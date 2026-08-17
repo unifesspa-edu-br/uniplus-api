@@ -63,4 +63,18 @@ public sealed class CriarRecursoAcessibilidadeCommandHandlerTests
         resultado.Error!.Code.Should().Be(RecursoAcessibilidadeErrorCodes.NomeTamanho);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Campo inválido propaga o erro sem consultar unicidade nem persistir — validação vence I/O")]
+    public async Task Handle_CampoInvalido_RetornaErroSemConsultarBancoNemPersistir()
+    {
+        CriarRecursoAcessibilidadeCommand comando = ComandoValido() with { Nome = "A" };
+
+        Result<Guid> resultado = await CriarRecursoAcessibilidadeCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        await _repository.DidNotReceive().NomeExisteEntreVivosAsync(
+            Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<RecursoAcessibilidade>(), Arg.Any<CancellationToken>());
+    }
 }

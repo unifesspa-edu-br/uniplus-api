@@ -81,4 +81,16 @@ public sealed class AtualizarRecursoAcessibilidadeCommandHandlerTests
             .NomeExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Campo inválido no payload propaga o erro sem buscar o recurso por Id — validação vence 404")]
+    public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
+    {
+        Result resultado = await AtualizarRecursoAcessibilidadeCommandHandler.Handle(
+            new AtualizarRecursoAcessibilidadeCommand(Guid.CreateVersion7(), "A"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(RecursoAcessibilidadeErrorCodes.NomeTamanho);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }

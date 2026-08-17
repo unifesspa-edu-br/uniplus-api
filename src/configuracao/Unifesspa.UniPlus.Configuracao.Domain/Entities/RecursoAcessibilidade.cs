@@ -40,45 +40,48 @@ public sealed class RecursoAcessibilidade : SoftDeletableEntity, IAuditableEntit
     }
 
     /// <summary>
-    /// Cria um novo RecursoAcessibilidade. Valida formato/tamanho local. A
-    /// unicidade de <paramref name="nome"/> entre recursos vivos é
-    /// responsabilidade do handler.
+    /// Cria um novo RecursoAcessibilidade, acumulando toda violação
+    /// independente em vez de parar na primeira. A unicidade de
+    /// <paramref name="nome"/> entre recursos vivos é responsabilidade do handler.
     /// </summary>
-    public static Result<RecursoAcessibilidade> Criar(string nome, string? descricao)
+    public static Result<RecursoAcessibilidade> Criar(string? nome, string? descricao)
     {
-        ArgumentNullException.ThrowIfNull(nome);
-
         Result validacao = ValidarCampos(nome, descricao);
         if (validacao.IsFailure)
         {
-            return Result<RecursoAcessibilidade>.Failure(validacao.Error!);
+            return Result<RecursoAcessibilidade>.ValidationFailure(validacao.Errors);
         }
 
         var recurso = new RecursoAcessibilidade();
-        recurso.AplicarCampos(nome, descricao);
+        recurso.AplicarCampos(nome!, descricao);
 
         return Result<RecursoAcessibilidade>.Success(recurso);
     }
 
     /// <summary>
-    /// Atualiza os atributos do RecursoAcessibilidade. O <c>Nome</c> é editável;
-    /// sua unicidade (quando alterado) é responsabilidade do handler. Revalida
-    /// formato/tamanho.
+    /// Atualiza os atributos do RecursoAcessibilidade, acumulando toda violação
+    /// independente. O <c>Nome</c> é editável; sua unicidade (quando alterado) é
+    /// responsabilidade do handler.
     /// </summary>
-    public Result Atualizar(string nome, string? descricao)
+    public Result Atualizar(string? nome, string? descricao)
     {
-        ArgumentNullException.ThrowIfNull(nome);
-
         Result validacao = ValidarCampos(nome, descricao);
         if (validacao.IsFailure)
         {
-            return validacao;
+            return Result.ValidationFailure(validacao.Errors);
         }
 
-        AplicarCampos(nome, descricao);
+        AplicarCampos(nome!, descricao);
 
         return Result.Success();
     }
+
+    /// <summary>
+    /// Valida nome e descrição sem I/O e sem mutar nada — para os handlers de
+    /// criação e atualização falharem rápido antes de qualquer busca no banco
+    /// (validação sempre vence I/O).
+    /// </summary>
+    public static Result ValidarCamposDoPayload(string? nome, string? descricao) => ValidarCampos(nome, descricao);
 
     private void AplicarCampos(string nome, string? descricao)
     {
@@ -89,29 +92,30 @@ public sealed class RecursoAcessibilidade : SoftDeletableEntity, IAuditableEntit
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
-    private static Result ValidarCampos(string nome, string? descricao)
+    private static Result ValidarCampos(string? nome, string? descricao)
     {
+        List<FieldError> erros = [];
+
         if (string.IsNullOrWhiteSpace(nome))
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("nome", new DomainError(
                 RecursoAcessibilidadeErrorCodes.NomeObrigatorio,
-                "Nome do recurso de acessibilidade é obrigatório."));
+                "Nome do recurso de acessibilidade é obrigatório.")));
         }
-
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
+        else if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("nome", new DomainError(
                 RecursoAcessibilidadeErrorCodes.NomeTamanho,
-                $"Nome do recurso de acessibilidade deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
+                $"Nome do recurso de acessibilidade deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
         }
 
         if (descricao is not null && descricao.Trim().Length > DescricaoMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("descricao", new DomainError(
                 RecursoAcessibilidadeErrorCodes.DescricaoTamanho,
-                $"Descrição do recurso de acessibilidade deve ter no máximo {DescricaoMaxLength} caracteres."));
+                $"Descrição do recurso de acessibilidade deve ter no máximo {DescricaoMaxLength} caracteres.")));
         }
 
-        return Result.Success();
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
 }

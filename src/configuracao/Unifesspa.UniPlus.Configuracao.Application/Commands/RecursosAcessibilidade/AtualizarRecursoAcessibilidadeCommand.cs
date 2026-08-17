@@ -11,5 +11,5 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record AtualizarRecursoAcessibilidadeCommand(
     Guid Id,
-    string Nome,
+    string? Nome,
     string? Descricao = null) : ICommand<Result>;
