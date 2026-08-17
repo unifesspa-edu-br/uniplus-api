@@ -123,7 +123,11 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
                 "ConfiguracaoDivulgacao.JustificativaComCaractereNulo",
                 "A justificativa não pode conter o caractere nulo (U+0000).")));
         }
-        else if (justificativaNormalizada is { Length: > JustificativaMaxLength })
+
+        // If independente do guard acima: uma justificativa longa demais E com caractere nulo
+        // viola as duas regras ao mesmo tempo — um else if suprimiria JustificativaMuitoLonga
+        // até o cliente reenviar sem o caractere nulo, escondendo uma violação já detectável.
+        if (justificativaNormalizada is { Length: > JustificativaMaxLength })
         {
             erros.Add(new("justificativa", new DomainError(
                 "ConfiguracaoDivulgacao.JustificativaMuitoLonga",

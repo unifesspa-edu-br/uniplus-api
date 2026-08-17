@@ -121,6 +121,19 @@ public sealed class ConfiguracaoDivulgacaoTests
         resultado.Errors.Should().ContainSingle(e => e.Field == "camposPublicos" && e.Error.Code == "ConfiguracaoDivulgacao.CampoNaoPermitido");
     }
 
+    [Fact(DisplayName = "Justificativa longa demais e com caractere nulo ao mesmo tempo acumula as duas violações")]
+    public void Criar_JustificativaLongaComCaractereNulo_AcumulaAsDuasViolacoes()
+    {
+        string justificativa = $"{(char)0}{new string('a', ConfiguracaoDivulgacao.JustificativaMaxLength + 1)}";
+
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], justificativa);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "justificativa" && e.Error.Code == "ConfiguracaoDivulgacao.JustificativaComCaractereNulo");
+        resultado.Errors.Should().Contain(e => e.Field == "justificativa" && e.Error.Code == "ConfiguracaoDivulgacao.JustificativaMuitoLonga");
+    }
+
     [Fact(DisplayName = "Nome sem justificativa e nome_abreviado junto de nome acumulam os dois erros")]
     public void Criar_ComDoisErrosIndependentes_AcumulaOsDois()
     {
