@@ -83,6 +83,18 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Validator falha (sem estourar) quando ModalidadeIds é nulo")]
+    public void Rejeita_ModalidadeIdsNulo()
+    {
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { ModalidadeIds = null! };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = _validator.Validate(command);
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == "DistribuicaoVagas[0].ModalidadeIds");
+    }
+
     [Fact(DisplayName = "Item nulo na lista gera erro, sem lançar exceção")]
     public void Validar_ItemNulo_GeraErro()
     {

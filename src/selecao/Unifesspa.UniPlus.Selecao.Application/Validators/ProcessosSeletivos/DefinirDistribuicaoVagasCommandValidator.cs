@@ -57,6 +57,14 @@ public sealed class DefinirDistribuicaoVagasCommandValidator : AbstractValidator
                 .NotEmpty()
                 .WithMessage("Versão da regra de distribuição é obrigatória.");
 
+            // NotNull (não NotEmpty): a lista vazia é responsabilidade do domínio
+            // (ConfiguracaoDistribuicaoVagas.ModalidadesVazias, ADR-0125) — mas a
+            // nulidade em si precisa ser barrada aqui, sem isso o handler
+            // desreferenciaria ModalidadeIds (Contains/foreach), estourando como 500.
+            item.RuleFor(d => d.ModalidadeIds)
+                .NotNull()
+                .WithMessage("O campo ModalidadeIds é obrigatório (pode ser uma lista vazia).");
+
             item.RuleFor(d => d.Quadro)
                 .NotNull()
                 .WithMessage("O quadro é obrigatório — envie lista vazia quando não houver quantidade a fixar.")
