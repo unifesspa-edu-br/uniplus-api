@@ -20,8 +20,6 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
     private const int RegraCodigoMaxLength = 128;
     private const int RegraVersaoMaxLength = 16;
     private const int HashLength = 64;
-    private const int MunicipioMaxLength = 200;
-    private const int BaseLegalMaxLength = 500;
 
     public void Configure(EntityTypeBuilder<ConfiguracaoBonusRegional> builder)
     {
@@ -41,7 +39,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
 
         builder.Property(b => b.Fator).HasPrecision(6, 4).IsRequired();
         builder.Property(b => b.Teto).HasPrecision(6, 4);
-        builder.Property(b => b.MunicipioConvenio).HasMaxLength(MunicipioMaxLength);
-        builder.Property(b => b.BaseLegal).HasMaxLength(BaseLegalMaxLength);
+        builder.Property(b => b.MunicipioConvenio).HasMaxLength(ConfiguracaoBonusRegional.MunicipioConvenioMaxLength);
+        builder.Property(b => b.BaseLegal).HasMaxLength(ConfiguracaoBonusRegional.BaseLegalMaxLength);
     }
 }
