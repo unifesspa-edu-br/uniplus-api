@@ -60,32 +60,43 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
     private ConfiguracaoDivulgacao() { }
 
     /// <summary>
-    /// Ordem dos guards, testada: um conjunto que viole a vocabulário e o piso ao mesmo tempo
-    /// devolve o erro de vocabulário, não o do piso.
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — o array
+    /// <c>errors[]</c> do contrato público (ADR-0023) precisa de todas as regras violadas no
+    /// mesmo lote. As checagens rodam sobre a lista bruta (não a canônica): a construção da
+    /// coleção deduplicada/ordenada só acontece se nenhuma violação for encontrada.
     /// </summary>
     public static Result<ConfiguracaoDivulgacao> Criar(IReadOnlyList<string> camposPublicos, string? justificativa)
     {
         ArgumentNullException.ThrowIfNull(camposPublicos);
 
+        List<FieldError> erros = [];
+
         if (camposPublicos.Count == 0)
         {
-            return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
+            erros.Add(new("camposPublicos", new DomainError(
                 "ConfiguracaoDivulgacao.CamposPublicosVazio",
-                "A lista de campos públicos não pode ser vazia — para restaurar o default, remova a configuração explícita."));
+                "A lista de campos públicos não pode ser vazia — para restaurar o default, remova a configuração explícita.")));
         }
 
-        if (camposPublicos.FirstOrDefault(static c => c is not (NumeroInscricao or NomeAbreviado or Nome)) is { } campoNaoPermitido)
+        // Item nulo não pertence ao vocabulário — reportado junto dos demais campos fora do
+        // vocabulário fechado, em vez de escapar de FirstOrDefault(...) is { } (que descarta um
+        // resultado nulo como "não encontrado") e sobreviver silenciosamente na lista canônica.
+        List<string?> camposNaoPermitidos = [.. camposPublicos.Where(static c => c is not (NumeroInscricao or NomeAbreviado or Nome))];
+        if (camposNaoPermitidos.Count > 0)
         {
-            return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
+            string listagem = string.Join(", ", camposNaoPermitidos.Select(static c => c is null ? "(nulo)" : $"'{c}'"));
+            erros.Add(new("camposPublicos", new DomainError(
                 "ConfiguracaoDivulgacao.CampoNaoPermitido",
-                $"O campo '{campoNaoPermitido}' não pertence ao vocabulário de divulgação pública ({NumeroInscricao}, {NomeAbreviado}, {Nome})."));
+                $"{listagem} não pertence ao vocabulário de divulgação pública ({NumeroInscricao}, {NomeAbreviado}, {Nome}).")));
         }
 
-        if (!camposPublicos.Contains(NumeroInscricao, StringComparer.Ordinal))
+        // Redundante com CamposPublicosVazio quando a lista já está vazia — não acrescenta um
+        // segundo erro para a mesma causa raiz.
+        if (camposPublicos.Count > 0 && !camposPublicos.Contains(NumeroInscricao, StringComparer.Ordinal))
         {
-            return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
+            erros.Add(new("camposPublicos", new DomainError(
                 "ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio",
-                $"'{NumeroInscricao}' é o piso da divulgação pública — não pode ser removido da lista."));
+                $"'{NumeroInscricao}' é o piso da divulgação pública — não pode ser removido da lista.")));
         }
 
         bool temNomeAbreviado = camposPublicos.Contains(NomeAbreviado, StringComparer.Ordinal);
@@ -93,9 +104,9 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
 
         if (temNomeAbreviado && temNome)
         {
-            return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
+            erros.Add(new("camposPublicos", new DomainError(
                 "ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes",
-                $"'{NomeAbreviado}' e '{Nome}' não podem ser publicados ao mesmo tempo — escolha uma forma de identificação do candidato."));
+                $"'{NomeAbreviado}' e '{Nome}' não podem ser publicados ao mesmo tempo — escolha uma forma de identificação do candidato.")));
         }
 
         string? justificativaNormalizada = NormalizarJustificativa(justificativa);
@@ -107,23 +118,27 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
         // restauração do envelope, que também passa por este método.
         if (justificativaNormalizada is not null && justificativaNormalizada.Contains(CaractereNulo))
         {
-            return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
+            erros.Add(new("justificativa", new DomainError(
                 "ConfiguracaoDivulgacao.JustificativaComCaractereNulo",
-                "A justificativa não pode conter o caractere nulo (U+0000)."));
+                "A justificativa não pode conter o caractere nulo (U+0000).")));
         }
-
-        if (justificativaNormalizada is { Length: > JustificativaMaxLength })
+        else if (justificativaNormalizada is { Length: > JustificativaMaxLength })
         {
-            return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
+            erros.Add(new("justificativa", new DomainError(
                 "ConfiguracaoDivulgacao.JustificativaMuitoLonga",
-                $"A justificativa deve ter no máximo {JustificativaMaxLength} caracteres."));
+                $"A justificativa deve ter no máximo {JustificativaMaxLength} caracteres.")));
         }
 
         if (temNome && justificativaNormalizada is null)
         {
-            return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
+            erros.Add(new("justificativa", new DomainError(
                 "ConfiguracaoDivulgacao.JustificativaObrigatoria",
-                $"Publicar '{Nome}' exige justificativa (UNI-REQ-0050) — '{NumeroInscricao}' e '{NomeAbreviado}' dispensam."));
+                $"Publicar '{Nome}' exige justificativa (UNI-REQ-0050) — '{NumeroInscricao}' e '{NomeAbreviado}' dispensam.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<ConfiguracaoDivulgacao>.ValidationFailure(erros);
         }
 
         string[] canonico = [.. camposPublicos.Distinct(StringComparer.Ordinal).OrderBy(static c => c, StringComparer.Ordinal)];
