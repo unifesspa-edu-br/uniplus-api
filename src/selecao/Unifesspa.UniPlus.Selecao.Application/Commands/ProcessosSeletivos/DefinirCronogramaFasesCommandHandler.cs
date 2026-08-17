@@ -21,12 +21,16 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </summary>
 /// <remarks>
 /// ADR-0125: propaga TODOS os erros de <see cref="FaseCronograma.Criar"/> (não só o
-/// primeiro), prefixados com <c>fases[i].</c>. Diferente das demais fatias da rolagem,
-/// não há uma passada pura pré-I/O aqui — a maior parte das invariantes que a factory
-/// acumula depende de <c>OrigemData</c>/<c>ProduzResultado</c>/<c>ResultadoDefinitivo</c>,
-/// snapshot-copy do cadastro (<see cref="IFaseCanonicaReader"/>), não de campo cru do
-/// payload; Ordem e a janela (Fim ≥ Início), que SÃO primitivos do payload, já são
-/// cobertas pelo FluentValidation como middleware Wolverine, vencendo I/O por construção.
+/// primeiro), prefixados com <c>fases[i]</c> (erro sem field próprio) ou
+/// <c>fases[i].campo</c>. Diferente das demais fatias da rolagem, não há uma passada pura
+/// pré-I/O aqui — a maior parte das invariantes que a factory acumula depende de
+/// <c>OrigemData</c>/<c>ProduzResultado</c>/<c>ResultadoDefinitivo</c>, snapshot-copy do
+/// cadastro (<see cref="IFaseCanonicaReader"/>), não de campo cru do payload. Ordem
+/// permanece só <c>throw</c> no domínio (nunca acumulada) e continua coberta pelo
+/// FluentValidation; a janela (Fim ≥ Início) foi retirada do validator de propósito — ela
+/// JÁ acumula no domínio (<c>FaseCronograma.JanelaInvertida</c>), e deixá-la também no
+/// validator faria o middleware bloquear sozinho, sem nunca deixar o domínio acumulá-la
+/// junto de outras violações da mesma fase.
 /// </remarks>
 public static class DefinirCronogramaFasesCommandHandler
 {

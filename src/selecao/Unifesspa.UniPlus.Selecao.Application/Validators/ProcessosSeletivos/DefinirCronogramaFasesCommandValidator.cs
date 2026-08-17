@@ -12,6 +12,15 @@ using FluentValidation;
 /// bicondicional fase×etapa, resolução da regra/ato âncora) são do domínio e do handler
 /// (ADR-0102).
 /// </summary>
+/// <remarks>
+/// A checagem de janela (Fim ≥ Início) NÃO está aqui, de propósito — desde a ADR-0125,
+/// <c>FaseCronograma.JanelaInvertida</c> acumula no domínio junto das demais violações da
+/// mesma fase (ex.: ato produzido ausente). Mantê-la também aqui faria o FluentValidation
+/// (middleware, sempre roda primeiro) bloquear sozinho um payload com janela invertida +
+/// outra violação, entregando ao cliente só o erro de janela — a acumulação do domínio
+/// nunca chegaria a rodar. Ordem (só <c>throw</c> no domínio, nunca acumulada) não tem
+/// esse conflito e continua validada aqui.
+/// </remarks>
 public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<DefinirCronogramaFasesCommand>
 {
     public DefinirCronogramaFasesCommandValidator()
@@ -40,11 +49,6 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
             fase.RuleFor(f => f.FaseCanonicaId)
                 .NotEmpty()
                 .WithMessage("O id da fase canônica é obrigatório.");
-
-            fase.RuleFor(f => f.Fim)
-                .GreaterThanOrEqualTo(f => f.Inicio)
-                .When(f => f.Inicio.HasValue && f.Fim.HasValue)
-                .WithMessage("O fim da janela da fase não pode anteceder o início.");
 
             fase.RuleForEach(f => f.TiposBancaIds)
                 .NotEmpty()
