@@ -51,47 +51,74 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria um termo novo, com rascunho vazio ou com campos iniciais. Nasce sempre
+    /// Cria um termo novo, com rascunho vazio ou com campos iniciais, acumulando
+    /// toda violação independente em vez de parar na primeira. Nasce sempre
     /// <c>EM_ELABORACAO</c> — marcar revisado e promover são operações explícitas
     /// subsequentes, nunca implícitas na criação.
     /// </summary>
     public static Result<TermoConsentimento> Criar(
-        string nome, string? textoRascunho, string? baseLegalRascunho, string? formaAceiteRascunhoToken)
+        string? nome, string? textoRascunho, string? baseLegalRascunho, string? formaAceiteRascunhoToken)
     {
-        ArgumentNullException.ThrowIfNull(nome);
+        List<FieldError> erros = [];
 
-        Result<FormaAceite> validacao = ValidarCampos(nome, textoRascunho, baseLegalRascunho, formaAceiteRascunhoToken);
-        if (validacao.IsFailure)
+        string? nomeNorm = null;
+        if (string.IsNullOrWhiteSpace(nome))
         {
-            return Result<TermoConsentimento>.Failure(validacao.Error!);
+            erros.Add(new("nome", new DomainError(
+                TermoConsentimentoErrorCodes.NomeObrigatorio, "Nome do termo é obrigatório.")));
+        }
+        else
+        {
+            nomeNorm = nome.Trim();
+            if (nomeNorm.Length is < NomeMinLength or > NomeMaxLength)
+            {
+                erros.Add(new("nome", new DomainError(
+                    TermoConsentimentoErrorCodes.NomeTamanho,
+                    $"Nome do termo deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
+                nomeNorm = null;
+            }
+        }
+
+        Result<FormaAceite> camposEditaveis = ValidarCamposEditaveis(textoRascunho, baseLegalRascunho, formaAceiteRascunhoToken);
+        if (camposEditaveis.IsFailure)
+        {
+            erros.AddRange(camposEditaveis.Errors);
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<TermoConsentimento>.ValidationFailure(erros);
         }
 
         return Result<TermoConsentimento>.Success(new TermoConsentimento
         {
-            Nome = nome.Trim(),
+            Nome = nomeNorm!,
             TextoRascunho = NormalizarOpcional(textoRascunho),
             BaseLegalRascunho = NormalizarOpcional(baseLegalRascunho),
-            FormaAceiteRascunho = validacao.Value!,
+            FormaAceiteRascunho = camposEditaveis.Value,
             Revisado = false,
         });
     }
 
     /// <summary>
-    /// Edita o rascunho corrente. Se o rascunho já estava <see cref="Revisado"/>,
-    /// a edição é aceita mas devolve o status a <c>EM_ELABORACAO</c> e limpa a
-    /// marca de revisão — nunca falha por já estar revisado.
+    /// Edita o rascunho corrente, acumulando toda violação independente. Se o
+    /// rascunho já estava <see cref="Revisado"/>, a edição é aceita mas devolve o
+    /// status a <c>EM_ELABORACAO</c> e limpa a marca de revisão — nunca falha por
+    /// já estar revisado. O <c>Nome</c> não é campo deste comando (imutável desde
+    /// a criação, nunca fica inválido depois de já criado) — só os três campos
+    /// editáveis do rascunho são revalidados aqui.
     /// </summary>
     public Result EditarRascunho(string? textoRascunho, string? baseLegalRascunho, string? formaAceiteRascunhoToken)
     {
-        Result<FormaAceite> validacao = ValidarCampos(Nome, textoRascunho, baseLegalRascunho, formaAceiteRascunhoToken);
+        Result<FormaAceite> validacao = ValidarCamposEditaveis(textoRascunho, baseLegalRascunho, formaAceiteRascunhoToken);
         if (validacao.IsFailure)
         {
-            return Result.Failure(validacao.Error!);
+            return Result.ValidationFailure(validacao.Errors);
         }
 
         TextoRascunho = NormalizarOpcional(textoRascunho);
         BaseLegalRascunho = NormalizarOpcional(baseLegalRascunho);
-        FormaAceiteRascunho = validacao.Value!;
+        FormaAceiteRascunho = validacao.Value;
 
         if (Revisado)
         {
@@ -101,6 +128,18 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
         }
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Valida os três campos editáveis do rascunho (texto, base legal, forma de
+    /// aceite), sem I/O e sem mutar nada — para o handler de edição falhar rápido
+    /// antes de buscar o termo por Id (validação sempre vence 404).
+    /// </summary>
+    public static Result ValidarCamposDoPayload(
+        string? textoRascunho, string? baseLegalRascunho, string? formaAceiteRascunhoToken)
+    {
+        Result<FormaAceite> resultado = ValidarCamposEditaveis(textoRascunho, baseLegalRascunho, formaAceiteRascunhoToken);
+        return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
     }
 
     /// <summary>
@@ -198,49 +237,38 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
         return Result<TermoConsentimentoVersao>.Success(versao);
     }
 
-    private static Result<FormaAceite> ValidarCampos(
-        string nome, string? textoRascunho, string? baseLegalRascunho, string? formaAceiteRascunhoToken)
+    private static Result<FormaAceite> ValidarCamposEditaveis(
+        string? textoRascunho, string? baseLegalRascunho, string? formaAceiteRascunhoToken)
     {
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Falha(TermoConsentimentoErrorCodes.NomeObrigatorio, "Nome do termo é obrigatório.");
-        }
-
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
-        {
-            return Falha(
-                TermoConsentimentoErrorCodes.NomeTamanho,
-                $"Nome do termo deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.");
-        }
+        List<FieldError> erros = [];
 
         if (textoRascunho is not null && textoRascunho.Trim().Length > TextoMaxLength)
         {
-            return Falha(
+            erros.Add(new("textoRascunho", new DomainError(
                 TermoConsentimentoErrorCodes.TextoTamanho,
-                $"Texto do rascunho deve ter no máximo {TextoMaxLength} caracteres.");
+                $"Texto do rascunho deve ter no máximo {TextoMaxLength} caracteres.")));
         }
 
         if (baseLegalRascunho is not null && baseLegalRascunho.Trim().Length > BaseLegalMaxLength)
         {
-            return Falha(
+            erros.Add(new("baseLegalRascunho", new DomainError(
                 TermoConsentimentoErrorCodes.BaseLegalTamanho,
-                $"Base legal do rascunho deve ter no máximo {BaseLegalMaxLength} caracteres.");
+                $"Base legal do rascunho deve ter no máximo {BaseLegalMaxLength} caracteres.")));
         }
 
         FormaAceite formaAceite = FormaAceite.ADefinir;
         if (!string.IsNullOrWhiteSpace(formaAceiteRascunhoToken)
             && !FormasAceite.TryAnalisar(formaAceiteRascunhoToken, out formaAceite))
         {
-            return Falha(
+            erros.Add(new("formaAceiteRascunho", new DomainError(
                 TermoConsentimentoErrorCodes.FormaAceiteInvalida,
-                "Forma de aceite deve ser uma de: " + string.Join(", ", FormasAceite.TokensCanonicos) + ".");
+                "Forma de aceite deve ser uma de: " + string.Join(", ", FormasAceite.TokensCanonicos) + ".")));
         }
 
-        return Result<FormaAceite>.Success(formaAceite);
+        return erros.Count == 0
+            ? Result<FormaAceite>.Success(formaAceite)
+            : Result<FormaAceite>.ValidationFailure(erros);
     }
-
-    private static Result<FormaAceite> Falha(string codigo, string mensagem) =>
-        Result<FormaAceite>.Failure(new DomainError(codigo, mensagem));
 
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();

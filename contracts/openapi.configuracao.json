@@ -10729,7 +10729,10 @@
         "type": "object",
         "properties": {
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "textoRascunho": {
             "type": [

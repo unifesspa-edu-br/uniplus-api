@@ -91,6 +91,27 @@ public sealed class TermoConsentimentoTests
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.BaseLegalTamanho);
     }
 
+    [Fact(DisplayName = "Nome ausente, texto longo e forma de aceite inválida acumulam as três violações")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
+    {
+        Result<TermoConsentimento> resultado = TermoConsentimento.Criar(
+            "", new string('A', 20_001), null, "FORMA_INEXISTENTE");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[1].Field.Should().Be("textoRascunho");
+        resultado.Errors[2].Field.Should().Be("formaAceiteRascunho");
+    }
+
+    [Fact(DisplayName = "ValidarCamposDoPayload isolado é público e reusável sem instanciar o agregado")]
+    public void ValidarCamposDoPayload_CamposValidos_Aceita()
+    {
+        Result resultado = TermoConsentimento.ValidarCamposDoPayload("Texto", "Base legal", null);
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Criar com forma de aceite fora do domínio fechado falha")]
     public void Criar_FormaAceiteInvalida_Falha()
     {
