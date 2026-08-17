@@ -174,7 +174,7 @@ public sealed class PesoAreaEnemTests
         resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.BaseLegalObrigatoria);
     }
 
-    [Fact(DisplayName = "Atualizar aplica novos pesos e preserva Id, resolução e grupo (CA-04b)")]
+    [Fact(DisplayName = "Atualizar aplica novos pesos e preserva Id, resolução e grupo")]
     public void Atualizar_DadosValidos_PreservaChaveEId()
     {
         PesoAreaEnem peso = Criar().Value!;
@@ -222,5 +222,37 @@ public sealed class PesoAreaEnemTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.BaseLegalObrigatoria);
+    }
+
+    // ── Acumulação de violações independentes (ADR-0125) ────────────────────────
+
+    [Fact(DisplayName = "Resolução ausente, grupo inválido e peso negativo acumulam as três violações")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
+    {
+        Result<PesoAreaEnem> resultado = Criar(resolucao: "", grupo: "Engenharias", redacao: -1.00m);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors[0].Field.Should().Be("resolucao");
+        resultado.Errors[1].Field.Should().Be("grupoCurso");
+        resultado.Errors[2].Field.Should().Be("pesoRedacao");
+    }
+
+    [Fact(DisplayName = "Dois pesos negativos e corte acima do máximo acumulam as três violações")]
+    public void Criar_DoisPesosECorteInvalidos_AcumulaAsTres()
+    {
+        Result<PesoAreaEnem> resultado = Criar(redacao: -1.00m, mt: -1.00m, corte: 1000.001m);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+    }
+
+    [Fact(DisplayName = "ValidarCamposDoPayload isolado é público e reusável sem instanciar o agregado")]
+    public void ValidarCamposDoPayload_CamposValidos_Aceita()
+    {
+        Result resultado = PesoAreaEnem.ValidarCamposDoPayload(
+            1.50m, 1.00m, 1.00m, 1.00m, 2.00m, 400m, BaseLegal);
+
+        resultado.IsSuccess.Should().BeTrue();
     }
 }

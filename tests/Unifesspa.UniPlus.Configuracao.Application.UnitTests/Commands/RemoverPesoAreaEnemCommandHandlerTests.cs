@@ -32,7 +32,7 @@ public sealed class RemoverPesoAreaEnemCommandHandlerTests
         _repository.DidNotReceive().Remover(Arg.Any<PesoAreaEnem>());
     }
 
-    [Fact(DisplayName = "Sem FK de entrada: remoção é soft-delete e nunca é bloqueada (CA-05)")]
+    [Fact(DisplayName = "Sem FK de entrada: remoção é soft-delete e nunca é bloqueada")]
     public async Task Handle_Existente_RemoveESoftDelete()
     {
         PesoAreaEnem existente = PesoAreaEnem

@@ -15,15 +15,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Os cinco pesos são <c>[JsonRequired]</c>: como são <c>decimal</c> não-anuláveis,
 /// omiti-los no JSON faria o System.Text.Json construir o record com <c>0m</c> — um
 /// peso válido — em vez de rejeitar o campo ausente. O <c>CorteRedacao</c> é o único
-/// genuinamente opcional (assume 400 quando omitido).
+/// genuinamente opcional (assume 400 quando omitido). <c>Resolucao</c>, <c>GrupoCurso</c>
+/// e <c>BaseLegal</c> são <c>string?</c> (ADR-0125): nulo para o campo ausente escapar
+/// do <c>[ApiController]</c> e chegar à validação de domínio; sem default, para o
+/// schema OpenAPI continuar listando-os como obrigatórios.
 /// </remarks>
 public sealed record CriarPesoAreaEnemCommand(
-    string Resolucao,
-    string GrupoCurso,
+    string? Resolucao,
+    string? GrupoCurso,
     [property: JsonRequired] decimal PesoRedacao,
     [property: JsonRequired] decimal PesoCienciasNatureza,
     [property: JsonRequired] decimal PesoCienciasHumanas,
     [property: JsonRequired] decimal PesoLinguagens,
     [property: JsonRequired] decimal PesoMatematica,
-    string BaseLegal,
+    string? BaseLegal,
     decimal? CorteRedacao = null) : ICommand<Result<Guid>>;

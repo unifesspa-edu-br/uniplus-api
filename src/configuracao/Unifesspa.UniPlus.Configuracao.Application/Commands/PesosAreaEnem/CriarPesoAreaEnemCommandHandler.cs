@@ -8,8 +8,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarPesoAreaEnemCommand"/> (convention-based Wolverine):
-/// confere a unicidade do par (resolução, grupo de área) entre linhas vivas, cria
-/// o agregado, persiste e commita.
+/// valida o payload primeiro (422, sem I/O — validação sempre vence I/O), confere
+/// a unicidade do par (resolução, grupo de área) entre linhas vivas (409, DB),
+/// persiste e commita.
 /// </summary>
 public static class CriarPesoAreaEnemCommandHandler
 {
@@ -22,11 +23,6 @@ public static class CriarPesoAreaEnemCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-
-        if (await repository.ParExisteEntreVivosAsync(command.Resolucao, command.GrupoCurso, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(ParJaExisteErro(command.Resolucao, command.GrupoCurso));
-        }
 
         Result<PesoAreaEnem> pesoResult = PesoAreaEnem.Criar(
             command.Resolucao,
@@ -41,10 +37,16 @@ public static class CriarPesoAreaEnemCommandHandler
 
         if (pesoResult.IsFailure)
         {
-            return Result<Guid>.Failure(pesoResult.Error!);
+            return Result<Guid>.ValidationFailure(pesoResult.Errors);
         }
 
         PesoAreaEnem peso = pesoResult.Value!;
+
+        if (await repository.ParExisteEntreVivosAsync(peso.Resolucao, peso.GrupoCurso.Valor, null, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(ParJaExisteErro());
+        }
+
         await repository.AdicionarAsync(peso, cancellationToken).ConfigureAwait(false);
 
         try
@@ -58,14 +60,17 @@ public static class CriarPesoAreaEnemCommandHandler
             // índice único parcial dispara 23505 e viramos o mesmo ParJaExiste do
             // caminho não-race — 409 consistente, em vez de deixar o DbUpdateException
             // virar 500 no middleware global. O filtro do `when` garante que outras
-            // exceções propagam intactas.
-            return Result<Guid>.Failure(ParJaExisteErro(command.Resolucao, command.GrupoCurso));
+            // exceções propagam intactas. Descarta o rastreamento da entidade que não
+            // foi persistida, senão o save automático do Wolverine repetiria a
+            // violação fora deste catch.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<Guid>.Failure(ParJaExisteErro());
         }
 
         return Result<Guid>.Success(peso.Id);
     }
 
-    private static DomainError ParJaExisteErro(string resolucao, string grupoCurso) =>
+    private static DomainError ParJaExisteErro() =>
         new(PesoAreaEnemErrorCodes.ParJaExiste,
-            $"Já existe uma linha de pesos viva para a resolução '{resolucao}' e o grupo '{grupoCurso}'.");
+            "Já existe uma linha de pesos viva para a resolução e o grupo informados.");
 }

@@ -64,4 +64,31 @@ public sealed class CriarPesoAreaEnemCommandHandlerTests
         resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.PesoNegativo);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Campo inválido no payload propaga o erro sem consultar unicidade nem persistir — validação vence I/O")]
+    public async Task Handle_CampoInvalido_RetornaErroSemConsultarBancoNemPersistir()
+    {
+        CriarPesoAreaEnemCommand comando = ComandoValido() with { GrupoCurso = "Engenharias" };
+
+        Result<Guid> resultado = await CriarPesoAreaEnemCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.GrupoCursoInvalido);
+        await _repository.DidNotReceive().ParExisteEntreVivosAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<PesoAreaEnem>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Grupo inválido e peso negativo acumulam as duas violações")]
+    public async Task Handle_GrupoInvalidoEPesoNegativo_AcumulaAsDuasViolacoes()
+    {
+        CriarPesoAreaEnemCommand comando = ComandoValido() with { GrupoCurso = "Engenharias", PesoMatematica = -1.00m };
+
+        Result<Guid> resultado = await CriarPesoAreaEnemCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+    }
 }

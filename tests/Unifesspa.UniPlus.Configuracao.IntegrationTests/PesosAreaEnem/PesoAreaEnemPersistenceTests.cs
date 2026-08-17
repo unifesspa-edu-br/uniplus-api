@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 /// Integração ponta-a-ponta dos Pesos do ENEM por grupo de área contra Postgres
 /// real (UNI-REQ-0066): persistência dos pesos, UNIQUE parcial do par
 /// (resolução, grupo), liberação do slot por soft-delete, CHECKs de domínio/não-
-/// negatividade, DEFAULT 400 do corte e leitura cross-módulo (CA-01, CA-04, CA-05).
+/// negatividade, DEFAULT 400 do corte quando omitido e leitura cross-módulo.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -37,7 +37,7 @@ public sealed class PesoAreaEnemPersistenceTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "CA-01: criar persiste os pesos e fica visível pelo leitor cross-módulo")]
+    [Fact(DisplayName = "Criar persiste os pesos e fica visível pelo leitor cross-módulo")]
     public async Task Insert_PersisteEFicaVisivelPeloReader()
     {
         string resolucao = ResolucaoUnica();
@@ -68,7 +68,7 @@ public sealed class PesoAreaEnemPersistenceTests
         view.PesoRedacao.Should().Be(1.50m);
     }
 
-    [Fact(DisplayName = "CA-02: UNIQUE parcial (resolução, grupo) rejeita segundo par vivo idêntico")]
+    [Fact(DisplayName = "UNIQUE parcial (resolução, grupo) rejeita segundo par vivo idêntico")]
     public async Task UniquePartial_Par_RejeitaDuplicataAtiva()
     {
         string resolucao = ResolucaoUnica();
@@ -104,7 +104,7 @@ public sealed class PesoAreaEnemPersistenceTests
         await act.Should().NotThrowAsync("o par (resolução, grupo) é distinto");
     }
 
-    [Fact(DisplayName = "CA-05: soft-delete preserva a trilha e liberta o slot da UNIQUE parcial do par")]
+    [Fact(DisplayName = "Soft-delete preserva a trilha e liberta o slot da UNIQUE parcial do par")]
     public async Task SoftDelete_PreservaTrilhaELibertaSlot()
     {
         string resolucao = ResolucaoUnica();
@@ -161,7 +161,7 @@ public sealed class PesoAreaEnemPersistenceTests
             "o CHECK de domínio de grupo_curso impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "CA-04: DEFAULT 400 do banco aplica quando o corte é omitido no INSERT cru")]
+    [Fact(DisplayName = "DEFAULT 400 do banco aplica quando o corte é omitido no INSERT cru")]
     public async Task Default_CorteRedacao_AplicaQuandoOmitido()
     {
         Guid id = Guid.CreateVersion7();

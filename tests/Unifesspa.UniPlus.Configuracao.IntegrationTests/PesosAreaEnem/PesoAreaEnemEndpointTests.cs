@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>PesoAreaEnem</c> (UNI-REQ-0066):
 /// routing, vendor media type, HATEOAS, autenticação/autorização, idempotência,
-/// domínio fechado do grupo (CA-03) e corte padrão 400 (CA-04) com Wolverine
+/// domínio fechado do grupo e corte padrão 400 quando omitido, com Wolverine
 /// rodando contra Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
@@ -109,7 +109,7 @@ public sealed class PesoAreaEnemEndpointTests
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
-    [Fact(DisplayName = "CA-04: POST admin sem corte de redação assume o padrão 400")]
+    [Fact(DisplayName = "POST admin sem corte de redação assume o padrão 400")]
     public async Task Criar_SemCorte_AssumePadrao400()
     {
         var body = new
@@ -134,7 +134,7 @@ public sealed class PesoAreaEnemEndpointTests
         doc.RootElement.GetProperty("corteRedacao").GetDecimal().Should().Be(400m);
     }
 
-    [Fact(DisplayName = "CA-03: POST admin com grupo fora do domínio retorna 422")]
+    [Fact(DisplayName = "POST admin com grupo fora do domínio retorna 422")]
     public async Task Criar_GrupoInvalido_Retorna422()
     {
         var body = new

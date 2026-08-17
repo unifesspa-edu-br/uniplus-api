@@ -7,10 +7,12 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarPesoAreaEnemCommand"/>. Edita apenas pesos,
-/// corte e base legal — a chave de negócio (resolução + grupo) e o <c>Id</c> são
-/// imutáveis (CA-04b), logo não há colisão de unicidade possível e nenhuma
-/// checagem de corrida é necessária.
+/// Handler do <see cref="AtualizarPesoAreaEnemCommand"/>. Valida o payload (422,
+/// sem I/O) ANTES de buscar a linha por Id — validação sempre vence 404. Edita
+/// apenas pesos, corte e base legal — a chave de negócio (resolução + grupo) e o
+/// <c>Id</c> são imutáveis — mudá-los caracterizaria outra linha, não uma edição
+/// —, logo não há colisão de unicidade possível e nenhuma checagem de corrida é
+/// necessária.
 /// </summary>
 public static class AtualizarPesoAreaEnemCommandHandler
 {
@@ -23,6 +25,20 @@ public static class AtualizarPesoAreaEnemCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        Result preCheck = PesoAreaEnem.ValidarCamposDoPayload(
+            command.PesoRedacao,
+            command.PesoCienciasNatureza,
+            command.PesoCienciasHumanas,
+            command.PesoLinguagens,
+            command.PesoMatematica,
+            command.CorteRedacao,
+            command.BaseLegal);
+
+        if (preCheck.IsFailure)
+        {
+            return Result.ValidationFailure(preCheck.Errors);
+        }
 
         PesoAreaEnem? peso = await repository
             .ObterPorIdAsync(command.Id, cancellationToken)
