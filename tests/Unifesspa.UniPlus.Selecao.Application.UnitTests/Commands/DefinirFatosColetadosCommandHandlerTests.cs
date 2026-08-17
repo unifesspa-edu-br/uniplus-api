@@ -209,6 +209,39 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "ADR-0125: FatoCodigo vazio recusa com FatoCodigoObrigatorio, não FatoDesconhecido (achado de revisão)")]
+    public async Task Handle_FatoCodigoVazio_RecusaComErroDeFormaNaoDeVocabulario()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("", 0, "Rótulo", "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FatoColetado.FatoCodigoObrigatorio");
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "ADR-0125: violação de forma de um fato precede a resolução semântica de outro fato (achado de revisão)")]
+    public async Task Handle_FormaInvalidaEmUmFatoEVocabularioDesconhecidoNoOutro_FormaVence()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        DefinirFatosColetadosCommand command = new(processo.Id,
+        [
+            new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", false, null),
+            new FatoColetadoInput("FATO_INEXISTENTE", 1, "Rótulo", "SELECAO_UNICA", false, null),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["FatoColetado.OrdemInvalida"]);
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "TipoRenderizacao coerente para fato CATEGORICO multivalorado (MODALIDADE) — mesmo não-coletável, a coerência é checada antes")]
     public async Task Handle_TipoRenderizacaoCoerenteComCategoricoMultivalorado_NaoFalhaPorCoerencia()
     {
