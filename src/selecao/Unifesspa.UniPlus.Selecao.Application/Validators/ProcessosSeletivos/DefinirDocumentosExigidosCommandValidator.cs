@@ -190,10 +190,6 @@ public sealed class ItemDocumentoExigidoInputValidator : AbstractValidator<ItemD
     // Story #916: DIFERENTE/NAO_EM (operadores de exclusão) somam-se aos 4 originais.
     private static readonly string[] OperadoresValidos = ["IGUAL", "EM", "MAIOR_IGUAL", "MENOR_IGUAL", "DIFERENTE", "NAO_EM"];
 
-    private static readonly string[] AbrangenciasValidas = ["FEDERAL", "ESTADUAL", "MUNICIPAL", "INTERNA_NORMA", "INTERNA_EDITAL"];
-
-    private static readonly string[] StatusBaseLegalValidos = ["PENDENTE", "RESOLVIDO"];
-
     // Espelham DocumentoExigidoBaseLegalConfiguration (HasMaxLength) — sem este teto aqui,
     // um PUT com referência/observação longa demais passa pela validação de forma e só
     // falha no SaveChanges (DbUpdateException/500), em vez de 400 acionável.
@@ -258,19 +254,17 @@ public sealed class ItemDocumentoExigidoInputValidator : AbstractValidator<ItemD
 
         RuleForEach(i => i.BasesLegais).ChildRules(baseLegal =>
         {
+            // NotEmpty(Referencia)/Must(Abrangencia)/Must(Status) saíram — têm equivalente
+            // incondicional em DocumentoExigidoBaseLegal.ValidarFormaBasica/
+            // NoExigenciaBaseLegal.ValidarFormaBasica (ADR-0125), que acumulam. Mantê-las
+            // aqui faria o FluentValidation (middleware, sempre roda antes do handler)
+            // bloquear sozinho no primeiro erro, tornando a acumulação do domínio
+            // inatingível para clientes reais — mesmo raciocínio já aplicado em
+            // DefinirCronogramaFasesCommandValidator (PR #1221) para a janela de fase.
+            // MaximumLength permanece — sem equivalente possível no domínio.
             baseLegal.RuleFor(b => b.Referencia)
-                .NotEmpty()
-                .WithMessage("A referência da base legal é obrigatória.")
                 .MaximumLength(ReferenciaBaseLegalMaxLength)
                 .WithMessage($"A referência da base legal deve ter no máximo {ReferenciaBaseLegalMaxLength} caracteres.");
-
-            baseLegal.RuleFor(b => b.Abrangencia)
-                .Must(valor => AbrangenciasValidas.Contains(valor, StringComparer.Ordinal))
-                .WithMessage($"Abrangência da base legal deve ser um de: {string.Join(", ", AbrangenciasValidas)}.");
-
-            baseLegal.RuleFor(b => b.Status)
-                .Must(valor => StatusBaseLegalValidos.Contains(valor, StringComparer.Ordinal))
-                .WithMessage($"Status da base legal deve ser um de: {string.Join(", ", StatusBaseLegalValidos)}.");
 
             baseLegal.RuleFor(b => b.Observacao)
                 .MaximumLength(ObservacaoBaseLegalMaxLength)

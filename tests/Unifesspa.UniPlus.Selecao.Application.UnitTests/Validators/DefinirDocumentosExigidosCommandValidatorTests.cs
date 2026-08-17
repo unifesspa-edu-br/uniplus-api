@@ -47,39 +47,36 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     public void Aceita_BaseLegalValida() =>
         Validar(ItemCom(new BaseLegalInput("Lei 12.711/2012, art. 3º", "FEDERAL", "RESOLVIDO", null))).IsValid.Should().BeTrue();
 
-    [Fact(DisplayName = "CA-01: referência vazia é rejeitada")]
-    public void Rejeita_ReferenciaBaseLegalVazia()
+    [Fact(DisplayName = "Validator passa com referência vazia — a rejeição é do agregado (DocumentoExigidoBaseLegal.Criar, ADR-0125)")]
+    public void Aceita_ReferenciaBaseLegalVaziaNoValidator()
     {
         ValidationResult resultado = Validar(ItemCom(new BaseLegalInput("", "FEDERAL", "RESOLVIDO", null)));
 
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("referência da base legal", StringComparison.OrdinalIgnoreCase));
+        resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
     }
 
-    [Fact(DisplayName = "CA-01: referência só de espaços é rejeitada")]
-    public void Rejeita_ReferenciaBaseLegalSoDeEspacos()
+    [Fact(DisplayName = "Validator passa com referência só de espaços — a rejeição é do agregado (DocumentoExigidoBaseLegal.Criar, ADR-0125)")]
+    public void Aceita_ReferenciaBaseLegalSoDeEspacosNoValidator()
     {
         ValidationResult resultado = Validar(ItemCom(new BaseLegalInput("   ", "FEDERAL", "RESOLVIDO", null)));
 
-        resultado.IsValid.Should().BeFalse();
+        resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
     }
 
-    [Fact(DisplayName = "Abrangência fora do domínio é rejeitada")]
-    public void Rejeita_AbrangenciaDesconhecida()
+    [Fact(DisplayName = "Validator passa com abrangência fora do domínio — a rejeição é do agregado (DocumentoExigidoBaseLegal.Criar, ADR-0125)")]
+    public void Aceita_AbrangenciaDesconhecidaNoValidator()
     {
         ValidationResult resultado = Validar(ItemCom(new BaseLegalInput("Lei X", "PLANETARIA", "RESOLVIDO", null)));
 
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("Abrangência", StringComparison.Ordinal));
+        resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
     }
 
-    [Fact(DisplayName = "Status fora do domínio é rejeitado")]
-    public void Rejeita_StatusDesconhecido()
+    [Fact(DisplayName = "Validator passa com status fora do domínio — a rejeição é do agregado (DocumentoExigidoBaseLegal.Criar, ADR-0125)")]
+    public void Aceita_StatusDesconhecidoNoValidator()
     {
         ValidationResult resultado = Validar(ItemCom(new BaseLegalInput("Lei X", "FEDERAL", "EM_ANALISE", null)));
 
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("Status", StringComparison.Ordinal));
+        resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
     }
 
     [Theory(DisplayName = "Todas as abrangências e status válidos são aceitos")]
