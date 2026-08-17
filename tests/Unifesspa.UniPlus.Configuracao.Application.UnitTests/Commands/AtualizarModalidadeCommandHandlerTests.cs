@@ -92,6 +92,28 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Legal fixa com payload internamente incoerente ainda responde estrutura protegida, não a coerência")]
+    public async Task Handle_LegalFixaComPayloadIncoerente_RespondeEstruturaProtegida()
+    {
+        Modalidade existente = Existente("LB_PPI");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        // Payload internamente incoerente (AMPLA não admite regra) E que também
+        // tenta alterar a estrutura de uma modalidade legal fixa — a guarda tem
+        // que vencer, não a coerência, mesmo com o pré-check do handler rodando
+        // antes do fetch.
+        var comando = new AtualizarModalidadeCommand(
+            existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DO_VR",
+            RegraRemanejamento: "SEGUE_CASCATA");
+
+        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Campo inválido no payload propaga o erro sem buscar a modalidade por Id — validação vence 404")]
     public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
     {

@@ -330,6 +330,38 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
+    /// Valida só os campos independentes de coerência cruzada (parse dos enums,
+    /// tamanhos), sem I/O — para o handler de atualização falhar rápido antes do
+    /// fetch. <b>Não</b> inclui as três invariantes cruzadas nem a guarda do
+    /// catálogo legal fixo: a guarda depende do <c>Codigo</c> já persistido, e as
+    /// coerências têm de vir depois dela — reportá-las aqui, antes do fetch,
+    /// preemptiria <c>EstruturaProtegidaNaoEditavel</c> com um erro de coerência
+    /// para um payload que também é internamente incoerente. Só
+    /// <see cref="Atualizar"/>, depois do fetch, avalia guarda e coerência na
+    /// ordem certa.
+    /// </summary>
+    public static Result ValidarCamposDoPayload(
+        string? descricao,
+        string? naturezaLegalToken,
+        string? composicaoVagasToken,
+        string? composicaoOrigem,
+        string? regraRemanejamentoToken,
+        string? remanejamentoDestino,
+        string? remanejamentoPar,
+        string? remanejamentoFallback,
+        IReadOnlyList<string>? criteriosCumulativos,
+        string? acaoQuandoIndeferidoToken,
+        string? baseLegal)
+    {
+        (List<FieldError> erros, _, _, _, _) = ValidarCamposIndependentes(
+            descricao, naturezaLegalToken, composicaoVagasToken, composicaoOrigem, regraRemanejamentoToken,
+            remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
+            criteriosCumulativos, acaoQuandoIndeferidoToken, baseLegal);
+
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
+    }
+
+    /// <summary>
     /// Valida os campos editáveis por completo, acumulando toda violação
     /// independente — os campos que não cruzam entre si (<see cref="ValidarCamposIndependentes"/>)
     /// e as três invariantes cruzadas (RetiraDe⟺origem, natureza↔regra, args por
