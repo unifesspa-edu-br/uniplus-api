@@ -31,15 +31,14 @@ public sealed class DefinirClassificacaoCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "RegrasEliminacao");
     }
 
-    [Fact(DisplayName = "Validator falha quando NOpcoesAlocacao está fora de {1,2}")]
-    public void Rejeita_NOpcoesForaDeIntervalo()
+    [Fact(DisplayName = "Validator passa com NOpcoesAlocacao fora de {1,2} — a rejeição é do agregado (ConfiguracaoClassificacao.Criar)")]
+    public void Aceita_NOpcoesForaDeIntervaloNoValidator()
     {
         DefinirClassificacaoCommand comando = ComandoValido([]) with { NOpcoesAlocacao = 3 };
 
         ValidationResult result = new DefinirClassificacaoCommandValidator().Validate(comando);
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "NOpcoesAlocacao");
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Validator falha quando código de arredondamento é informado sem versão")]

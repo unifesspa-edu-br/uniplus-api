@@ -93,6 +93,11 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// existe no processo) continua validada pela raiz, que tem acesso a ela
     /// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
     /// </summary>
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — a
+    /// mensagem de eliminação ENEM fora de processo ENEM não ecoa mais o código da regra
+    /// (ADR-0023).
+    /// </summary>
     public static Result<ConfiguracaoClassificacao> Criar(
         ReferenciaRegra regraCalculo,
         ReferenciaRegra? regraArredondamento,
@@ -106,11 +111,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         ArgumentNullException.ThrowIfNull(regraOrdemAlocacao);
         ArgumentNullException.ThrowIfNull(regrasEliminacao);
 
-        if (nOpcoesAlocacao is not (1 or 2))
-        {
-            return Result<ConfiguracaoClassificacao>.Failure(new DomainError(
-                "ConfiguracaoClassificacao.NOpcoesInvalido", "O número de opções de curso deve ser 1 ou 2 (RN04)."));
-        }
+        List<FieldError> erros = ValidarNOpcoesAlocacao(nOpcoesAlocacao);
 
         bool ehImportada = regraCalculo.Codigo == RegraCalculoCodigo.ClassificacaoImportada;
 
@@ -119,9 +120,9 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             // INV-B8: classificação importada (federal) não exige precisão local.
             if (regraArredondamento is not null || casasArredondamento is not null)
             {
-                return Result<ConfiguracaoClassificacao>.Failure(new DomainError(
+                erros.Add(new("regraArredondamentoCodigo", new DomainError(
                     "ConfiguracaoClassificacao.ArredondamentoIndevido",
-                    "Arredondamento local não se aplica quando a classificação é importada (INV-B8)."));
+                    "Arredondamento local não se aplica quando a classificação é importada (INV-B8).")));
             }
 
             // Mesma razão: eliminação por corte de nota pressupõe um cálculo
@@ -130,9 +131,9 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             // contraditório (o resultado já vem pronto de fora).
             if (regrasEliminacao.Count > 0)
             {
-                return Result<ConfiguracaoClassificacao>.Failure(new DomainError(
+                erros.Add(new("regrasEliminacao", new DomainError(
                     "ConfiguracaoClassificacao.EliminacaoIndevida",
-                    "Regras de eliminação não se aplicam quando a classificação é importada (INV-B8)."));
+                    "Regras de eliminação não se aplicam quando a classificação é importada (INV-B8).")));
             }
         }
         else
@@ -140,26 +141,27 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             // Cálculo local exige uma regra de precisão declarada (gaps 1.1: default truncar).
             if (regraArredondamento is null || casasArredondamento is not > 0)
             {
-                return Result<ConfiguracaoClassificacao>.Failure(new DomainError(
+                erros.Add(new("regraArredondamentoCodigo", new DomainError(
                     "ConfiguracaoClassificacao.ArredondamentoObrigatorio",
-                    "Cálculo local exige regra de arredondamento com casas decimais maior que zero (INV-B8)."));
+                    "Cálculo local exige regra de arredondamento com casas decimais maior que zero (INV-B8).")));
             }
         }
 
         // A única dependência real da estrutura de pontuação por área do ENEM —
         // eixo ortogonal a RegraCalculo (que só distingue cálculo local de
         // classificação importada, INV-B8). Quando a classificação é importada, o
-        // gate acima já recusou qualquer regrasEliminacao não-vazia, então este
-        // laço só encontra itens no caminho de cálculo local.
-        foreach (RegraEliminacao regra in regrasEliminacao)
+        // gate acima já recusou qualquer regrasEliminacao não-vazia, então esta
+        // checagem só encontra itens no caminho de cálculo local.
+        if (regrasEliminacao.Any(static regra => regra.Args is ArgsElimCorteRedacao or ArgsElimZeroEmArea) && !baseadoEmEnem)
         {
-            bool somenteEnem = regra.Args is ArgsElimCorteRedacao or ArgsElimZeroEmArea;
-            if (somenteEnem && !baseadoEmEnem)
-            {
-                return Result<ConfiguracaoClassificacao>.Failure(new DomainError(
-                    "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
-                    $"A regra {regra.Regra.Codigo} só se aplica quando a classificação está configurada como baseada em ENEM."));
-            }
+            erros.Add(new("regrasEliminacao", new DomainError(
+                "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
+                "Uma ou mais regras de eliminação só se aplicam quando a classificação está configurada como baseada em ENEM.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<ConfiguracaoClassificacao>.ValidationFailure(erros);
         }
 
         ConfiguracaoClassificacao configuracao = new()
@@ -179,6 +181,26 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         }
 
         return Result<ConfiguracaoClassificacao>.Success(configuracao);
+    }
+
+    /// <summary>
+    /// O número de opções de curso não depende do catálogo de regras — ao contrário das
+    /// demais checagens de <see cref="Criar"/>, que só fazem sentido depois de a regra de
+    /// cálculo já ter sido resolvida (é ela que distingue classificação local de importada,
+    /// INV-B8). Existe separada para o handler poder confirmá-la ANTES de consultar o
+    /// <c>rol_de_regras</c> (mesmo padrão de <c>CriterioDesempate.ValidarOrdem</c>, PR #1216).
+    /// </summary>
+    public static List<FieldError> ValidarNOpcoesAlocacao(int nOpcoesAlocacao)
+    {
+        List<FieldError> erros = [];
+
+        if (nOpcoesAlocacao is not (1 or 2))
+        {
+            erros.Add(new("nOpcoesAlocacao", new DomainError(
+                "ConfiguracaoClassificacao.NOpcoesInvalido", "O número de opções de curso deve ser 1 ou 2 (RN04).")));
+        }
+
+        return erros;
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>

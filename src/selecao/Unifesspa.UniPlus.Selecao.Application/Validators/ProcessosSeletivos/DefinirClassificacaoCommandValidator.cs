@@ -4,6 +4,16 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+/// <summary>
+/// Checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
+/// identificador de rota; os pares <c>RegraCodigo</c>/<c>RegraVersao</c> (cálculo, arredondamento,
+/// ordem de alocação, cada regra de eliminação) nunca chegam crus a
+/// <c>ConfiguracaoClassificacao.Criar</c> — só alimentam a leitura do <c>rol_de_regras</c>
+/// (<c>IRegraCatalogoReader</c>); a lista de regras de eliminação e cada item não podem ser
+/// nulos — o handler desreferencia sem checagem defensiva. <c>NOpcoesAlocacao</c> (via
+/// <c>ConfiguracaoClassificacao.ValidarNOpcoesAlocacao</c>) e a coerência de arredondamento
+/// (via <c>Criar</c>) já têm equivalente completo no domínio e ficaram fora daqui.
+/// </summary>
 public sealed class DefinirClassificacaoCommandValidator : AbstractValidator<DefinirClassificacaoCommand>
 {
     public DefinirClassificacaoCommandValidator()
@@ -28,11 +38,6 @@ public sealed class DefinirClassificacaoCommandValidator : AbstractValidator<Def
             .When(x => x.RegraArredondamentoCodigo is not null)
             .WithMessage("Versão da regra de arredondamento é obrigatória quando o código é informado.");
 
-        RuleFor(x => x.CasasArredondamento)
-            .GreaterThan(0)
-            .When(x => x.CasasArredondamento.HasValue)
-            .WithMessage("Casas de arredondamento, quando informadas, devem ser maiores que zero.");
-
         RuleFor(x => x.RegraOrdemAlocacaoCodigo)
             .NotEmpty()
             .WithMessage("Código da regra de ordem de alocação é obrigatório.");
@@ -40,10 +45,6 @@ public sealed class DefinirClassificacaoCommandValidator : AbstractValidator<Def
         RuleFor(x => x.RegraOrdemAlocacaoVersao)
             .NotEmpty()
             .WithMessage("Versão da regra de ordem de alocação é obrigatória.");
-
-        RuleFor(x => x.NOpcoesAlocacao)
-            .InclusiveBetween(1, 2)
-            .WithMessage("Número de opções de curso deve ser 1 ou 2 (RN04).");
 
         // RuleForEach por si só não falha sobre uma coleção nula (apenas não
         // itera) — sem esta regra, um payload malformado que omita o campo

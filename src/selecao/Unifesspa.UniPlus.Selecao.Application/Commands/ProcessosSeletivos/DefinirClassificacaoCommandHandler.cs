@@ -10,13 +10,16 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775): resolve
-/// cada regra no catálogo <c>rol_de_regras</c>
-/// (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args tipados de
-/// cada regra de eliminação conforme o código, repassa <c>BaseadoEmEnem</c> e
-/// congela as referências — a invariante ENEM×eliminação é validada por
-/// <see cref="ConfiguracaoClassificacao.Criar"/>; a que depende de OUTRA
-/// dimensão do agregado (INV-B4) é garantida pela raiz
+/// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775), em duas passadas. A
+/// primeira confirma o número de opções de alocação
+/// (<see cref="ConfiguracaoClassificacao.ValidarNOpcoesAlocacao"/>) sem tocar o catálogo,
+/// acumulando (ADR-0125). Só então a segunda resolve cada regra no catálogo
+/// <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args
+/// tipados de cada regra de eliminação conforme o código, repassa <c>BaseadoEmEnem</c> e
+/// congela as referências — a invariante ENEM×eliminação e a coerência de arredondamento são
+/// validadas por <see cref="ConfiguracaoClassificacao.Criar"/>, que depende da regra de
+/// cálculo já resolvida (é ela que distingue classificação local de importada, INV-B8); a que
+/// depende de OUTRA dimensão do agregado (INV-B4) é garantida pela raiz
 /// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
 /// </summary>
 public static class DefinirClassificacaoCommandHandler
@@ -59,6 +62,16 @@ public static class DefinirClassificacaoCommandHandler
         if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
         {
             return Result<MutacaoAceita>.Failure(bloqueio);
+        }
+
+        // Acumula (ADR-0125) o número de opções de alocação — a única checagem de
+        // ConfiguracaoClassificacao.Criar que não depende de a regra de cálculo já ter sido
+        // resolvida no catálogo. Mesmo padrão de DefinirCriteriosDesempateCommandHandler
+        // (PR #1216): roda antes de qualquer I/O, ANTES de resolver o rol_de_regras.
+        List<FieldError> formaErros = ConfiguracaoClassificacao.ValidarNOpcoesAlocacao(command.NOpcoesAlocacao);
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
         }
 
         Result<ReferenciaRegra> regraCalculoResult = await ResolverRegraAsync(
@@ -121,7 +134,7 @@ public static class DefinirClassificacaoCommandHandler
             command.BaseadoEmEnem);
         if (configuracaoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(configuracaoResult.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(configuracaoResult.Errors);
         }
 
         Result result = processo.DefinirClassificacao(configuracaoResult.Value!, command.Precondicao);

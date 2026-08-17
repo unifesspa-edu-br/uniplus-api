@@ -168,4 +168,45 @@ public sealed class ConfiguracaoClassificacaoTests
         RegraEliminacaoCodigo.ElimZeroEmArea => new ArgsElimZeroEmArea(),
         _ => throw new ArgumentOutOfRangeException(nameof(codigoRegra), codigoRegra, "Código de regra ENEM desconhecido no teste."),
     };
+
+    [Fact(DisplayName = "ADR-0125: NOpcoesInvalido e ArredondamentoObrigatorio acumulam no mesmo lote")]
+    public void Criar_NOpcoesInvalidoESemArredondamento_AcumulaAsDuasViolacoes()
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoMediaPonderada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 3, [], baseadoEmEnem: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "ConfiguracaoClassificacao.NOpcoesInvalido",
+            "ConfiguracaoClassificacao.ArredondamentoObrigatorio",
+        ]);
+    }
+
+    [Fact(DisplayName = "ADR-0125: ArredondamentoIndevido, EliminacaoIndevida e EliminacaoEnemForaDeProcessoEnem acumulam no mesmo lote")]
+    public void Criar_ImportadaComArredondamentoEEliminacaoEnemSemBaseadoEmEnem_AcumulaAsTresViolacoes()
+    {
+        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", new string('f', 64)).Value!,
+            new ArgsElimZeroEmArea()).Value!;
+
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoImportada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "ConfiguracaoClassificacao.ArredondamentoIndevido",
+            "ConfiguracaoClassificacao.EliminacaoIndevida",
+            "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
+        ]);
+    }
+
+    [Fact(DisplayName = "ValidarNOpcoesAlocacao sem violação retorna lote vazio")]
+    public void ValidarNOpcoesAlocacao_SemViolacao_Vazio()
+    {
+        List<FieldError> erros = ConfiguracaoClassificacao.ValidarNOpcoesAlocacao(1);
+
+        erros.Should().BeEmpty();
+    }
 }
