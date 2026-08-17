@@ -103,7 +103,7 @@ public static class DefinirBonusRegionalCommandHandler
             referenciaRegraResult.Value!, command.Fator.Value, command.Teto, command.MunicipioConvenio, command.BaseLegal);
         if (bonusResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(bonusResult.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(bonusResult.Errors);
         }
 
         Result definirResult = processo.DefinirBonusRegional(bonusResult.Value!, command.Precondicao);

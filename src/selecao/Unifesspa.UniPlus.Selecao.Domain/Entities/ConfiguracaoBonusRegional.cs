@@ -20,6 +20,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class ConfiguracaoBonusRegional : EntityBase
 {
+    /// <summary>Alinhado a <c>ConfiguracaoBonusRegionalConfiguration</c> (varchar(200)).</summary>
+    public const int MunicipioConvenioMaxLength = 200;
+
+    /// <summary>Alinhado a <c>ConfiguracaoBonusRegionalConfiguration</c> (varchar(500)).</summary>
+    public const int BaseLegalMaxLength = 500;
+
     public Guid ProcessoSeletivoId { get; private set; }
     public ReferenciaRegra Regra { get; private set; } = null!;
     public decimal Fator { get; private set; }
@@ -29,28 +35,56 @@ public sealed class ConfiguracaoBonusRegional : EntityBase
 
     private ConfiguracaoBonusRegional() { }
 
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — o array
+    /// <c>errors[]</c> do contrato público (ADR-0023) precisa de todas as regras violadas no
+    /// mesmo lote. Os limites de tamanho de <see cref="MunicipioConvenio"/>/<see cref="BaseLegal"/>
+    /// não existiam aqui antes — só no validator — deixando o domínio aceitar um valor que só
+    /// falhava em <c>SaveChanges</c> com erro de banco em vez de 422.
+    /// </summary>
     public static Result<ConfiguracaoBonusRegional> Criar(
         ReferenciaRegra regra, decimal fator, decimal? teto, string? municipioConvenio, string? baseLegal)
     {
         ArgumentNullException.ThrowIfNull(regra);
 
+        List<FieldError> erros = [];
+
         if (regra.Codigo != RegraBonusCodigo.Multiplicativo)
         {
-            return Result<ConfiguracaoBonusRegional>.Failure(new DomainError(
+            erros.Add(new("regraCodigo", new DomainError(
                 "ConfiguracaoBonusRegional.RegraInvalida",
-                $"A regra {regra.Codigo} não é do código {RegraBonusCodigo.Multiplicativo}."));
+                $"A regra do bônus precisa ser do código {RegraBonusCodigo.Multiplicativo}.")));
         }
 
         if (fator <= 0)
         {
-            return Result<ConfiguracaoBonusRegional>.Failure(new DomainError(
-                "ConfiguracaoBonusRegional.FatorInvalido", "O fator do bônus deve ser maior que zero."));
+            erros.Add(new("fator", new DomainError(
+                "ConfiguracaoBonusRegional.FatorInvalido", "O fator do bônus deve ser maior que zero.")));
         }
 
         if (teto is <= 0)
         {
-            return Result<ConfiguracaoBonusRegional>.Failure(new DomainError(
-                "ConfiguracaoBonusRegional.TetoInvalido", "O teto do bônus, quando informado, deve ser maior que zero."));
+            erros.Add(new("teto", new DomainError(
+                "ConfiguracaoBonusRegional.TetoInvalido", "O teto do bônus, quando informado, deve ser maior que zero.")));
+        }
+
+        if (municipioConvenio is { Length: > MunicipioConvenioMaxLength })
+        {
+            erros.Add(new("municipioConvenio", new DomainError(
+                "ConfiguracaoBonusRegional.MunicipioConvenioTamanho",
+                $"Município do convênio deve ter no máximo {MunicipioConvenioMaxLength} caracteres.")));
+        }
+
+        if (baseLegal is { Length: > BaseLegalMaxLength })
+        {
+            erros.Add(new("baseLegal", new DomainError(
+                "ConfiguracaoBonusRegional.BaseLegalTamanho",
+                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<ConfiguracaoBonusRegional>.ValidationFailure(erros);
         }
 
         return Result<ConfiguracaoBonusRegional>.Success(new ConfiguracaoBonusRegional

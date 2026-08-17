@@ -64,4 +64,44 @@ public sealed class ConfiguracaoBonusRegionalTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.TetoInvalido");
     }
+
+    [Fact(DisplayName = "Criar com município do convênio acima do limite falha")]
+    public void Criar_MunicipioConvenioMuitoLongo_Falha()
+    {
+        string municipioLongo = new('a', ConfiguracaoBonusRegional.MunicipioConvenioMaxLength + 1);
+
+        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(
+            RegraMultiplicativo(), 1.20m, null, municipioLongo, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.MunicipioConvenioTamanho");
+    }
+
+    [Fact(DisplayName = "Criar com base legal acima do limite falha")]
+    public void Criar_BaseLegalMuitoLonga_Falha()
+    {
+        string baseLegalLonga = new('a', ConfiguracaoBonusRegional.BaseLegalMaxLength + 1);
+
+        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(
+            RegraMultiplicativo(), 1.20m, null, null, baseLegalLonga);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.BaseLegalTamanho");
+    }
+
+    [Fact(DisplayName = "ADR-0125: violações independentes acumulam num único lote")]
+    public void Criar_RegraEFatorETetoInvalidos_AcumulaAsTresViolacoes()
+    {
+        ReferenciaRegra regraErrada = ReferenciaRegra.Criar("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64)).Value!;
+
+        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(regraErrada, 0m, 0m, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "ConfiguracaoBonusRegional.RegraInvalida",
+            "ConfiguracaoBonusRegional.FatorInvalido",
+            "ConfiguracaoBonusRegional.TetoInvalido",
+        ]);
+    }
 }
