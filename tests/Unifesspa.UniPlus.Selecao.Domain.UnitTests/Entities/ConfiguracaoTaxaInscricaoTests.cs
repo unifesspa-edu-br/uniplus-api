@@ -147,6 +147,19 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoExigeCobranca");
     }
 
+    [Fact(DisplayName = "Criar com cobra=false, fundamento desconhecido e sem confirmação acumula as três violações — vocabulário e confirmação não dependem de cobra")]
+    public void Criar_NaoCobraComFundamentoDesconhecidoSemConfirmacao_AcumulaAsTresViolacoes()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
+            cobra: false, valor: null, fundamentosCodigos: ["FUNDAMENTO_INEXISTENTE"], confirmacaoFundamentos: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoExigeCobranca");
+        resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
+        resultado.Errors.Should().Contain(e => e.Field == "confirmacaoFundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria");
+    }
+
     [Fact(DisplayName = "Criar com fundamento desconhecido e sem confirmação acumula as duas violações — a confirmação é exigida independente do fundamento ser reconhecido")]
     public void Criar_FundamentoDesconhecidoSemConfirmacao_AcumulaAsDuasViolacoes()
     {

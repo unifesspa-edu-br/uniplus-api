@@ -95,40 +95,40 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase
                     "Processo que declara não cobrar taxa não pode configurar fundamento de isenção — "
                     + "\"não cobrar\" e \"isentar\" são decisões distintas e mutuamente exclusivas.")));
             }
-            else
+
+            // Vocabulário e confirmação rodam independente de `cobra`: cada um é uma
+            // violação detectável por si só (o token não pertence ao catálogo, ou falta
+            // confirmação), então reportá-los junto de FundamentoExigeCobranca no mesmo
+            // lote poupa o cliente de descobri-los um de cada vez, a cada reenvio.
+            bool temFundamentoDesconhecido = false;
+            foreach (string codigo in fundamentosCodigos)
             {
-                bool temFundamentoDesconhecido = false;
-                foreach (string codigo in fundamentosCodigos)
+                FundamentoIsencao fundamento = FundamentoIsencaoCodigo.FromCodigo(codigo);
+                if (fundamento == FundamentoIsencao.Nenhum)
                 {
-                    FundamentoIsencao fundamento = FundamentoIsencaoCodigo.FromCodigo(codigo);
-                    if (fundamento == FundamentoIsencao.Nenhum)
-                    {
-                        temFundamentoDesconhecido = true;
-                        continue;
-                    }
-
-                    fundamentos.Add(fundamento);
+                    temFundamentoDesconhecido = true;
+                    continue;
                 }
 
-                fundamentos = [.. fundamentos.Distinct().OrderBy(static f => f.ToCodigo(), StringComparer.Ordinal)];
+                fundamentos.Add(fundamento);
+            }
 
-                if (temFundamentoDesconhecido)
-                {
-                    // ADR-0023: errors[].message nunca ecoa o valor rejeitado — sem o código
-                    // específico, mesmo raciocínio do vocabulário de ConfiguracaoDivulgacao.
-                    erros.Add(new("fundamentos", new DomainError(
-                        "ConfiguracaoTaxaInscricao.FundamentoDesconhecido",
-                        "Um ou mais fundamentos de isenção informados não pertencem ao catálogo conhecido.")));
-                }
+            fundamentos = [.. fundamentos.Distinct().OrderBy(static f => f.ToCodigo(), StringComparer.Ordinal)];
 
-                // Independente de haver fundamento desconhecido: referenciar QUALQUER
-                // fundamento (reconhecido ou não) exige a confirmação explícita.
-                if (!confirmacaoFundamentos)
-                {
-                    erros.Add(new("confirmacaoFundamentos", new DomainError(
-                        "ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria",
-                        "Referenciar fundamento de isenção exige confirmação explícita do administrador.")));
-                }
+            if (temFundamentoDesconhecido)
+            {
+                // ADR-0023: errors[].message nunca ecoa o valor rejeitado — sem o código
+                // específico, mesmo raciocínio do vocabulário de ConfiguracaoDivulgacao.
+                erros.Add(new("fundamentos", new DomainError(
+                    "ConfiguracaoTaxaInscricao.FundamentoDesconhecido",
+                    "Um ou mais fundamentos de isenção informados não pertencem ao catálogo conhecido.")));
+            }
+
+            if (!confirmacaoFundamentos)
+            {
+                erros.Add(new("confirmacaoFundamentos", new DomainError(
+                    "ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria",
+                    "Referenciar fundamento de isenção exige confirmação explícita do administrador.")));
             }
         }
 
