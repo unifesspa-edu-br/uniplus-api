@@ -103,4 +103,20 @@ public sealed class CriarModalidadeCommandHandlerTests
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Campo inválido propaga o erro sem consultar unicidade nem persistir — validação vence I/O")]
+    public async Task Handle_CampoInvalido_RetornaErroSemConsultarBancoNemPersistir()
+    {
+        var comando = new CriarModalidadeCommand(CodigoInstitucional, NaturezaLegal: "XPTO");
+
+        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaInvalida);
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(
+            Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }

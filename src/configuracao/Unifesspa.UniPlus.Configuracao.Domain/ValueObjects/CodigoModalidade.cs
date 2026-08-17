@@ -96,7 +96,7 @@ public sealed partial record CodigoModalidade
     /// do tamanho máximo) retorna <c>CodigoFormatoInvalido</c>. O valor é
     /// normalizado por <c>Trim</c> antes da validação.
     /// </summary>
-    public static Result<CodigoModalidade> Criar(string valor)
+    public static Result<CodigoModalidade> Criar(string? valor)
     {
         if (string.IsNullOrWhiteSpace(valor))
         {

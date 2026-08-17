@@ -46,7 +46,7 @@ public static class RemoverModalidadeCommandHandler
         {
             return Result.Failure(new DomainError(
                 ModalidadeErrorCodes.RemocaoBloqueadaCodigoProtegido,
-                $"A modalidade legal fixa '{modalidade.Codigo.Valor}' não pode ser removida."));
+                "Esta modalidade pertence ao catálogo legal fixo e não pode ser removida."));
         }
 
         // Check-then-act, simétrico ao bloqueio de remoção dos demais cadastros. A
