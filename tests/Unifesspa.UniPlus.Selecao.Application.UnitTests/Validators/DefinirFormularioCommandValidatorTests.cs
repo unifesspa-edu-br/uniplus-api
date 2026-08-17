@@ -8,6 +8,11 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+/// <summary>
+/// Só a forma do <c>ProcessoSeletivoId</c> — identificador de rota sem equivalente no
+/// agregado. Tamanho de Título/TermoAceiteTexto tem equivalente de domínio (ADR-0125) e
+/// é coberto em <c>ProcessoSeletivoSessaoEditorialTests</c>.
+/// </summary>
 public sealed class DefinirFormularioCommandValidatorTests
 {
     private static readonly DefinirFormularioCommandValidator Validator = new();
@@ -20,23 +25,12 @@ public sealed class DefinirFormularioCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando o título excede 300 caracteres — mesmo limite da coluna, recusado antes do SaveChanges")]
-    public void Rejeita_TituloExcedeLimite()
+    [Fact(DisplayName = "Falha quando ProcessoSeletivoId é vazio")]
+    public void Rejeita_ProcessoSeletivoIdVazio()
     {
-        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(
-            Guid.CreateVersion7(), new string('a', 301), null, PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.Empty, null, null, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Titulo");
-    }
-
-    [Fact(DisplayName = "Falha quando o termo de aceite excede 4000 caracteres — mesmo limite da coluna, recusado antes do SaveChanges")]
-    public void Rejeita_TermoAceiteExcedeLimite()
-    {
-        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(
-            Guid.CreateVersion7(), null, new string('a', 4001), PrecondicaoIfMatch.Ausente));
-
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "TermoAceiteTexto");
+        result.Errors.Should().Contain(e => e.PropertyName == "ProcessoSeletivoId");
     }
 }

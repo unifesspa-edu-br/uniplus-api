@@ -630,17 +630,55 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// agregado: os dois campos só se relacionam com a apresentação, nunca com a estrutura do
     /// processo.
     /// </summary>
+    private const int FormularioTituloMaxLength = 300;
+    private const int FormularioTermoAceiteTextoMaxLength = 4000;
+
     public Result DefinirFormulario(string? titulo, string? termoAceiteTexto, PrecondicaoIfMatch precondicao)
     {
+        // ADR-0110 D9: a precondição de concorrência precede a validação de payload —
+        // o guard de mutação roda primeiro, não depois (mesma ordem observável de hoje).
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
+        }
+
+        Result validacao = ValidarCamposDoFormulario(titulo, termoAceiteTexto);
+        if (validacao.IsFailure)
+        {
+            return Result.ValidationFailure(validacao.Errors);
         }
 
         FormularioTitulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim();
         FormularioTermoAceiteTexto = string.IsNullOrWhiteSpace(termoAceiteTexto) ? null : termoAceiteTexto.Trim();
         Rascunho?.IncrementarRevisao();
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Acumula toda violação de campo do formulário em vez de retornar na primeira
+    /// (ADR-0125) — alinhado a <c>ProcessoSeletivoConfiguration</c> (varchar(300)/
+    /// varchar(4000)): sem o limite aqui, um valor mais longo passa e só falha em
+    /// <c>SaveChanges</c> com erro de banco em vez de 422.
+    /// </summary>
+    private static Result ValidarCamposDoFormulario(string? titulo, string? termoAceiteTexto)
+    {
+        List<FieldError> erros = [];
+
+        if (titulo is not null && titulo.Trim().Length > FormularioTituloMaxLength)
+        {
+            erros.Add(new("titulo", new DomainError(
+                "ProcessoSeletivo.FormularioTituloTamanho",
+                $"Título do formulário deve ter no máximo {FormularioTituloMaxLength} caracteres.")));
+        }
+
+        if (termoAceiteTexto is not null && termoAceiteTexto.Trim().Length > FormularioTermoAceiteTextoMaxLength)
+        {
+            erros.Add(new("termoAceiteTexto", new DomainError(
+                "ProcessoSeletivo.FormularioTermoAceiteTextoTamanho",
+                $"Termo de aceite do formulário deve ter no máximo {FormularioTermoAceiteTextoMaxLength} caracteres.")));
+        }
+
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
 
     /// <summary>
