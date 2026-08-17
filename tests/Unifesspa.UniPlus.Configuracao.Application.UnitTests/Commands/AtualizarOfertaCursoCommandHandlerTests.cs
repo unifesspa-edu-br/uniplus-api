@@ -86,6 +86,18 @@ public sealed class AtualizarOfertaCursoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Campo inválido no payload propaga o erro sem buscar a oferta por Id — validação vence 404")]
+    public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
+    {
+        Result resultado = await AtualizarOfertaCursoCommandHandler.Handle(
+            Comando(Guid.CreateVersion7(), programa: "PROUNI"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.ProgramaDeOfertaInvalido);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Atualizar preserva curso, local e unidade ofertante (imutáveis — não trafegam no comando)")]
     public async Task Handle_Atualizacao_PreservaImutaveis()
     {

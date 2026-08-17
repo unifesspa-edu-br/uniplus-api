@@ -102,7 +102,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
             vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
         if (camposResult.IsFailure)
         {
-            return Result<OfertaCurso>.Failure(camposResult.Error!);
+            return Result<OfertaCurso>.ValidationFailure(camposResult.Errors);
         }
 
         var oferta = new OfertaCurso
@@ -140,12 +140,38 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
             vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
         if (camposResult.IsFailure)
         {
-            return Result.Failure(camposResult.Error!);
+            return Result.ValidationFailure(camposResult.Errors);
         }
 
         AplicarCampos(camposResult.Value!);
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Valida os oito campos regulatórios editáveis (o guard condicional da base
+    /// legal incluso), sem I/O e sem construir/mutar nada — para os handlers de
+    /// criação e atualização falharem rápido antes de qualquer busca no banco ou
+    /// em módulo cruzado (validação sempre vence I/O). <see cref="Criar"/> e
+    /// <see cref="Atualizar"/> continuam revalidando por conta própria via
+    /// <see cref="ValidarComuns"/> — este método não substitui a invariante do
+    /// agregado, só antecipa a mesma checagem para antes do fetch.
+    /// </summary>
+    public static Result ValidarCamposDoPayload(
+        string? programaDeOferta,
+        string? formatoPedagogico,
+        string? turno,
+        string? eMecCodigo,
+        string? codigoSga,
+        int? vagasAnuaisAutorizadas,
+        string? baseLegal,
+        string? atoAutorizacaoMec)
+    {
+        Result<CamposResolvidos> resultado = ValidarComuns(
+            programaDeOferta, formatoPedagogico, turno, eMecCodigo, codigoSga,
+            vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
+
+        return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
     }
 
     private void AplicarCampos(CamposResolvidos campos)
@@ -170,95 +196,104 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         string? baseLegal,
         string? atoAutorizacaoMec)
     {
+        List<FieldError> erros = [];
+
         // ProgramaDeOferta — obrigatório, sem default: a ausência é inválida.
-        if (!ProgramasDeOferta.TryAnalisar(programaDeOfertaToken, out ProgramaDeOferta programa))
+        bool programaOk = ProgramasDeOferta.TryAnalisar(programaDeOfertaToken, out ProgramaDeOferta programa);
+        if (!programaOk)
         {
-            return Falha(OfertaCursoErrorCodes.ProgramaDeOfertaInvalido,
-                $"Programa de oferta deve ser um de: {string.Join(", ", ProgramasDeOferta.TokensCanonicos)}.");
+            erros.Add(new("programaDeOferta", new DomainError(
+                OfertaCursoErrorCodes.ProgramaDeOfertaInvalido,
+                $"Programa de oferta deve ser um de: {string.Join(", ", ProgramasDeOferta.TokensCanonicos)}.")));
         }
 
         // FormatoPedagogico — obrigatório, default PRESENCIAL quando ausente
         // (mesmo expediente do default AMPLA de NaturezasLegais).
-        FormatoPedagogico formato;
-        if (string.IsNullOrWhiteSpace(formatoPedagogicoToken))
+        FormatoPedagogico formato = FormatoPedagogico.Presencial;
+        if (!string.IsNullOrWhiteSpace(formatoPedagogicoToken) && !FormatosPedagogicos.TryAnalisar(formatoPedagogicoToken, out formato))
         {
-            formato = FormatoPedagogico.Presencial;
-        }
-        else if (!FormatosPedagogicos.TryAnalisar(formatoPedagogicoToken, out formato))
-        {
-            return Falha(OfertaCursoErrorCodes.FormatoPedagogicoInvalido,
-                $"Formato pedagógico deve ser um de: {string.Join(", ", FormatosPedagogicos.TokensCanonicos)}.");
+            erros.Add(new("formatoPedagogico", new DomainError(
+                OfertaCursoErrorCodes.FormatoPedagogicoInvalido,
+                $"Formato pedagógico deve ser um de: {string.Join(", ", FormatosPedagogicos.TokensCanonicos)}.")));
         }
 
         // Turno — opcional (null quando ausente); quando informado, um dos quatro tokens.
         TurnoOferta? turno = null;
         if (!string.IsNullOrWhiteSpace(turnoToken))
         {
-            if (!TurnosOferta.TryAnalisar(turnoToken, out TurnoOferta turnoResolvido))
+            if (TurnosOferta.TryAnalisar(turnoToken, out TurnoOferta turnoResolvido))
             {
-                return Falha(OfertaCursoErrorCodes.TurnoInvalido,
-                    $"Turno da oferta deve ser um de: {string.Join(", ", TurnosOferta.TokensCanonicos)}.");
+                turno = turnoResolvido;
             }
-
-            turno = turnoResolvido;
+            else
+            {
+                erros.Add(new("turno", new DomainError(
+                    OfertaCursoErrorCodes.TurnoInvalido,
+                    $"Turno da oferta deve ser um de: {string.Join(", ", TurnosOferta.TokensCanonicos)}.")));
+            }
         }
 
         if (vagasAnuaisAutorizadas is < 0)
         {
-            return Falha(OfertaCursoErrorCodes.VagasAnuaisNegativas,
-                "Vagas anuais autorizadas não podem ser negativas (zero é aceito).");
+            erros.Add(new("vagasAnuaisAutorizadas", new DomainError(
+                OfertaCursoErrorCodes.VagasAnuaisNegativas,
+                "Vagas anuais autorizadas não podem ser negativas (zero é aceito).")));
         }
 
-        if (eMecCodigo is not null && eMecCodigo.Trim().Length > EMecCodigoMaxLength)
+        string? eMecNorm = NormalizarOpcional(eMecCodigo);
+        if (eMecNorm is not null && eMecNorm.Length > EMecCodigoMaxLength)
         {
-            return Falha(OfertaCursoErrorCodes.EMecCodigoTamanho,
-                $"Código e-MEC da oferta deve ter no máximo {EMecCodigoMaxLength} caracteres.");
+            erros.Add(new("eMecCodigo", new DomainError(
+                OfertaCursoErrorCodes.EMecCodigoTamanho,
+                $"Código e-MEC da oferta deve ter no máximo {EMecCodigoMaxLength} caracteres.")));
         }
 
-        if (codigoSga is not null && codigoSga.Trim().Length > CodigoSgaMaxLength)
+        string? codigoSgaNorm = NormalizarOpcional(codigoSga);
+        if (codigoSgaNorm is not null && codigoSgaNorm.Length > CodigoSgaMaxLength)
         {
-            return Falha(OfertaCursoErrorCodes.CodigoSgaTamanho,
-                $"Código no sistema de gestão acadêmica deve ter no máximo {CodigoSgaMaxLength} caracteres.");
-        }
-
-        if (baseLegal is not null && baseLegal.Trim().Length > BaseLegalMaxLength)
-        {
-            return Falha(OfertaCursoErrorCodes.BaseLegalTamanho,
-                $"Base legal da oferta deve ter no máximo {BaseLegalMaxLength} caracteres.");
-        }
-
-        if (atoAutorizacaoMec is not null && atoAutorizacaoMec.Trim().Length > AtoAutorizacaoMecMaxLength)
-        {
-            return Falha(OfertaCursoErrorCodes.AtoAutorizacaoMecTamanho,
-                $"Ato de autorização MEC deve ter no máximo {AtoAutorizacaoMecMaxLength} caracteres.");
+            erros.Add(new("codigoSga", new DomainError(
+                OfertaCursoErrorCodes.CodigoSgaTamanho,
+                $"Código no sistema de gestão acadêmica deve ter no máximo {CodigoSgaMaxLength} caracteres.")));
         }
 
         string? baseLegalNorm = NormalizarOpcional(baseLegal);
+        if (baseLegalNorm is not null && baseLegalNorm.Length > BaseLegalMaxLength)
+        {
+            erros.Add(new("baseLegal", new DomainError(
+                OfertaCursoErrorCodes.BaseLegalTamanho,
+                $"Base legal da oferta deve ter no máximo {BaseLegalMaxLength} caracteres.")));
+        }
+
+        string? atoNorm = NormalizarOpcional(atoAutorizacaoMec);
+        if (atoNorm is not null && atoNorm.Length > AtoAutorizacaoMecMaxLength)
+        {
+            erros.Add(new("atoAutorizacaoMec", new DomainError(
+                OfertaCursoErrorCodes.AtoAutorizacaoMecTamanho,
+                $"Ato de autorização MEC deve ter no máximo {AtoAutorizacaoMecMaxLength} caracteres.")));
+        }
 
         // Guard condicional (ADR-0066): programa fora do Regular exige base legal —
-        // revalidado também na atualização (transição Regular→Parfor sem base falha).
-        if (programa != ProgramaDeOferta.Regular && baseLegalNorm is null)
+        // revalidado também na atualização (transição Regular→Parfor sem base
+        // falha). Só avalia com o token de programa já reconhecido — senão o erro
+        // seria derivado de um token inválido, não uma incoerência independente.
+        if (programaOk && programa != ProgramaDeOferta.Regular && baseLegalNorm is null)
         {
-            return Falha(OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular,
-                "Base legal é obrigatória quando o programa de oferta não é REGULAR.");
+            erros.Add(new("baseLegal", new DomainError(
+                OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular,
+                "Base legal é obrigatória quando o programa de oferta não é REGULAR.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<CamposResolvidos>.ValidationFailure(erros);
         }
 
         return Result<CamposResolvidos>.Success(new CamposResolvidos(
-            programa,
-            formato,
-            turno,
-            NormalizarOpcional(eMecCodigo),
-            NormalizarOpcional(codigoSga),
-            vagasAnuaisAutorizadas,
-            baseLegalNorm,
-            NormalizarOpcional(atoAutorizacaoMec)));
+            programa, formato, turno, eMecNorm, codigoSgaNorm, vagasAnuaisAutorizadas, baseLegalNorm, atoNorm));
     }
 
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
-
-    private static Result<CamposResolvidos> Falha(string code, string mensagem) =>
-        Result<CamposResolvidos>.Failure(new DomainError(code, mensagem));
 
     private sealed record CamposResolvidos(
         ProgramaDeOferta ProgramaDeOferta,

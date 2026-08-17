@@ -9450,7 +9450,10 @@
             "format": "uuid"
           },
           "programaDeOferta": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "formatoPedagogico": {
             "type": [
@@ -10477,7 +10480,10 @@
             "format": "uuid"
           },
           "programaDeOferta": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "formatoPedagogico": {
             "type": [
