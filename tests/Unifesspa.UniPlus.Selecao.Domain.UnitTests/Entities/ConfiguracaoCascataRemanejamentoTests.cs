@@ -194,4 +194,37 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.CodigoInvalido");
     }
+
+    [Fact(DisplayName = "ADR-0125: DestinoRemanejamento.Criar acumula as violações independentes de um mesmo item")]
+    public void DestinoRemanejamento_Criar_CodigosInvalidosEOrdemInvalida_AcumulaAsTresViolacoes()
+    {
+        Result<DestinoRemanejamento> resultado = DestinoRemanejamento.Criar("lb-ppi", 0, "lb-q");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "ConfiguracaoCascataRemanejamento.CodigoInvalido",
+            "ConfiguracaoCascataRemanejamento.CodigoInvalido",
+            "ConfiguracaoCascataRemanejamento.OrdemInvalida",
+        ]);
+    }
+
+    [Fact(DisplayName = "ADR-0125: ConfiguracaoCascataRemanejamento.Criar acumula fallback inválido e excesso de destinos no mesmo lote")]
+    public void Criar_FallbackInvalidoEExcedeLimiteDeDestinos_AcumulaAsDuasViolacoes()
+    {
+        List<DestinoRemanejamento> destinos = [];
+        for (int i = 1; i <= 57; i++)
+        {
+            destinos.Add(Destino("LB_PPI", i, $"DESTINO_{i}"));
+        }
+
+        Result<ConfiguracaoCascataRemanejamento> resultado = ConfiguracaoCascataRemanejamento.Criar(RegraCascata(), "ac-invalido", destinos);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "ConfiguracaoCascataRemanejamento.FallbackObrigatorio",
+            "ConfiguracaoCascataRemanejamento.ExcedeLimiteDeDestinos",
+        ]);
+    }
 }

@@ -19,7 +19,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed partial class DestinoRemanejamento : EntityBase
 {
-    private const int CodigoMaxLength = 60;
+    /// <summary>Alinhado a <c>DestinoRemanejamentoConfiguration</c> (varchar(60)).</summary>
+    public const int CodigoMaxLength = 60;
 
     [GeneratedRegex("^[A-Z0-9_]+$")]
     private static partial Regex CodigoValido();
@@ -31,34 +32,50 @@ public sealed partial class DestinoRemanejamento : EntityBase
 
     private DestinoRemanejamento() { }
 
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — o
+    /// chamador (o handler, iterando <c>destinos[i]</c>) funde estes erros com o índice do
+    /// item na lista antes de devolver o lote completo (ADR-0023: <c>errors[]</c> não
+    /// reflete o dado rejeitado, por isso as mensagens abaixo não ecoam os códigos/ordem
+    /// recebidos).
+    /// </summary>
     public static Result<DestinoRemanejamento> Criar(string modalidadeOrigemCodigo, int ordem, string modalidadeDestinoCodigo)
     {
-        if (!CodigoEhValido(modalidadeOrigemCodigo))
+        List<FieldError> erros = [];
+
+        bool origemValida = CodigoEhValido(modalidadeOrigemCodigo);
+        if (!origemValida)
         {
-            return Result<DestinoRemanejamento>.Failure(new DomainError(
+            erros.Add(new("modalidadeOrigemCodigo", new DomainError(
                 "ConfiguracaoCascataRemanejamento.CodigoInvalido",
-                $"Código de origem \"{modalidadeOrigemCodigo}\" inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres."));
+                $"Código de origem inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres.")));
         }
 
-        if (!CodigoEhValido(modalidadeDestinoCodigo))
+        bool destinoValido = CodigoEhValido(modalidadeDestinoCodigo);
+        if (!destinoValido)
         {
-            return Result<DestinoRemanejamento>.Failure(new DomainError(
+            erros.Add(new("modalidadeDestinoCodigo", new DomainError(
                 "ConfiguracaoCascataRemanejamento.CodigoInvalido",
-                $"Código de destino \"{modalidadeDestinoCodigo}\" inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres."));
+                $"Código de destino inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres.")));
         }
 
         if (ordem < 1)
         {
-            return Result<DestinoRemanejamento>.Failure(new DomainError(
+            erros.Add(new("ordem", new DomainError(
                 "ConfiguracaoCascataRemanejamento.OrdemInvalida",
-                $"A ordem do destino deve ser ≥ 1 — recebida {ordem}."));
+                "A ordem do destino deve ser ≥ 1.")));
         }
 
-        if (string.Equals(modalidadeOrigemCodigo, modalidadeDestinoCodigo, StringComparison.Ordinal))
+        if (origemValida && destinoValido && string.Equals(modalidadeOrigemCodigo, modalidadeDestinoCodigo, StringComparison.Ordinal))
         {
-            return Result<DestinoRemanejamento>.Failure(new DomainError(
+            erros.Add(new("modalidadeDestinoCodigo", new DomainError(
                 "ConfiguracaoCascataRemanejamento.OrigemIgualAoDestino",
-                $"A modalidade \"{modalidadeOrigemCodigo}\" não pode remanejar para si mesma."));
+                "Uma modalidade não pode remanejar para si mesma.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<DestinoRemanejamento>.ValidationFailure(erros);
         }
 
         return Result<DestinoRemanejamento>.Success(new DestinoRemanejamento

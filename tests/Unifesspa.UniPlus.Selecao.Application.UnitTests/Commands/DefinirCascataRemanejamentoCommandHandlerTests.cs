@@ -364,6 +364,30 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         return processo;
     }
 
+    [Fact(DisplayName = "ADR-0125: Handle acumula violações de itens distintos com o índice do item prefixado ao field")]
+    public async Task Handle_DoisItensInvalidos_AcumulaComIndicePrefixadoAoField()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraCascataValida());
+
+        DefinirCascataRemanejamentoCommand command = new(
+            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
+            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("lb-ppi", 0, "LB_PCD")],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(
+        [
+            "destinos[1].modalidadeOrigemCodigo",
+            "destinos[1].ordem",
+        ]);
+    }
+
     [Fact(DisplayName = "Handle com processo já publicado, sem sessão editorial, propaga bloqueio e NÃO persiste (CA-07/ADR-0110)")]
     public async Task Handle_ProcessoPublicadoSemSessao_PropagaBloqueioENaoPersiste()
     {

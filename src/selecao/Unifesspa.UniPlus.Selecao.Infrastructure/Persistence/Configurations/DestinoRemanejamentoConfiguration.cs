@@ -17,8 +17,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class DestinoRemanejamentoConfiguration : IEntityTypeConfiguration<DestinoRemanejamento>
 {
-    private const int CodigoMaxLength = 60;
-
     public void Configure(EntityTypeBuilder<DestinoRemanejamento> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -27,9 +25,9 @@ internal sealed class DestinoRemanejamentoConfiguration : IEntityTypeConfigurati
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).ValueGeneratedNever();
 
-        builder.Property(d => d.ModalidadeOrigemCodigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.ModalidadeOrigemCodigo).HasMaxLength(DestinoRemanejamento.CodigoMaxLength).IsRequired();
         builder.Property(d => d.Ordem).IsRequired();
-        builder.Property(d => d.ModalidadeDestinoCodigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.ModalidadeDestinoCodigo).HasMaxLength(DestinoRemanejamento.CodigoMaxLength).IsRequired();
 
         builder.HasIndex(d => new { d.ConfiguracaoCascataRemanejamentoId, d.ModalidadeOrigemCodigo, d.Ordem })
             .IsUnique()
