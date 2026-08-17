@@ -102,7 +102,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
             if (resultado.IsFailure)
             {
                 IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors
-                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{erro.Field}" })];
+                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{TraduzirFieldDoDominio(erro.Field)}" })];
                 return Result<MutacaoAceita>.ValidationFailure(errosComIndice);
             }
 
@@ -123,6 +123,21 @@ public static class DefinirDistribuicaoVagasCommandHandler
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
+
+    /// <summary>
+    /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/> reporta violações do conjunto de
+    /// modalidades sob o field <c>modalidades</c> — o nome da propriedade do agregado
+    /// (<see cref="ConfiguracaoDistribuicaoVagas.Modalidades"/>), não do payload do cliente,
+    /// que expõe <see cref="ConfiguracaoDistribuicaoVagasInput.ModalidadeIds"/>. Sem esta
+    /// tradução, a resposta de validação apontaria o cliente para uma propriedade
+    /// inexistente no request.
+    /// </summary>
+    private static string TraduzirFieldDoDominio(string fieldDominio) =>
+        fieldDominio switch
+        {
+            "modalidades" => "modalidadeIds",
+            _ => fieldDominio,
+        };
 
     private static async Task<Result<ConfiguracaoDistribuicaoVagas>> ResolverDistribuicaoAsync(
         ConfiguracaoDistribuicaoVagasInput input,
