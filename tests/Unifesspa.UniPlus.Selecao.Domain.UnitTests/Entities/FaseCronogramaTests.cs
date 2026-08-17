@@ -195,7 +195,8 @@ public sealed class FaseCronogramaTests
             regraRecurso: regraRecurso);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraRecursoFase.FaseNaoProduzResultado");
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["RegraRecursoFase.FaseNaoProduzResultado"],
+            "sem atoProduzidoCodigo (fase não produz resultado) a comparação de âncora não pode ser avaliada — não deve acumular AncoraDeOutraFase");
     }
 
     [Fact(DisplayName = "CA-16: RegraRecursoFase numa fase de resultado DEFINITIVO é recusada")]

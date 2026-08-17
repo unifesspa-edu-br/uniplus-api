@@ -208,8 +208,15 @@ public sealed class FaseCronograma : EntityBase
             }
 
             // Item 2 do §3.6: o ato recorrido é SEMPRE o ato da própria fase — ancorar no
-            // ato de outra fase é recusado.
-            if (!string.Equals(regraRecurso.Args.AtoAncoraCodigo, atoProduzidoCodigo, StringComparison.Ordinal))
+            // ato de outra fase é recusado. Comparação condicionada a produzResultado e a
+            // atoProduzidoCodigo não vazio: quando qualquer um falta, já há um erro mais
+            // fundamental acumulado acima (FaseNaoProduzResultado ou, em Criar,
+            // AtoProduzidoObrigatorio) — sem esta guarda, a comparação sempre falharia
+            // contra um ato inexistente e reportaria uma âncora espúria, orientando o
+            // cliente a corrigir uma condição que ainda não pode ser avaliada.
+            if (produzResultado
+                && !string.IsNullOrWhiteSpace(atoProduzidoCodigo)
+                && !string.Equals(regraRecurso.Args.AtoAncoraCodigo, atoProduzidoCodigo, StringComparison.Ordinal))
             {
                 erros.Add(new("regraRecurso.atoAncoraCodigo", new DomainError(
                     "RegraRecursoFase.AncoraDeOutraFase",
