@@ -7,13 +7,12 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 
 /// <summary>
-/// O <see cref="RemoverTipoAtoPublicadoCommandValidator"/> é o único validator
-/// remanescente do cadastro de tipos de ato: Criar/Atualizar tiveram os seus
-/// removidos (ADR-0125) — a validação de formato passou para o agregado
-/// (<c>TipoAtoPublicado.ValidarCampos</c>, coberta em
+/// Os validators remanescentes do cadastro de tipos de ato checam só forma de
+/// identificador de rota, sem equivalente no agregado (ADR-0125) — Criar teve o
+/// seu removido por inteiro (não recebe Id), e Atualizar/Remover mantêm cada um
+/// uma checagem mínima de <c>Id</c>. A validação de formato dos demais campos
+/// passou para o agregado (<c>TipoAtoPublicado.ValidarCampos</c>, coberta em
 /// <c>Unifesspa.UniPlus.Publicacoes.Domain.UnitTests.TipoAtoPublicadoTests</c>).
-/// Remover não tem agregado a consultar (é uma remoção lógica por Id), então o
-/// validator de formato do Id continua fazendo sentido aqui.
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -21,7 +20,28 @@ using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class TipoAtoPublicadoValidatorsTests
 {
+    private static readonly DateOnly Inicio = new(2026, 1, 1);
+
+    private readonly AtualizarTipoAtoPublicadoCommandValidator _atualizar = new();
     private readonly RemoverTipoAtoPublicadoCommandValidator _remover = new();
+
+    [Fact(DisplayName = "Atualizar: identificador vazio é recusado")]
+    public void Atualizar_IdVazio()
+    {
+        AtualizarTipoAtoPublicadoCommand comando = new(
+            Guid.Empty, "EDITAL_ABERTURA", "Edital de abertura", true, true, false, Inicio);
+
+        _atualizar.Validate(comando).IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Atualizar: identificador informado passa")]
+    public void Atualizar_IdInformado()
+    {
+        AtualizarTipoAtoPublicadoCommand comando = new(
+            Guid.NewGuid(), "EDITAL_ABERTURA", "Edital de abertura", true, true, false, Inicio);
+
+        _atualizar.Validate(comando).IsValid.Should().BeTrue();
+    }
 
     [Fact(DisplayName = "Remover: identificador vazio é recusado")]
     public void Remover_IdVazio()
