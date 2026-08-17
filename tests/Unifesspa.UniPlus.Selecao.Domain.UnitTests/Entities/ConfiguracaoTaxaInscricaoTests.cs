@@ -134,4 +134,28 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ConfirmacaoFundamentos.Should().BeFalse();
     }
+
+    [Fact(DisplayName = "Criar com cobra=false, valor informado e fundamento configurado acumula as duas violações")]
+    public void Criar_NaoCobraComValorEFundamento_AcumulaAsDuasViolacoes()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
+            cobra: false, valor: 10m, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico], confirmacaoFundamentos: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "valor" && e.Error.Code == "ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra");
+        resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoExigeCobranca");
+    }
+
+    [Fact(DisplayName = "Criar com fundamento desconhecido e sem confirmação acumula as duas violações — a confirmação é exigida independente do fundamento ser reconhecido")]
+    public void Criar_FundamentoDesconhecidoSemConfirmacao_AcumulaAsDuasViolacoes()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
+            cobra: true, valor: 100m, fundamentosCodigos: ["FUNDAMENTO_INEXISTENTE"], confirmacaoFundamentos: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
+        resultado.Errors.Should().Contain(e => e.Field == "confirmacaoFundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria");
+    }
 }

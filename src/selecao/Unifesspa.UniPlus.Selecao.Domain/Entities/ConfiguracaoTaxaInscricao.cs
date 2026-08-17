@@ -56,8 +56,10 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase
     private ConfiguracaoTaxaInscricao() { }
 
     /// <summary>
-    /// Ordem dos guards, testada: cobrança/valor primeiro (CA-01/CA-02), depois a exclusividade
-    /// com isenção (CA-03), depois o vocabulário dos fundamentos e a confirmação (CA-06).
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — o array
+    /// <c>errors[]</c> do contrato público (ADR-0023) precisa de todas as regras violadas no
+    /// mesmo lote: cobrança/valor, exclusividade com isenção, vocabulário dos fundamentos e
+    /// confirmação podem coexistir no mesmo payload malformado.
     /// </summary>
     public static Result<ConfiguracaoTaxaInscricao> Criar(
         bool cobra,
@@ -65,20 +67,22 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase
         IReadOnlyList<string>? fundamentosCodigos,
         bool confirmacaoFundamentos)
     {
+        List<FieldError> erros = [];
+
         if (cobra)
         {
             if (valor is not { } valorInformado || valorInformado <= 0)
             {
-                return Result<ConfiguracaoTaxaInscricao>.Failure(new DomainError(
+                erros.Add(new("valor", new DomainError(
                     "ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra",
-                    "Processo que cobra taxa exige valor positivo."));
+                    "Processo que cobra taxa exige valor positivo.")));
             }
         }
         else if (valor is not null)
         {
-            return Result<ConfiguracaoTaxaInscricao>.Failure(new DomainError(
+            erros.Add(new("valor", new DomainError(
                 "ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra",
-                "Processo que declara não cobrar taxa não pode informar valor."));
+                "Processo que declara não cobrar taxa não pode informar valor.")));
         }
 
         List<FundamentoIsencao> fundamentos = [];
@@ -86,33 +90,51 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase
         {
             if (!cobra)
             {
-                return Result<ConfiguracaoTaxaInscricao>.Failure(new DomainError(
+                erros.Add(new("fundamentos", new DomainError(
                     "ConfiguracaoTaxaInscricao.FundamentoExigeCobranca",
                     "Processo que declara não cobrar taxa não pode configurar fundamento de isenção — "
-                    + "\"não cobrar\" e \"isentar\" são decisões distintas e mutuamente exclusivas."));
+                    + "\"não cobrar\" e \"isentar\" são decisões distintas e mutuamente exclusivas.")));
             }
-
-            foreach (string codigo in fundamentosCodigos)
+            else
             {
-                FundamentoIsencao fundamento = FundamentoIsencaoCodigo.FromCodigo(codigo);
-                if (fundamento == FundamentoIsencao.Nenhum)
+                bool temFundamentoDesconhecido = false;
+                foreach (string codigo in fundamentosCodigos)
                 {
-                    return Result<ConfiguracaoTaxaInscricao>.Failure(new DomainError(
-                        "ConfiguracaoTaxaInscricao.FundamentoDesconhecido",
-                        $"'{codigo}' não é um fundamento de isenção conhecido."));
+                    FundamentoIsencao fundamento = FundamentoIsencaoCodigo.FromCodigo(codigo);
+                    if (fundamento == FundamentoIsencao.Nenhum)
+                    {
+                        temFundamentoDesconhecido = true;
+                        continue;
+                    }
+
+                    fundamentos.Add(fundamento);
                 }
 
-                fundamentos.Add(fundamento);
-            }
+                fundamentos = [.. fundamentos.Distinct().OrderBy(static f => f.ToCodigo(), StringComparer.Ordinal)];
 
-            fundamentos = [.. fundamentos.Distinct().OrderBy(static f => f.ToCodigo(), StringComparer.Ordinal)];
+                if (temFundamentoDesconhecido)
+                {
+                    // ADR-0023: errors[].message nunca ecoa o valor rejeitado — sem o código
+                    // específico, mesmo raciocínio do vocabulário de ConfiguracaoDivulgacao.
+                    erros.Add(new("fundamentos", new DomainError(
+                        "ConfiguracaoTaxaInscricao.FundamentoDesconhecido",
+                        "Um ou mais fundamentos de isenção informados não pertencem ao catálogo conhecido.")));
+                }
 
-            if (!confirmacaoFundamentos)
-            {
-                return Result<ConfiguracaoTaxaInscricao>.Failure(new DomainError(
-                    "ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria",
-                    "Referenciar fundamento de isenção exige confirmação explícita do administrador."));
+                // Independente de haver fundamento desconhecido: referenciar QUALQUER
+                // fundamento (reconhecido ou não) exige a confirmação explícita.
+                if (!confirmacaoFundamentos)
+                {
+                    erros.Add(new("confirmacaoFundamentos", new DomainError(
+                        "ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria",
+                        "Referenciar fundamento de isenção exige confirmação explícita do administrador.")));
+                }
             }
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<ConfiguracaoTaxaInscricao>.ValidationFailure(erros);
         }
 
         return Result<ConfiguracaoTaxaInscricao>.Success(new ConfiguracaoTaxaInscricao
