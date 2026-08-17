@@ -32,15 +32,15 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
         result.IsValid.Should().BeFalse();
     }
 
-    [Theory(DisplayName = "Falha com Valor não positivo, quando informado")]
+    [Theory(DisplayName = "Passa com Valor não positivo — o validator não decide isso, é regra de domínio (ValorObrigatorioQuandoCobra)")]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Rejeita_ValorNaoPositivo(double valor)
+    public void Aceita_ValorNaoPositivo(double valor)
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
             Guid.CreateVersion7(), true, (decimal)valor, null, false, PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Falha com Valor de mais de duas casas decimais")]

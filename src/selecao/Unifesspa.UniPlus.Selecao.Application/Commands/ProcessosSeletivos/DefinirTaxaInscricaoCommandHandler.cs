@@ -59,7 +59,7 @@ public static class DefinirTaxaInscricaoCommandHandler
             command.Cobra.Value, command.Valor, command.Fundamentos, command.ConfirmacaoFundamentos);
         if (configuracaoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(configuracaoResult.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(configuracaoResult.Errors);
         }
 
         Result definirResult = processo.DefinirTaxaInscricao(configuracaoResult.Value!, command.Precondicao);
