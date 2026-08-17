@@ -262,4 +262,28 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[1].atoProduzidoCodigo"]);
     }
+
+    [Fact(DisplayName = "ADR-0125: erro sem field próprio (JanelaObrigatoriaEmDataPropria) é prefixado só com fases[i], nunca fica com field null")]
+    public async Task Handle_ErroSemFieldProprio_PrefixaComIndiceDaFaseSemDeixarFieldNulo()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+
+        // OrigemData=PROPRIA (via FaseCanonicaResultado) sem Inicio/Fim dispara
+        // JanelaObrigatoriaEmDataPropria (sem field próprio — afeta os dois lados da
+        // janela); AtoProduzidoCodigo ausente dispara AtoProduzidoObrigatorio (field
+        // "atoProduzidoCodigo") na MESMA fase — os dois precisam ficar rastreáveis à
+        // fase de índice 0, mesmo o que não tem field de campo específico.
+        FaseCronogramaInput fase = InputResultado(faseCanonicaId) with { Inicio = null, Fim = null, AtoProduzidoCodigo = null };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [fase], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[0]", "fases[0].atoProduzidoCodigo"]);
+        resultado.Errors.Should().NotContain(e => e.Field == null);
+    }
 }
