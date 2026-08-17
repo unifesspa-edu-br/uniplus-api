@@ -206,6 +206,37 @@ public sealed class TipoAtoPublicadoTests
         tipo.EstaVigenteEm(Inicio.AddDays(-1)).Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Criar com três violações independentes acumula as três no mesmo lote")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
+    {
+        Result<TipoAtoPublicado> resultado = TipoAtoPublicado.Criar(
+            codigo: "edital abertura",
+            nome: "E",
+            congelaConfiguracao: true,
+            unicoPorObjeto: true,
+            efeitoIrreversivel: false,
+            vigenciaInicio: Inicio,
+            vigenciaFim: Inicio.AddDays(-1),
+            baseLegal: null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors.Should().Contain(e => e.Field == "codigo" && e.Error.Code == TipoAtoPublicadoErrorCodes.CodigoFormato);
+        resultado.Errors.Should().Contain(e => e.Field == "nome" && e.Error.Code == TipoAtoPublicadoErrorCodes.NomeTamanho);
+        resultado.Errors.Should().Contain(e => e.Field == "vigenciaFim" && e.Error.Code == TipoAtoPublicadoErrorCodes.VigenciaFimAnteriorAoInicio);
+    }
+
+    [Fact(DisplayName = "ValidarCampos replica o resultado de Criar sem instanciar o agregado")]
+    public void ValidarCampos_MesmoPayloadDeCriarComFalha_RetornaMesmosErros()
+    {
+        Result validacao = TipoAtoPublicado.ValidarCampos(
+            codigo: null, nome: null, vigenciaInicio: Inicio, vigenciaFim: null, baseLegal: null);
+
+        validacao.IsFailure.Should().BeTrue();
+        validacao.Errors.Should().ContainSingle(e => e.Field == "codigo" && e.Error.Code == TipoAtoPublicadoErrorCodes.CodigoObrigatorio);
+        validacao.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == TipoAtoPublicadoErrorCodes.NomeObrigatorio);
+    }
+
     private static Result<TipoAtoPublicado> Novo(
         string codigo = "EDITAL_ABERTURA",
         string nome = "Edital de abertura",

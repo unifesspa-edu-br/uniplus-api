@@ -76,8 +76,8 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
     /// verificada pelo banco, na gravação.
     /// </summary>
     public static Result<TipoAtoPublicado> Criar(
-        string codigo,
-        string nome,
+        string? codigo,
+        string? nome,
         bool congelaConfiguracao,
         bool unicoPorObjeto,
         bool efeitoIrreversivel,
@@ -85,18 +85,15 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         DateOnly? vigenciaFim,
         string? baseLegal)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(nome);
-
         Result validacao = ValidarCampos(codigo, nome, vigenciaInicio, vigenciaFim, baseLegal);
         if (validacao.IsFailure)
         {
-            return Result<TipoAtoPublicado>.Failure(validacao.Error!);
+            return Result<TipoAtoPublicado>.ValidationFailure(validacao.Errors);
         }
 
         var tipo = new TipoAtoPublicado();
         tipo.AplicarCampos(
-            codigo, nome, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel,
+            codigo!, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel,
             vigenciaInicio, vigenciaFim, baseLegal);
 
         return Result<TipoAtoPublicado>.Success(tipo);
@@ -116,9 +113,15 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
     /// com dois editais de abertura vivos. Renomear é criar outro tipo — não editar este.
     /// Nome, atributos de consequência, vigência e base legal seguem editáveis.
     /// </remarks>
+    /// <remarks>
+    /// A checagem de imutabilidade do código depende do <see cref="Codigo"/> já
+    /// persistido — só faz sentido rodar depois que os campos independentes já
+    /// passaram, senão um código malformado seria relatado como "imutável" em vez
+    /// do erro de formato real.
+    /// </remarks>
     public Result Atualizar(
-        string codigo,
-        string nome,
+        string? codigo,
+        string? nome,
         bool congelaConfiguracao,
         bool unicoPorObjeto,
         bool efeitoIrreversivel,
@@ -126,16 +129,13 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         DateOnly? vigenciaFim,
         string? baseLegal)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(nome);
-
         Result validacao = ValidarCampos(codigo, nome, vigenciaInicio, vigenciaFim, baseLegal);
         if (validacao.IsFailure)
         {
-            return validacao;
+            return Result.ValidationFailure(validacao.Errors);
         }
 
-        if (!string.Equals(codigo.Trim(), Codigo, StringComparison.Ordinal))
+        if (!string.Equals(codigo!.Trim(), Codigo, StringComparison.Ordinal))
         {
             return Result.Failure(new DomainError(
                 TipoAtoPublicadoErrorCodes.CodigoImutavel,
@@ -145,7 +145,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         }
 
         AplicarCampos(
-            codigo, nome, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel,
+            codigo, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel,
             vigenciaInicio, vigenciaFim, baseLegal);
 
         return Result.Success();
@@ -179,70 +179,75 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         BaseLegal = string.IsNullOrWhiteSpace(baseLegal) ? null : baseLegal.Trim();
     }
 
-    private static Result ValidarCampos(
-        string codigo,
-        string nome,
+    /// <summary>
+    /// Valida os campos independentes do tipo de ato, acumulando cada violação em
+    /// vez de retornar na primeira (ADR-0125) — o array <c>errors[]</c> do contrato
+    /// público (ADR-0023) precisa de todas as regras de campo violadas no mesmo
+    /// lote, não só a primeira. Não inclui a imutabilidade do código (depende do
+    /// valor persistido — só faz sentido conferir depois que o formato do próprio
+    /// código já passou, e só o handler de atualização tem o registro fetched).
+    /// Público para o handler de atualização poder validar o payload inteiro antes
+    /// de buscar o registro por Id (validação sempre vence 404).
+    /// </summary>
+    public static Result ValidarCampos(
+        string? codigo,
+        string? nome,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
         string? baseLegal)
     {
+        List<FieldError> erros = [];
+
         if (string.IsNullOrWhiteSpace(codigo))
         {
-            return Result.Failure(new DomainError(
-                TipoAtoPublicadoErrorCodes.CodigoObrigatorio,
-                "Código do tipo de ato é obrigatório."));
+            erros.Add(new("codigo", new DomainError(
+                TipoAtoPublicadoErrorCodes.CodigoObrigatorio, "Código do tipo de ato é obrigatório.")));
         }
-
-        string codigoNorm = codigo.Trim();
-
-        if (codigoNorm.Length > CodigoMaxLength)
+        else if (codigo.Trim().Length > CodigoMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("codigo", new DomainError(
                 TipoAtoPublicadoErrorCodes.CodigoTamanho,
-                $"Código do tipo de ato deve ter no máximo {CodigoMaxLength} caracteres."));
+                $"Código do tipo de ato deve ter no máximo {CodigoMaxLength} caracteres.")));
         }
-
         // Caixa alta é exigida, não imposta: `convocacao` é recusado em vez de
         // convertido em silêncio. A coluna é `text` e o Postgres compara
         // case-sensitive — normalizar a caixa esconderia do usuário que dois
         // códigos que ele julgava distintos são o mesmo.
-        if (!FormatoCodigo().IsMatch(codigoNorm))
+        else if (!FormatoCodigo().IsMatch(codigo.Trim()))
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("codigo", new DomainError(
                 TipoAtoPublicadoErrorCodes.CodigoFormato,
-                "Código do tipo de ato deve usar apenas letras maiúsculas sem acento, separadas por underscore (ex.: EDITAL_ABERTURA)."));
+                "Código do tipo de ato deve usar apenas letras maiúsculas sem acento, separadas por underscore (ex.: EDITAL_ABERTURA).")));
         }
 
         if (string.IsNullOrWhiteSpace(nome))
         {
-            return Result.Failure(new DomainError(
-                TipoAtoPublicadoErrorCodes.NomeObrigatorio,
-                "Nome do tipo de ato é obrigatório."));
+            erros.Add(new("nome", new DomainError(
+                TipoAtoPublicadoErrorCodes.NomeObrigatorio, "Nome do tipo de ato é obrigatório.")));
         }
-
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
+        else if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("nome", new DomainError(
                 TipoAtoPublicadoErrorCodes.NomeTamanho,
-                $"Nome do tipo de ato deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
+                $"Nome do tipo de ato deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
         }
 
         if (baseLegal is not null && baseLegal.Trim().Length > BaseLegalMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("baseLegal", new DomainError(
                 TipoAtoPublicadoErrorCodes.BaseLegalTamanho,
-                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres."));
+                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
         }
 
         // Fim exclusivo: uma janela cujo fim iguala o início não contém dia algum.
         if (vigenciaFim is { } fim && fim <= vigenciaInicio)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("vigenciaFim", new DomainError(
                 TipoAtoPublicadoErrorCodes.VigenciaFimAnteriorAoInicio,
-                "Fim da vigência é exclusivo e deve ser posterior ao início."));
+                "Fim da vigência é exclusivo e deve ser posterior ao início.")));
         }
 
-        return Result.Success();
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
 
     [GeneratedRegex(@"^[A-Z]+(_[A-Z]+)*$", RegexOptions.CultureInvariant)]

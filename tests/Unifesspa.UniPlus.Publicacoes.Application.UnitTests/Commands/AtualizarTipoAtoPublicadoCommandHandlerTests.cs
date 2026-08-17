@@ -60,12 +60,10 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Theory(DisplayName = "Consulta sobreposição quando o código ou a janela mudam")]
-    [InlineData("EDITAL_RETIFICACAO", 2026, 1, 1, null)]
-    [InlineData("EDITAL_ABERTURA", 2026, 3, 1, null)]
-    [InlineData("EDITAL_ABERTURA", 2026, 1, 1, 2027)]
-    public async Task Handle_MudaJanelaOuCodigo_ConsultaSobreposicao(
-        string codigo, int ano, int mes, int dia, int? anoFim)
+    [Theory(DisplayName = "Consulta sobreposição quando a janela muda")]
+    [InlineData(2026, 3, 1, null)]
+    [InlineData(2026, 1, 1, 2027)]
+    public async Task Handle_MudaJanela_ConsultaSobreposicao(int ano, int mes, int dia, int? anoFim)
     {
         TipoAtoPublicado existente = Existente();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
@@ -76,7 +74,6 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
         DateOnly? fim = anoFim is { } a ? new DateOnly(a, 1, 1) : null;
         AtualizarTipoAtoPublicadoCommand comando = Comando(existente.Id) with
         {
-            Codigo = codigo,
             VigenciaInicio = new DateOnly(ano, mes, dia),
             VigenciaFim = fim,
         };
@@ -86,7 +83,24 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
 
         // A própria versão é excluída da checagem — senão ela colidiria consigo mesma.
         await _repository.Received(1).ExisteSobreposicaoDeVigenciaAsync(
-            codigo, comando.VigenciaInicio, fim, existente.Id, Arg.Any<CancellationToken>());
+            "EDITAL_ABERTURA", comando.VigenciaInicio, fim, existente.Id, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Recusa código alterado sem consultar sobreposição — o código é a identidade do tipo")]
+    public async Task Handle_ComCodigoAlterado_RecusaSemConsultarSobreposicao()
+    {
+        TipoAtoPublicado existente = Existente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
+            Comando(existente.Id) with { Codigo = "EDITAL_RETIFICACAO" },
+            _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.CodigoImutavel);
+        await _repository.DidNotReceive().ExisteSobreposicaoDeVigenciaAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Recusa quando a nova janela intercepta outra versão viva")]
@@ -107,17 +121,15 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Propaga o erro do agregado e não commita")]
-    public async Task Handle_ComPayloadInvalido_NaoCommita()
+    [Fact(DisplayName = "Propaga o erro do agregado sem buscar por Id — validação vence 404")]
+    public async Task Handle_ComPayloadInvalido_RetornaErroSemBuscarPorId()
     {
-        TipoAtoPublicado existente = Existente();
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
         Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
-            Comando(existente.Id) with { Nome = "E" }, _repository, _unitOfWork, CancellationToken.None);
+            Comando(Guid.NewGuid()) with { Nome = "E" }, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.NomeTamanho);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

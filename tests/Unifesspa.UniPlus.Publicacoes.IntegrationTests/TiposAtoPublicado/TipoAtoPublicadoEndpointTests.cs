@@ -333,18 +333,18 @@ public sealed class TipoAtoPublicadoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
-    [Fact(DisplayName = "POST com código minúsculo retorna 422 — validação do command")]
+    [Fact(DisplayName = "POST com código minúsculo retorna 422 — validação de domínio")]
     public async Task Criar_ComCodigoMinusculo_Retorna422()
     {
-        // Falha de FluentValidation no pipeline do Wolverine vira ValidationException,
-        // que o GlobalExceptionMiddleware escreve como 422 `uniplus.validacao`. O 400
-        // fica para o que o binding recusa antes do command existir (rota, corpo).
+        // ADR-0125: o formato do código é validado pelo agregado, não mais por um
+        // FluentValidation à parte — o GlobalExceptionMiddleware traduz o DomainError
+        // (TipoAtoPublicadoErrorCodes.CodigoFormato) para o mapeamento registrado.
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await PostAsync(client, Payload("edital_abertura"));
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await response.Content.ReadAsStringAsync()).Should().Contain("uniplus.validacao");
+        (await response.Content.ReadAsStringAsync()).Should().Contain("uniplus.publicacoes.tipo_ato.codigo_formato");
     }
 
     [Fact(DisplayName = "POST com janela vazia retorna 422 — o fim é exclusivo")]

@@ -62,19 +62,29 @@ public sealed class CriarTipoAtoPublicadoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Propaga o erro do agregado quando o código é inválido")]
-    public async Task Handle_ComCodigoInvalido_PropagaErroDeDominio()
+    [Fact(DisplayName = "Propaga o erro do agregado quando o código é inválido, sem consultar sobreposição — validação vence I/O")]
+    public async Task Handle_ComCodigoInvalido_PropagaErroDeDominioSemConsultarSobreposicao()
     {
-        _repository.ExisteSobreposicaoDeVigenciaAsync(
-            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-
         Result<Guid> resultado = await CriarTipoAtoPublicadoCommandHandler.Handle(
             Comando() with { Codigo = "edital abertura" }, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.CodigoFormato);
+        await _repository.DidNotReceive().ExisteSobreposicaoDeVigenciaAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Acumula código inválido e nome ausente no mesmo lote")]
+    public async Task Handle_ComDoisCamposInvalidos_AcumulaOsDois()
+    {
+        Result<Guid> resultado = await CriarTipoAtoPublicadoCommandHandler.Handle(
+            Comando() with { Codigo = "edital abertura", Nome = "" }, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "codigo" && e.Error.Code == TipoAtoPublicadoErrorCodes.CodigoFormato);
+        resultado.Errors.Should().Contain(e => e.Field == "nome" && e.Error.Code == TipoAtoPublicadoErrorCodes.NomeObrigatorio);
     }
 
     [Fact(DisplayName = "A checagem de sobreposição recebe exatamente a janela do comando")]
