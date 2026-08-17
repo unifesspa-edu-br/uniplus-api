@@ -324,4 +324,28 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["distribuicaoVagas[0].modalidadeIds"]);
     }
+
+    [Fact(DisplayName = "ADR-0125: ModalidadeIds vazio recusa com ModalidadesVazias na 1ª passada, mesmo com oferta/regra inexistentes")]
+    public async Task Handle_ModalidadeIdsVazioComOfertaInexistente_RecusaComModalidadesVaziasSemConsultarReaders()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        // Oferta/regra propositalmente NÃO configuradas nos mocks — se a checagem de
+        // forma perdesse para o I/O, o handler tentaria resolvê-las e devolveria
+        // OfertaCursoNaoEncontrada em vez de ModalidadesVazias.
+
+        DefinirDistribuicaoVagasCommand command = new(
+            processo.Id,
+            [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [], [])], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
+            mocks.ReferenciaReservaDemograficaReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["ConfiguracaoDistribuicaoVagas.ModalidadesVazias"]);
+        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["distribuicaoVagas[0].modalidadeIds"]);
+        await mocks.OfertaCursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+    }
 }
