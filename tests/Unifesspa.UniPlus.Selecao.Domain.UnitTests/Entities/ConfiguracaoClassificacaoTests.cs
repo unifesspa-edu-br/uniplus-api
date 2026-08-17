@@ -51,14 +51,30 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.ArredondamentoIndevido");
     }
 
-    [Fact(DisplayName = "Criar com FORMULA-MEDIA-PONDERADA sem arredondamento falha (INV-B8)")]
+    [Fact(DisplayName = "Criar com FORMULA-MEDIA-PONDERADA sem arredondamento falha (INV-B8) — acumula os dois campos")]
     public void Criar_MediaPonderada_SemArredondamento_Falha()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoMediaPonderada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.ArredondamentoObrigatorio");
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "ConfiguracaoClassificacao.ArredondamentoObrigatorio",
+            "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio",
+        ]);
+    }
+
+    [Fact(DisplayName = "ADR-0125: regra de arredondamento válida com casas inválidas recusa só CasasArredondamentoObrigatorio (achado de revisão)")]
+    public void Criar_MediaPonderada_ComRegraArredondamentoECasasInvalidas_RecusaSoCasas()
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 0, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be("casasArredondamento");
+        resultado.Errors[0].Error.Code.Should().Be("ConfiguracaoClassificacao.CasasArredondamentoObrigatorio");
     }
 
     [Theory(DisplayName = "Criar com NOpcoesAlocacao fora de {1,2} falha")]
@@ -169,8 +185,8 @@ public sealed class ConfiguracaoClassificacaoTests
         _ => throw new ArgumentOutOfRangeException(nameof(codigoRegra), codigoRegra, "Código de regra ENEM desconhecido no teste."),
     };
 
-    [Fact(DisplayName = "ADR-0125: NOpcoesInvalido e ArredondamentoObrigatorio acumulam no mesmo lote")]
-    public void Criar_NOpcoesInvalidoESemArredondamento_AcumulaAsDuasViolacoes()
+    [Fact(DisplayName = "ADR-0125: NOpcoesInvalido, ArredondamentoObrigatorio e CasasArredondamentoObrigatorio acumulam no mesmo lote")]
+    public void Criar_NOpcoesInvalidoESemArredondamento_AcumulaAsTresViolacoes()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoMediaPonderada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 3, [], baseadoEmEnem: false);
@@ -180,6 +196,7 @@ public sealed class ConfiguracaoClassificacaoTests
         [
             "ConfiguracaoClassificacao.NOpcoesInvalido",
             "ConfiguracaoClassificacao.ArredondamentoObrigatorio",
+            "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio",
         ]);
     }
 
