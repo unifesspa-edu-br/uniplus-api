@@ -96,13 +96,19 @@ public static class DefinirCriteriosDesempateCommandHandler
                 : null;
 
         List<CriterioDesempate> criterios = [];
-        foreach (CriterioDesempateInput input in command.Criterios)
+        for (int indice = 0; indice < command.Criterios.Count; indice++)
         {
-            Result<CriterioDesempate> resultado = await ResolverCriterioAsync(input, regraCatalogoReader, vocabularioFatos, cancellationToken)
+            Result<CriterioDesempate> resultado = await ResolverCriterioAsync(command.Criterios[indice], regraCatalogoReader, vocabularioFatos, cancellationToken)
                 .ConfigureAwait(false);
             if (resultado.IsFailure)
             {
-                return Result<MutacaoAceita>.ValidationFailure(resultado.Errors);
+                // Prefixa o índice do item só nos erros com Field preenchido (vindos de
+                // CriterioDesempate.Criar) — os semânticos (RegraNaoEncontrada, EtapaRefObrigatorio,
+                // PredicadoDnf.*) têm Field nulo e não têm o que prefixar (achado de revisão: sem
+                // isso, "idadeMinima" chegava como campo de topo, ambíguo entre vários critérios).
+                IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors.Select(erro =>
+                    erro.Field is null ? erro : erro with { Field = $"criterios[{indice}].{erro.Field}" })];
+                return Result<MutacaoAceita>.ValidationFailure(errosComIndice);
             }
 
             criterios.Add(resultado.Value!);
