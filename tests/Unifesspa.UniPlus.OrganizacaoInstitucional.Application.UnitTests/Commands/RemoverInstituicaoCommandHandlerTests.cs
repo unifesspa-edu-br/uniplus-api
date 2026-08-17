@@ -21,7 +21,7 @@ public sealed class RemoverInstituicaoCommandHandlerTests
             cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null, cidadeOrigem: null,
             cidadeDisplayAtualizadoEm: null, unidadeRaizId: null).Value!;
 
-    [Fact(DisplayName = "Handle com Instituição existente faz soft-delete e invalida cache (CA-05)")]
+    [Fact(DisplayName = "Handle com Instituição existente faz soft-delete e invalida cache")]
     public async Task Handle_ComInstituicaoExistente_RemoveEInvalidaCache()
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();

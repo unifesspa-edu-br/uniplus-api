@@ -14,15 +14,14 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 /// Wolverine — método estático <c>Handle</c> com dependências por parâmetro.
 /// </summary>
 /// <remarks>
-/// Sequência:
-/// <list type="number">
-///   <item>Guard de domínio do singleton: rejeita se já existe Instituição viva (CA-02);</item>
-///   <item>Valida o vínculo com a Unidade raiz (reitoria), se informado (CA-04);</item>
-///   <item>Cria o agregado via <see cref="Instituicao.Criar"/>;</item>
-///   <item>Persiste + commit; uma corrida concorrente que passe pelo guard e
-///   colida no índice único parcial é traduzida para o mesmo erro de singleton (CA-02);</item>
-///   <item>Invalida o cache do reader cross-módulo (ADR-0056).</item>
-/// </list>
+/// Sequência: valida o agregado por inteiro primeiro (sem I/O) — os cinco campos
+/// obrigatórios, a referência de cidade e a coerência com o endereço acumulados
+/// no mesmo lote (validação sempre vence I/O) — só então confere o guard de
+/// singleton (rejeita se já existe Instituição viva) e o vínculo com a Unidade
+/// raiz (reitoria), cria o agregado carimbando a proveniência do display cache e
+/// persiste. Uma corrida concorrente que passe pelo guard de singleton e colida
+/// no índice único parcial é traduzida para o mesmo erro; ao final, invalida o
+/// cache do reader cross-módulo (ADR-0056).
 /// </remarks>
 public static class CriarInstituicaoCommandHandler
 {
@@ -42,6 +41,42 @@ public static class CriarInstituicaoCommandHandler
         ArgumentNullException.ThrowIfNull(cacheInvalidator);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
+            EnderecoGeoInputMapping.Resolver(command.Endereco, existente: null, agora);
+
+        Result validacao = Instituicao.ValidarCampos(
+            command.CodigoEmec,
+            command.Nome,
+            command.Sigla,
+            command.OrganizacaoAcademica,
+            command.CategoriaAdministrativa,
+            command.Cnpj,
+            command.Mantenedora,
+            command.CodigoMantenedoraEmec,
+            command.Situacao,
+            command.AtoCredenciamento,
+            command.AtoRecredenciamento,
+            command.ConceitoInstitucional,
+            command.Igc,
+            command.Website,
+            enderecoErro is null ? endereco : null,
+            command.CidadeCodigoIbge,
+            command.CidadeNome,
+            command.CidadeUf);
+
+        if (enderecoErro is not null || validacao.IsFailure)
+        {
+            List<FieldError> erros = [.. validacao.Errors];
+            if (enderecoErro is not null)
+            {
+                erros.Add(new FieldError("endereco", enderecoErro));
+            }
+
+            return Result<Guid>.ValidationFailure(erros);
+        }
+
         if (await repository.ExisteAlgumaVivaAsync(cancellationToken).ConfigureAwait(false))
         {
             return Result<Guid>.Failure(new DomainError(
@@ -57,22 +92,15 @@ public static class CriarInstituicaoCommandHandler
             return Result<Guid>.Failure(vinculoInvalido);
         }
 
-        DateTimeOffset agora = timeProvider.GetUtcNow();
-
         // Carimbo server-side do display cache da cidade (ADR-0090): com cidade
         // informada, proveniência geo-api + instante atual; sem cidade, ambos nulos.
         bool temCidade = !string.IsNullOrWhiteSpace(command.CidadeCodigoIbge);
         string? cidadeOrigem = temCidade ? ReferenciaCidadeGeo.OrigemGeoApi : null;
         DateTimeOffset? cidadeAtualizadoEm = temCidade ? agora : null;
 
-        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
-            EnderecoGeoInputMapping.Resolver(command.Endereco, existente: null, agora);
-        if (enderecoErro is not null)
-        {
-            return Result<Guid>.Failure(enderecoErro);
-        }
-
-        Result<Instituicao> instituicaoResult = Instituicao.Criar(
+        // O payload já foi confirmado válido no pré-check acima, com o mesmo
+        // endereco resolvido e o mesmo `agora` — Criar não pode falhar de novo.
+        Instituicao instituicao = Instituicao.Criar(
             command.CodigoEmec,
             command.Nome,
             command.Sigla,
@@ -93,14 +121,8 @@ public static class CriarInstituicaoCommandHandler
             command.CidadeUf,
             cidadeOrigem,
             cidadeAtualizadoEm,
-            command.UnidadeRaizId);
+            command.UnidadeRaizId).Value!;
 
-        if (instituicaoResult.IsFailure)
-        {
-            return Result<Guid>.Failure(instituicaoResult.Error!);
-        }
-
-        Instituicao instituicao = instituicaoResult.Value!;
         await repository.AdicionarAsync(instituicao, cancellationToken).ConfigureAwait(false);
 
         try
@@ -112,9 +134,13 @@ public static class CriarInstituicaoCommandHandler
         {
             // Corrida entre ExisteAlgumaVivaAsync e o INSERT (check-then-act): o
             // índice único parcial sentinela dispara 23505 e viramos o mesmo erro
-            // de singleton (CA-02) — 409 consistente com o caminho não-race, em vez
-            // de deixar o DbUpdateException virar 500 no middleware global. O filtro
-            // do `when` garante que outras exceções propagam intactas.
+            // de singleton — 409 consistente com o caminho não-race, em vez de
+            // deixar o DbUpdateException virar 500 no middleware global. O filtro
+            // do `when` garante que outras exceções propagam intactas. Descarta o
+            // rastreamento ANTES de devolver: o outbox do Wolverine chama
+            // SaveChangesAsync de novo após o handler retornar (ADR-0004), e sem
+            // isso a mesma exceção estouraria de novo fora deste catch, virando 500.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<Guid>.Failure(new DomainError(
                 InstituicaoErrorCodes.JaExisteInstituicaoViva,
                 "Já existe uma Instituição cadastrada — cada instância da plataforma atende uma única instituição."));

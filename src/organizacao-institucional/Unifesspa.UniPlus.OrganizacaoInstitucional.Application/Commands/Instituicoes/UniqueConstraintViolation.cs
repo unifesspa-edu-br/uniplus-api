@@ -13,7 +13,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instit
 /// Mesmo padrão de <c>UniqueConstraintViolation</c> do módulo Seleção
 /// (ObrigatoriedadesLegais). A tradução cross-cutting de 23505 → 409 via
 /// <c>GlobalExceptionMiddleware</c> permanece como follow-up separado (#504);
-/// este helper cobre o caso específico do invariante singleton (CA-02) que esta
+/// este helper cobre o caso específico do invariante singleton que esta
 /// Story introduz.
 /// </remarks>
 internal static class UniqueConstraintViolation

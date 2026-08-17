@@ -11,13 +11,17 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 /// proveniência/frescura do display cache é recarimbada server-side pelo handler
 /// apenas quando o trio muda (ADR-0090).
 /// </summary>
+/// <remarks>
+/// Os cinco campos obrigatórios são <c>string?</c>, não <c>string</c> (ADR-0125) —
+/// mesma justificativa de <see cref="CriarInstituicaoCommand"/>.
+/// </remarks>
 public sealed record AtualizarInstituicaoCommand(
     Guid Id,
-    string CodigoEmec,
-    string Nome,
-    string Sigla,
-    string OrganizacaoAcademica,
-    string CategoriaAdministrativa,
+    string? CodigoEmec,
+    string? Nome,
+    string? Sigla,
+    string? OrganizacaoAcademica,
+    string? CategoriaAdministrativa,
     string? Cnpj,
     string? Mantenedora,
     string? CodigoMantenedoraEmec,

@@ -26,7 +26,7 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         {
             t.HasCheckConstraint("ck_instituicao_singleton_sentinela", "registro_vivo_sentinela = true");
 
-            // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe — a cidade
+            // CHECK de coerência cidade↔CEP (ADR-0096): NULL-safe — a cidade
             // da sede é opcional, mas quando há endereço o domínio garante a cidade
             // presente; o CHECK barra divergência de código IBGE/UF.
             t.HasCheckConstraint(

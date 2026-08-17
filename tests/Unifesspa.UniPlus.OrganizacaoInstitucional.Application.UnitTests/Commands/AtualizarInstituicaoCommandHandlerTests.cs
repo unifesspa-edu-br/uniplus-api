@@ -63,6 +63,24 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
         await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Handle com campo obrigatório vazio propaga o erro sem buscar a Instituição por Id — validação vence 404")]
+    public async Task Handle_ComCampoObrigatorioVazio_RetornaErroSemBuscarPorId()
+    {
+        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
+        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
+        AtualizarInstituicaoCommand comando = CommandValido(Guid.CreateVersion7()) with { Nome = "" };
+
+        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
+            comando, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.NomeObrigatorio);
+        await repo.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Handle com campos válidos atualiza e invalida cache")]
     public async Task Handle_ComCamposValidos_AtualizaEInvalidaCache()
     {
@@ -81,7 +99,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
         await cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com unidade raiz reitoria aceita o vínculo (CA-04)")]
+    [Fact(DisplayName = "Handle com unidade raiz reitoria aceita o vínculo")]
     public async Task Handle_ComUnidadeRaizReitoria_Aceita()
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
@@ -100,7 +118,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
         existente.UnidadeRaizId.Should().Be(reitoria.Id);
     }
 
-    [Fact(DisplayName = "Handle com unidade raiz de outro tipo retorna UnidadeRaizNaoEhReitoria (CA-04)")]
+    [Fact(DisplayName = "Handle com unidade raiz de outro tipo retorna UnidadeRaizNaoEhReitoria")]
     public async Task Handle_ComUnidadeRaizNaoReitoria_RetornaErro()
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
