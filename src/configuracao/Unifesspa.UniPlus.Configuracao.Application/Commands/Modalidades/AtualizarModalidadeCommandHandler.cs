@@ -7,13 +7,17 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarModalidadeCommand"/>. Pré-checa os campos editáveis
-/// (parse, tamanhos e as três coerências cruzadas — tudo que independe do estado
-/// persistido, 422, sem I/O) ANTES de buscar a modalidade por Id — validação sempre
-/// vence 404. Só depois do fetch (404) é que <see cref="Modalidade.Atualizar"/> pode
-/// avaliar a guarda do catálogo legal fixo, pois ela depende do <c>Codigo</c> já
-/// persistido; ela reaplica a mesma validação como rede de segurança. Por fim,
-/// revalida a integridade referencial dos códigos citados (422, DB) e commita.
+/// Handler do <see cref="AtualizarModalidadeCommand"/>. Pré-checa só os campos
+/// independentes de coerência cruzada (parse, tamanhos — 422, sem I/O) ANTES de
+/// buscar a modalidade por Id — validação sempre vence 404. As três invariantes
+/// cruzadas NÃO entram no pré-check: precisam vir depois da guarda do catálogo
+/// legal fixo, que só <see cref="Modalidade.Atualizar"/> pode avaliar, pois
+/// depende do <c>Codigo</c> já persistido — reportar uma incoerência antes do
+/// fetch preemptiria "esta modalidade não se edita" com "corrija a coerência do
+/// payload" quando as duas violações coexistem. Depois do fetch (404),
+/// <see cref="Modalidade.Atualizar"/> aplica a guarda e só então as coerências, na
+/// ordem certa. Por fim, revalida a integridade referencial dos códigos citados
+/// (422, DB) e commita.
 /// </summary>
 public static class AtualizarModalidadeCommandHandler
 {
@@ -27,7 +31,7 @@ public static class AtualizarModalidadeCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<Modalidade.CamposResolvidos> preCheck = Modalidade.ValidarCampos(
+        Result preCheck = Modalidade.ValidarCamposDoPayload(
             command.Descricao,
             command.NaturezaLegal,
             command.ComposicaoVagas,
