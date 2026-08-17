@@ -81,13 +81,14 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
         // Item nulo não pertence ao vocabulário — reportado junto dos demais campos fora do
         // vocabulário fechado, em vez de escapar de FirstOrDefault(...) is { } (que descarta um
         // resultado nulo como "não encontrado") e sobreviver silenciosamente na lista canônica.
-        List<string?> camposNaoPermitidos = [.. camposPublicos.Where(static c => c is not (NumeroInscricao or NomeAbreviado or Nome))];
-        if (camposNaoPermitidos.Count > 0)
+        // A mensagem não ecoa os valores rejeitados (ADR-0023): errors[].message nunca carrega
+        // reflexo do dado rejeitado, mesmo quando o campo em si não é PII.
+        bool temCampoNaoPermitido = camposPublicos.Any(static c => c is not (NumeroInscricao or NomeAbreviado or Nome));
+        if (temCampoNaoPermitido)
         {
-            string listagem = string.Join(", ", camposNaoPermitidos.Select(static c => c is null ? "(nulo)" : $"'{c}'"));
             erros.Add(new("camposPublicos", new DomainError(
                 "ConfiguracaoDivulgacao.CampoNaoPermitido",
-                $"{listagem} não pertence ao vocabulário de divulgação pública ({NumeroInscricao}, {NomeAbreviado}, {Nome}).")));
+                $"Um ou mais campos não pertencem ao vocabulário de divulgação pública ({NumeroInscricao}, {NomeAbreviado}, {Nome}).")));
         }
 
         // Redundante com CamposPublicosVazio quando a lista já está vazia — não acrescenta um
