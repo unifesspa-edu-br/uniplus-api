@@ -86,4 +86,22 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName == "Fases[0].RegraRecurso.SuspensividadeSegundaInstanciaValor");
     }
+
+    [Fact(DisplayName = "Validator passa com janela invertida — a rejeição é do agregado (FaseCronograma.Criar, ADR-0125), para poder acumular com outras violações da mesma fase")]
+    public void Aceita_JanelaInvertidaNoValidator()
+    {
+        FaseCronogramaInput fase = new(
+            Ordem: 1,
+            FaseCanonicaId: Guid.CreateVersion7(),
+            Inicio: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            Fim: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            AtoProduzidoCodigo: null,
+            TiposBancaIds: [],
+            RegraRecurso: null);
+        DefinirCronogramaFasesCommand command = new(Guid.CreateVersion7(), [fase], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator().Validate(command);
+
+        resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
+    }
 }

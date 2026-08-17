@@ -156,9 +156,12 @@ public sealed class FaseCronograma : EntityBase
         // chamar numa primeira passada: origemData/produzResultado/resultadoDefinitivo são
         // snapshot-copy do CADASTRO (FaseCanonica), resolvido via IFaseCanonicaReader —
         // não primitivos do payload do cliente — então não há como confirmá-las sem o
-        // reader já ter rodado. Ordem e a janela (Fim >= Início) já são cobertas pelo
-        // FluentValidation, que roda como middleware Wolverine antes do handler — vencem
-        // I/O por construção, sem precisar de pré-checagem própria aqui.
+        // reader já ter rodado. Ordem permanece só throw (defesa de programação, nunca
+        // acumulada) e continua coberta pelo FluentValidation; a janela (Fim >= Início) NÃO
+        // tem mais regra equivalente no validator — ela é a acumulada abaixo
+        // (JanelaInvertida), e deixá-la também no validator faria o middleware bloquear
+        // sozinho, sem nunca deixar o payload chegar aqui para acumular junto de outras
+        // violações da mesma fase.
         List<FieldError> erros = [];
 
         // JanelaInvertida vale independentemente da origem da data — uma fase DELEGADA
