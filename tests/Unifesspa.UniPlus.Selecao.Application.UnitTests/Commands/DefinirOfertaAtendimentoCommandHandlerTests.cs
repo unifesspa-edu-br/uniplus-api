@@ -79,6 +79,24 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "ADR-0125: Handle recusa CondicaoId duplicado ANTES de consultar qualquer leitor (validação vence I/O)")]
+    public async Task Handle_CondicaoIdDuplicado_RecusaSemConsultarLeitores()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Guid condicaoId = Guid.CreateVersion7();
+
+        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, ISelecaoUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
+
+        DefinirOfertaAtendimentoCommand command = new(processo.Id, [condicaoId, condicaoId], [], [], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirOfertaAtendimentoCommandHandler.Handle(
+            command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("OfertaAtendimento.CondicaoDuplicada");
+        await mocks.CondicaoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default!, default!);
+    }
+
     [Fact(DisplayName = "Handle com condição inexistente recusa sem persistir")]
     public async Task Handle_CondicaoInexistente_Recusa()
     {

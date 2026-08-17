@@ -36,8 +36,13 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
     private OfertaAtendimentoEspecializado() { }
 
     /// <summary>
-    /// Monta a oferta validando a invariante ADR-0067: tipo de deficiência só
-    /// é ofertável quando a condição PcD está entre as condições ofertadas.
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — as
+    /// três checagens de duplicata e a invariante ADR-0067 (tipo de deficiência só sob
+    /// condição PcD) não dependem umas das outras. As checagens de duplicata só existem
+    /// aqui por defesa em profundidade: o handler já confirma unicidade via
+    /// <see cref="ValidarIdsUnicos"/>, sobre os IDs crus, ANTES de resolver cada dimensão nos
+    /// cadastros vivos (validação sempre precede I/O) — chamar <see cref="Criar"/>
+    /// diretamente sem passar por ali (ex.: em teste) ainda é seguro.
     /// </summary>
     public static Result<OfertaAtendimentoEspecializado> Criar(
         IReadOnlyList<OfertaCondicao> condicoes,
@@ -48,29 +53,31 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
         ArgumentNullException.ThrowIfNull(recursos);
         ArgumentNullException.ThrowIfNull(tiposDeficiencia);
 
+        List<FieldError> erros = [];
+
         // Recusa duplicatas aqui — não no índice único do banco (CA-06): sem
         // este guard, um request com o mesmo *_origem_id repetido passaria
         // pelo domínio e só falharia no SaveChanges como DbUpdateException
         // (500), em vez de Result 422.
         if (condicoes.Select(c => c.CondicaoOrigemId).Distinct().Count() != condicoes.Count)
         {
-            return Result<OfertaAtendimentoEspecializado>.Failure(new DomainError(
+            erros.Add(new("condicaoIds", new DomainError(
                 "OfertaAtendimento.CondicaoDuplicada",
-                "Cada condição de atendimento só pode ser ofertada uma vez."));
+                "Cada condição de atendimento só pode ser ofertada uma vez.")));
         }
 
         if (recursos.Select(r => r.RecursoOrigemId).Distinct().Count() != recursos.Count)
         {
-            return Result<OfertaAtendimentoEspecializado>.Failure(new DomainError(
+            erros.Add(new("recursoIds", new DomainError(
                 "OfertaAtendimento.RecursoDuplicado",
-                "Cada recurso de acessibilidade só pode ser ofertado uma vez."));
+                "Cada recurso de acessibilidade só pode ser ofertado uma vez.")));
         }
 
         if (tiposDeficiencia.Select(t => t.TipoDeficienciaOrigemId).Distinct().Count() != tiposDeficiencia.Count)
         {
-            return Result<OfertaAtendimentoEspecializado>.Failure(new DomainError(
+            erros.Add(new("tipoDeficienciaIds", new DomainError(
                 "OfertaAtendimento.TipoDeficienciaDuplicado",
-                "Cada tipo de deficiência só pode ser ofertado uma vez."));
+                "Cada tipo de deficiência só pode ser ofertado uma vez.")));
         }
 
         bool pcdOfertada = condicoes.Any(c =>
@@ -78,9 +85,14 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
 
         if (tiposDeficiencia.Count > 0 && !pcdOfertada)
         {
-            return Result<OfertaAtendimentoEspecializado>.Failure(new DomainError(
+            erros.Add(new("tipoDeficienciaIds", new DomainError(
                 "OfertaAtendimento.TipoDeficienciaSemCondicaoPcd",
-                "Tipos de deficiência só podem ser ofertados quando a condição PcD está ofertada."));
+                "Tipos de deficiência só podem ser ofertados quando a condição PcD está ofertada.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<OfertaAtendimentoEspecializado>.ValidationFailure(erros);
         }
 
         OfertaAtendimentoEspecializado oferta = new();
@@ -103,6 +115,47 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
         }
 
         return Result<OfertaAtendimentoEspecializado>.Success(oferta);
+    }
+
+    /// <summary>
+    /// Confirma unicidade dos IDs crus de cada dimensão — sem depender do cadastro vivo
+    /// (ADR-0056) já resolvido, ao contrário das checagens equivalentes dentro de
+    /// <see cref="Criar"/>. Existe para o handler poder recusar duplicatas ANTES de consultar
+    /// os três leitores cross-módulo (ADR-0125 ponto 5: validação sempre precede I/O) — um
+    /// payload com o mesmo <c>condicaoId</c> repetido não precisa de três chamadas de rede
+    /// para descobrir que vai falhar.
+    /// </summary>
+    public static List<FieldError> ValidarIdsUnicos(
+        IReadOnlyList<Guid> condicaoIds, IReadOnlyList<Guid> recursoIds, IReadOnlyList<Guid> tipoDeficienciaIds)
+    {
+        ArgumentNullException.ThrowIfNull(condicaoIds);
+        ArgumentNullException.ThrowIfNull(recursoIds);
+        ArgumentNullException.ThrowIfNull(tipoDeficienciaIds);
+
+        List<FieldError> erros = [];
+
+        if (condicaoIds.Distinct().Count() != condicaoIds.Count)
+        {
+            erros.Add(new("condicaoIds", new DomainError(
+                "OfertaAtendimento.CondicaoDuplicada",
+                "Cada condição de atendimento só pode ser ofertada uma vez.")));
+        }
+
+        if (recursoIds.Distinct().Count() != recursoIds.Count)
+        {
+            erros.Add(new("recursoIds", new DomainError(
+                "OfertaAtendimento.RecursoDuplicado",
+                "Cada recurso de acessibilidade só pode ser ofertado uma vez.")));
+        }
+
+        if (tipoDeficienciaIds.Distinct().Count() != tipoDeficienciaIds.Count)
+        {
+            erros.Add(new("tipoDeficienciaIds", new DomainError(
+                "OfertaAtendimento.TipoDeficienciaDuplicado",
+                "Cada tipo de deficiência só pode ser ofertado uma vez.")));
+        }
+
+        return erros;
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>

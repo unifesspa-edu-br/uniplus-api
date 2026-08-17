@@ -63,6 +63,16 @@ public static class DefinirOfertaAtendimentoCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        // Validação sempre precede I/O (ADR-0125, ponto 5): confirma unicidade dos IDs crus
+        // antes de consultar os três leitores cross-módulo — um payload com duplicata não
+        // precisa de nenhuma chamada de rede para descobrir que vai falhar.
+        List<FieldError> idsErros = OfertaAtendimentoEspecializado.ValidarIdsUnicos(
+            command.CondicaoIds, command.RecursoIds, command.TipoDeficienciaIds);
+        if (idsErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(idsErros);
+        }
+
         List<OfertaCondicao> condicoes = [];
         foreach (Guid condicaoId in command.CondicaoIds)
         {
@@ -115,7 +125,7 @@ public static class DefinirOfertaAtendimentoCommandHandler
             OfertaAtendimentoEspecializado.Criar(condicoes, recursos, tiposDeficiencia);
         if (ofertaResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(ofertaResult.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(ofertaResult.Errors);
         }
 
         Result result = processo.DefinirOfertaAtendimento(ofertaResult.Value!, command.Precondicao);
