@@ -19,7 +19,7 @@ public sealed class RemoverUnidadeCommandHandlerTests
         Unidade.Criar(
             "Centro de Processos Seletivos",
             null,
-            Slug.From("ceps").Value!,
+            "ceps",
             "CEPS",
             "0001",
             null,

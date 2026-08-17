@@ -93,7 +93,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             Result atualizarResult = tracked.Atualizar(
                 tracked.Nome,
                 "Alias atualizado",
-                tracked.Slug,
+                tracked.Slug.Valor,
                 tracked.Sigla,
                 tracked.Codigo,
                 tracked.UnidadeSuperiorId,
@@ -474,7 +474,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         Unidade.Criar(
             nome: $"Unidade {sigla}",
             alias: alias,
-            slug: Slug.From(slug).Value!,
+            slug: slug,
             sigla: sigla,
             codigo: codigo,
             unidadeSuperiorId: superiorId,

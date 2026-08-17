@@ -830,7 +830,7 @@ public sealed class EnvelopeFechadoE2ETests
             Unidade unidade = Unidade.Criar(
                 nome: "Centro de Processos Seletivos E2E",
                 alias: null,
-                slug: Slug.From($"ceps-e2e-{sufixo}").Value!,
+                slug: $"ceps-e2e-{sufixo}",
                 sigla: $"CEPS{sufixo}",
                 codigo: $"CEPS-{sufixo}",
                 unidadeSuperiorId: null,

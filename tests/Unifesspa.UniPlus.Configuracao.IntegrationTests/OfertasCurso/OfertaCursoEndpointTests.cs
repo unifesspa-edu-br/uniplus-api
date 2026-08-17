@@ -444,7 +444,7 @@ public sealed class OfertaCursoEndpointTests
         Unidade unidade = Unidade.Criar(
             nome: $"Unidade {sigla}",
             alias: null,
-            slug: Slug.From(slug).Value!,
+            slug: slug,
             sigla: sigla,
             codigo: codigo,
             unidadeSuperiorId: null,

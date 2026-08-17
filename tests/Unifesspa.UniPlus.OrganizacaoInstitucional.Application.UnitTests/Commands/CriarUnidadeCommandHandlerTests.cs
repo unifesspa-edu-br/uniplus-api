@@ -132,4 +132,23 @@ public sealed class CriarUnidadeCommandHandlerTests
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SuperiorNaoEncontrado);
         await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Handle com nome ausente e slug inválido acumula os dois erros sem consultar unicidade — validação vence I/O")]
+    public async Task Handle_ComDoisCamposInvalidos_AcumulaOsDoisSemConsultarUnicidade()
+    {
+        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
+        CriarUnidadeCommand command = CommandValido() with { Nome = "", Slug = "SLUG-COM-MAIUSCULAS" };
+
+        Result<Guid> resultado = await CriarUnidadeCommandHandler.Handle(
+            command, repo, uow, cache, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "nome" && e.Error.Code == UnidadeErrorCodes.NomeObrigatorio);
+        resultado.Errors.Should().Contain(e => e.Field == "slug" && e.Error.Code == UnidadeErrorCodes.SlugFormatoInvalido);
+        await repo.DidNotReceive().SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await repo.DidNotReceive().SiglaExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+    }
 }

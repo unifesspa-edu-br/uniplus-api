@@ -421,7 +421,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         Unidade.Criar(
             nome: "Reitoria",
             alias: null,
-            slug: Slug.From(slug).Value!,
+            slug: slug,
             sigla: sigla,
             codigo: codigo,
             unidadeSuperiorId: null,

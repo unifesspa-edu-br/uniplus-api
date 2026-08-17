@@ -34,7 +34,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 /// acadêmicas podem não ser administradoras), então exigir cidade em toda
 /// Unidade infla cadastro sem uso; a obrigatoriedade real é do PONTO DE USO
 /// (<c>ProcessoSeletivo</c> exige Unidade administradora com cidade —
-/// uniplus-api#1114 CA-02).</para>
+/// uniplus-api#1114).</para>
 /// </remarks>
 public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
 {
@@ -83,11 +83,11 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
     /// formato e domínio local.
     /// </summary>
     public static Result<Unidade> Criar(
-        string nome,
+        string? nome,
         string? alias,
-        Slug slug,
-        string sigla,
-        string codigo,
+        string? slug,
+        string? sigla,
+        string? codigo,
         Guid? unidadeSuperiorId,
         TipoUnidade tipo,
         bool unidadeAcademica,
@@ -97,25 +97,25 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         string? cidadeNome = null,
         string? cidadeUf = null)
     {
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(sigla);
-        ArgumentNullException.ThrowIfNull(codigo);
-
         Result validacao = ValidarCampos(
-            nome, alias, sigla, codigo, tipo, vigenciaInicio, vigenciaFim,
+            nome, alias, slug, sigla, codigo, tipo, vigenciaInicio, vigenciaFim,
             cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
-            return Result<Unidade>.Failure(validacao.Error!);
+            return Result<Unidade>.ValidationFailure(validacao.Errors);
         }
+
+        // ValidarCampos, chamado acima, já provou o formato de slug — a segunda
+        // chamada é determinística e não pode falhar.
+        Slug slugValidado = Slug.From(slug).Value!;
 
         var unidade = new Unidade
         {
-            Nome = nome.Trim(),
+            Nome = nome!.Trim(),
             Alias = alias?.Trim(),
-            Slug = slug,
-            Sigla = sigla.Trim().ToUpperInvariant(),
-            Codigo = codigo.Trim(),
+            Slug = slugValidado,
+            Sigla = sigla!.Trim().ToUpperInvariant(),
+            Codigo = codigo!.Trim(),
             UnidadeSuperiorId = unidadeSuperiorId,
             Tipo = tipo,
             UnidadeAcademica = unidadeAcademica,
@@ -130,7 +130,7 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
 
         // Abre histórico inicial para identificadores com variação temporal.
         unidade._historico.Add(
-            UnidadeIdentificadorHistorico.Abrir(unidade.Id, TipoIdentificador.Slug, slug.Valor, vigenciaInicio));
+            UnidadeIdentificadorHistorico.Abrir(unidade.Id, TipoIdentificador.Slug, slugValidado.Valor, vigenciaInicio));
         unidade._historico.Add(
             UnidadeIdentificadorHistorico.Abrir(unidade.Id, TipoIdentificador.Sigla, unidade.Sigla, vigenciaInicio));
         unidade._historico.Add(
@@ -150,11 +150,11 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
     /// A data de mudança é o <paramref name="dataAtual"/> fornecido pelo handler.
     /// </summary>
     public Result Atualizar(
-        string nome,
+        string? nome,
         string? alias,
-        Slug slug,
-        string sigla,
-        string codigo,
+        string? slug,
+        string? sigla,
+        string? codigo,
         Guid? unidadeSuperiorId,
         TipoUnidade tipo,
         bool unidadeAcademica,
@@ -165,30 +165,30 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         string? cidadeNome = null,
         string? cidadeUf = null)
     {
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(sigla);
-        ArgumentNullException.ThrowIfNull(codigo);
-
         Result validacao = ValidarCampos(
-            nome, alias, sigla, codigo, tipo, VigenciaInicio, vigenciaFim,
+            nome, alias, slug, sigla, codigo, tipo, VigenciaInicio, vigenciaFim,
             cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
-            return validacao;
+            return Result.ValidationFailure(validacao.Errors);
         }
 
-        string siglaNormalizada = sigla.Trim().ToUpperInvariant();
-        string codigoNormalizado = codigo.Trim();
+        // ValidarCampos, chamado acima, já provou o formato de slug — a segunda
+        // chamada é determinística e não pode falhar.
+        Slug slugValidado = Slug.From(slug).Value!;
+
+        string siglaNormalizada = sigla!.Trim().ToUpperInvariant();
+        string codigoNormalizado = codigo!.Trim();
         string? aliasNormalizado = alias?.Trim();
 
-        RenomearIdentificadorSeNecessario(TipoIdentificador.Slug, Slug.Valor, slug.Valor, dataAtual, motivoMudancaIdentificador);
+        RenomearIdentificadorSeNecessario(TipoIdentificador.Slug, Slug.Valor, slugValidado.Valor, dataAtual, motivoMudancaIdentificador);
         RenomearIdentificadorSeNecessario(TipoIdentificador.Sigla, Sigla, siglaNormalizada, dataAtual, motivoMudancaIdentificador);
         RenomearIdentificadorSeNecessario(TipoIdentificador.Codigo, Codigo, codigoNormalizado, dataAtual, motivoMudancaIdentificador);
         RenomearIdentificadorSeNecessario(TipoIdentificador.Alias, Alias, aliasNormalizado, dataAtual, motivoMudancaIdentificador);
 
-        Nome = nome.Trim();
+        Nome = nome!.Trim();
         Alias = aliasNormalizado;
-        Slug = slug;
+        Slug = slugValidado;
         Sigla = siglaNormalizada;
         Codigo = codigoNormalizado;
         UnidadeSuperiorId = unidadeSuperiorId;
@@ -206,10 +206,7 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Aplica a referência de cidade já validada (bicondicional): código presente
-    /// implica trio completo, ausente zera os três campos. Extraído para método
-    /// privado — não externamente visível — porque <c>ValidarCampos</c> já provou
-    /// a bicondicional antes desta chamada; o analisador CA1062 não relaciona essa
-    /// prova entre parâmetros diferentes num método público.
+    /// implica trio completo, ausente zera os três campos.
     /// </summary>
     private void AplicarReferenciaCidade(string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf)
     {
@@ -229,7 +226,7 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         // Nenhuma mudança — sem histórico. Comparação Ordinal (case-sensitive):
         // os valores chegam já normalizados (Slug lowercase, Sigla uppercase), e
         // Codigo/Alias preservam a caixa — então uma troca só na caixa (ABC→abc)
-        // conta como mudança e gera entrada de histórico (CA-04).
+        // conta como mudança e gera entrada de histórico.
         if (string.Equals(valorAtual, novoValor, StringComparison.Ordinal))
         {
             return;
@@ -252,11 +249,21 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         }
     }
 
-    private static Result ValidarCampos(
-        string nome,
+    /// <summary>
+    /// Valida todos os campos da Unidade, acumulando cada violação em vez de
+    /// retornar na primeira (ADR-0125) — o array <c>errors[]</c> do contrato
+    /// público (ADR-0023) precisa de todas as regras de campo violadas no mesmo
+    /// lote, não só a primeira. Público para o handler de atualização poder
+    /// validar o payload inteiro antes de buscar o registro por Id (validação
+    /// sempre vence 404) — mesmo uso que o handler de criação faz antes das
+    /// checagens de unicidade (Slug/Sigla/Codigo) e do vínculo com a superior.
+    /// </summary>
+    public static Result ValidarCampos(
+        string? nome,
         string? alias,
-        string sigla,
-        string codigo,
+        string? slug,
+        string? sigla,
+        string? codigo,
         TipoUnidade tipo,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
@@ -264,71 +271,99 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         string? cidadeNome,
         string? cidadeUf)
     {
+        List<FieldError> erros = [];
+
         if (!Enum.IsDefined(tipo) || tipo == TipoUnidade.Nenhum)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("tipo", new DomainError(
                 UnidadeErrorCodes.TipoInvalido,
-                "Tipo de Unidade inválido — use um valor definido em TipoUnidade, diferente de Nenhum."));
+                "Tipo de Unidade inválido — use um valor definido em TipoUnidade, diferente de Nenhum.")));
         }
 
         if (string.IsNullOrWhiteSpace(nome))
         {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.NomeObrigatorio,
-                "Nome da Unidade é obrigatório."));
+            erros.Add(new("nome", new DomainError(
+                UnidadeErrorCodes.NomeObrigatorio, "Nome da Unidade é obrigatório.")));
+        }
+        else if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
+        {
+            erros.Add(new("nome", new DomainError(
+                UnidadeErrorCodes.NomeTamanho,
+                $"Nome da Unidade deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
         }
 
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
+        Result<Slug> slugResult = Slug.From(slug);
+        if (slugResult.IsFailure)
         {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.NomeTamanho,
-                $"Nome da Unidade deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
+            erros.Add(new("slug", slugResult.Error!));
         }
 
         if (string.IsNullOrWhiteSpace(sigla))
         {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.SiglaObrigatoria,
-                "Sigla da Unidade é obrigatória."));
+            erros.Add(new("sigla", new DomainError(
+                UnidadeErrorCodes.SiglaObrigatoria, "Sigla da Unidade é obrigatória.")));
         }
-
-        if (sigla.Trim().Length is < SiglaMinLength or > SiglaMaxLength)
+        else if (sigla.Trim().Length is < SiglaMinLength or > SiglaMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("sigla", new DomainError(
                 UnidadeErrorCodes.SiglaTamanho,
-                $"Sigla da Unidade deve ter entre {SiglaMinLength} e {SiglaMaxLength} caracteres."));
+                $"Sigla da Unidade deve ter entre {SiglaMinLength} e {SiglaMaxLength} caracteres.")));
         }
 
         if (string.IsNullOrWhiteSpace(codigo))
         {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.CodigoObrigatorio,
-                "Código da Unidade é obrigatório."));
+            erros.Add(new("codigo", new DomainError(
+                UnidadeErrorCodes.CodigoObrigatorio, "Código da Unidade é obrigatório.")));
         }
-
-        if (codigo.Trim().Length is < CodigoMinLength or > CodigoMaxLength)
+        else if (codigo.Trim().Length is < CodigoMinLength or > CodigoMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("codigo", new DomainError(
                 UnidadeErrorCodes.CodigoTamanho,
-                $"Código da Unidade deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres."));
+                $"Código da Unidade deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres.")));
         }
 
         if (alias is not null && alias.Trim().Length > AliasMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("alias", new DomainError(
                 UnidadeErrorCodes.AliasTamanho,
-                $"Alias da Unidade não pode ter mais que {AliasMaxLength} caracteres."));
+                $"Alias da Unidade não pode ter mais que {AliasMaxLength} caracteres.")));
         }
 
         if (vigenciaFim.HasValue && vigenciaFim.Value < vigenciaInicio)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("vigenciaFim", new DomainError(
                 UnidadeErrorCodes.VigenciaFimAnteriorAoInicio,
-                "Data de encerramento da vigência deve ser igual ou posterior à data de início."));
+                "Data de encerramento da vigência deve ser igual ou posterior à data de início.")));
         }
 
-        return ValidarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
+        Result cidade = ValidarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
+        if (cidade.IsFailure)
+        {
+            // ValidarReferenciaCidade acumula toda violação independente do trio de
+            // cidade — cada uma mapeada para o campo real que descreve.
+            foreach (FieldError erroCidade in cidade.Errors)
+            {
+                erros.Add(new(CampoDaCidade(erroCidade.Error.Code), erroCidade.Error));
+            }
+        }
+
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
+
+    /// <summary>
+    /// Mapeia o código interno de <see cref="ReferenciaCidadeGeo.Validar"/> para o
+    /// campo do payload (camelCase, ADR-0023) a que ele se refere de fato — mesmo
+    /// padrão de <c>Instituicao.CampoDaCidade</c>.
+    /// </summary>
+    private static string CampoDaCidade(string codigoErro) => codigoErro switch
+    {
+        CidadeReferenciaErrorCodes.NomeObrigatorio
+            or CidadeReferenciaErrorCodes.NomeCaractereNulo
+            or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
+        CidadeReferenciaErrorCodes.UfObrigatoria
+            or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",
+        _ => "cidadeCodigoIbge",
+    };
 
     /// <summary>
     /// Valida a referência de cidade do Geo (issue #1114) como opcional

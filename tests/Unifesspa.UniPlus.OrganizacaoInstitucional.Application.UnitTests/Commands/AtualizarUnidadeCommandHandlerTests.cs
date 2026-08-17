@@ -20,7 +20,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     private static Unidade UnidadeExistente() => Unidade.Criar(
         "Centro de Processos Seletivos",
         null,
-        Slug.From("ceps").Value!,
+        "ceps",
         "CEPS",
         "0001",
         null,
@@ -171,7 +171,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         Unidade existente = Unidade.Criar(
             "Centro de Processos Seletivos",
             null,
-            Slug.From("ceps").Value!,
+            "ceps",
             "CEPS",
             "ABC",
             null,
@@ -206,5 +206,20 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         await uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         await cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle com sigla ausente propaga o erro sem buscar a Unidade por Id — validação vence 404")]
+    public async Task Handle_ComSiglaAusente_RetornaErroSemBuscarPorId()
+    {
+        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(Guid.NewGuid()) with { Sigla = "" };
+
+        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
+            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaObrigatoria);
+        await repo.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }
