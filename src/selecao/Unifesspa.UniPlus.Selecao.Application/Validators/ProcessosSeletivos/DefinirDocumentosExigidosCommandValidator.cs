@@ -177,16 +177,6 @@ public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInp
 /// <summary>Validação de forma de UMA folha (<see cref="ItemDocumentoExigidoInput"/>) — mesmas regras do modelo plano anterior, menos <c>GrupoSatisfacaoId</c> (a posição na árvore o substitui, Story #920).</summary>
 public sealed class ItemDocumentoExigidoInputValidator : AbstractValidator<ItemDocumentoExigidoInput>
 {
-    private static readonly string[] AplicabilidadesValidas = ["GERAL", "CONDICIONAL"];
-
-    private static readonly string[] ConsequenciasValidas =
-    [
-        "ELIMINA",
-        "RECLASSIFICA_AC",
-        "REMOVE_VANTAGEM",
-        "PENDENCIA_REENVIO",
-    ];
-
     // Story #916: DIFERENTE/NAO_EM (operadores de exclusão) somam-se aos 4 originais.
     private static readonly string[] OperadoresValidos = ["IGUAL", "EM", "MAIOR_IGUAL", "MENOR_IGUAL", "DIFERENTE", "NAO_EM"];
 
@@ -212,14 +202,12 @@ public sealed class ItemDocumentoExigidoInputValidator : AbstractValidator<ItemD
             .NotEmpty()
             .WithMessage("O id do tipo de documento é obrigatório.");
 
-        RuleFor(i => i.Aplicabilidade)
-            .Must(valor => AplicabilidadesValidas.Contains(valor, StringComparer.Ordinal))
-            .WithMessage($"Aplicabilidade deve ser um de: {string.Join(", ", AplicabilidadesValidas)}.");
-
-        RuleFor(i => i.ConsequenciaIndeferimento)
-            .Must(valor => ConsequenciasValidas.Contains(valor, StringComparer.Ordinal))
-            .When(i => !string.IsNullOrWhiteSpace(i.ConsequenciaIndeferimento))
-            .WithMessage($"Consequência de indeferimento deve ser um de: {string.Join(", ", ConsequenciasValidas)}.");
+        // Aplicabilidade.Must(valida)/ConsequenciaIndeferimento.Must(valida) saíram — têm
+        // equivalente incondicional em DocumentoExigido.ValidarFormaBasica (ADR-0125), que
+        // acumula. Mantê-las aqui faria o FluentValidation (middleware, sempre roda antes
+        // do handler) bloquear sozinho no primeiro erro, tornando a acumulação do domínio
+        // inatingível para clientes reais — mesmo raciocínio já aplicado às bases legais
+        // deste mesmo command (PR #1224).
 
         RuleFor(i => i.Condicoes)
             .NotNull()
@@ -298,9 +286,7 @@ public sealed class ItemDocumentoExigidoInputValidator : AbstractValidator<ItemD
         // são DomainError (422), não FluentValidation (400): a interpretação do
         // ValueKind já é, em si, uma leitura semântica do dado, não só forma.
 
-        RuleFor(i => i.TamanhoMaximoBytes)
-            .GreaterThan(0)
-            .When(i => i.TamanhoMaximoBytes is not null)
-            .WithMessage("O tamanho máximo em bytes, quando presente, deve ser maior que zero.");
+        // TamanhoMaximoBytes.GreaterThan(0) saiu — mesmo motivo de Aplicabilidade/
+        // ConsequenciaIndeferimento acima: DocumentoExigido.ValidarFormaBasica já cobre.
     }
 }
