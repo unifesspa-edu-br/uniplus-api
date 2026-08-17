@@ -61,7 +61,7 @@ public sealed class EtapaProcessoTests
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.CaraterObrigatorio");
     }
 
-    [Fact(DisplayName = "Criar com valor de caráter fora do enum falha com CaraterObrigatorio (achado de revisão)")]
+    [Fact(DisplayName = "Criar com valor de caráter fora do enum falha com CaraterObrigatorio")]
     public void Criar_CaraterForaDoEnum_Falha()
     {
         // O JsonStringEnumConverter global aceita inteiro cru (allowIntegerValues: true por
