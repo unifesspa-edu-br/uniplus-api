@@ -49,6 +49,10 @@ public sealed class CriterioDesempate : EntityBase
     /// documentação lá. Só tem efeito quando <paramref name="vocabularioFatos"/>
     /// é informado.
     /// </param>
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — ordem,
+    /// compatibilidade de args e idade mínima não dependem umas das outras.
+    /// </summary>
     public static Result<CriterioDesempate> Criar(
         int ordem,
         ReferenciaRegra regra,
@@ -59,11 +63,7 @@ public sealed class CriterioDesempate : EntityBase
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(args);
 
-        if (ordem <= 0)
-        {
-            return Result<CriterioDesempate>.Failure(new DomainError(
-                "CriterioDesempate.OrdemInvalida", "A ordem do critério de desempate deve ser maior que zero."));
-        }
+        List<FieldError> erros = ValidarOrdem(ordem);
 
         bool argsCompativeis = regra.Codigo switch
         {
@@ -76,15 +76,15 @@ public sealed class CriterioDesempate : EntityBase
 
         if (!argsCompativeis)
         {
-            return Result<CriterioDesempate>.Failure(new DomainError(
+            erros.Add(new("regraCodigo", new DomainError(
                 "CriterioDesempate.ArgsIncompativeisComRegra",
-                $"Os args informados não correspondem à regra {regra.Codigo}."));
+                "Os args informados não correspondem à regra referenciada.")));
         }
 
         if (args is ArgsDesempateIdoso { IdadeMinima: <= 0 })
         {
-            return Result<CriterioDesempate>.Failure(new DomainError(
-                "CriterioDesempate.IdadeMinimaInvalida", "A idade mínima do critério IDOSO deve ser maior que zero."));
+            erros.Add(new("idadeMinima", new DomainError(
+                "CriterioDesempate.IdadeMinimaInvalida", "A idade mínima do critério IDOSO deve ser maior que zero.")));
         }
 
         if (args is ArgsDesempatePredicadoFato predicadoFato && vocabularioFatos is not null)
@@ -92,14 +92,21 @@ public sealed class CriterioDesempate : EntityBase
             Result<PredicadoDnf> predicadoResult = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, predicadoFato.Condicao)]);
             if (predicadoResult.IsFailure)
             {
-                return Result<CriterioDesempate>.Failure(predicadoResult.Error!);
+                erros.Add(new(null, predicadoResult.Error!));
             }
-
-            Result validacaoResult = PredicadoDnfValidador.Validar(predicadoResult.Value!, vocabularioFatos, fatosColetadosPeloProcesso);
-            if (validacaoResult.IsFailure)
+            else
             {
-                return Result<CriterioDesempate>.Failure(validacaoResult.Error!);
+                Result validacaoResult = PredicadoDnfValidador.Validar(predicadoResult.Value!, vocabularioFatos, fatosColetadosPeloProcesso);
+                if (validacaoResult.IsFailure)
+                {
+                    erros.Add(new(null, validacaoResult.Error!));
+                }
             }
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<CriterioDesempate>.ValidationFailure(erros);
         }
 
         return Result<CriterioDesempate>.Success(new CriterioDesempate
@@ -108,6 +115,26 @@ public sealed class CriterioDesempate : EntityBase
             Regra = regra,
             Args = args,
         });
+    }
+
+    /// <summary>
+    /// A ordem não depende do catálogo de regras nem do vocabulário de fatos — ao contrário das
+    /// demais checagens de <see cref="Criar"/>, que só fazem sentido depois de a regra e os args
+    /// terem sido resolvidos (I/O cross-módulo). Existe separada para o handler poder confirmar
+    /// a ordem de TODOS os critérios numa primeira passada, antes de consultar o
+    /// <c>rol_de_regras</c> (mesmo padrão de <c>FatoColetado.ValidarFormaBasica</c>, PR #1214).
+    /// </summary>
+    public static List<FieldError> ValidarOrdem(int ordem)
+    {
+        List<FieldError> erros = [];
+
+        if (ordem <= 0)
+        {
+            erros.Add(new("ordem", new DomainError(
+                "CriterioDesempate.OrdemInvalida", "A ordem do critério de desempate deve ser maior que zero.")));
+        }
+
+        return erros;
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>

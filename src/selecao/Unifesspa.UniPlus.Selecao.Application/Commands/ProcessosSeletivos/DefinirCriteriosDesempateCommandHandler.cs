@@ -14,16 +14,18 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
-/// Handler do <see cref="DefinirCriteriosDesempateCommand"/> (Story #774):
-/// resolve cada critério no catálogo <c>rol_de_regras</c>
-/// (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args tipados
-/// conforme o código da regra e congela a referência — a existência do
-/// <c>etapa_ref</c> no processo (INV-B6) é garantida pela raiz
-/// (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>). Quando algum
-/// critério referencia <c>DESEMPATE-PREDICADO-FATO</c>, resolve também o
-/// vocabulário fechado de fatos do candidato (<see cref="IFatoCandidatoReader"/>,
-/// #846, ADR-0111) para que <see cref="CriterioDesempate.Criar"/> valide a
-/// condição contra ele (fecha o INV-B6 do <c>Fato</c>).
+/// Handler do <see cref="DefinirCriteriosDesempateCommand"/> (Story #774), em duas passadas. A
+/// primeira confirma a ordem de TODOS os critérios (<see cref="CriterioDesempate.ValidarOrdem"/>)
+/// sem tocar o catálogo, acumulando (ADR-0125) através da lista inteira. Só então a segunda
+/// resolve cada critério no catálogo <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>,
+/// Story #772), monta os args tipados conforme o código da regra e congela a referência — a
+/// existência do <c>etapa_ref</c> no processo (INV-B6) é garantida pela raiz
+/// (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>). Quando algum critério referencia
+/// <c>DESEMPATE-PREDICADO-FATO</c>, resolve também o vocabulário fechado de fatos do candidato
+/// (<see cref="IFatoCandidatoReader"/>, #846, ADR-0111) para que
+/// <see cref="CriterioDesempate.Criar"/> valide a condição contra ele (fecha o INV-B6 do
+/// <c>Fato</c>) — parando no primeiro critério que falhar, granularidade nunca coberta pelo
+/// FluentValidation.
 /// </summary>
 public static class DefinirCriteriosDesempateCommandHandler
 {
@@ -69,6 +71,22 @@ public static class DefinirCriteriosDesempateCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        // Acumula (ADR-0125) a ordem de TODOS os critérios numa primeira passada — a única
+        // checagem de CriterioDesempate.Criar que não depende de a regra já ter sido resolvida
+        // no catálogo. Mesmo padrão de DefinirFatosColetadosCommandHandler (PR #1214): roda
+        // antes de qualquer I/O, ANTES de resolver o rol_de_regras.
+        List<FieldError> formaErros = [];
+        for (int indice = 0; indice < command.Criterios.Count; indice++)
+        {
+            List<FieldError> itemErros = CriterioDesempate.ValidarOrdem(command.Criterios[indice].Ordem);
+            formaErros.AddRange(itemErros.Select(erro => erro with { Field = $"criterios[{indice}].{erro.Field}" }));
+        }
+
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+        }
+
         // O vocabulário só é resolvido (I/O cross-módulo) quando algum critério de fato
         // referencia DESEMPATE-PREDICADO-FATO — o caso comum (demais 3 regras) não paga
         // esse custo.
@@ -84,7 +102,7 @@ public static class DefinirCriteriosDesempateCommandHandler
                 .ConfigureAwait(false);
             if (resultado.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(resultado.Error!);
+                return Result<MutacaoAceita>.ValidationFailure(resultado.Errors);
             }
 
             criterios.Add(resultado.Value!);

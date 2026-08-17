@@ -115,4 +115,26 @@ public sealed class CriterioDesempateTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CriterioDesempate.IdadeMinimaInvalida");
     }
+
+    [Fact(DisplayName = "ADR-0125: ordem inválida e idade mínima inválida acumulam no mesmo lote")]
+    public void Criar_OrdemInvalidaEIdadeMinimaInvalida_AcumulaAsDuasViolacoes()
+    {
+        Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
+            0, Regra(CriterioDesempateCodigo.Idoso), new ArgsDesempateIdoso(0));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "CriterioDesempate.OrdemInvalida",
+            "CriterioDesempate.IdadeMinimaInvalida",
+        ]);
+    }
+
+    [Fact(DisplayName = "ValidarOrdem sem violação retorna lote vazio")]
+    public void ValidarOrdem_SemViolacao_Vazio()
+    {
+        List<FieldError> erros = CriterioDesempate.ValidarOrdem(1);
+
+        erros.Should().BeEmpty();
+    }
 }
