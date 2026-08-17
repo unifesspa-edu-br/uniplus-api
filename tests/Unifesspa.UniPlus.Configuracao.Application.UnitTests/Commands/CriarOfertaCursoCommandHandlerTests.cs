@@ -146,6 +146,22 @@ public sealed class CriarOfertaCursoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Campo inválido no payload propaga o erro sem consultar curso, local ou unidade — validação vence I/O")]
+    public async Task Handle_CampoInvalido_RetornaErroSemConsultarNadaNemPersistir()
+    {
+        var comando = new CriarOfertaCursoCommand(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
+            ProgramaDeOferta: "PROUNI");
+
+        Result<Guid> resultado = await HandleAsync(comando);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.ProgramaDeOfertaInvalido);
+        await _cursoRepository.DidNotReceive().ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unidadeReader.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Programa não-REGULAR com base legal cria normalmente")]
     public async Task Handle_ProgramaNaoRegularComBaseLegal_Cria()
     {

@@ -12,9 +12,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// base legal é revalidado na transição (Regular→Parfor sem base é rejeitado).
 /// O ator (<c>updated_by</c>) é carimbado server-side via <c>IUserContext</c>.
 /// </summary>
+/// <remarks>
+/// <c>ProgramaDeOferta</c> é <c>string?</c>, não <c>string</c> (ADR-0125): sem
+/// valor default, para o schema OpenAPI continuar listando-o como obrigatório;
+/// nulo, para o campo ausente escapar do <c>[ApiController]</c> e chegar à
+/// validação de domínio.
+/// </remarks>
 public sealed record AtualizarOfertaCursoCommand(
     Guid Id,
-    string ProgramaDeOferta,
+    string? ProgramaDeOferta,
     string? FormatoPedagogico = null,
     string? Turno = null,
     string? EMecCodigo = null,

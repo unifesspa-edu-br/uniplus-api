@@ -326,4 +326,40 @@ public sealed class OfertaCursoTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.AtoAutorizacaoMecTamanho);
     }
+
+    // ── Acumulação e gate entre campos independentes (ADR-0125) ────────────────
+
+    [Fact(DisplayName = "Programa inválido, turno inválido e vagas negativas acumulam as três violações")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            programaDeOferta: "PROUNI", turno: "DIURNO", vagasAnuaisAutorizadas: -1);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors[0].Field.Should().Be("programaDeOferta");
+        resultado.Errors[1].Field.Should().Be("turno");
+        resultado.Errors[2].Field.Should().Be("vagasAnuaisAutorizadas");
+    }
+
+    [Fact(DisplayName = "Programa inválido não deriva a exigência de base legal — só o token inválido é reportado")]
+    public void Criar_ProgramaInvalidoComBaseLegalAusente_NaoDerivaGuard()
+    {
+        Result<OfertaCurso> resultado = Criar(programaDeOferta: "PROUNI", baseLegal: null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(1,
+            "o guard de base legal depende do programa já reconhecido — reportá-lo sobre um " +
+            "token que nem chegou a resolver seria um erro derivado, não uma incoerência independente");
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.ProgramaDeOfertaInvalido);
+    }
+
+    [Fact(DisplayName = "ValidarCamposDoPayload isolado é público e reusável sem construir o agregado")]
+    public void ValidarCamposDoPayload_CamposValidos_Aceita()
+    {
+        Result resultado = OfertaCurso.ValidarCamposDoPayload(
+            "REGULAR", "PRESENCIAL", "MATUTINO", "123456", "ENG-01", 40, null, null);
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
 }
