@@ -40,7 +40,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
-                peso: 1m, notaMinima: null, ordem: 1),
+                peso: 1m, notaMinima: null, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente);
         etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
 

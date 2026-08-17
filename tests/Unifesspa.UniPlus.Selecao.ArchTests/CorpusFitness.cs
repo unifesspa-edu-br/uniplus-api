@@ -23,7 +23,7 @@ internal static class CorpusFitness
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
-                peso: 1m, ordem: 1),
+                peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente);
 
         // Cronograma mínimo (Story #851): UMA fase satisfaz as duas exigências do corpus —

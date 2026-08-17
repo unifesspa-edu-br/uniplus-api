@@ -18,7 +18,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // ao reconfigurar o agregado tracked). Convenção do repo.
         builder.Property(e => e.Id).ValueGeneratedNever();
 
-        builder.Property(e => e.Nome).HasMaxLength(300).IsRequired();
+        builder.Property(e => e.Nome).HasMaxLength(EtapaProcesso.NomeMaxLength).IsRequired();
         builder.Property(e => e.Carater).HasConversion<int>().IsRequired();
 
         builder.Ignore(e => e.TipoEtapaOrigemId);

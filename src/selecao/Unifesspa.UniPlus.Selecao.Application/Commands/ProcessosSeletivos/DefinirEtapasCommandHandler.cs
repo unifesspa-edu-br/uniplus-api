@@ -24,6 +24,13 @@ public static class DefinirEtapasCommandHandler
     /// diretamente um <em>segundo DbContext concreto</em> (não um reader por trás de interface
     /// pública) precisaria do opt-in.
     /// </summary>
+    /// <remarks>
+    /// Em duas passadas (ADR-0125): a primeira acumula a forma de TODAS as etapas via
+    /// <see cref="EtapaProcesso.ValidarFormaBasica"/>, sem tocar o <see cref="ITipoEtapaReader"/>;
+    /// só se ela vier limpa a segunda resolve cada tipo de etapa no cadastro e chama
+    /// <see cref="EtapaProcesso.Criar"/>/<see cref="EtapaProcesso.AtualizarDados"/>, que
+    /// reinvocam a mesma checagem como defesa em profundidade.
+    /// </remarks>
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -72,6 +79,26 @@ public static class DefinirEtapasCommandHandler
             return Result<MutacaoAceita>.Failure(new DomainError(
                 "ProcessoSeletivo.IdEtapaDuplicado",
                 "O mesmo Id de etapa não pode ser informado mais de uma vez no mesmo payload."));
+        }
+
+        // Acumula (ADR-0125) a forma de TODAS as etapas do payload numa primeira passada, com
+        // EtapaProcesso.ValidarFormaBasica — nenhuma dessas checagens depende do cadastro de
+        // tipos de etapa. Só roda antes do tipoEtapaReader (validação vence I/O dentro do
+        // bucket 422, PR #1211): sem isso, um payload com 2 etapas — uma com nome vazio, outra
+        // com TipoEtapaOrigemId de um tipo inativo — devolveria só o erro de catálogo da
+        // segunda etapa, escondendo a falha de forma da primeira.
+        List<FieldError> formaErros = [];
+        for (int indice = 0; indice < command.Etapas.Count; indice++)
+        {
+            EtapaProcessoInput itemForma = command.Etapas[indice];
+            formaErros.AddRange(EtapaProcesso
+                .ValidarFormaBasica(itemForma.Nome, itemForma.Carater, itemForma.Peso, itemForma.NotaMinima, itemForma.Ordem)
+                .Select(erro => erro.Field is null ? erro : erro with { Field = $"etapas[{indice}].{erro.Field}" }));
+        }
+
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
         }
 
         // Reconcilia por Id em vez de recriar toda a coleção: uma etapa cujo
@@ -142,14 +169,30 @@ public static class DefinirEtapasCommandHandler
 
             if (etapaExistente is not null)
             {
-                etapaExistente.AtualizarDados(
+                // Defesa em profundidade: ValidarFormaBasica já rodou limpa na primeira
+                // passada acima — esta falha só ocorreria por dessincronia entre as duas
+                // checagens, nunca pelo payload em si.
+                Result atualizarResult = etapaExistente.AtualizarDados(
                     input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem);
+                if (atualizarResult.IsFailure)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.ValidationFailure(atualizarResult.Errors);
+                }
+
                 etapas.Add(etapaExistente);
             }
             else
             {
-                etapas.Add(EtapaProcesso.Criar(
-                    input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem));
+                Result<EtapaProcesso> criarResult = EtapaProcesso.Criar(
+                    input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem);
+                if (criarResult.IsFailure)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.ValidationFailure(criarResult.Errors);
+                }
+
+                etapas.Add(criarResult.Value!);
             }
         }
 

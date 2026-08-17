@@ -68,7 +68,7 @@ public sealed class AvaliadorConformidadeLegalTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 "Primeira avaliação", CaraterEtapa.Classificatoria, NovoTipoEtapa("PROVA_OBJETIVA", "Prova Objetiva"),
-                peso: 1m, ordem: 1)],
+                peso: 1m, ordem: 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
@@ -87,7 +87,7 @@ public sealed class AvaliadorConformidadeLegalTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 "PROVA_OBJETIVA", CaraterEtapa.Classificatoria, NovoTipoEtapa("ENTREVISTA", "Entrevista"),
-                peso: 1m, ordem: 1)],
+                peso: 1m, ordem: 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
@@ -108,7 +108,7 @@ public sealed class AvaliadorConformidadeLegalTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 "Redação", CaraterEtapa.Classificatoria, NovoTipoEtapa("REDACAO", "Redação"),
-                peso: 1m, ordem: 1)],
+                peso: 1m, ordem: 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));

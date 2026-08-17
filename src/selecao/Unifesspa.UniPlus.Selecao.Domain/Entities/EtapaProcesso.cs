@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -22,6 +23,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class EtapaProcesso : EntityBase
 {
+    /// <summary>Alinhado a <c>EtapaProcessoConfiguration</c> (varchar(300)).</summary>
+    public const int NomeMaxLength = 300;
+
     public Guid ProcessoSeletivoId { get; private set; }
     public string Nome { get; private set; } = string.Empty;
     public CaraterEtapa Carater { get; private set; }
@@ -40,7 +44,14 @@ public sealed class EtapaProcesso : EntityBase
 
     private EtapaProcesso() { }
 
-    public static EtapaProcesso Criar(
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125). Precisão/
+    /// escala de <see cref="Peso"/>/<see cref="NotaMinima"/> (<c>numeric(18,4)</c>) permanecem
+    /// só no validator — não há ainda um helper de domínio para limite decimal (achado B2 do
+    /// mapeamento da rolagem), então checar aqui duplicaria uma regra de forma de wire/coluna
+    /// sem trazer nenhum ganho de correção.
+    /// </summary>
+    public static Result<EtapaProcesso> Criar(
         string nome,
         CaraterEtapa carater,
         TipoEtapaSnapshot tipoEtapa,
@@ -48,16 +59,15 @@ public sealed class EtapaProcesso : EntityBase
         decimal? notaMinima = null,
         int? ordem = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
-        if (carater == CaraterEtapa.Nenhum)
+
+        List<FieldError> erros = ValidarFormaBasica(nome, carater, peso, notaMinima, ordem);
+        if (erros.Count > 0)
         {
-            throw new ArgumentException(
-                "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).",
-                nameof(carater));
+            return Result<EtapaProcesso>.ValidationFailure(erros);
         }
 
-        return new EtapaProcesso
+        return Result<EtapaProcesso>.Success(new EtapaProcesso
         {
             Nome = nome.Trim(),
             Carater = carater,
@@ -65,7 +75,60 @@ public sealed class EtapaProcesso : EntityBase
             Peso = peso,
             NotaMinima = notaMinima,
             Ordem = ordem,
-        };
+        });
+    }
+
+    /// <summary>
+    /// Nome/Carater/Peso/NotaMinima/Ordem não dependem de nenhum cadastro cross-módulo —
+    /// diferente de <see cref="TipoEtapa"/> (resolvido à parte, contra o cadastro vivo de
+    /// Configuração, por quem chama). Compartilhada entre <see cref="Criar"/> e
+    /// <see cref="AtualizarDados"/> (mesmas checagens) e exposta para o handler poder
+    /// confirmar a forma de TODAS as etapas do payload numa primeira passada, antes de
+    /// resolver o tipo de etapa no cadastro (mesmo padrão de
+    /// <c>FatoColetado.ValidarFormaBasica</c>, PR #1214).
+    /// </summary>
+    public static List<FieldError> ValidarFormaBasica(
+        string? nome, CaraterEtapa carater, decimal? peso, decimal? notaMinima, int? ordem)
+    {
+        List<FieldError> erros = [];
+
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            erros.Add(new("nome", new DomainError(
+                "EtapaProcesso.NomeObrigatorio", "O nome da etapa é obrigatório.")));
+        }
+        else if (nome.Trim().Length > NomeMaxLength)
+        {
+            erros.Add(new("nome", new DomainError(
+                "EtapaProcesso.NomeTamanho", $"O nome da etapa deve ter no máximo {NomeMaxLength} caracteres.")));
+        }
+
+        if (carater == CaraterEtapa.Nenhum)
+        {
+            erros.Add(new("carater", new DomainError(
+                "EtapaProcesso.CaraterObrigatorio",
+                "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).")));
+        }
+
+        if (peso is <= 0)
+        {
+            erros.Add(new("peso", new DomainError(
+                "EtapaProcesso.PesoInvalido", "O peso da etapa, quando informado, deve ser maior que zero.")));
+        }
+
+        if (notaMinima is < 0)
+        {
+            erros.Add(new("notaMinima", new DomainError(
+                "EtapaProcesso.NotaMinimaInvalida", "A nota mínima, quando informada, não pode ser negativa.")));
+        }
+
+        if (ordem is <= 0)
+        {
+            erros.Add(new("ordem", new DomainError(
+                "EtapaProcesso.OrdemInvalida", "A ordem da etapa, quando informada, deve ser maior que zero.")));
+        }
+
+        return erros;
     }
 
     /// <summary>
@@ -140,7 +203,7 @@ public sealed class EtapaProcesso : EntityBase
     /// desempate ou regra de eliminação da classificação (sem isso, qualquer
     /// reconfiguração de etapas quebraria essas referências por construção).
     /// </summary>
-    public void AtualizarDados(
+    public Result AtualizarDados(
         string nome,
         CaraterEtapa carater,
         TipoEtapaSnapshot tipoEtapa,
@@ -148,13 +211,12 @@ public sealed class EtapaProcesso : EntityBase
         decimal? notaMinima,
         int? ordem)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
-        if (carater == CaraterEtapa.Nenhum)
+
+        List<FieldError> erros = ValidarFormaBasica(nome, carater, peso, notaMinima, ordem);
+        if (erros.Count > 0)
         {
-            throw new ArgumentException(
-                "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).",
-                nameof(carater));
+            return Result.ValidationFailure(erros);
         }
 
         Nome = nome.Trim();
@@ -163,6 +225,8 @@ public sealed class EtapaProcesso : EntityBase
         Peso = peso;
         NotaMinima = notaMinima;
         Ordem = ordem;
+
+        return Result.Success();
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>
