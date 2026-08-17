@@ -35,41 +35,52 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
     }
 
-    [Theory(DisplayName = "VO_base não positivo gera erro")]
+    [Theory(DisplayName = "Validator passa com VO_base não positivo — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Validar_VoBaseInvalido_GeraErro(int voBase)
+    public void Aceita_VoBaseInvalidoNoValidator(int voBase)
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { VoBase = voBase };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 
-        resultado.IsValid.Should().BeFalse();
+        resultado.IsValid.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "PR fora de [0,5; 1] gera erro")]
+    [Theory(DisplayName = "Validator passa com PR fora de [0,5; 1] — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
     [InlineData(0.49)]
     [InlineData(1.01)]
-    public void Validar_PrForaDoLimite_GeraErro(double pr)
+    public void Aceita_PrForaDoLimiteNoValidator(double pr)
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Pr = (decimal)pr };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 
+        resultado.IsValid.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Validator falha quando o PR tem mais de 4 casas decimais (arredondaria silenciosamente)")]
+    public void Rejeita_PrComEscalaExcessiva()
+    {
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Pr = 0.75001m };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = _validator.Validate(command);
+
         resultado.IsValid.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Lista de modalidades vazia gera erro")]
-    public void Validar_ModalidadeIdsVazio_GeraErro()
+    [Fact(DisplayName = "Validator passa com lista de modalidades vazia — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
+    public void Aceita_ModalidadeIdsVazioNoValidator()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { ModalidadeIds = [] };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 
-        resultado.IsValid.Should().BeFalse();
+        resultado.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Item nulo na lista gera erro, sem lançar exceção")]

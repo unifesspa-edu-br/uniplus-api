@@ -79,6 +79,36 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     private ConfiguracaoDistribuicaoVagas() { }
 
     /// <summary>
+    /// Acumula (ADR-0125) as duas únicas checagens que dependem só de <paramref name="voBase"/>
+    /// e <paramref name="pr"/> — primitivos do payload, sem qualquer resolução de cadastro ou
+    /// motor de cálculo. Diferente das demais invariantes de <see cref="Criar"/> (que dependem
+    /// da lista de <see cref="ModalidadeSelecionada"/> já resolvida via cadastro, ou do ramo de
+    /// regra), esta é exposta para o handler poder confirmar a forma de TODAS as distribuições
+    /// do payload numa primeira passada, antes de resolver oferta/modalidades/regras nos
+    /// cadastros vivos (mesmo padrão de <c>EtapaProcesso.ValidarFormaBasica</c>, PR #1218).
+    /// </summary>
+    public static List<FieldError> ValidarFormaBasica(int voBase, decimal pr)
+    {
+        List<FieldError> erros = [];
+
+        if (voBase <= 0)
+        {
+            erros.Add(new("voBase", new DomainError(
+                "ConfiguracaoDistribuicaoVagas.VoBaseInvalido", "VO_base deve ser maior que zero.")));
+        }
+
+        // INV-1: 0,5 ≤ PR ≤ 1 (art. 10, II — piso legal 50%, teto 100%).
+        if (pr < PrMinimo || pr > PrMaximo)
+        {
+            erros.Add(new("pr", new DomainError(
+                "ConfiguracaoDistribuicaoVagas.PrForaDoLimite",
+                $"PR deve estar entre {PrMinimo:0.0} e {PrMaximo:0.0} (art. 10, II).")));
+        }
+
+        return erros;
+    }
+
+    /// <summary>
     /// Cria a configuração de distribuição de vagas de uma oferta, validando
     /// INV-1 (limites do PR), INV-5 (referência demográfica completa quando
     /// Lei 12.711) e INV-6 (8 modalidades federais + AC obrigatórias quando
@@ -98,34 +128,29 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         ArgumentNullException.ThrowIfNull(regraDistribuicao);
         ArgumentNullException.ThrowIfNull(modalidades);
 
-        if (voBase <= 0)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.VoBaseInvalido",
-                "VO_base deve ser maior que zero."));
-        }
-
-        // INV-1: 0,5 ≤ PR ≤ 1 (art. 10, II — piso legal 50%, teto 100%).
-        if (pr < PrMinimo || pr > PrMaximo)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.PrForaDoLimite",
-                $"PR deve estar entre {PrMinimo:0.0} e {PrMaximo:0.0} (art. 10, II)."));
-        }
+        // Acumula (ADR-0125) as checagens independentes entre si — VoBase/PR (formais,
+        // primitivas) e as de coerência do conjunto de modalidades já resolvido. A partir
+        // daqui (ramo Lei 12.711 × Institucional, montagem do quadro) as checagens são
+        // sequenciais e dependentes umas das outras — ex.: só faz sentido avaliar
+        // completude das modalidades federais SE a regra for a Lei 12.711, e a montagem do
+        // quadro só roda se tudo acima passou — então permanecem retorno na primeira falha,
+        // mesma decisão de escopo de CriterioDesempate (PR #1216) para checks
+        // dependentes de dado já resolvido.
+        List<FieldError> erros = ValidarFormaBasica(voBase, pr);
 
         if (modalidades.Count == 0)
         {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
+            erros.Add(new("modalidades", new DomainError(
                 "ConfiguracaoDistribuicaoVagas.ModalidadesVazias",
-                "A oferta deve ter ao menos uma modalidade selecionada."));
+                "A oferta deve ter ao menos uma modalidade selecionada.")));
         }
 
         List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
         if (codigosInformados.Distinct(StringComparer.Ordinal).Count() != codigosInformados.Count)
         {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
+            erros.Add(new("modalidades", new DomainError(
                 "ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada",
-                "Cada modalidade só pode ser selecionada uma vez por oferta."));
+                "Cada modalidade só pode ser selecionada uma vez por oferta.")));
         }
 
         // Coerência referencial: a Configuração só prova que os códigos de
@@ -136,7 +161,12 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         DomainError? erroReferenciaCruzada = ValidarReferenciasCruzadas(modalidades, codigosInformados);
         if (erroReferenciaCruzada is not null)
         {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(erroReferenciaCruzada);
+            erros.Add(new("modalidades", erroReferenciaCruzada));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<ConfiguracaoDistribuicaoVagas>.ValidationFailure(erros);
         }
 
         bool ehLei12711 = regraDistribuicao.Codigo == RegraDistribuicaoVagasCodigo.Lei12711;

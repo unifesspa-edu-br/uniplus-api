@@ -203,4 +203,27 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaIndevida");
     }
+
+    [Fact(DisplayName = "ADR-0125: VO_base inválido e PR fora do limite acumulam no mesmo lote")]
+    public void Criar_VoBaseInvalidoEPrForaDoLimite_AcumulaAsDuasViolacoes()
+    {
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 0, pr: 1.5m, RegraInstitucional(), null, null, []);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "ConfiguracaoDistribuicaoVagas.VoBaseInvalido",
+            "ConfiguracaoDistribuicaoVagas.PrForaDoLimite",
+            "ConfiguracaoDistribuicaoVagas.ModalidadesVazias",
+        ]);
+    }
+
+    [Fact(DisplayName = "ValidarFormaBasica sem violação retorna lote vazio")]
+    public void ValidarFormaBasica_SemViolacao_Vazio()
+    {
+        List<FieldError> erros = ConfiguracaoDistribuicaoVagas.ValidarFormaBasica(voBase: 50, pr: 0.75m);
+
+        erros.Should().BeEmpty();
+    }
 }

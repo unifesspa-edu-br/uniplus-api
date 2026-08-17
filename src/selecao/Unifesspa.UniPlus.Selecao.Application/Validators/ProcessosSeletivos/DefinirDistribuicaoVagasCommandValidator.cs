@@ -4,6 +4,19 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+/// <summary>
+/// Trimado pela ADR-0125 só do que <see cref="Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDistribuicaoVagas.ValidarFormaBasica"/>
+/// cobre de forma incondicional: VoBase (positividade) e PR (faixa [0,5; 1]).
+/// O resto permanece — a maioria por não ter equivalente de domínio possível (o
+/// domínio nunca vê <see cref="ConfiguracaoDistribuicaoVagasInput.OfertaCursoId"/>/
+/// <see cref="QuantidadeVagaInput.ModalidadeId"/> crus, só o já resolvido pelo
+/// handler), e a checagem de <c>Quadro</c> sem <c>ModalidadeId</c> duplicado
+/// especificamente por ter equivalente só PARCIAL: o handler monta
+/// <c>quadroPorModalidade</c> com <c>ToDictionary</c> — uma chave repetida
+/// dispara <see cref="ArgumentException"/> não tratada (500) antes de o domínio
+/// sequer rodar. AGENTS.md L39-43: validator de shape sem equivalente
+/// incondicional no domínio sobrevive, não é deletado cegamente.
+/// </summary>
 public sealed class DefinirDistribuicaoVagasCommandValidator : AbstractValidator<DefinirDistribuicaoVagasCommand>
 {
     public DefinirDistribuicaoVagasCommandValidator()
@@ -29,17 +42,12 @@ public sealed class DefinirDistribuicaoVagasCommandValidator : AbstractValidator
                 .NotEmpty()
                 .WithMessage("OfertaCursoId é obrigatório.");
 
-            item.RuleFor(d => d.VoBase)
-                .GreaterThan(0)
-                .WithMessage("VO_base deve ser maior que zero.");
-
             // Persistido como numeric(5,4) — o limite de escala evita que um
             // valor com mais de 4 casas passe aqui e o banco arredonde
             // silenciosamente após o reload (mesma lição do Peso de EtapaProcesso).
             item.RuleFor(d => d.Pr)
-                .InclusiveBetween(0.5m, 1m)
                 .PrecisionScale(5, 4, ignoreTrailingZeros: false)
-                .WithMessage("PR deve estar entre 0,5 e 1,0 (art. 10, II), com no máximo 4 casas decimais.");
+                .WithMessage("PR deve ter no máximo 4 casas decimais.");
 
             item.RuleFor(d => d.RegraDistribuicaoCodigo)
                 .NotEmpty()
@@ -48,10 +56,6 @@ public sealed class DefinirDistribuicaoVagasCommandValidator : AbstractValidator
             item.RuleFor(d => d.RegraDistribuicaoVersao)
                 .NotEmpty()
                 .WithMessage("Versão da regra de distribuição é obrigatória.");
-
-            item.RuleFor(d => d.ModalidadeIds)
-                .NotEmpty()
-                .WithMessage("A oferta deve ter ao menos uma modalidade selecionada.");
 
             item.RuleFor(d => d.Quadro)
                 .NotNull()
