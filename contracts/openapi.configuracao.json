@@ -9603,7 +9603,10 @@
             "format": "uuid"
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
             "type": [
@@ -10649,7 +10652,10 @@
         "type": "object",
         "properties": {
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
             "type": [

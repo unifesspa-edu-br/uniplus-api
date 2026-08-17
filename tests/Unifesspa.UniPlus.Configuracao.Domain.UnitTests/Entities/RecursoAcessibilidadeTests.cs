@@ -85,4 +85,23 @@ public sealed class RecursoAcessibilidadeTests
         recurso.Descricao.Should().Be("Acréscimo de tempo para realização da prova");
         recurso.Id.Should().Be(idOriginal, "o Id é imutável mesmo com o nome editável");
     }
+
+    [Fact(DisplayName = "Nome ausente e descrição longa acumulam as duas violações")]
+    public void Criar_NomeAusenteEDescricaoLonga_AcumulaAsDuasViolacoes()
+    {
+        Result<RecursoAcessibilidade> resultado = Criar(nome: "", descricao: new string('D', 1001));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[1].Field.Should().Be("descricao");
+    }
+
+    [Fact(DisplayName = "ValidarCamposDoPayload isolado é público e reusável sem instanciar o agregado")]
+    public void ValidarCamposDoPayload_CamposValidos_Aceita()
+    {
+        Result resultado = RecursoAcessibilidade.ValidarCamposDoPayload(Nome, null);
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
 }

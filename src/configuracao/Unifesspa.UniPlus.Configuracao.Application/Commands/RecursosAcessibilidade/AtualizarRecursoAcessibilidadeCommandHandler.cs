@@ -7,10 +7,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarRecursoAcessibilidadeCommand"/>. Como o nome é
-/// editável, confere a unicidade entre recursos vivos quando ele muda (ignorando o
-/// próprio registro) e protege a corrida traduzindo a violação do índice único
-/// parcial em <c>NomeJaExiste</c>.
+/// Handler do <see cref="AtualizarRecursoAcessibilidadeCommand"/>. Valida o
+/// payload (422, sem I/O) ANTES de buscar o recurso por Id — validação sempre
+/// vence 404. Como o nome é editável, confere a unicidade entre recursos vivos
+/// quando ele muda (ignorando o próprio registro) e protege a corrida traduzindo
+/// a violação do índice único parcial em <c>NomeJaExiste</c>.
 /// </summary>
 public static class AtualizarRecursoAcessibilidadeCommandHandler
 {
@@ -24,6 +25,12 @@ public static class AtualizarRecursoAcessibilidadeCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result preCheck = RecursoAcessibilidade.ValidarCamposDoPayload(command.Nome, command.Descricao);
+        if (preCheck.IsFailure)
+        {
+            return Result.ValidationFailure(preCheck.Errors);
+        }
+
         RecursoAcessibilidade? recurso = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (recurso is null)
         {
@@ -34,10 +41,10 @@ public static class AtualizarRecursoAcessibilidadeCommandHandler
 
         // Nome é case-sensitive (Ordinal), normalizado por Trim no agregado — só
         // checa colisão quando o nome efetivamente muda.
-        if (!string.Equals(command.Nome.Trim(), recurso.Nome, StringComparison.Ordinal)
+        if (!string.Equals(command.Nome!.Trim(), recurso.Nome, StringComparison.Ordinal)
             && await repository.NomeExisteEntreVivosAsync(command.Nome, command.Id, cancellationToken).ConfigureAwait(false))
         {
-            return Result.Failure(NomeJaExisteErro(command.Nome));
+            return Result.Failure(NomeJaExisteErro());
         }
 
         Result atualizarResult = recurso.Atualizar(command.Nome, command.Descricao);
@@ -55,13 +62,14 @@ public static class AtualizarRecursoAcessibilidadeCommandHandler
         {
             // Corrida entre a checagem de unicidade e o UPDATE: o índice único parcial
             // dispara 23505 e viramos o mesmo NomeJaExiste do caminho não-race.
-            return Result.Failure(NomeJaExisteErro(command.Nome));
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(NomeJaExisteErro());
         }
 
         return Result.Success();
     }
 
-    private static DomainError NomeJaExisteErro(string nome) =>
+    private static DomainError NomeJaExisteErro() =>
         new(RecursoAcessibilidadeErrorCodes.NomeJaExiste,
-            $"Já existe um recurso de acessibilidade vivo com o nome '{nome}'.");
+            "Já existe um recurso de acessibilidade vivo com o nome informado.");
 }
