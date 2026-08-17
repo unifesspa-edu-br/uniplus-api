@@ -27,9 +27,9 @@ public sealed class DefinirReferenciaTemporalFatosCommandValidatorTests
     public void Aceita_TipoValido() =>
         Validar("DATA_ESPECIFICA", new DateOnly(2026, 3, 1), null).IsValid.Should().BeTrue();
 
-    [Fact(DisplayName = "Tipo fora do domínio é recusado")]
-    public void Rejeita_TipoDesconhecido() =>
-        Validar("TIPO_INEXISTENTE", null, null).IsValid.Should().BeFalse();
+    [Fact(DisplayName = "Tipo fora do domínio passa pelo validator — a rejeição é do agregado (ReferenciaTemporalFatos.Criar)")]
+    public void Aceita_TipoDesconhecidoNoValidator() =>
+        Validar("TIPO_INEXISTENTE", null, null).IsValid.Should().BeTrue();
 
     [Fact(DisplayName = "Tipo nulo com Data solta é recusado — não pode remover a referência silenciosamente")]
     public void Rejeita_TipoNuloComDataSolta()

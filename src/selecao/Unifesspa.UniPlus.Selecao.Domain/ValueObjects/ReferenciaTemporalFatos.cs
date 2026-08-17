@@ -35,36 +35,81 @@ public sealed record ReferenciaTemporalFatos
     /// <summary>Só presente quando <see cref="Tipo"/> é <see cref="Enums.ReferenciaTipo.InicioFase"/> ou <see cref="Enums.ReferenciaTipo.FimFase"/>.</summary>
     public Guid? FaseId { get; }
 
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — o array
+    /// <c>errors[]</c> do contrato público (ADR-0023) precisa de todas as regras violadas no
+    /// mesmo lote. Recebe o enum já resolvido — usada pelos chamadores internos que já têm um
+    /// <see cref="ReferenciaTipo"/> confiável (ex.: reconstrução do envelope canônico
+    /// congelado); o caminho de wire usa a sobrecarga que recebe o token cru, que distingue
+    /// "ausente" de "presente mas não reconhecido" antes de chegar aqui.
+    /// </summary>
     public static Result<ReferenciaTemporalFatos> Criar(ReferenciaTipo tipo, DateOnly? data, Guid? faseId)
     {
+        List<FieldError> erros = [];
+
         if (tipo == ReferenciaTipo.Nenhuma)
         {
-            return Result<ReferenciaTemporalFatos>.Failure(new DomainError(
+            erros.Add(new("tipo", new DomainError(
                 "ReferenciaTemporalFatos.TipoObrigatorio",
-                "O tipo de referência temporal é obrigatório (FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA)."));
+                "O tipo de referência temporal é obrigatório (FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA).")));
+        }
+        else
+        {
+            // Coerência de Data/FaseId só faz sentido com o tipo já reconhecido — senão a
+            // causa raiz (tipo obrigatório ausente) ficaria mascarada por uma coerência
+            // calculada sobre um tipo que não existe.
+            bool exigeData = tipo == ReferenciaTipo.DataEspecifica;
+            if (exigeData != data.HasValue)
+            {
+                erros.Add(new("data", new DomainError(
+                    "ReferenciaTemporalFatos.DataIncoerenteComTipo",
+                    exigeData
+                        ? "DATA_ESPECIFICA exige a data."
+                        : "A data só é aceita quando o tipo é DATA_ESPECIFICA.")));
+            }
+
+            bool exigeFase = tipo is ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase;
+            if (exigeFase != faseId.HasValue)
+            {
+                erros.Add(new("faseId", new DomainError(
+                    "ReferenciaTemporalFatos.FaseIncoerenteComTipo",
+                    exigeFase
+                        ? "INICIO_FASE/FIM_FASE exigem a fase âncora."
+                        : "A fase âncora só é aceita quando o tipo é INICIO_FASE ou FIM_FASE.")));
+            }
         }
 
-        bool exigeData = tipo == ReferenciaTipo.DataEspecifica;
-        if (exigeData != data.HasValue)
+        if (erros.Count > 0)
         {
-            return Result<ReferenciaTemporalFatos>.Failure(new DomainError(
-                "ReferenciaTemporalFatos.DataIncoerenteComTipo",
-                exigeData
-                    ? "DATA_ESPECIFICA exige a data."
-                    : "A data só é aceita quando o tipo é DATA_ESPECIFICA."));
-        }
-
-        bool exigeFase = tipo is ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase;
-        if (exigeFase != faseId.HasValue)
-        {
-            return Result<ReferenciaTemporalFatos>.Failure(new DomainError(
-                "ReferenciaTemporalFatos.FaseIncoerenteComTipo",
-                exigeFase
-                    ? "INICIO_FASE/FIM_FASE exigem a fase âncora."
-                    : "A fase âncora só é aceita quando o tipo é INICIO_FASE ou FIM_FASE."));
+            return Result<ReferenciaTemporalFatos>.ValidationFailure(erros);
         }
 
         return Result<ReferenciaTemporalFatos>.Success(new ReferenciaTemporalFatos(tipo, data, faseId));
+    }
+
+    /// <summary>
+    /// Sobrecarga do caminho de wire (handler do <c>Definir*</c>): recebe o token cru, não o
+    /// enum já convertido. Antes, <c>ReferenciaTipoCodigo.FromCodigo</c> rodava no handler e
+    /// colapsava qualquer token desconhecido no mesmo sentinela <see cref="ReferenciaTipo.Nenhuma"/>
+    /// usado para "ausente" — um tipo genuinamente enviado mas não reconhecido virava
+    /// <c>TipoObrigatorio</c> ("é obrigatório"), quando o problema real era outro
+    /// (<c>TipoDesconhecido</c>). A distinção só é possível aqui, antes da conversão para
+    /// enum — por isso não dá para resolvê-la dentro da sobrecarga acima.
+    /// </summary>
+    public static Result<ReferenciaTemporalFatos> Criar(string? tipoCodigo, DateOnly? data, Guid? faseId)
+    {
+        ReferenciaTipo tipo = ReferenciaTipoCodigo.FromCodigo(tipoCodigo);
+        if (tipo == ReferenciaTipo.Nenhuma && !string.IsNullOrWhiteSpace(tipoCodigo))
+        {
+            return Result<ReferenciaTemporalFatos>.ValidationFailure(
+            [
+                new("tipo", new DomainError(
+                    "ReferenciaTemporalFatos.TipoDesconhecido",
+                    "Tipo de referência temporal fora do catálogo fechado (FIM_INSCRICAO, INICIO_FASE, FIM_FASE, DATA_ESPECIFICA).")),
+            ]);
+        }
+
+        return Criar(tipo, data, faseId);
     }
 
     /// <summary>
