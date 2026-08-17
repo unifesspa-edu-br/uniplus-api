@@ -253,4 +253,24 @@ public sealed class FaseCronogramaTests
 
         act.Should().Throw<ArgumentException>().WithParameterName("ordem");
     }
+
+    [Fact(DisplayName = "ADR-0125: JanelaInvertida e AtoProduzidoObrigatorio acumulam no mesmo lote")]
+    public void Criar_JanelaInvertidaEAtoProduzidoObrigatorio_AcumulaAsDuasViolacoes()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            inicio: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            produzResultado: true,
+            atoProduzidoCodigo: null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "FaseCronograma.JanelaInvertida",
+            "FaseCronograma.AtoProduzidoObrigatorio",
+        ]);
+        resultado.Errors.Should().Contain(e => e.Field == "fim" && e.Error.Code == "FaseCronograma.JanelaInvertida");
+        resultado.Errors.Should().Contain(e => e.Field == "atoProduzidoCodigo" && e.Error.Code == "FaseCronograma.AtoProduzidoObrigatorio");
+    }
 }

@@ -19,6 +19,15 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// (módulo Publicações), usando a data do relógio injetado lida <b>uma vez</b> por
 /// operação (ADR-0068) — e delega a montagem/validação ao domínio.
 /// </summary>
+/// <remarks>
+/// ADR-0125: propaga TODOS os erros de <see cref="FaseCronograma.Criar"/> (não só o
+/// primeiro), prefixados com <c>fases[i].</c>. Diferente das demais fatias da rolagem,
+/// não há uma passada pura pré-I/O aqui — a maior parte das invariantes que a factory
+/// acumula depende de <c>OrigemData</c>/<c>ProduzResultado</c>/<c>ResultadoDefinitivo</c>,
+/// snapshot-copy do cadastro (<see cref="IFaseCanonicaReader"/>), não de campo cru do
+/// payload; Ordem e a janela (Fim ≥ Início), que SÃO primitivos do payload, já são
+/// cobertas pelo FluentValidation como middleware Wolverine, vencendo I/O por construção.
+/// </remarks>
 public static class DefinirCronogramaFasesCommandHandler
 {
     public static async Task<Result<MutacaoAceita>> Handle(
@@ -65,8 +74,9 @@ public static class DefinirCronogramaFasesCommandHandler
         DateOnly hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 
         List<FaseCronograma> fases = [];
-        foreach (FaseCronogramaInput input in command.Fases)
+        for (int indice = 0; indice < command.Fases.Count; indice++)
         {
+            FaseCronogramaInput input = command.Fases[indice];
             FaseCanonicaView? faseCanonica = await faseCanonicaReader
                 .ObterPorIdAsync(input.FaseCanonicaId, cancellationToken)
                 .ConfigureAwait(false);
@@ -211,7 +221,9 @@ public static class DefinirCronogramaFasesCommandHandler
                 regraRecurso);
             if (faseResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(faseResult.Error!);
+                IReadOnlyList<FieldError> errosComIndice = [.. faseResult.Errors
+                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"fases[{indice}].{erro.Field}" })];
+                return Result<MutacaoAceita>.ValidationFailure(errosComIndice);
             }
 
             fases.Add(faseResult.Value!);

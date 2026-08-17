@@ -236,4 +236,30 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         processo.CronogramaFases.Should().ContainSingle().Which.Codigo.Should().Be("RESULTADO_FINAL");
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "ADR-0125: erro de FaseCronograma.Criar na SEGUNDA fase do payload carrega o índice do item no field")]
+    public async Task Handle_SegundaFaseComAtoProduzidoAusente_PrefixaIndiceNoField()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId1 = Guid.CreateVersion7();
+        Guid faseCanonicaId2 = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId1, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaRecorrivel(faseCanonicaId1));
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId2, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId2));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_PRELIMINAR", "Resultado preliminar", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false));
+
+        // 1ª fase: ProduzResultado=true (via FaseCanonicaRecorrivel), com AtoProduzidoCodigo
+        // ausente no payload — dispara FaseCronograma.AtoProduzidoObrigatorio na 2ª (índice 1).
+        FaseCronogramaInput fase1 = InputResultado(faseCanonicaId1) with { Ordem = 1, AtoProduzidoCodigo = "RESULTADO_PRELIMINAR" };
+        FaseCronogramaInput fase2 = InputResultado(faseCanonicaId2) with { Ordem = 2, AtoProduzidoCodigo = null };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [fase1, fase2], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[1].atoProduzidoCodigo"]);
+    }
 }
