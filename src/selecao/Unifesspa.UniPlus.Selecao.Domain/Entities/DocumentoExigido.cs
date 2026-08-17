@@ -125,9 +125,10 @@ public sealed class DocumentoExigido : EntityBase
         if (consequenciaNormalizada is not null
             && !ConsequenciasValidas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
         {
+            // ADR-0023: nunca ecoar o valor rejeitado na mensagem de erro.
             erros.Add(new("consequenciaIndeferimento", new DomainError(
                 "DocumentoExigido.ConsequenciaIndeferimentoInvalida",
-                $"Consequência de indeferimento '{consequenciaNormalizada}' inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}.")));
+                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}.")));
         }
 
         if (tamanhoMaximoBytes is <= 0)

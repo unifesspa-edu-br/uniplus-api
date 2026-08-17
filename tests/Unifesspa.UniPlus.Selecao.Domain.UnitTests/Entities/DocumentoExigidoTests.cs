@@ -67,6 +67,14 @@ public sealed class DocumentoExigidoTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIndeferimentoInvalida");
     }
 
+    [Fact(DisplayName = "ADR-0023: a mensagem de consequência inválida não ecoa o valor rejeitado")]
+    public void Criar_ConsequenciaInvalida_MensagemNaoEcoaValorRejeitado()
+    {
+        Result<DocumentoExigido> resultado = Exigencia(consequenciaIndeferimento: "REPROVA_TUDO");
+
+        resultado.Error!.Message.Should().NotContain("REPROVA_TUDO");
+    }
+
     [Theory(DisplayName = "Consequências válidas são aceitas")]
     [InlineData("ELIMINA")]
     [InlineData("RECLASSIFICA_AC")]
