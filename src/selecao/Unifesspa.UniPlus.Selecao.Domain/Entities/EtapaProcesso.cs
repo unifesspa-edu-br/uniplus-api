@@ -103,7 +103,7 @@ public sealed class EtapaProcesso : EntityBase
                 "EtapaProcesso.NomeTamanho", $"O nome da etapa deve ter no máximo {NomeMaxLength} caracteres.")));
         }
 
-        if (carater == CaraterEtapa.Nenhum)
+        if (carater == CaraterEtapa.Nenhum || !Enum.IsDefined(carater))
         {
             erros.Add(new("carater", new DomainError(
                 "EtapaProcesso.CaraterObrigatorio",

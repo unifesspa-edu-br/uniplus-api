@@ -61,6 +61,19 @@ public sealed class EtapaProcessoTests
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.CaraterObrigatorio");
     }
 
+    [Fact(DisplayName = "Criar com valor de caráter fora do enum falha com CaraterObrigatorio (achado de revisão)")]
+    public void Criar_CaraterForaDoEnum_Falha()
+    {
+        // O JsonStringEnumConverter global aceita inteiro cru (allowIntegerValues: true por
+        // padrão) — sem esta checagem, "carater": 4 bindaria como (CaraterEtapa)4 e passaria
+        // pela checagem de Nenhum, sendo persistido como valor indefinido.
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+            "Prova Objetiva", (CaraterEtapa)4, TipoEtapaProvaObjetiva());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.CaraterObrigatorio");
+    }
+
     [Fact(DisplayName = "Criar com peso não positivo falha com PesoInvalido")]
     public void Criar_PesoInvalido_Falha()
     {
