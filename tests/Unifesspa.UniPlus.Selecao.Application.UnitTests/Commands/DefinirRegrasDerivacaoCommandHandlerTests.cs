@@ -193,6 +193,30 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
     }
 
+    [Fact(DisplayName = "ADR-0125: violações de forma acumulam entre configurações/regras, com o índice prefixado ao field, ANTES de consultar o vocabulário")]
+    public async Task Handle_DuasViolacoesDeForma_AcumulaComIndicePrefixadoESemConsultarVocabulario()
+    {
+        ProcessoSeletivo processo = ProcessoBase();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        DefinirRegrasDerivacaoCommand command = new(processo.Id,
+        [
+            new ConfiguracaoDerivacaoInput("", [new RegraDerivacaoInput(0, "AC", null)]),
+            ConfigModalidade(new RegraDerivacaoInput(-1, "", null)),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
+        [
+            "configuracoes[0].codigoFato",
+            "configuracoes[1].regras[0].ordem",
+            "configuracoes[1].regras[0].contribui",
+        ]);
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Condição 'quando' com operador incompatível com o domínio do fato citado é recusada")]
     public async Task Handle_QuandoOperadorIncompativel_Recusa()
     {

@@ -47,34 +47,20 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
 
     private ConfiguracaoDerivacaoFato() { }
 
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — código do
+    /// fato, presença de regras e unicidade de ordem não dependem uns dos outros. A mensagem de
+    /// ordem duplicada não ecoa mais a ordem nem o código do fato (ADR-0023).
+    /// </summary>
     public static Result<ConfiguracaoDerivacaoFato> Criar(
         string codigoFato,
         IReadOnlyList<RegraDerivacaoConfigurada>? regras)
     {
-        if (string.IsNullOrWhiteSpace(codigoFato))
-        {
-            return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
-                ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoObrigatorio,
-                "O código do fato derivado é obrigatório."));
-        }
-
         IReadOnlyList<RegraDerivacaoConfigurada> lista = regras ?? [];
-        if (lista.Count == 0)
+        List<FieldError> erros = ValidarFormaBasica(codigoFato, lista.Count, lista.Select(static r => r.Ordem));
+        if (erros.Count > 0)
         {
-            return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
-                ConfiguracaoDerivacaoFatoErrorCodes.SemRegras,
-                $"A derivação de '{codigoFato}' precisa de ao menos uma regra."));
-        }
-
-        HashSet<int> ordens = [];
-        foreach (RegraDerivacaoConfigurada regra in lista)
-        {
-            if (!ordens.Add(regra.Ordem))
-            {
-                return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
-                    ConfiguracaoDerivacaoFatoErrorCodes.OrdemRegraDuplicada,
-                    $"A ordem {regra.Ordem} é usada por mais de uma regra na derivação de '{codigoFato}'."));
-            }
+            return Result<ConfiguracaoDerivacaoFato>.ValidationFailure(erros);
         }
 
         ConfiguracaoDerivacaoFato config = new() { CodigoFato = codigoFato.Trim() };
@@ -85,6 +71,44 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
         }
 
         return Result<ConfiguracaoDerivacaoFato>.Success(config);
+    }
+
+    /// <summary>
+    /// Código do fato, presença de regras e unicidade de ordem não dependem do vocabulário
+    /// cross-módulo nem das regras já resolvidas — só do código cru e da contagem/ordens brutas
+    /// do payload. Existe separada para o handler poder confirmar a forma de TODAS as
+    /// configurações numa primeira passada, antes de resolver o catálogo (mesmo padrão de
+    /// <c>FatoColetado.ValidarFormaBasica</c>, PR #1214).
+    /// </summary>
+    public static List<FieldError> ValidarFormaBasica(string? codigoFato, int totalRegras, IEnumerable<int> ordensBrutas)
+    {
+        ArgumentNullException.ThrowIfNull(ordensBrutas);
+
+        List<FieldError> erros = [];
+
+        if (string.IsNullOrWhiteSpace(codigoFato))
+        {
+            erros.Add(new("codigoFato", new DomainError(
+                ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoObrigatorio,
+                "O código do fato derivado é obrigatório.")));
+        }
+
+        if (totalRegras == 0)
+        {
+            erros.Add(new("regras", new DomainError(
+                ConfiguracaoDerivacaoFatoErrorCodes.SemRegras,
+                "A derivação de um fato precisa de ao menos uma regra.")));
+        }
+
+        List<int> ordens = [.. ordensBrutas];
+        if (ordens.Distinct().Count() != ordens.Count)
+        {
+            erros.Add(new("regras", new DomainError(
+                ConfiguracaoDerivacaoFatoErrorCodes.OrdemRegraDuplicada,
+                "A ordem de uma regra é usada por mais de uma regra na mesma derivação.")));
+        }
+
+        return erros;
     }
 
     internal void VincularProcessoSeletivo(Guid processoSeletivoId) =>

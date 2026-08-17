@@ -4,6 +4,17 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+/// <summary>
+/// Três checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
+/// identificador de rota; a lista de configurações e a lista de regras, e cada item delas, não
+/// podem ser nulos — o handler desreferencia sem checagem defensiva. Código do fato/presença de
+/// regras/unicidade de ordem (via <c>ConfiguracaoDerivacaoFato.ValidarFormaBasica</c>) e
+/// ordem/contribuição (via <c>RegraDerivacaoConfigurada.ValidarFormaBasica</c>) já têm
+/// equivalente completo no domínio e ficaram fora daqui. A forma do predicado <c>quando</c>
+/// permanece: não tem equivalente em <c>RegraDerivacaoConfigurada.Criar</c>, que só recebe a
+/// lista já montada — a montagem e a checagem de forma bruta acontecem na Application
+/// (<c>DefinirRegrasDerivacaoCommandHandler</c>), que resolve o vocabulário cross-módulo.
+/// </summary>
 public sealed class DefinirRegrasDerivacaoCommandValidator : AbstractValidator<DefinirRegrasDerivacaoCommand>
 {
     public DefinirRegrasDerivacaoCommandValidator()
@@ -23,28 +34,12 @@ public sealed class DefinirRegrasDerivacaoCommandValidator : AbstractValidator<D
 
         RuleForEach(x => x.Configuracoes).ChildRules(config =>
         {
-            config.RuleFor(c => c.CodigoFato)
-                .NotEmpty()
-                .WithMessage("O código do fato derivado é obrigatório.");
-
-            config.RuleFor(c => c.Regras)
-                .NotEmpty()
-                .WithMessage("A derivação de um fato precisa de ao menos uma regra.");
-
             config.RuleForEach(c => c.Regras)
                 .NotNull()
                 .WithMessage("Item de regra de derivação não pode ser nulo.");
 
             config.RuleForEach(c => c.Regras).ChildRules(regra =>
             {
-                regra.RuleFor(r => r.Ordem)
-                    .GreaterThanOrEqualTo(0)
-                    .WithMessage("A ordem da regra não pode ser negativa.");
-
-                regra.RuleFor(r => r.Contribui)
-                    .NotEmpty()
-                    .WithMessage("Uma regra de derivação precisa contribuir um código.");
-
                 // Regra âncora (incondicional) tem Quando null. Uma lista externa vazia, uma
                 // cláusula interna vazia ou uma condição nula deixariam a semântica DNF ambígua ou
                 // fariam o handler desreferenciar um item nulo — a âncora é representada por null.
