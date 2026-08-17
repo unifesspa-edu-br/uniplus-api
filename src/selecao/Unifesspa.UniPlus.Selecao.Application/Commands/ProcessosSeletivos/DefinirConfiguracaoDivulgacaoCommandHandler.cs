@@ -47,7 +47,7 @@ public static class DefinirConfiguracaoDivulgacaoCommandHandler
                 ConfiguracaoDivulgacao.Criar(command.CamposPublicos, command.Justificativa);
             if (configuracaoResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(configuracaoResult.Error!);
+                return Result<MutacaoAceita>.ValidationFailure(configuracaoResult.Errors);
             }
 
             configuracao = configuracaoResult.Value!;

@@ -99,15 +99,38 @@ public sealed class ConfiguracaoDivulgacaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaComCaractereNulo");
     }
 
-    [Fact(DisplayName = "A ordem dos guards importa: violar vocabulário e piso ao mesmo tempo devolve o erro de vocabulário")]
-    public void Criar_OrdemDosGuards_VocabularioPrecedeOPiso()
+    [Fact(DisplayName = "Violar vocabulário e piso ao mesmo tempo acumula os dois erros no mesmo lote")]
+    public void Criar_VocabularioEPisoViolados_AcumulaOsDois()
     {
         // "cpf" não pertence ao vocabulário E a lista não contém numero_inscricao — as duas
-        // invariantes estão violadas ao mesmo tempo; o guard 2 (vocabulário) roda antes do 3 (piso).
+        // invariantes estão violadas ao mesmo tempo (ADR-0125: ambas entram no mesmo lote).
         Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["cpf"], null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.CampoNaoPermitido");
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "camposPublicos" && e.Error.Code == "ConfiguracaoDivulgacao.CampoNaoPermitido");
+        resultado.Errors.Should().Contain(e => e.Field == "camposPublicos" && e.Error.Code == "ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio");
+    }
+
+    [Fact(DisplayName = "Item nulo na lista não pertence ao vocabulário — não sobrevive silenciosamente à lista canônica")]
+    public void Criar_ComItemNuloNaLista_RetornaCampoNaoPermitido()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", null!], null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle(e => e.Field == "camposPublicos" && e.Error.Code == "ConfiguracaoDivulgacao.CampoNaoPermitido");
+    }
+
+    [Fact(DisplayName = "Nome sem justificativa e nome_abreviado junto de nome acumulam os dois erros")]
+    public void Criar_ComDoisErrosIndependentes_AcumulaOsDois()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(
+            ["numero_inscricao", "nome_abreviado", "nome"], null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "camposPublicos" && e.Error.Code == "ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes");
+        resultado.Errors.Should().Contain(e => e.Field == "justificativa" && e.Error.Code == "ConfiguracaoDivulgacao.JustificativaObrigatoria");
     }
 
     [Fact(DisplayName = "O conjunto é deduplicado e guardado na ordem canônica, não na ordem de entrada")]
