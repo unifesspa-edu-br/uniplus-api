@@ -65,20 +65,7 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase
         ArgumentNullException.ThrowIfNull(destinos);
 
         List<FieldError> erros = [];
-
-        if (string.IsNullOrWhiteSpace(fallbackCodigo) || fallbackCodigo.Length > FallbackMaxLength || !CodigoValido().IsMatch(fallbackCodigo))
-        {
-            erros.Add(new("fallbackCodigo", new DomainError(
-                "ConfiguracaoCascataRemanejamento.FallbackObrigatorio",
-                $"O código de fallback é obrigatório, precisa casar com ^[A-Z0-9_]+$ e ter no máximo {FallbackMaxLength} caracteres.")));
-        }
-
-        if (destinos.Count == 0)
-        {
-            erros.Add(new("destinos", new DomainError(
-                "ConfiguracaoCascataRemanejamento.SemDestinos",
-                "A cascata precisa de ao menos um destino.")));
-        }
+        ValidarFallback(fallbackCodigo, erros);
 
         HashSet<string> origens = new(StringComparer.Ordinal);
         foreach (DestinoRemanejamento destino in destinos)
@@ -86,19 +73,7 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase
             origens.Add(destino.ModalidadeOrigemCodigo);
         }
 
-        if (origens.Count > MaxOrigens)
-        {
-            erros.Add(new("destinos", new DomainError(
-                "ConfiguracaoCascataRemanejamento.ExcedeLimiteDeOrigens",
-                $"A cascata não pode declarar mais de {MaxOrigens} origens.")));
-        }
-
-        if (destinos.Count > MaxDestinos)
-        {
-            erros.Add(new("destinos", new DomainError(
-                "ConfiguracaoCascataRemanejamento.ExcedeLimiteDeDestinos",
-                $"A cascata não pode declarar mais de {MaxDestinos} destinos.")));
-        }
+        ValidarLimites(destinos.Count, origens.Count, erros);
 
         foreach (string origem in origens)
         {
@@ -151,6 +126,66 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase
         }
 
         return Result<ConfiguracaoCascataRemanejamento>.Success(cascata);
+    }
+
+    /// <summary>
+    /// Fallback e limites de contagem não dependem de os itens terem passado por
+    /// <see cref="DestinoRemanejamento.Criar"/> — só do código de fallback cru e da
+    /// contagem/origens dos itens do payload, malformados ou não. Quando algum item falha
+    /// individualmente, o chamador (o handler) não tem uma <see cref="IReadOnlyList{T}"/> de
+    /// <see cref="DestinoRemanejamento"/> válida para passar a <see cref="Criar"/> — mas essas
+    /// violações continuam detectáveis e não podem desaparecer do lote só porque outro item
+    /// também falhou (achado de revisão).
+    /// </summary>
+    public static List<FieldError> ValidarFallbackELimitesIndependentesDeItens(
+        string? fallbackCodigo, int totalDestinos, IEnumerable<string?> origensCodigosBrutos)
+    {
+        ArgumentNullException.ThrowIfNull(origensCodigosBrutos);
+
+        List<FieldError> erros = [];
+        ValidarFallback(fallbackCodigo, erros);
+
+        int totalOrigens = origensCodigosBrutos
+            .Where(codigo => !string.IsNullOrWhiteSpace(codigo))
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        ValidarLimites(totalDestinos, totalOrigens, erros);
+
+        return erros;
+    }
+
+    private static void ValidarFallback(string? fallbackCodigo, List<FieldError> erros)
+    {
+        if (string.IsNullOrWhiteSpace(fallbackCodigo) || fallbackCodigo.Length > FallbackMaxLength || !CodigoValido().IsMatch(fallbackCodigo))
+        {
+            erros.Add(new("fallbackCodigo", new DomainError(
+                "ConfiguracaoCascataRemanejamento.FallbackObrigatorio",
+                $"O código de fallback é obrigatório, precisa casar com ^[A-Z0-9_]+$ e ter no máximo {FallbackMaxLength} caracteres.")));
+        }
+    }
+
+    private static void ValidarLimites(int totalDestinos, int totalOrigens, List<FieldError> erros)
+    {
+        if (totalDestinos == 0)
+        {
+            erros.Add(new("destinos", new DomainError(
+                "ConfiguracaoCascataRemanejamento.SemDestinos",
+                "A cascata precisa de ao menos um destino.")));
+        }
+
+        if (totalOrigens > MaxOrigens)
+        {
+            erros.Add(new("destinos", new DomainError(
+                "ConfiguracaoCascataRemanejamento.ExcedeLimiteDeOrigens",
+                $"A cascata não pode declarar mais de {MaxOrigens} origens.")));
+        }
+
+        if (totalDestinos > MaxDestinos)
+        {
+            erros.Add(new("destinos", new DomainError(
+                "ConfiguracaoCascataRemanejamento.ExcedeLimiteDeDestinos",
+                $"A cascata não pode declarar mais de {MaxDestinos} destinos.")));
+        }
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>

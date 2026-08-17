@@ -100,9 +100,7 @@ public static class DefinirCascataRemanejamentoCommandHandler
 
         // Acumula (ADR-0125) as violações de TODOS os itens em vez de parar no primeiro —
         // um payload com vários destinos malformados reporta todos de uma vez, cada um com
-        // o índice do item na lista prefixado ao field (ex.: "destinos[2].ordem"). Se algum
-        // item falhar, a checagem de coerência entre itens (ConfiguracaoCascataRemanejamento.
-        // Criar) não roda: ela pressupõe destinos já válidos individualmente.
+        // o índice do item na lista prefixado ao field (ex.: "destinos[2].ordem").
         List<DestinoRemanejamento> destinos = [];
         List<FieldError> itemErros = [];
         for (int indice = 0; indice < command.Destinos!.Count; indice++)
@@ -134,7 +132,13 @@ public static class DefinirCascataRemanejamentoCommandHandler
 
         if (itemErros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(itemErros);
+            // A checagem de coerência ENTRE itens (ordem duplicada/não contígua, destino
+            // repetido) pressupõe destinos já válidos e não roda aqui — mas fallback e limites
+            // de contagem não dependem disso, e não podem desaparecer do lote só porque outro
+            // item também falhou (achado de revisão).
+            List<FieldError> checagensIndependentes = ConfiguracaoCascataRemanejamento.ValidarFallbackELimitesIndependentesDeItens(
+                command.FallbackCodigo, command.Destinos.Count, command.Destinos.Select(d => d?.ModalidadeOrigemCodigo));
+            return Result<MutacaoAceita>.ValidationFailure([.. checagensIndependentes, .. itemErros]);
         }
 
         Result<ConfiguracaoCascataRemanejamento> cascataResult = ConfiguracaoCascataRemanejamento.Criar(

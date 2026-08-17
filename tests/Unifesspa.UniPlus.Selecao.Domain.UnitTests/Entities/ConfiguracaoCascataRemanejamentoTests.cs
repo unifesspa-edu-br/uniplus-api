@@ -209,6 +209,15 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
         ]);
     }
 
+    [Fact(DisplayName = "ADR-0125: ValidarFallbackELimitesIndependentesDeItens detecta fallback inválido mesmo com origens brutas nulas")]
+    public void ValidarFallbackELimitesIndependentesDeItens_FallbackInvalido_DetectaSemPrecisarDeItensValidos()
+    {
+        List<FieldError> erros = ConfiguracaoCascataRemanejamento.ValidarFallbackELimitesIndependentesDeItens(
+            "ac-invalido", totalDestinos: 1, origensCodigosBrutos: ["LB_PPI"]);
+
+        erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["ConfiguracaoCascataRemanejamento.FallbackObrigatorio"]);
+    }
+
     [Fact(DisplayName = "ADR-0125: ConfiguracaoCascataRemanejamento.Criar acumula fallback inválido e excesso de destinos no mesmo lote")]
     public void Criar_FallbackInvalidoEExcedeLimiteDeDestinos_AcumulaAsDuasViolacoes()
     {
