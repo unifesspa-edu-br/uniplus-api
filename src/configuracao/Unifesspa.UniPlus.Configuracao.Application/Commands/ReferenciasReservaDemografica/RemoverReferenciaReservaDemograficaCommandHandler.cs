@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Handler do <see cref="RemoverReferenciaReservaDemograficaCommand"/>.
 /// Soft-delete via <c>SoftDeleteInterceptor</c>. Cadastro flat: não há vínculo
 /// intra-banco que bloqueie a remoção, e referências congeladas por valor em
-/// outro banco (ADR-0061) são desacopladas e nunca bloqueiam (CA-05).
+/// outro banco (ADR-0061) são desacopladas e nunca bloqueiam.
 /// </summary>
 public static class RemoverReferenciaReservaDemograficaCommandHandler
 {

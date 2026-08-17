@@ -15,8 +15,8 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 /// <summary>
 /// Integração ponta-a-ponta da Referência de reserva demográfica contra Postgres
 /// real (UNI-REQ-0065): persistência dos percentuais, UNIQUE parcial de Censo,
-/// liberação do slot por soft-delete, leitura cross-módulo (CA-01) e soft-delete
-/// preservando a trilha (CA-05).
+/// liberação do slot por soft-delete, leitura cross-módulo e soft-delete
+/// preservando a trilha.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -36,7 +36,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "CA-01: criar persiste os percentuais e fica visível pelo leitor cross-módulo")]
+    [Fact(DisplayName = "Criar persiste os percentuais e fica visível pelo leitor cross-módulo")]
     public async Task Insert_PersisteEFicaVisivelPeloReader()
     {
         ReferenciaReservaDemografica referencia = Nova("2022", 78.50m, 1.20m, 8.40m);
@@ -65,7 +65,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
         view.PpiPercentual.Should().Be(78.50m);
     }
 
-    [Fact(DisplayName = "CA-02: UNIQUE parcial (censo) rejeita segunda referência viva para o mesmo Censo")]
+    [Fact(DisplayName = "UNIQUE parcial (censo) rejeita segunda referência viva para o mesmo Censo")]
     public async Task UniquePartial_Censo_RejeitaDuplicataAtiva()
     {
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
@@ -88,7 +88,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
         pg.ConstraintName.Should().Be("ix_referencia_reserva_demografica_censo_vivo");
     }
 
-    [Fact(DisplayName = "CA-05: soft-delete preserva a trilha e liberta o slot da UNIQUE parcial de Censo")]
+    [Fact(DisplayName = "Soft-delete preserva a trilha e liberta o slot da UNIQUE parcial de Censo")]
     public async Task SoftDelete_PreservaTrilhaELibertaSlot()
     {
         ReferenciaReservaDemografica referencia = Nova("1991", 40m, 1m, 4m);

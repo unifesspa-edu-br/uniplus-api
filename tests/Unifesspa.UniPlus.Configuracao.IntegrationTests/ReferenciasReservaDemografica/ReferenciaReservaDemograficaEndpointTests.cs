@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>ReferenciaReservaDemografica</c>
 /// (UNI-REQ-0065): routing, vendor media type, HATEOAS, autenticação/autorização,
-/// idempotência e validação de percentual (CA-03) com Wolverine rodando contra
+/// idempotência e validação de percentual fora do intervalo fechado com Wolverine rodando contra
 /// Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
@@ -105,7 +105,7 @@ public sealed class ReferenciaReservaDemograficaEndpointTests
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
-    [Fact(DisplayName = "CA-03: POST admin com percentual fora do intervalo retorna 422")]
+    [Fact(DisplayName = "POST admin com percentual fora do intervalo retorna 422")]
     public async Task Criar_PercentualInvalido_Retorna422()
     {
         var body = new

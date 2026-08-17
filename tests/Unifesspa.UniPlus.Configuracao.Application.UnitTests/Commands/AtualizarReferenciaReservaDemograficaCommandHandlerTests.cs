@@ -67,4 +67,17 @@ public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
         resultado.Error!.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.CensoJaExiste);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Campo inválido no payload propaga o erro sem buscar a referência por Id — validação vence 404")]
+    public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
+    {
+        Result resultado = await AtualizarReferenciaReservaDemograficaCommandHandler.Handle(
+            new AtualizarReferenciaReservaDemograficaCommand(Guid.CreateVersion7(), "2022", 120m, 1.3m, 8.5m, BaseLegal),
+            _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.PercentualForaDeFaixa);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }

@@ -8,8 +8,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarReferenciaReservaDemograficaCommand"/>
-/// (convention-based Wolverine): confere a unicidade do Censo entre referências
-/// vivas, cria o agregado, persiste e commita.
+/// (convention-based Wolverine): valida o payload primeiro (422, sem I/O —
+/// validação sempre vence I/O), confere a unicidade do Censo entre referências
+/// vivas (409, DB), persiste e commita.
 /// </summary>
 public static class CriarReferenciaReservaDemograficaCommandHandler
 {
@@ -23,13 +24,6 @@ public static class CriarReferenciaReservaDemograficaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        if (await repository.CensoExisteEntreLivosAsync(command.CensoReferencia, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(new DomainError(
-                ReferenciaReservaDemograficaErrorCodes.CensoJaExiste,
-                $"Já existe uma Referência de reserva demográfica viva para o Censo '{command.CensoReferencia}'."));
-        }
-
         Result<ReferenciaReservaDemografica> referenciaResult = ReferenciaReservaDemografica.Criar(
             command.CensoReferencia,
             command.PpiPercentual,
@@ -39,10 +33,16 @@ public static class CriarReferenciaReservaDemograficaCommandHandler
 
         if (referenciaResult.IsFailure)
         {
-            return Result<Guid>.Failure(referenciaResult.Error!);
+            return Result<Guid>.ValidationFailure(referenciaResult.Errors);
         }
 
         ReferenciaReservaDemografica referencia = referenciaResult.Value!;
+
+        if (await repository.CensoExisteEntreLivosAsync(referencia.CensoReferencia, null, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(CensoJaExisteErro());
+        }
+
         await repository.AdicionarAsync(referencia, cancellationToken).ConfigureAwait(false);
 
         try
@@ -56,12 +56,17 @@ public static class CriarReferenciaReservaDemograficaCommandHandler
             // índice único parcial dispara 23505 e viramos o mesmo CensoJaExiste do
             // caminho não-race — 409 consistente, em vez de deixar o DbUpdateException
             // virar 500 no middleware global. O filtro do `when` garante que outras
-            // exceções propagam intactas.
-            return Result<Guid>.Failure(new DomainError(
-                ReferenciaReservaDemograficaErrorCodes.CensoJaExiste,
-                $"Já existe uma Referência de reserva demográfica viva para o Censo '{command.CensoReferencia}'."));
+            // exceções propagam intactas. Descarta o rastreamento da entidade que não
+            // foi persistida, senão o save automático do Wolverine repetiria a
+            // violação fora deste catch.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<Guid>.Failure(CensoJaExisteErro());
         }
 
         return Result<Guid>.Success(referencia.Id);
     }
+
+    private static DomainError CensoJaExisteErro() =>
+        new(ReferenciaReservaDemograficaErrorCodes.CensoJaExiste,
+            "Já existe uma Referência de reserva demográfica viva para o Censo informado.");
 }
