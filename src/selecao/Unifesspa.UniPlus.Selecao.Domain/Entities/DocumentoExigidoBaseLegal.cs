@@ -29,28 +29,47 @@ public sealed class DocumentoExigidoBaseLegal : EntityBase
 
     private DocumentoExigidoBaseLegal() { }
 
-    public static Result<DocumentoExigidoBaseLegal> Criar(
-        string referencia, TipoAbrangencia abrangencia, StatusBaseLegal status, string? observacao)
+    /// <summary>
+    /// Acumula (ADR-0125) as três checagens — todas primitivas do payload cru, sem
+    /// qualquer resolução de cadastro. Exposta para o handler poder confirmar a forma de
+    /// TODAS as bases legais do payload numa primeira passada, antes de qualquer I/O (mesmo
+    /// padrão de <c>EtapaProcesso.ValidarFormaBasica</c>, PR #1218).
+    /// </summary>
+    public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia abrangencia, StatusBaseLegal status)
     {
+        List<FieldError> erros = [];
+
         if (string.IsNullOrWhiteSpace(referencia))
         {
-            return Result<DocumentoExigidoBaseLegal>.Failure(new DomainError(
+            erros.Add(new("referencia", new DomainError(
                 "DocumentoExigidoBaseLegal.ReferenciaObrigatoria",
-                "A referência da base legal é obrigatória."));
+                "A referência da base legal é obrigatória.")));
         }
 
         if (abrangencia == TipoAbrangencia.Nenhuma)
         {
-            return Result<DocumentoExigidoBaseLegal>.Failure(new DomainError(
+            erros.Add(new("abrangencia", new DomainError(
                 "DocumentoExigidoBaseLegal.AbrangenciaObrigatoria",
-                "A abrangência da base legal é obrigatória."));
+                "A abrangência da base legal é obrigatória.")));
         }
 
         if (status == StatusBaseLegal.Nenhuma)
         {
-            return Result<DocumentoExigidoBaseLegal>.Failure(new DomainError(
+            erros.Add(new("status", new DomainError(
                 "DocumentoExigidoBaseLegal.StatusObrigatorio",
-                "O status da base legal é obrigatório."));
+                "O status da base legal é obrigatório.")));
+        }
+
+        return erros;
+    }
+
+    public static Result<DocumentoExigidoBaseLegal> Criar(
+        string referencia, TipoAbrangencia abrangencia, StatusBaseLegal status, string? observacao)
+    {
+        List<FieldError> erros = ValidarFormaBasica(referencia, abrangencia, status);
+        if (erros.Count > 0)
+        {
+            return Result<DocumentoExigidoBaseLegal>.ValidationFailure(erros);
         }
 
         return Result<DocumentoExigidoBaseLegal>.Success(new DocumentoExigidoBaseLegal

@@ -387,6 +387,32 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             "a correlação é pela identidade da própria exigência (ADR-0072), não pelo tipo de documento");
     }
 
+    [Fact(DisplayName = "ADR-0125: duas bases legais inválidas na mesma folha acumulam, com o índice prefixado ao field")]
+    public async Task Handle_DuasBasesLegaisInvalidasNaMesmaFolha_AcumulaComIndicePrefixado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+
+        BaseLegalInput baseSemReferencia = new("", "FEDERAL", "RESOLVIDO", null);
+        BaseLegalInput baseSemAbrangencia = new("Lei X", "", "RESOLVIDO", null);
+        ItemDocumentoExigidoInput exigencia = new(
+            fase.Id, tipoDocumentoId, "GERAL", true, null, [], [baseSemReferencia, baseSemAbrangencia], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(
+            processo.Id, [new NoExigenciaInput("FOLHA", exigencia, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
+            ["basesLegais[0].referencia", "basesLegais[1].abrangencia"]);
+    }
+
     [Fact(DisplayName = "Story #918: reenviar o PUT com FormatosPermitidos/TamanhoMaximoBytes diferentes substitui integralmente (não faz merge)")]
     public async Task Handle_ReenviarComFormatoETamanhoDiferentes_SubstituiIntegralmente()
     {
