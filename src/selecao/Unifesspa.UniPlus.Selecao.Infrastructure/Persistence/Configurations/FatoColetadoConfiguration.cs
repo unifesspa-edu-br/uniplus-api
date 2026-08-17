@@ -13,13 +13,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 /// </summary>
 public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoColetado>
 {
-    private const int FatoCodigoMaxLength = 60;
-
-    // Mesma grandeza de LimitesDoEnvelope.NomeDeCadastro (o decoder do envelope aplica o mesmo
-    // limite ao reidratar) — um rótulo de campo de formulário é a mesma grandeza de um nome de
-    // cadastro curto.
-    private const int RotuloMaxLength = 300;
-
     public void Configure(EntityTypeBuilder<FatoColetado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -28,9 +21,9 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.HasKey(f => f.Id);
         builder.Property(f => f.Id).ValueGeneratedNever();
 
-        builder.Property(f => f.FatoCodigo).HasMaxLength(FatoCodigoMaxLength).IsRequired();
+        builder.Property(f => f.FatoCodigo).HasMaxLength(FatoColetado.FatoCodigoMaxLength).IsRequired();
         builder.Property(f => f.Ordem).IsRequired();
-        builder.Property(f => f.Rotulo).HasMaxLength(RotuloMaxLength).IsRequired();
+        builder.Property(f => f.Rotulo).HasMaxLength(FatoColetado.RotuloMaxLength).IsRequired();
         builder.Property(f => f.TipoRenderizacao).HasConversion<int>().IsRequired();
         builder.Property(f => f.Obrigatorio).IsRequired();
 

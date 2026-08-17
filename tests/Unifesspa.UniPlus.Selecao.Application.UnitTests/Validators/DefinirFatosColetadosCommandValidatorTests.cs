@@ -43,44 +43,40 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "Fatos");
     }
 
-    [Fact(DisplayName = "Falha quando o código do fato é vazio")]
-    public void Rejeita_FatoCodigoVazio()
+    [Fact(DisplayName = "Passa com código do fato vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
+    public void Aceita_FatoCodigoVazioNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
             Guid.CreateVersion7(), [new FatoColetadoInput("", 0, "Rótulo", "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].FatoCodigo");
+        result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando o rótulo é vazio")]
-    public void Rejeita_RotuloVazio()
+    [Fact(DisplayName = "Passa com rótulo vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
+    public void Aceita_RotuloVazioNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
             Guid.CreateVersion7(), [new FatoColetadoInput("COR_RACA", 0, "", "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].Rotulo");
+        result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando o rótulo excede 300 caracteres — mesmo limite da coluna, recusado antes do SaveChanges")]
-    public void Rejeita_RotuloExcedeLimite()
+    [Fact(DisplayName = "Passa com rótulo acima de 300 caracteres no validator — o limite é conferido pelo agregado (FatoColetado.Criar)")]
+    public void Aceita_RotuloExcedeLimiteNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
             Guid.CreateVersion7(), [new FatoColetadoInput("COR_RACA", 0, new string('a', 301), "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].Rotulo");
+        result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando a ordem é negativa")]
-    public void Rejeita_OrdemNegativa()
+    [Fact(DisplayName = "Passa com ordem negativa no validator — a rejeição é do agregado (FatoColetado.Criar)")]
+    public void Aceita_OrdemNegativaNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
             Guid.CreateVersion7(), [new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].Ordem");
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Falha quando a pré-condição presente é uma lista externa vazia (ausência é null)")]

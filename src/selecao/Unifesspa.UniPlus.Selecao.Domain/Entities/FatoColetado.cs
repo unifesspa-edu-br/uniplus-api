@@ -28,6 +28,17 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class FatoColetado : EntityBase
 {
+    /// <summary>Alinhado a <c>FatoColetadoConfiguration</c> (varchar(60)).</summary>
+    public const int FatoCodigoMaxLength = 60;
+
+    /// <summary>
+    /// Alinhado a <c>FatoColetadoConfiguration</c> (varchar(300)) — mesma grandeza de
+    /// <c>LimitesDoEnvelope.NomeDeCadastro</c> (o decoder do envelope aplica o mesmo limite ao
+    /// reidratar): um rótulo de campo de formulário é a mesma grandeza de um nome de cadastro
+    /// curto.
+    /// </summary>
+    public const int RotuloMaxLength = 300;
+
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -59,6 +70,11 @@ public sealed class FatoColetado : EntityBase
 
     private FatoColetado() { }
 
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — os
+    /// quatro campos e a autorreferência de pré-condição não dependem uns dos outros. A
+    /// mensagem de autorreferência não ecoa o código do fato (ADR-0023).
+    /// </summary>
     public static Result<FatoColetado> Criar(
         string fatoCodigo,
         int ordem,
@@ -67,35 +83,49 @@ public sealed class FatoColetado : EntityBase
         bool obrigatorio,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes)
     {
+        List<FieldError> erros = [];
+
         if (string.IsNullOrWhiteSpace(fatoCodigo))
         {
-            return Result<FatoColetado>.Failure(new DomainError(
+            erros.Add(new("fatoCodigo", new DomainError(
                 FatoColetadoErrorCodes.FatoCodigoObrigatorio,
-                "O código do fato coletado é obrigatório."));
+                "O código do fato coletado é obrigatório.")));
+        }
+        else if (fatoCodigo.Trim().Length > FatoCodigoMaxLength)
+        {
+            erros.Add(new("fatoCodigo", new DomainError(
+                FatoColetadoErrorCodes.FatoCodigoTamanho,
+                $"O código do fato coletado deve ter no máximo {FatoCodigoMaxLength} caracteres.")));
         }
 
         if (ordem < 0)
         {
-            return Result<FatoColetado>.Failure(new DomainError(
+            erros.Add(new("ordem", new DomainError(
                 FatoColetadoErrorCodes.OrdemInvalida,
-                "A ordem de coleta não pode ser negativa."));
+                "A ordem de coleta não pode ser negativa.")));
         }
 
         if (string.IsNullOrWhiteSpace(rotulo))
         {
-            return Result<FatoColetado>.Failure(new DomainError(
+            erros.Add(new("rotulo", new DomainError(
                 FatoColetadoErrorCodes.RotuloObrigatorio,
-                "O rótulo do fato coletado é obrigatório."));
+                "O rótulo do fato coletado é obrigatório.")));
+        }
+        else if (rotulo.Trim().Length > RotuloMaxLength)
+        {
+            erros.Add(new("rotulo", new DomainError(
+                FatoColetadoErrorCodes.RotuloTamanho,
+                $"O rótulo do fato coletado deve ter no máximo {RotuloMaxLength} caracteres.")));
         }
 
         if (tipoRenderizacao == TipoRenderizacao.Nenhuma)
         {
-            return Result<FatoColetado>.Failure(new DomainError(
+            erros.Add(new("tipoRenderizacao", new DomainError(
                 FatoColetadoErrorCodes.TipoRenderizacaoObrigatorio,
-                "O tipo de renderização do fato coletado é obrigatório."));
+                "O tipo de renderização do fato coletado é obrigatório.")));
         }
 
-        string codigo = fatoCodigo.Trim();
+        string codigo = fatoCodigo?.Trim() ?? string.Empty;
         IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
 
         // Auto-referência é ciclo de comprimento um. Barrada aqui, na criação, porque não depende
@@ -103,14 +133,16 @@ public sealed class FatoColetado : EntityBase
         // reportaria um caminho de um nó só. Toda a validação acontece antes de qualquer mutação:
         // uma condição só é vinculada depois de o fato inteiro ser aceito, para nunca deixar uma
         // instância recebida do chamador apontando para um fato que a factory acabou de recusar.
-        foreach (CondicaoPrecondicaoFato precondicao in condicoes)
+        if (condicoes.Any(precondicao => string.Equals(precondicao.Fato, codigo, StringComparison.Ordinal)))
         {
-            if (string.Equals(precondicao.Fato, codigo, StringComparison.Ordinal))
-            {
-                return Result<FatoColetado>.Failure(new DomainError(
-                    FatoColetadoErrorCodes.PrecondicaoAutorreferente,
-                    $"A pré-condição do fato '{codigo}' cita o próprio fato."));
-            }
+            erros.Add(new("precondicao", new DomainError(
+                FatoColetadoErrorCodes.PrecondicaoAutorreferente,
+                "A pré-condição cita o próprio fato.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<FatoColetado>.ValidationFailure(erros);
         }
 
         FatoColetado fato = new()
@@ -157,8 +189,10 @@ public sealed class FatoColetado : EntityBase
 public static class FatoColetadoErrorCodes
 {
     public const string FatoCodigoObrigatorio = "FatoColetado.FatoCodigoObrigatorio";
+    public const string FatoCodigoTamanho = "FatoColetado.FatoCodigoTamanho";
     public const string OrdemInvalida = "FatoColetado.OrdemInvalida";
     public const string RotuloObrigatorio = "FatoColetado.RotuloObrigatorio";
+    public const string RotuloTamanho = "FatoColetado.RotuloTamanho";
     public const string TipoRenderizacaoObrigatorio = "FatoColetado.TipoRenderizacaoObrigatorio";
     public const string PrecondicaoAutorreferente = "FatoColetado.PrecondicaoAutorreferente";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";

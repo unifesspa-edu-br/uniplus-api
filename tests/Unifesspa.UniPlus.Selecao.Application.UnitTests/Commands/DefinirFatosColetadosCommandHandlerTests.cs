@@ -190,6 +190,25 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Error!.Code.Should().Be("FatoColetado.TipoRenderizacaoIncoerenteComDominio");
     }
 
+    [Fact(DisplayName = "ADR-0125: violações de forma de FatoColetado.Criar acumulam entre fatos, com o índice prefixado ao field")]
+    public async Task Handle_DoisFatosComViolacaoDeForma_AcumulaComIndicePrefixadoAoField()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        DefinirFatosColetadosCommand command = new(processo.Id,
+        [
+            new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", false, null),
+            new FatoColetadoInput("BAIXA_RENDA", 1, "", "BOOLEANO", false, null),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fatos[0].ordem", "fatos[1].rotulo"]);
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "TipoRenderizacao coerente para fato CATEGORICO multivalorado (MODALIDADE) — mesmo não-coletável, a coerência é checada antes")]
     public async Task Handle_TipoRenderizacaoCoerenteComCategoricoMultivalorado_NaoFalhaPorCoerencia()
     {
