@@ -139,11 +139,21 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         else
         {
             // Cálculo local exige uma regra de precisão declarada (gaps 1.1: default truncar).
-            if (regraArredondamento is null || casasArredondamento is not > 0)
+            // As duas metades são checadas e atribuídas ao field que cada uma corrige — um
+            // regraArredondamentoCodigo válido acompanhado de casasArredondamento inválido não
+            // pode apontar o campo errado (achado de revisão).
+            if (regraArredondamento is null)
             {
                 erros.Add(new("regraArredondamentoCodigo", new DomainError(
                     "ConfiguracaoClassificacao.ArredondamentoObrigatorio",
-                    "Cálculo local exige regra de arredondamento com casas decimais maior que zero (INV-B8).")));
+                    "Cálculo local exige regra de arredondamento (INV-B8).")));
+            }
+
+            if (casasArredondamento is not > 0)
+            {
+                erros.Add(new("casasArredondamento", new DomainError(
+                    "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio",
+                    "Cálculo local exige casas decimais de arredondamento maior que zero (INV-B8).")));
             }
         }
 
