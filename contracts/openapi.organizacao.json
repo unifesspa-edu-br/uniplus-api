@@ -1001,19 +1001,34 @@
             "format": "uuid"
           },
           "codigoEmec": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "sigla": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "organizacaoAcademica": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "categoriaAdministrativa": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cnpj": {
             "type": [
@@ -1314,19 +1329,34 @@
         "type": "object",
         "properties": {
           "codigoEmec": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "sigla": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "organizacaoAcademica": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "categoriaAdministrativa": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cnpj": {
             "type": [

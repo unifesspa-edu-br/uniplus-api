@@ -90,7 +90,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         persistida.CidadeDisplayAtualizadoEm.Should().Be(carimbo);
     }
 
-    [Fact(DisplayName = "Índice único parcial rejeita uma segunda Instituição viva (singleton — CA-02)")]
+    [Fact(DisplayName = "Índice único parcial rejeita uma segunda Instituição viva (singleton)")]
     public async Task Singleton_SegundaInstituicaoVivaRejeitada()
     {
         await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
@@ -138,7 +138,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             "a CHECK constraint ck_instituicao_singleton_sentinela só admite a sentinela true");
     }
 
-    [Fact(DisplayName = "Soft-delete liberta o slot singleton — nova Instituição é aceita após exclusão (CA-05)")]
+    [Fact(DisplayName = "Soft-delete liberta o slot singleton — nova Instituição é aceita após exclusão")]
     public async Task Singleton_AposSoftDeleteNovaAceita()
     {
         await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
@@ -178,7 +178,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         await act.Should().NotThrowAsync("slot liberado pelo soft-delete");
     }
 
-    [Fact(DisplayName = "ExisteAlgumaVivaAsync reflete registros vivos e ignora os soft-deleted (CA-05)")]
+    [Fact(DisplayName = "ExisteAlgumaVivaAsync reflete registros vivos e ignora os soft-deleted")]
     public async Task ExisteAlgumaVivaAsync_RefleteRegistrosVivos()
     {
         await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
@@ -218,7 +218,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         }
     }
 
-    [Fact(DisplayName = "FK unidade_raiz_id aceita vínculo com Unidade do tipo reitoria (CA-04)")]
+    [Fact(DisplayName = "FK unidade_raiz_id aceita vínculo com Unidade do tipo reitoria")]
     public async Task Fk_UnidadeRaizReitoria_Aceita()
     {
         await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
@@ -249,7 +249,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             .Should().BeFalse("nenhuma Instituição referencia uma Unidade aleatória");
     }
 
-    [Fact(DisplayName = "CA-01/CA-07: Insert com endereço estruturado faz round-trip das colunas owned")]
+    [Fact(DisplayName = "Insert com endereço estruturado faz round-trip das colunas owned")]
     public async Task Insert_ComEndereco_RoundTrip()
     {
         await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
@@ -293,7 +293,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         persistida.Endereco.Should().BeNull();
     }
 
-    [Fact(DisplayName = "CA-04: CHECK de coerência rejeita UPDATE cru com cidade do endereço divergente")]
+    [Fact(DisplayName = "CHECK de coerência rejeita UPDATE cru com cidade do endereço divergente")]
     public async Task CheckCoerencia_RejeitaUpdateCruIncoerente()
     {
         await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
@@ -317,7 +317,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             "o CHECK ck_instituicao_endereco_cidade_coerente impede divergência cidade↔CEP");
     }
 
-    [Fact(DisplayName = "CA-04: CHECK rejeita UPDATE cru que zera a cidade da sede mantendo o endereço")]
+    [Fact(DisplayName = "CHECK rejeita UPDATE cru que zera a cidade da sede mantendo o endereço")]
     public async Task CheckCidadeObrigatoria_RejeitaEnderecoSemCidade()
     {
         await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);

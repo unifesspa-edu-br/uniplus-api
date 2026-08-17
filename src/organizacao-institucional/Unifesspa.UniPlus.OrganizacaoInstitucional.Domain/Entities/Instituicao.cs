@@ -38,7 +38,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 /// ao Geo via CEP (<see cref="ReferenciaEnderecoGeo"/>, ADR-0096), opcional —
 /// sucede o antigo <c>EnderecoSede</c> texto livre. O Geo <strong>modela</strong>
 /// endereço pontual (lookup de CEP #676, busca de logradouro #707); quando há
-/// endereço, a referência de cidade da sede é obrigatória e coerente com ele (CA-04).</para>
+/// endereço, a referência de cidade da sede é obrigatória e coerente com ele.</para>
 /// </remarks>
 public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
 {
@@ -108,11 +108,11 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     /// é carimbada server-side pelo handler (ADR-0090).
     /// </summary>
     public static Result<Instituicao> Criar(
-        string codigoEmec,
-        string nome,
-        string sigla,
-        string organizacaoAcademica,
-        string categoriaAdministrativa,
+        string? codigoEmec,
+        string? nome,
+        string? sigla,
+        string? organizacaoAcademica,
+        string? categoriaAdministrativa,
         string? cnpj,
         string? mantenedora,
         string? codigoMantenedoraEmec,
@@ -130,12 +130,6 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         DateTimeOffset? cidadeDisplayAtualizadoEm,
         Guid? unidadeRaizId)
     {
-        ArgumentNullException.ThrowIfNull(codigoEmec);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(sigla);
-        ArgumentNullException.ThrowIfNull(organizacaoAcademica);
-        ArgumentNullException.ThrowIfNull(categoriaAdministrativa);
-
         Result validacao = ValidarCampos(
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
@@ -143,12 +137,12 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
             cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
-            return Result<Instituicao>.Failure(validacao.Error!);
+            return Result<Instituicao>.ValidationFailure(validacao.Errors);
         }
 
         var instituicao = new Instituicao();
         instituicao.AplicarCampos(
-            codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
+            codigoEmec!, nome!, sigla!, organizacaoAcademica!, categoriaAdministrativa!,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
             atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
             cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
@@ -163,11 +157,11 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     /// como o carimbo da proveniência/frescura do display cache da cidade.
     /// </summary>
     public Result Atualizar(
-        string codigoEmec,
-        string nome,
-        string sigla,
-        string organizacaoAcademica,
-        string categoriaAdministrativa,
+        string? codigoEmec,
+        string? nome,
+        string? sigla,
+        string? organizacaoAcademica,
+        string? categoriaAdministrativa,
         string? cnpj,
         string? mantenedora,
         string? codigoMantenedoraEmec,
@@ -185,12 +179,6 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         DateTimeOffset? cidadeDisplayAtualizadoEm,
         Guid? unidadeRaizId)
     {
-        ArgumentNullException.ThrowIfNull(codigoEmec);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(sigla);
-        ArgumentNullException.ThrowIfNull(organizacaoAcademica);
-        ArgumentNullException.ThrowIfNull(categoriaAdministrativa);
-
         Result validacao = ValidarCampos(
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
@@ -198,11 +186,11 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
             cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
-            return validacao;
+            return Result.ValidationFailure(validacao.Errors);
         }
 
         AplicarCampos(
-            codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
+            codigoEmec!, nome!, sigla!, organizacaoAcademica!, categoriaAdministrativa!,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
             atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
             cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
@@ -285,12 +273,21 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         return valor.Trim();
     }
 
-    private static Result ValidarCampos(
-        string codigoEmec,
-        string nome,
-        string sigla,
-        string organizacaoAcademica,
-        string categoriaAdministrativa,
+    /// <summary>
+    /// Valida todos os campos da Instituição, acumulando cada violação em vez de
+    /// retornar na primeira (ADR-0125) — o array <c>errors[]</c> do contrato
+    /// público (ADR-0023) precisa de todas as regras de campo violadas no mesmo
+    /// lote, não só a primeira. Público para o handler de atualização poder
+    /// validar o payload inteiro antes de buscar o registro por Id (validação
+    /// sempre vence 404) — mesmo uso que o handler de criação faz antes do guard
+    /// de singleton e do vínculo com a Unidade raiz.
+    /// </summary>
+    public static Result ValidarCampos(
+        string? codigoEmec,
+        string? nome,
+        string? sigla,
+        string? organizacaoAcademica,
+        string? categoriaAdministrativa,
         string? cnpj,
         string? mantenedora,
         string? codigoMantenedoraEmec,
@@ -305,99 +302,126 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? cidadeNome,
         string? cidadeUf)
     {
+        List<FieldError> erros = [];
+
         if (string.IsNullOrWhiteSpace(codigoEmec))
         {
-            return Result.Failure(new DomainError(
-                InstituicaoErrorCodes.CodigoEmecObrigatorio,
-                "Código e-MEC da Instituição é obrigatório."));
+            erros.Add(new("codigoEmec", new DomainError(
+                InstituicaoErrorCodes.CodigoEmecObrigatorio, "Código e-MEC da Instituição é obrigatório.")));
         }
-
-        if (codigoEmec.Trim().Length > CodigoEmecMaxLength)
+        else if (codigoEmec.Trim().Length > CodigoEmecMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("codigoEmec", new DomainError(
                 InstituicaoErrorCodes.CodigoEmecTamanho,
-                $"Código e-MEC deve ter no máximo {CodigoEmecMaxLength} caracteres."));
+                $"Código e-MEC deve ter no máximo {CodigoEmecMaxLength} caracteres.")));
         }
 
         if (string.IsNullOrWhiteSpace(nome))
         {
-            return Result.Failure(new DomainError(
-                InstituicaoErrorCodes.NomeObrigatorio,
-                "Nome da Instituição é obrigatório."));
+            erros.Add(new("nome", new DomainError(
+                InstituicaoErrorCodes.NomeObrigatorio, "Nome da Instituição é obrigatório.")));
         }
-
-        if (nome.Trim().Length > NomeMaxLength)
+        else if (nome.Trim().Length > NomeMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("nome", new DomainError(
                 InstituicaoErrorCodes.NomeTamanho,
-                $"Nome da Instituição deve ter no máximo {NomeMaxLength} caracteres."));
+                $"Nome da Instituição deve ter no máximo {NomeMaxLength} caracteres.")));
         }
 
         if (string.IsNullOrWhiteSpace(sigla))
         {
-            return Result.Failure(new DomainError(
-                InstituicaoErrorCodes.SiglaObrigatoria,
-                "Sigla da Instituição é obrigatória."));
+            erros.Add(new("sigla", new DomainError(
+                InstituicaoErrorCodes.SiglaObrigatoria, "Sigla da Instituição é obrigatória.")));
         }
-
-        if (sigla.Trim().Length > SiglaMaxLength)
+        else if (sigla.Trim().Length > SiglaMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("sigla", new DomainError(
                 InstituicaoErrorCodes.SiglaTamanho,
-                $"Sigla da Instituição deve ter no máximo {SiglaMaxLength} caracteres."));
+                $"Sigla da Instituição deve ter no máximo {SiglaMaxLength} caracteres.")));
         }
 
         if (string.IsNullOrWhiteSpace(organizacaoAcademica))
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("organizacaoAcademica", new DomainError(
                 InstituicaoErrorCodes.OrganizacaoAcademicaObrigatoria,
-                "Organização acadêmica da Instituição é obrigatória."));
+                "Organização acadêmica da Instituição é obrigatória.")));
         }
-
-        if (organizacaoAcademica.Trim().Length > OrganizacaoAcademicaMaxLength)
+        else if (organizacaoAcademica.Trim().Length > OrganizacaoAcademicaMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("organizacaoAcademica", new DomainError(
                 InstituicaoErrorCodes.OrganizacaoAcademicaTamanho,
-                $"Organização acadêmica deve ter no máximo {OrganizacaoAcademicaMaxLength} caracteres."));
+                $"Organização acadêmica deve ter no máximo {OrganizacaoAcademicaMaxLength} caracteres.")));
         }
 
         if (string.IsNullOrWhiteSpace(categoriaAdministrativa))
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("categoriaAdministrativa", new DomainError(
                 InstituicaoErrorCodes.CategoriaAdministrativaObrigatoria,
-                "Categoria administrativa da Instituição é obrigatória."));
+                "Categoria administrativa da Instituição é obrigatória.")));
         }
-
-        if (categoriaAdministrativa.Trim().Length > CategoriaAdministrativaMaxLength)
+        else if (categoriaAdministrativa.Trim().Length > CategoriaAdministrativaMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("categoriaAdministrativa", new DomainError(
                 InstituicaoErrorCodes.CategoriaAdministrativaTamanho,
-                $"Categoria administrativa deve ter no máximo {CategoriaAdministrativaMaxLength} caracteres."));
+                $"Categoria administrativa deve ter no máximo {CategoriaAdministrativaMaxLength} caracteres.")));
         }
 
+        bool cidadeOk = true;
         Result cidade = ValidarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (cidade.IsFailure)
         {
-            return cidade;
+            cidadeOk = false;
+
+            // ValidarReferenciaCidade acumula toda violação independente do trio de
+            // cidade — cada uma mapeada para o campo real que descreve.
+            foreach (FieldError erroCidade in cidade.Errors)
+            {
+                erros.Add(new(CampoDaCidade(erroCidade.Error.Code), erroCidade.Error));
+            }
         }
 
-        Result enderecoCoerente = ValidarCoerenciaEndereco(endereco, cidadeCodigoIbge, cidadeUf);
-        if (enderecoCoerente.IsFailure)
+        // Coerência endereço↔cidade só faz sentido com a referência de cidade já
+        // confirmada válida — senão a causa raiz (formato do trio) ficaria
+        // mascarada por "incoerente" ou por "cidade obrigatória".
+        if (cidadeOk)
         {
-            return enderecoCoerente;
+            Result enderecoCoerente = ValidarCoerenciaEndereco(endereco, cidadeCodigoIbge, cidadeUf);
+            if (enderecoCoerente.IsFailure)
+            {
+                erros.Add(new("endereco", enderecoCoerente.Error!));
+            }
         }
 
-        return ValidarOpcionais(
+        erros.AddRange(ValidarOpcionais(
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website);
+            atoRecredenciamento, conceitoInstitucional, igc, website));
+
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
+
+    /// <summary>
+    /// Mapeia o código interno de <see cref="ReferenciaCidadeGeo.Validar"/> para o
+    /// campo do payload (camelCase, ADR-0023) a que ele se refere de fato — sem
+    /// isso, todo erro de cidade seria rotulado com o mesmo campo em
+    /// <c>errors[].field</c>, mesmo quando a causa é o nome ou a UF, não o código
+    /// IBGE.
+    /// </summary>
+    private static string CampoDaCidade(string codigoErro) => codigoErro switch
+    {
+        CidadeReferenciaErrorCodes.NomeObrigatorio
+            or CidadeReferenciaErrorCodes.NomeCaractereNulo
+            or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
+        CidadeReferenciaErrorCodes.UfObrigatoria
+            or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",
+        _ => "cidadeCodigoIbge",
+    };
 
     /// <summary>
     /// Como a cidade da sede é opcional all-or-nothing mas o CEP sempre resolve a
     /// uma cidade, um endereço presente exige a referência de cidade da sede
-    /// preenchida (CA-08/CA-04) e coerente com o snapshot de cidade do endereço —
-    /// preservando a consistência do <c>InstituicaoView</c> cross-módulo, que
-    /// expõe a cidade da sede.
+    /// preenchida e coerente com o snapshot de cidade do endereço — preservando a
+    /// consistência do <c>InstituicaoView</c> cross-módulo, que expõe a cidade da
+    /// sede.
     /// </summary>
     private static Result ValidarCoerenciaEndereco(
         ReferenciaEnderecoGeo? endereco,
@@ -441,7 +465,14 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
             : Result.Success();
     }
 
-    private static Result ValidarOpcionais(
+    /// <summary>
+    /// Confere o tamanho dos nove campos opcionais, cada um contribuindo no
+    /// máximo um erro à lista — todos compartilham o mesmo código de domínio
+    /// <see cref="InstituicaoErrorCodes.CampoOpcionalTamanho"/> (assim desenhado
+    /// desde a origem), mas cada ocorrência carrega o rótulo do campo real em
+    /// <see cref="FieldError.Field"/> para o cliente saber qual violou.
+    /// </summary>
+    private static List<FieldError> ValidarOpcionais(
         string? cnpj,
         string? mantenedora,
         string? codigoMantenedoraEmec,
@@ -452,29 +483,30 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? igc,
         string? website)
     {
-        (string? valor, int max)[] opcionais =
+        (string campo, string? valor, int max)[] opcionais =
         [
-            (cnpj, CampoOpcionalCurtoMaxLength),
-            (mantenedora, NomeMaxLength),
-            (codigoMantenedoraEmec, CodigoEmecMaxLength),
-            (situacao, CampoOpcionalCurtoMaxLength),
-            (atoCredenciamento, CampoOpcionalLongoMaxLength),
-            (atoRecredenciamento, CampoOpcionalLongoMaxLength),
-            (conceitoInstitucional, CampoOpcionalCurtoMaxLength),
-            (igc, CampoOpcionalCurtoMaxLength),
-            (website, CampoOpcionalMedioMaxLength),
+            ("cnpj", cnpj, CampoOpcionalCurtoMaxLength),
+            ("mantenedora", mantenedora, NomeMaxLength),
+            ("codigoMantenedoraEmec", codigoMantenedoraEmec, CodigoEmecMaxLength),
+            ("situacao", situacao, CampoOpcionalCurtoMaxLength),
+            ("atoCredenciamento", atoCredenciamento, CampoOpcionalLongoMaxLength),
+            ("atoRecredenciamento", atoRecredenciamento, CampoOpcionalLongoMaxLength),
+            ("conceitoInstitucional", conceitoInstitucional, CampoOpcionalCurtoMaxLength),
+            ("igc", igc, CampoOpcionalCurtoMaxLength),
+            ("website", website, CampoOpcionalMedioMaxLength),
         ];
 
-        foreach ((string? valor, int max) in opcionais)
+        List<FieldError> erros = [];
+        foreach ((string campo, string? valor, int max) in opcionais)
         {
             if (valor is not null && valor.Trim().Length > max)
             {
-                return Result.Failure(new DomainError(
+                erros.Add(new(campo, new DomainError(
                     InstituicaoErrorCodes.CampoOpcionalTamanho,
-                    $"Um dos campos opcionais excede o tamanho máximo de {max} caracteres."));
+                    $"Campo opcional excede o tamanho máximo de {max} caracteres.")));
             }
         }
 
-        return Result.Success();
+        return erros;
     }
 }

@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 /// <summary>
 /// Confere a integridade do vínculo <c>unidade_raiz_id</c> da Instituição:
 /// quando informado, deve apontar para uma Unidade viva do tipo reitoria
-/// (UNI-REQ-0007 · CA-04). Compartilhado entre os handlers de criação e
+/// (UNI-REQ-0007). Compartilhado entre os handlers de criação e
 /// atualização.
 /// </summary>
 internal static class InstituicaoUnidadeRaizGuard

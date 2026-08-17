@@ -71,4 +71,6 @@ public sealed class OrganizacaoInstitucionalDbContext : DbContext, IOrganizacaoI
     {
         return await SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public void DescartarAlteracoesNaoSalvas() => ChangeTracker.Clear();
 }

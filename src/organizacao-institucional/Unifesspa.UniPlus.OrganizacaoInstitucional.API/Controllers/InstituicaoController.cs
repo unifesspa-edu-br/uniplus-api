@@ -73,8 +73,8 @@ public sealed class InstituicaoController : ControllerBase
 
     /// <summary>
     /// Cria a Instituição. Restrito a <c>plataforma-admin</c>. Idempotency-Key
-    /// obrigatório (ADR-0027). Retorna 409 se já existe uma Instituição viva
-    /// (singleton — CA-02).
+    /// obrigatório (ADR-0027). Retorna 409 se já existe uma Instituição viva —
+    /// a plataforma atende uma única instituição por deployment (ADR-0055).
     /// </summary>
     [HttpPost("admin/instituicao")]
     [Authorize(Roles = "plataforma-admin")]

@@ -59,7 +59,7 @@ public sealed class InstituicaoTests
             cidadeDisplayAtualizadoEm: null,
             unidadeRaizId);
 
-    [Fact(DisplayName = "Criar com campos válidos retorna sucesso com Id Guid v7 não vazio (CA-01)")]
+    [Fact(DisplayName = "Criar com campos válidos retorna sucesso com Id Guid v7 não vazio")]
     public void Criar_ComCamposValidos_RetornaSucessoComGuidV7()
     {
         Result<Instituicao> resultado = CriarValida();
@@ -73,7 +73,7 @@ public sealed class InstituicaoTests
         instituicao.IsDeleted.Should().BeFalse();
     }
 
-    [Theory(DisplayName = "Criar sem um campo obrigatório retorna o erro correspondente (CA-03)")]
+    [Theory(DisplayName = "Criar sem um campo obrigatório retorna o erro correspondente")]
     [InlineData("", "Nome", "SIGLA", "Org", "Cat", InstituicaoErrorCodes.CodigoEmecObrigatorio)]
     [InlineData("3990", "", "SIGLA", "Org", "Cat", InstituicaoErrorCodes.NomeObrigatorio)]
     [InlineData("3990", "Nome", "", "Org", "Cat", InstituicaoErrorCodes.SiglaObrigatoria)]
@@ -215,7 +215,7 @@ public sealed class InstituicaoTests
         resultado.Value!.Endereco!.Cep.Should().Be("68507590");
     }
 
-    [Fact(DisplayName = "Criar com endereço mas sem cidade da sede falha (CA-04: cidade obrigatória com endereço)")]
+    [Fact(DisplayName = "Criar com endereço mas sem cidade da sede falha (cidade obrigatória com endereço)")]
     public void Criar_ComEnderecoSemCidade_RetornaCidadeObrigatoria()
     {
         Result<Instituicao> resultado = CriarValida(endereco: Endereco());
@@ -224,7 +224,7 @@ public sealed class InstituicaoTests
         resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.CidadeObrigatoriaComEndereco);
     }
 
-    [Fact(DisplayName = "Criar com endereço de cidade incoerente com a cidade da sede falha (CA-04)")]
+    [Fact(DisplayName = "Criar com endereço de cidade incoerente com a cidade da sede falha")]
     public void Criar_ComEnderecoCidadeIncoerente_RetornaCidadeIncoerente()
     {
         Result<Instituicao> resultado = CriarValida(
@@ -233,5 +233,62 @@ public sealed class InstituicaoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.CidadeIncoerente);
+    }
+
+    [Fact(DisplayName = "Criar com três violações independentes acumula as três no mesmo lote")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
+    {
+        Result<Instituicao> resultado = Instituicao.Criar(
+            codigoEmec: null,
+            nome: null,
+            sigla: "Unifesspa",
+            organizacaoAcademica: "Universidade",
+            categoriaAdministrativa: "Pública Federal",
+            cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null,
+            atoCredenciamento: null, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
+            website: null, endereco: null,
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "SP",
+            cidadeOrigem: null, cidadeDisplayAtualizadoEm: null, unidadeRaizId: null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors.Should().Contain(e => e.Field == "codigoEmec" && e.Error.Code == InstituicaoErrorCodes.CodigoEmecObrigatorio);
+        resultado.Errors.Should().Contain(e => e.Field == "nome" && e.Error.Code == InstituicaoErrorCodes.NomeObrigatorio);
+        resultado.Errors.Should().Contain(e => e.Field == "cidadeUf" && e.Error.Code == CidadeReferenciaErrorCodes.UfIncoerente);
+    }
+
+    [Fact(DisplayName = "Criar com dois campos opcionais acima do limite rotula cada um com o campo real")]
+    public void Criar_ComDoisOpcionaisMuitoLongos_RotulaCadaCampo()
+    {
+        string valorLongo = new('A', 600);
+
+        Result<Instituicao> resultado = Instituicao.Criar(
+            "3990", "Universidade", "Unifesspa", "Universidade", "Pública Federal",
+            cnpj: valorLongo, mantenedora: null, codigoMantenedoraEmec: null, situacao: null,
+            atoCredenciamento: valorLongo, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
+            website: null, endereco: null,
+            cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null,
+            cidadeOrigem: null, cidadeDisplayAtualizadoEm: null, unidadeRaizId: null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "cnpj" && e.Error.Code == InstituicaoErrorCodes.CampoOpcionalTamanho);
+        resultado.Errors.Should().Contain(e => e.Field == "atoCredenciamento" && e.Error.Code == InstituicaoErrorCodes.CampoOpcionalTamanho);
+    }
+
+    [Fact(DisplayName = "ValidarCamposDoPayload replica o resultado de Criar sem instanciar o agregado")]
+    public void ValidarCampos_MesmoPayloadDeCriarComFalha_RetornaMesmosErros()
+    {
+        Result validacao = Instituicao.ValidarCampos(
+            codigoEmec: null, nome: null, sigla: "Unifesspa",
+            organizacaoAcademica: "Universidade", categoriaAdministrativa: "Pública Federal",
+            cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null,
+            atoCredenciamento: null, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
+            website: null, endereco: null,
+            cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null);
+
+        validacao.IsFailure.Should().BeTrue();
+        validacao.Errors.Should().ContainSingle(e => e.Field == "codigoEmec");
+        validacao.Errors.Should().ContainSingle(e => e.Field == "nome");
     }
 }
