@@ -222,7 +222,10 @@ public static class DefinirCronogramaFasesCommandHandler
             if (faseResult.IsFailure)
             {
                 IReadOnlyList<FieldError> errosComIndice = [.. faseResult.Errors
-                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"fases[{indice}].{erro.Field}" })];
+                    .Select(erro => erro with
+                    {
+                        Field = erro.Field is null ? $"fases[{indice}]" : $"fases[{indice}].{erro.Field}",
+                    })];
                 return Result<MutacaoAceita>.ValidationFailure(errosComIndice);
             }
 
