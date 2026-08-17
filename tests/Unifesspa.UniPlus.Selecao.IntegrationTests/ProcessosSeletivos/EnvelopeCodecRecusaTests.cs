@@ -387,7 +387,9 @@ public sealed class EnvelopeCodecRecusaTests
             (Action<JsonObject>)(envelope => Bloco(envelope)["camposPublicos"] =
                 new JsonArray(JsonValue.Create("cpf"), JsonValue.Create("numero_inscricao"))),
             "ConfiguracaoDivulgacao.CampoNaoPermitido",
-            "'cpf'",
+            // ADR-0023: errors[].message nunca ecoa o valor rejeitado — a mensagem é
+            // genérica desde a migração para acumulação (ADR-0125), não mais "'cpf'".
+            "vocabulário de divulgação pública",
         ];
         yield return
         [
