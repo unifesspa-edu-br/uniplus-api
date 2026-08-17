@@ -29,6 +29,17 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// runtime da idade máxima de emissão (<c>IdadeMaximaEmissao</c>) é fora de escopo desta
 /// Story; este handler não abre exceção isolada à convenção só por não usá-lo ainda.
 /// </remarks>
+/// <remarks>
+/// ADR-0125 (escopo parcial): <c>DocumentoExigidoBaseLegal</c>/<c>NoExigenciaBaseLegal</c>
+/// acumulam a forma de todas as bases legais de um MESMO nó (<c>basesLegais[i].campo</c>),
+/// e essa lista de erros sobrevive até o topo (<c>ConstruirNoAsync</c>/<c>ConstruirDocumentoExigidoAsync</c>
+/// propagam <c>Result.Errors</c>, não só <c>Result.Error</c>). A recursão em si — árvore de
+/// <c>NoExigencia</c> — continua first-failure ENTRE nós/folhas: acumular a árvore inteira
+/// exigiria um path posicional (<c>raizes[i].filhos[j]. ...</c>) sem convenção estabelecida
+/// nesta rolagem, e reescrever <c>ConstruirNoAsync</c> para retornar erros parciais mesmo
+/// quando um filho falha é uma mudança de forma de retorno em cascata, não a aplicação
+/// mecânica do padrão já usado nas demais fatias — decisão de escopo, não pendência.
+/// </remarks>
 public static class DefinirDocumentosExigidosCommandHandler
 {
     public static async Task<Result<MutacaoAceita>> Handle(
@@ -103,7 +114,7 @@ public static class DefinirDocumentosExigidosCommandHandler
                     .ConfigureAwait(false);
                 if (documentoResult.IsFailure)
                 {
-                    return Result<NoExigencia>.Failure(documentoResult.Error!);
+                    return Result<NoExigencia>.ValidationFailure(documentoResult.Errors);
                 }
 
                 ChaveDistincao? chaveDistincao = input.ChaveDistincao is null
@@ -141,7 +152,7 @@ public static class DefinirDocumentosExigidosCommandHandler
                 Result<NoExigencia> filhoResult = await ConstruirNoAsync(filhoInput, ordemFilho, tipoEntidadeEfetivo).ConfigureAwait(false);
                 if (filhoResult.IsFailure)
                 {
-                    return Result<NoExigencia>.Failure(filhoResult.Error!);
+                    return Result<NoExigencia>.ValidationFailure(filhoResult.Errors);
                 }
 
                 filhos.Add(filhoResult.Value!);
@@ -152,7 +163,7 @@ public static class DefinirDocumentosExigidosCommandHandler
                 ResolverBasesLegaisDeGrupo(input.BasesLegais ?? []);
             if (basesLegaisResult.IsFailure)
             {
-                return Result<NoExigencia>.Failure(basesLegaisResult.Error!);
+                return Result<NoExigencia>.ValidationFailure(basesLegaisResult.Errors);
             }
 
             TipoEntidade? repetePorEntidadeGrupo = input.RepetePorEntidade is null
@@ -170,7 +181,7 @@ public static class DefinirDocumentosExigidosCommandHandler
             Result<NoExigencia> raizResult = await ConstruirNoAsync(raizInput, ordemRaiz, tipoEntidadeAncestral: null).ConfigureAwait(false);
             if (raizResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(raizResult.Error!);
+                return Result<MutacaoAceita>.ValidationFailure(raizResult.Errors);
             }
 
             raizes.Add(raizResult.Value!);
@@ -258,7 +269,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegaisResult = ResolverBasesLegais(input.BasesLegais);
         if (basesLegaisResult.IsFailure)
         {
-            return Result<DocumentoExigido>.Failure(basesLegaisResult.Error!);
+            return Result<DocumentoExigido>.ValidationFailure(basesLegaisResult.Errors);
         }
 
         IdadeMaximaEmissaoInput? idade = input.IdadeMaximaEmissao;
@@ -411,22 +422,37 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// fechado); o gate "≥1 RESOLVIDO por exigência que determina resultado" é da
     /// publicação (<c>Domain.Services.ValidadorBaseLegalExigencias</c>), nunca da escrita.
     /// </summary>
+    /// <summary>
+    /// ADR-0125: acumula a forma de TODAS as bases legais do nó numa primeira passada
+    /// (<see cref="DocumentoExigidoBaseLegal.ValidarFormaBasica"/>, pura), indexando o field
+    /// (<c>basesLegais[i].campo</c>), antes de construir qualquer instância — só se vier
+    /// limpa a construção roda de fato. O escopo da acumulação é o NÓ (esta lista), não a
+    /// árvore inteira: <c>ConstruirNoAsync</c> continua first-failure entre nós/folhas —
+    /// acumular a árvore completa exigiria um path posicional (<c>raizes[i].filhos[j]...</c>)
+    /// ainda sem convenção estabelecida nesta rolagem.
+    /// </summary>
     private static Result<IReadOnlyList<DocumentoExigidoBaseLegal>> ResolverBasesLegais(IReadOnlyList<BaseLegalInput> inputs)
     {
+        List<FieldError> formaErros = [];
+        for (int indice = 0; indice < inputs.Count; indice++)
+        {
+            BaseLegalInput itemForma = inputs[indice];
+            formaErros.AddRange(DocumentoExigidoBaseLegal
+                .ValidarFormaBasica(itemForma.Referencia, TipoAbrangenciaCodigo.FromCodigo(itemForma.Abrangencia), StatusBaseLegalCodigo.FromCodigo(itemForma.Status))
+                .Select(erro => erro with { Field = $"basesLegais[{indice}].{erro.Field}" }));
+        }
+
+        if (formaErros.Count > 0)
+        {
+            return Result<IReadOnlyList<DocumentoExigidoBaseLegal>>.ValidationFailure(formaErros);
+        }
+
         List<DocumentoExigidoBaseLegal> basesLegais = [];
         foreach (BaseLegalInput input in inputs)
         {
             TipoAbrangencia abrangencia = TipoAbrangenciaCodigo.FromCodigo(input.Abrangencia);
             StatusBaseLegal status = StatusBaseLegalCodigo.FromCodigo(input.Status);
-
-            Result<DocumentoExigidoBaseLegal> baseLegalResult = DocumentoExigidoBaseLegal.Criar(
-                input.Referencia, abrangencia, status, input.Observacao);
-            if (baseLegalResult.IsFailure)
-            {
-                return Result<IReadOnlyList<DocumentoExigidoBaseLegal>>.Failure(baseLegalResult.Error!);
-            }
-
-            basesLegais.Add(baseLegalResult.Value!);
+            basesLegais.Add(DocumentoExigidoBaseLegal.Criar(input.Referencia, abrangencia, status, input.Observacao).Value!);
         }
 
         return Result<IReadOnlyList<DocumentoExigidoBaseLegal>>.Success(basesLegais);
@@ -435,20 +461,26 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// <summary>Mesma resolução de <see cref="ResolverBasesLegais"/>, para a base legal PRÓPRIA de um grupo <c>OU</c>/<c>N-de</c> (Story #920) — tipo de entidade diferente (<see cref="NoExigenciaBaseLegal"/>), mesma forma de wire (<see cref="BaseLegalInput"/>).</summary>
     private static Result<IReadOnlyList<NoExigenciaBaseLegal>> ResolverBasesLegaisDeGrupo(IReadOnlyList<BaseLegalInput> inputs)
     {
+        List<FieldError> formaErros = [];
+        for (int indice = 0; indice < inputs.Count; indice++)
+        {
+            BaseLegalInput itemForma = inputs[indice];
+            formaErros.AddRange(NoExigenciaBaseLegal
+                .ValidarFormaBasica(itemForma.Referencia, TipoAbrangenciaCodigo.FromCodigo(itemForma.Abrangencia), StatusBaseLegalCodigo.FromCodigo(itemForma.Status))
+                .Select(erro => erro with { Field = $"basesLegais[{indice}].{erro.Field}" }));
+        }
+
+        if (formaErros.Count > 0)
+        {
+            return Result<IReadOnlyList<NoExigenciaBaseLegal>>.ValidationFailure(formaErros);
+        }
+
         List<NoExigenciaBaseLegal> basesLegais = [];
         foreach (BaseLegalInput input in inputs)
         {
             TipoAbrangencia abrangencia = TipoAbrangenciaCodigo.FromCodigo(input.Abrangencia);
             StatusBaseLegal status = StatusBaseLegalCodigo.FromCodigo(input.Status);
-
-            Result<NoExigenciaBaseLegal> baseLegalResult = NoExigenciaBaseLegal.Criar(
-                input.Referencia, abrangencia, status, input.Observacao);
-            if (baseLegalResult.IsFailure)
-            {
-                return Result<IReadOnlyList<NoExigenciaBaseLegal>>.Failure(baseLegalResult.Error!);
-            }
-
-            basesLegais.Add(baseLegalResult.Value!);
+            basesLegais.Add(NoExigenciaBaseLegal.Criar(input.Referencia, abrangencia, status, input.Observacao).Value!);
         }
 
         return Result<IReadOnlyList<NoExigenciaBaseLegal>>.Success(basesLegais);

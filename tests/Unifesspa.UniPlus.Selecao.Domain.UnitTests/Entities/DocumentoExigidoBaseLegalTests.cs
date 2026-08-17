@@ -82,4 +82,27 @@ public sealed class DocumentoExigidoBaseLegalTests
 
         baseLegal.Observacao.Should().BeNull();
     }
+
+    [Fact(DisplayName = "ADR-0125: referência vazia e abrangência Nenhuma acumulam no mesmo lote")]
+    public void Criar_ReferenciaVaziaEAbrangenciaNenhuma_AcumulaAsDuasViolacoes()
+    {
+        Result<DocumentoExigidoBaseLegal> resultado = DocumentoExigidoBaseLegal.Criar(
+            "", TipoAbrangencia.Nenhuma, StatusBaseLegal.Resolvido, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "DocumentoExigidoBaseLegal.ReferenciaObrigatoria",
+            "DocumentoExigidoBaseLegal.AbrangenciaObrigatoria",
+        ]);
+    }
+
+    [Fact(DisplayName = "ValidarFormaBasica sem violação retorna lote vazio")]
+    public void ValidarFormaBasica_SemViolacao_Vazio()
+    {
+        List<FieldError> erros = DocumentoExigidoBaseLegal.ValidarFormaBasica(
+            "Lei X", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido);
+
+        erros.Should().BeEmpty();
+    }
 }

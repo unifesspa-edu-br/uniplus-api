@@ -27,28 +27,45 @@ public sealed class NoExigenciaBaseLegal : EntityBase
 
     private NoExigenciaBaseLegal() { }
 
-    public static Result<NoExigenciaBaseLegal> Criar(
-        string referencia, TipoAbrangencia abrangencia, StatusBaseLegal status, string? observacao)
+    /// <summary>
+    /// Acumula (ADR-0125) as três checagens — mesmo shape/validação de
+    /// <see cref="DocumentoExigidoBaseLegal.ValidarFormaBasica"/>, ver ali.
+    /// </summary>
+    public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia abrangencia, StatusBaseLegal status)
     {
+        List<FieldError> erros = [];
+
         if (string.IsNullOrWhiteSpace(referencia))
         {
-            return Result<NoExigenciaBaseLegal>.Failure(new DomainError(
+            erros.Add(new("referencia", new DomainError(
                 "NoExigenciaBaseLegal.ReferenciaObrigatoria",
-                "A referência da base legal é obrigatória."));
+                "A referência da base legal é obrigatória.")));
         }
 
         if (abrangencia == TipoAbrangencia.Nenhuma)
         {
-            return Result<NoExigenciaBaseLegal>.Failure(new DomainError(
+            erros.Add(new("abrangencia", new DomainError(
                 "NoExigenciaBaseLegal.AbrangenciaObrigatoria",
-                "A abrangência da base legal é obrigatória."));
+                "A abrangência da base legal é obrigatória.")));
         }
 
         if (status == StatusBaseLegal.Nenhuma)
         {
-            return Result<NoExigenciaBaseLegal>.Failure(new DomainError(
+            erros.Add(new("status", new DomainError(
                 "NoExigenciaBaseLegal.StatusObrigatorio",
-                "O status da base legal é obrigatório."));
+                "O status da base legal é obrigatório.")));
+        }
+
+        return erros;
+    }
+
+    public static Result<NoExigenciaBaseLegal> Criar(
+        string referencia, TipoAbrangencia abrangencia, StatusBaseLegal status, string? observacao)
+    {
+        List<FieldError> erros = ValidarFormaBasica(referencia, abrangencia, status);
+        if (erros.Count > 0)
+        {
+            return Result<NoExigenciaBaseLegal>.ValidationFailure(erros);
         }
 
         return Result<NoExigenciaBaseLegal>.Success(new NoExigenciaBaseLegal
