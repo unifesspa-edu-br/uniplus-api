@@ -7,6 +7,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
+/// <summary>
+/// Handler do <see cref="EditarRascunhoTermoConsentimentoCommand"/>. Valida o
+/// payload (422, sem I/O) ANTES de buscar o termo por Id — validação sempre
+/// vence 404.
+/// </summary>
 public static class EditarRascunhoTermoConsentimentoCommandHandler
 {
     public static async Task<Result> Handle(
@@ -18,6 +23,13 @@ public static class EditarRascunhoTermoConsentimentoCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        Result preCheck = TermoConsentimento.ValidarCamposDoPayload(
+            command.TextoRascunho, command.BaseLegalRascunho, command.FormaAceiteRascunho);
+        if (preCheck.IsFailure)
+        {
+            return Result.ValidationFailure(preCheck.Errors);
+        }
 
         TermoConsentimento? termo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (termo is null)

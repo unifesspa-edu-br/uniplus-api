@@ -27,7 +27,7 @@ public static class CriarTermoConsentimentoCommandHandler
 
         if (termoResult.IsFailure)
         {
-            return Result<Guid>.Failure(termoResult.Error!);
+            return Result<Guid>.ValidationFailure(termoResult.Errors);
         }
 
         TermoConsentimento termo = termoResult.Value!;

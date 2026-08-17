@@ -88,4 +88,19 @@ public sealed class EditarRascunhoTermoConsentimentoCommandHandlerTests
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.FormaAceiteInvalida);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Campo inválido no payload propaga o erro sem buscar o termo por Id — validação vence 404")]
+    public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
+    {
+        EditarRascunhoTermoConsentimentoCommand comando = new(
+            Guid.CreateVersion7(), "Texto", "Base legal", "FORMA_INEXISTENTE");
+
+        Result resultado = await EditarRascunhoTermoConsentimentoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.FormaAceiteInvalida);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }
