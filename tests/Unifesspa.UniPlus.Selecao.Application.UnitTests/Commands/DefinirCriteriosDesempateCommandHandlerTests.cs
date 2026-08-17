@@ -213,6 +213,26 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         result.Error!.Code.Should().Be("CriterioDesempate.RegraTipoInvalido");
     }
 
+    [Fact(DisplayName = "ADR-0125: ordem inválida acumula entre critérios, com o índice prefixado ao field, ANTES de consultar o catálogo")]
+    public async Task Handle_DoisCriteriosComOrdemInvalida_AcumulaComIndicePrefixadoESemConsultarCatalogo()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        DefinirCriteriosDesempateCommand command = new(processo.Id,
+        [
+            new CriterioDesempateInput(0, CriterioDesempateCodigo.MaiorIdade, "v1", null, null, null, null, null),
+            new CriterioDesempateInput(-1, CriterioDesempateCodigo.MaiorIdade, "v1", null, null, null, null, null),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["criterios[0].ordem", "criterios[1].ordem"]);
+        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+    }
+
     [Fact(DisplayName = "Handle com lista vazia remove todos os critérios e persiste")]
     public async Task Handle_ListaVazia_Persiste()
     {

@@ -4,6 +4,14 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+/// <summary>
+/// Três checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
+/// identificador de rota; a lista de critérios e cada item não podem ser nulos — o handler
+/// desreferencia sem checagem defensiva. <c>RegraCodigo</c>/<c>RegraVersao</c> nunca chegam
+/// crus a <c>CriterioDesempate.Criar</c> — só alimentam a leitura do <c>rol_de_regras</c>
+/// (<c>IRegraCatalogoReader</c>). <c>Ordem</c> já tem equivalente completo em
+/// <c>CriterioDesempate.ValidarOrdem</c>/<c>Criar</c> e ficou fora daqui.
+/// </summary>
 public sealed class DefinirCriteriosDesempateCommandValidator : AbstractValidator<DefinirCriteriosDesempateCommand>
 {
     public DefinirCriteriosDesempateCommandValidator()
@@ -27,10 +35,6 @@ public sealed class DefinirCriteriosDesempateCommandValidator : AbstractValidato
 
         RuleForEach(x => x.Criterios).ChildRules(item =>
         {
-            item.RuleFor(c => c.Ordem)
-                .GreaterThan(0)
-                .WithMessage("Ordem do critério de desempate deve ser maior que zero.");
-
             item.RuleFor(c => c.RegraCodigo)
                 .NotEmpty()
                 .WithMessage("Código da regra de desempate é obrigatório.");
