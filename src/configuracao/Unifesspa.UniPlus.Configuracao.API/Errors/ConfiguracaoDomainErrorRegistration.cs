@@ -274,11 +274,23 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.peso_area_enem.peso_negativo",
                 "Peso de área não pode ser negativo")),
 
+        new(PesoAreaEnemErrorCodes.PesoExcedeMaximo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.peso_excede_maximo",
+                "Peso de área excede o teto persistível")),
+
         new(PesoAreaEnemErrorCodes.CorteRedacaoNegativo,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.peso_area_enem.corte_redacao_negativo",
                 "Corte de redação não pode ser negativo")),
+
+        new(PesoAreaEnemErrorCodes.CorteRedacaoExcedeMaximo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.corte_redacao_excede_maximo",
+                "Corte de redação excede a nota máxima da redação do ENEM")),
 
         new(PesoAreaEnemErrorCodes.BaseLegalObrigatoria,
             new DomainErrorMapping(
