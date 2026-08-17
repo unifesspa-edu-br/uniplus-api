@@ -70,11 +70,29 @@ public static class DefinirDistribuicaoVagasCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        // Acumula (ADR-0125) a forma de VoBase/PR de TODAS as distribuições do payload —
+        // as únicas checagens de ConfiguracaoDistribuicaoVagas.Criar que não dependem de
+        // nenhum cadastro cross-módulo nem do catálogo de regras. Roda antes de qualquer
+        // I/O (validação vence I/O dentro do bucket 422, PR #1211).
+        List<FieldError> formaErros = [];
+        for (int indice = 0; indice < command.DistribuicaoVagas.Count; indice++)
+        {
+            ConfiguracaoDistribuicaoVagasInput itemForma = command.DistribuicaoVagas[indice];
+            formaErros.AddRange(ConfiguracaoDistribuicaoVagas
+                .ValidarFormaBasica(itemForma.VoBase, itemForma.Pr)
+                .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{erro.Field}" }));
+        }
+
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+        }
+
         List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
-        foreach (ConfiguracaoDistribuicaoVagasInput input in command.DistribuicaoVagas)
+        for (int indice = 0; indice < command.DistribuicaoVagas.Count; indice++)
         {
             Result<ConfiguracaoDistribuicaoVagas> resultado = await ResolverDistribuicaoAsync(
-                input,
+                command.DistribuicaoVagas[indice],
                 regraCatalogoReader,
                 ofertaCursoReader,
                 modalidadeReader,
@@ -83,7 +101,9 @@ public static class DefinirDistribuicaoVagasCommandHandler
 
             if (resultado.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(resultado.Error!);
+                IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors
+                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{erro.Field}" })];
+                return Result<MutacaoAceita>.ValidationFailure(errosComIndice);
             }
 
             distribuicoes.Add(resultado.Value!);

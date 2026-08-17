@@ -268,4 +268,29 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada");
     }
+
+    [Fact(DisplayName = "ADR-0125: VoBase/PR inválidos acumulam entre distribuições, com o índice prefixado ao field, ANTES de consultar os readers")]
+    public async Task Handle_DuasDistribuicoesComVoBaseOuPrInvalidos_AcumulaComIndicePrefixadoESemConsultarReaders()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        DefinirDistribuicaoVagasCommand command = new(
+            processo.Id,
+            [
+                new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 0, 0.5m, "X", "v1", null, null, null, [Guid.CreateVersion7()], []),
+                new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1.5m, "X", "v1", null, null, null, [Guid.CreateVersion7()], []),
+            ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
+            mocks.ReferenciaReservaDemograficaReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(
+            ["distribuicaoVagas[0].voBase", "distribuicaoVagas[1].pr"]);
+        await mocks.OfertaCursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }
