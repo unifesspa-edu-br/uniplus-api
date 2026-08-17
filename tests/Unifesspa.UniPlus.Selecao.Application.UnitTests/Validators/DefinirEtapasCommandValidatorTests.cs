@@ -44,16 +44,15 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas");
     }
 
-    [Fact(DisplayName = "Validator falha quando o caráter da etapa é Nenhum")]
-    public void Rejeita_CaraterNenhum()
+    [Fact(DisplayName = "Validator passa com caráter Nenhum — a rejeição é do agregado (EtapaProcesso.Criar, ADR-0125)")]
+    public void Aceita_CaraterNenhumNoValidator()
     {
         EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Nenhum, TipoEtapaOrigemIdValido, 3m, null, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].Carater");
+        result.IsValid.Should().BeTrue();
     }
 
     /// <summary>
@@ -72,16 +71,15 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].TipoEtapaOrigemId");
     }
 
-    [Fact(DisplayName = "Validator falha quando o peso informado não é positivo")]
-    public void Rejeita_PesoNaoPositivo()
+    [Fact(DisplayName = "Validator passa com peso não positivo — a rejeição é do agregado (EtapaProcesso.Criar, ADR-0125)")]
+    public void Aceita_PesoNaoPositivoNoValidator()
     {
         EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 0m, null, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].Peso");
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Validator falha quando o peso tem mais de 4 casas decimais (arredondaria para zero)")]

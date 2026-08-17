@@ -143,7 +143,7 @@ public sealed class ConformidadeCronogramaTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
+            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
@@ -190,7 +190,7 @@ public sealed class ConformidadeCronogramaTests
         // cenário aqui prova a MESMA classe de defeito por outro caminho: guard "vivo" via
         // reflection para simular um estado que hoje só seria alcançável por dado legado.
         Result definirEtapas = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: null, notaMinima: 5m, ordem: 1)],
+            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: null, notaMinima: 5m, ordem: 1).Value!],
             PrecondicaoIfMatch.Ausente);
         definirEtapas.IsFailure.Should().BeTrue(
             "pré-condição: DefinirEtapas já recusa uma lista sem NENHUMA etapa que componha a nota — " +

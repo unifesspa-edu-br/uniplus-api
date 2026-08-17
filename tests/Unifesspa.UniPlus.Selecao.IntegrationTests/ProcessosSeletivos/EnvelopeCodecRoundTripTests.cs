@@ -345,7 +345,7 @@ public sealed class EnvelopeCodecRoundTripTests
         // E a contraprova: regenerar o id quebra o round-trip — o etapaRef fica órfão.
         GrafoConfiguracao comIdRegenerado = new(
             etapas: [.. envelope.Grafo.Etapas.Select(e =>
-                EtapaProcesso.Criar(e.Nome, e.Carater, e.TipoEtapa, e.Peso, e.NotaMinima, e.Ordem))],
+                EtapaProcesso.Criar(e.Nome, e.Carater, e.TipoEtapa, e.Peso, e.NotaMinima, e.Ordem).Value!)],
             ofertaAtendimento: envelope.Grafo.OfertaAtendimento,
             distribuicaoVagas: envelope.Grafo.DistribuicaoVagas,
             bonusRegional: envelope.Grafo.BonusRegional,
@@ -691,7 +691,7 @@ public sealed class EnvelopeCodecRoundTripTests
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
-                peso: 1m, ordem: 1),
+                peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
@@ -866,7 +866,7 @@ public sealed class EnvelopeCodecRoundTripTests
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
-                peso: 1m, ordem: 1),
+                peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
@@ -1172,7 +1172,7 @@ public sealed class EnvelopeCodecRoundTripTests
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
-                peso: 1m, ordem: 1),
+                peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
