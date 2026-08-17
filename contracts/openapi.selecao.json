@@ -6927,7 +6927,10 @@
         "type": "object",
         "properties": {
           "modalidadeOrigemCodigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "ordem": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -6938,7 +6941,10 @@
             "format": "int32"
           },
           "modalidadeDestinoCodigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

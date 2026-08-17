@@ -411,6 +411,26 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         ]);
     }
 
+    [Fact(DisplayName = "ADR-0125: validação de forma precede a consulta ao catálogo de regras, mesmo com regra inexistente (achado de revisão)")]
+    public async Task Handle_FallbackInvalidoComRegraInexistente_ValidacaoVenceAConsultaAoCatalogo()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((RegraCatalogo?)null);
+
+        DefinirCascataRemanejamentoCommand command = new(
+            processo.Id, "INEXISTENTE", "v1", "ac-invalido",
+            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.FallbackObrigatorio");
+        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+    }
+
     [Fact(DisplayName = "Handle com processo já publicado, sem sessão editorial, propaga bloqueio e NÃO persiste (CA-07/ADR-0110)")]
     public async Task Handle_ProcessoPublicadoSemSessao_PropagaBloqueioENaoPersiste()
     {

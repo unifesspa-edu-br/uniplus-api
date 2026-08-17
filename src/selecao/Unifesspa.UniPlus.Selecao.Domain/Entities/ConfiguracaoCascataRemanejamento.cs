@@ -62,6 +62,37 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase
         ReferenciaRegra regra, string fallbackCodigo, IReadOnlyList<DestinoRemanejamento> destinos)
     {
         ArgumentNullException.ThrowIfNull(regra);
+
+        List<FieldError> erros = ValidarForma(fallbackCodigo, destinos);
+        if (erros.Count > 0)
+        {
+            return Result<ConfiguracaoCascataRemanejamento>.ValidationFailure(erros);
+        }
+
+        ConfiguracaoCascataRemanejamento cascata = new()
+        {
+            Regra = regra,
+            FallbackCodigo = fallbackCodigo,
+        };
+        foreach (DestinoRemanejamento destino in destinos)
+        {
+            destino.VincularCascata(cascata.Id);
+            cascata._destinos.Add(destino);
+        }
+
+        return Result<ConfiguracaoCascataRemanejamento>.Success(cascata);
+    }
+
+    /// <summary>
+    /// A validação de forma não depende da regra resolvida no catálogo — só de
+    /// <paramref name="fallbackCodigo"/> e dos itens já parseados. Existe separada de
+    /// <see cref="Criar"/> (que a chama internamente) para o handler poder confirmá-la
+    /// **antes** de consultar o <c>rol_de_regras</c> (achado de revisão, ADR-0125 ponto 5:
+    /// validação sempre precede I/O) — mesmo padrão já usado em <c>Campus.ValidarAtualizacao</c>/
+    /// <c>Campus.Atualizar</c>.
+    /// </summary>
+    public static List<FieldError> ValidarForma(string fallbackCodigo, IReadOnlyList<DestinoRemanejamento> destinos)
+    {
         ArgumentNullException.ThrowIfNull(destinos);
 
         List<FieldError> erros = [];
@@ -109,23 +140,7 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase
             }
         }
 
-        if (erros.Count > 0)
-        {
-            return Result<ConfiguracaoCascataRemanejamento>.ValidationFailure(erros);
-        }
-
-        ConfiguracaoCascataRemanejamento cascata = new()
-        {
-            Regra = regra,
-            FallbackCodigo = fallbackCodigo,
-        };
-        foreach (DestinoRemanejamento destino in destinos)
-        {
-            destino.VincularCascata(cascata.Id);
-            cascata._destinos.Add(destino);
-        }
-
-        return Result<ConfiguracaoCascataRemanejamento>.Success(cascata);
+        return erros;
     }
 
     /// <summary>

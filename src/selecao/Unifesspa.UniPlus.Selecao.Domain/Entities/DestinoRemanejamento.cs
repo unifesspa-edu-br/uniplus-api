@@ -39,7 +39,7 @@ public sealed partial class DestinoRemanejamento : EntityBase
     /// reflete o dado rejeitado, por isso as mensagens abaixo não ecoam os códigos/ordem
     /// recebidos).
     /// </summary>
-    public static Result<DestinoRemanejamento> Criar(string modalidadeOrigemCodigo, int ordem, string modalidadeDestinoCodigo)
+    public static Result<DestinoRemanejamento> Criar(string? modalidadeOrigemCodigo, int ordem, string? modalidadeDestinoCodigo)
     {
         List<FieldError> erros = [];
 
@@ -80,13 +80,13 @@ public sealed partial class DestinoRemanejamento : EntityBase
 
         return Result<DestinoRemanejamento>.Success(new DestinoRemanejamento
         {
-            ModalidadeOrigemCodigo = modalidadeOrigemCodigo,
+            ModalidadeOrigemCodigo = modalidadeOrigemCodigo!,
             Ordem = ordem,
-            ModalidadeDestinoCodigo = modalidadeDestinoCodigo,
+            ModalidadeDestinoCodigo = modalidadeDestinoCodigo!,
         });
     }
 
-    private static bool CodigoEhValido(string codigo) =>
+    private static bool CodigoEhValido(string? codigo) =>
         !string.IsNullOrWhiteSpace(codigo) && codigo.Length <= CodigoMaxLength && CodigoValido().IsMatch(codigo);
 
     internal void VincularCascata(Guid configuracaoCascataRemanejamentoId) =>
