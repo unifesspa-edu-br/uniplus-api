@@ -98,35 +98,50 @@ public static class DefinirCascataRemanejamentoCommandHandler
             return Result<MutacaoAceita>.Failure(referenciaRegraResult.Error!);
         }
 
+        // Acumula (ADR-0125) as violações de TODOS os itens em vez de parar no primeiro —
+        // um payload com vários destinos malformados reporta todos de uma vez, cada um com
+        // o índice do item na lista prefixado ao field (ex.: "destinos[2].ordem"). Se algum
+        // item falhar, a checagem de coerência entre itens (ConfiguracaoCascataRemanejamento.
+        // Criar) não roda: ela pressupõe destinos já válidos individualmente.
         List<DestinoRemanejamento> destinos = [];
-        foreach (DestinoRemanejamentoInput destinoInput in command.Destinos!)
+        List<FieldError> itemErros = [];
+        for (int indice = 0; indice < command.Destinos!.Count; indice++)
         {
+            DestinoRemanejamentoInput? destinoInput = command.Destinos[indice];
+
             // Defesa em profundidade: o FluentValidation (middleware, antes deste handler) já
             // recusa um item nulo, mas o handler não deve confiar exclusivamente nisso para
             // não desreferenciar null — um payload que contornasse a validação de borda não
             // pode virar 500.
             if (destinoInput is null)
             {
-                return Result<MutacaoAceita>.Failure(new DomainError(
+                itemErros.Add(new($"destinos[{indice}]", new DomainError(
                     "ConfiguracaoCascataRemanejamento.CamposObrigatorios",
-                    "Nenhum item da lista de destinos pode ser nulo."));
+                    "Nenhum item da lista de destinos pode ser nulo.")));
+                continue;
             }
 
             Result<DestinoRemanejamento> destinoResult = DestinoRemanejamento.Criar(
                 destinoInput.ModalidadeOrigemCodigo, destinoInput.Ordem, destinoInput.ModalidadeDestinoCodigo);
             if (destinoResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(destinoResult.Error!);
+                itemErros.AddRange(destinoResult.Errors.Select(erro => erro with { Field = $"destinos[{indice}].{erro.Field}" }));
+                continue;
             }
 
             destinos.Add(destinoResult.Value!);
+        }
+
+        if (itemErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(itemErros);
         }
 
         Result<ConfiguracaoCascataRemanejamento> cascataResult = ConfiguracaoCascataRemanejamento.Criar(
             referenciaRegraResult.Value!, command.FallbackCodigo!, destinos);
         if (cascataResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(cascataResult.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(cascataResult.Errors);
         }
 
         ConfiguracaoCascataRemanejamento cascata = cascataResult.Value!;

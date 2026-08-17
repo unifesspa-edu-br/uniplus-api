@@ -20,7 +20,6 @@ internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTyp
     private const int RegraCodigoMaxLength = 128;
     private const int RegraVersaoMaxLength = 16;
     private const int HashLength = 64;
-    private const int CodigoMaxLength = 60;
 
     public void Configure(EntityTypeBuilder<ConfiguracaoCascataRemanejamento> builder)
     {
@@ -38,7 +37,7 @@ internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTyp
         });
         builder.Navigation(c => c.Regra).IsRequired();
 
-        builder.Property(c => c.FallbackCodigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(c => c.FallbackCodigo).HasMaxLength(ConfiguracaoCascataRemanejamento.FallbackMaxLength).IsRequired();
 
         // Coleção filha: entidade própria com FK para a raiz (nunca owned types) —
         // mesmo padrão de ConfiguracaoDistribuicaoVagas.Modalidades.
