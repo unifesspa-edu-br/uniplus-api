@@ -233,6 +233,29 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
     }
 
+    [Fact(DisplayName = "ADR-0125: erro de CriterioDesempate.Criar na segunda passada carrega o índice do item no field (achado de revisão)")]
+    public async Task Handle_SegundoCriterioComIdadeMinimaInvalida_PrefixaIndiceNoField()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorIdade, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(CriterioDesempateCodigo.MaiorIdade, TipoRegra.CriterioDesempate));
+        mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.Idoso, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(CriterioDesempateCodigo.Idoso, TipoRegra.CriterioDesempate));
+
+        DefinirCriteriosDesempateCommand command = new(processo.Id,
+        [
+            new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorIdade, "v1", null, null, null, null, null),
+            new CriterioDesempateInput(2, CriterioDesempateCodigo.Idoso, "v1", null, 0, null, null, null),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["criterios[1].idadeMinima"]);
+    }
+
     [Fact(DisplayName = "Handle com lista vazia remove todos os critérios e persiste")]
     public async Task Handle_ListaVazia_Persiste()
     {
