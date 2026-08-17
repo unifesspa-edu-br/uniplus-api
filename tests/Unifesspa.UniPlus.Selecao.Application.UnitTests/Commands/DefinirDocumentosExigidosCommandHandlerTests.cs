@@ -387,6 +387,35 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             "a correlação é pela identidade da própria exigência (ADR-0072), não pelo tipo de documento");
     }
 
+    [Fact(DisplayName = "ADR-0125: base legal inválida numa fase profunda da árvore recusa ANTES de consultar TipoDocumento/vocabulário de fatos")]
+    public async Task Handle_BaseLegalInvalidaEmFolhaProfunda_RecusaSemConsultarReaders()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        // TipoDocumentoReader/FatoCandidatoReader propositalmente NÃO configurados — se a
+        // travessia pura perdesse para o I/O, o handler tentaria resolvê-los e devolveria
+        // um erro de I/O em vez do erro de forma da base legal.
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+
+        BaseLegalInput baseInvalida = new("", "FEDERAL", "RESOLVIDO", null);
+        ItemDocumentoExigidoInput folha = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [baseInvalida], null, Qualquer, null);
+        NoExigenciaInput noFolha = new("FOLHA", folha, null, null, null, null);
+        // O grupo (nó raiz) é visitado ANTES da folha (pré-ordem) — mas não tem bases
+        // legais próprias, então a travessia recursa até achar a violação na folha.
+        NoExigenciaInput grupo = new("OU", null, 1, "ELIMINA", [], [noFolha]);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [grupo], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigidoBaseLegal.ReferenciaObrigatoria"]);
+        await mocks.TipoDocumentoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await mocks.FatoCandidatoReader.DidNotReceiveWithAnyArgs().ListarAsync(default);
+    }
+
     [Fact(DisplayName = "ADR-0125: duas bases legais inválidas na mesma folha acumulam, com o índice prefixado ao field")]
     public async Task Handle_DuasBasesLegaisInvalidasNaMesmaFolha_AcumulaComIndicePrefixado()
     {

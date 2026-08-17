@@ -33,12 +33,16 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// ADR-0125 (escopo parcial): <c>DocumentoExigidoBaseLegal</c>/<c>NoExigenciaBaseLegal</c>
 /// acumulam a forma de todas as bases legais de um MESMO nó (<c>basesLegais[i].campo</c>),
 /// e essa lista de erros sobrevive até o topo (<c>ConstruirNoAsync</c>/<c>ConstruirDocumentoExigidoAsync</c>
-/// propagam <c>Result.Errors</c>, não só <c>Result.Error</c>). A recursão em si — árvore de
+/// propagam <c>Result.Errors</c>, não só <c>Result.Error</c>). <see cref="ValidarBasesLegaisDaArvore"/>
+/// percorre a árvore inteira de forma PURA (sem I/O) antes de qualquer leitura externa
+/// (vocabulário de fatos, TipoDocumento), confirmando a forma do primeiro nó com bases
+/// legais malformadas — validação vence I/O também na árvore. A recursão em si — árvore de
 /// <c>NoExigencia</c> — continua first-failure ENTRE nós/folhas: acumular a árvore inteira
-/// exigiria um path posicional (<c>raizes[i].filhos[j]. ...</c>) sem convenção estabelecida
-/// nesta rolagem, e reescrever <c>ConstruirNoAsync</c> para retornar erros parciais mesmo
-/// quando um filho falha é uma mudança de forma de retorno em cascata, não a aplicação
-/// mecânica do padrão já usado nas demais fatias — decisão de escopo, não pendência.
+/// (múltiplos nós ao mesmo tempo) exigiria um path posicional (<c>raizes[i].filhos[j]. ...</c>)
+/// sem convenção estabelecida nesta rolagem, e reescrever <c>ConstruirNoAsync</c> para
+/// retornar erros parciais mesmo quando um filho falha é uma mudança de forma de retorno em
+/// cascata, não a aplicação mecânica do padrão já usado nas demais fatias — decisão de
+/// escopo, não pendência.
 /// </remarks>
 public static class DefinirDocumentosExigidosCommandHandler
 {
@@ -73,6 +77,18 @@ public static class DefinirDocumentosExigidosCommandHandler
         if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
         {
             return Result<MutacaoAceita>.Failure(bloqueio);
+        }
+
+        // ADR-0125: travessia PURA da árvore (sem nenhum I/O) que confirma a forma das
+        // bases legais de TODOS os nós antes de resolver qualquer cadastro externo
+        // (vocabulário de fatos, TipoDocumento) — validação vence I/O também na árvore, não
+        // só em listas planas. Mantém "primeiro nó com erro" (não acumula entre nós
+        // diferentes — isso exigiria o path posicional ainda sem convenção nesta rolagem),
+        // só adianta a checagem pura do primeiro nó problemático para antes de qualquer I/O.
+        List<FieldError> formaErros = ValidarBasesLegaisDaArvore(command.Raizes);
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
         }
 
         // O vocabulário só é resolvido (I/O cross-módulo) quando alguma folha declara
@@ -202,6 +218,51 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// <summary>Resolve o vocabulário de gatilho recursivamente na floresta — só a presença de gatilho, ainda sem I/O.</summary>
     private static bool ExisteGatilho(IReadOnlyList<NoExigenciaInput> nos) =>
         nos.Any(no => (no.Documento?.Condicoes.Count ?? 0) > 0 || ExisteGatilho(no.Filhos ?? []));
+
+    /// <summary>
+    /// ADR-0125: percorre a árvore em pré-ordem (mesma ordem de visita de
+    /// <c>ConstruirNoAsync</c>) confirmando a forma das bases legais de cada nó
+    /// (<see cref="DocumentoExigidoBaseLegal.ValidarFormaBasica"/> em folha,
+    /// <see cref="NoExigenciaBaseLegal.ValidarFormaBasica"/> em grupo) — 100% pura, sem
+    /// nenhum reader. Retorna no primeiro nó com violação (mesmo comportamento
+    /// "first-failing-node" do restante da árvore), mas os erros DENTRO desse nó já vêm
+    /// acumulados entre si.
+    /// </summary>
+    private static List<FieldError> ValidarBasesLegaisDaArvore(IReadOnlyList<NoExigenciaInput> nos)
+    {
+        foreach (NoExigenciaInput no in nos)
+        {
+            bool ehFolha = string.Equals(no.Tipo, "FOLHA", StringComparison.Ordinal);
+            IReadOnlyList<BaseLegalInput> basesLegais = ehFolha
+                ? no.Documento?.BasesLegais ?? []
+                : no.BasesLegais ?? [];
+
+            List<FieldError> erros = [];
+            for (int indice = 0; indice < basesLegais.Count; indice++)
+            {
+                BaseLegalInput item = basesLegais[indice];
+                TipoAbrangencia abrangencia = TipoAbrangenciaCodigo.FromCodigo(item.Abrangencia);
+                StatusBaseLegal status = StatusBaseLegalCodigo.FromCodigo(item.Status);
+                List<FieldError> errosItem = ehFolha
+                    ? DocumentoExigidoBaseLegal.ValidarFormaBasica(item.Referencia, abrangencia, status)
+                    : NoExigenciaBaseLegal.ValidarFormaBasica(item.Referencia, abrangencia, status);
+                erros.AddRange(errosItem.Select(erro => erro with { Field = $"basesLegais[{indice}].{erro.Field}" }));
+            }
+
+            if (erros.Count > 0)
+            {
+                return erros;
+            }
+
+            List<FieldError> errosFilhos = ValidarBasesLegaisDaArvore(no.Filhos ?? []);
+            if (errosFilhos.Count > 0)
+            {
+                return errosFilhos;
+            }
+        }
+
+        return [];
+    }
 
     /// <summary>
     /// Constrói UMA folha da árvore — exatamente a mesma resolução por-item do modelo plano
