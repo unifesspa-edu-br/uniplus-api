@@ -7,10 +7,13 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarModalidadeCommand"/>. Carrega a modalidade (404
-/// se inexistente), aplica os campos editáveis (o <c>Codigo</c> é imutável, então
-/// não há checagem de unicidade nem corrida de índice), revalida as invariantes de
-/// coerência (422) e a integridade referencial dos códigos citados (422), e commita.
+/// Handler do <see cref="AtualizarModalidadeCommand"/>. Pré-checa os campos editáveis
+/// (parse, tamanhos e as três coerências cruzadas — tudo que independe do estado
+/// persistido, 422, sem I/O) ANTES de buscar a modalidade por Id — validação sempre
+/// vence 404. Só depois do fetch (404) é que <see cref="Modalidade.Atualizar"/> pode
+/// avaliar a guarda do catálogo legal fixo, pois ela depende do <c>Codigo</c> já
+/// persistido; ela reaplica a mesma validação como rede de segurança. Por fim,
+/// revalida a integridade referencial dos códigos citados (422, DB) e commita.
 /// </summary>
 public static class AtualizarModalidadeCommandHandler
 {
@@ -23,6 +26,24 @@ public static class AtualizarModalidadeCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        Result<Modalidade.CamposResolvidos> preCheck = Modalidade.ValidarCampos(
+            command.Descricao,
+            command.NaturezaLegal,
+            command.ComposicaoVagas,
+            command.ComposicaoOrigem,
+            command.RegraRemanejamento,
+            command.RemanejamentoDestino,
+            command.RemanejamentoPar,
+            command.RemanejamentoFallback,
+            command.CriteriosCumulativos,
+            command.AcaoQuandoIndeferido,
+            command.BaseLegal);
+
+        if (preCheck.IsFailure)
+        {
+            return Result.ValidationFailure(preCheck.Errors);
+        }
 
         Modalidade? modalidade = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (modalidade is null)
@@ -56,6 +77,10 @@ public static class AtualizarModalidadeCommandHandler
         if (referencias.Count > 0
             && !await repository.CodigosVivosExistemAsync(referencias, cancellationToken).ConfigureAwait(false))
         {
+            // modalidade.Atualizar já mutou o agregado rastreado — descarta antes de
+            // devolver a falha, senão o save automático do Wolverine persistiria a
+            // alteração cuja referência acabou de ser recusada.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(new DomainError(
                 ModalidadeErrorCodes.ReferenciaInexistenteOuInativa,
                 "Um ou mais códigos de modalidade referenciados (origem ou remanejamento) "

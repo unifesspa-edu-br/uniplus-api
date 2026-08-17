@@ -66,17 +66,25 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria uma nova Modalidade. Valida o código (formato) e todas as invariantes
-    /// de coerência de domínio (natureza↔remanejamento, RetiraDe⟺origem, args por
+    /// Cria uma nova Modalidade, acumulando toda violação independente em vez de
+    /// parar na primeira. Valida o código (formato) e todas as invariantes de
+    /// coerência de domínio (natureza↔remanejamento, RetiraDe⟺origem, args por
     /// regra, ação de indeferimento). Os enums chegam como tokens textuais
     /// (UPPER_SNAKE): <paramref name="naturezaLegal"/> e <paramref name="composicaoVagas"/>
     /// aplicam default quando ausentes (AMPLA / RESIDUAL_DO_VO);
     /// <paramref name="regraRemanejamento"/> e <paramref name="acaoQuandoIndeferido"/>
-    /// são opcionais. A unicidade do código e a integridade referencial dos códigos
-    /// citados são responsabilidade do handler.
+    /// são opcionais.
     /// </summary>
+    /// <remarks>
+    /// A factory <b>aceita</b> os dez códigos do catálogo legal fixo — recusá-los é
+    /// papel do cadastro (handler), não do domínio: o mesmo código válido pode
+    /// legitimamente chegar aqui por outra via que não o endpoint de criação (ex.:
+    /// reconstrução administrativa a partir do estado semeado). A unicidade do
+    /// código e a integridade referencial dos códigos citados também são
+    /// responsabilidade do handler, pois exigem consulta ao banco.
+    /// </remarks>
     public static Result<Modalidade> Criar(
-        string codigo,
+        string? codigo,
         string? descricao,
         string? naturezaLegal,
         string? composicaoVagas,
@@ -89,33 +97,30 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? acaoQuandoIndeferido,
         string? baseLegal)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
+        List<FieldError> erros = [];
 
         Result<CodigoModalidade> codigoResult = CodigoModalidade.Criar(codigo);
         if (codigoResult.IsFailure)
         {
-            return Result<Modalidade>.Failure(codigoResult.Error!);
+            erros.Add(new("codigo", codigoResult.Error!));
         }
 
-        Result<CamposResolvidos> camposResult = ResolverCampos(
+        Result<CamposResolvidos> camposResult = ValidarCampos(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
             criteriosCumulativos, acaoQuandoIndeferido, baseLegal);
         if (camposResult.IsFailure)
         {
-            return Result<Modalidade>.Failure(camposResult.Error!);
+            erros.AddRange(camposResult.Errors);
         }
 
-        CamposResolvidos campos = camposResult.Value!;
-
-        Result<CamposResolvidos>? coerencia = ValidarCoerencia(campos);
-        if (coerencia is not null)
+        if (erros.Count > 0)
         {
-            return Result<Modalidade>.Failure(coerencia.Error!);
+            return Result<Modalidade>.ValidationFailure(erros);
         }
 
         var modalidade = new Modalidade { Codigo = codigoResult.Value! };
-        modalidade.AplicarCampos(campos);
+        modalidade.AplicarCampos(camposResult.Value!);
 
         return Result<Modalidade>.Success(modalidade);
     }
@@ -146,30 +151,28 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? acaoQuandoIndeferido,
         string? baseLegal)
     {
-        Result<CamposResolvidos> camposResult = ResolverCampos(
+        (List<FieldError> erros, _, _, _, CamposResolvidos campos) = ValidarCamposIndependentes(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
             criteriosCumulativos, acaoQuandoIndeferido, baseLegal);
-        if (camposResult.IsFailure)
+        if (erros.Count > 0)
         {
-            return Result.Failure(camposResult.Error!);
+            return Result.ValidationFailure(erros);
         }
-
-        CamposResolvidos campos = camposResult.Value!;
 
         if (Codigo.EhLegalFixa && EstruturaDivergeDe(campos))
         {
             return Result.Failure(new DomainError(
                 ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel,
-                $"A modalidade legal fixa '{Codigo.Valor}' admite alteração apenas de descrição "
-                + "e base legal — natureza, composição, remanejamento, critérios e ação no "
-                + "indeferimento são fixados em lei."));
+                "Esta modalidade pertence ao catálogo legal fixo e admite alteração apenas de "
+                + "descrição e base legal — natureza, composição, remanejamento, critérios e ação "
+                + "no indeferimento são fixados em lei."));
         }
 
-        Result<CamposResolvidos>? coerencia = ValidarCoerencia(campos);
-        if (coerencia is not null)
+        Result coerencia = ValidarCoerenciaCruzada(campos);
+        if (coerencia.IsFailure)
         {
-            return Result.Failure(coerencia.Error!);
+            return coerencia;
         }
 
         AplicarCampos(campos);
@@ -206,12 +209,20 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Primeira metade da validação: analisa os tokens dos enums, normaliza os textos e
-    /// confere tamanhos — tudo que depende só do valor recebido. As invariantes que
-    /// cruzam campos ficam em <see cref="ValidarCoerencia"/>, para que a guarda do
-    /// catálogo legal fixo possa correr entre as duas.
+    /// Valida e normaliza os campos editáveis independentes de qualquer coerência
+    /// cruzada, acumulando toda violação em vez de parar na primeira — tokens dos
+    /// enums, normalização de texto e tamanhos. Também devolve, junto do lote de
+    /// erros, se cada token do qual alguma invariante cruzada depende foi
+    /// reconhecido (<paramref name="naturezaLegalToken"/> → natureza,
+    /// <paramref name="composicaoVagasToken"/> → composição,
+    /// <paramref name="regraRemanejamentoToken"/> → regra): quando o lote de erros
+    /// está vazio, os três sinalizadores são sempre verdadeiros, por construção.
+    /// Sem I/O — separada de <see cref="ValidarCoerenciaCruzada"/> porque
+    /// <see cref="Atualizar"/> precisa intercalar a guarda do catálogo legal fixo
+    /// entre as duas.
     /// </summary>
-    private static Result<CamposResolvidos> ResolverCampos(
+    private static (List<FieldError> Erros, bool NaturezaOk, bool ComposicaoOk, bool RegraOk, CamposResolvidos Campos)
+        ValidarCamposIndependentes(
         string? descricao,
         string? naturezaLegalToken,
         string? composicaoVagasToken,
@@ -224,74 +235,87 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? acaoQuandoIndeferidoToken,
         string? baseLegal)
     {
-        if (descricao is not null && descricao.Trim().Length > DescricaoMaxLength)
+        List<FieldError> erros = [];
+
+        string? descricaoNorm = NormalizarOpcional(descricao);
+        if (descricaoNorm is not null && descricaoNorm.Length > DescricaoMaxLength)
         {
-            return Falha(ModalidadeErrorCodes.DescricaoTamanho,
-                $"Descrição da modalidade deve ter no máximo {DescricaoMaxLength} caracteres.");
+            erros.Add(new("descricao", new DomainError(
+                ModalidadeErrorCodes.DescricaoTamanho,
+                $"Descrição da modalidade deve ter no máximo {DescricaoMaxLength} caracteres.")));
         }
 
-        if (baseLegal is not null && baseLegal.Trim().Length > BaseLegalMaxLength)
+        string? baseLegalNorm = NormalizarOpcional(baseLegal);
+        if (baseLegalNorm is not null && baseLegalNorm.Length > BaseLegalMaxLength)
         {
-            return Falha(ModalidadeErrorCodes.BaseLegalTamanho,
-                $"Base legal da modalidade deve ter no máximo {BaseLegalMaxLength} caracteres.");
+            erros.Add(new("baseLegal", new DomainError(
+                ModalidadeErrorCodes.BaseLegalTamanho,
+                $"Base legal da modalidade deve ter no máximo {BaseLegalMaxLength} caracteres.")));
         }
 
         // NaturezaLegal — obrigatória, default AMPLA quando ausente.
-        NaturezaLegal natureza;
-        if (string.IsNullOrWhiteSpace(naturezaLegalToken))
+        bool naturezaOk = true;
+        NaturezaLegal natureza = NaturezaLegal.Ampla;
+        if (!string.IsNullOrWhiteSpace(naturezaLegalToken) && !NaturezasLegais.TryAnalisar(naturezaLegalToken, out natureza))
         {
-            natureza = NaturezaLegal.Ampla;
-        }
-        else if (!NaturezasLegais.TryAnalisar(naturezaLegalToken, out natureza))
-        {
-            return Falha(ModalidadeErrorCodes.NaturezaInvalida,
-                $"Natureza legal deve ser uma de: {string.Join(", ", NaturezasLegais.TokensCanonicos)}.");
+            naturezaOk = false;
+            erros.Add(new("naturezaLegal", new DomainError(
+                ModalidadeErrorCodes.NaturezaInvalida,
+                $"Natureza legal deve ser uma de: {string.Join(", ", NaturezasLegais.TokensCanonicos)}.")));
         }
 
         // ComposicaoVagas — obrigatória, default RESIDUAL_DO_VO quando ausente.
-        ComposicaoVagas composicao;
-        if (string.IsNullOrWhiteSpace(composicaoVagasToken))
+        bool composicaoOk = true;
+        ComposicaoVagas composicao = ComposicaoVagas.ResidualDoVo;
+        if (!string.IsNullOrWhiteSpace(composicaoVagasToken) && !ComposicoesVagas.TryAnalisar(composicaoVagasToken, out composicao))
         {
-            composicao = ComposicaoVagas.ResidualDoVo;
-        }
-        else if (!ComposicoesVagas.TryAnalisar(composicaoVagasToken, out composicao))
-        {
-            return Falha(ModalidadeErrorCodes.ComposicaoVagasInvalida,
-                $"Composição de vagas deve ser uma de: {string.Join(", ", ComposicoesVagas.TokensCanonicos)}.");
+            composicaoOk = false;
+            erros.Add(new("composicaoVagas", new DomainError(
+                ModalidadeErrorCodes.ComposicaoVagasInvalida,
+                $"Composição de vagas deve ser uma de: {string.Join(", ", ComposicoesVagas.TokensCanonicos)}.")));
         }
 
         // RegraRemanejamento — opcional (null quando ausente).
+        bool regraOk = true;
         RegraRemanejamento? regra = null;
         if (!string.IsNullOrWhiteSpace(regraRemanejamentoToken))
         {
-            if (!RegrasRemanejamento.TryAnalisar(regraRemanejamentoToken, out RegraRemanejamento regraResolvida))
+            if (RegrasRemanejamento.TryAnalisar(regraRemanejamentoToken, out RegraRemanejamento regraResolvida))
             {
-                return Falha(ModalidadeErrorCodes.RegraRemanejamentoInvalida,
-                    $"Regra de remanejamento deve ser uma de: {string.Join(", ", RegrasRemanejamento.TokensCanonicos)}.");
+                regra = regraResolvida;
             }
-
-            regra = regraResolvida;
+            else
+            {
+                regraOk = false;
+                erros.Add(new("regraRemanejamento", new DomainError(
+                    ModalidadeErrorCodes.RegraRemanejamentoInvalida,
+                    $"Regra de remanejamento deve ser uma de: {string.Join(", ", RegrasRemanejamento.TokensCanonicos)}.")));
+            }
         }
 
         // AcaoQuandoIndeferido — opcional (null quando ausente); quando informada,
-        // deve ser um dos dois tokens (invariante 6).
+        // deve ser um dos dois tokens (invariante 6). Nada depende dela — sem gate.
         AcaoQuandoIndeferido? acao = null;
         if (!string.IsNullOrWhiteSpace(acaoQuandoIndeferidoToken))
         {
-            if (!AcoesQuandoIndeferido.TryAnalisar(acaoQuandoIndeferidoToken, out AcaoQuandoIndeferido acaoResolvida))
+            if (AcoesQuandoIndeferido.TryAnalisar(acaoQuandoIndeferidoToken, out AcaoQuandoIndeferido acaoResolvida))
             {
-                return Falha(ModalidadeErrorCodes.AcaoIndeferimentoInvalida,
-                    $"Ação quando indeferido deve ser uma de: {string.Join(", ", AcoesQuandoIndeferido.TokensCanonicos)}.");
+                acao = acaoResolvida;
             }
-
-            acao = acaoResolvida;
+            else
+            {
+                erros.Add(new("acaoQuandoIndeferido", new DomainError(
+                    ModalidadeErrorCodes.AcaoIndeferimentoInvalida,
+                    $"Ação quando indeferido deve ser uma de: {string.Join(", ", AcoesQuandoIndeferido.TokensCanonicos)}.")));
+            }
         }
 
         string? origemNorm = NormalizarOpcional(composicaoOrigem);
         if (origemNorm is not null && origemNorm.Length > CodigoReferenciaMaxLength)
         {
-            return Falha(ModalidadeErrorCodes.CodigoFormatoInvalido,
-                $"Código de origem da composição deve ter no máximo {CodigoReferenciaMaxLength} caracteres.");
+            erros.Add(new("composicaoOrigem", new DomainError(
+                ModalidadeErrorCodes.CodigoFormatoInvalido,
+                $"Código de origem da composição deve ter no máximo {CodigoReferenciaMaxLength} caracteres.")));
         }
 
         RemanejamentoArgs args = RemanejamentoArgs.Criar(
@@ -299,77 +323,158 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
 
         IReadOnlyList<string> criterios = NormalizarCriterios(criteriosCumulativos);
 
-        return Result<CamposResolvidos>.Success(new CamposResolvidos(
-            NormalizarOpcional(descricao),
-            natureza,
-            composicao,
-            origemNorm,
-            regra,
-            args,
-            criterios,
-            acao,
-            NormalizarOpcional(baseLegal)));
+        var campos = new CamposResolvidos(
+            descricaoNorm, natureza, composicao, origemNorm, regra, args, criterios, acao, baseLegalNorm);
+
+        return (erros, naturezaOk, composicaoOk, regraOk, campos);
     }
 
     /// <summary>
-    /// Segunda metade da validação: as invariantes que cruzam campos já resolvidos —
-    /// RetiraDe⟺origem, natureza↔regra de remanejamento e argumentos exigidos ou
-    /// proibidos por regra. Retorna <see langword="null"/> quando tudo é coerente.
+    /// Valida os campos editáveis por completo, acumulando toda violação
+    /// independente — os campos que não cruzam entre si (<see cref="ValidarCamposIndependentes"/>)
+    /// e as três invariantes cruzadas (RetiraDe⟺origem, natureza↔regra, args por
+    /// regra), cada uma só avaliada quando os tokens de que ela depende já foram
+    /// reconhecidos (senão o erro reportado seria derivado de um token inválido,
+    /// não uma incoerência independente — ex.: reportar "SEGUE_CASCATA exigido"
+    /// sobre uma <c>NaturezaLegal</c> que nem chegou a resolver para um valor de
+    /// domínio). Sem I/O — existe também para o handler de atualização falhar
+    /// rápido antes de buscar a modalidade por Id.
     /// </summary>
-    private static Result<CamposResolvidos>? ValidarCoerencia(CamposResolvidos campos)
+    public static Result<CamposResolvidos> ValidarCampos(
+        string? descricao,
+        string? naturezaLegalToken,
+        string? composicaoVagasToken,
+        string? composicaoOrigem,
+        string? regraRemanejamentoToken,
+        string? remanejamentoDestino,
+        string? remanejamentoPar,
+        string? remanejamentoFallback,
+        IReadOnlyList<string>? criteriosCumulativos,
+        string? acaoQuandoIndeferidoToken,
+        string? baseLegal)
     {
-        // Invariante 4 — equivalência exata RetiraDe ⟺ ComposicaoOrigem preenchida.
-        bool ehRetiraDe = campos.ComposicaoVagas == ComposicaoVagas.RetiraDe;
-        if (ehRetiraDe && campos.ComposicaoOrigem is null)
-        {
-            return Falha(ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
-                "Composição RETIRA_DE exige o código de origem (composicao_origem).");
-        }
+        (List<FieldError> erros, bool naturezaOk, bool composicaoOk, bool regraOk, CamposResolvidos campos) =
+            ValidarCamposIndependentes(
+                descricao, naturezaLegalToken, composicaoVagasToken, composicaoOrigem, regraRemanejamentoToken,
+                remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
+                criteriosCumulativos, acaoQuandoIndeferidoToken, baseLegal);
 
-        if (!ehRetiraDe && campos.ComposicaoOrigem is not null)
+        // Invariante 4 — equivalência exata RetiraDe ⟺ origem preenchida. A
+        // presença de origem independe do tamanho já sinalizado acima; só depende
+        // de ComposicaoVagas ter sido reconhecida.
+        if (composicaoOk)
         {
-            return Falha(ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
-                "Código de origem (composicao_origem) só é permitido na composição RETIRA_DE.");
+            bool ehRetiraDe = campos.ComposicaoVagas == ComposicaoVagas.RetiraDe;
+            if (ehRetiraDe && campos.ComposicaoOrigem is null)
+            {
+                erros.Add(new("composicaoOrigem", new DomainError(
+                    ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
+                    "Composição RETIRA_DE exige o código de origem (composicao_origem).")));
+            }
+            else if (!ehRetiraDe && campos.ComposicaoOrigem is not null)
+            {
+                erros.Add(new("composicaoOrigem", new DomainError(
+                    ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
+                    "Código de origem (composicao_origem) só é permitido na composição RETIRA_DE.")));
+            }
         }
 
         // Invariante 3 — coerência natureza ↔ regra de remanejamento.
-        Result<CamposResolvidos>? coerencia = ValidarCoerenciaNaturezaRemanejamento(
-            campos.NaturezaLegal, campos.RegraRemanejamento);
-        if (coerencia is not null)
+        if (naturezaOk && regraOk)
         {
-            return coerencia;
+            FieldError? incoerencia = ValidarCoerenciaNaturezaRemanejamento(campos.NaturezaLegal, campos.RegraRemanejamento);
+            if (incoerencia is not null)
+            {
+                erros.Add(incoerencia);
+            }
         }
 
         // Invariante 5 — argumentos exigidos/proibidos por regra.
-        return ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs);
+        if (regraOk)
+        {
+            FieldError? argumentoInvalido = ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs);
+            if (argumentoInvalido is not null)
+            {
+                erros.Add(argumentoInvalido);
+            }
+        }
+
+        return erros.Count == 0
+            ? Result<CamposResolvidos>.Success(campos)
+            : Result<CamposResolvidos>.ValidationFailure(erros);
     }
 
-    private static Result<CamposResolvidos>? ValidarCoerenciaNaturezaRemanejamento(
+    /// <summary>
+    /// As três invariantes que cruzam campos já resolvidos e confirmados válidos
+    /// individualmente (RetiraDe⟺origem, natureza↔regra, args por regra),
+    /// acumulando toda violação independente. Diferente de <see cref="ValidarCampos"/>,
+    /// não precisa de sinalizador de gate: só é chamada por <see cref="Atualizar"/>
+    /// depois que <see cref="ValidarCamposIndependentes"/> já devolveu zero erros —
+    /// os três tokens dos quais estas invariantes dependem já estão, por
+    /// construção, reconhecidos.
+    /// </summary>
+    private static Result ValidarCoerenciaCruzada(CamposResolvidos campos)
+    {
+        List<FieldError> erros = [];
+
+        bool ehRetiraDe = campos.ComposicaoVagas == ComposicaoVagas.RetiraDe;
+        if (ehRetiraDe && campos.ComposicaoOrigem is null)
+        {
+            erros.Add(new("composicaoOrigem", new DomainError(
+                ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
+                "Composição RETIRA_DE exige o código de origem (composicao_origem).")));
+        }
+        else if (!ehRetiraDe && campos.ComposicaoOrigem is not null)
+        {
+            erros.Add(new("composicaoOrigem", new DomainError(
+                ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
+                "Código de origem (composicao_origem) só é permitido na composição RETIRA_DE.")));
+        }
+
+        FieldError? incoerencia = ValidarCoerenciaNaturezaRemanejamento(campos.NaturezaLegal, campos.RegraRemanejamento);
+        if (incoerencia is not null)
+        {
+            erros.Add(incoerencia);
+        }
+
+        FieldError? argumentoInvalido = ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs);
+        if (argumentoInvalido is not null)
+        {
+            erros.Add(argumentoInvalido);
+        }
+
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
+    }
+
+    private static FieldError? ValidarCoerenciaNaturezaRemanejamento(
         NaturezaLegal natureza,
         RegraRemanejamento? regra)
     {
         switch (natureza)
         {
             case NaturezaLegal.CotaReservada when regra != Enums.RegraRemanejamento.SegueCascata:
-                return Falha(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
-                    "Cota reservada exige regra de remanejamento SEGUE_CASCATA.");
+                return new("regraRemanejamento", new DomainError(
+                    ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
+                    "Cota reservada exige regra de remanejamento SEGUE_CASCATA."));
 
             case NaturezaLegal.Ampla when regra is not null:
-                return Falha(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
-                    "Ampla concorrência não admite regra de remanejamento.");
+                return new("regraRemanejamento", new DomainError(
+                    ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
+                    "Ampla concorrência não admite regra de remanejamento."));
 
             case NaturezaLegal.Suplementar or NaturezaLegal.OutraModalidade
                 when regra is not (Enums.RegraRemanejamento.DestinoUnico or Enums.RegraRemanejamento.Cruzado):
-                return Falha(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
+                return new("regraRemanejamento", new DomainError(
+                    ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
                     "Modalidade suplementar ou de outra natureza exige regra de remanejamento "
-                    + "DESTINO_UNICO ou CRUZADO.");
+                    + "DESTINO_UNICO ou CRUZADO."));
 
             default:
                 return null;
         }
     }
 
-    private static Result<CamposResolvidos>? ValidarArgumentosPorRegra(
+    private static FieldError? ValidarArgumentosPorRegra(
         RegraRemanejamento? regra,
         RemanejamentoArgs args)
     {
@@ -378,14 +483,16 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             case Enums.RegraRemanejamento.DestinoUnico:
                 if (args.Destino is null)
                 {
-                    return Falha(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra DESTINO_UNICO exige o argumento 'destino'.");
+                    return new("regraRemanejamento", new DomainError(
+                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
+                        "Regra DESTINO_UNICO exige o argumento 'destino'."));
                 }
 
                 if (args.Par is not null || args.Fallback is not null)
                 {
-                    return Falha(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra DESTINO_UNICO não admite os argumentos 'par' e 'fallback'.");
+                    return new("regraRemanejamento", new DomainError(
+                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
+                        "Regra DESTINO_UNICO não admite os argumentos 'par' e 'fallback'."));
                 }
 
                 return null;
@@ -393,14 +500,16 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             case Enums.RegraRemanejamento.Cruzado:
                 if (args.Par is null || args.Fallback is null)
                 {
-                    return Falha(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra CRUZADO exige os argumentos 'par' e 'fallback'.");
+                    return new("regraRemanejamento", new DomainError(
+                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
+                        "Regra CRUZADO exige os argumentos 'par' e 'fallback'."));
                 }
 
                 if (args.Destino is not null)
                 {
-                    return Falha(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra CRUZADO não admite o argumento 'destino'.");
+                    return new("regraRemanejamento", new DomainError(
+                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
+                        "Regra CRUZADO não admite o argumento 'destino'."));
                 }
 
                 return null;
@@ -408,8 +517,9 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             // SegueCascata ou sem regra: nenhum argumento é permitido.
             default:
                 return args.TemAlgum
-                    ? Falha(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Nenhum argumento de remanejamento é admitido para esta regra.")
+                    ? new("regraRemanejamento", new DomainError(
+                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
+                        "Nenhum argumento de remanejamento é admitido para esta regra."))
                     : null;
         }
     }
@@ -429,10 +539,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
-    private static Result<CamposResolvidos> Falha(string code, string mensagem) =>
-        Result<CamposResolvidos>.Failure(new DomainError(code, mensagem));
-
-    private sealed record CamposResolvidos(
+    public sealed record CamposResolvidos(
         string? Descricao,
         NaturezaLegal NaturezaLegal,
         ComposicaoVagas ComposicaoVagas,

@@ -475,4 +475,45 @@ public sealed class ModalidadeTests
 
         r.IsSuccess.Should().BeTrue("o seed e a reidratação dependem da factory aceitá-los");
     }
+
+    // ── Acumulação e gate entre campos independentes (ADR-0125) ────────────────
+
+    [Fact(DisplayName = "Código ausente, descrição longa e natureza inválida acumulam as três violações")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
+    {
+        Result<Modalidade> r = Criar(
+            codigo: "", descricao: new string('a', 301), natureza: "XPTO");
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors.Should().HaveCount(3);
+        r.Errors[0].Field.Should().Be("codigo");
+        r.Errors[0].Error.Code.Should().Be(ModalidadeErrorCodes.CodigoObrigatorio);
+        r.Errors[1].Field.Should().Be("descricao");
+        r.Errors[2].Field.Should().Be("naturezaLegal");
+    }
+
+    [Fact(DisplayName = "Regra fora do domínio com argumento presente reporta só o token inválido, não a incoerência derivada")]
+    public void Criar_RegraInvalidaComArgumento_NaoDerivaIncoerenciaDeArgumento()
+    {
+        Result<Modalidade> r = Criar(
+            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL", regra: "CASCATA", destino: "AC");
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors.Should().HaveCount(1,
+            "a invariante de argumentos por regra depende de RegraRemanejamento já reconhecida — " +
+            "reportá-la sobre um token que nem chegou a resolver seria um erro derivado, não independente");
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.RegraRemanejamentoInvalida);
+    }
+
+    [Fact(DisplayName = "ValidarCampos isolado é público e reusável sem instanciar o agregado")]
+    public void ValidarCampos_CamposValidos_Aceita()
+    {
+        Result<Modalidade.CamposResolvidos> r = Modalidade.ValidarCampos(
+            descricao: null, naturezaLegalToken: "AMPLA", composicaoVagasToken: "RESIDUAL_DO_VO",
+            composicaoOrigem: null, regraRemanejamentoToken: null, remanejamentoDestino: null,
+            remanejamentoPar: null, remanejamentoFallback: null, criteriosCumulativos: null,
+            acaoQuandoIndeferidoToken: null, baseLegal: null);
+
+        r.IsSuccess.Should().BeTrue();
+    }
 }

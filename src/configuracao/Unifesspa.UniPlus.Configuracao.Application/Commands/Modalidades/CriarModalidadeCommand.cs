@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <c>IUserContext</c>, não no payload.
 /// </summary>
 public sealed record CriarModalidadeCommand(
-    string Codigo,
+    string? Codigo = null,
     string? Descricao = null,
     string? NaturezaLegal = null,
     string? ComposicaoVagas = null,

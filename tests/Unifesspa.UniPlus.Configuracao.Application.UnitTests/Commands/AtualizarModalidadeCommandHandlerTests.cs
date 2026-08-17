@@ -91,4 +91,18 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.ReferenciaInexistenteOuInativa);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Campo inválido no payload propaga o erro sem buscar a modalidade por Id — validação vence 404")]
+    public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
+    {
+        var comando = new AtualizarModalidadeCommand(Guid.CreateVersion7(), NaturezaLegal: "XPTO");
+
+        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaInvalida);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }

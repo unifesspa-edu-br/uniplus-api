@@ -10373,13 +10373,13 @@
         }
       },
       "CriarModalidadeCommand": {
-        "required": [
-          "codigo"
-        ],
         "type": "object",
         "properties": {
           "codigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
             "type": [
