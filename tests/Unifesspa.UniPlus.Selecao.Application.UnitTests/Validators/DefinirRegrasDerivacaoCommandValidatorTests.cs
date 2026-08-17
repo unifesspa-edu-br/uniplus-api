@@ -53,42 +53,38 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes");
     }
 
-    [Fact(DisplayName = "Falha quando o código do fato é vazio")]
-    public void Rejeita_CodigoFatoVazio()
+    [Fact(DisplayName = "Passa com código do fato vazio no validator — a rejeição é do agregado (ConfiguracaoDerivacaoFato.Criar)")]
+    public void Aceita_CodigoFatoVazioNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(
             Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("", [new RegraDerivacaoInput(0, "AC", null)])], PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes[0].CodigoFato");
+        result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando a configuração não tem regra alguma")]
-    public void Rejeita_SemRegras()
+    [Fact(DisplayName = "Passa sem regra alguma no validator — a rejeição é do agregado (ConfiguracaoDerivacaoFato.Criar)")]
+    public void Aceita_SemRegrasNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(
             Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("MODALIDADE", [])], PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes[0].Regras");
+        result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando a ordem da regra é negativa")]
-    public void Rejeita_OrdemNegativa()
+    [Fact(DisplayName = "Passa com ordem negativa no validator — a rejeição é do agregado (RegraDerivacaoConfigurada.Criar)")]
+    public void Aceita_OrdemNegativaNoValidator()
     {
         ValidationResult result = Validator.Validate(Comando(new RegraDerivacaoInput(-1, "AC", null)));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes[0].Regras[0].Ordem");
+        result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando contribui é vazio")]
-    public void Rejeita_ContribuiVazio()
+    [Fact(DisplayName = "Passa com contribui vazio no validator — a rejeição é do agregado (RegraDerivacaoConfigurada.Criar)")]
+    public void Aceita_ContribuiVazioNoValidator()
     {
         ValidationResult result = Validator.Validate(Comando(new RegraDerivacaoInput(0, "", null)));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes[0].Regras[0].Contribui");
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Falha quando o 'quando' presente é uma lista externa vazia (âncora é null)")]

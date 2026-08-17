@@ -30,23 +30,19 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
 
     private RegraDerivacaoConfigurada() { }
 
+    /// <summary>
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — ordem e
+    /// contribuição não dependem uma da outra.
+    /// </summary>
     public static Result<RegraDerivacaoConfigurada> Criar(
         int ordem,
         string contribui,
         IReadOnlyList<CondicaoRegraDerivacao>? condicoes)
     {
-        if (ordem < 0)
+        List<FieldError> erros = ValidarFormaBasica(ordem, contribui);
+        if (erros.Count > 0)
         {
-            return Result<RegraDerivacaoConfigurada>.Failure(new DomainError(
-                RegraDerivacaoConfiguradaErrorCodes.OrdemInvalida,
-                "A ordem da regra não pode ser negativa."));
-        }
-
-        if (string.IsNullOrWhiteSpace(contribui))
-        {
-            return Result<RegraDerivacaoConfigurada>.Failure(new DomainError(
-                RegraDerivacaoConfiguradaErrorCodes.ContribuiObrigatorio,
-                "Uma regra de derivação precisa contribuir um código."));
+            return Result<RegraDerivacaoConfigurada>.ValidationFailure(erros);
         }
 
         RegraDerivacaoConfigurada regra = new() { Ordem = ordem, Contribui = contribui.Trim() };
@@ -57,6 +53,35 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
         }
 
         return Result<RegraDerivacaoConfigurada>.Success(regra);
+    }
+
+    /// <summary>
+    /// Ordem e contribuição não dependem do vocabulário cross-módulo nem de condições já
+    /// resolvidas. Existe separada para o handler poder confirmar a forma de TODAS as regras do
+    /// payload numa primeira passada, antes de resolver o catálogo (mesmo padrão de
+    /// <c>FatoColetado.ValidarFormaBasica</c>, PR #1214 — evita que um <c>contribui</c> vazio
+    /// caia num erro semântico menos específico, e que uma violação de forma seja mascarada pelo
+    /// erro semântico de outra regra do mesmo payload).
+    /// </summary>
+    public static List<FieldError> ValidarFormaBasica(int ordem, string? contribui)
+    {
+        List<FieldError> erros = [];
+
+        if (ordem < 0)
+        {
+            erros.Add(new("ordem", new DomainError(
+                RegraDerivacaoConfiguradaErrorCodes.OrdemInvalida,
+                "A ordem da regra não pode ser negativa.")));
+        }
+
+        if (string.IsNullOrWhiteSpace(contribui))
+        {
+            erros.Add(new("contribui", new DomainError(
+                RegraDerivacaoConfiguradaErrorCodes.ContribuiObrigatorio,
+                "Uma regra de derivação precisa contribuir um código.")));
+        }
+
+        return erros;
     }
 
     internal void VincularConfiguracao(Guid configuracaoDerivacaoFatoId) =>

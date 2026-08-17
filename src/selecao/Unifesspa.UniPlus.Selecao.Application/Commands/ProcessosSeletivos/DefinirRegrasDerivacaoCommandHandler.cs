@@ -14,14 +14,18 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirRegrasDerivacaoCommand"/> (Story #985): substitui integralmente as
-/// regras de derivação de um processo em rascunho. Resolve na Application (que tem acesso ao
-/// vocabulário cross-módulo, ADR-0056) a semântica que o domínio não alcança: o fato alvo é
-/// <b>derivado com binding de regra de derivação</b>; cada condição <c>quando</c> valida operador ×
-/// domínio × valor do fato citado, contra a oferta do próprio processo para os domínios dinâmicos;
-/// todo fato citado está disponível na configuração final (coletado ou derivado no processo); e o
-/// código contribuído pertence ao domínio do fato — para <c>MODALIDADE</c>, ao conjunto de
-/// modalidades ofertadas. A validação estrutural (código de fato único) e o guard de rascunho são
-/// do agregado (<see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/>).
+/// regras de derivação de um processo em rascunho, em duas passadas. A primeira confirma a
+/// <b>forma básica</b> de TODAS as configurações e regras (<see cref="ConfiguracaoDerivacaoFato.ValidarFormaBasica"/>/
+/// <see cref="RegraDerivacaoConfigurada.ValidarFormaBasica"/>) sem tocar o vocabulário
+/// cross-módulo, acumulando (ADR-0125) através de toda a lista. Só então a segunda resolve, na
+/// Application (que tem acesso ao vocabulário cross-módulo, ADR-0056), a semântica que o domínio
+/// não alcança: o fato alvo é <b>derivado com binding de regra de derivação</b>; cada condição
+/// <c>quando</c> valida operador × domínio × valor do fato citado, contra a oferta do próprio
+/// processo para os domínios dinâmicos; todo fato citado está disponível na configuração final
+/// (coletado ou derivado no processo); e o código contribuído pertence ao domínio do fato — para
+/// <c>MODALIDADE</c>, ao conjunto de modalidades ofertadas — parando na primeira configuração/
+/// regra que falhar, granularidade nunca coberta pelo FluentValidation. O guard de rascunho é do
+/// agregado (<see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/>).
 /// </summary>
 public static class DefinirRegrasDerivacaoCommandHandler
 {
@@ -54,6 +58,34 @@ public static class DefinirRegrasDerivacaoCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        // Acumula (ADR-0125) a forma básica de TODAS as configurações e regras numa primeira
+        // passada, ANTES de resolver o vocabulário cross-módulo — mesmo padrão de
+        // DefinirFatosColetadosCommandHandler (PR #1214): rodar depois da resolução semântica
+        // trocaria um código/contribuição vazios por um erro semântico menos específico, e uma
+        // violação de forma podia ser mascarada pelo erro semântico de outra configuração/regra
+        // do mesmo payload.
+        List<FieldError> formaErros = [];
+        for (int indiceConfig = 0; indiceConfig < command.Configuracoes.Count; indiceConfig++)
+        {
+            ConfiguracaoDerivacaoInput configInput = command.Configuracoes[indiceConfig];
+            List<FieldError> configErros = ConfiguracaoDerivacaoFato.ValidarFormaBasica(
+                configInput.CodigoFato, configInput.Regras.Count, configInput.Regras.Select(static r => r.Ordem));
+            formaErros.AddRange(configErros.Select(erro => erro with { Field = $"configuracoes[{indiceConfig}].{erro.Field}" }));
+
+            for (int indiceRegra = 0; indiceRegra < configInput.Regras.Count; indiceRegra++)
+            {
+                RegraDerivacaoInput regraInput = configInput.Regras[indiceRegra];
+                List<FieldError> regraErros = RegraDerivacaoConfigurada.ValidarFormaBasica(regraInput.Ordem, regraInput.Contribui);
+                formaErros.AddRange(regraErros.Select(erro =>
+                    erro with { Field = $"configuracoes[{indiceConfig}].regras[{indiceRegra}].{erro.Field}" }));
+            }
+        }
+
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+        }
+
         (IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
             IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario) =
             await ResolverVocabularioAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
@@ -83,7 +115,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
                 ResolverConfiguracao(configInput, catalogo, vocabulario, universo, dominiosDinamicos, modalidadesOfertadas);
             if (configResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(configResult.Error!);
+                return Result<MutacaoAceita>.ValidationFailure(configResult.Errors);
             }
 
             configuracoes.Add(configResult.Value!);
@@ -134,7 +166,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
                 ResolverRegra(regraInput, vocabulario, universo, dominiosDinamicos);
             if (regraResult.IsFailure)
             {
-                return Result<ConfiguracaoDerivacaoFato>.Failure(regraResult.Error!);
+                return Result<ConfiguracaoDerivacaoFato>.ValidationFailure(regraResult.Errors);
             }
 
             regras.Add(regraResult.Value!);
