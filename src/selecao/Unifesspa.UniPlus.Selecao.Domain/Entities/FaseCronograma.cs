@@ -150,22 +150,33 @@ public sealed class FaseCronograma : EntityBase
                 "Resultado definitivo pressupõe que a fase produza resultado.", nameof(resultadoDefinitivo));
         }
 
+        // Acumula (ADR-0125) as checagens abaixo — todas independentes entre si, nenhuma
+        // decide o que checar a partir do resultado de outra. Diferente das demais fatias
+        // desta rolagem, NÃO há uma "ValidarFormaBasica" pré-I/O extraída para o handler
+        // chamar numa primeira passada: origemData/produzResultado/resultadoDefinitivo são
+        // snapshot-copy do CADASTRO (FaseCanonica), resolvido via IFaseCanonicaReader —
+        // não primitivos do payload do cliente — então não há como confirmá-las sem o
+        // reader já ter rodado. Ordem e a janela (Fim >= Início) já são cobertas pelo
+        // FluentValidation, que roda como middleware Wolverine antes do handler — vencem
+        // I/O por construção, sem precisar de pré-checagem própria aqui.
+        List<FieldError> erros = [];
+
         // JanelaInvertida vale independentemente da origem da data — uma fase DELEGADA
         // com janela declarada não escapa da checagem de coerência interna.
         if (inicio is { } inicioValor && fim is { } fimValor && fimValor < inicioValor)
         {
-            return Result<FaseCronograma>.Failure(new DomainError(
+            erros.Add(new("fim", new DomainError(
                 "FaseCronograma.JanelaInvertida",
-                $"A fase '{codigo}' tem o fim da janela ({fimValor:O}) antes do início ({inicioValor:O})."));
+                $"A fase '{codigo}' tem o fim da janela ({fimValor:O}) antes do início ({inicioValor:O}).")));
         }
 
         // CA-07: OrigemData=PROPRIA exige janela; DELEGADA aceita "sem data" como estado
         // válido — o setor responsável não congela data que não controla (§3.2).
         if (origemData == OrigemDataFase.Propria && (inicio is null || fim is null))
         {
-            return Result<FaseCronograma>.Failure(new DomainError(
+            erros.Add(new(null, new DomainError(
                 "FaseCronograma.JanelaObrigatoriaEmDataPropria",
-                $"A fase '{codigo}' tem origem de data própria e exige início e fim da janela."));
+                $"A fase '{codigo}' tem origem de data própria e exige início e fim da janela.")));
         }
 
         // Uma fase que produz resultado precisa declarar QUAL ato ela produz — é o que
@@ -173,9 +184,9 @@ public sealed class FaseCronograma : EntityBase
         // de haver recurso ou não (§3.7).
         if (produzResultado && string.IsNullOrWhiteSpace(atoProduzidoCodigo))
         {
-            return Result<FaseCronograma>.Failure(new DomainError(
+            erros.Add(new("atoProduzidoCodigo", new DomainError(
                 "FaseCronograma.AtoProduzidoObrigatorio",
-                $"A fase '{codigo}' produz resultado e precisa declarar o código do ato que produz."));
+                $"A fase '{codigo}' produz resultado e precisa declarar o código do ato que produz.")));
         }
 
         if (regraRecurso is not null)
@@ -184,26 +195,31 @@ public sealed class FaseCronograma : EntityBase
             // definitivo.
             if (!produzResultado)
             {
-                return Result<FaseCronograma>.Failure(new DomainError(
+                erros.Add(new(null, new DomainError(
                     "RegraRecursoFase.FaseNaoProduzResultado",
-                    $"A fase '{codigo}' não produz resultado e não pode admitir regra de recurso."));
+                    $"A fase '{codigo}' não produz resultado e não pode admitir regra de recurso.")));
             }
 
             if (resultadoDefinitivo)
             {
-                return Result<FaseCronograma>.Failure(new DomainError(
+                erros.Add(new(null, new DomainError(
                     "RegraRecursoFase.RecursoContraResultadoDefinitivo",
-                    $"A fase '{codigo}' produz resultado definitivo — não cabe recurso contra ele."));
+                    $"A fase '{codigo}' produz resultado definitivo — não cabe recurso contra ele.")));
             }
 
             // Item 2 do §3.6: o ato recorrido é SEMPRE o ato da própria fase — ancorar no
             // ato de outra fase é recusado.
             if (!string.Equals(regraRecurso.Args.AtoAncoraCodigo, atoProduzidoCodigo, StringComparison.Ordinal))
             {
-                return Result<FaseCronograma>.Failure(new DomainError(
+                erros.Add(new("regraRecurso.atoAncoraCodigo", new DomainError(
                     "RegraRecursoFase.AncoraDeOutraFase",
-                    $"A fase '{codigo}' produz o ato '{atoProduzidoCodigo}', mas a regra de recurso ancora em '{regraRecurso.Args.AtoAncoraCodigo}' — o ato recorrido tem de ser o da própria fase."));
+                    $"A fase '{codigo}' produz o ato '{atoProduzidoCodigo}', mas a regra de recurso ancora em '{regraRecurso.Args.AtoAncoraCodigo}' — o ato recorrido tem de ser o da própria fase.")));
             }
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<FaseCronograma>.ValidationFailure(erros);
         }
 
         FaseCronograma fase = new()
