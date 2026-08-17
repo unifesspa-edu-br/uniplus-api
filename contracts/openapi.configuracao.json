@@ -10373,6 +10373,9 @@
         }
       },
       "CriarModalidadeCommand": {
+        "required": [
+          "codigo"
+        ],
         "type": "object",
         "properties": {
           "codigo": {

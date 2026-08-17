@@ -156,6 +156,20 @@ public sealed class ModalidadeEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "POST sem o campo codigo no JSON retorna 422 (CodigoObrigatorio), não 400 de model binding")]
+    public async Task Criar_CodigoAusenteNoJson_Retorna422()
+    {
+        var body = new { naturezaLegal = "AMPLA" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "codigo é string? sem default no comando (ADR-0125) — o [ApiController] não deve " +
+            "interceptar o campo ausente antes do domínio rodar");
+        (await LerCodigoDeErro(response)).Should().Be("uniplus.configuracao.modalidade.codigo_obrigatorio");
+    }
+
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
     public async Task Criar_CodigoDuplicado_Retorna409()
     {
