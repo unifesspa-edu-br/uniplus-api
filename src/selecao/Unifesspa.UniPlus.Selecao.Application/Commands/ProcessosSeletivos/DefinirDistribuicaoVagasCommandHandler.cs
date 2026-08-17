@@ -79,8 +79,8 @@ public static class DefinirDistribuicaoVagasCommandHandler
         {
             ConfiguracaoDistribuicaoVagasInput itemForma = command.DistribuicaoVagas[indice];
             formaErros.AddRange(ConfiguracaoDistribuicaoVagas
-                .ValidarFormaBasica(itemForma.VoBase, itemForma.Pr)
-                .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{erro.Field}" }));
+                .ValidarFormaBasica(itemForma.VoBase, itemForma.Pr, itemForma.ModalidadeIds.Count)
+                .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{TraduzirFieldDoDominio(erro.Field)}" }));
         }
 
         if (formaErros.Count > 0)

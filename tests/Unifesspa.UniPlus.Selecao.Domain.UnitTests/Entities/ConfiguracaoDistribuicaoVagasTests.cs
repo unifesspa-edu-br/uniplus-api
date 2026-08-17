@@ -222,8 +222,16 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     [Fact(DisplayName = "ValidarFormaBasica sem violação retorna lote vazio")]
     public void ValidarFormaBasica_SemViolacao_Vazio()
     {
-        List<FieldError> erros = ConfiguracaoDistribuicaoVagas.ValidarFormaBasica(voBase: 50, pr: 0.75m);
+        List<FieldError> erros = ConfiguracaoDistribuicaoVagas.ValidarFormaBasica(voBase: 50, pr: 0.75m, quantidadeModalidades: 1);
 
         erros.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "ValidarFormaBasica com zero modalidades reporta ModalidadesVazias sem precisar de nenhuma resolvida")]
+    public void ValidarFormaBasica_ZeroModalidades_ReportaModalidadesVazias()
+    {
+        List<FieldError> erros = ConfiguracaoDistribuicaoVagas.ValidarFormaBasica(voBase: 50, pr: 0.75m, quantidadeModalidades: 0);
+
+        erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["ConfiguracaoDistribuicaoVagas.ModalidadesVazias"]);
     }
 }

@@ -79,15 +79,20 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     private ConfiguracaoDistribuicaoVagas() { }
 
     /// <summary>
-    /// Acumula (ADR-0125) as duas únicas checagens que dependem só de <paramref name="voBase"/>
-    /// e <paramref name="pr"/> — primitivos do payload, sem qualquer resolução de cadastro ou
-    /// motor de cálculo. Diferente das demais invariantes de <see cref="Criar"/> (que dependem
-    /// da lista de <see cref="ModalidadeSelecionada"/> já resolvida via cadastro, ou do ramo de
-    /// regra), esta é exposta para o handler poder confirmar a forma de TODAS as distribuições
-    /// do payload numa primeira passada, antes de resolver oferta/modalidades/regras nos
-    /// cadastros vivos (mesmo padrão de <c>EtapaProcesso.ValidarFormaBasica</c>, PR #1218).
+    /// Acumula (ADR-0125) as três únicas checagens que não dependem de nenhuma modalidade já
+    /// RESOLVIDA no cadastro — <paramref name="voBase"/>/<paramref name="pr"/> são primitivos
+    /// do payload, e a contagem de modalidades já é conhecida pelos Ids crus do request, antes
+    /// de qualquer <c>IModalidadeReader</c>. Sem incluir a contagem aqui, um payload com
+    /// <c>ModalidadeIds</c> vazio E uma oferta/regra inexistente devolveria o erro de
+    /// catálogo em vez de <c>ModalidadesVazias</c> — a checagem de forma perderia para o I/O
+    /// exatamente no caso em que não precisava dele. Diferente das demais invariantes de
+    /// <see cref="Criar"/> (que dependem do <em>Código</em> de cada
+    /// <see cref="ModalidadeSelecionada"/> já resolvida, não apenas da contagem), esta é
+    /// exposta para o handler confirmar a forma de TODAS as distribuições do payload numa
+    /// primeira passada, antes de resolver oferta/modalidades/regras nos cadastros vivos
+    /// (mesmo padrão de <c>EtapaProcesso.ValidarFormaBasica</c>, PR #1218).
     /// </summary>
-    public static List<FieldError> ValidarFormaBasica(int voBase, decimal pr)
+    public static List<FieldError> ValidarFormaBasica(int voBase, decimal pr, int quantidadeModalidades)
     {
         List<FieldError> erros = [];
 
@@ -103,6 +108,13 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
             erros.Add(new("pr", new DomainError(
                 "ConfiguracaoDistribuicaoVagas.PrForaDoLimite",
                 $"PR deve estar entre {PrMinimo:0.0} e {PrMaximo:0.0} (art. 10, II).")));
+        }
+
+        if (quantidadeModalidades == 0)
+        {
+            erros.Add(new("modalidades", new DomainError(
+                "ConfiguracaoDistribuicaoVagas.ModalidadesVazias",
+                "A oferta deve ter ao menos uma modalidade selecionada.")));
         }
 
         return erros;
@@ -136,14 +148,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         // quadro só roda se tudo acima passou — então permanecem retorno na primeira falha,
         // mesma decisão de escopo de CriterioDesempate (PR #1216) para checks
         // dependentes de dado já resolvido.
-        List<FieldError> erros = ValidarFormaBasica(voBase, pr);
-
-        if (modalidades.Count == 0)
-        {
-            erros.Add(new("modalidades", new DomainError(
-                "ConfiguracaoDistribuicaoVagas.ModalidadesVazias",
-                "A oferta deve ter ao menos uma modalidade selecionada.")));
-        }
+        List<FieldError> erros = ValidarFormaBasica(voBase, pr, modalidades.Count);
 
         List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
         if (codigosInformados.Distinct(StringComparer.Ordinal).Count() != codigosInformados.Count)
