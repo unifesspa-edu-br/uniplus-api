@@ -200,8 +200,8 @@ public sealed class ConfiguracaoClassificacaoTests
         ]);
     }
 
-    [Fact(DisplayName = "ADR-0125: ArredondamentoIndevido, EliminacaoIndevida e EliminacaoEnemForaDeProcessoEnem acumulam no mesmo lote")]
-    public void Criar_ImportadaComArredondamentoEEliminacaoEnemSemBaseadoEmEnem_AcumulaAsTresViolacoes()
+    [Fact(DisplayName = "ADR-0125: ArredondamentoIndevido, CasasArredondamentoIndevido, EliminacaoIndevida e EliminacaoEnemForaDeProcessoEnem acumulam no mesmo lote")]
+    public void Criar_ImportadaComArredondamentoEEliminacaoEnemSemBaseadoEmEnem_AcumulaAsQuatroViolacoes()
     {
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", new string('f', 64)).Value!,
@@ -214,9 +214,22 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
             "ConfiguracaoClassificacao.ArredondamentoIndevido",
+            "ConfiguracaoClassificacao.CasasArredondamentoIndevido",
             "ConfiguracaoClassificacao.EliminacaoIndevida",
             "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
         ]);
+    }
+
+    [Fact(DisplayName = "ADR-0125: regra de arredondamento importada com só casas informadas recusa só CasasArredondamentoIndevido (achado de revisão)")]
+    public void Criar_ImportadaComSoCasasInformadas_RecusaSoCasas()
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be("casasArredondamento");
+        resultado.Errors[0].Error.Code.Should().Be("ConfiguracaoClassificacao.CasasArredondamentoIndevido");
     }
 
     [Fact(DisplayName = "ValidarNOpcoesAlocacao sem violação retorna lote vazio")]
