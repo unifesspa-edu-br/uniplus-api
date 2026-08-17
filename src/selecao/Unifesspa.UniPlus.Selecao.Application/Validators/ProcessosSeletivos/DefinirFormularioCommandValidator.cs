@@ -4,6 +4,13 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+/// <summary>
+/// Checa só a forma do <c>ProcessoSeletivoId</c> — um identificador de rota sem
+/// equivalente no agregado (<c>ProcessoSeletivo.DefinirFormulario</c> não o
+/// recebe como parâmetro). O tamanho de Título/TermoAceiteTexto tem equivalente
+/// de domínio (ADR-0125) e ficou fora daqui — o agregado é a autoridade sobre
+/// eles, via <c>ValidarCamposDoFormulario</c>.
+/// </summary>
 public sealed class DefinirFormularioCommandValidator : AbstractValidator<DefinirFormularioCommand>
 {
     public DefinirFormularioCommandValidator()
@@ -11,16 +18,5 @@ public sealed class DefinirFormularioCommandValidator : AbstractValidator<Defini
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
-
-        // Alinhado a ProcessoSeletivoConfiguration (varchar(300)/varchar(4000)) — sem o limite
-        // aqui, um valor mais longo passa a validação e só falha em SaveChanges com erro de banco
-        // em vez de 422 (mesmo achado já corrigido em DefinirBonusRegionalCommandValidator).
-        RuleFor(x => x.Titulo)
-            .MaximumLength(300)
-            .WithMessage("Título do formulário deve ter no máximo 300 caracteres.");
-
-        RuleFor(x => x.TermoAceiteTexto)
-            .MaximumLength(4000)
-            .WithMessage("Termo de aceite do formulário deve ter no máximo 4000 caracteres.");
     }
 }

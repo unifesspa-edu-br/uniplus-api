@@ -72,6 +72,25 @@ public sealed class FormularioInscricaoEndpointTests
         processo.FormularioTermoAceiteTexto.Should().Be("Declaro que as informações são verdadeiras.");
     }
 
+    [Fact(DisplayName = "PUT admin com título e termo acima do limite é 422 com as duas violações em errors[]")]
+    public async Task Definir_ComDoisCamposInvalidos_422ComAsDuasViolacoes()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(Definir_ComDoisCamposInvalidos_422ComAsDuasViolacoes));
+
+        HttpResponseMessage resposta = await ctx.PutFormularioAsync(
+            new string('a', 301), new string('a', 4001));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        // field usa o mesmo casing do payload JSON (camelCase, ADR-0023), não o PascalCase do C#.
+        JsonElement erros = doc.RootElement.GetProperty("errors");
+        erros.GetArrayLength().Should().Be(2);
+        erros[0].GetProperty("field").GetString().Should().Be("titulo");
+        erros[0].GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.formulario_titulo_tamanho");
+        erros[1].GetProperty("field").GetString().Should().Be("termoAceiteTexto");
+        erros[1].GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.formulario_termo_aceite_texto_tamanho");
+    }
+
     [Fact(DisplayName = "GET público, sem autenticação, retorna 422 Snapshot.VigenteAusente para processo em rascunho")]
     public async Task Obter_ProcessoEmRascunho_422SnapshotVigenteAusente()
     {

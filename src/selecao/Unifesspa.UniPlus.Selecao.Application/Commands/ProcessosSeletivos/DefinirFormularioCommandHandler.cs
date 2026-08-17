@@ -37,7 +37,7 @@ public static class DefinirFormularioCommandHandler
         Result result = processo.DefinirFormulario(command.Titulo, command.TermoAceiteTexto, command.Precondicao);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(result.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
