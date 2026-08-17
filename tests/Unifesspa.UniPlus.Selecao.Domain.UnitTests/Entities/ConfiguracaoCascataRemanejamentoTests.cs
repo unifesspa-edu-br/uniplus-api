@@ -209,6 +209,14 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
         ]);
     }
 
+    [Fact(DisplayName = "ADR-0125: ValidarForma não depende da regra resolvida no catálogo — mesmo resultado de Criar sem o parâmetro regra")]
+    public void ValidarForma_ComDestinosValidos_SemViolacoes()
+    {
+        List<FieldError> erros = ConfiguracaoCascataRemanejamento.ValidarForma("AC", [Destino("LB_PPI", 1, "LB_Q")]);
+
+        erros.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "ADR-0125: ValidarFallbackELimitesIndependentesDeItens detecta fallback inválido mesmo com origens brutas nulas")]
     public void ValidarFallbackELimitesIndependentesDeItens_FallbackInvalido_DetectaSemPrecisarDeItensValidos()
     {

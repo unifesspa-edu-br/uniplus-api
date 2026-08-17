@@ -15,11 +15,11 @@ using Kernel.Results;
 /// Handler do <see cref="DefinirCascataRemanejamentoCommand"/>
 /// (RN-CASCATA-1..5, Story #575): campos todos nulos remove a cascata
 /// (<see cref="ProcessoSeletivo.DefinirCascataRemanejamento"/> com
-/// <see langword="null"/>); todos presentes resolve a regra
-/// <c>criterio_remanejamento</c> no catálogo, monta a cascata pela factory
-/// (forma — RN-CASCATA-4) e só então compara célula a célula contra o
-/// <c>esquema_args</c> congelado da regra (conteúdo — RN-CASCATA-5), nessa
-/// ordem — ver §4 da story para o porquê da ordem.
+/// <see langword="null"/>); todos presentes valida a forma de cada destino e a
+/// coerência entre eles (RN-CASCATA-4) ANTES de consultar o <c>rol_de_regras</c>
+/// (ADR-0125: validação sempre precede I/O) e só então compara célula a célula
+/// contra o <c>esquema_args</c> congelado da regra resolvida (conteúdo —
+/// RN-CASCATA-5) — ver §4 da story para o porquê da ordem entre forma e conteúdo.
 /// </summary>
 public static class DefinirCascataRemanejamentoCommandHandler
 {
@@ -75,32 +75,12 @@ public static class DefinirCascataRemanejamentoCommandHandler
                 "(definição) ou todos ausentes (remoção)."));
         }
 
-        RegraCatalogo? regra = await regraCatalogoReader
-            .ObterAsync(command.RegraCodigo!, command.RegraVersao!, cancellationToken)
-            .ConfigureAwait(false);
-        if (regra is null)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoCascataRemanejamento.RegraNaoEncontrada",
-                $"Regra de remanejamento {command.RegraCodigo}/{command.RegraVersao} não encontrada no rol_de_regras."));
-        }
-
-        if (regra.Tipo != TipoRegra.CriterioRemanejamento)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoCascataRemanejamento.RegraTipoInvalido",
-                $"A regra {command.RegraCodigo}/{command.RegraVersao} não é do tipo criterio_remanejamento."));
-        }
-
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(referenciaRegraResult.Error!);
-        }
-
-        // Acumula (ADR-0125) as violações de TODOS os itens em vez de parar no primeiro —
-        // um payload com vários destinos malformados reporta todos de uma vez, cada um com
-        // o índice do item na lista prefixado ao field (ex.: "destinos[2].ordem").
+        // Validação sempre precede I/O (ADR-0125, ponto 5): confirma fallback + forma de cada
+        // destino + coerência entre destinos ANTES de consultar o rol_de_regras — um payload
+        // malformado não pode "vencer" pela sorte de a regra também não existir, nem o inverso.
+        // Acumula (ADR-0125) as violações de TODOS os itens em vez de parar no primeiro — um
+        // payload com vários destinos malformados reporta todos de uma vez, cada um com o
+        // índice do item na lista prefixado ao field (ex.: "destinos[2].ordem").
         List<DestinoRemanejamento> destinos = [];
         List<FieldError> itemErros = [];
         for (int indice = 0; indice < command.Destinos!.Count; indice++)
@@ -141,6 +121,38 @@ public static class DefinirCascataRemanejamentoCommandHandler
             return Result<MutacaoAceita>.ValidationFailure([.. checagensIndependentes, .. itemErros]);
         }
 
+        List<FieldError> formaErros = ConfiguracaoCascataRemanejamento.ValidarForma(command.FallbackCodigo!, destinos);
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+        }
+
+        RegraCatalogo? regra = await regraCatalogoReader
+            .ObterAsync(command.RegraCodigo!, command.RegraVersao!, cancellationToken)
+            .ConfigureAwait(false);
+        if (regra is null)
+        {
+            return Result<MutacaoAceita>.Failure(new DomainError(
+                "ConfiguracaoCascataRemanejamento.RegraNaoEncontrada",
+                $"Regra de remanejamento {command.RegraCodigo}/{command.RegraVersao} não encontrada no rol_de_regras."));
+        }
+
+        if (regra.Tipo != TipoRegra.CriterioRemanejamento)
+        {
+            return Result<MutacaoAceita>.Failure(new DomainError(
+                "ConfiguracaoCascataRemanejamento.RegraTipoInvalido",
+                $"A regra {command.RegraCodigo}/{command.RegraVersao} não é do tipo criterio_remanejamento."));
+        }
+
+        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
+        if (referenciaRegraResult.IsFailure)
+        {
+            return Result<MutacaoAceita>.Failure(referenciaRegraResult.Error!);
+        }
+
+        // ValidarForma já confirmou que o resultado será sucesso — Criar não deveria voltar a
+        // falhar (mesmos dados, checagem determinística), mas ainda é a fonte de verdade da
+        // construção (mesmo padrão de Campus.ValidarAtualizacao/Campus.Atualizar).
         Result<ConfiguracaoCascataRemanejamento> cascataResult = ConfiguracaoCascataRemanejamento.Criar(
             referenciaRegraResult.Value!, command.FallbackCodigo!, destinos);
         if (cascataResult.IsFailure)
