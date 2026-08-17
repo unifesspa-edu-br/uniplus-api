@@ -117,12 +117,22 @@ public sealed class ConfiguracaoClassificacao : EntityBase
 
         if (ehImportada)
         {
-            // INV-B8: classificação importada (federal) não exige precisão local.
-            if (regraArredondamento is not null || casasArredondamento is not null)
+            // INV-B8: classificação importada (federal) não exige precisão local. As duas
+            // metades são checadas e atribuídas ao field que cada uma carrega — informar só
+            // casasArredondamento (regraArredondamento nulo) não pode apontar o field de regra
+            // (achado de revisão, mesmo caso já corrigido no ramo de cálculo local).
+            if (regraArredondamento is not null)
             {
                 erros.Add(new("regraArredondamentoCodigo", new DomainError(
                     "ConfiguracaoClassificacao.ArredondamentoIndevido",
                     "Arredondamento local não se aplica quando a classificação é importada (INV-B8).")));
+            }
+
+            if (casasArredondamento is not null)
+            {
+                erros.Add(new("casasArredondamento", new DomainError(
+                    "ConfiguracaoClassificacao.CasasArredondamentoIndevido",
+                    "Casas de arredondamento não se aplicam quando a classificação é importada (INV-B8).")));
             }
 
             // Mesma razão: eliminação por corte de nota pressupõe um cálculo
