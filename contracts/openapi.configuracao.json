@@ -9632,7 +9632,10 @@
             "format": "uuid"
           },
           "censoReferencia": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "ppiPercentual": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
@@ -9659,7 +9662,10 @@
             "format": "double"
           },
           "baseLegal": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10676,7 +10682,10 @@
         "type": "object",
         "properties": {
           "censoReferencia": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "ppiPercentual": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
@@ -10703,7 +10712,10 @@
             "format": "double"
           },
           "baseLegal": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

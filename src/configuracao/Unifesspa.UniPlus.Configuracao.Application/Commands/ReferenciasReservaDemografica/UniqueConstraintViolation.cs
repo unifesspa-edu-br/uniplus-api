@@ -14,7 +14,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ReferenciasReserva
 /// Mesmo padrão de <c>UniqueConstraintViolation</c> dos módulos Seleção
 /// (ObrigatoriedadesLegais) e Organização (Instituicoes). A tradução cross-cutting
 /// de 23505 → 409 via <c>GlobalExceptionMiddleware</c> permanece como follow-up
-/// separado (#504); este helper cobre o caso específico da unicidade de Censo (CA-02).
+/// separado (#504); este helper cobre o caso específico da unicidade de Censo.
 /// </remarks>
 internal static class UniqueConstraintViolation
 {

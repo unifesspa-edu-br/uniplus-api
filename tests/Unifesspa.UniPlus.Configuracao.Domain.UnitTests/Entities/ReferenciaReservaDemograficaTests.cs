@@ -101,4 +101,25 @@ public sealed class ReferenciaReservaDemograficaTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.PercentualForaDeFaixa);
     }
+
+    [Fact(DisplayName = "Censo ausente e dois percentuais fora da faixa acumulam as três violações")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
+    {
+        Result<ReferenciaReservaDemografica> resultado =
+            ReferenciaReservaDemografica.Criar("", -1m, 10m, 150m, BaseLegal);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors[0].Field.Should().Be("censoReferencia");
+        resultado.Errors[1].Field.Should().Be("ppiPercentual");
+        resultado.Errors[2].Field.Should().Be("pcdPercentual");
+    }
+
+    [Fact(DisplayName = "ValidarCamposDoPayload isolado é público e reusável sem instanciar o agregado")]
+    public void ValidarCamposDoPayload_CamposValidos_Aceita()
+    {
+        Result resultado = ReferenciaReservaDemografica.ValidarCamposDoPayload("2022", 10m, 10m, 10m, BaseLegal);
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
 }

@@ -45,60 +45,73 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
     }
 
     /// <summary>
-    /// Cria uma nova Referência de reserva demográfica. Valida o Censo, os três
+    /// Cria uma nova Referência de reserva demográfica, acumulando toda violação
+    /// independente em vez de parar na primeira. Valida o Censo, os três
     /// percentuais (intervalo fechado 0–100) e a base legal. A unicidade de
     /// <paramref name="censoReferencia"/> entre referências vivas é
     /// responsabilidade do handler.
     /// </summary>
     public static Result<ReferenciaReservaDemografica> Criar(
-        string censoReferencia,
+        string? censoReferencia,
         decimal ppiPercentual,
         decimal quilombolaPercentual,
         decimal pcdPercentual,
-        string baseLegal)
+        string? baseLegal)
     {
-        ArgumentNullException.ThrowIfNull(censoReferencia);
-        ArgumentNullException.ThrowIfNull(baseLegal);
-
         Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> validacao =
             ValidarCampos(censoReferencia, ppiPercentual, quilombolaPercentual, pcdPercentual, baseLegal);
         if (validacao.IsFailure)
         {
-            return Result<ReferenciaReservaDemografica>.Failure(validacao.Error!);
+            return Result<ReferenciaReservaDemografica>.ValidationFailure(validacao.Errors);
         }
 
         var referencia = new ReferenciaReservaDemografica();
-        referencia.AplicarCampos(censoReferencia, validacao.Value, baseLegal);
+        referencia.AplicarCampos(censoReferencia!, validacao.Value, baseLegal!);
 
         return Result<ReferenciaReservaDemografica>.Success(referencia);
     }
 
     /// <summary>
-    /// Atualiza os percentuais e a base legal da referência. Nunca altera o
-    /// <c>Id</c>. Revalida o intervalo de cada percentual e a presença da base
-    /// legal. A unicidade de <paramref name="censoReferencia"/> (quando
-    /// alterada) é responsabilidade do handler.
+    /// Atualiza os percentuais e a base legal da referência, acumulando toda
+    /// violação independente. Nunca altera o <c>Id</c>. A unicidade de
+    /// <paramref name="censoReferencia"/> (quando alterada) é responsabilidade
+    /// do handler.
     /// </summary>
     public Result Atualizar(
-        string censoReferencia,
+        string? censoReferencia,
         decimal ppiPercentual,
         decimal quilombolaPercentual,
         decimal pcdPercentual,
-        string baseLegal)
+        string? baseLegal)
     {
-        ArgumentNullException.ThrowIfNull(censoReferencia);
-        ArgumentNullException.ThrowIfNull(baseLegal);
-
         Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> validacao =
             ValidarCampos(censoReferencia, ppiPercentual, quilombolaPercentual, pcdPercentual, baseLegal);
         if (validacao.IsFailure)
         {
-            return Result.Failure(validacao.Error!);
+            return Result.ValidationFailure(validacao.Errors);
         }
 
-        AplicarCampos(censoReferencia, validacao.Value, baseLegal);
+        AplicarCampos(censoReferencia!, validacao.Value, baseLegal!);
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Valida Censo, os três percentuais e a base legal, sem I/O e sem mutar
+    /// nada — para os handlers de criação e atualização falharem rápido antes
+    /// de qualquer busca no banco (validação sempre vence I/O).
+    /// </summary>
+    public static Result ValidarCamposDoPayload(
+        string? censoReferencia,
+        decimal ppiPercentual,
+        decimal quilombolaPercentual,
+        decimal pcdPercentual,
+        string? baseLegal)
+    {
+        Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> resultado =
+            ValidarCampos(censoReferencia, ppiPercentual, quilombolaPercentual, pcdPercentual, baseLegal);
+
+        return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
     }
 
     private void AplicarCampos(
@@ -114,56 +127,59 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
     }
 
     private static Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> ValidarCampos(
-        string censoReferencia,
+        string? censoReferencia,
         decimal ppiPercentual,
         decimal quilombolaPercentual,
         decimal pcdPercentual,
-        string baseLegal)
+        string? baseLegal)
     {
+        List<FieldError> erros = [];
+
         if (string.IsNullOrWhiteSpace(censoReferencia))
         {
-            return Falha(new DomainError(
-                ReferenciaReservaDemograficaErrorCodes.CensoObrigatorio,
-                "Censo de referência é obrigatório."));
+            erros.Add(new("censoReferencia", new DomainError(
+                ReferenciaReservaDemograficaErrorCodes.CensoObrigatorio, "Censo de referência é obrigatório.")));
         }
-
-        if (censoReferencia.Trim().Length is < CensoReferenciaMinLength or > CensoReferenciaMaxLength)
+        else if (censoReferencia.Trim().Length is < CensoReferenciaMinLength or > CensoReferenciaMaxLength)
         {
-            return Falha(new DomainError(
+            erros.Add(new("censoReferencia", new DomainError(
                 ReferenciaReservaDemograficaErrorCodes.CensoTamanho,
-                $"Censo de referência deve ter entre {CensoReferenciaMinLength} e {CensoReferenciaMaxLength} caracteres."));
+                $"Censo de referência deve ter entre {CensoReferenciaMinLength} e {CensoReferenciaMaxLength} caracteres.")));
         }
 
         Result<Percentual> ppi = Percentual.Criar(ppiPercentual);
         if (ppi.IsFailure)
         {
-            return Falha(ComCodigoForaDeFaixa(ppi.Error!));
+            erros.Add(new("ppiPercentual", ComCodigoForaDeFaixa(ppi.Error!)));
         }
 
         Result<Percentual> quilombola = Percentual.Criar(quilombolaPercentual);
         if (quilombola.IsFailure)
         {
-            return Falha(ComCodigoForaDeFaixa(quilombola.Error!));
+            erros.Add(new("quilombolaPercentual", ComCodigoForaDeFaixa(quilombola.Error!)));
         }
 
         Result<Percentual> pcd = Percentual.Criar(pcdPercentual);
         if (pcd.IsFailure)
         {
-            return Falha(ComCodigoForaDeFaixa(pcd.Error!));
+            erros.Add(new("pcdPercentual", ComCodigoForaDeFaixa(pcd.Error!)));
         }
 
         if (string.IsNullOrWhiteSpace(baseLegal))
         {
-            return Falha(new DomainError(
-                ReferenciaReservaDemograficaErrorCodes.BaseLegalObrigatoria,
-                "Base legal é obrigatória."));
+            erros.Add(new("baseLegal", new DomainError(
+                ReferenciaReservaDemograficaErrorCodes.BaseLegalObrigatoria, "Base legal é obrigatória.")));
+        }
+        else if (baseLegal.Trim().Length > BaseLegalMaxLength)
+        {
+            erros.Add(new("baseLegal", new DomainError(
+                ReferenciaReservaDemograficaErrorCodes.BaseLegalTamanho,
+                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
         }
 
-        if (baseLegal.Trim().Length > BaseLegalMaxLength)
+        if (erros.Count > 0)
         {
-            return Falha(new DomainError(
-                ReferenciaReservaDemograficaErrorCodes.BaseLegalTamanho,
-                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres."));
+            return Result<(Percentual, Percentual, Percentual)>.ValidationFailure(erros);
         }
 
         return Result<(Percentual, Percentual, Percentual)>.Success((ppi.Value!, quilombola.Value!, pcd.Value!));
@@ -172,7 +188,4 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
     // Reetiqueta o erro genérico do value object com o código de domínio do cadastro.
     private static DomainError ComCodigoForaDeFaixa(DomainError erro) =>
         new(ReferenciaReservaDemograficaErrorCodes.PercentualForaDeFaixa, erro.Message);
-
-    private static Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> Falha(DomainError erro) =>
-        Result<(Percentual, Percentual, Percentual)>.Failure(erro);
 }

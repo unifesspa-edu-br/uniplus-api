@@ -32,7 +32,7 @@ public sealed class RemoverReferenciaReservaDemograficaCommandHandlerTests
         _repository.DidNotReceive().Remover(Arg.Any<ReferenciaReservaDemografica>());
     }
 
-    [Fact(DisplayName = "Cadastro flat: remoção é soft-delete e nunca é bloqueada (CA-05)")]
+    [Fact(DisplayName = "Cadastro flat: remoção é soft-delete e nunca é bloqueada")]
     public async Task Handle_Existente_RemoveESoftDelete()
     {
         ReferenciaReservaDemografica existente =
