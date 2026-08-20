@@ -85,7 +85,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0054](0054-naming-convention-e-strategy-migrations.md) | Convenção de nomenclatura `snake_case` via `EFCore.NamingConventions` + isolamento por banco e estratégia de migrations | accepted | 2026-05-13 |
 | [0055](0055-organizacao-institucional-bounded-context.md) | `OrganizacaoInstitucional` como bounded context para áreas (CEPS, CRCA, PROEG, PROGEP, PLATAFORMA) com roster fechado | accepted | 2026-05-14 |
 | [0056](0056-modulo-configuracao-e-read-side-via-reader.md) | Módulo `Configuracao` para catálogos cross-cutting + desmembramento read-side cross-módulo via `IXxxReader` | accepted | 2026-05-14 |
-| [0057](0057-areas-rbac-snapshot-historia-invariantes.md) | RBAC por áreas com snapshot na publicação, histórico SCD Type 2 e invariantes de governança — **supersessão proposta pela ADR-0078** | accepted | 2026-05-14 |
+| [0057](0057-areas-rbac-snapshot-historia-invariantes.md) | Sucessão parcial do RBAC por áreas — identidade sucedida pela ADR-0077; decisões contextuais de acesso pela ADR-0078 | accepted | 2026-05-14 |
 | [0058](0058-obrigatoriedade-legal-validacao-data-driven.md) | `ObrigatoriedadeLegal` como validação data-driven com citação legal e snapshot-on-bind | accepted | 2026-05-14 |
 | [0059](0059-sprint-3-decomposicao-estrategia-paralela.md) | Decomposição da Sprint 3 — foundation primeiro, depois 3 lanes paralelas | accepted | 2026-05-14 |
 | [0060](0060-junction-tables-por-entidade-com-view-unificada.md) | Junction tables por entidade para `AreasDeInteresse` + view unificada por DbContext para leituras cross-catálogo | accepted | 2026-05-14 |
@@ -106,9 +106,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0075](0075-snapshot-do-ato-resolvido-no-instante.md) | O snapshot que governa um ato é resolvido deterministicamente no instante do ato e gravado nele | accepted | 2026-05-31 |
 | [0076](0076-contrato-snapshot-runtime-espelha-publicacao.md) | A validação do snapshot lido em runtime reproduz, integralmente, a validação aplicada à configuração na publicação | accepted | 2026-05-31 |
 | [0077](0077-identidade-institucional-canonica-de-unidade.md) | Identidade institucional canônica de `Unidade` (`Id` Guid v7 estável; `Slug`/`Sigla`/`Codigo` únicos entre vivos; `Alias` não-único; histórico de identificadores; cadastro aberto e hierárquico) — refina 0055 | accepted | 2026-06-15 |
-| [0078](0078-modelo-de-autorizacao-pbac-abac.md) | Modelo de autorização PBAC + ABAC com ponto de decisão único — supersede 0057, refina 0055 | proposed | 2026-06-02 |
+| [0078](0078-modelo-de-autorizacao-pbac-abac.md) | Modelo de autorização PBAC + ABAC com ponto de decisão único — sucede o modelo de decisão contextual da 0057 | accepted | 2026-06-02 |
 | [0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md) | Hierarquia institucional sem herança de permissão (unidades irmãs; visibilidade por escopo de auditoria explícito) — refina 0055 | proposed | 2026-06-02 |
-| [0080](0080-catalogo-declarativo-de-permissoes-e-codegen.md) | Catálogo declarativo de permissões como fonte única + geração de artefatos (codegen, fitness contra deriva) | proposed | 2026-06-02 |
+| [0080](0080-catalogo-declarativo-de-permissoes-e-codegen.md) | Catálogo declarativo de permissões como fonte única + geração de artefatos (codegen, fitness contra deriva) | accepted | 2026-06-02 |
 | [0081](0081-lgpd-by-design-dto-por-permissao.md) | LGPD-by-design — projeção por permissão como controle primário de proteção de dado pessoal (mascaramento secundário; BOPLA) — **classificação/base legal pendente de validação DPO** | proposed | 2026-06-02 |
 | [0082](0082-nome-social-publico-nome-civil-pessoal.md) | Nome social como dado público e nome civil como dado pessoal protegido (Decreto 8.727/2016) — validada pelo Parecer Técnico 002/2026 da DPO; emendada em 2026-08-11: exceção justificada ao nome completo e piso técnico do default (UNI-REQ-0050) | accepted | 2026-06-02 |
 | [0083](0083-grupos-oidc-governados-pela-aplicacao.md) | Grupos OIDC governados pela aplicação — vínculo no banco, marca de propriedade e sincronização não-destrutiva | proposed | 2026-06-02 |

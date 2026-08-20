@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -45,6 +45,8 @@ Espalhar essas condições por verificações ad hoc nos controllers — por exe
 ## Resultado da decisão
 
 **Escolhida:** "B — PBAC + ABAC com ponto de decisão único", porque combina permissões granulares com atributos de contexto num contrato formal único, auditável e testável, sem o acoplamento operacional de um motor externo nesta fase.
+
+Perfis e grupos existentes, inclusive `plataforma-admin`, não são removidos por esta decisão. Eles permanecem como representação de responsabilidades administrativas e podem compor as concessões avaliadas. Esta ADR substitui apenas o uso de papel ou área como regra suficiente para decisões contextuais sobre recursos protegidos; a migração de endpoints e contratos existentes pertence às respectivas issues de desenvolvimento.
 
 ### Ponto de decisão único
 
