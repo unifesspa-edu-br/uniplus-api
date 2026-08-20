@@ -44,6 +44,10 @@ public sealed partial class HttpUserContext : IUserContext
 
     public string? UserId => GetFirstClaimValue(UserIdClaimCandidates);
 
+    public string? Issuer => GetSingleClaimValue(OidcClaims.Iss);
+
+    public string? Jti => GetSingleClaimValue(OidcClaims.Jti);
+
     public string? Name => GetFirstClaimValue(NameClaimCandidates);
 
     public string? Email => GetFirstClaimValue(EmailClaimCandidates);

@@ -16,6 +16,8 @@ internal sealed class StubUserContext : IUserContext
 
     public bool IsAuthenticated => true;
     public string? UserId { get; }
+    public string? Issuer => null;
+    public string? Jti => null;
     public string? Name => null;
     public string? Email => null;
     public string? Cpf => null;
