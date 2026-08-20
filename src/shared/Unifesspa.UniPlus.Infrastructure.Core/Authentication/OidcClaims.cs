@@ -13,4 +13,6 @@ internal static class OidcClaims
     public const string Name = "name";
     public const string PreferredUsername = "preferred_username";
     public const string Email = "email";
+    public const string Iss = "iss";
+    public const string Jti = "jti";
 }

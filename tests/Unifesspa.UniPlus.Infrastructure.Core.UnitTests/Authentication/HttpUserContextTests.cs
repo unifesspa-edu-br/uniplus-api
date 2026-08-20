@@ -24,6 +24,42 @@ public sealed class HttpUserContextTests
     }
 
     [Fact]
+    public void Issuer_Should_ReturnIssClaim_WhenPresent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("iss", "https://keycloak.unifesspa.edu.br/realms/unifesspa"));
+
+        context.Issuer.Should().Be("https://keycloak.unifesspa.edu.br/realms/unifesspa");
+    }
+
+    [Fact]
+    public void Issuer_Should_ReturnNull_WhenClaimAbsent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("sub", "user-42"));
+
+        context.Issuer.Should().BeNull();
+    }
+
+    [Fact]
+    public void Jti_Should_ReturnJtiClaim_WhenPresent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("jti", "3f0f6f2a-6f0e-4b8a-9b0e-2f6f0e4b8a9b"));
+
+        context.Jti.Should().Be("3f0f6f2a-6f0e-4b8a-9b0e-2f6f0e4b8a9b");
+    }
+
+    [Fact]
+    public void Jti_Should_ReturnNull_WhenClaimAbsent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("sub", "user-42"));
+
+        context.Jti.Should().BeNull();
+    }
+
+    [Fact]
     public void Name_Should_PreferClaimTypesName_OverPreferredUsername()
     {
         HttpUserContext context = CreateContext(
@@ -180,6 +216,8 @@ public sealed class HttpUserContextTests
         HttpUserContext context = new(accessor, NullLogger<HttpUserContext>.Instance);
 
         context.UserId.Should().BeNull();
+        context.Issuer.Should().BeNull();
+        context.Jti.Should().BeNull();
         context.Name.Should().BeNull();
         context.Email.Should().BeNull();
         context.Cpf.Should().BeNull();

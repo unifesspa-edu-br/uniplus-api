@@ -20,6 +20,17 @@ public interface IUserContext
     string? UserId { get; }
 
     /// <summary>
+    /// Gets the token issuer (<c>iss</c> claim), paired with <see cref="UserId"/>
+    /// to identify the subject across IdPs (ADR-0033).
+    /// </summary>
+    string? Issuer { get; }
+
+    /// <summary>
+    /// Gets the token identifier (<c>jti</c> claim), used for revocation.
+    /// </summary>
+    string? Jti { get; }
+
+    /// <summary>
     /// Gets the authenticated user's display name.
     /// </summary>
     string? Name { get; }
