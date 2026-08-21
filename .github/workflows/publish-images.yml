@@ -76,7 +76,14 @@ jobs:
     name: Publish ${{ matrix.module }}
     needs: discover
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 60min: a matriz é única pra todos os módulos, mas `host` (composition
+    # root que bundla Selecao/Ingresso/Configuração/OrganizacaoInstitucional/
+    # Publicações/Discentes) é ordens de grandeza maior que os demais — o
+    # build multi-arch inclui arm64 via QEMU emulation (~2-3x mais lento que
+    # nativo). 30min estourou no meio do push multi-arch do `host` na v0.5.0
+    # (primeira release cortada depois do módulo crescer pra esse tamanho);
+    # `portal` sozinho terminava em ~15min, bem dentro do limite antigo.
+    timeout-minutes: 60
 
     strategy:
       fail-fast: false
