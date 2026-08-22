@@ -2,6 +2,19 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <!-- ReferenceOutputAssembly=false: só ordena o build do gerador antes deste
+         projeto, sem linkar seu assembly — o gerador é uma ferramenta de build,
+         não uma dependência de compilação. Evita que o Exec abaixo dispare um
+         segundo build (dotnet run) do mesmo projeto em paralelo ao build que o
+         MSBuild já orquestra via este ProjectReference. -->
+    <ProjectReference Include="..\..\..\tools\permission-catalog-generator\Unifesspa.UniPlus.PermissionCatalogGenerator.csproj"
+                       ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <Target Name="VerificarCatalogoDePermissoes"
+          BeforeTargets="CoreCompile"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(SkipPermissionCatalogVerification)' != 'true'">
+    <Exec Command="dotnet exec &quot;$(MSBuildThisFileDirectory)../../../tools/permission-catalog-generator/bin/$(Configuration)/net10.0/Unifesspa.UniPlus.PermissionCatalogGenerator.dll&quot; --verify &quot;$(MSBuildThisFileDirectory)../../../permissions.yml&quot; &quot;$(MSBuildThisFileDirectory)Generated/UniPlusPermissions.g.cs&quot;" />
+  </Target>
 
 </Project>

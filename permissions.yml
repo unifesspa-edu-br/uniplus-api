@@ -1,0 +1,31 @@
+permissions:
+  - codigo: configuracao:motivos-decisao-recursal:manter
+    modulo: configuracao
+    recurso: motivos-decisao-recursal
+    acao: manter
+    descricao: Manter motivos de decisão recursal
+    experimental: false
+    sensibilidade: interna
+    exportavel: false
+    audit_level: caso-uso
+    base_legal_default: ""
+    requires_mfa: false
+    requires_dual_approval: false
+    context_scope: []
+    allowed_subject_kind: []
+    decision_checks: []
+  - codigo: configuracao:motivos-decisao-recursal:consultar-auditoria
+    modulo: configuracao
+    recurso: motivos-decisao-recursal
+    acao: consultar-auditoria
+    descricao: Consultar auditoria dos motivos de decisão recursal
+    experimental: false
+    sensibilidade: interna
+    exportavel: false
+    audit_level: caso-uso
+    base_legal_default: ""
+    requires_mfa: false
+    requires_dual_approval: false
+    context_scope: []
+    allowed_subject_kind: []
+    decision_checks: []
