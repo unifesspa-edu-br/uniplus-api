@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Authorization\Unifesspa.UniPlus.Authorization.csproj" />
+    <ProjectReference Include="..\..\tools\permission-catalog-generator\Unifesspa.UniPlus.PermissionCatalogGenerator.csproj" />
   </ItemGroup>
 
   <ItemGroup>

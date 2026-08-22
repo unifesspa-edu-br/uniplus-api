@@ -82,4 +82,7 @@
     <Project Path="tests/Unifesspa.UniPlus.Discentes.UnitTests/Unifesspa.UniPlus.Discentes.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Host.IntegrationTests/Unifesspa.UniPlus.Host.IntegrationTests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/permission-catalog-generator/Unifesspa.UniPlus.PermissionCatalogGenerator.csproj" />
+  </Folder>
 </Solution>
