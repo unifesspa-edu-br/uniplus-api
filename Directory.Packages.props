@@ -97,5 +97,9 @@
     <PackageVersion Include="TngTech.ArchUnitNET" Version="0.13.3" />
     <PackageVersion Include="TngTech.ArchUnitNET.xUnit" Version="0.13.3" />
     <PackageVersion Include="coverlet.collector" Version="8.0.1" />
+
+    <!-- Tooling de build (gerador do catálogo de permissões) — nunca referenciado por Authorization
+         em runtime (ReferenceOutputAssembly=false no ProjectReference que ordena o build). -->
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
 </Project>
