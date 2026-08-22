@@ -115,6 +115,14 @@ gh api /orgs/unifesspa-edu-br/packages/container/uniplus-api-selecao/versions \
 - **Concurrency:** `cancel-in-progress: false` — protege contra dois workflows tentando publicar a mesma tag por race (force-push). Tags semver são imutáveis após publicadas; force-push em tag é uma operação que ninguém deve fazer.
 - **Cleanup:** GHCR retention manual é responsabilidade futura. Política planejada: `v*` indefinido, `sha-*` 30 dias — ver [ADR-0050 § Consequências](adrs/0050-registry-ghcr-e-tagging.md#negativas).
 
+## Bump automático da tag em HML (uniplusApiHost)
+
+Após este workflow publicar com sucesso, `.github/workflows/bump-infra-tag.yml` dispara via `workflow_run` e abre um PR no `uniplus-infra` atualizando `uniplusApiHost.image.tag` em `environments/hml-standalone-single/values.yaml` para a tag recém-publicada. O ArgoCD em HML já reconcilia sozinho qualquer mudança commitada em `main` do `uniplus-infra` (`syncPolicy.automated`) — este workflow fecha o passo manual que faltava (editar o `values.yaml` à mão a cada release).
+
+**Escopo atual:** só `uniplusApiHost`. `uniplus-web` fica para uma automação equivalente futura, e o PR gerado **não é auto-merged** — fica para aprovação humana.
+
+**Pré-requisito:** secret `INFRA_BUMP_TOKEN` neste repositório — PAT fine-grained com permissão de escrita (`contents` + `pull requests`) restrita a `unifesspa-edu-br/uniplus-infra`. O `GITHUB_TOKEN` padrão do Actions não alcança um repositório diferente do atual. Sem o secret cadastrado, o job falha explicitamente no primeiro passo, antes de tocar em qualquer repositório.
+
 ## Próximos passos (deferidos)
 
 - **SBOM e attestation cosign keyless** via OIDC do GitHub — issue separada quando HML exigir.

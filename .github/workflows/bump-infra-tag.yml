@@ -1,0 +1,233 @@
+name: Bump Infra Tag
+
+# Fecha o passo manual do pipeline de release: hoje alguém precisa editar à
+# mão `uniplusApiHost.image.tag` em
+# environments/hml-standalone-single/values.yaml do uniplus-infra a cada
+# release. O ArgoCD em HML já reconcilia sozinho qualquer mudança commitada
+# em main do uniplus-infra (syncPolicy.automated: prune+selfHeal) — este
+# workflow só automatiza quem decide/commita a tag nova.
+#
+# Escopo desta primeira versão (uniplus-api#1256): só uniplusApiHost.
+# uniplus-web fica para issue futura, depois de validar o mecanismo aqui.
+#
+# Dispara ao concluir com sucesso o workflow "Publish Images" (que só roda
+# em push de tag v*.*.* — ADR-0050), extrai a tag publicada e abre PR no
+# uniplus-infra. Merge NÃO é automático nesta primeira versão — fica para
+# aprovação humana; auto-merge é evolução futura, só depois do mecanismo
+# validado em produção real de HML.
+#
+# Pré-requisito: secret INFRA_BUMP_TOKEN neste repositório — PAT fine-grained
+# dedicado, com permissão de escrita (contents + pull requests) restrita a
+# unifesspa-edu-br/uniplus-infra. O GITHUB_TOKEN padrão do Actions não
+# alcança um repositório diferente do atual. Sem o secret, o job falha
+# explicitamente no primeiro passo, antes de tocar em qualquer repositório.
+
+on:
+  workflow_run:
+    workflows: ["Publish Images"]
+    types:
+      - completed
+
+permissions: {}
+
+concurrency:
+  # Grupo fixo (não por tag): serializa qualquer execução concorrente deste
+  # workflow. Com o grupo por tag, duas tags publicadas em sequência rápida
+  # (ex.: v0.5.1 e o fix v0.5.2 logo em seguida) rodavam em paralelo, cada
+  # uma lendo o mesmo main ainda não atualizado e abrindo PRs concorrentes
+  # que alteram a mesma linha — achado de revisão. Serializar não elimina
+  # 100% o caso de duas tags publicadas antes do primeiro PR ser mergeado
+  # (aí ficam 2 PRs abertos, um desatualizado — o humano no merge escolhe
+  # o correto), mas elimina a corrida de execução simultânea.
+  group: bump-infra-tag-uniplusApiHost
+  cancel-in-progress: false
+
+jobs:
+  bump-tag:
+    name: Abrir PR de bump no uniplus-infra
+    # workflow_run.event garante que só reage a runs originados de push de
+    # tag (o único trigger que "Publish Images" tem hoje) — defesa em
+    # profundidade caso o workflow ganhe outro trigger no futuro (ex.:
+    # workflow_dispatch) sem que este job seja revisado junto.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Validar presença do secret INFRA_BUMP_TOKEN
+        env:
+          INFRA_BUMP_TOKEN: ${{ secrets.INFRA_BUMP_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$INFRA_BUMP_TOKEN" ]; then
+            echo "::error::Secret INFRA_BUMP_TOKEN ausente neste repositório. Cadastre um PAT fine-grained (contents + pull requests) restrito a unifesspa-edu-br/uniplus-infra antes de esperar este workflow funcionar — ver uniplus-api#1256."
+            exit 1
+          fi
+          echo "✓ Secret presente."
+
+      - name: Extrair e validar tag publicada
+        id: tag
+        # TAG vem via `env:`, nunca interpolada direto no bloco `run:` —
+        # `${{ github.event.workflow_run.head_branch }}` é conteúdo de
+        # webhook (nome de branch/tag de um push), então interpolação
+        # direta no shell é injeção de script clássica do GitHub Actions.
+        # Passar por env + `"$TAG"` faz o valor chegar como dado, não como
+        # texto de comando. https://docs.github.com/en/actions/concepts/security/script-injections
+        env:
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::head_branch '$TAG' não é uma tag semver v<X>.<Y>.<Z>. 'Publish Images' só roda em push de tag (ADR-0050), então isso não deveria acontecer — abortando sem tocar no uniplus-infra."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "✓ Tag publicada: $TAG"
+
+      - name: Checkout uniplus-infra
+        uses: actions/checkout@v5
+        with:
+          repository: unifesspa-edu-br/uniplus-infra
+          ref: main
+          token: ${{ secrets.INFRA_BUMP_TOKEN }}
+
+      - name: Atualizar uniplusApiHost.image.tag
+        # Edição textual cirúrgica em vez de round-trip de parser YAML
+        # genérico: testado contra o values.yaml real, um parse+dump com
+        # ruamel.yaml reformata o arquivo inteiro (estilo de listas,
+        # `null` explícito vira vazio) por causa dos comentários e do
+        # estilo de indentação de sequência deste arquivo específico — o
+        # diff deixava de ser só a tag. python3 já vem no runner
+        # ubuntu-latest, sem dependência extra.
+        env:
+          NOVA_TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import os
+          import re
+
+          caminho = "environments/hml-standalone-single/values.yaml"
+          nova_tag = os.environ["NOVA_TAG"]
+
+          with open(caminho, encoding="utf-8") as f:
+              linhas = f.readlines()
+
+          # Delimita o bloco top-level `uniplusApiHost:` (linha em coluna 0
+          # até a próxima linha não-indentada).
+          inicio_bloco = None
+          fim_bloco = len(linhas)
+          for i, linha in enumerate(linhas):
+              if linha.startswith("uniplusApiHost:"):
+                  inicio_bloco = i
+              elif inicio_bloco is not None and re.match(r"^\S", linha):
+                  fim_bloco = i
+                  break
+
+          if inicio_bloco is None:
+              raise SystemExit(f"Chave uniplusApiHost: não encontrada em {caminho}.")
+
+          padrao_tag = re.compile(r"^\s{4}tag:\s*v\d+\.\d+\.\d+\s*$")
+          candidatos = [
+              i for i in range(inicio_bloco, fim_bloco) if padrao_tag.match(linhas[i])
+          ]
+
+          if len(candidatos) != 1:
+              raise SystemExit(
+                  f"Esperada exatamente 1 linha 'tag: vX.Y.Z' sob uniplusApiHost, "
+                  f"encontradas {len(candidatos)} — possível drift estrutural no "
+                  f"values.yaml. Abortando sem editar."
+              )
+
+          idx = candidatos[0]
+          anterior = next(
+              (linhas[j].rstrip("\n") for j in range(idx - 1, inicio_bloco, -1) if linhas[j].strip()),
+              None,
+          )
+          if anterior != "  image:":
+              raise SystemExit(
+                  f"Linha da tag não está sob 'image:' como esperado (achei {anterior!r}) "
+                  f"— possível drift estrutural. Abortando sem editar."
+              )
+
+          tag_atual = re.search(r"v\d+\.\d+\.\d+", linhas[idx]).group(0)
+          linhas[idx] = re.sub(r"v\d+\.\d+\.\d+", nova_tag, linhas[idx], count=1)
+
+          with open(caminho, "w", encoding="utf-8") as f:
+              f.writelines(linhas)
+
+          print(f"uniplusApiHost.image.tag: {tag_atual} -> {nova_tag}")
+          PYEOF
+
+      - name: Criar branch, commitar e push
+        id: commit
+        env:
+          NOVA_TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet; then
+            echo "Nenhuma mudança — uniplusApiHost.image.tag já está em $NOVA_TAG."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Guarda contra drift estrutural: o edit deve tocar só o
+          # values.yaml do ambiente HML, nunca outro arquivo.
+          ARQUIVOS_ALTERADOS=$(git diff --name-only | wc -l)
+          if [ "$ARQUIVOS_ALTERADOS" -ne 1 ]; then
+            echo "::error::Esperado exatamente 1 arquivo alterado, encontrado $ARQUIVOS_ALTERADOS. Abortando sem commitar."
+            git diff --stat
+            exit 1
+          fi
+
+          git config user.name "uniplus-bot"
+          git config user.email "uniplus-bot@users.noreply.github.com"
+
+          BRANCH="chore/bump-uniplus-api-host-${NOVA_TAG}"
+
+          # Idempotência: se "Publish Images" for reexecutado pra mesma tag
+          # (retry manual, rerun de job) antes do PR anterior ser mergeado,
+          # a branch determinística já existe no remoto — sem este guard,
+          # o push abaixo falha (non-fast-forward). Trata como no-op: o PR
+          # já deve estar aberto.
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            echo "Branch $BRANCH já existe no uniplus-infra — provavelmente já há PR aberto para $NOVA_TAG. Nada a fazer."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git checkout -b "$BRANCH"
+          git add environments/hml-standalone-single/values.yaml
+          git commit -m "chore(hml): atualiza uniplusApiHost para ${NOVA_TAG}
+
+          Gerado automaticamente pelo workflow de bump de tag do uniplus-api
+          (unifesspa-edu-br/uniplus-api#1256) após publish-images concluir com
+          sucesso para a tag ${NOVA_TAG}."
+          git push origin "$BRANCH"
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Abrir PR no uniplus-infra
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.INFRA_BUMP_TOKEN }}
+          NOVA_TAG: ${{ steps.tag.outputs.tag }}
+          BRANCH: ${{ steps.commit.outputs.branch }}
+        run: |
+          set -euo pipefail
+          cat > /tmp/pr-body.md <<EOF
+          PR aberto automaticamente pelo workflow \`bump-infra-tag.yml\` do uniplus-api (unifesspa-edu-br/uniplus-api#1256), após \`publish-images.yml\` publicar a tag \`${NOVA_TAG}\` com sucesso.
+
+          Altera só \`uniplusApiHost.image.tag\` em \`environments/hml-standalone-single/values.yaml\`. ArgoCD sincroniza automaticamente assim que este PR for mergeado em \`main\` (\`syncPolicy.automated\`).
+
+          Merge requer aprovação humana — este workflow não faz merge automático.
+          EOF
+
+          gh pr create \
+            --repo unifesspa-edu-br/uniplus-infra \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(hml): atualiza uniplusApiHost para ${NOVA_TAG}" \
+            --body-file /tmp/pr-body.md
