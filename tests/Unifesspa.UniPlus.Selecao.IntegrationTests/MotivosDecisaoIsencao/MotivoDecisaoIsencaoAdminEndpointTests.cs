@@ -218,6 +218,29 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "Token sem jti responde o 401 canônico da API, com desafio e problem+json")]
+    public async Task Criar_TokenSemJti_RespondeDesafioCanonico()
+    {
+        // Token que a autenticação aceita mas do qual o sujeito da decisão não
+        // se monta: a borda responde identidade incompleta. O 401 daí precisa
+        // ser o mesmo de qualquer outra falha de autenticação desta API, senão
+        // o cliente não reconhece que deve renovar a credencial.
+        HttpClient client = ClienteAutenticado();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.SemJtiHeader, "1");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, PermissaoManter);
+
+        using (client)
+        {
+            using HttpResponseMessage resposta = await PostAsync(
+                client, "/api/selecao/admin/motivos-decisao-isencao", PayloadValido(Codigo()));
+
+            resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            resposta.Headers.WwwAuthenticate.Should().NotBeEmpty(
+                "o desafio é o que diz ao cliente que a credencial precisa ser renovada");
+            resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+        }
+    }
+
     private static object PayloadValido(string codigo) => new
     {
         codigo,

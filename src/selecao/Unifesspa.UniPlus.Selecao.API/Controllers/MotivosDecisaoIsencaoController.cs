@@ -311,7 +311,14 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
         return resultado switch
         {
             ResultadoDoAcesso.Permitido => null,
-            ResultadoDoAcesso.IdentidadeIncompleta => Unauthorized(),
+
+            // Challenge, e não Unauthorized: o 401 canônico desta API carrega
+            // o header WWW-Authenticate e um corpo problem+json, ambos escritos
+            // pelo OnChallenge do esquema configurado. Um 401 devolvido direto
+            // do controller sai sem os dois e não se parece com nenhuma outra
+            // falha de autenticação da API — o cliente perde justamente o sinal
+            // de que precisa renovar a credencial.
+            ResultadoDoAcesso.IdentidadeIncompleta => Challenge(),
             _ => Forbid(),
         };
     }
