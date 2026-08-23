@@ -25,6 +25,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(MotivoDecisaoIsencaoErrorCodes.JaAtivo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_ativo", "O motivo já está ativo")),
         new(MotivoDecisaoIsencaoErrorCodes.JaInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_inativo", "O motivo já está inativo")),
         new(MotivoDecisaoIsencaoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.motivo_decisao_isencao.nao_encontrado", "Motivo de decisão de isenção não encontrado")),
+        new(MotivoDecisaoIsencaoErrorCodes.SituacaoAlteradaConcorrentemente, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.motivo_decisao_isencao.situacao_alterada_concorrentemente", "A situação do motivo foi alterada por outra operação")),
         // ObrigatoriedadeLegal forma plena (Story #460, ADR-0058). Códigos do
         // placeholder #459 preservados; novos códigos refletem invariantes da
         // forma plena (vigência, governance, hash UNIQUE, regra duplicada).

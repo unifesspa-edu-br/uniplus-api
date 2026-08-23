@@ -20,4 +20,5 @@ public static class MotivoDecisaoIsencaoErrorCodes
     public const string JaAtivo = "MotivoDecisaoIsencao.JaAtivo";
     public const string JaInativo = "MotivoDecisaoIsencao.JaInativo";
     public const string NaoEncontrado = "MotivoDecisaoIsencao.NaoEncontrado";
+    public const string SituacaoAlteradaConcorrentemente = "MotivoDecisaoIsencao.SituacaoAlteradaConcorrentemente";
 }
