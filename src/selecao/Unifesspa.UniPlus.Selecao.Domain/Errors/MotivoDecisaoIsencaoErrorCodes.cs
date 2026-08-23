@@ -14,6 +14,7 @@ public static class MotivoDecisaoIsencaoErrorCodes
     public const string CodigoJaExiste = "MotivoDecisaoIsencao.CodigoJaExiste";
     public const string DescricaoObrigatoria = "MotivoDecisaoIsencao.DescricaoObrigatoria";
     public const string DescricaoTamanho = "MotivoDecisaoIsencao.DescricaoTamanho";
+    public const string DescricaoCaractereInvalido = "MotivoDecisaoIsencao.DescricaoCaractereInvalido";
     public const string FundamentoObrigatorio = "MotivoDecisaoIsencao.FundamentoObrigatorio";
     public const string ResultadoPermitidoObrigatorio = "MotivoDecisaoIsencao.ResultadoPermitidoObrigatorio";
     public const string JaAtivo = "MotivoDecisaoIsencao.JaAtivo";

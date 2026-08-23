@@ -196,6 +196,28 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact(DisplayName = "Descrição com caractere nulo é recusada pelo domínio, não pelo banco")]
+    public async Task Criar_DescricaoComCaractereNulo_Recusa()
+    {
+        using HttpClient client = ClienteComPermissoes(PermissaoManter);
+
+        using HttpResponseMessage resposta = await PostAsync(
+            client,
+            "/api/selecao/admin/motivos-decisao-isencao",
+            new
+            {
+                codigo = Codigo(),
+                descricao = "Renda\u0000acima do limite.",
+                fundamento = "CADASTRO_UNICO",
+                resultadoPermitido = "INDEFERIDO",
+            });
+
+        // O Postgres não armazena U+0000 em coluna textual. Sem recusa no
+        // agregado, o valor atravessa a validação e estoura no SaveChanges,
+        // devolvendo 500 para um payload que é apenas inválido.
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
     private static object PayloadValido(string codigo) => new
     {
         codigo,
