@@ -36,6 +36,7 @@ public sealed class OidcAuthenticationConfigurationTests
             {
                 ["Auth:Authority"] = "http://insecure.example.com/realms/test",
                 ["Auth:Audience"] = "uniplus",
+                ["Auth:ClientId"] = "uniplus-api",
             });
 
         IOptions<AuthOptions> options = provider.GetRequiredService<IOptions<AuthOptions>>();
@@ -55,6 +56,7 @@ public sealed class OidcAuthenticationConfigurationTests
             {
                 ["Auth:Authority"] = "https://idp.example.com/realms/test",
                 ["Auth:Audience"] = "uniplus",
+                ["Auth:ClientId"] = "uniplus-api",
             });
 
         IOptions<AuthOptions> options = provider.GetRequiredService<IOptions<AuthOptions>>();
@@ -72,6 +74,7 @@ public sealed class OidcAuthenticationConfigurationTests
             {
                 ["Auth:Authority"] = "http://localhost:8080/realms/test",
                 ["Auth:Audience"] = "uniplus",
+                ["Auth:ClientId"] = "uniplus-api",
             });
 
         IOptions<AuthOptions> options = provider.GetRequiredService<IOptions<AuthOptions>>();

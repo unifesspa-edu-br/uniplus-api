@@ -1,20 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- IUserContext (ADR-0033) é a identidade de onde o agregador da borda monta
+         o sujeito da decisão — a porta IAuthorizationSubjectResolver o recebe na
+         assinatura (ADR-0078). Sem ciclo: Application.Abstractions não conhece
+         autorização. -->
+    <ProjectReference Include="..\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
-    <!-- ReferenceOutputAssembly=false: só ordena o build do gerador antes deste
-         projeto, sem linkar seu assembly — o gerador é uma ferramenta de build,
-         não uma dependência de compilação. Evita que o Exec abaixo dispare um
-         segundo build (dotnet run) do mesmo projeto em paralelo ao build que o
-         MSBuild já orquestra via este ProjectReference. -->
-    <ProjectReference Include="..\..\..\tools\permission-catalog-generator\Unifesspa.UniPlus.PermissionCatalogGenerator.csproj"
-                       ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <Target Name="VerificarCatalogoDePermissoes"
-          BeforeTargets="CoreCompile"
-          Condition="'$(DesignTimeBuild)' != 'true' and '$(SkipPermissionCatalogVerification)' != 'true'">
-    <Exec Command="dotnet exec &quot;$(MSBuildThisFileDirectory)../../../tools/permission-catalog-generator/bin/$(Configuration)/net10.0/Unifesspa.UniPlus.PermissionCatalogGenerator.dll&quot; --verify &quot;$(MSBuildThisFileDirectory)../../../permissions.yml&quot; &quot;$(MSBuildThisFileDirectory)Generated/UniPlusPermissions.g.cs&quot;" />
-  </Target>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Authorization.UnitTests" />
+  </ItemGroup>
+
 
 </Project>

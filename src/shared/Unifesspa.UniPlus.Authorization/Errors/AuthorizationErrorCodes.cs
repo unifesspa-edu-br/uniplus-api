@@ -38,4 +38,12 @@ public static class AuthorizationErrorCodes
 
     public const string AuthorizationRequestContextRequestIdObrigatorio = "Authorization.AuthorizationRequestContext.RequestIdObrigatorio";
     public const string AuthorizationRequestContextOnBehalfOfInvalido = "Authorization.AuthorizationRequestContext.OnBehalfOfInvalido";
+
+    // Falhas de resolução do sujeito na borda: o token autenticou mas não traz o
+    // que identifica o solicitante para a decisão. São de AUTENTICAÇÃO (a borda
+    // responde 401), não negativas de autorização — não houve decisão de acesso.
+    public const string SujeitoNaoAutenticado = "Authorization.Sujeito.NaoAutenticado";
+    public const string SujeitoIssuerAusente = "Authorization.Sujeito.IssuerAusente";
+    public const string SujeitoSubjectAusente = "Authorization.Sujeito.SubjectAusente";
+    public const string SujeitoJtiAusente = "Authorization.Sujeito.JtiAusente";
 }
