@@ -435,7 +435,22 @@
           "attributes": {}
         }
       ],
-      "uniplus-api": [],
+      "uniplus-api": [
+        {
+          "name": "configuracao:motivos-decisao-recursal:manter",
+          "description": "Manter os motivos de decisao recursal",
+          "composite": false,
+          "clientRole": true,
+          "attributes": {}
+        },
+        {
+          "name": "configuracao:motivos-decisao-recursal:consultar-auditoria",
+          "description": "Consultar a trilha protegida dos motivos de decisao recursal",
+          "composite": false,
+          "clientRole": true,
+          "attributes": {}
+        }
+      ],
       "account": [
         {
           "id": "768466f8-9cdc-4e1b-84a4-acaadbd8198d",
@@ -628,6 +643,15 @@
           "manage-account",
           "view-profile",
           "view-groups"
+        ]
+      }
+    ],
+    "uniplus-api": [
+      {
+        "client": "configuracao-web",
+        "roles": [
+          "configuracao:motivos-decisao-recursal:manter",
+          "configuracao:motivos-decisao-recursal:consultar-auditoria"
         ]
       }
     ]
@@ -3102,6 +3126,10 @@
         "account": [
           "view-profile",
           "manage-account"
+        ],
+        "uniplus-api": [
+          "configuracao:motivos-decisao-recursal:manter",
+          "configuracao:motivos-decisao-recursal:consultar-auditoria"
         ]
       },
       "attributes": {
