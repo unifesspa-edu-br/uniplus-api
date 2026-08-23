@@ -41,7 +41,23 @@ public static class AtualizarMotivoDecisaoIsencaoCommandHandler
             return atualizar;
         }
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // A edição grava a mesma linha que a ativação e a desativação, e o
+            // xmin as faz colidir entre si. Deixar a exceção escapar não
+            // devolveria apenas um erro de servidor: o filtro de idempotência
+            // não apaga a reserva de uma requisição que terminou em exceção —
+            // ele não tem como saber se a mutação chegou a ser aplicada —, e a
+            // entrada ficaria em processamento até o TTL, respondendo conflito
+            // de processamento a todo retry com a mesma chave. Traduzir aqui
+            // completa a entrada normalmente e devolve o conflito real.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(MotivoDecisaoIsencaoHandlerErros.SituacaoAlteradaConcorrentemente());
+        }
 
         return Result.Success();
     }
