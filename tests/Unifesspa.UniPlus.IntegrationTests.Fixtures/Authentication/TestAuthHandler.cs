@@ -24,15 +24,31 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     public const string NameHeader = "X-Test-Name";
     public const string EmailHeader = "X-Test-Email";
     public const string RolesHeader = "X-Test-Roles";
+
+    /// <summary>
+    /// Permissões concedidas ao sujeito, separadas por vírgula. Emitidas em
+    /// <c>resource_access.{clientId}.roles</c> — a única fonte que o ponto de
+    /// decisão (ADR-0078) consulta. Distinta de <see cref="RolesHeader"/>, que
+    /// popula <c>realm_access</c> e nunca vira permissão.
+    /// </summary>
+    public const string PermissionsHeader = "X-Test-Permissions";
+
+    /// <summary>Emissor do token. O sujeito da decisão é o par emissor + subject.</summary>
+    public const string DefaultIssuer = "https://idp.test/realms/unifesspa";
     public const string CpfHeader = "X-Test-Cpf";
     public const string NomeSocialHeader = "X-Test-Nome-Social";
+
+    private readonly IOptions<AuthOptions> _authOptions;
 
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
-        UrlEncoder encoder)
+        UrlEncoder encoder,
+        IOptions<AuthOptions> authOptions)
         : base(options, logger, encoder)
     {
+        ArgumentNullException.ThrowIfNull(authOptions);
+        _authOptions = authOptions;
     }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -54,6 +70,15 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             new("sub", GetHeaderValue(UserIdHeader, "test-user-id")),
             new("name", GetHeaderValue(NameHeader, "Test User")),
             new("email", GetHeaderValue(EmailHeader, "test@unifesspa.edu.br")),
+
+            // O emissor e o identificador de sessão não são opcionais para o
+            // ponto de decisão: sem eles o sujeito não se monta e toda decisão
+            // responde "identidade incompleta", que a borda traduz em 401. Vêm
+            // com valor fixo porque nenhum teste precisa variá-los para
+            // exercitar autorização — quem precisar cobre o caso ausente
+            // montando o principal à mão, como fazem os testes do resolver.
+            new("iss", DefaultIssuer),
+            new("jti", $"jti-{Guid.NewGuid():N}"),
         ];
 
         string? cpf = GetOptionalHeaderValue(CpfHeader);
@@ -71,6 +96,21 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
         if (roles.Length > 0)
         {
             claims.Add(new Claim("realm_access", JsonSerializer.Serialize(new { roles })));
+        }
+
+        // As permissões vão sob o clientId desta API, e não sob a audiência: é
+        // a chave que o agregador do sujeito lê (ADR-0010 separa as duas de
+        // propósito). Emiti-las no lugar errado faria o teste montar um token
+        // que nunca concede nada e passar a impressão de que a regra negou.
+        string[] permissoes = GetHeaderValues(PermissionsHeader);
+        if (permissoes.Length > 0)
+        {
+            claims.Add(new Claim(
+                "resource_access",
+                JsonSerializer.Serialize(new Dictionary<string, object>(StringComparer.Ordinal)
+                {
+                    [_authOptions.Value.ClientId] = new { roles = permissoes },
+                })));
         }
 
         ClaimsIdentity identity = new(claims, SchemeName);

@@ -85,6 +85,13 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<RegraCatalogo> RolDeRegras => Set<RegraCatalogo>();
 
     /// <summary>
+    /// Catálogo institucional de motivos de decisão de isenção (UNI-REQ-0120) —
+    /// cadastro administrativo, protegido pela permissão de manutenção. A mesma
+    /// lista serve à análise documental inicial e ao recurso do fundamento.
+    /// </summary>
+    public DbSet<MotivoDecisaoIsencao> MotivosDecisaoIsencao => Set<MotivoDecisaoIsencao>();
+
+    /// <summary>
     /// Catálogo data-driven de regras legais (Story #460, ADR-0058). O CRUD
     /// admin entra em #461; em V1 esta DbSet é populada via factory direta
     /// para testes e seeds.

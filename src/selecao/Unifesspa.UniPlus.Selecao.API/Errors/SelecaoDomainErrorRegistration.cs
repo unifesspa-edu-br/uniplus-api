@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via IServiceProvider.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>().")]
@@ -12,6 +13,17 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
+        // Catálogo de motivos de decisão de isenção (UNI-REQ-0120 a UNI-REQ-0122).
+        new(MotivoDecisaoIsencaoErrorCodes.CodigoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.codigo_obrigatorio", "Código do motivo é obrigatório")),
+        new(MotivoDecisaoIsencaoErrorCodes.CodigoFormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.codigo_formato_invalido", "Código do motivo fora do formato aceito")),
+        new(MotivoDecisaoIsencaoErrorCodes.CodigoJaExiste, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.motivo_decisao_isencao.codigo_ja_existe", "Já existe motivo com este código")),
+        new(MotivoDecisaoIsencaoErrorCodes.DescricaoObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.descricao_obrigatoria", "Descrição do motivo é obrigatória")),
+        new(MotivoDecisaoIsencaoErrorCodes.DescricaoTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.descricao_tamanho", "Descrição do motivo fora do tamanho permitido")),
+        new(MotivoDecisaoIsencaoErrorCodes.FundamentoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.fundamento_obrigatorio", "Fundamento de isenção do motivo é obrigatório")),
+        new(MotivoDecisaoIsencaoErrorCodes.ResultadoPermitidoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.resultado_permitido_obrigatorio", "Motivo deve declarar exatamente um resultado permitido")),
+        new(MotivoDecisaoIsencaoErrorCodes.JaAtivo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_ativo", "O motivo já está ativo")),
+        new(MotivoDecisaoIsencaoErrorCodes.JaInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_inativo", "O motivo já está inativo")),
+        new(MotivoDecisaoIsencaoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.motivo_decisao_isencao.nao_encontrado", "Motivo de decisão de isenção não encontrado")),
         // ObrigatoriedadeLegal forma plena (Story #460, ADR-0058). Códigos do
         // placeholder #459 preservados; novos códigos refletem invariantes da
         // forma plena (vigência, governance, hash UNIQUE, regra duplicada).
