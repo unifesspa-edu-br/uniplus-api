@@ -12,4 +12,9 @@ internal static class MotivoDecisaoIsencaoHandlerErros
     public static DomainError NaoEncontrado(Guid id) =>
         new(MotivoDecisaoIsencaoErrorCodes.NaoEncontrado,
             $"Motivo de decisão de isenção {id} não encontrado.");
+
+    public static DomainError SituacaoAlteradaConcorrentemente() =>
+        new(MotivoDecisaoIsencaoErrorCodes.SituacaoAlteradaConcorrentemente,
+            "A situação do motivo de decisão de isenção foi alterada por outra operação. "
+            + "Consulte o estado atual antes de repetir.");
 }

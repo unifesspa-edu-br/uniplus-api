@@ -57,6 +57,16 @@ internal sealed class MotivoDecisaoIsencaoConfiguration : IEntityTypeConfigurati
 
         builder.Property(m => m.Ativo).IsRequired();
 
+        // Token de concorrência otimista mapeado para a coluna de sistema `xmin`
+        // do Postgres (shadow property `uint` + IsRowVersion — convenção do
+        // provider Npgsql, sem coluna nem migration própria; ADR-0119, mesmo
+        // padrão de TermoConsentimentoConfiguration). Ativar e desativar são
+        // check-then-act: duas requisições concorrentes leem o mesmo `Ativo`,
+        // ambas passam a guarda do agregado e ambas gravam, de modo que a
+        // segunda relataria uma transição que não aconteceu e sobrescreveria a
+        // auditoria da primeira. O xmin amarra o UPDATE à versão lida.
+        builder.Property<uint>("Version").IsRowVersion();
+
         builder.Property(m => m.CreatedBy).HasMaxLength(AuditUserMaxLength);
         builder.Property(m => m.UpdatedBy).HasMaxLength(AuditUserMaxLength);
 

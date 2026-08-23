@@ -34,7 +34,20 @@ public static class AtivarMotivoDecisaoIsencaoCommandHandler
             return ativar;
         }
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // Outra requisição mudou a situação entre a leitura e a gravação. A
+            // guarda do agregado não alcança essa corrida: as duas leram o mesmo
+            // estado e as duas a atravessaram. Sem o descarte, o SaveChangesAsync
+            // que o Wolverine dispara depois do handler tentaria o mesmo UPDATE
+            // fora deste catch.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(MotivoDecisaoIsencaoHandlerErros.SituacaoAlteradaConcorrentemente());
+        }
 
         return Result.Success();
     }
