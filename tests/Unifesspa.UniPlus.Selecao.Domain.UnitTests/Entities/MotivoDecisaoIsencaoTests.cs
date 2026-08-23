@@ -113,6 +113,37 @@ public sealed class MotivoDecisaoIsencaoTests
             "a recusa não pode deixar o agregado com a descrição pela metade");
     }
 
+    [Fact(DisplayName = "Descrição com caractere nulo é recusada pelo agregado")]
+    public void Criar_DescricaoComCaractereNulo_Recusa()
+    {
+        // O caractere nulo não é espaço em branco e cabe no tamanho, então
+        // passaria as duas checagens anteriores — mas a coluna textual do banco
+        // não o armazena, e sem esta recusa o payload inválido só falharia ao
+        // gravar, como erro de servidor.
+        Result<MotivoDecisaoIsencao> resultado = MotivoDecisaoIsencao.Criar(
+            "RENDA_ACIMA_DO_LIMITE",
+            "Renda\0acima do limite.",
+            FundamentoIsencao.CadastroUnico,
+            ResultadoPermitido.Indeferido);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be(MotivoDecisaoIsencaoErrorCodes.DescricaoCaractereInvalido);
+    }
+
+    [Fact(DisplayName = "A edição também recusa caractere nulo na descrição")]
+    public void Atualizar_DescricaoComCaractereNulo_Recusa()
+    {
+        MotivoDecisaoIsencao motivo = CriarValido();
+
+        Result resultado = motivo.Atualizar("Nova\0redação.");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be(MotivoDecisaoIsencaoErrorCodes.DescricaoCaractereInvalido);
+        motivo.Descricao.Should().Be("Renda familiar per capita acima do limite legal.");
+    }
+
     [Fact(DisplayName = "Desativar preserva o registro e apenas o retira das novas publicações")]
     public void Desativar_MotivoAtivo_PreservaORegistro()
     {

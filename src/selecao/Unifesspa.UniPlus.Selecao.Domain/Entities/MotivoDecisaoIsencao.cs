@@ -264,6 +264,17 @@ public sealed class MotivoDecisaoIsencao : EntityBase, IAuditableEntity
 
         string normalizada = descricao.Trim();
 
+        // O caractere nulo não é espaço em branco, então atravessa a checagem
+        // de obrigatoriedade, e cabe no tamanho — mas a coluna textual do banco
+        // não o armazena. Sem esta recusa o valor só falharia ao gravar, e um
+        // payload inválido responderia 500 em vez da validação de domínio.
+        if (normalizada.Contains('\0', StringComparison.Ordinal))
+        {
+            return Result<string>.ValidationFailure([new("descricao", new DomainError(
+                MotivoDecisaoIsencaoErrorCodes.DescricaoCaractereInvalido,
+                "Descrição do motivo não pode conter o caractere nulo."))]);
+        }
+
         if (normalizada.Length is < DescricaoMinLength or > DescricaoMaxLength)
         {
             return Result<string>.ValidationFailure([new("descricao", new DomainError(

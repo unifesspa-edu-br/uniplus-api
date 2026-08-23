@@ -52,7 +52,17 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed class MotivosDecisaoIsencaoController : ControllerBase
 {
     private const string ResourceTag = "motivos-decisao-isencao";
-    private const string RecursoTipo = "MotivoDecisaoIsencao";
+    /// <summary>
+    /// Tipo de recurso que a decisão de acesso enxerga. Diverge de propósito do
+    /// nome da entidade: é o vocabulário já em uso por esta permissão, e a
+    /// restrição de tipo de uma concessão é comparada por igualdade exata
+    /// (<c>GrantEfetivoAplicavelCheck</c>). Uma concessão escopada a
+    /// <c>MotivoDecisaoRecursal</c> deixaria de alcançar este endpoint se ele
+    /// se anunciasse com outro nome — e a negativa apareceria como 403 sem
+    /// explicação, já que as concessões do token não trazem restrição de tipo
+    /// e mascaram a divergência.
+    /// </summary>
+    private const string RecursoTipo = "MotivoDecisaoRecursal";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
