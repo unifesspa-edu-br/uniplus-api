@@ -35,6 +35,13 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
 
     /// <summary>Emissor do token. O sujeito da decisão é o par emissor + subject.</summary>
     public const string DefaultIssuer = "https://idp.test/realms/unifesspa";
+
+    /// <summary>
+    /// Presente, omite o <c>jti</c> do token. Reproduz o token que a validação
+    /// JWT aceita mas do qual o sujeito da decisão não se monta — o caso em que
+    /// a borda responde identidade incompleta, e não negativa de acesso.
+    /// </summary>
+    public const string SemJtiHeader = "X-Test-Sem-Jti";
     public const string CpfHeader = "X-Test-Cpf";
     public const string NomeSocialHeader = "X-Test-Nome-Social";
 
@@ -78,8 +85,12 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             // exercitar autorização — quem precisar cobre o caso ausente
             // montando o principal à mão, como fazem os testes do resolver.
             new("iss", DefaultIssuer),
-            new("jti", $"jti-{Guid.NewGuid():N}"),
         ];
+
+        if (GetOptionalHeaderValue(SemJtiHeader) is null)
+        {
+            claims.Add(new Claim("jti", $"jti-{Guid.NewGuid():N}"));
+        }
 
         string? cpf = GetOptionalHeaderValue(CpfHeader);
         if (cpf is not null)
