@@ -89,18 +89,47 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
-        [FromQuery] FundamentoIsencao? fundamento,
+        [FromQuery] string? fundamento,
         [FromQuery] bool apenasAtivos = true,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
+
+        // O filtro chega como texto e é convertido pelo mesmo mapa canônico que
+        // o comando de criação usa, e não por binding direto no enum. Ligado ao
+        // enum, o parâmetro aceitaria a grafia dos membros em C# e recusaria
+        // justamente o código que esta API devolve em `fundamento` — quem
+        // relesse o valor de uma resposta e o usasse como filtro receberia 400.
+        FundamentoIsencao? fundamentoFiltrado = null;
+        if (!string.IsNullOrWhiteSpace(fundamento))
+        {
+            FundamentoIsencao convertido = FundamentoIsencaoCodigo.FromCodigo(fundamento);
+
+            // Nenhum é sentinela de ausência, e não um terceiro fundamento:
+            // chega aqui tanto por código desconhecido quanto por alguém pedir
+            // a própria sentinela. Aceitá-la filtraria pelos motivos sem
+            // fundamento, conjunto que por invariante é sempre vazio — uma
+            // lista vazia diria "não há motivos" em vez de "o filtro é inválido".
+            if (convertido == FundamentoIsencao.Nenhum)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Fundamento de isenção desconhecido",
+                    Detail = "O filtro aceita apenas os códigos "
+                        + $"{FundamentoIsencaoCodigo.CadastroUnico} e {FundamentoIsencaoCodigo.DoacaoMedulaOssea}.",
+                    Status = StatusCodes.Status400BadRequest,
+                });
+            }
+
+            fundamentoFiltrado = convertido;
+        }
 
         ListarMotivosDecisaoIsencaoResult resultado = await _queryBus.Send(
             new ListarMotivosDecisaoIsencaoQuery(
                 page.AfterId,
                 page.Limit,
                 page.Direction,
-                fundamento,
+                fundamentoFiltrado,
                 apenasAtivos),
             cancellationToken).ConfigureAwait(false);
 

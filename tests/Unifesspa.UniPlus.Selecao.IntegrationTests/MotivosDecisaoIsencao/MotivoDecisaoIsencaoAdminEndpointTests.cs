@@ -152,6 +152,50 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
         consulta.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Fact(DisplayName = "O filtro por fundamento aceita o mesmo código canônico que a leitura devolve")]
+    public async Task Listar_FiltroPeloCodigoCanonico_Filtra()
+    {
+        using HttpClient client = ClienteComPermissoes(PermissaoManter);
+        string codigo = Codigo();
+
+        using HttpResponseMessage criada = await PostAsync(
+            client, "/api/selecao/admin/motivos-decisao-isencao", PayloadValido(codigo));
+        criada.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // O DTO devolve fundamento como "CADASTRO_UNICO"; devolver esse mesmo
+        // valor no filtro tem de funcionar. Ligar o parâmetro direto ao enum
+        // faria a API recusar o que ela própria emitiu.
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri("/api/selecao/motivos-decisao-isencao?fundamento=CADASTRO_UNICO", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+    }
+
+    [Fact(DisplayName = "O filtro recusa fundamento fora do vocabulário canônico")]
+    public async Task Listar_FiltroForaDoVocabulario_Recusa()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri("/api/selecao/motivos-decisao-isencao?fundamento=NAO_EXISTE", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "A sentinela de fundamento não informado não é aceita como filtro")]
+    public async Task Listar_FiltroComSentinela_Recusa()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // Nenhum é sentinela de ausência, não um fundamento — aceitá-la como
+        // filtro devolveria a lista dos motivos que não têm fundamento, que por
+        // invariante é sempre vazia.
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri("/api/selecao/motivos-decisao-isencao?fundamento=NENHUM", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private static object PayloadValido(string codigo) => new
     {
         codigo,

@@ -600,7 +600,7 @@
             "name": "fundamento",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/FundamentoIsencao"
+              "type": "string"
             }
           },
           {
@@ -8264,15 +8264,6 @@
             }
           }
         }
-      },
-      "FundamentoIsencao": {
-        "enum": [
-          "nenhum",
-          "cadastroUnico",
-          "doacaoMedulaOssea",
-          null
-        ],
-        "type": "string"
       },
       "IdadeMaximaEmissaoDto": {
         "required": [
