@@ -850,4 +850,107 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
+
+    // ══════════════════════════════════════════════════════════════════════════════════════
+    // Gates que a raiz aplica antes do agregador — localidade e convenção de contagem
+    // ══════════════════════════════════════════════════════════════════════════════════════
+
+    private static ReferenciaRegra RegraDeRecursoAncorada() =>
+        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)).Value!;
+
+    private static RegraRecursoFase RecursoEmHoras() => RegraRecursoFase.Criar(
+        RegraDeRecursoAncorada(),
+        new ArgsRegraPrazoRecurso(
+            PrazoValor: 48m,
+            PrazoUnidade: UnidadePrazo.Horas,
+            AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
+            SuspensividadePrimeiraInstanciaValor: null,
+            SuspensividadePrimeiraInstanciaUnidade: null,
+            SuspensividadeSegundaInstanciaValor: null,
+            SuspensividadeSegundaInstanciaUnidade: null)).Value!;
+
+    /// <summary>Fase preliminar que produz o ato âncora e aceita recurso sobre ele.</summary>
+    private static FaseCronograma FaseComRecurso() => FaseCronograma.Criar(
+        1, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
+        agrupaEtapas: false, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: false,
+        coletaInscricao: false, inicio: null, fim: null,
+        atoProduzidoCodigo: "RESULTADO_PRELIMINAR", atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [], regraRecurso: RecursoEmHoras()).Value!;
+
+    private static FaseCronograma FaseFinal(int ordem) => FaseCronograma.Criar(
+        ordem, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
+        agrupaEtapas: false, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true,
+        coletaInscricao: false, inicio: null, fim: null,
+        atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [], regraRecurso: null).Value!;
+
+    [Fact(DisplayName = "Convenção de contagem não declarada com fase que aceita recurso — item vermelho e Publicar recusa com AlgoritmoContagemPrazoNaoDeclarado")]
+    public void ContagemDePrazos_AlgoritmoNaoDeclarado()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        SoEstesItensVermelhos(processo, "algoritmo_contagem_prazo_nao_declarado");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado");
+    }
+
+    [Fact(DisplayName = "Localidade ausente — item vermelho e Publicar recusa com LocalidadeAusente")]
+    public void ContagemDePrazos_LocalidadeAusente()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+
+        // A localidade é exigida desde a criação, então o fluxo público não alcança este
+        // estado — o que se prova aqui é a defesa da raiz contra um caminho de escrita que a
+        // contorne, incluindo a materialização de um registro gravado antes de o campo existir.
+        // Sem essa prova, a projeção do item ficaria verde por construção e nunca exercitada.
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Localidade))!
+            .SetValue(processo, null);
+
+        SoEstesItensVermelhos(processo, "localidade_nao_declarada");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeAusente");
+    }
+
+    [Fact(DisplayName = "Com duas pendências simultâneas, o checklist lista a que bloqueia a publicação antes da outra")]
+    public void ContagemDePrazos_PrecedenciaDoChecklistSegueOsGates()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        // Duas pendências ao mesmo tempo, de gates que Publicar() avalia em ordem conhecida:
+        // a convenção de contagem (2º) e a taxa de inscrição, que é item estrutural e cai no
+        // agregador genérico (3º). Quem lê o checklist de cima para baixo tem de encontrar a
+        // causa que efetivamente bloqueia antes da que só apareceria depois dela.
+        processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirTaxaInscricao(null!, PrecondicaoIfMatch.Curinga);
+
+        string[] vermelhos = [.. processo.AvaliarConformidade().Where(static i => !i.Ok).Select(static i => i.Codigo)];
+
+        // Equal, não BeEquivalentTo: aqui a ORDEM é o que está sendo provado.
+        vermelhos.Should().Equal(
+            ["algoritmo_contagem_prazo_nao_declarado", "taxa_inscricao_nao_declarada"],
+            "a convenção de contagem é gate anterior ao agregador de itens estruturais, e o " +
+            "checklist reproduz a precedência de Publicar()");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
+            "a publicação recusa pela primeira causa da mesma precedência");
+    }
+
+    [Fact(DisplayName = "Contraprova: sem fase que aceite recurso, a convenção de contagem não é exigida")]
+    public void ContagemDePrazos_SemRecursoNaoExigeConvencao()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+
+        SoEstesItensVermelhos(processo);
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
 }

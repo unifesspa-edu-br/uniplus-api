@@ -18,11 +18,11 @@ public sealed record ItemConformidadeDto(string Codigo, string Dimensao, string 
 
 /// <summary>
 /// Checklist de conformidade ESTRUTURAL do <c>ProcessoSeletivo</c> (CA-07, issue #1092):
-/// bicondicional com os QUATRO gates estruturais que <c>Publicar</c>/<c>Retificar</c> aplicam —
-/// completude dos itens obrigatórios, coerência do cronograma, cobertura da cascata de
-/// remanejamento e as checagens de pré-canonicalização (exigências documentais, consequência de
-/// indeferimento, referência temporal de fatos, regras de derivação e o grafo de dependência
-/// conjunto). Nenhum item novo em <c>ItemConformidadeDto</c>; a leitura não altera o processo.
+/// bicondicional com os SEIS gates estruturais que <c>Publicar</c>/<c>Retificar</c> aplicam —
+/// localidade que rege a contagem dos prazos, convenção de contagem declarada, completude dos
+/// itens obrigatórios, coerência do cronograma, cobertura da cascata de remanejamento e as
+/// checagens de pré-canonicalização (exigências documentais, consequência de indeferimento,
+/// referência temporal de fatos, regras de derivação e o grafo de dependência conjunto). Nenhum item novo em <c>ItemConformidadeDto</c>; a leitura não altera o processo.
 /// </summary>
 /// <remarks>
 /// <b>Não é "publicável".</b> Todos os itens <c>Ok</c> significa que o agregado está

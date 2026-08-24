@@ -56,6 +56,39 @@ public sealed class GateEstruturalRegressaoTests
         chamadasNoFecharHandler.Should().Be(1, "FecharRetificacao antecipa a mesma recusa que o Domain reconferiria");
     }
 
+    /// <summary>
+    /// Localidade e convenção de contagem são gates da raiz, e só dela: os handlers da
+    /// Application não os antecipam. Diferente de <c>PendenciaDeConformidade</c> e
+    /// <c>PendenciaDaCascata</c>, cada um tem <b>três</b> call sites no Domain — os dois de
+    /// <c>Publicar</c>/<c>SucederVersao</c> mais a projeção em <c>AvaliarConformidade</c>, que
+    /// é o que mantém checklist e recusa bicondicionais. Perder a terceira chamada devolve o
+    /// defeito em que a publicação recusa por uma causa que o checklist declarava verde.
+    /// </summary>
+    [Fact(DisplayName = "Localidade e convenção de contagem: dois gates no Domain e a projeção no checklist, sem antecipação nos handlers")]
+    public void ContagemDePrazos_TemGatesNaRaizEProjecaoNoChecklist()
+    {
+        string processoSeletivo = File.ReadAllText(CaminhoProcessoSeletivo());
+
+        Regex.Count(processoSeletivo, @"PendenciaDaLocalidade\(\)\s+is\s").Should().Be(3,
+            "Publicar() e SucederVersao() aplicam o gate, e AvaliarConformidade() projeta o mesmo predicado");
+        Regex.Count(processoSeletivo, @"PendenciaDoAlgoritmoDeContagem\(\)\s+is\s").Should().Be(3,
+            "mesma topologia da localidade — dois gates e uma projeção");
+
+        foreach (string handler in new[]
+                 {
+                     "PublicarProcessoSeletivoCommandHandler.cs",
+                     "RetificarProcessoSeletivoCommandHandler.cs",
+                     "FecharRetificacaoCommandHandler.cs",
+                 })
+        {
+            string fonte = File.ReadAllText(CaminhoHandler(handler));
+            fonte.Should().NotContain("PendenciaDaLocalidade(",
+                "o gate de localidade não é antecipado na Application — a raiz é o único ponto");
+            fonte.Should().NotContain("PendenciaDoAlgoritmoDeContagem(",
+                "o gate da convenção de contagem não é antecipado na Application");
+        }
+    }
+
     private static int ContarChamadasDeGate(string caminho)
     {
         string fonte = File.ReadAllText(caminho);

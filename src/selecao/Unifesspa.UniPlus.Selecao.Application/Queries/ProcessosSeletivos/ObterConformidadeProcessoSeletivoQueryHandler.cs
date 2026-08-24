@@ -14,7 +14,7 @@ using DTOs;
 /// </summary>
 /// <remarks>
 /// O checklist em si vive em <c>ProcessoSeletivo.AvaliarConformidade()</c> (Domain) — bicondicional
-/// com os QUATRO gates estruturais que <c>Publicar</c>/<c>Retificar</c> aplicam (issue #1092), não
+/// com os SEIS gates estruturais que <c>Publicar</c>/<c>Retificar</c> aplicam (issue #1092), não
 /// só o primeiro. Este handler apenas mapeia; a fonte única evita que a leitura pública e os gates
 /// de publicação divirjam.
 /// </remarks>
