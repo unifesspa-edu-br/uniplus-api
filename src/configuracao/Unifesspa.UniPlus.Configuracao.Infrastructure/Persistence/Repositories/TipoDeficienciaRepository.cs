@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -58,6 +60,30 @@ public sealed class TipoDeficienciaRepository : ITipoDeficienciaRepository
     {
         ArgumentNullException.ThrowIfNull(tipo);
         _dbContext.TiposDeficiencia.Remove(tipo);
+    }
+
+    public Task<bool> CodigoExisteEntreVivosAsync(
+        string codigo,
+        Guid? excluirId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        // Um código fora do formato nunca tem tipo vivo — evita query desnecessária e
+        // garante que a comparação use o valor canônico normalizado (Trim).
+        // Case-sensitive (default do Postgres) — alinhado ao índice único.
+        Result<CodigoTipoDeficiencia> codigoResult = CodigoTipoDeficiencia.Criar(codigo);
+        if (codigoResult.IsFailure)
+        {
+            return Task.FromResult(false);
+        }
+
+        CodigoTipoDeficiencia codigoVo = codigoResult.Value!;
+
+        return _dbContext.TiposDeficiencia
+            .AsNoTracking()
+            .Where(t => excluirId == null || t.Id != excluirId)
+            .AnyAsync(t => t.Codigo == codigoVo, cancellationToken);
     }
 
     public Task<bool> NomeExisteEntreVivosAsync(

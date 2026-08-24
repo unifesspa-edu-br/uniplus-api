@@ -9702,6 +9702,7 @@
       "AtualizarTipoDeficienciaCommand": {
         "required": [
           "id",
+          "codigo",
           "nome",
           "descricao"
         ],
@@ -9710,6 +9711,12 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
             "type": [
@@ -10788,11 +10795,18 @@
       },
       "CriarTipoDeficienciaCommand": {
         "required": [
+          "codigo",
           "nome",
           "descricao"
         ],
         "type": "object",
         "properties": {
+          "codigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "nome": {
             "type": [
               "null",
@@ -12173,6 +12187,7 @@
       "TipoDeficienciaDto": {
         "required": [
           "id",
+          "codigo",
           "nome",
           "descricao",
           "permanente",
@@ -12183,6 +12198,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           },
           "nome": {
             "type": "string"

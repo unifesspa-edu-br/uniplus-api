@@ -469,7 +469,25 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.recurso_acessibilidade.nao_encontrado",
                 "Recurso de acessibilidade não encontrado")),
 
-        // ── Tipo de deficiência (UNI-REQ-0012) ────────────────────────────
+        // ── Tipo de deficiência (UNI-REQ-0012, UNI-REQ-0061) ──────────────
+        new(TipoDeficienciaErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_deficiencia.codigo_obrigatorio",
+                "Código do tipo de deficiência é obrigatório")),
+
+        new(TipoDeficienciaErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_deficiencia.codigo_formato_invalido",
+                "Código do tipo de deficiência em formato inválido")),
+
+        new(TipoDeficienciaErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.tipo_deficiencia.codigo_ja_existe",
+                "Já existe um tipo de deficiência ativo com este código")),
+
         new(TipoDeficienciaErrorCodes.NomeObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

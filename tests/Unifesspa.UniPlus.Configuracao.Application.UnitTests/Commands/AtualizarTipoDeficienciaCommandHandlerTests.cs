@@ -13,14 +13,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class AtualizarTipoDeficienciaCommandHandlerTests
 {
+    private const string Codigo = "DEFICIENCIA_VISUAL";
+    private const string Descricao = "Deficiência relacionada à visão";
+
     private readonly ITipoDeficienciaRepository _repository = Substitute.For<ITipoDeficienciaRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
-    private static TipoDeficiencia TipoExistente(string nome = "Visual") =>
-        TipoDeficiencia.Criar(nome, "Deficiência relacionada à visão").Value!;
+    private static TipoDeficiencia TipoExistente(string codigo = Codigo, string nome = "Visual") =>
+        TipoDeficiencia.Criar(codigo, nome, Descricao).Value!;
 
-    private static AtualizarTipoDeficienciaCommand Comando(Guid id, string nome = "Visual") =>
-        new(id, nome, "Deficiência relacionada à visão");
+    private static AtualizarTipoDeficienciaCommand Comando(
+        Guid id, string codigo = Codigo, string nome = "Visual") =>
+        new(id, codigo, nome, Descricao);
 
     [Fact(DisplayName = "Tipo inexistente retorna NaoEncontrado (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrado()
@@ -36,12 +40,74 @@ public sealed class AtualizarTipoDeficienciaCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Editar para um código que colide com outro tipo vivo retorna conflito (409)")]
+    public async Task Handle_CodigoColidente_RetornaConflito()
+    {
+        TipoDeficiencia existente = TipoExistente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        // O novo código "TEA" já pertence a outro tipo vivo.
+        _repository.CodigoExisteEntreVivosAsync("TEA", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
+            Comando(existente.Id, codigo: "TEA"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDeficienciaErrorCodes.CodigoJaExiste);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Editar para um código distinto e livre é aceito e persiste")]
+    public async Task Handle_CodigoDistintoLivre_Aceita()
+    {
+        TipoDeficiencia existente = TipoExistente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _repository.CodigoExisteEntreVivosAsync("TEA", existente.Id, Arg.Any<CancellationToken>()).Returns(false);
+
+        Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
+            Comando(existente.Id, codigo: "TEA"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        existente.Codigo.Valor.Should().Be("TEA");
+        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Reenviar o próprio código não consulta a unicidade do código")]
+    public async Task Handle_CodigoInalterado_NaoChecaUnicidadeDoCodigo()
+    {
+        TipoDeficiencia existente = TipoExistente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
+            Comando(existente.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Editar apenas o nome preserva o código e não consulta a unicidade do código")]
+    public async Task Handle_SomenteNomeAlterado_PreservaCodigo()
+    {
+        TipoDeficiencia existente = TipoExistente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _repository.NomeExisteEntreVivosAsync("Baixa visão", existente.Id, Arg.Any<CancellationToken>()).Returns(false);
+
+        Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
+            Comando(existente.Id, nome: "Baixa visão"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        existente.Nome.Should().Be("Baixa visão");
+        existente.Codigo.Valor.Should().Be(Codigo);
+        await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Editar para um nome que colide com outro tipo vivo retorna conflito (409)")]
     public async Task Handle_NomeColidente_RetornaConflito()
     {
-        TipoDeficiencia existente = TipoExistente("Visual");
+        TipoDeficiencia existente = TipoExistente();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        // O novo nome "Auditiva" já pertence a outro tipo vivo.
         _repository.NomeExisteEntreVivosAsync("Auditiva", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
 
         Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
@@ -52,29 +118,14 @@ public sealed class AtualizarTipoDeficienciaCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Editar para um nome distinto e livre é aceito e persiste")]
-    public async Task Handle_NomeDistintoLivre_Aceita()
+    [Fact(DisplayName = "Editar sem mudar o nome não consulta a unicidade do nome")]
+    public async Task Handle_NomeInalterado_NaoChecaUnicidadeDoNome()
     {
-        TipoDeficiencia existente = TipoExistente("Visual");
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        _repository.NomeExisteEntreVivosAsync("Auditiva", existente.Id, Arg.Any<CancellationToken>()).Returns(false);
-
-        Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
-            Comando(existente.Id, nome: "Auditiva"), _repository, _unitOfWork, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        existente.Nome.Should().Be("Auditiva");
-        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Editar sem mudar o nome não consulta a unicidade")]
-    public async Task Handle_NomeInalterado_NaoChecaUnicidade()
-    {
-        TipoDeficiencia existente = TipoExistente("Visual");
+        TipoDeficiencia existente = TipoExistente();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
-            Comando(existente.Id, nome: "Visual"), _repository, _unitOfWork, CancellationToken.None);
+            Comando(existente.Id), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         await _repository.DidNotReceive()
@@ -86,13 +137,13 @@ public sealed class AtualizarTipoDeficienciaCommandHandlerTests
     public async Task Handle_PayloadInvalidoEIdInexistente_RetornaViolacaoDeValidacao()
     {
         Guid id = Guid.CreateVersion7();
-        AtualizarTipoDeficienciaCommand comando = Comando(id, nome: "") with { Descricao = "" };
+        AtualizarTipoDeficienciaCommand comando = Comando(id, codigo: "", nome: "") with { Descricao = "" };
 
         Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().HaveCount(3);
         resultado.Error!.Code.Should().NotBe(TipoDeficienciaErrorCodes.NaoEncontrado);
         await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }

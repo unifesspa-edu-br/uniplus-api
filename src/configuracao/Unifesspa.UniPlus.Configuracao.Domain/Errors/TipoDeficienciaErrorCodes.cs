@@ -1,14 +1,22 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 
 // Mapeamentos esperados em ConfiguracaoDomainErrorRegistration (UNI-REQ-0012):
-//   NomeJaExiste         → 409 Conflict
-//   NomeObrigatorio      → 422 UnprocessableEntity
-//   NomeTamanho          → 422 UnprocessableEntity
-//   DescricaoObrigatoria → 422 UnprocessableEntity
-//   DescricaoTamanho     → 422 UnprocessableEntity
-//   NaoEncontrado        → 404 NotFound
+//   CodigoJaExiste        → 409 Conflict
+//   NomeJaExiste          → 409 Conflict
+//   CodigoObrigatorio     → 422 UnprocessableEntity
+//   CodigoFormatoInvalido → 422 UnprocessableEntity
+//   NomeObrigatorio       → 422 UnprocessableEntity
+//   NomeTamanho           → 422 UnprocessableEntity
+//   DescricaoObrigatoria  → 422 UnprocessableEntity
+//   DescricaoTamanho      → 422 UnprocessableEntity
+//   NaoEncontrado         → 404 NotFound
 public static class TipoDeficienciaErrorCodes
 {
+    /// <summary>Código ausente (UNI-REQ-0061): a identidade congelada nos fatos de atendimento é código + origem.</summary>
+    public const string CodigoObrigatorio = "TipoDeficiencia.CodigoObrigatorio";
+    public const string CodigoFormatoInvalido = "TipoDeficiencia.CodigoFormatoInvalido";
+    public const string CodigoJaExiste = "TipoDeficiencia.CodigoJaExiste";
+
     public const string NomeObrigatorio = "TipoDeficiencia.NomeObrigatorio";
     public const string NomeTamanho = "TipoDeficiencia.NomeTamanho";
     public const string NomeJaExiste = "TipoDeficiencia.NomeJaExiste";
