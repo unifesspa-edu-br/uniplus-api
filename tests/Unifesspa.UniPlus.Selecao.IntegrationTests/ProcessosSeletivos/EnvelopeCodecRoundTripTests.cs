@@ -146,7 +146,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             CorpusEnvelope.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System);
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(publicacao.Value!);
@@ -304,7 +304,8 @@ public sealed class EnvelopeCodecRoundTripTests
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
-                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados));
+                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
+                envelope.CalendarioDiasUteis));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         // Os três são independentes no modelo (VersaoConfiguracao guarda schema_version e
@@ -518,7 +519,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados)).Value!.Bytes;
+                reidratado.Value.ValoresSelecionaveisCongelados,
+                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
 
         return (congelado.Bytes, bytesMutados, recodificados);
     }
@@ -569,7 +571,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados)).Value!.Bytes;
+                reidratado.Value.ValoresSelecionaveisCongelados,
+                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
 
         recodificado.Should().Equal(fixture,
             "a fixture rica é o oráculo do decoder — bytes reais, GUIDs reais, agregado completo. Se ela deixar de " +
@@ -640,11 +643,11 @@ public sealed class EnvelopeCodecRoundTripTests
         // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
         // EnvelopeCodecV13 já documenta para si).
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.12", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.13", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            entrada.HashDocumento, "user-sub-123", TimeProvider.System);
+            entrada.HashDocumento, "user-sub-123", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 
@@ -662,7 +665,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados)).Value!.Bytes;
+                reidratado.Value.ValoresSelecionaveisCongelados,
+                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma exigência documental rica (condicaoGatilho, basesLegais, " +
@@ -789,11 +793,11 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));
-        congelado.SchemaVersion.Should().Be("0.0.12", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.13", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-sub-arvore", TimeProvider.System);
+            hashDocumento, "user-sub-arvore", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 
@@ -810,7 +814,9 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
-                reidratado.Value.MetadadosFatosCongelados)).Value!.Bytes;
+                reidratado.Value.MetadadosFatosCongelados,
+                reidratado.Value.ValoresSelecionaveisCongelados,
+                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma árvore com grupo OU, cardinalidade qualificada e repetição por " +
@@ -998,11 +1004,11 @@ public sealed class EnvelopeCodecRoundTripTests
         EntradaCanonicalizacao entrada = new(
             processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.12", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.13", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-sub-sete-conjuntos", TimeProvider.System);
+            hashDocumento, "user-sub-sete-conjuntos", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 
@@ -1152,7 +1158,10 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Dados,
                 reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
                 reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade)).Value!.Bytes;
+                reidratado.Value.Conformidade,
+                reidratado.Value.MetadadosFatosCongelados,
+                reidratado.Value.ValoresSelecionaveisCongelados,
+                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
 
         recodificados.Should().NotEqual(congelado.Bytes,
             "o decoder tem de LER 'classificacao.baseadoEmEnem' — se o ignorasse, a recodificação traria o valor " +

@@ -107,7 +107,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", clock);
+            docAbertura.HashSha256!, "integration-test-user", clock, CorpusEnvelope.ContextoRico());
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -137,7 +137,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição")));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
-                docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock);
+                docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock, CorpusEnvelope.ContextoRico());
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
             versaoRetificacao = retificar.Value!;
 
@@ -269,7 +269,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
@@ -307,7 +307,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
                 dadosRetificacao, versaoAbertura, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
                 canonicoRetificacao.AlgoritmoHash, docRetificacao.HashSha256!, "integration-test-user",
-                PrecondicaoIfMatch.Curinga, TimeProvider.System);
+                PrecondicaoIfMatch.Curinga, TimeProvider.System, CorpusEnvelope.ContextoRico());
             fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
             versaoRetificacao = fechar.Value!;
 
@@ -348,7 +348,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
@@ -420,7 +420,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
@@ -488,7 +488,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
@@ -530,7 +530,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
                 dadosRetificacao, versaoAbertura, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
                 canonicoRetificacao.AlgoritmoHash, docRetificacao.HashSha256!, "integration-test-user",
-                PrecondicaoIfMatch.Curinga, TimeProvider.System);
+                PrecondicaoIfMatch.Curinga, TimeProvider.System, CorpusEnvelope.ContextoRico());
             fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
             versaoRetificacao = fechar.Value!;
 
@@ -570,7 +570,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 

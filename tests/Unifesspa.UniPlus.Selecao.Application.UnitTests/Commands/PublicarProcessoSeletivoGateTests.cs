@@ -107,6 +107,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             vagaDeLinhagemReader,
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
             TimeProvider.System,
             CancellationToken.None);
 
@@ -230,6 +231,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             vagaDeLinhagemReader,
             obrigatoriedadeLegalRepository,
             Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
             TimeProvider.System,
             CancellationToken.None);
 

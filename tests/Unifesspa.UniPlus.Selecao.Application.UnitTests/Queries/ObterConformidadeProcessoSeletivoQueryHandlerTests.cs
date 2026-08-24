@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -22,7 +23,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             .Returns((ProcessoSeletivo?)null);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CancellationToken.None);
 
         result.Should().BeNull();
     }
@@ -37,7 +38,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CancellationToken.None);
 
         result.Should().NotBeNull();
         // Etapa deixou de ser item do checklist (Story #851 §3.5): um processo sem prova
@@ -98,7 +99,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Itens.Should().Contain(
@@ -111,7 +112,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         // duas superfícies concordam depois da correção (a prova da bicondicional).
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             DadosEdital.Criar("001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!,
-            "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", new string('a', 64), "teste", TimeProvider.System);
+            "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", new string('a', 64), "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta");
@@ -170,7 +171,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Itens.Should().OnlyContain(i => i.Ok);
@@ -180,7 +181,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         // estrutural (não afetado aqui): conformidade legal, documento confirmado, tipo de ato.
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             DadosEdital.Criar("001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!,
-            "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", new string('a', 64), "teste", TimeProvider.System);
+            "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", new string('a', 64), "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
     }

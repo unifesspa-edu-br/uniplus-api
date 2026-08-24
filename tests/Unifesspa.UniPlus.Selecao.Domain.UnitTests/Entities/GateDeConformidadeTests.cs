@@ -39,7 +39,7 @@ public sealed class GateDeConformidadeTests
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
-            TimeProvider.System);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         return publicar.Value!;
@@ -99,7 +99,7 @@ public sealed class GateDeConformidadeTests
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
             motivo: "Correção do prazo",
-            TimeProvider.System);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         retificar.IsFailure.Should().BeTrue(
             "retificar também congela uma versão append-only e vinculante — congelar configuração incompleta " +
@@ -122,7 +122,7 @@ public sealed class GateDeConformidadeTests
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
-            TimeProvider.System);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -154,7 +154,7 @@ public sealed class GateDeConformidadeTests
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
-            TimeProvider.System);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         publicar.IsFailure.Should().BeTrue(
             "as outras cinco dimensões estão conformes — só a ausência de declaração de taxa pode estar bloqueando");

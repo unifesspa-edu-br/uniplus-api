@@ -1515,14 +1515,68 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return null;
         }
 
-        bool algumaContagemDependeDaConvencao = _cronogramaFases.Exists(fase => fase.RegraRecurso is not null);
-
-        return algumaContagemDependeDaConvencao
+        return AlgumaContagemDistingueDiaUtil()
             ? new DomainError(
                 "ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
                 "O processo tem prazo de recurso cuja contagem distingue dia útil, e não declarou a convenção de contagem que usa.")
             : null;
     }
+
+    /// <summary>
+    /// Recusa gerar versão quando alguma contagem do certame distingue dia útil e não há
+    /// calendário de dias úteis vigente (UNI-REQ-0116).
+    /// </summary>
+    /// <remarks>
+    /// Mesmo gatilho de <see cref="PendenciaDoAlgoritmoDeContagem"/>, e pela mesma razão: toda
+    /// regra de recurso carrega prazo de interposição, e as duas unidades declaráveis nele
+    /// correm sobre dia útil. A diferença é a origem do dado — a convenção o processo declara,
+    /// o calendário vem do módulo Configuração e chega pelo contexto.
+    /// <para>
+    /// As duas causas são distintas e cada uma tem erro próprio: falta o dado que diz quais
+    /// dias são úteis, ou falta a convenção que diz como contá-los. Podem faltar ao mesmo
+    /// tempo, e reportar uma pela outra mandaria quem publica corrigir o lugar errado.
+    /// </para>
+    /// </remarks>
+    private DomainError? PendenciaDoCalendarioVigente(ContextoDeContagemDePrazos contexto)
+    {
+        if (contexto.CalendarioVigente is not null)
+        {
+            return null;
+        }
+
+        if (!AlgumaContagemDistingueDiaUtil())
+        {
+            return null;
+        }
+
+        // Dataset vigente existe, mas veio incoerente do cadastro: a causa é essa, não a
+        // ausência. Reportar "não há calendário" mandaria cadastrar um que já está lá.
+        if (contexto.FalhaDoCalendarioVigente is { } falha)
+        {
+            return falha;
+        }
+
+        return AlgumaContagemDistingueDiaUtil()
+            ? new DomainError(
+                "ProcessoSeletivo.CalendarioVigenteAusente",
+                "O processo tem prazo de recurso cuja contagem distingue dia útil, e não há calendário de dias úteis vigente cadastrado.")
+            : null;
+    }
+
+    /// <summary>
+    /// Se alguma contagem do certame distingue dia útil de não útil — o gatilho compartilhado
+    /// pelos gates do calendário e da convenção de contagem (UNI-REQ-0116).
+    /// </summary>
+    /// <remarks>
+    /// Basta existir regra de recurso: toda regra declara prazo de interposição, e as duas
+    /// unidades declaráveis nele correm sobre dia útil — dias úteis por definição, e horas
+    /// porque só as horas situadas em dia útil avançam o relógio. A suspensividade em dias
+    /// úteis depende igualmente, mas nunca sozinha, já que não existe suspensividade sem a
+    /// regra que a carrega. A janela de solicitação de isenção não é regra de recurso e não
+    /// aciona nada disto.
+    /// </remarks>
+    private bool AlgumaContagemDistingueDiaUtil() =>
+        _cronogramaFases.Exists(static fase => fase.RegraRecurso is not null);
 
     /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
@@ -1639,8 +1693,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// pendência que vai bloquear a publicação antes das que só apareceriam depois dela.
     /// </para>
     /// </remarks>
-    public IReadOnlyList<ItemConformidade> AvaliarConformidade() =>
-    [
+    public IReadOnlyList<ItemConformidade> AvaliarConformidade(ContextoDeContagemDePrazos contexto)
+    {
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        return
+        [
         // ── Gates que a raiz aplica ANTES do agregador genérico, na ordem de Publicar ──
         // Os dois têm erro nomeado próprio e por isso não entram em
         // ItensEstruturaisDeConformidade(), que alimenta o agregador: lá dentro, o
@@ -1648,6 +1706,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // alcançada — mesma razão pela qual a cascata fica de fora.
         new ItemConformidade("localidade_nao_declarada", DimensaoConformidade.ContagemDePrazos, "Localidade que rege a contagem dos prazos", PendenciaDaLocalidade() is null),
         new ItemConformidade("algoritmo_contagem_prazo_nao_declarado", DimensaoConformidade.ContagemDePrazos, "Convenção de contagem dos prazos de recurso", PendenciaDoAlgoritmoDeContagem() is null),
+        new ItemConformidade("calendario_vigente_ausente", DimensaoConformidade.ContagemDePrazos, "Calendário de dias úteis vigente", PendenciaDoCalendarioVigente(contexto) is null),
+
+        // O fuso não é gate de publicação — zona irresolvível é defeito de instalação, mapeado
+        // para 500, e quem publica não tem o que corrigir. Projetá-lo assim mesmo é o que evita
+        // que o preflight declare tudo pronto e a publicação devolva um 500 sem explicação.
+        new ItemConformidade("fuso_institucional_nao_reconhecido", DimensaoConformidade.ContagemDePrazos, "Fuso institucional reconhecido pelo runtime", contexto.FusoInstitucionalReconhecido),
 
         .. ItensEstruturaisDeConformidade(),
 
@@ -1679,7 +1743,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
-    ];
+        ];
+    }
 
     /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria (Story #920) — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
     private bool GruposComConsequenciaTemBaseLegalResolvida() =>
@@ -2627,11 +2692,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string algoritmoHash,
         string hashDocumento,
         string atorUsuarioSub,
-        TimeProvider clock)
+        TimeProvider clock,
+        ContextoDeContagemDePrazos contexto)
     {
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(contexto);
 
         if (Status != StatusProcesso.Rascunho)
         {
@@ -2657,6 +2724,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDoAlgoritmoDeContagem() is { } pendenciaAlgoritmo)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaAlgoritmo);
+        }
+
+        if (PendenciaDoCalendarioVigente(contexto) is { } pendenciaCalendario)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaCalendario);
         }
 
         if (PendenciaDeConformidade() is { } pendencia)
@@ -2750,7 +2822,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string hashDocumento,
         string atorUsuarioSub,
         string motivo,
-        TimeProvider clock)
+        TimeProvider clock,
+        ContextoDeContagemDePrazos contexto)
     {
         // A ordem é a de sempre, e ela importa: os contratos do método (argumentos não nulos)
         // e o estado do certame são conferidos ANTES da sessão editorial. Antepor a recusa por
@@ -2781,7 +2854,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return SucederVersao(
             dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
-            hashDocumento, atorUsuarioSub, motivo, clock);
+            hashDocumento, atorUsuarioSub, motivo, clock, contexto);
     }
 
     /// <summary>
@@ -2815,7 +2888,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string hashDocumento,
         string atorUsuarioSub,
         PrecondicaoIfMatch precondicao,
-        TimeProvider clock)
+        TimeProvider clock,
+        ContextoDeContagemDePrazos contexto)
     {
         ArgumentNullException.ThrowIfNull(precondicao);
 
@@ -2826,7 +2900,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         Result<VersaoConfiguracao> versao = SucederVersao(
             dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
-            hashDocumento, atorUsuarioSub, Rascunho!.Motivo, clock);
+            hashDocumento, atorUsuarioSub, Rascunho!.Motivo, clock, contexto);
         if (versao.IsFailure)
         {
             return versao;
@@ -2949,10 +3023,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string hashDocumento,
         string atorUsuarioSub,
         string motivo,
-        TimeProvider clock)
+        TimeProvider clock,
+        ContextoDeContagemDePrazos contexto)
     {
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentNullException.ThrowIfNull(versaoAtual);
+        ArgumentNullException.ThrowIfNull(contexto);
         ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
         ArgumentNullException.ThrowIfNull(clock);
 
@@ -3001,6 +3077,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDoAlgoritmoDeContagem() is { } pendenciaAlgoritmo)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaAlgoritmo);
+        }
+
+        if (PendenciaDoCalendarioVigente(contexto) is { } pendenciaCalendario)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaCalendario);
         }
 
         if (PendenciaDeConformidade() is { } pendencia)

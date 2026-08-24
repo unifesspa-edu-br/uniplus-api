@@ -41,7 +41,7 @@ public sealed class GateEstruturalRegressaoTests
     public void PendenciaDaCascata_AtravessaOsCincoCallSites()
     {
         // O padrão `is { }` (destructuring) isola os call sites de GATE (Publicar,
-        // SucederVersao, os três handlers) do uso em AvaliarConformidade(), que testa
+        // SucederVersao, os três handlers) do uso em AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario), que testa
         // `PendenciaDaCascata() is null` só para exibição — mesma chamada, propósito
         // diferente, não é um sexto call site de bloqueio.
         int chamadasNoDomain = ContarChamadasDeGate(CaminhoProcessoSeletivo());
@@ -70,7 +70,7 @@ public sealed class GateEstruturalRegressaoTests
         string processoSeletivo = File.ReadAllText(CaminhoProcessoSeletivo());
 
         Regex.Count(processoSeletivo, @"PendenciaDaLocalidade\(\)\s+is\s").Should().Be(3,
-            "Publicar() e SucederVersao() aplicam o gate, e AvaliarConformidade() projeta o mesmo predicado");
+            "Publicar() e SucederVersao() aplicam o gate, e AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario) projeta o mesmo predicado");
         Regex.Count(processoSeletivo, @"PendenciaDoAlgoritmoDeContagem\(\)\s+is\s").Should().Be(3,
             "mesma topologia da localidade — dois gates e uma projeção");
 

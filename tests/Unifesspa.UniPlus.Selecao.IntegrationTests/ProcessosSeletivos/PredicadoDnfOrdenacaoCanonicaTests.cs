@@ -358,7 +358,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-sub-predicado-1068", TimeProvider.System);
+            hashDocumento, "user-sub-predicado-1068", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 
@@ -384,7 +384,8 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             new EntradaCanonicalizacao(
                 processo, reidratado.Value.Dados, reidratado.Value.HashDocumento, FusoInstitucional.ZoneId, reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade, reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados));
+                reidratado.Value.ValoresSelecionaveisCongelados,
+                reidratado.Value.CalendarioDiasUteis));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,

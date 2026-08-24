@@ -55,7 +55,7 @@ public sealed class ConformidadeCronogramaTests
         "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!;
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System);
+        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
     /// <summary>
     /// Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada em

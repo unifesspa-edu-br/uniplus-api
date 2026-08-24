@@ -145,7 +145,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
             ProcessoSeletivo processo = NovoProcessoConforme();
             VersaoConfiguracao versao = processo.Publicar(
                 NovosDados(), Bytes, schemaVersion, "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-                new RelogioFixo(Agora)).Value!;
+                new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario).Value!;
             processo.DequeueDomainEvents();
 
             IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();

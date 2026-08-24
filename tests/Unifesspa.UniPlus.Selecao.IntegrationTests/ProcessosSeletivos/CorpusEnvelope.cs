@@ -591,6 +591,31 @@ internal static class CorpusEnvelope
         };
     }
 
+    /// <summary>
+    /// Calendário congelado do corpus rico (UNI-REQ-0080). Traz <b>uma data de cada abrangência</b>
+    /// de propósito: um corpus só com feriado nacional deixaria as três formas territoriais sem
+    /// golden, e a recusa de combinação inválida no decoder passaria a ser provada apenas por
+    /// mutação, nunca por artefato.
+    /// </summary>
+    /// <remarks>
+    /// O id é fixo, como os demais ids do corpus: gerado a cada execução, a golden fixture rica
+    /// não teria como existir. A data municipal é de Marabá, a localidade regente do corpus.
+    /// </remarks>
+    internal static CalendarioDiasUteisCongelado CalendarioRico() =>
+        CalendarioDiasUteisCongelado.Criar(
+            Guid.Parse("01930000-0000-7000-8000-0000000000ca"),
+            "2026",
+            [
+                DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!,
+                DiaNaoUtilCongelado.Criar(new DateOnly(2026, 4, 5), "MUNICIPAL", "1504208", "Marabá", "PA").Value!,
+                DiaNaoUtilCongelado.Criar(new DateOnly(2026, 8, 15), "ESTADUAL", null, null, "PA").Value!,
+                DiaNaoUtilCongelado.Criar(new DateOnly(2026, 10, 28), "INSTITUCIONAL", null, null, null).Value!,
+            ]).Value!;
+
+    /// <summary>Contexto do corpus: o calendário rico, com o fuso reconhecido.</summary>
+    internal static ContextoDeContagemDePrazos ContextoRico() =>
+        new(CalendarioRico(), FusoInstitucionalReconhecido: true);
+
     internal static EntradaCanonicalizacao Entrada(
         ProcessoSeletivo processo,
         RetificacaoInfo? retificacao = null,
@@ -598,7 +623,8 @@ internal static class CorpusEnvelope
         bool permutarValoresSelecionaveis = false) =>
         new(
             processo, DadosRicos(), HashDocumento, FusoInstitucional.ZoneId, retificacao, conformidade,
-            ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis));
+            ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis),
+            CalendarioDiasUteis: CalendarioRico());
 
     /// <summary>
     /// Uma <see cref="VersaoConfiguracao"/> montada com <b>ids de ato fixos</b>, para que
@@ -650,7 +676,7 @@ internal static class CorpusEnvelope
             snapshot.AlgoritmoHash,
             HashDocumento,
             Ator,
-            TimeProvider.System).IsSuccess.Should().BeTrue();
+            TimeProvider.System, ContextoRico()).IsSuccess.Should().BeTrue();
         processo.ClearDomainEvents();
     }
 

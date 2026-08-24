@@ -112,8 +112,29 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             Substitute.For<IFatoCandidatoReader>()), documento);
     }
 
+    /// <summary>
+    /// A leitura do calendário vigente é <b>uma por handler</b>: a mesma resposta alimenta o gate
+    /// da raiz e o bloco congelado do envelope. Duas leituras abririam a janela em que o dataset
+    /// muda entre validar e congelar, e a versão publicada carregaria um calendário que o gate
+    /// não aprovou — defeito que nenhuma asserção sobre o resultado pegaria, porque num teste
+    /// comum as duas leituras devolveriam o mesmo valor.
+    /// </summary>
+    [Fact(DisplayName = "O handler lê o calendário vigente uma única vez")]
+    public async Task Handle_LeCalendarioUmaUnicaVez()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        var reader = CalendarioVigenteReaderDeTeste.ComVigente();
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento, reader);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        reader.Leituras.Should().Be(1);
+    }
+
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> HandleAsync(
-        Mocks mocks, ProcessoSeletivo processo, DocumentoEdital documento)
+        Mocks mocks, ProcessoSeletivo processo, DocumentoEdital documento,
+        ICalendarioVigenteReader? calendarioReader = null)
     {
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("user-sub-1");
@@ -134,6 +155,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             mocks.VagaDeLinhagemReader,
             mocks.ObrigatoriedadeLegalRepository,
             mocks.FatoCandidatoReader,
+            calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente(),
             TimeProvider.System,
             CancellationToken.None);
     }

@@ -35,6 +35,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
         IFatoCandidatoReader fatoCandidatoReader,
+        ICalendarioVigenteReader calendarioVigenteReader,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -49,6 +50,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
+        ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -216,12 +218,32 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(fusoResult.Error!), []);
         }
 
+        // UNI-REQ-0116: UMA leitura do calendário vigente por operação. A mesma resposta
+        // alimenta o gate da raiz e o bloco congelado do envelope — ler duas vezes abriria a
+        // janela em que o dataset muda entre validar e congelar, e a versão publicada
+        // carregaria um calendário que o gate não aprovou.
+        CalendarioVigenteView? calendarioVigente = await calendarioVigenteReader
+            .ObterVigenteAsync(cancellationToken)
+            .ConfigureAwait(false);
+        // Dataset vigente incoerente não aborta aqui: quem decide se ele importa é o gate da
+        // raiz, e só importa para processo cuja contagem distingue dia útil. Abortar antes
+        // recusaria também quem não usa o dado que está quebrado, e o checklist ficaria verde
+        // para um processo que a publicação recusa.
+        Result<CalendarioDiasUteisCongelado?> calendarioResult =
+            LeituraDoCalendarioVigente.Traduzir(calendarioVigente);
+
+        var contexto = new ContextoDeContagemDePrazos(
+            calendarioResult.IsSuccess ? calendarioResult.Value : null,
+            FusoInstitucionalReconhecido: true,
+            FalhaDoCalendarioVigente: calendarioResult.IsFailure ? calendarioResult.Error : null);
+
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
                 processo, dados, documento.HashSha256!, fusoResult.Value!.Id,
                 Conformidade: conformidadeLegal.Value,
                 MetadadosFatosCongelados: metadadosFatosResult.Value,
-                ValoresSelecionaveisCongelados: valoresSelecionaveisResult.Value));
+                ValoresSelecionaveisCongelados: valoresSelecionaveisResult.Value,
+                CalendarioDiasUteis: contexto.CalendarioVigente));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
@@ -232,7 +254,8 @@ public static class PublicarProcessoSeletivoCommandHandler
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub,
-            timeProvider);
+            timeProvider,
+            contexto);
         if (publicarResult.IsFailure)
         {
             return (Result.Failure(publicarResult.Error!), []);

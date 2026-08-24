@@ -84,6 +84,14 @@ public static class SelecaoCodegenRegistration
         // (Story #847). Mesmo motivo dos demais readers cross-módulo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
 
+        // Calendário de dias úteis vigente (issue #1140, UNI-REQ-0116) — consumido pelas três
+        // transições que geram versão e pela consulta de conformidade. Sob este opt-in o
+        // Wolverine resolve o reader por service location, e o ConfiguracaoDbContext deixa de
+        // ser alcançável na análise de AutoApplyTransactions: sem ambiguidade de DbContext, os
+        // handlers de escrita dispensam [NonTransactional] e preservam o enrolamento
+        // transacional write+evento do outbox (ADR-0004), que Publicar precisa.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICalendarioVigenteReader>();
+
         // Cronograma de fases (Story #851): FaseCanonica/TipoBanca (Configuração) e o
         // grafo de precedências (idem) — primeiro consumo real dos dois primeiros
         // readers desde que a #40 os deixou registrados sem consumidor. Mesmo motivo

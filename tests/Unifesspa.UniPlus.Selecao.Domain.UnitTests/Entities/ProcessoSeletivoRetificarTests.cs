@@ -139,7 +139,7 @@ public sealed class ProcessoSeletivoRetificarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock, ContextoDeContagemDePrazos.SemCalendario);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         versaoAbertura = publicacao.Value!;
         processo.DequeueDomainEvents();
@@ -155,7 +155,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção do prazo de inscrição", clock: clock);
+            motivo: "Correção do prazo de inscrição", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado, "retificar não altera o status Publicado");
@@ -177,7 +177,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção do anexo II", clock: clock);
+            motivo: "Correção do anexo II", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
 
@@ -204,7 +204,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "qualquer", clock: Relogio());
+            motivo: "qualquer", clock: Relogio(), ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
@@ -220,7 +220,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "   ", clock: clock);
+            motivo: "   ", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.MotivoRetificacaoObrigatorio");
@@ -236,7 +236,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<VersaoConfiguracao> primeira = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "primeira retificação", clock: clock);
+            motivo: "primeira retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
@@ -245,7 +245,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // anterior, não o edital original (ADR-0103).
         Result<VersaoConfiguracao> segunda = processo.Retificar(
             NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "segunda retificação", clock: clock);
+            motivo: "segunda retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
         primeira.Value!.AtoCriadorRetificaId.Should().Be(versaoAbertura.AtoCriadorId, "R1 emenda a abertura");
@@ -264,7 +264,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção de datas", clock: clock);
+            motivo: "Correção de datas", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso");
@@ -284,7 +284,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<VersaoConfiguracao> retificacao = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "retificação sob relógio regredido", clock: clock);
+            motivo: "retificação sob relógio regredido", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
 
         retificacao.IsSuccess.Should().BeTrue(retificacao.Error?.Message);
 
@@ -335,7 +335,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(-10));
         Result<VersaoConfiguracao> primeira = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "primeira retificação", clock: clock);
+            motivo: "primeira retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         primeira.Value!.VigenteAPartirDe.Should().Be(
             versaoAbertura.VigenteAPartirDe,
@@ -346,7 +346,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // irretificável.
         Result<VersaoConfiguracao> segunda = processo.Retificar(
             NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "segunda retificação", clock: clock);
+            motivo: "segunda retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
         segunda.Value!.AtoCriadorRetificaId.Should().Be(
@@ -389,7 +389,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            PrecondicaoIfMatch.Curinga, clock);
+            PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(
             resultado.Error?.Message ?? "o bloco documentosExigidos.exigencias deixou de ser stub — nada mais bloqueia este fechamento");
@@ -505,7 +505,7 @@ public sealed class ProcessoSeletivoRetificarTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock, ContextoDeContagemDePrazos.SemCalendario);
         publicacao.IsSuccess.Should().BeTrue(
             publicacao.Error?.Message ?? "AC não declara AcaoQuandoIndeferido — nada com que a exigência seja incoerente");
         VersaoConfiguracao versaoAbertura = publicacao.Value!;
@@ -525,7 +525,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            PrecondicaoIfMatch.Curinga, clock);
+            PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue(
             "a coerência é recomputada a cada fechamento, a partir da coleção real de exigências — não fica " +

@@ -134,7 +134,8 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
                 reposto, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
-                ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos()));
+                ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos(),
+                CalendarioDiasUteis: CorpusEnvelope.CalendarioRico()));
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
             "o agregado que voltou do Postgres tem de recanonicalizar nos MESMOS bytes que o ato congelou — é a " +

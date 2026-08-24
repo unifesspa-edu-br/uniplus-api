@@ -27,7 +27,8 @@ public sealed class EnvelopeReidratado
         RetificacaoInfo? retificacao,
         ResultadoConformidade? conformidade,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null,
-        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados = null)
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados = null,
+        CalendarioDiasUteisCongelado? calendarioDiasUteis = null)
     {
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -42,7 +43,21 @@ public sealed class EnvelopeReidratado
         Conformidade = conformidade;
         MetadadosFatosCongelados = metadadosFatosCongelados;
         ValoresSelecionaveisCongelados = valoresSelecionaveisCongelados;
+        CalendarioDiasUteis = calendarioDiasUteis;
     }
+
+    /// <summary>
+    /// Calendário de dias úteis <b>congelado nesta versão</b>, e não o vigente hoje. Como o fuso,
+    /// acompanha o grafo sem entrar nele: não é estado do agregado, e sim contexto da
+    /// canonicalização.
+    /// <para>
+    /// A razão de voltar por aqui é mais forte que a do fuso. O dataset que originou este bloco
+    /// pode ter deixado de ser vigente e sido <b>removido</b> do cadastro; recanonicalizar contra
+    /// o vigente não produziria apenas bytes diferentes — não haveria como recuperar a lista que
+    /// esta versão congelou, e a prova de fidelidade ficaria impossível de repetir.
+    /// </para>
+    /// </summary>
+    public CalendarioDiasUteisCongelado? CalendarioDiasUteis { get; }
 
     public GrafoConfiguracao Grafo { get; }
 

@@ -61,12 +61,19 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
         // `documentosExigidos.dataReferenciaFatos`. Recanonicalizar sob o fuso vigente faria a
         // mesma versão produzir bytes diferentes depois que o padrão institucional mudasse — e a
         // prova byte a byte, que é o que autoriza o descarte da retificação, deixaria de valer.
+        //
+        // O calendário segue a mesma regra, e é o caso em que ela mais pesa: o dataset que
+        // deixou de ser vigente pode ter sido REMOVIDO do cadastro. Recanonicalizar contra o
+        // vigente não só produziria bytes diferentes — não haveria como recuperar a lista que
+        // esta versão congelou. Por isso o bloco vem do envelope, e nenhum reader é consultado
+        // nesta operação.
         Result<SnapshotCanonico> recodificado = registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
                 sombra, envelope.Dados, envelope.HashDocumento, envelope.FusoHorario,
                 envelope.Retificacao, envelope.Conformidade,
-                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados));
+                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
+                envelope.CalendarioDiasUteis));
 
         if (recodificado.IsFailure)
         {

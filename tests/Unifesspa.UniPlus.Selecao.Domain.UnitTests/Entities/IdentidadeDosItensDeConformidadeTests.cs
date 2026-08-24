@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class IdentidadeDosItensDeConformidadeTests
 {
     private static IReadOnlyList<ItemConformidade> Checklist() =>
-        ProcessoConformeFactory.Criar().AvaliarConformidade();
+        ProcessoConformeFactory.Criar().AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario);
 
     private static IReadOnlyList<string> DimensoesDeclaradas() =>
     [

@@ -237,9 +237,12 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
 
         DadosEdital dados = DadosEdital.Criar(
             "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!;
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, HashFixo, FusoInstitucional.ZoneId));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(
+                processo, dados, HashFixo, FusoInstitucional.ZoneId,
+                CalendarioDiasUteis: CorpusEnvelope.CalendarioRico()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, HashFixo, "integration-test-user", TimeProvider.System);
+            dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, HashFixo, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         VersaoConfiguracao versaoAbertura = publicar.Value!;
         byte[] bytesCongelados = versaoAbertura.ConfiguracaoCongeladaCanonica;
@@ -317,7 +320,10 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         // publicação original — um DocumentoEditalId diferente mudaria 'hashesEdital' e a
         // comparação de bytes provaria outra coisa.
         Result<SnapshotCanonico> recodificado = new RegistroCodecsEnvelope().Recodificar(
-            versaoAbertura.SchemaVersion, new EntradaCanonicalizacao(relido, dados, HashFixo, FusoInstitucional.ZoneId));
+            versaoAbertura.SchemaVersion,
+            new EntradaCanonicalizacao(
+                relido, dados, HashFixo, FusoInstitucional.ZoneId,
+                CalendarioDiasUteis: CorpusEnvelope.CalendarioRico()));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
         recodificado.Value!.Bytes.Should().Equal(bytesCongelados,
             "o processo relido do banco, sem a linha explícita, recanonicaliza nos MESMOS bytes que o ato publicado congelou");
