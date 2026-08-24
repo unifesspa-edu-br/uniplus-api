@@ -245,48 +245,48 @@ public sealed class EnvelopeFechadoE2ETests
             processoId, "a coleção compartilha o Postgres com outros processos conformes — sem amarrar o ID, uma regressão no handler que ignorasse a rota devolveria a conformidade de outro processo");
 
         conformidade.Itens.Should().NotBeEmpty("uma lista vazia daria falso verde por AllSatisfy trivial");
-        conformidade.Itens.Select(i => i.Item).Should().OnlyHaveUniqueItems("cada item do checklist aparece uma única vez");
+        conformidade.Itens.Select(i => i.Codigo).Should().OnlyHaveUniqueItems("cada item do checklist aparece uma única vez");
         // issue #1092: o checklist passou a ser bicondicional com os QUATRO gates estruturais
         // (antes só projetava PendenciaDeConformidade) — a publicação no passo 16 só devolve 204
         // porque os quatro gates já estão satisfeitos, então o corpus rico continua OnlyContain(Ok):
         // a ampliação não pode criar falso vermelho no caminho HTTP completo.
         conformidade.Itens.Should().OnlyContain(i => i.Ok, "o processo está completo — nenhum item deveria estar pendente");
-        conformidade.Itens.Select(i => i.Item).Should().BeEquivalentTo(
+        conformidade.Itens.Select(i => i.Codigo).Should().BeEquivalentTo(
             [
                 // ── PendenciaDeConformidade (itens estruturais originais) ──
-                "Atendimento especializado",
-                "Distribuição de vagas",
-                "Classificação",
-                "Cronograma de fases",
-                "Taxa de inscrição e isenção",
-                "Base legal das exigências documentais",
-                "Divisor da média (fórmula local)",
-                "Cascata de remanejamento",
+                "atendimento_especializado_ausente",
+                "distribuicao_vagas_ausente",
+                "classificacao_ausente",
+                "cronograma_fases_ausente",
+                "taxa_inscricao_nao_declarada",
+                "exigencias_base_legal_nao_resolvida",
+                "classificacao_divisor_media_invalido",
+                "cascata_pendente",
                 // ── PendenciaDoCronograma ──
-                "Cronograma: fase que agrupa etapas só quando há etapa pontuada",
-                "Cronograma: etapa pontuada tem fase que agrupa etapas",
-                "Cronograma: inscrição própria tem fase que coleta inscrição",
-                "Cronograma: vagas ofertadas têm fase que produz resultado",
+                "cronograma_fase_agrupadora_sem_etapa_pontuada",
+                "cronograma_etapa_pontuada_sem_fase_agrupadora",
+                "cronograma_inscricao_propria_sem_fase_de_coleta",
+                "cronograma_vagas_sem_fase_que_produz_resultado",
                 // ── PendenciaDaCascata, detalhamento por razão ──
-                "Cascata: modalidade SegueCascata usa a regra de distribuição federal",
-                "Cascata: origem SegueCascata declarada na cascata de remanejamento",
-                "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas",
-                "Cascata: origem declarada corresponde a modalidade SegueCascata ofertada",
-                "Cascata: destino declarado corresponde a modalidade ofertada",
+                "cascata_modalidade_fora_do_regime_federal",
+                "cascata_origem_ausente",
+                "cascata_fallback_nao_ofertado",
+                "cascata_origem_nao_segue_cascata",
+                "cascata_destino_desconhecido",
                 // ── PendenciaPreCanonicalizacao ──
-                "Exigência documental: sem CONDICIONAL vazia que determina resultado",
-                "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)",
-                "Consequência de indeferimento: coerente com a ação da vaga (exigência)",
-                "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)",
-                "Consequência de indeferimento: coerente com a ação da vaga (grupo)",
-                "Referência temporal de fatos: configurada quando há gatilho por faixa etária",
-                "Referência temporal de fatos: fase âncora pertence ao cronograma",
-                "Referência temporal de fatos: extremo da fase âncora definido",
-                "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO",
-                "Regras de derivação: fatos citados existem no processo",
-                "Fato coletável de escopo do processo: oferta declara ao menos um valor",
-                "Regras de derivação: código contribuído pertence ao domínio ofertado",
-                "Grafo de dependência conjunto: sem ciclo",
+                "exigencia_condicional_vazia_determina_resultado",
+                "exigencia_remove_vantagem_sem_vantagem_viva",
+                "exigencia_consequencia_incoerente_com_acao_da_vaga",
+                "grupo_remove_vantagem_sem_vantagem_viva",
+                "grupo_consequencia_incoerente_com_acao_da_vaga",
+                "referencia_temporal_ausente_com_gatilho_etario",
+                "referencia_temporal_fase_fora_do_cronograma",
+                "referencia_temporal_extremo_da_fase_ausente",
+                "referencia_temporal_fim_inscricao_indisponivel",
+                "derivacao_fatos_citados_inexistentes",
+                "fato_coletavel_sem_valores_ofertados",
+                "derivacao_dominio_de_contribuicao_invalido",
+                "grafo_dependencia_com_ciclo",
             ],
             "o conjunto exato de itens que este corpus produz — remover um item do checklist, ou acrescentar um item indevido marcado ok, muda este conjunto");
 

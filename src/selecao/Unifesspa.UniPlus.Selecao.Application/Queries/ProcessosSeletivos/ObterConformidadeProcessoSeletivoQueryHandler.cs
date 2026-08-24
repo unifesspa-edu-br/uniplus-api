@@ -37,7 +37,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         }
 
         ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade()
-            .Select(static item => new ItemConformidadeDto(item.Item, item.Ok))];
+            .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
 
         return new ConformidadeProcessoSeletivoDto(processo.Id, itens);
     }

@@ -40,12 +40,14 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
 
         result.Should().NotBeNull();
-        // "Etapas" deixou de ser item do checklist (Story #851 §3.5) — o que continua
-        // obrigatório e ainda não satisfeito aqui é atendimento, distribuição, classificação
-        // e cronograma de fases.
-        result!.Itens.Should().NotContain(i => i.Item == "Etapas");
-        result.Itens.Should().Contain(i => i.Item == "Atendimento especializado" && !i.Ok);
-        result.Itens.Should().Contain(i => i.Item == "Cronograma de fases" && !i.Ok);
+        // Etapa deixou de ser item do checklist (Story #851 §3.5): um processo sem prova
+        // publica sem etapa quando o cronograma é coerente. A asserção é por prefixo do
+        // código, e não pela frase que o item tinha, para continuar pegando a reintrodução
+        // sob qualquer redação nova. O que continua obrigatório e ainda não satisfeito aqui
+        // é atendimento, distribuição, classificação e cronograma de fases.
+        result!.Itens.Should().NotContain(i => i.Codigo.StartsWith("etapa", StringComparison.Ordinal));
+        result.Itens.Should().Contain(i => i.Codigo == "atendimento_especializado_ausente" && !i.Ok);
+        result.Itens.Should().Contain(i => i.Codigo == "cronograma_fases_ausente" && !i.Ok);
     }
 
     [Fact(DisplayName = "Handle com InscricaoPropria sem fase de coleta NÃO declara o checklist inteiramente verde (issue #1092 — regressão do falso verde)")]
@@ -100,7 +102,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
         result.Should().NotBeNull();
         result!.Itens.Should().Contain(
-            i => i.Item == "Cronograma: inscrição própria tem fase que coleta inscrição" && !i.Ok,
+            i => i.Codigo == "cronograma_inscricao_propria_sem_fase_de_coleta" && !i.Ok,
             "a origem é InscricaoPropria e nenhuma fase coleta inscrição — antes da correção este item nem existia, e o checklist devolvia tudo Ok");
         result.Itens.Should().ContainSingle(i => !i.Ok,
             "isolar a asserção: só esta razão deveria estar vermelha neste estado — as outras três razões do cronograma e os demais gates estão satisfeitos");
