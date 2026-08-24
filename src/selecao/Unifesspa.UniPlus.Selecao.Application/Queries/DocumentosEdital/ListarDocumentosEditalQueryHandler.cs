@@ -27,27 +27,27 @@ public static class ListarDocumentosEditalQueryHandler
         ArgumentNullException.ThrowIfNull(documentoEditalRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
 
+        // A visibilidade do processo é decidida antes de qualquer documento ser
+        // lido, e não apenas quando a lista volta vazia. O processo é excluído
+        // logicamente, e a exclusão preserva a linha e a chave estrangeira: um
+        // processo fora de alcance continua tendo documentos apontando para
+        // ele. Deduzir a existência do processo a partir de haver documento
+        // devolveria 200 com a lista de um processo que todo o resto da API
+        // trata como inexistente.
+        bool existe = await processoSeletivoRepository
+            .ExisteAsync(query.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!existe)
+        {
+            return Result<ListarDocumentosEditalResult>.Failure(new DomainError(
+                "ProcessoSeletivo.NaoEncontrado",
+                $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
+        }
+
         IReadOnlyList<DocumentoEdital> documentos = await documentoEditalRepository
             .ListarPorProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-
-        // A existência do processo só é consultada quando não veio documento
-        // nenhum. Documento e processo são ligados por chave estrangeira: se a
-        // lista trouxe alguma coisa, o processo existe, e a segunda consulta
-        // não teria como responder outra coisa.
-        if (documentos.Count == 0)
-        {
-            bool existe = await processoSeletivoRepository
-                .ExisteAsync(query.ProcessoSeletivoId, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (!existe)
-            {
-                return Result<ListarDocumentosEditalResult>.Failure(new DomainError(
-                    "ProcessoSeletivo.NaoEncontrado",
-                    $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
-            }
-        }
 
         DocumentoEditalDto[] items = [.. documentos.Select(DocumentoEditalMapping.ToDto)];
 
