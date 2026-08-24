@@ -31,6 +31,19 @@ public sealed class DocumentoEditalRepository : IDocumentoEditalRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<DocumentoEdital>> ListarPorProcessoAsync(
+        Guid processoSeletivoId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.DocumentosEdital
+            .AsNoTracking()
+            .Where(d => d.ProcessoSeletivoId == processoSeletivoId)
+            .OrderByDescending(d => d.CreatedAt)
+            .ThenByDescending(d => d.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task AdicionarAsync(DocumentoEdital entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
