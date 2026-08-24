@@ -53,6 +53,7 @@ public static class SelecaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<MotivoDecisaoIsencaoDto>, MotivoDecisaoIsencaoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<ProcessoSeletivoDto>, ProcessoSeletivoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<RegraCatalogoDto>, RegraCatalogoLinksBuilder>();
 
         // Idempotency-Key (ADR-0027) — store EF adjacente ao SelecaoDbContext, filter
         // global que se ativa apenas em endpoints com [RequiresIdempotencyKey].

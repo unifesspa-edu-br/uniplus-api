@@ -379,6 +379,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FaseCronograma.FaseCanonicaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada", "Fase canônica não encontrada ou não está mais viva")),
         new("FaseCronograma.TipoBancaNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado", "Tipo de banca não encontrado ou não está mais vivo")),
         new("FaseCronograma.AtoProduzidoNaoEncontradoNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.ato_produzido_nao_encontrado_no_catalogo", "O tipo de ato produzido pela fase não tem versão vigente no catálogo de Publicações")),
+        // A identidade da regra é o par (codigo, versao): pedir uma versão que não existe de um
+        // código que existe é o mesmo 404 de pedir um código inventado, e distinguir os dois
+        // revelaria quais códigos há no catálogo a quem só tentou adivinhar.
+        new("RegraCatalogo.NaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.regra_catalogo.nao_encontrada", "Regra não encontrada no catálogo na versão pedida")),
         new("RegraRecursoFase.FaseNaoProduzResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.fase_nao_produz_resultado", "A fase não produz resultado e não pode admitir regra de recurso")),
         new("RegraRecursoFase.RecursoContraResultadoDefinitivo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.recurso_contra_resultado_definitivo", "Não cabe recurso contra resultado definitivo")),
         new("RegraRecursoFase.AncoraDeOutraFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_de_outra_fase", "O ato recorrido tem de ser o ato produzido pela própria fase")),
