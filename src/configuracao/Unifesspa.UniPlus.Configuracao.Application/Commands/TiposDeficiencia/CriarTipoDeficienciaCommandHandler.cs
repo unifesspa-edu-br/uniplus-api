@@ -8,10 +8,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarTipoDeficienciaCommand"/> (convention-based
-/// Wolverine): valida o agregado por inteiro primeiro (sem I/O) — nome e
-/// descrição acumulam no mesmo lote — só então confere a unicidade do nome
-/// entre vivos, com o nome já normalizado. Protege a corrida check-then-act
-/// traduzindo a violação do índice único parcial em <c>NomeJaExiste</c>.
+/// Wolverine): valida o agregado por inteiro primeiro (sem I/O) — código, nome e
+/// descrição acumulam no mesmo lote — só então confere a unicidade do código e a
+/// do nome entre vivos, com os valores já normalizados. Protege a corrida
+/// check-then-act traduzindo a violação de cada índice único parcial no conflito
+/// correspondente.
 /// </summary>
 public static class CriarTipoDeficienciaCommandHandler
 {
@@ -25,13 +26,19 @@ public static class CriarTipoDeficienciaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<TipoDeficiencia> criar = TipoDeficiencia.Criar(command.Nome, command.Descricao, command.Permanente);
+        Result<TipoDeficiencia> criar = TipoDeficiencia.Criar(
+            command.Codigo, command.Nome, command.Descricao, command.Permanente);
         if (criar.IsFailure)
         {
             return Result<Guid>.ValidationFailure(criar.Errors);
         }
 
         TipoDeficiencia tipo = criar.Value!;
+
+        if (await repository.CodigoExisteEntreVivosAsync(tipo.Codigo.Valor, null, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(CodigoJaExisteErro());
+        }
 
         if (await repository.NomeExisteEntreVivosAsync(tipo.Nome, null, cancellationToken).ConfigureAwait(false))
         {
@@ -44,19 +51,43 @@ public static class CriarTipoDeficienciaCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsNomeConflict(constraint))
+        catch (Exception ex) when (ConflitoDeUnicidade(ex) is { } conflito)
         {
             // Sem descartar, a entidade Added continua rastreada e o SaveChangesAsync
             // automático do Wolverine (AutoApplyTransactions) tenta a mesma inserção de
             // novo FORA deste catch — a mesma violação estoura sem tradução, e o 409
             // pretendido vira 500.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(NomeJaExisteErro());
+            return Result<Guid>.Failure(conflito);
         }
 
         return Result<Guid>.Success(tipo.Id);
     }
+
+    /// <summary>
+    /// Traduz a violação 23505 no conflito da constraint efetivamente violada —
+    /// há dois índices únicos parciais na tabela, e devolver o erro do outro
+    /// mentiria sobre a causa. <see langword="null"/> quando a exceção não é uma
+    /// violação de unicidade conhecida (o caller deixa propagar).
+    /// </summary>
+    private static DomainError? ConflitoDeUnicidade(Exception ex)
+    {
+        if (UniqueConstraintViolation.GetViolatedConstraint(ex) is not { } constraint)
+        {
+            return null;
+        }
+
+        if (UniqueConstraintViolation.IsCodigoConflict(constraint))
+        {
+            return CodigoJaExisteErro();
+        }
+
+        return UniqueConstraintViolation.IsNomeConflict(constraint) ? NomeJaExisteErro() : null;
+    }
+
+    private static DomainError CodigoJaExisteErro() =>
+        new(TipoDeficienciaErrorCodes.CodigoJaExiste,
+            "Já existe um tipo de deficiência vivo com o código informado.");
 
     private static DomainError NomeJaExisteErro() =>
         new(TipoDeficienciaErrorCodes.NomeJaExiste,

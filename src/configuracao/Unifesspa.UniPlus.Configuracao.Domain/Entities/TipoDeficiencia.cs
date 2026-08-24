@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -8,15 +9,22 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Tipo de deficiência — cadastro institucional do tipo de deficiência reconhecido
 /// (UNI-REQ-0012, módulo Configuração): Visual, Auditiva, TEA, Física, Intelectual…
-/// É um cadastro classificatório simples (apenas nome + descrição opcional); a
+/// É um cadastro classificatório simples (código + nome + descrição); a
 /// solicitação concreta de atendimento especializado e os recursos de
 /// acessibilidade são entidades distintas (vocabulário INEP/Edital ENEM 52/2025).
 /// </summary>
 /// <remarks>
-/// <para>O <c>Nome</c> é a chave natural, único entre tipos vivos (índice único
-/// parcial <c>WHERE is_deleted = false</c>) — e <b>editável</b>: a unicidade
-/// (quando o nome muda) é checada pelo handler, com proteção de corrida pelo índice
-/// (a violação 23505 é traduzida em <c>NomeJaExiste</c>).</para>
+/// <para>O <see cref="Codigo"/> (value object <see cref="CodigoTipoDeficiencia"/>)
+/// é a identidade semântica exigida por UNI-REQ-0061 — é ele que os fatos de
+/// atendimento congelam junto com a origem. É informado pelo operador (não há
+/// geração automática no backend), único entre tipos vivos (índice único parcial
+/// <c>WHERE is_deleted = false</c>) e <b>editável</b>, pois o consumo cross-módulo
+/// é por snapshot-copy desacoplado (ADR-0061): editar o código vivo não altera o
+/// que já foi congelado numa oferta.</para>
+/// <para>O <c>Nome</c> segue sendo o rótulo legível, também único entre tipos
+/// vivos e editável. A unicidade de ambos é checada pelo handler, com proteção de
+/// corrida pelos índices (a violação 23505 é traduzida em <c>CodigoJaExiste</c> ou
+/// <c>NomeJaExiste</c> conforme a constraint).</para>
 /// <para>Dado institucional sem PII (LGPD inaplicável). A remoção é sempre
 /// soft-delete e nunca bloqueada por referência.</para>
 /// <para>
@@ -35,6 +43,7 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
 
+    public CodigoTipoDeficiencia Codigo { get; private set; } = null!;
     public string Nome { get; private set; } = string.Empty;
     public string Descricao { get; private set; } = string.Empty;
     public bool? Permanente { get; private set; }
@@ -48,14 +57,26 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida e normaliza nome e descrição (os dois campos editáveis),
-    /// acumulando toda violação independente em vez de parar na primeira — sem
-    /// mutar nada. Existe para o handler validar o payload por inteiro antes de
-    /// qualquer I/O (consulta de unicidade do nome, leitura por Id).
+    /// Valida e normaliza código, nome e descrição (os três campos textuais
+    /// editáveis), acumulando toda violação independente em vez de parar na
+    /// primeira — sem mutar nada. Existe para o handler validar o payload por
+    /// inteiro antes de qualquer I/O (consultas de unicidade, leitura por Id).
     /// </summary>
-    public static Result<(string Nome, string Descricao)> ValidarCamposEditaveis(string? nome, string? descricao)
+    public static Result<(CodigoTipoDeficiencia Codigo, string Nome, string Descricao)> ValidarCamposEditaveis(
+        string? codigo, string? nome, string? descricao)
     {
         List<FieldError> erros = [];
+
+        CodigoTipoDeficiencia? codigoValidado = null;
+        Result<CodigoTipoDeficiencia> codigoResult = CodigoTipoDeficiencia.Criar(codigo);
+        if (codigoResult.IsFailure)
+        {
+            erros.Add(new("codigo", codigoResult.Error!));
+        }
+        else
+        {
+            codigoValidado = codigoResult.Value;
+        }
 
         string? nomeNormalizado = null;
         if (string.IsNullOrWhiteSpace(nome))
@@ -95,51 +116,57 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
 
         if (erros.Count > 0)
         {
-            return Result<(string, string)>.ValidationFailure(erros);
+            return Result<(CodigoTipoDeficiencia, string, string)>.ValidationFailure(erros);
         }
 
-        return Result<(string, string)>.Success((nomeNormalizado!, descricaoNormalizada!));
+        return Result<(CodigoTipoDeficiencia, string, string)>.Success(
+            (codigoValidado!, nomeNormalizado!, descricaoNormalizada!));
     }
 
     /// <summary>
-    /// Cria um novo TipoDeficiencia. Revalida nome e descrição, acumulando toda
-    /// violação no mesmo lote. A unicidade de <paramref name="nome"/> entre
-    /// tipos vivos é responsabilidade do handler.
+    /// Cria um novo TipoDeficiencia. Revalida código, nome e descrição, acumulando
+    /// toda violação no mesmo lote. A unicidade de <paramref name="codigo"/> e de
+    /// <paramref name="nome"/> entre tipos vivos é responsabilidade do handler.
     /// </summary>
-    public static Result<TipoDeficiencia> Criar(string? nome, string? descricao, bool? permanente = null)
+    public static Result<TipoDeficiencia> Criar(
+        string? codigo, string? nome, string? descricao, bool? permanente = null)
     {
-        Result<(string Nome, string Descricao)> campos = ValidarCamposEditaveis(nome, descricao);
+        Result<(CodigoTipoDeficiencia Codigo, string Nome, string Descricao)> campos =
+            ValidarCamposEditaveis(codigo, nome, descricao);
         if (campos.IsFailure)
         {
             return Result<TipoDeficiencia>.ValidationFailure(campos.Errors);
         }
 
         var tipo = new TipoDeficiencia();
-        tipo.AplicarCampos(campos.Value.Nome, campos.Value.Descricao, permanente);
+        tipo.AplicarCampos(campos.Value.Codigo, campos.Value.Nome, campos.Value.Descricao, permanente);
 
         return Result<TipoDeficiencia>.Success(tipo);
     }
 
     /// <summary>
-    /// Atualiza os atributos do TipoDeficiencia. O <c>Nome</c> é editável; sua
-    /// unicidade (quando alterado) é responsabilidade do handler. Revalida
-    /// nome e descrição, acumulando toda violação no mesmo lote.
+    /// Atualiza os atributos do TipoDeficiencia. <c>Codigo</c> e <c>Nome</c> são
+    /// editáveis; a unicidade de cada um (quando muda) é responsabilidade do
+    /// handler. Revalida código, nome e descrição, acumulando toda violação no
+    /// mesmo lote.
     /// </summary>
-    public Result Atualizar(string? nome, string? descricao, bool? permanente = null)
+    public Result Atualizar(string? codigo, string? nome, string? descricao, bool? permanente = null)
     {
-        Result<(string Nome, string Descricao)> campos = ValidarCamposEditaveis(nome, descricao);
+        Result<(CodigoTipoDeficiencia Codigo, string Nome, string Descricao)> campos =
+            ValidarCamposEditaveis(codigo, nome, descricao);
         if (campos.IsFailure)
         {
             return Result.ValidationFailure(campos.Errors);
         }
 
-        AplicarCampos(campos.Value.Nome, campos.Value.Descricao, permanente);
+        AplicarCampos(campos.Value.Codigo, campos.Value.Nome, campos.Value.Descricao, permanente);
 
         return Result.Success();
     }
 
-    private void AplicarCampos(string nome, string descricao, bool? permanente)
+    private void AplicarCampos(CodigoTipoDeficiencia codigo, string nome, string descricao, bool? permanente)
     {
+        Codigo = codigo;
         Nome = nome;
         Descricao = descricao;
         Permanente = permanente;

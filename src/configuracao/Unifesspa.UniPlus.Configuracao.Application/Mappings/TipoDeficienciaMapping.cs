@@ -10,6 +10,7 @@ public static class TipoDeficienciaMapping
         ArgumentNullException.ThrowIfNull(tipo);
         return new TipoDeficienciaDto(
             tipo.Id,
+            tipo.Codigo.Valor,
             tipo.Nome,
             tipo.Descricao,
             tipo.Permanente,

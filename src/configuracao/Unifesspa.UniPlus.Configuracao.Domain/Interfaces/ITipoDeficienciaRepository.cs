@@ -36,6 +36,16 @@ public interface ITipoDeficienciaRepository
     void Remover(TipoDeficiencia tipo);
 
     /// <summary>
+    /// Verifica se existe tipo de deficiência vivo com o <paramref name="codigo"/>
+    /// (case-sensitive, sobre o valor normalizado por <c>Trim</c>), excluindo
+    /// opcionalmente um <paramref name="excluirId"/> (para a checagem na atualização).
+    /// </summary>
+    Task<bool> CodigoExisteEntreVivosAsync(
+        string codigo,
+        Guid? excluirId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Verifica se existe tipo de deficiência vivo com o <paramref name="nome"/>
     /// (case-sensitive, sobre o valor normalizado por <c>Trim</c>), excluindo
     /// opcionalmente um <paramref name="excluirId"/> (para a checagem na atualização).
