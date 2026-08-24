@@ -42,7 +42,7 @@
     <PackageVersion Include="Confluent.Kafka" Version="2.15.0" />
     <PackageVersion Include="Confluent.SchemaRegistry" Version="2.15.0" />
     <PackageVersion Include="Confluent.SchemaRegistry.Serdes.Avro" Version="2.15.0" />
-    <PackageVersion Include="Apache.Avro" Version="1.12.1" />
+    <PackageVersion Include="Apache.Avro" Version="1.12.2" />
 
     <!-- Caching -->
     <PackageVersion Include="StackExchange.Redis" Version="2.12.14" />
