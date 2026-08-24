@@ -42,6 +42,7 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>())
             .Returns([pendente, confirmado]);
+        processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(true);
 
         Result<ListarDocumentosEditalResult> resultado = await ListarDocumentosEditalQueryHandler.Handle(
             new ListarDocumentosEditalQuery(processoSeletivoId),
@@ -109,22 +110,29 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Lista com documento dispensa a consulta de existência do processo — a chave estrangeira já respondeu")]
-    public async Task Handle_ComDocumento_NaoConsultaExistenciaDoProcesso()
+    [Fact(DisplayName = "Processo fora de alcance recusa mesmo tendo documento — a chave estrangeira sobrevive à exclusão lógica")]
+    public async Task Handle_ProcessoInvisivelComDocumento_Recusa()
     {
         Guid processoSeletivoId = Guid.CreateVersion7();
         IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
+
+        // O processo é excluído logicamente: a linha continua no banco, as
+        // chaves estrangeiras seguem íntegras e os documentos continuam
+        // apontando para ele — só o filtro global tira o processo de alcance.
+        // Ter documento, portanto, não prova que o processo é visível.
         documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>())
             .Returns([NovoPendente(processoSeletivoId)]);
+        processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(false);
 
-        await ListarDocumentosEditalQueryHandler.Handle(
+        Result<ListarDocumentosEditalResult> resultado = await ListarDocumentosEditalQueryHandler.Handle(
             new ListarDocumentosEditalQuery(processoSeletivoId),
             documentos,
             processos,
             CancellationToken.None);
 
-        await processos.DidNotReceive().ExisteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        resultado.IsSuccess.Should().BeFalse();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
     [Fact(DisplayName = "O contrato do documento não tem onde carregar chave de objeto nem URL de storage")]
