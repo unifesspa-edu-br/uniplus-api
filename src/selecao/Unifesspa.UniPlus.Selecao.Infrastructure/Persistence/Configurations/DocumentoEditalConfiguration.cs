@@ -28,6 +28,13 @@ public sealed class DocumentoEditalConfiguration : IEntityTypeConfiguration<Docu
             .HasForeignKey(d => d.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(d => d.ProcessoSeletivoId);
+        // Índice composto na ordem exata em que a leitura dos documentos de um
+        // processo pede as linhas: filtra por processo e já entrega o resultado
+        // ordenado, sem passo de sort. As colunas de ordenação são descendentes
+        // porque a lista vai do envio mais recente para o mais antigo, e um
+        // índice ascendente serviria o filtro mas deixaria o sort de volta.
+        builder.HasIndex(d => new { d.ProcessoSeletivoId, d.CreatedAt, d.Id })
+            .IsDescending(false, true, true)
+            .HasDatabaseName("ix_documentos_edital_processo_recentes");
     }
 }
