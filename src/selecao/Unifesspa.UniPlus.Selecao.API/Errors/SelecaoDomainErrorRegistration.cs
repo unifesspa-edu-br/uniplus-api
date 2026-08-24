@@ -394,6 +394,15 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // a declarar em horas.
         new("RegraRecursoFase.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_dias_corridos", "Prazo de interposição em dias corridos não é aceito")),
         new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_fracao_de_dia_util", "Prazo de interposição em dias úteis exige valor inteiro")),
+        // Estado que o requisito proíbe e que a construção da entidade recusa, venha de
+        // onde vier — inclusive da reidratação do envelope, que não passa pelo validator
+        // HTTP. Cada recusa tem código próprio porque a remediação difere: declarar a
+        // unidade que falta, corrigir a magnitude, ou completar o par.
+        new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_sem_unidade_declaravel", "O prazo de interposição precisa declarar dias úteis ou horas")),
+        new("RegraRecursoFase.PrazoNaoPositivo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_nao_positivo", "O prazo de interposição deve ser estritamente positivo")),
+        new("RegraRecursoFase.SuspensividadeIncompleta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_incompleta", "A suspensividade exige valor e unidade juntos, ou nenhum dos dois")),
+        new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_unidade_nao_declaravel", "A unidade da suspensividade não é declarável")),
+        new("RegraRecursoFase.SuspensividadeNaoPositiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_nao_positiva", "O valor da suspensividade deve ser estritamente positivo")),
         new("RegraRecursoFase.RegraCatalogoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida", "A regra referenciada não é RECURSO-PRAZO-ANCORADO-EM-ATO, ou diverge do rol_de_regras")),
         // Codec do envelope (Story #859, ADR-0110 D1/D8). A recusa é NOMEADA: um descarte
         // que falha precisa distinguir uma versão que o sistema não conhece, uma que ele

@@ -63,28 +63,18 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
     }
 
-    [Theory(DisplayName = "Rejeita suspensividade da 1ª instância <= 0 — presente mas sem janela real")]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public void Rejeita_Suspensividade1NaoPositiva(int valor)
+    [Theory(DisplayName = "Validator passa com suspensividade não positiva ou pela metade — a recusa é de RegraRecursoFase.Criar, fonte única de validação (ADR-0125)")]
+    [InlineData(0, UnidadePrazo.Dias)]
+    [InlineData(-1, UnidadePrazo.Dias)]
+    [InlineData(5, UnidadePrazo.Nenhuma)]
+    public void Aceita_SuspensividadeInvalidaNoValidator(int valor, UnidadePrazo unidade)
     {
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(Comando(RegraRecurso(susp1Valor: valor, susp1Unidade: UnidadePrazo.Dias)));
+            .Validate(Comando(RegraRecurso(susp1Valor: valor, susp1Unidade: unidade)));
 
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == "Fases[0].RegraRecurso.SuspensividadePrimeiraInstanciaValor");
-    }
-
-    [Theory(DisplayName = "Rejeita suspensividade da 2ª instância <= 0 — presente mas sem janela real")]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public void Rejeita_Suspensividade2NaoPositiva(int valor)
-    {
-        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(Comando(RegraRecurso(susp2Valor: valor, susp2Unidade: UnidadePrazo.Dias)));
-
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == "Fases[0].RegraRecurso.SuspensividadeSegundaInstanciaValor");
+        resultado.IsValid.Should().BeTrue(
+            "magnitude e unidade declarável são invariantes do agregado; repeti-las aqui devolveria a resposta "
+            + "genérica do validator no lugar do erro de negócio nomeado — a cobertura vive em RegraRecursoFaseTests");
     }
 
     [Fact(DisplayName = "Validator passa com janela invertida — a rejeição é do agregado (FaseCronograma.Criar, ADR-0125), para poder acumular com outras violações da mesma fase")]
