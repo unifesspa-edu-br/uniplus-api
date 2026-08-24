@@ -4,6 +4,9 @@ using System.Text.Json.Serialization;
 
 using Controllers;
 
+using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoController.DefinirTaxaInscricao"/> —
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
@@ -20,5 +23,6 @@ using Controllers;
 public sealed record DefinirTaxaInscricaoRequest(
     [property: JsonRequired] bool? Cobra,
     decimal? Valor,
+    [property: VocabularioFechado(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea)]
     IReadOnlyList<string>? Fundamentos,
     bool ConfirmacaoFundamentos);

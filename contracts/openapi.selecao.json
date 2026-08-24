@@ -6094,6 +6094,70 @@
           }
         ]
       }
+    },
+    "/api/selecao/fundamentos-isencao": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.fundamento-isencao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FundamentoIsencaoDto"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/campos-divulgacao": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.campo-divulgacao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampoDivulgacaoDto"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6375,6 +6439,29 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "CampoDivulgacaoDto": {
+        "required": [
+          "codigo",
+          "nome",
+          "obrigatorio",
+          "exigeJustificativa"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "exigeJustificativa": {
+            "type": "boolean"
           }
         }
       },
@@ -7504,6 +7591,11 @@
               "array"
             ],
             "items": {
+              "enum": [
+                "numero_inscricao",
+                "nome_abreviado",
+                "nome"
+              ],
               "type": "string"
             }
           },
@@ -7655,6 +7747,10 @@
               "array"
             ],
             "items": {
+              "enum": [
+                "CADASTRO_UNICO",
+                "DOACAO_MEDULA_OSSEA"
+              ],
               "type": "string"
             }
           },
@@ -8355,6 +8451,25 @@
             "items": {
               "$ref": "#/components/schemas/FatoFormularioRenderizavelDto"
             }
+          }
+        }
+      },
+      "FundamentoIsencaoDto": {
+        "required": [
+          "codigo",
+          "nome",
+          "descricao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
           }
         }
       },
@@ -10364,6 +10479,9 @@
     },
     {
       "name": "ProcessoSeletivo"
+    },
+    {
+      "name": "Vocabularios"
     }
   ]
 }
