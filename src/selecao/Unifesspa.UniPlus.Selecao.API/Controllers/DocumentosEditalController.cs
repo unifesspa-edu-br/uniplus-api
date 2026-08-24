@@ -4,12 +4,14 @@ using System.Diagnostics.CodeAnalysis;
 
 using Application.Commands.DocumentosEdital;
 using Application.DTOs;
+using Application.Queries.DocumentosEdital;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -32,12 +34,35 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class DocumentosEditalController : ControllerBase
 {
     private readonly ICommandBus _commandBus;
+    private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
 
-    public DocumentosEditalController(ICommandBus commandBus, IDomainErrorMapper mapper)
+    public DocumentosEditalController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper)
     {
         _commandBus = commandBus;
+        _queryBus = queryBus;
         _mapper = mapper;
+    }
+
+    /// <summary>
+    /// Lista os documentos do processo, do mais recente para o mais antigo, com
+    /// o pendente e o confirmado lado a lado — é por aqui que o editor retoma um
+    /// rascunho depois de um refresh, em vez de reenviar o arquivo que já subiu.
+    /// Devolve apenas metadados: nenhum endereço de storage e nenhuma URL
+    /// assinada atravessa o contrato.
+    /// </summary>
+    [HttpGet]
+    [VendorMediaType(Resource = "documento-edital", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<DocumentoEditalDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> Listar(Guid processoSeletivoId, CancellationToken cancellationToken)
+    {
+        Result<ListarDocumentosEditalResult> resultado = await _queryBus
+            .Send(new ListarDocumentosEditalQuery(processoSeletivoId), cancellationToken)
+            .ConfigureAwait(false);
+
+        return resultado.IsSuccess ? Ok(resultado.Value!.Items) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

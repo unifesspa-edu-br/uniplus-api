@@ -11,6 +11,8 @@ using DTOs;
 
 using Kernel.Results;
 
+using Mappings;
+
 /// <summary>
 /// Handler convention-based de <see cref="ConfirmarUploadDocumentoEditalCommand"/>.
 /// </summary>
@@ -137,12 +139,6 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
         documentoEditalRepository.Atualizar(documento);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<DocumentoEditalDto>.Success(new DocumentoEditalDto(
-            documento.Id,
-            documento.ProcessoSeletivoId,
-            documento.Status.ToString(),
-            documento.TamanhoBytes!.Value,
-            documento.HashSha256!,
-            documento.ConfirmadoEm!.Value));
+        return Result<DocumentoEditalDto>.Success(DocumentoEditalMapping.ToDto(documento));
     }
 }
