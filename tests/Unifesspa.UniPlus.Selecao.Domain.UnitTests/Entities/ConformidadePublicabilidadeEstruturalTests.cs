@@ -130,7 +130,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirEtapas([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Cronograma: fase que agrupa etapas só quando há etapa pontuada");
+            .Which.Codigo.Should().Be("cronograma_fase_agrupadora_sem_etapa_pontuada");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -147,7 +147,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // Fase permanece sem agrupar etapas (herdada de ProcessoConforme).
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Cronograma: etapa pontuada tem fase que agrupa etapas");
+            .Which.Codigo.Should().Be("cronograma_etapa_pontuada_sem_fase_agrupadora");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -171,7 +171,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Cronograma: inscrição própria tem fase que coleta inscrição");
+            .Which.Codigo.Should().Be("cronograma_inscricao_propria_sem_fase_de_coleta");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -192,7 +192,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Cronograma: vagas ofertadas têm fase que produz resultado");
+            .Which.Codigo.Should().Be("cronograma_vagas_sem_fase_que_produz_resultado");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -255,7 +255,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
     /// <summary>Só os itens de <see cref="ProcessoSeletivo.AvaliarConformidade"/> que se espera ver vermelhos.</summary>
     private static void SoEstesItensVermelhos(ProcessoSeletivo processo, params string[] itensVermelhos) =>
-        processo.AvaliarConformidade().Where(static i => !i.Ok).Select(static i => i.Item)
+        processo.AvaliarConformidade().Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().BeEquivalentTo(itensVermelhos);
 
     [Fact(DisplayName = "Cascata: modalidade SegueCascata fora do regime federal — item vermelho e Publicar recusa com CascataForaDoRegimeFederal")]
@@ -273,7 +273,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // A cascata (item agregado, comportamento pré-existente) TAMBÉM vai a vermelho —
         // ela já cobria este código antes da issue #1092; o item NOVO é o detalhamento.
         SoEstesItensVermelhos(
-            processo, "Cascata de remanejamento", "Cascata: modalidade SegueCascata usa a regra de distribuição federal");
+            processo, "cascata_pendente", "cascata_modalidade_fora_do_regime_federal");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -287,7 +287,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // Nenhuma DefinirCascataRemanejamento — a origem exigida não tem cascata configurada.
 
         SoEstesItensVermelhos(
-            processo, "Cascata de remanejamento", "Cascata: origem SegueCascata declarada na cascata de remanejamento");
+            processo, "cascata_pendente", "cascata_origem_ausente");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -305,7 +305,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(
-            processo, "Cascata de remanejamento", "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas");
+            processo, "cascata_pendente", "cascata_fallback_nao_ofertado");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -328,7 +328,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(
-            processo, "Cascata de remanejamento", "Cascata: origem declarada corresponde a modalidade SegueCascata ofertada");
+            processo, "cascata_pendente", "cascata_origem_nao_segue_cascata");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -355,7 +355,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(
-            processo, "Cascata de remanejamento", "Cascata: destino declarado corresponde a modalidade ofertada");
+            processo, "cascata_pendente", "cascata_destino_desconhecido");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -380,7 +380,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Exigência documental: sem CONDICIONAL vazia que determina resultado");
+            .Which.Codigo.Should().Be("exigencia_condicional_vazia_determina_resultado");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -402,7 +402,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // Sem DefinirBonusRegional — nenhuma vantagem viva para remover.
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)");
+            .Which.Codigo.Should().Be("exigencia_remove_vantagem_sem_vantagem_viva");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -424,7 +424,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Consequência de indeferimento: coerente com a ação da vaga (exigência)");
+            .Which.Codigo.Should().Be("exigencia_consequencia_incoerente_com_acao_da_vaga");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -447,7 +447,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)");
+            .Which.Codigo.Should().Be("grupo_remove_vantagem_sem_vantagem_viva");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -471,7 +471,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Consequência de indeferimento: coerente com a ação da vaga (grupo)");
+            .Which.Codigo.Should().Be("grupo_consequencia_incoerente_com_acao_da_vaga");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -496,7 +496,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // Nenhuma ReferenciaTemporalFatos configurada.
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Referência temporal de fatos: configurada quando há gatilho por faixa etária");
+            .Which.Codigo.Should().Be("referencia_temporal_ausente_com_gatilho_etario");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -538,7 +538,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Referência temporal de fatos: fase âncora pertence ao cronograma");
+            .Which.Codigo.Should().Be("referencia_temporal_fase_fora_do_cronograma");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -571,7 +571,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Referência temporal de fatos: extremo da fase âncora definido");
+            .Which.Codigo.Should().Be("referencia_temporal_extremo_da_fase_ausente");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -596,7 +596,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO");
+            .Which.Codigo.Should().Be("referencia_temporal_fim_inscricao_indisponivel");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -615,7 +615,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Regras de derivação: fatos citados existem no processo");
+            .Which.Codigo.Should().Be("derivacao_fatos_citados_inexistentes");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -638,7 +638,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Fato coletável de escopo do processo: oferta declara ao menos um valor");
+            .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -658,7 +658,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Fato coletável de escopo do processo: oferta declara ao menos um valor");
+            .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -675,7 +675,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             "\"V\" é rótulo de exibição de AC_PCD no edital, nunca código de entrada — e não está no domínio ofertado (só AC)");
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Regras de derivação: código contribuído pertence ao domínio ofertado");
+            .Which.Codigo.Should().Be("derivacao_dominio_de_contribuicao_invalido");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -696,7 +696,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
-            .Which.Item.Should().Be("Grafo de dependência conjunto: sem ciclo");
+            .Which.Codigo.Should().Be("grafo_dependencia_com_ciclo");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -721,9 +721,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade();
-        checklist.Should().Contain(i => i.Item == "Atendimento especializado" && !i.Ok,
+        checklist.Should().Contain(i => i.Codigo == "atendimento_especializado_ausente" && !i.Ok,
             "Gate 1 também está pendente — o checklist projeta TODOS os vereditos, não só o primeiro");
-        checklist.Should().Contain(i => i.Item == "Cronograma: inscrição própria tem fase que coleta inscrição" && !i.Ok);
+        checklist.Should().Contain(i => i.Codigo == "cronograma_inscricao_propria_sem_fase_de_coleta" && !i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -757,9 +757,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.Etapas.Should().BeEmpty("pré-condição da contraprova: sem etapa, sob CLASSIFICACAO-IMPORTADA");
 
         processo.AvaliarConformidade().Should().Contain(
-            i => i.Item == "Cronograma: fase que agrupa etapas só quando há etapa pontuada" && i.Ok);
+            i => i.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && i.Ok);
         processo.AvaliarConformidade().Should().Contain(
-            i => i.Item == "Cronograma: etapa pontuada tem fase que agrupa etapas" && i.Ok);
+            i => i.Codigo == "cronograma_etapa_pontuada_sem_fase_agrupadora" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -772,16 +772,16 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
         string[] itensDeCascata =
         [
-            "Cascata: modalidade SegueCascata usa a regra de distribuição federal",
-            "Cascata: origem SegueCascata declarada na cascata de remanejamento",
-            "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas",
-            "Cascata: origem declarada corresponde a modalidade SegueCascata ofertada",
-            "Cascata: destino declarado corresponde a modalidade ofertada",
+            "cascata_modalidade_fora_do_regime_federal",
+            "cascata_origem_ausente",
+            "cascata_fallback_nao_ofertado",
+            "cascata_origem_nao_segue_cascata",
+            "cascata_destino_desconhecido",
         ];
         IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade();
         foreach (string item in itensDeCascata)
         {
-            checklist.Should().Contain(i => i.Item == item && i.Ok, $"cascata não se aplica — \"{item}\" não pode ficar vermelho");
+            checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"cascata não se aplica — \"{item}\" não pode ficar vermelho");
         }
     }
 
@@ -796,7 +796,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().Contain(
-            i => i.Item == "Fato coletável de escopo do processo: oferta declara ao menos um valor" && i.Ok);
+            i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -814,7 +814,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().Contain(
-            i => i.Item == "Fato coletável de escopo do processo: oferta declara ao menos um valor" && i.Ok);
+            i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -836,15 +836,15 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
         string[] itensDeReferenciaTemporal =
         [
-            "Referência temporal de fatos: configurada quando há gatilho por faixa etária",
-            "Referência temporal de fatos: fase âncora pertence ao cronograma",
-            "Referência temporal de fatos: extremo da fase âncora definido",
-            "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO",
+            "referencia_temporal_ausente_com_gatilho_etario",
+            "referencia_temporal_fase_fora_do_cronograma",
+            "referencia_temporal_extremo_da_fase_ausente",
+            "referencia_temporal_fim_inscricao_indisponivel",
         ];
         IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade();
         foreach (string item in itensDeReferenciaTemporal)
         {
-            checklist.Should().Contain(i => i.Item == item && i.Ok, $"sem gatilho por FAIXA_ETARIA — \"{item}\" não pode ficar vermelho");
+            checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"sem gatilho por FAIXA_ETARIA — \"{item}\" não pode ficar vermelho");
         }
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);

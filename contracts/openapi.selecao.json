@@ -8588,12 +8588,20 @@
       },
       "ItemConformidadeDto": {
         "required": [
-          "item",
+          "codigo",
+          "dimensao",
+          "mensagem",
           "ok"
         ],
         "type": "object",
         "properties": {
-          "item": {
+          "codigo": {
+            "type": "string"
+          },
+          "dimensao": {
+            "type": "string"
+          },
+          "mensagem": {
             "type": "string"
           },
           "ok": {

@@ -69,7 +69,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade()
-            .Should().Contain(item => item.Item == "Base legal das exigências documentais" && !item.Ok);
+            .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && !item.Ok);
     }
 
     [Fact(DisplayName = "Grupo com consequência e base legal RESOLVIDO aprova o checklist de conformidade")]
@@ -86,7 +86,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade()
-            .Should().Contain(item => item.Item == "Base legal das exigências documentais" && item.Ok);
+            .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && item.Ok);
     }
 
     [Fact(DisplayName = "PENDENCIA_REENVIO em grupo numa fase sem PermiteComplementacao é recusado (forward)")]

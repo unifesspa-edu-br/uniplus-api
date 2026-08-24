@@ -1557,20 +1557,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         List<ItemConformidade> itens =
         [
-            new ItemConformidade("Atendimento especializado", OfertaAtendimento is not null),
-            new ItemConformidade("Distribuição de vagas", _distribuicaoVagas.Count > 0),
-            new ItemConformidade("Classificação", Classificacao is not null),
-            new ItemConformidade("Cronograma de fases", _cronogramaFases.Count > 0),
+            new ItemConformidade("atendimento_especializado_ausente", DimensaoConformidade.AtendimentoEspecializado, "Atendimento especializado", OfertaAtendimento is not null),
+            new ItemConformidade("distribuicao_vagas_ausente", DimensaoConformidade.DistribuicaoVagas, "Distribuição de vagas", _distribuicaoVagas.Count > 0),
+            new ItemConformidade("classificacao_ausente", DimensaoConformidade.Classificacao, "Classificação", Classificacao is not null),
+            new ItemConformidade("cronograma_fases_ausente", DimensaoConformidade.Cronograma, "Cronograma de fases", _cronogramaFases.Count > 0),
             // Issue #1112: publicar sem declarar cobrança de taxa é recusado — a ausência nunca
             // é interpretada como "não cobra" (CA-01). Diferente de BonusRegional/Divulgacao,
             // aqui ausência não é estado publicável.
-            new ItemConformidade("Taxa de inscrição e isenção", ConfiguracaoTaxaInscricao is not null),
+            new ItemConformidade("taxa_inscricao_nao_declarada", DimensaoConformidade.TaxaInscricao, "Taxa de inscrição e isenção", ConfiguracaoTaxaInscricao is not null),
             // Story #554, PR #898 (issue #549, ADR-0074): toda exigência que determina
             // resultado precisa de ≥1 base legal RESOLVIDO — semântica vazia quando não há
             // exigência que determine resultado (Services.ValidadorBaseLegalExigencias).
             // Story #920: estendido a grupo OU/N-de com consequência própria (exigência de
             // 1ª classe, base legal NÃO derivada dos filhos).
             new ItemConformidade(
+                "exigencias_base_legal_nao_resolvida",
+                DimensaoConformidade.ExigenciasDocumentais,
                 "Base legal das exigências documentais",
                 Services.ValidadorBaseLegalExigencias.TodasResolvidas(_documentosExigidos)
                     && GruposComConsequenciaTemBaseLegalResolvida()),
@@ -1578,7 +1580,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         if (Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada })
         {
-            itens.Add(new ItemConformidade("Divisor da média (fórmula local)", CalcularDivisorMedia() > 0));
+            itens.Add(new ItemConformidade("classificacao_divisor_media_invalido", DimensaoConformidade.Classificacao, "Divisor da média (fórmula local)", CalcularDivisorMedia() > 0));
         }
 
         return itens;
@@ -1619,35 +1621,35 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public IReadOnlyList<ItemConformidade> AvaliarConformidade() =>
     [
         .. ItensEstruturaisDeConformidade(),
-        new ItemConformidade("Cascata de remanejamento", PendenciaDaCascata() is null),
+        new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
 
         // ── PendenciaDoCronograma (Story #851 §3.4/§3.5) ──
-        new ItemConformidade("Cronograma: fase que agrupa etapas só quando há etapa pontuada", !HaFaseDeAvaliacaoSemEtapa()),
-        new ItemConformidade("Cronograma: etapa pontuada tem fase que agrupa etapas", !HaEtapaSemFaseDeAvaliacao()),
-        new ItemConformidade("Cronograma: inscrição própria tem fase que coleta inscrição", !HaInscricaoPropriaSemFaseDeColeta()),
-        new ItemConformidade("Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
+        new ItemConformidade("cronograma_fase_agrupadora_sem_etapa_pontuada", DimensaoConformidade.Cronograma, "Cronograma: fase que agrupa etapas só quando há etapa pontuada", !HaFaseDeAvaliacaoSemEtapa()),
+        new ItemConformidade("cronograma_etapa_pontuada_sem_fase_agrupadora", DimensaoConformidade.Cronograma, "Cronograma: etapa pontuada tem fase que agrupa etapas", !HaEtapaSemFaseDeAvaliacao()),
+        new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !HaInscricaoPropriaSemFaseDeColeta()),
+        new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
 
         // ── PendenciaDaCascata, detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
-        new ItemConformidade("Cascata: modalidade SegueCascata usa a regra de distribuição federal", !ExisteCascataForaDoRegimeFederal()),
-        new ItemConformidade("Cascata: origem SegueCascata declarada na cascata de remanejamento", !ExisteCascataOrigemAusente()),
-        new ItemConformidade("Cascata: fallback e destinos resolvíveis nas modalidades ofertadas", !ExisteCascataFallbackNaoSelecionadoNaOferta()),
-        new ItemConformidade("Cascata: origem declarada corresponde a modalidade SegueCascata ofertada", !ExisteCascataOrigemNaoSegueCascata()),
-        new ItemConformidade("Cascata: destino declarado corresponde a modalidade ofertada", !ExisteCascataDestinoDesconhecido()),
+        new ItemConformidade("cascata_modalidade_fora_do_regime_federal", DimensaoConformidade.CascataRemanejamento, "Cascata: modalidade SegueCascata usa a regra de distribuição federal", !ExisteCascataForaDoRegimeFederal()),
+        new ItemConformidade("cascata_origem_ausente", DimensaoConformidade.CascataRemanejamento, "Cascata: origem SegueCascata declarada na cascata de remanejamento", !ExisteCascataOrigemAusente()),
+        new ItemConformidade("cascata_fallback_nao_ofertado", DimensaoConformidade.CascataRemanejamento, "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas", !ExisteCascataFallbackNaoSelecionadoNaOferta()),
+        new ItemConformidade("cascata_origem_nao_segue_cascata", DimensaoConformidade.CascataRemanejamento, "Cascata: origem declarada corresponde a modalidade SegueCascata ofertada", !ExisteCascataOrigemNaoSegueCascata()),
+        new ItemConformidade("cascata_destino_desconhecido", DimensaoConformidade.CascataRemanejamento, "Cascata: destino declarado corresponde a modalidade ofertada", !ExisteCascataDestinoDesconhecido()),
 
         // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
-        new ItemConformidade("Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
-        new ItemConformidade("Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ExisteExigenciaRemoveVantagemSemVantagemViva()),
-        new ItemConformidade("Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga()),
-        new ItemConformidade("Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ExisteGrupoRemoveVantagemSemVantagemViva()),
-        new ItemConformidade("Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga()),
-        new ItemConformidade("Referência temporal de fatos: configurada quando há gatilho por faixa etária", !ReferenciaTemporalFatosAusenteQuandoExigida()),
-        new ItemConformidade("Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
-        new ItemConformidade("Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
-        new ItemConformidade("Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
-        new ItemConformidade("Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
-        new ItemConformidade("Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
-        new ItemConformidade("Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
-        new ItemConformidade("Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
+        new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
+        new ItemConformidade("exigencia_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ExisteExigenciaRemoveVantagemSemVantagemViva()),
+        new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga()),
+        new ItemConformidade("grupo_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ExisteGrupoRemoveVantagemSemVantagemViva()),
+        new ItemConformidade("grupo_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga()),
+        new ItemConformidade("referencia_temporal_ausente_com_gatilho_etario", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: configurada quando há gatilho por faixa etária", !ReferenciaTemporalFatosAusenteQuandoExigida()),
+        new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
+        new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
+        new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
+        new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
+        new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
+        new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
+        new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
     ];
 
     /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria (Story #920) — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
@@ -1681,7 +1683,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return new DomainError(
             "ProcessoSeletivo.ConformidadeInsuficiente",
-            $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(static p => p.Item))}.");
+            $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(static p => p.Mensagem))}.");
     }
 
     /// <summary>

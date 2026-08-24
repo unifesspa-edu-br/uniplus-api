@@ -126,7 +126,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         await AssertGateEstruturalNaoConformeAsync(
             (db, nome) => ProcessoSeletivoPendenciasSeeder.SemearComCadastroProprioNaoConformeAsync(db, nome),
             "uniplus.selecao.processo_seletivo.conformidade_insuficiente",
-            "Atendimento especializado",
+            "atendimento_especializado_ausente",
             nameof(Publicar_QuandoCadastroProprioNaoConforme_Retorna422ComPendencias));
 
     [Fact(DisplayName =
@@ -135,7 +135,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         await AssertGateEstruturalNaoConformeAsync(
             ProcessoSeletivoPendenciasSeeder.SemearComCronogramaNaoConformeAsync,
             "uniplus.selecao.processo_seletivo.inscricao_propria_sem_fase_de_coleta",
-            "Cronograma: inscrição própria tem fase que coleta inscrição",
+            "cronograma_inscricao_propria_sem_fase_de_coleta",
             nameof(Publicar_QuandoCronogramaNaoConforme_Retorna422ComPendencias));
 
     [Fact(DisplayName =
@@ -144,7 +144,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         await AssertGateEstruturalNaoConformeAsync(
             ProcessoSeletivoPendenciasSeeder.SemearComCascataNaoConformeAsync,
             "uniplus.selecao.processo_seletivo.cascata_fora_do_regime_federal",
-            "Cascata: modalidade SegueCascata usa a regra de distribuição federal",
+            "cascata_modalidade_fora_do_regime_federal",
             nameof(Publicar_QuandoCascataNaoConforme_Retorna422ComPendencias));
 
     [Fact(DisplayName =
@@ -153,19 +153,79 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         await AssertGateEstruturalNaoConformeAsync(
             ProcessoSeletivoPendenciasSeeder.SemearComPreCanonicalizacaoNaoConformeAsync,
             "uniplus.selecao.documento_exigido.condicional_vazia_determina_resultado",
-            "Exigência documental: sem CONDICIONAL vazia que determina resultado",
+            "exigencia_condicional_vazia_determina_resultado",
             nameof(Publicar_QuandoPreCanonicalizacaoNaoConforme_Retorna422ComPendencias));
+
+    [Fact(DisplayName =
+        "As pendências do 422 da publicação têm a MESMA identidade que o checklist de GET /conformidade — preview obsoleto e recusa são comparáveis por código e dimensão")]
+    public async Task Publicar_Recusado_PendenciasCasamComOChecklistDoPreview()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        (ProcessoSeletivo processo, DocumentoEdital documento) =
+            await ProcessoSeletivoPendenciasSeeder.SemearComCronogramaNaoConformeAsync(
+                db, $"{nameof(Publicar_Recusado_PendenciasCasamComOChecklistDoPreview)} {Guid.CreateVersion7()}");
+
+        // O preview: o que o editor viu antes de tentar publicar.
+        HttpResponseMessage preview = await GetConformidadeAsync(client, processo.Id);
+        preview.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument checklist = JsonDocument.Parse(await preview.Content.ReadAsStringAsync());
+
+        (string Codigo, string Dimensao)[] reprovadosNoPreview =
+        [
+            .. checklist.RootElement.GetProperty("itens").EnumerateArray()
+                .Where(i => !i.GetProperty("ok").GetBoolean())
+                .Select(i => (i.GetProperty("codigo").GetString()!, i.GetProperty("dimensao").GetString()!)),
+        ];
+        reprovadosNoPreview.Should().NotBeEmpty("pré-condição: o cenário semeado tem pendência estrutural");
+
+        // A recusa: o que a publicação devolveu.
+        HttpResponseMessage recusa = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
+        recusa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await recusa.Content.ReadAsStringAsync());
+
+        (string Codigo, string Dimensao)[] naRecusa =
+        [
+            .. problema.RootElement.GetProperty("pendencias").EnumerateArray()
+                .Select(p => (p.GetProperty("codigo").GetString()!, p.GetProperty("dimensao").GetString()!)),
+        ];
+
+        naRecusa.Should().BeEquivalentTo(reprovadosNoPreview,
+            "é a correspondência que permite ao cliente descobrir que o preview aprovado ficou obsoleto e levar "
+            + "quem publica à mesma seção do editor, sem comparar frases");
+
+        // A mensagem viaja junto, mas como texto humano — não é ela que identifica o item.
+        problema.RootElement.GetProperty("pendencias").EnumerateArray()
+            .Should().AllSatisfy(p => p.GetProperty("mensagem").GetString().Should().NotBeNullOrWhiteSpace());
+    }
+
+    private static async Task<HttpResponseMessage> GetConformidadeAsync(HttpClient client, Guid processoId)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get,
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/conformidade", UriKind.Relative));
+        AppendTestAuth(request);
+        return await client.SendAsync(request).ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Semeia via <paramref name="semear"/>, publica e confirma que o 422 tem o <paramref
-    /// name="codigoEsperado"/> e que <c>pendencias</c> contém <paramref
-    /// name="itemVermelhoEsperado"/> — corpo comum aos quatro grupos de gate estrutural da
+    /// name="codigoEsperado"/> e que <c>pendencias</c> contém o item de código <paramref
+    /// name="codigoDoItemVermelho"/> — corpo comum aos quatro grupos de gate estrutural da
     /// issue #1096 (CA-01 a CA-04).
     /// </summary>
+    /// <remarks>
+    /// A asserção é pelo código do item, não pela frase: a mensagem é redação e muda sem que
+    /// a invariante mude, e um teste preso ao texto quebraria na primeira revisão editorial
+    /// sem nada ter regredido.
+    /// </remarks>
     private async Task AssertGateEstruturalNaoConformeAsync(
         Func<SelecaoDbContext, string, Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)>> semear,
         string codigoEsperado,
-        string itemVermelhoEsperado,
+        string codigoDoItemVermelho,
         string nomeDoCenario)
     {
         ArgumentNullException.ThrowIfNull(semear);
@@ -183,8 +243,9 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString().Should().Be(codigoEsperado);
-        doc.RootElement.GetProperty("pendencias").EnumerateArray().Select(e => e.GetString())
-            .Should().Contain(itemVermelhoEsperado);
+        doc.RootElement.GetProperty("pendencias").EnumerateArray()
+            .Select(e => e.GetProperty("codigo").GetString())
+            .Should().Contain(codigoDoItemVermelho);
     }
 
     [Fact(DisplayName =
@@ -250,8 +311,9 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         // tradução exclusiva do código de erro que efetivamente recusou.
         doc.RootElement.GetProperty("code").GetString()
             .Should().Be("uniplus.selecao.processo_seletivo.documento_nao_confirmado");
-        doc.RootElement.GetProperty("pendencias").EnumerateArray().Select(e => e.GetString())
-            .Should().Contain("Atendimento especializado");
+        doc.RootElement.GetProperty("pendencias").EnumerateArray()
+            .Select(e => e.GetProperty("codigo").GetString())
+            .Should().Contain("atendimento_especializado_ausente");
     }
 
     [Fact(DisplayName =

@@ -4,7 +4,17 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// Veredicto de um item do checklist de conformidade ESTRUTURAL do <c>ProcessoSeletivo</c>
 /// (Story #758, CA-07, issue #1092).
 /// </summary>
-public sealed record ItemConformidadeDto(string Item, bool Ok);
+/// <remarks>
+/// A identidade do item é o par <paramref name="Codigo"/>/<paramref name="Dimensao"/>, e não
+/// a mensagem: um cliente que precise levar quem publica até a seção correta do editor liga a
+/// navegação ao código, não ao texto. A mensagem é redação, e redação melhora — uma tabela de
+/// frases no cliente quebraria na primeira revisão editorial, e quebraria em silêncio.
+/// </remarks>
+/// <param name="Codigo">Identificador estável da invariante, único no checklist.</param>
+/// <param name="Dimensao">Seção do agregado onde a pendência se corrige.</param>
+/// <param name="Mensagem">Texto humano do item; pode mudar sem que código ou dimensão mudem.</param>
+/// <param name="Ok">Veredicto do item no estado atual do agregado.</param>
+public sealed record ItemConformidadeDto(string Codigo, string Dimensao, string Mensagem, bool Ok);
 
 /// <summary>
 /// Checklist de conformidade ESTRUTURAL do <c>ProcessoSeletivo</c> (CA-07, issue #1092):
