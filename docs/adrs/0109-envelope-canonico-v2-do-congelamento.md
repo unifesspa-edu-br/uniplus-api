@@ -216,3 +216,44 @@ Permanece a outra parte da D2: mudar a forma sem regenerar a golden fixture corr
 impossível, e o diff continua tornando a mudança visível. Quando o primeiro certame for
 publicado em qualquer ambiente, inclusive homologação, volta o regime de preservação por
 versão da ADR-0110; então cada versão publicada terá a sua golden fixture preservada.
+
+## Emenda 3 (2026-08-24) — a identidade da versão sai do nome do arquivo
+
+A Emenda 2 derrubou a fixture por `schema_version` e manteve só a da forma corrente, com a
+anterior saindo no mesmo commit que avança a versão. Ela descreveu o mecanismo pelo caso então
+exercido — renomear `envelope-0.0.5.json` para `envelope-0.0.6.json` —, e o nome versionado
+sobreviveu como resíduo do regime que a própria emenda aposentou.
+
+### E3.1 — A fixture tem nome fixo; a versão que ela congela é declarada ao lado
+
+As golden fixtures passam a se chamar `envelope.json`, `envelope-cascata.json` e
+`envelope-rico.json`. A `schema_version` que elas congelam é declarada em
+`Fixtures/schema-version.txt` e comparada à do canonicalizador por teste próprio.
+
+A versão não pode entrar no conteúdo da fixture: ela é o payload canônico puro, e qualquer
+acréscimo a faria deixar de ser byte-idêntica ao envelope emitido — que é a única coisa que a
+fixture existe para provar.
+
+**Consequência:** avançar a versão deixa de exigir renomear três arquivos. Os dois modos de
+falha que a D2 protege continuam cobertos, e nenhum deles depende do nome: bumpar sem atualizar
+a declaração falha no teste de versão; mudar a forma sem regenerar falha na comparação byte a
+byte. A cobertura é a mesma de antes também no que ela nunca teve — no regime de nome
+versionado, satisfazer o gate sem congelar forma nova era questão de renomear o arquivo, assim
+como aqui é de editar uma linha.
+
+### E3.2 — As fixtures de versões mortas saem
+
+As fixtures das versões `0.0.6` a `0.0.11` foram removidas. Sob codec único elas não eram
+lidas por teste nenhum: não há decoder que as reidrate, e nenhum certame publicado cuja forma
+elas reproduzam. Mantê-las sugeria um versionamento de fixture que a Emenda 2 já havia
+encerrado.
+
+**Consequência:** o diretório passa a conter exatamente o que o gate usa — três corpus da forma
+corrente e a versão que eles congelam.
+
+### Fora desta emenda
+
+O retorno ao regime de preservação por versão quando o primeiro certame for publicado em
+qualquer ambiente, previsto no fecho da Emenda 2, **não** é alterado aqui. A partir dele, cada
+versão publicada terá a sua golden fixture preservada, e a identidade volta a precisar de
+artefato próprio por versão.

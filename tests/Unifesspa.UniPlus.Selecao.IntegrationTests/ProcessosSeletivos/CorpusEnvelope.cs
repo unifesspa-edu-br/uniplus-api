@@ -121,7 +121,7 @@ internal static class CorpusEnvelope
     /// <param name="permutar">Inverte a ordem de ENTRADA das coleções não ordenadas — nunca o conteúdo.</param>
     /// <param name="comArvoreSatisfacao">
     /// Opt-in: acrescenta a árvore de satisfação de documentos exigidos (<see cref="ArvoreSatisfacaoRica"/>).
-    /// Fica fora por padrão porque as golden fixtures (<c>envelope-0.0.10-rico.json</c>) e os testes de
+    /// Fica fora por padrão porque as golden fixtures (<c>envelope-rico.json</c>) e os testes de
     /// round-trip congelam a forma de HOJE do corpus rico — sem árvore, <c>documentosExigidos.exigencias</c>
     /// e <c>arvoreSatisfacao</c> vazios. Populá-la incondicionalmente mudaria os bytes desse envelope de
     /// referência para todo consumidor de <see cref="ProcessoRico"/>, não só quem testa a permutação.
