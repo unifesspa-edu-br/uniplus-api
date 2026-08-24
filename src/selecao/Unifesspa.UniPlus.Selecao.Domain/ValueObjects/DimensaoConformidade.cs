@@ -27,4 +27,11 @@ public static class DimensaoConformidade
     public const string ExigenciasDocumentais = "exigencias_documentais";
     public const string CascataRemanejamento = "cascata_remanejamento";
     public const string ColetaDeFatos = "coleta_de_fatos";
+
+    /// <summary>
+    /// Os dados do processo que regem a contagem dos prazos de recurso — a localidade cujo
+    /// calendário se aplica e a convenção de contagem declarada. Não é o cronograma: a fase
+    /// pode estar inteiramente coerente e a contagem continuar indeterminada.
+    /// </summary>
+    public const string ContagemDePrazos = "contagem_de_prazos";
 }

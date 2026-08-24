@@ -672,7 +672,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <summary>
     /// Issue #1096: enriquece TODA recusa HTTP 422 da publicação com o checklist de
     /// pendências — reconsulta <see cref="ObterConformidadeProcessoSeletivoQuery"/> (mesmo
-    /// <c>ProcessoSeletivo.AvaliarConformidade()</c> por trás dos quatro gates estruturais,
+    /// <c>ProcessoSeletivo.AvaliarConformidade()</c> por trás dos seis gates estruturais,
     /// sem duplicar a regra nem manter lista paralela de códigos de erro no controller) e
     /// anexa <c>Extensions["pendencias"]</c> quando o estado atual tiver item vermelho —
     /// independentemente de qual gate produziu o 422 (CA-01/CA-02/CA-03/CA-04/CA-06). Quando
@@ -976,8 +976,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Consulta a conformidade ESTRUTURAL do processo (CA-07, issue #1092): checklist
-    /// bicondicional com os quatro gates estruturais de <c>Publicar</c>/<c>Retificar</c> — todo
-    /// item <c>Ok</c> se e somente se nenhum dos quatro gates tem pendência. Não altera o
+    /// bicondicional com os seis gates estruturais de <c>Publicar</c>/<c>Retificar</c> — todo
+    /// item <c>Ok</c> se e somente se nenhum dos seis gates tem pendência. Não altera o
     /// processo.
     /// </summary>
     /// <remarks>

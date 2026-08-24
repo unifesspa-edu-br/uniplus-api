@@ -246,10 +246,10 @@ public sealed class EnvelopeFechadoE2ETests
 
         conformidade.Itens.Should().NotBeEmpty("uma lista vazia daria falso verde por AllSatisfy trivial");
         conformidade.Itens.Select(i => i.Codigo).Should().OnlyHaveUniqueItems("cada item do checklist aparece uma única vez");
-        // issue #1092: o checklist passou a ser bicondicional com os QUATRO gates estruturais
-        // (antes só projetava PendenciaDeConformidade) — a publicação no passo 16 só devolve 204
-        // porque os quatro gates já estão satisfeitos, então o corpus rico continua OnlyContain(Ok):
-        // a ampliação não pode criar falso vermelho no caminho HTTP completo.
+        // issue #1092: o checklist passou a ser bicondicional com os gates estruturais (antes só
+        // projetava PendenciaDeConformidade) — a publicação no passo 16 só devolve 204 porque
+        // todos eles já estão satisfeitos, então o corpus rico continua OnlyContain(Ok): a
+        // ampliação não pode criar falso vermelho no caminho HTTP completo.
         conformidade.Itens.Should().OnlyContain(i => i.Ok, "o processo está completo — nenhum item deveria estar pendente");
         conformidade.Itens.Select(i => i.Codigo).Should().BeEquivalentTo(
             [
@@ -261,6 +261,10 @@ public sealed class EnvelopeFechadoE2ETests
                 "taxa_inscricao_nao_declarada",
                 "exigencias_base_legal_nao_resolvida",
                 "classificacao_divisor_media_invalido",
+
+                // ── Gates que a raiz aplica antes do agregador genérico ──
+                "localidade_nao_declarada",
+                "algoritmo_contagem_prazo_nao_declarado",
                 "cascata_pendente",
                 // ── PendenciaDoCronograma ──
                 "cronograma_fase_agrupadora_sem_etapa_pontuada",

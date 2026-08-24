@@ -1479,6 +1479,24 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Recusa gerar versão sem a localidade que rege a contagem dos prazos (UNI-REQ-0111).
+    /// </summary>
+    /// <remarks>
+    /// A localidade é exigida desde a criação, então chegar aqui sem ela não é estado
+    /// alcançável pelo fluxo público — a recusa fica como invariante da raiz, defendendo
+    /// contra caminho de escrita que a contorne, e porque o requisito exige a recusa nomeada
+    /// nas três transições que geram versão. É <b>também</b> a fonte única do item que
+    /// <see cref="AvaliarConformidade"/> projeta: uma segunda condição escrita lá poderia
+    /// divergir desta e devolver checklist verde para processo que a publicação recusa.
+    /// </remarks>
+    private DomainError? PendenciaDaLocalidade() =>
+        Localidade is null
+            ? new DomainError(
+                "ProcessoSeletivo.LocalidadeAusente",
+                "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada.")
+            : null;
+
+    /// <summary>
     /// Recusa gerar versão quando alguma contagem do certame distingue dia útil e a
     /// convenção não foi declarada (UNI-REQ-0112/UNI-REQ-0116).
     /// </summary>
@@ -1588,15 +1606,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Checklist de conformidade ESTRUTURAL do agregado (issue #1092): bicondicional com os
-    /// QUATRO gates que <see cref="Publicar"/>/<see cref="SucederVersao"/> aplicam, nesta ordem
-    /// — <see cref="PendenciaDeConformidade"/>, <see cref="PendenciaDoCronograma"/>,
+    /// SEIS gates que <see cref="Publicar"/>/<see cref="SucederVersao"/> aplicam, nesta ordem
+    /// — <see cref="PendenciaDaLocalidade"/>, <see cref="PendenciaDoAlgoritmoDeContagem"/>,
+    /// <see cref="PendenciaDeConformidade"/>, <see cref="PendenciaDoCronograma"/>,
     /// <see cref="PendenciaDaCascata"/> e <see cref="PendenciaPreCanonicalizacao"/>. Todos os
-    /// itens ficam <see langword="true"/> se e somente se os quatro gates não têm pendência —
+    /// itens ficam <see langword="true"/> se e somente se os seis gates não têm pendência —
     /// não existe estado em que este checklist declare tudo <c>Ok</c> e a publicação recuse por
     /// razão estrutural.
     /// </summary>
     /// <remarks>
-    /// <b>Delimitação — "estrutural" não é "publicável".</b> Mesmo com os quatro gates verdes, a
+    /// <b>Delimitação — "estrutural" não é "publicável".</b> Mesmo com os seis gates verdes, a
     /// publicação ainda pode recusar por conformidade LEGAL (motor data-driven, <c>GET
     /// /conformidade-legal</c>), documento confirmado, tipo de ato e outras leituras
     /// request-specific que só o command handler de publicação avalia (ADR-0109). Este método
@@ -1614,14 +1633,23 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// sincronizado.
     /// </para>
     /// <para>
-    /// Ordem estável: a ordem dos itens é a ordem de declaração abaixo, nunca a ordem de
-    /// iteração de uma coleção do EF.
+    /// <b>Ordem estável e fiel aos gates.</b> A ordem dos itens é a de declaração abaixo,
+    /// nunca a de iteração de uma coleção do EF — e reproduz a precedência que
+    /// <see cref="Publicar"/> aplica. Quem lê o checklist de cima para baixo encontra a
+    /// pendência que vai bloquear a publicação antes das que só apareceriam depois dela.
     /// </para>
     /// </remarks>
     public IReadOnlyList<ItemConformidade> AvaliarConformidade() =>
     [
+        // ── Gates que a raiz aplica ANTES do agregador genérico, na ordem de Publicar ──
+        // Os dois têm erro nomeado próprio e por isso não entram em
+        // ItensEstruturaisDeConformidade(), que alimenta o agregador: lá dentro, o
+        // ConformidadeInsuficiente interceptaria a causa específica antes de ela ser
+        // alcançada — mesma razão pela qual a cascata fica de fora.
+        new ItemConformidade("localidade_nao_declarada", DimensaoConformidade.ContagemDePrazos, "Localidade que rege a contagem dos prazos", PendenciaDaLocalidade() is null),
+        new ItemConformidade("algoritmo_contagem_prazo_nao_declarado", DimensaoConformidade.ContagemDePrazos, "Convenção de contagem dos prazos de recurso", PendenciaDoAlgoritmoDeContagem() is null),
+
         .. ItensEstruturaisDeConformidade(),
-        new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
 
         // ── PendenciaDoCronograma (Story #851 §3.4/§3.5) ──
         new ItemConformidade("cronograma_fase_agrupadora_sem_etapa_pontuada", DimensaoConformidade.Cronograma, "Cronograma: fase que agrupa etapas só quando há etapa pontuada", !HaFaseDeAvaliacaoSemEtapa()),
@@ -1629,7 +1657,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !HaInscricaoPropriaSemFaseDeColeta()),
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
 
-        // ── PendenciaDaCascata, detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
+        // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
+        new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
         new ItemConformidade("cascata_modalidade_fora_do_regime_federal", DimensaoConformidade.CascataRemanejamento, "Cascata: modalidade SegueCascata usa a regra de distribuição federal", !ExisteCascataForaDoRegimeFederal()),
         new ItemConformidade("cascata_origem_ausente", DimensaoConformidade.CascataRemanejamento, "Cascata: origem SegueCascata declarada na cascata de remanejamento", !ExisteCascataOrigemAusente()),
         new ItemConformidade("cascata_fallback_nao_ofertado", DimensaoConformidade.CascataRemanejamento, "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas", !ExisteCascataFallbackNaoSelecionadoNaOferta()),
@@ -2617,11 +2646,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // público — a recusa fica como invariante da raiz, defendendo contra caminho de escrita que
         // a contorne, e porque o requisito exige a recusa nomeada nas três transições que geram
         // versão. Publicar cobre a inicial; SucederVersao cobre a retificação e o fechamento.
-        if (Localidade is null)
+        if (PendenciaDaLocalidade() is { } pendenciaLocalidade)
         {
-            return Result<VersaoConfiguracao>.Failure(new DomainError(
-                "ProcessoSeletivo.LocalidadeAusente",
-                "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada."));
+            return Result<VersaoConfiguracao>.Failure(pendenciaLocalidade);
         }
 
         // Convenção de contagem (UNI-REQ-0112): exigida só quando alguma contagem do
@@ -2963,11 +2990,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // público — a recusa fica como invariante da raiz, defendendo contra caminho de escrita que
         // a contorne, e porque o requisito exige a recusa nomeada nas três transições que geram
         // versão. Publicar cobre a inicial; SucederVersao cobre a retificação e o fechamento.
-        if (Localidade is null)
+        if (PendenciaDaLocalidade() is { } pendenciaLocalidade)
         {
-            return Result<VersaoConfiguracao>.Failure(new DomainError(
-                "ProcessoSeletivo.LocalidadeAusente",
-                "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada."));
+            return Result<VersaoConfiguracao>.Failure(pendenciaLocalidade);
         }
 
         // Convenção de contagem (UNI-REQ-0112): exigida só quando alguma contagem do
