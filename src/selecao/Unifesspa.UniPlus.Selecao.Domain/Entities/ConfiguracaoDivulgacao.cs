@@ -37,6 +37,26 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
     public const string Nome = "nome";
 
     /// <summary>
+    /// O vocabulário fechado da divulgação pública, na ordem canônica de apresentação — do
+    /// piso à forma mais identificadora do candidato. É desta lista que sai tanto a recusa
+    /// de campo não permitido quanto a leitura pública do vocabulário: uma segunda lista,
+    /// mantida à parte para o cliente descobrir os códigos, envelheceria sozinha.
+    /// </summary>
+    /// <remarks>
+    /// A ordem não é alfabética de propósito. Ela ordena por quanto cada campo identifica
+    /// quem prestou o certame, que é a leitura que importa para quem decide o que publicar —
+    /// e a ordem alfabética colocaria <c>nome</c> antes de <c>nome_abreviado</c>, invertendo
+    /// justamente esse sentido. A ordem em que os campos são <b>persistidos</b> continua
+    /// sendo a canônica ASCII, decidida em <see cref="Criar"/>.
+    /// </remarks>
+    public static readonly IReadOnlyList<CampoDivulgacaoPublica> CamposPermitidos =
+    [
+        new(NumeroInscricao, "Número de inscrição", Obrigatorio: true, ExigeJustificativa: false),
+        new(NomeAbreviado, "Nome abreviado", Obrigatorio: false, ExigeJustificativa: false),
+        new(Nome, "Nome completo", Obrigatorio: false, ExigeJustificativa: true),
+    ];
+
+    /// <summary>
     /// Teto da justificativa normalizada — mesma grandeza de <see cref="RascunhoRetificacao.MotivoMaxLength"/>
     /// e de <c>DocumentoExigidoBaseLegal.Observacao</c>: texto de negócio livre, não um rótulo curto.
     /// </summary>
@@ -83,7 +103,8 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
         // resultado nulo como "não encontrado") e sobreviver silenciosamente na lista canônica.
         // A mensagem não ecoa os valores rejeitados (ADR-0023): errors[].message nunca carrega
         // reflexo do dado rejeitado, mesmo quando o campo em si não é PII.
-        bool temCampoNaoPermitido = camposPublicos.Any(static c => c is not (NumeroInscricao or NomeAbreviado or Nome));
+        bool temCampoNaoPermitido = camposPublicos.Any(static c =>
+            c is null || !CamposPermitidos.Any(permitido => string.Equals(permitido.Codigo, c, StringComparison.Ordinal)));
         if (temCampoNaoPermitido)
         {
             erros.Add(new("camposPublicos", new DomainError(
