@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
+using System.Reflection;
+using System.Text.Json.Nodes;
+
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -40,6 +43,8 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
         if (propertyName is null)
             return Task.CompletedTask;
 
+        AplicarVocabularioFechado(schema, context);
+
         // JsonSchemaType é [Flags] — propriedades nullable saem com o flag Null somado ao
         // tipo base (ex.: Array | Null, String | Null), então comparação por igualdade exata
         // pula schemas legítimos. HasFlag pega o tipo base com ou sem nulidade.
@@ -62,5 +67,34 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Publica como <c>enum</c> o vocabulário que a propriedade declara via
+    /// <see cref="VocabularioFechadoAttribute"/>. Num array, o conjunto pertence ao ITEM,
+    /// não à lista: aplicá-lo à lista diria que a lista inteira é um dos valores.
+    /// </summary>
+    private static void AplicarVocabularioFechado(OpenApiSchema schema, OpenApiSchemaTransformerContext context)
+    {
+        if (context.JsonPropertyInfo?.AttributeProvider
+                ?.GetCustomAttributes(typeof(VocabularioFechadoAttribute), inherit: true)
+                .FirstOrDefault() is not VocabularioFechadoAttribute vocabulario
+            || vocabulario.Valores.Count == 0)
+        {
+            return;
+        }
+
+        // JsonSchemaType é [Flags]: uma propriedade anulável sai com Null somado ao tipo
+        // base, então a comparação precisa ser por flag e não por igualdade.
+        bool ehArray = schema.Type is { } tipo && tipo.HasFlag(JsonSchemaType.Array);
+        IOpenApiSchema? alvo = ehArray ? schema.Items : schema;
+
+        if (alvo is not OpenApiSchema destino)
+        {
+            return;
+        }
+
+        destino.Type ??= JsonSchemaType.String;
+        destino.Enum = [.. vocabulario.Valores.Select(static v => (JsonNode)JsonValue.Create(v)!)];
     }
 }
