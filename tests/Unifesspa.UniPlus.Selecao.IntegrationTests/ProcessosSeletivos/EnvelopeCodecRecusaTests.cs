@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
 
@@ -1399,6 +1400,65 @@ public sealed class EnvelopeCodecRecusaTests
         ProcessoSeletivo processo = ProcessoPublicado();
         byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico())).Bytes;
         return (CorpusEnvelope.VersaoDeAbertura(processo, bytes), bytes);
+    }
+
+    // ── Invariantes da regra de recurso: a reidratação não é porta de fundo ──
+
+    /// <summary>
+    /// O prazo de interposição em unidade não declarável entra pela reidratação, não pelo
+    /// HTTP: quem chega pela API é barrado pelo validator do comando, mas o codec chama
+    /// <c>RegraRecursoFase.Criar</c> direto. Sem a invariante na entidade, um envelope com
+    /// <c>Nenhuma</c> — que é o valor zero do enum, e portanto o default de qualquer args
+    /// construído sem preencher a unidade — reidrataria num agregado cujo prazo não conta
+    /// em unidade alguma.
+    /// </summary>
+    [Fact(DisplayName = "Prazo de interposição sem unidade declarável no envelope: recusa nomeada da entidade, não agregado em estado proibido")]
+    public void RegraRecursoComPrazoSemUnidadeDeclaravel_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ArgsDaRegraDeRecurso(envelope)["prazoUnidade"] = nameof(UnidadePrazo.Nenhuma));
+
+        resultado.IsFailure.Should().BeTrue(
+            "a unidade do prazo é o que decide quando a janela do candidato fecha; sem ela o prazo não conta");
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoSemUnidadeDeclaravel");
+    }
+
+    [Fact(DisplayName = "Prazo de interposição não positivo no envelope: recusa nomeada, e não um prazo que fecha ao abrir")]
+    public void RegraRecursoComPrazoNaoPositivo_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            // O decimal trafega como texto canônico de 4 casas, como o resto do envelope —
+            // um número JSON aqui seria recusado pela gramática antes de a entidade opinar,
+            // e o teste passaria pelo motivo errado.
+            ArgsDaRegraDeRecurso(envelope)["prazoValor"] = "0.0000");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoNaoPositivo");
+    }
+
+    [Fact(DisplayName = "Par de suspensividade pela metade no envelope: recusa nomeada, e não uma janela sem relógio")]
+    public void RegraRecursoComSuspensividadePelaMetade_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ArgsDaRegraDeRecurso(envelope)["suspensividadePrimeiraInstanciaUnidade"] = null);
+
+        resultado.IsFailure.Should().BeTrue(
+            "o valor sobreviveu e a unidade sumiu — o par deixou de dizer em que relógio a janela corre");
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
+    }
+
+    /// <summary>
+    /// Os <c>args</c> da regra de recurso da única fase do corpus que a declara. Localizada
+    /// pela presença do bloco, não por índice fixo: uma fase nova no corpus deslocaria o
+    /// índice e faria os testes acima passarem a adulterar outra coisa.
+    /// </summary>
+    private static JsonObject ArgsDaRegraDeRecurso(JsonObject envelope)
+    {
+        JsonObject fase = envelope["cronogramaFases"]!["fases"]!.AsArray()
+            .Select(f => f!.AsObject())
+            .Single(f => f["regraRecurso"] is JsonObject);
+
+        return fase["regraRecurso"]!["args"]!.AsObject();
     }
 
     /// <summary>

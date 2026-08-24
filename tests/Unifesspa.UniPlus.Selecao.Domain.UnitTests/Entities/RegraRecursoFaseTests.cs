@@ -29,6 +29,24 @@ public sealed class RegraRecursoFaseTests
             SuspensividadeSegundaInstanciaValor: susp2Unidade is null ? null : 5m,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 
+    /// <summary>
+    /// Args com um par de suspensividade montado lado a lado, sem a amarração de
+    /// <see cref="ArgsBase"/> entre valor e unidade — é o que permite declarar
+    /// deliberadamente meio par.
+    /// </summary>
+    private static ArgsRegraPrazoRecurso ArgsComSuspensividade(
+        decimal? susp1Valor,
+        UnidadePrazo? susp1Unidade,
+        decimal? susp2Valor = null,
+        UnidadePrazo? susp2Unidade = null) => new(
+            PrazoValor: 48m,
+            PrazoUnidade: UnidadePrazo.Horas,
+            AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
+            SuspensividadePrimeiraInstanciaValor: susp1Valor,
+            SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
+            SuspensividadeSegundaInstanciaValor: susp2Valor,
+            SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
+
     private static ReferenciaRegra RegraAncorada() => ReferenciaRegra.Criar(
         RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
 
@@ -134,6 +152,146 @@ public sealed class RegraRecursoFaseTests
         resultado.Value.Args.SuspensividadePrimeiraInstanciaValor.Should().Be(5m);
         resultado.Value.Args.SuspensividadeSegundaInstanciaUnidade.Should().BeNull(
             "null numa instância é valor legítimo — significa que ela não bloqueia (caso normal do Ingresso via judicial)");
+        resultado.Value.Args.SuspensividadeSegundaInstanciaValor.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Unidade não declarável na interposição é recusada — Nenhuma é o default do enum, e chega aqui sem ninguém ter declarado nada")]
+    [InlineData(UnidadePrazo.Nenhuma)]
+    [InlineData((UnidadePrazo)99)]
+    public void PrazoDeInterposicaoSemUnidadeDeclaravel_Recusa(UnidadePrazo unidade)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsBase(prazoUnidade: unidade));
+
+        resultado.IsFailure.Should().BeTrue(
+            "Nenhuma vale zero e é o que um ArgsRegraPrazoRecurso construído sem preencher a unidade carrega");
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoSemUnidadeDeclaravel");
+    }
+
+    [Theory(DisplayName = "Prazo de interposição zerado ou negativo é recusado — nasceria inutilizável e a publicação o congela assim")]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-48)]
+    public void PrazoDeInterposicaoNaoPositivo_Recusa(decimal valor)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsBase(prazoUnidade: UnidadePrazo.Horas, prazoValor: valor));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoNaoPositivo");
+    }
+
+    [Theory(DisplayName = "Prazo negativo recusa pela magnitude em qualquer unidade — trocar de unidade não conserta um prazo que fecha antes de abrir")]
+    [InlineData(UnidadePrazo.DiasUteis, -0.5)]
+    [InlineData(UnidadePrazo.Dias, -5)]
+    [InlineData(UnidadePrazo.Nenhuma, -1)]
+    [InlineData(UnidadePrazo.Horas, -48)]
+    public void PrazoNegativo_RecusaPelaMagnitudeAntesDaUnidade(UnidadePrazo unidade, decimal valor)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsBase(prazoUnidade: unidade, prazoValor: valor));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoNaoPositivo",
+            "cada um destes viola magnitude E unidade ao mesmo tempo, e só a magnitude tem remediação que resolve — "
+            + "reescrever -5 dias corridos em dias úteis deixa um prazo que continua fechando antes de abrir");
+    }
+
+    [Fact(DisplayName = "Suspensividade com valor e sem unidade é recusada — um valor sozinho não diz em que relógio a janela corre")]
+    public void Suspensividade_ValorSemUnidade_Recusa()
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsComSuspensividade(susp1Valor: 5m, susp1Unidade: null));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
+    }
+
+    [Fact(DisplayName = "Suspensividade com unidade e sem valor é recusada — o par falha nos dois sentidos")]
+    public void Suspensividade_UnidadeSemValor_Recusa()
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsComSuspensividade(susp1Valor: null, susp1Unidade: UnidadePrazo.Dias));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
+    }
+
+    [Fact(DisplayName = "O par incompleto da 2ª instância é recusado como o da 1ª — as duas instâncias têm a mesma exigência de completude")]
+    public void Suspensividade_SegundaInstanciaIncompleta_Recusa()
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(),
+            ArgsComSuspensividade(
+                susp1Valor: 5m, susp1Unidade: UnidadePrazo.Dias,
+                susp2Valor: 3m, susp2Unidade: null));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
+        resultado.Error.Message.Should().Contain("2ª instância",
+            "a mensagem precisa dizer qual das duas instâncias está pela metade");
+    }
+
+    [Fact(DisplayName = "Unidade de suspensividade igual a Nenhuma é recusada — passa por qualquer checagem de presença e continua não declarando unidade")]
+    public void Suspensividade_UnidadeNenhuma_Recusa()
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsComSuspensividade(susp1Valor: 5m, susp1Unidade: UnidadePrazo.Nenhuma));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel");
+    }
+
+    [Theory(DisplayName = "Suspensividade que erra valor E unidade recusa pela magnitude — corrigir a unidade deixaria a janela negativa de pé")]
+    [InlineData(0, UnidadePrazo.Nenhuma)]
+    [InlineData(-3, UnidadePrazo.Nenhuma)]
+    [InlineData(-3, (UnidadePrazo)99)]
+    public void Suspensividade_ValorEUnidadeInvalidos_RecusaPelaMagnitude(decimal valor, UnidadePrazo unidade)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsComSuspensividade(susp1Valor: valor, susp1Unidade: unidade));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeNaoPositiva",
+            "a ordem das recusas segue a da interposição: a que orienta é a que tem remediação que resolve");
+    }
+
+    [Theory(DisplayName = "Valor de suspensividade zerado ou negativo é recusado — quem não quer bloquear omite o par inteiro, que é a desativação prevista")]
+    [InlineData(0)]
+    [InlineData(-5)]
+    public void Suspensividade_ValorNaoPositivo_Recusa(decimal valor)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsComSuspensividade(susp1Valor: valor, susp1Unidade: UnidadePrazo.Dias));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeNaoPositiva");
+    }
+
+    [Theory(DisplayName = "Metade presente inválida recusa por ela mesma, não por incompletude — completar o par deixaria a janela inválida de pé")]
+    [InlineData(-3, null, "RegraRecursoFase.SuspensividadeNaoPositiva")]
+    [InlineData(0, null, "RegraRecursoFase.SuspensividadeNaoPositiva")]
+    [InlineData(null, UnidadePrazo.Nenhuma, "RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel")]
+    [InlineData(null, (UnidadePrazo)99, "RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel")]
+    public void Suspensividade_MetadePresenteInvalida_RecusaPelaMetade(
+        int? valor, UnidadePrazo? unidade, string codigoEsperado)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsComSuspensividade(susp1Valor: valor, susp1Unidade: unidade));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(codigoEsperado,
+            "quem seguisse a orientação de completar o par voltaria com a mesma metade errada e uma segunda recusa");
+    }
+
+    [Fact(DisplayName = "Os dois pares ausentes continuam aceitos — a ausência É a desativação, e não um par pela metade")]
+    public void Suspensividade_AmbosOsParesAusentes_Aceita()
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsComSuspensividade(susp1Valor: null, susp1Unidade: null));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Args.SuspensividadePrimeiraInstanciaValor.Should().BeNull();
         resultado.Value.Args.SuspensividadeSegundaInstanciaValor.Should().BeNull();
     }
 }
