@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
-/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>27 blocos
+/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>28 blocos
 /// reais</b> — e devolve os bytes via <see cref="PerfilCanonicoV1"/>.
 /// <c>documentosExigidos</c> (Story #853) já carrega <c>obrigatoriedades[]</c> e
 /// <c>exigencias[]</c> (#554) reais. <c>vagas</c> (issue #848/ADR-0115) é outro: o
@@ -169,7 +169,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>CriarProcessoSeletivoCommandHandler</c> (CA-02). Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.9</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.12";
+    internal const string SchemaVersionAtual = "0.0.13";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -227,11 +227,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["taxaInscricao"] = SerializarTaxaInscricao(processo),
             ["localidade"] = SerializarLocalidade(processo, entrada.FusoHorario),
             ["algoritmoContagemPrazo"] = SerializarAlgoritmoContagemPrazo(processo),
+            ["calendarioDiasUteis"] = SerializarCalendarioDiasUteis(entrada.CalendarioDiasUteis),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 28º bloco preservando os 27
-        // anteriores (a issue #1112 elevou de 24 para 25, a localidade de 25 para 26 e a
-        // convenção de contagem de 26 para 27). A
+        // ADR-0101: a retificação ACRESCENTA um 29º bloco preservando os 28
+        // anteriores (a issue #1112 elevou de 24 para 25, a localidade de 25 para 26, a
+        // convenção de contagem de 26 para 27 e o calendário de 27 para 28). A
         // abertura não escreve esta chave —
         // seu payload é byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
@@ -642,6 +643,53 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["codigo"] = algoritmo.Codigo,
             ["versao"] = algoritmo.Versao,
             ["hash"] = algoritmo.Hash,
+        };
+    }
+
+    /// <summary>
+    /// Calendário de dias úteis congelado por valor (UNI-REQ-0080): a lista inteira de dias não
+    /// úteis vigente na publicação, e não uma referência ao dataset de origem.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>origemId</c> e <c>versaoDataset</c> viajam como rastreio da procedência. Nada no
+    /// cálculo os dereferencia: o dataset pode deixar de ser vigente e ser removido do cadastro,
+    /// e a versão publicada continua recontando o mesmo instante a partir do que está aqui.
+    /// </para>
+    /// <para>
+    /// Bloco único no processo, não repetido por fase. Quais dias incidem é decidido depois, pela
+    /// localidade congelada no bloco vizinho — repetir a lista por fase multiplicaria bytes sem
+    /// acrescentar fato, já que todas as fases do mesmo certame correm sob o mesmo calendário.
+    /// </para>
+    /// <para>
+    /// A ordem vem de <see cref="CalendarioDiasUteisCongelado.Ordenar"/>, a mesma que o value
+    /// object aplica ao congelar. Deixar a ordem para cá abriria a chance de o snapshot e o
+    /// envelope divergirem, e o envelope é comparado byte a byte.
+    /// </para>
+    /// </remarks>
+    private static JsonObject SerializarCalendarioDiasUteis(CalendarioDiasUteisCongelado? calendario)
+    {
+        if (calendario is null)
+        {
+            return new JsonObject { ["presente"] = false };
+        }
+
+        return new JsonObject
+        {
+            ["presente"] = true,
+            ["origemId"] = calendario.OrigemId,
+            ["versaoDataset"] = HashCanonicalComputer.NormalizeNfc(calendario.VersaoDataset),
+            ["diasNaoUteis"] = new JsonArray(
+            [
+                .. CalendarioDiasUteisCongelado.Ordenar(calendario.DiasNaoUteis).Select(static dia => (JsonNode)new JsonObject
+                {
+                    ["data"] = dia.Data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    ["abrangencia"] = dia.Abrangencia,
+                    ["municipioIbge"] = dia.MunicipioIbge,
+                    ["municipioNome"] = dia.MunicipioNome is { } nome ? HashCanonicalComputer.NormalizeNfc(nome) : null,
+                    ["uf"] = dia.Uf,
+                }),
+            ]),
         };
     }
 

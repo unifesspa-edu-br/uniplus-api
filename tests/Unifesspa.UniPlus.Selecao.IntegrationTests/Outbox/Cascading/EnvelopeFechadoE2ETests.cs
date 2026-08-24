@@ -265,6 +265,8 @@ public sealed class EnvelopeFechadoE2ETests
                 // ── Gates que a raiz aplica antes do agregador genérico ──
                 "localidade_nao_declarada",
                 "algoritmo_contagem_prazo_nao_declarado",
+                "calendario_vigente_ausente",
+                "fuso_institucional_nao_reconhecido",
                 "cascata_pendente",
                 // ── PendenciaDoCronograma ──
                 "cronograma_fase_agrupadora_sem_etapa_pontuada",

@@ -54,6 +54,19 @@ public sealed class GateDoAlgoritmoDeContagemTests
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null)).Value!;
 
+    /// <summary>
+    /// Calendário vigente mínimo. Este arquivo prova o gate da <b>convenção de contagem</b>; sem
+    /// calendário, todo processo com recurso teria também a pendência do calendário, e o caminho
+    /// feliz recusaria por uma causa que não é a testada aqui. O gate do calendário tem cobertura
+    /// própria.
+    /// </summary>
+    private static ContextoDeContagemDePrazos ComCalendario() => new(
+        CalendarioDiasUteisCongelado.Criar(
+            Guid.CreateVersion7(),
+            "2026",
+            [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
+        FusoInstitucionalReconhecido: true);
+
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
         ProcessoConformeFactory.Dados(),
         configuracaoCongeladaCanonica: "{}"u8.ToArray(),
@@ -61,7 +74,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         algoritmoHash: "canonical-json/sha256@v1",
         hashDocumento: HashFixo,
         atorUsuarioSub: "teste",
-        TimeProvider.System);
+        TimeProvider.System, ComCalendario());
 
     /// <summary>
     /// Leva o processo ao estado publicado sem passar pelo gate — a publicação é assunto de
@@ -112,7 +125,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
             motivo: "Correção do prazo",
-            TimeProvider.System);
+            TimeProvider.System, ComCalendario());
 
         retificar.IsFailure.Should().BeTrue();
         retificar.Error!.Code.Should().Be(CodigoDaRecusa);
@@ -138,7 +151,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
             PrecondicaoIfMatch.Curinga,
-            TimeProvider.System);
+            TimeProvider.System, ComCalendario());
 
         fechar.IsFailure.Should().BeTrue();
         fechar.Error!.Code.Should().Be(CodigoDaRecusa);

@@ -197,7 +197,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
             documentoEditalId: Guid.CreateVersion7()).Value!;
         byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(
             new System.Text.Json.Nodes.JsonObject { ["status"] = "ok" }.ToJsonString());
-        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-sub-123", TimeProvider.System)
+        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario)
             .IsSuccess.Should().BeTrue();
 
         return processo;

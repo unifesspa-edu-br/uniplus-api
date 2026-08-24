@@ -68,7 +68,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade()
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario)
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && !item.Ok);
     }
 
@@ -85,7 +85,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade()
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario)
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && item.Ok);
     }
 

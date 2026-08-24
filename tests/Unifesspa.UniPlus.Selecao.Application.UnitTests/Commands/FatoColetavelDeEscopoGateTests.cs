@@ -53,6 +53,7 @@ public sealed class FatoColetavelDeEscopoGateTests
             Substitute.For<IVagaDeLinhagemReader>(),
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -103,6 +104,7 @@ public sealed class FatoColetavelDeEscopoGateTests
             Substitute.For<IVagaDeLinhagemReader>(),
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -180,7 +182,7 @@ public sealed class FatoColetavelDeEscopoGateTests
 
         VersaoConfiguracao versao = processo.Publicar(
             dados, "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-            new RelogioFixo(Agora)).Value!;
+            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario).Value!;
         processo.DequeueDomainEvents();
 
         return (processo, versao);

@@ -13,9 +13,9 @@ public sealed record SnapshotCanonico(byte[] Bytes, string SchemaVersion, string
 
 /// <summary>
 /// Informação do ato de retificação (ADR-0103) acrescentada ao envelope como um
-/// bloco adicional (<c>retificacao</c>) além dos 27 blocos canônicos.
+/// bloco adicional (<c>retificacao</c>) além dos 28 blocos canônicos.
 /// <see langword="null"/> na publicação de abertura — o envelope de abertura
-/// mantém exatamente os 27 blocos, sem o bloco de retificação.
+/// mantém exatamente os 28 blocos, sem o bloco de retificação.
 /// </summary>
 public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 
@@ -127,16 +127,28 @@ public sealed record EntradaCanonicalizacao(
     RetificacaoInfo? Retificacao = null,
     ResultadoConformidade? Conformidade = null,
     IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados = null,
-    IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? ValoresSelecionaveisCongelados = null);
+    IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? ValoresSelecionaveisCongelados = null,
+    /// <summary>
+    /// Calendário de dias úteis copiado por valor da leitura vigente (UNI-REQ-0080), ou
+    /// <see langword="null"/> quando o certame não tem contagem que distinga dia útil e a
+    /// publicação prosseguiu sem ele.
+    /// <para>
+    /// Na recodificação de uma versão já publicada é o calendário <b>congelado nela</b> que volta
+    /// aqui, nunca o vigente — pelo mesmo motivo do fuso: a prova byte a byte mudaria de resultado
+    /// quando o cadastro ganhasse dataset novo, e a versão deixaria de reproduzir a própria
+    /// contagem.
+    /// </para>
+    /// </summary>
+    CalendarioDiasUteisCongelado? CalendarioDiasUteis = null);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>27 blocos reais</b> — a Feature #40 fechou a última dimensão provisória
+/// <b>28 blocos reais</b> — a Feature #40 fechou a última dimensão provisória
 /// (<c>divulgacao</c>, UNI-REQ-0050, issue #563) — e devolve os bytes que
 /// <c>VersaoConfiguracao.Abrir</c> persiste como base do hash. Quando a entrada
-/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 25º
-/// bloco <c>retificacao</c> preservando os 24 anteriores intactos (ADR-0103).
+/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 29º
+/// bloco <c>retificacao</c> preservando os 28 anteriores intactos (ADR-0103).
 /// </summary>
 /// <remarks>
 /// A assinatura recebe <b>um único</b> parâmetro por decisão (ADR-0109 D6):

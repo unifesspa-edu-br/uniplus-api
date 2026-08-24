@@ -265,6 +265,7 @@ public sealed class ValoresSelecionaveisResolverTests
             mocks.VagaDeLinhagemReader,
             mocks.ObrigatoriedadeLegalRepository,
             mocks.FatoCandidatoReader,
+            CalendarioVigenteReaderDeTeste.SemVigente(),
             TimeProvider.System,
             CancellationToken.None);
     }

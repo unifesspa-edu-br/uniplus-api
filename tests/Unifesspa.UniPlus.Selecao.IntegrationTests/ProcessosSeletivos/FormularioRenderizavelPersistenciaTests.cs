@@ -157,7 +157,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "integration-test-user", TimeProvider.System);
+            hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico());
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         Guid processoId = processo.Id;

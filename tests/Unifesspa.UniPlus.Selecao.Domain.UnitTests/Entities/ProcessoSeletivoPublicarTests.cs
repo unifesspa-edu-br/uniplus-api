@@ -122,7 +122,7 @@ public sealed class ProcessoSeletivoPublicarTests
         DadosEdital dados = NovosDados();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado);
@@ -142,7 +142,7 @@ public sealed class ProcessoSeletivoPublicarTests
         DateTimeOffset instante = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new RelogioFixo(instante));
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new RelogioFixo(instante), ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         VersaoConfiguracao versao = resultado.Value!;
@@ -166,7 +166,7 @@ public sealed class ProcessoSeletivoPublicarTests
         DadosEdital dados = NovosDados();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue();
         Domain.Events.ProcessoPublicadoEvent evento = processo.DomainEvents
@@ -191,7 +191,7 @@ public sealed class ProcessoSeletivoPublicarTests
         // Nenhuma dimensão obrigatória definida — Etapas/Atendimento/Distribuição/Classificação ausentes.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -203,12 +203,12 @@ public sealed class ProcessoSeletivoPublicarTests
     public void Publicar_ProcessoJaPublicado_RecusaTransicaoInvalida()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System)
+        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario)
             .IsSuccess.Should().BeTrue();
         processo.DequeueDomainEvents();
 
         Result<VersaoConfiguracao> segundaTentativa = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         segundaTentativa.IsFailure.Should().BeTrue();
         segundaTentativa.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
@@ -227,7 +227,7 @@ public sealed class ProcessoSeletivoPublicarTests
     public void DefinirX_ProcessoPublicado_RecusaMutacao(string dimensao)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System)
+        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario)
             .IsSuccess.Should().BeTrue();
 
         Result resultado = dimensao switch
@@ -293,7 +293,7 @@ public sealed class ProcessoSeletivoPublicarTests
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.CondicionalVaziaDeterminaResultado");
@@ -308,7 +308,7 @@ public sealed class ProcessoSeletivoPublicarTests
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(
             resultado.Error?.Message ?? "o bloco documentosExigidos.exigencias deixou de ser stub — nada mais bloqueia esta publicação");
@@ -320,7 +320,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -395,7 +395,7 @@ public sealed class ProcessoSeletivoPublicarTests
         // checagem B-03 (issue #892) agora é alcançada e recusa nomeadamente.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
@@ -411,7 +411,7 @@ public sealed class ProcessoSeletivoPublicarTests
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -453,7 +453,7 @@ public sealed class ProcessoSeletivoPublicarTests
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente");
@@ -512,7 +512,7 @@ public sealed class ProcessoSeletivoPublicarTests
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel");
@@ -791,7 +791,7 @@ public sealed class ProcessoSeletivoPublicarTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
@@ -809,7 +809,7 @@ public sealed class ProcessoSeletivoPublicarTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
@@ -827,7 +827,7 @@ public sealed class ProcessoSeletivoPublicarTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue(
             "a categoria do documento (SAUDE) não isenta a coerência — o que importa é a modalidade que o gatilho alcança");
@@ -846,7 +846,7 @@ public sealed class ProcessoSeletivoPublicarTests
         // ausência da entidade já significa "sem vantagem viva" para remover.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.RemoveVantagemSemVantagemViva");
@@ -867,7 +867,7 @@ public sealed class ProcessoSeletivoPublicarTests
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -907,7 +907,7 @@ public sealed class ProcessoSeletivoPublicarTests
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue(
             "um gatilho sem NENHUMA condição de MODALIDADE não isenta a exigência do CA-05 — ela alcança " +
@@ -932,7 +932,7 @@ public sealed class ProcessoSeletivoPublicarTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -959,7 +959,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        processo.AvaliarConformidade().Should().ContainSingle(i => i.Codigo == "exigencias_base_legal_nao_resolvida");
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => i.Codigo == "exigencias_base_legal_nao_resolvida");
     }
 
     [Fact(DisplayName = "CA-03 (semântica vazia): processo sem exigência que determina resultado tem o item satisfeito")]
@@ -967,7 +967,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        processo.AvaliarConformidade().Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Exigência que determina resultado sem base legal reprova o item")]
@@ -978,7 +978,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade().Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "CA-02: exigência com base RESOLVIDO satisfaz o item")]
@@ -989,7 +989,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade().Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Exigência com base só PENDENTE reprova o item")]
@@ -1000,7 +1000,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade().Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "CA-05: reenviar o PUT rebaixando a única base resolvida para PENDENTE volta a reprovar o item")]
@@ -1010,12 +1010,12 @@ public sealed class ProcessoSeletivoPublicarTests
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
-        processo.AvaliarConformidade().Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
 
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade().Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "CA-05: reenviar o PUT sem a única base resolvida volta a reprovar o item")]
@@ -1025,12 +1025,12 @@ public sealed class ProcessoSeletivoPublicarTests
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
-        processo.AvaliarConformidade().Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
 
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade().Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Publicar bloqueia com ConformidadeInsuficiente quando exigência determina resultado sem base legal — antes de alcançar B-01")]
@@ -1042,7 +1042,7 @@ public sealed class ProcessoSeletivoPublicarTests
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");

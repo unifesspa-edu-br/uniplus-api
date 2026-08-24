@@ -343,6 +343,7 @@ public sealed class ValoresDeDominioAtivosGateTests
             Substitute.For<IVagaDeLinhagemReader>(),
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             fatoCandidatoReader,
+            CalendarioVigenteReaderDeTeste.SemVigente(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 

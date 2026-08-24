@@ -58,11 +58,12 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "taxaInscricao",
         "localidade",
         "algoritmoContagemPrazo",
+        "calendarioDiasUteis",
     ];
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.12";
+    public string SchemaVersion => "0.0.13";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -133,6 +134,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = LerTaxaInscricao(leitor, payload);
         (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
         ReferenciaRegra? algoritmoContagemPrazo = LerAlgoritmoContagemPrazo(leitor, payload);
+        CalendarioDiasUteisCongelado? calendarioDiasUteis = LerCalendarioDiasUteis(leitor, payload, cronogramaFases);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -194,7 +196,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,
-                metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis));
+                metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis, calendarioDiasUteis));
     }
 
     /// <summary>
@@ -793,6 +795,173 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     /// referência que o domínio recusaria criar.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Calendário congelado por valor (UNI-REQ-0080). Reconstruído pelos mesmos value objects que
+    /// a publicação usa, e não por atribuição direta: a assimetria entre escrita e leitura é
+    /// invisível ao round-trip byte a byte — o encoder reemitiria o valor sujo tal qual, a prova
+    /// passaria, e a configuração restaurada carregaria um calendário que o domínio recusaria
+    /// criar.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Recusa, nunca normaliza.</b> Aparar espaço ou corrigir caixa aqui faria o valor divergir
+    /// dos bytes congelados, e a recanonicalização passaria a recusar um artefato legítimo.
+    /// </para>
+    /// <para>
+    /// A ordem canônica é conferida em vez de reordenada, pela mesma razão: o envelope é comparado
+    /// byte a byte, e reordenar em silêncio esconderia um artefato que não foi emitido por este
+    /// encoder.
+    /// </para>
+    /// </remarks>
+    private static CalendarioDiasUteisCongelado? LerCalendarioDiasUteis(
+        LeitorEnvelope leitor,
+        JsonObject payload,
+        IReadOnlyList<FaseCronograma> cronogramaFases)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "calendarioDiasUteis", "$");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        bool presente = leitor.Booleano(bloco, "presente", "calendarioDiasUteis");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        if (!presente)
+        {
+            leitor.ExigirChaves(bloco, "calendarioDiasUteis", "presente");
+
+            // Invariante entre blocos: nenhuma transição que gera versão publica processo com
+            // fase que aceita recurso e sem calendário vigente. Um envelope nessa combinação não
+            // foi produzido por publicação legítima, e aceitá-lo restauraria configuração que o
+            // gate recusa — o round-trip byte a byte não acusaria, porque o encoder reemitiria a
+            // mesma ausência.
+            if (cronogramaFases.Any(static fase => fase.RegraRecurso is not null))
+            {
+                return leitor.Propagar<CalendarioDiasUteisCongelado?>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    "'calendarioDiasUteis' declara ausência num processo com fase que aceita recurso — "
+                        + "combinação que nenhuma publicação produz."));
+            }
+
+            return null;
+        }
+
+        leitor.ExigirChaves(bloco, "calendarioDiasUteis", "presente", "origemId", "versaoDataset", "diasNaoUteis");
+
+        Guid origemId = leitor.Identificador(bloco, "origemId", "calendarioDiasUteis");
+        string versaoDataset = leitor.TextoNaoVazio(bloco, "versaoDataset", "calendarioDiasUteis");
+        JsonArray dias = leitor.Array(bloco, "diasNaoUteis", "calendarioDiasUteis");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        List<DiaNaoUtilCongelado> congelados = [];
+        for (int i = 0; i < dias.Count; i++)
+        {
+            string path = $"calendarioDiasUteis.diasNaoUteis[{i}]";
+            JsonObject item = leitor.ItemObjeto(dias, i, path);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            leitor.ExigirChaves(item, path, "data", "abrangencia", "municipioIbge", "municipioNome", "uf");
+
+            DateOnly data = leitor.Data(item, "data", path);
+            string abrangencia = leitor.TextoNaoVazio(item, "abrangencia", path);
+            string? municipioIbge = leitor.TextoOpcional(item, "municipioIbge", path);
+            string? municipioNome = leitor.TextoOpcional(item, "municipioNome", path);
+            string? uf = leitor.TextoOpcional(item, "uf", path);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            Result<DiaNaoUtilCongelado> dia = DiaNaoUtilCongelado.Criar(
+                data, abrangencia, municipioIbge, municipioNome, uf);
+            if (dia.IsFailure)
+            {
+                return leitor.Propagar<CalendarioDiasUteisCongelado?>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{path}' congelado não é um dia não útil válido: {dia.Error!.Message}"));
+            }
+
+            // A factory normaliza — apara espaço e sobe a UF para maiúscula —, porque é o caminho
+            // de ESCRITA. Aqui isso seria aceitar em silêncio um artefato que este encoder nunca
+            // emitiria: o objeto reidratado passaria a divergir dos bytes que o originaram, e a
+            // saída de Reidratar deixaria de representar fielmente o envelope. Comparar o lido
+            // com o normalizado é o que mantém o decoder fail-closed sem abrir mão da fonte única
+            // de validação.
+            if (!MesmoTextoOriginal(dia.Value!, abrangencia, municipioIbge, municipioNome, uf))
+            {
+                return leitor.Propagar<CalendarioDiasUteisCongelado?>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{path}' congelado não está na forma canônica — espaço em volta do valor ou UF fora de caixa alta."));
+            }
+
+            congelados.Add(dia.Value!);
+        }
+
+        // A ordem do artefato tem de ser a canônica. Criar() reordena; comparar antes é o que
+        // distingue "envelope emitido por este encoder" de "envelope montado à mão".
+        List<DiaNaoUtilCongelado> canonica = [.. CalendarioDiasUteisCongelado.Ordenar(congelados)];
+        if (!canonica.SequenceEqual(congelados))
+        {
+            return leitor.Propagar<CalendarioDiasUteisCongelado?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "'calendarioDiasUteis.diasNaoUteis' não está na ordem canônica (data, abrangência, município, UF)."));
+        }
+
+        Result<CalendarioDiasUteisCongelado> calendario =
+            CalendarioDiasUteisCongelado.Criar(origemId, versaoDataset, congelados);
+
+        if (calendario.IsFailure)
+        {
+            return leitor.Propagar<CalendarioDiasUteisCongelado?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'calendarioDiasUteis' congelado é inválido: {calendario.Error!.Message}"));
+        }
+
+        // Mesma razão da conferência por dia: a factory apara espaço da versão, e aceitar o
+        // texto normalizado devolveria um objeto que não representa os bytes decodificados.
+        if (!string.Equals(calendario.Value!.VersaoDataset, versaoDataset, StringComparison.Ordinal)
+            || !string.Equals(HashCanonicalComputer.NormalizeNfc(versaoDataset), versaoDataset, StringComparison.Ordinal))
+        {
+            return leitor.Propagar<CalendarioDiasUteisCongelado?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "'calendarioDiasUteis.versaoDataset' não está na forma canônica — espaço em volta do valor "
+                    + "ou texto fora da normalização Unicode que o encoder aplica."));
+        }
+
+        return calendario.Value;
+    }
+
+    /// <summary>
+    /// Se o dia reconstruído reproduz, caractere a caractere, os textos que estavam no envelope.
+    /// Divergir significa que a factory normalizou algo — e o artefato não era o que este encoder
+    /// emite.
+    /// </summary>
+    private static bool MesmoTextoOriginal(
+        DiaNaoUtilCongelado dia,
+        string abrangencia,
+        string? municipioIbge,
+        string? municipioNome,
+        string? uf) =>
+        string.Equals(dia.Abrangencia, abrangencia, StringComparison.Ordinal)
+        && string.Equals(dia.MunicipioIbge, municipioIbge, StringComparison.Ordinal)
+        && string.Equals(dia.MunicipioNome, municipioNome, StringComparison.Ordinal)
+        && string.Equals(dia.Uf, uf, StringComparison.Ordinal)
+        // O encoder normaliza o nome do município para NFC. Sem exigir o mesmo aqui, um texto
+        // decomposto passaria na comparação — a factory só apara espaço — e a recanonicalização
+        // mudaria os bytes, revelando a divergência tarde demais, já na restauração.
+        && (municipioNome is null
+            || string.Equals(HashCanonicalComputer.NormalizeNfc(municipioNome), municipioNome, StringComparison.Ordinal));
+
     private static ReferenciaRegra? LerAlgoritmoContagemPrazo(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "algoritmoContagemPrazo", "$");
