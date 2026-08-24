@@ -598,12 +598,12 @@ public sealed class EnvelopeCodecRoundTripTests
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        "envelope-0.0.12-rico.json"));
+        "envelope-rico.json"));
 
     private static string CaminhoNoFonte([CallerFilePath] string origem = "") => Path.Join(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        "envelope-0.0.12-rico.json");
+        "envelope-rico.json");
 
     // ── Round-trip 1.3 com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
 

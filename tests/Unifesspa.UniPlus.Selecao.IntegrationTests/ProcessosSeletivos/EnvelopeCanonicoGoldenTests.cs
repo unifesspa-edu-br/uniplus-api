@@ -412,17 +412,30 @@ public sealed class EnvelopeCanonicoGoldenTests
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia()));
 
-    // ── CA-03 — política: toda schema_version declarada tem a sua fixture ──
+    // ── CA-03 — política: a versão declarada e a forma congelada andam juntas ──
 
-    [Fact(DisplayName = "SchemaVersion_TemFixtureCorrespondente — bumpar a versão sem criar a fixture quebra o build")]
-    public void SchemaVersion_TemFixtureCorrespondente()
+    /// <summary>
+    /// O conteúdo da fixture é o payload canônico puro, e a <c>schema_version</c> não aparece
+    /// dentro dele — injetá-la ali faria a fixture deixar de ser byte-idêntica ao envelope real.
+    /// Enquanto o nome do arquivo carregava a versão, era ele que prendia uma à outra: bumpar
+    /// sem criar a fixture nova quebrava o build. Com nome fixo, quem prende é este arquivo:
+    /// a versão corrente declarada ao lado das fixtures, comparada à do canonicalizador.
+    /// Bumpar sem atualizá-lo quebra aqui, e mudar a forma sem regenerar quebra na comparação
+    /// byte a byte — os dois modos de falha continuam cobertos.
+    /// </summary>
+    [Fact(DisplayName = "SchemaVersionDeclarada_BateComACanonicalizacao — bumpar a versão sem declarar a nova ao lado das fixtures quebra o build")]
+    public void SchemaVersionDeclarada_BateComACanonicalizacao()
     {
         string versao = CanonicalizarReferencia().SchemaVersion;
-        string caminho = CaminhoDaFixture(versao);
+        string caminho = CaminhoDaVersaoDeclarada();
 
         File.Exists(caminho).Should().BeTrue(
-            $"a schema_version corrente é '{versao}' e toda versão declarada precisa da sua golden fixture " +
-            $"(esperada em '{caminho}'). Bumpar sem congelar a forma nova deixaria o envelope sem gate.");
+            $"a versão congelada nas golden fixtures é declarada em '{caminho}'");
+
+        File.ReadAllText(caminho).Trim().Should().Be(versao,
+            $"a schema_version corrente é '{versao}' e as fixtures ao lado congelam a forma dela. " +
+            "Bumpar a versão sem regenerar as fixtures e atualizar esta declaração deixaria o " +
+            "envelope declarando uma forma e congelando outra.");
     }
 
     // ── CA-04 — a fixture compara byte a byte ──
@@ -439,12 +452,12 @@ public sealed class EnvelopeCanonicoGoldenTests
         // visível na revisão, que é todo o ponto.
         if (Environment.GetEnvironmentVariable("UPDATE_ENVELOPE_FIXTURE") == "1")
         {
-            string destino = CaminhoDaFixtureNoFonte(canonico.SchemaVersion);
+            string destino = CaminhoDaFixtureNoFonte();
             Directory.CreateDirectory(Path.GetDirectoryName(destino)!);
             File.WriteAllText(destino, atual + Environment.NewLine);
         }
 
-        atual.Should().Be(LerFixture(canonico.SchemaVersion),
+        atual.Should().Be(LerFixture(),
             "o envelope mudou de forma sem que a golden fixture fosse atualizada. Se a mudança é intencional, " +
             "bumpe a schema_version e congele a forma nova numa fixture própria.");
     }
@@ -480,7 +493,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         JsonObject adulterado = EnvelopeComoObjeto();
         adulterado["blocoIntruso"] = "x";
 
-        BytesNormalizados(adulterado).Should().NotBe(LerFixture(CanonicalizarReferencia().SchemaVersion),
+        BytesNormalizados(adulterado).Should().NotBe(LerFixture(),
             "uma chave nova no envelope TEM de fazer a fixture falhar — se não faz, a fixture não é um gate");
     }
 
@@ -490,7 +503,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         JsonObject adulterado = EnvelopeComoObjeto();
         adulterado["documentosExigidos"] = new JsonObject { ["exigencias"] = new JsonArray() };
 
-        BytesNormalizados(adulterado).Should().NotBe(LerFixture(CanonicalizarReferencia().SchemaVersion),
+        BytesNormalizados(adulterado).Should().NotBe(LerFixture(),
             "um stub que vira conteúdo real é mudança de FORMA — a fixture tem de acusar");
     }
 
@@ -507,7 +520,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             "pré-condição do canário: a chave tem de existir como null explícito para que removê-la seja um teste");
         adulterado["classificacao"]!.AsObject().Remove("casasArredondamento");
 
-        BytesNormalizados(adulterado).Should().NotBe(LerFixture(CanonicalizarReferencia().SchemaVersion),
+        BytesNormalizados(adulterado).Should().NotBe(LerFixture(),
             "o envelope preserva `null` explícito (ADR-0109 D4). Omitir a chave muda os bytes — e o hash. " +
             "É por isso que a emenda ao item 4 da ADR-0100 é restrita ao caminho de hash de ENTIDADE.");
     }
@@ -814,46 +827,53 @@ public sealed class EnvelopeCanonicoGoldenTests
     private static string BytesNormalizados(JsonObject envelope) =>
         NormalizarIds(HashCanonicalComputer.ComputeSnapshotBytes(envelope));
 
-    private static string LerFixture(string schemaVersion) =>
-        File.ReadAllText(CaminhoDaFixture(schemaVersion)).Trim();
+    private static string LerFixture() => File.ReadAllText(CaminhoDaFixture()).Trim();
 
     /// <summary>
-    /// Nome do arquivo da fixture. A versão é tratada como <b>nome</b>, nunca como
-    /// caminho: um separador ou uma raiz em <paramref name="schemaVersion"/> faria o
-    /// <see cref="Path.Combine(string[])"/> descartar os segmentos anteriores em
-    /// silêncio e o teste passar a ler outro arquivo.
+    /// Nome do arquivo da fixture — fixo, sem a schema_version. Enquanto cada versão tinha
+    /// decoder próprio e congelado, o nome versionado guardava uma fixture por versão; com um
+    /// codec único reescrito no lugar, só a forma corrente é lida, e o número no nome obrigava
+    /// a renomear três arquivos a cada bump sem nada em troca. O par versão-forma continua
+    /// verificado, agora por <see cref="SchemaVersionDeclarada_BateComACanonicalizacao"/>.
     /// </summary>
-    private static string NomeDaFixture(string schemaVersion) =>
-        $"envelope-{Path.GetFileName(schemaVersion)}.json";
+    private const string NomeDaFixture = "envelope.json";
 
-    private static string CaminhoDaFixture(string schemaVersion) => Path.Combine(
+    private static string CaminhoDaFixture() => Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        NomeDaFixture(schemaVersion));
+        NomeDaFixture);
 
     /// <summary>Caminho da fixture na ÁRVORE-FONTE — só usado na regeneração explícita.</summary>
-    private static string CaminhoDaFixtureNoFonte(string schemaVersion, [CallerFilePath] string origem = "") => Path.Combine(
+    private static string CaminhoDaFixtureNoFonte([CallerFilePath] string origem = "") => Path.Combine(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        NomeDaFixture(schemaVersion));
+        NomeDaFixture);
 
     // ── Fixture da variante COM cascata (Story #575) — nome próprio, fora da chave por
     // schema_version: é uma segunda fixture da MESMA versão de schema, não uma versão nova. ──
 
-    private static string NomeDaFixtureCascata(string schemaVersion) =>
-        $"envelope-{Path.GetFileName(schemaVersion)}-cascata.json";
+    private const string NomeDaFixtureCascata = "envelope-cascata.json";
 
     private static string CaminhoDaFixtureCascata() => Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        NomeDaFixtureCascata(CanonicalizarReferencia().SchemaVersion));
+        NomeDaFixtureCascata);
 
     private static string CaminhoDaFixtureCascataNoFonte([CallerFilePath] string origem = "") => Path.Combine(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        NomeDaFixtureCascata(CanonicalizarReferencia().SchemaVersion));
+        NomeDaFixtureCascata);
 
     private static string LerFixtureCascata() => File.ReadAllText(CaminhoDaFixtureCascata()).Trim();
+
+    /// <summary>Versão de schema que as golden fixtures congelam, declarada ao lado delas.</summary>
+    private const string NomeDaVersaoDeclarada = "schema-version.txt";
+
+    private static string CaminhoDaVersaoDeclarada() => Path.Combine(
+        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
+        "ProcessosSeletivos",
+        "Fixtures",
+        NomeDaVersaoDeclarada);
 }
