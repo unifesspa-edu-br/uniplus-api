@@ -182,9 +182,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente a distribuição de vagas do processo (Story
-    /// #773): uma configuração por oferta de curso. O
-    /// <c>QuadroDeVagas</c> (quantidade calculada por modalidade) não é
-    /// definido aqui — é output derivado de um motor futuro.
+    /// #773): uma configuração por oferta de curso. O <c>QuadroDeVagas</c>
+    /// (quantidade calculada por modalidade — Lei 12.711 no ramo federal,
+    /// fixa no institucional) é materializado na mesma operação pelo motor
+    /// de cálculo da issue #848, mas esta rota persiste e responde
+    /// <c>204</c> sem devolvê-lo — ver <see cref="SimularDistribuicaoVagas"/>
+    /// para calcular sem persistir.
     /// </summary>
     [HttpPut("{id:guid}/distribuicao-vagas")]
     [RequiresIdempotencyKey]
@@ -207,6 +210,57 @@ public sealed class ProcessoSeletivoController : ControllerBase
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirDistribuicaoVagasCommand(id, distribuicaoVagas, precondicao), cancellationToken);
         return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
+    /// Calcula, sem persistir, o quadro de vagas por modalidade que o
+    /// <see cref="DefinirDistribuicaoVagas"/> produziria para o mesmo
+    /// payload (issue #1282) — preview para o admin conferir/ajustar
+    /// VoBase, PR ou modalidades antes de confirmar a gravação real.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Despachado via <see cref="_queryBus"/>, não <see cref="_commandBus"/>:
+    /// é uma leitura (CQRS), nunca uma mutação. POST é só o veículo — o
+    /// payload (Guids em lista, quadro declarado) é grande demais para
+    /// querystring de um GET idiomático. Por isso não leva
+    /// <c>[RequiresIdempotencyKey]</c> (reservado a mutação com efeito
+    /// cumulativo, ADR-0027) nem <c>[EmiteETag]</c> (não há concorrência
+    /// otimista sobre nada persistido).
+    /// </para>
+    /// <para>
+    /// <b>Ids do corpo da resposta são efêmeros</b> — gerados em memória para
+    /// a simulação, nunca gravados; não referenciam nenhum recurso real e
+    /// mudam a cada chamada, mesmo com o mesmo payload.
+    /// </para>
+    /// <para>
+    /// <b>Cada oferta é validada isoladamente</b> — as mesmas invariantes que
+    /// <c>ConfiguracaoDistribuicaoVagas.Criar</c> aplica por item. Invariantes
+    /// de nível de agregado, que só <see cref="DefinirDistribuicaoVagas"/>
+    /// verifica com a lista inteira do processo (ex.: oferta duplicada entre
+    /// itens do payload, <c>AcaoQuandoIndeferido</c> inconsistente entre
+    /// ofertas do mesmo processo), não são checadas aqui — só apareceriam no
+    /// PUT real. Decisão de escopo da issue #1282, não lacuna.
+    /// </para>
+    /// </remarks>
+    [HttpPost("{id:guid}/distribuicao-vagas/simulacao")]
+    [VendorMediaType(Resource = "simulacao-distribuicao-vagas", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> SimularDistribuicaoVagas(
+        Guid id,
+        [FromBody] IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> distribuicaoVagas,
+        CancellationToken cancellationToken)
+    {
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await _queryBus
+            .Send(new SimularDistribuicaoVagasQuery(id, distribuicaoVagas), cancellationToken)
+            .ConfigureAwait(false);
+
+        return resultado.IsSuccess
+            ? Ok(resultado.Value)
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
