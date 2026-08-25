@@ -47,7 +47,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
 
     private static OfertaCursoView NovaOferta(Guid id) => new(
         id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
-        "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "MATUTINO",
+        "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "REGULAR", ["MATUTINO"],
         null, null, 50, null, null);
 
     private static ModalidadeView NovaModalidadeAmpla(Guid id) => new(

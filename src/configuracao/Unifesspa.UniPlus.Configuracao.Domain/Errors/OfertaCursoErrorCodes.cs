@@ -20,6 +20,13 @@ public static class OfertaCursoErrorCodes
     public const string ProgramaDeOfertaInvalido = "OfertaCurso.ProgramaDeOfertaInvalido";
     public const string FormatoPedagogicoInvalido = "OfertaCurso.FormatoPedagogicoInvalido";
     public const string TurnoInvalido = "OfertaCurso.TurnoInvalido";
+    public const string RegimeDeTurnoInvalido = "OfertaCurso.RegimeDeTurnoInvalido";
+
+    // Regime de turno e turnos (UNI-REQ-0137).
+    public const string RegimeDeTurnoObrigatorio = "OfertaCurso.RegimeDeTurnoObrigatorio";
+    public const string TurnosObrigatorios = "OfertaCurso.TurnosObrigatorios";
+    public const string TurnoRepetido = "OfertaCurso.TurnoRepetido";
+    public const string CardinalidadeTurnosIncompativelComRegime = "OfertaCurso.CardinalidadeTurnosIncompativelComRegime";
 
     // Invariantes de coerência.
     public const string BaseLegalObrigatoriaParaProgramaNaoRegular = "OfertaCurso.BaseLegalObrigatoriaParaProgramaNaoRegular";

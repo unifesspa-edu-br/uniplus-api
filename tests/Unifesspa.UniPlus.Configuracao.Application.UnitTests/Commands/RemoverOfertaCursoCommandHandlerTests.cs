@@ -24,7 +24,7 @@ public sealed class RemoverOfertaCursoCommandHandlerTests
 
         return OfertaCurso.Criar(
             Guid.CreateVersion7(), Guid.CreateVersion7(), unidade, "REGULAR", null,
-            null, null, null, null, null, null).Value!;
+            "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
     }
 
     [Fact(DisplayName = "Oferta inexistente retorna NaoEncontrada (404)")]

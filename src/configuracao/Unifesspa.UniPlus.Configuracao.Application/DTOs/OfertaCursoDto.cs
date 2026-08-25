@@ -6,9 +6,10 @@ using System.Text.Json.Serialization;
 /// DTO de resposta HTTP para <c>OfertaCurso</c>. A unidade ofertante é um
 /// sub-objeto aninhado (<see cref="UnidadeOfertanteDto"/>, snapshot-copy
 /// ADR-0061). Os enums são expostos como tokens UPPER_SNAKE do contrato
-/// (<c>programaDeOferta</c>/<c>formatoPedagogico</c> obrigatórios;
-/// <c>turno</c> nulo quando a oferta não declara turno). Suporta HATEOAS
-/// Level 1 via <c>_links</c> (ADR-0029).
+/// (<c>programaDeOferta</c>, <c>formatoPedagogico</c> e <c>regimeDeTurno</c>
+/// obrigatórios). <c>turnos</c> traz de um a dois turnos, conforme o regime, em
+/// ordem canônica (matutino, vespertino, noturno). Suporta HATEOAS Level 1 via
+/// <c>_links</c> (ADR-0029).
 /// </summary>
 public sealed record OfertaCursoDto(
     Guid Id,
@@ -17,7 +18,8 @@ public sealed record OfertaCursoDto(
     UnidadeOfertanteDto UnidadeOfertante,
     string ProgramaDeOferta,
     string FormatoPedagogico,
-    string? Turno,
+    string RegimeDeTurno,
+    IReadOnlyList<string> Turnos,
     string? EMecCodigo,
     string? CodigoSga,
     int? VagasAnuaisAutorizadas,

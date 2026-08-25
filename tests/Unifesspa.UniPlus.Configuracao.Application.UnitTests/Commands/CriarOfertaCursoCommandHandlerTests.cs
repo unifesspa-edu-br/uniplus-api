@@ -43,8 +43,8 @@ public sealed class CriarOfertaCursoCommandHandlerTests
         string programa = "REGULAR",
         string? baseLegal = null) =>
         new(cursoId, localOfertaId, unidadeOrigemId, programa,
-            FormatoPedagogico: "PRESENCIAL", Turno: "MATUTINO",
-            EMecCodigo: "123456", CodigoSga: "ENG-01",
+            RegimeDeTurno: "REGULAR", Turnos: ["MATUTINO"],
+            FormatoPedagogico: "PRESENCIAL", EMecCodigo: "123456", CodigoSga: "ENG-01",
             VagasAnuaisAutorizadas: 40, BaseLegal: baseLegal, AtoAutorizacaoMec: null);
 
     private Task<Result<Guid>> HandleAsync(CriarOfertaCursoCommand comando) =>
@@ -151,7 +151,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
     {
         var comando = new CriarOfertaCursoCommand(
             Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
-            ProgramaDeOferta: "PROUNI");
+            ProgramaDeOferta: "PROUNI", RegimeDeTurno: "REGULAR", Turnos: ["MATUTINO"]);
 
         Result<Guid> resultado = await HandleAsync(comando);
 

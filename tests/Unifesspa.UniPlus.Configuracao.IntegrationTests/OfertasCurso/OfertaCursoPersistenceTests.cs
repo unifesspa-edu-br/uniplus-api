@@ -16,12 +16,13 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Integração ponta-a-ponta da OfertaCurso contra Postgres real (story #588,
 /// issue #749): persistência com owned type <c>unidade_oft_*</c> (roundtrip do
 /// snapshot ADR-0061), FKs intra-schema reais (curso/local_oferta, RESTRICT),
-/// CHECKs de domínio via SQL cru (programa/formato/turno/vagas/base legal
+/// CHECKs de domínio via SQL cru (programa/formato/regime/turnos/vagas/base legal
 /// condicional), soft-delete e o EXISTS real de
 /// <c>CursoRepository.ReferenciadoPorOfertaCursoVivaAsync</c>.
 /// </summary>
@@ -70,7 +71,8 @@ public sealed class OfertaCursoPersistenceTests
         persistida.UnidadeOfertante.Should().Be(unidade, "o owned type reidrata o snapshot por igualdade estrutural");
         persistida.ProgramaDeOferta.Should().Be(ProgramaDeOferta.Parfor);
         persistida.FormatoPedagogico.Should().Be(FormatoPedagogico.Semipresencial);
-        persistida.Turno.Should().Be(TurnoOferta.Noturno);
+        persistida.RegimeDeTurno.Should().Be(RegimeDeTurno.Integral);
+        persistida.Turnos.Should().Equal(TurnoOferta.Vespertino, TurnoOferta.Noturno);
         persistida.EMecCodigo.Should().Be("123456");
         persistida.CodigoSga.Should().Be("ENG-01");
         persistida.VagasAnuaisAutorizadas.Should().Be(40);
@@ -88,18 +90,19 @@ public sealed class OfertaCursoPersistenceTests
         view.UnidadeOfertanteSigla.Should().Be(unidade.Sigla);
         view.ProgramaDeOferta.Should().Be("PARFOR");
         view.FormatoPedagogico.Should().Be("SEMIPRESENCIAL");
-        view.Turno.Should().Be("NOTURNO");
+        view.RegimeDeTurno.Should().Be("INTEGRAL");
+        view.Turnos.Should().Equal("VESPERTINO", "NOTURNO");
 
         (await reader.ListarVivasAsync()).Should().Contain(v => v.Id == oferta.Id);
     }
 
-    [Fact(DisplayName = "Turno e campos opcionais nulos persistem nulos e reidratam como nulos")]
+    [Fact(DisplayName = "Campos opcionais nulos persistem nulos e reidratam como nulos")]
     public async Task Insert_OpcionaisNulos_PersisteNulos()
     {
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
         OfertaCurso oferta = OfertaCurso.Criar(
             cursoId, localId, NovaUnidade(), "REGULAR", null,
-            null, null, null, null, null, null).Value!;
+            "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -111,12 +114,46 @@ public sealed class OfertaCursoPersistenceTests
         OfertaCurso persistida = await readCtx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
         persistida.FormatoPedagogico.Should().Be(FormatoPedagogico.Presencial, "default conceitual quando o token está ausente");
-        persistida.Turno.Should().BeNull();
+        persistida.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
+        persistida.Turnos.Should().Equal(TurnoOferta.Matutino);
         persistida.EMecCodigo.Should().BeNull();
         persistida.CodigoSga.Should().BeNull();
         persistida.VagasAnuaisAutorizadas.Should().BeNull();
         persistida.BaseLegal.Should().BeNull();
         persistida.AtoAutorizacaoMec.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Atualizar a coleção de turnos após reidratação é detectado e persistido")]
+    public async Task Atualizar_TrocaTurnosAposReidratacao_Persiste()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.OfertasCurso.Add(oferta);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            OfertaCurso rastreada = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
+
+            Result atualizacao = rastreada.Atualizar(
+                "PARFOR", "SEMIPRESENCIAL", "REGULAR", ["MATUTINO"],
+                "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009");
+            atualizacao.IsSuccess.Should().BeTrue(atualizacao.Error?.Message);
+
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        OfertaCurso persistida = await readCtx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
+
+        persistida.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
+        persistida.Turnos.Should().ContainSingle(
+            "a troca do backing field da coleção primitiva precisa ser detectada pelo change tracker")
+            .Which.Should().Be(TurnoOferta.Matutino);
     }
 
     [Fact(DisplayName = "FK real: oferta apontando curso inexistente é rejeitada pelo banco (23503)")]
@@ -157,25 +194,101 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
 
         Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "PROUNI", formato: "PRESENCIAL", turno: null, vagas: null, baseLegal: "Lei X");
+            cursoId, localId, programa: "PROUNI", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: "Lei X");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_oferta_curso_programa_de_oferta impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita turno fora do domínio via SQL cru, mas aceita turno nulo (null-safe)")]
-    public async Task Check_Turno_NullSafe()
+    [Theory(DisplayName = "CHECK de banco rejeita token de turno fora do domínio via SQL cru")]
+    [InlineData("DIURNO")]
+    [InlineData("INTEGRAL")]
+    [InlineData("Matutino")]
+    public async Task Check_TurnosDominio_RejeitaTokenForaDoDominio(string token)
     {
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
 
-        Func<Task> invalido = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", turno: "DIURNO", vagas: null, baseLegal: null);
-        await invalido.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_turno impede token fora do domínio");
+        Func<Task> act = () => InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: "REGULAR", turnos: [token], vagas: null, baseLegal: null);
 
-        Func<Task> nulo = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", turno: null, vagas: null, baseLegal: null);
-        await nulo.Should().NotThrowAsync("turno é opcional e o CHECK é null-safe");
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_oferta_curso_turnos_dominio impede token fora do domínio");
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita elemento nulo dentro do array de turnos")]
+    public async Task Check_TurnosDominio_RejeitaElementoNulo()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        Func<Task> act = () => InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: "INTEGRAL", turnos: ["MATUTINO", null!], vagas: null, baseLegal: null);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "containment não considera NULL contido — o elemento nulo cai no CHECK de domínio");
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita regime fora do domínio via SQL cru")]
+    public async Task Check_RegimeDeTurno_RejeitaForaDoDominio()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        Func<Task> act = () => InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: "PARCIAL", turnos: ["MATUTINO"], vagas: null, baseLegal: null);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_oferta_curso_regime_de_turno impede token fora do domínio");
+    }
+
+    [Theory(DisplayName = "CHECK de banco espelha a cardinalidade que cada regime exige")]
+    [InlineData("REGULAR", new string[0])]
+    [InlineData("REGULAR", new[] { "MATUTINO", "NOTURNO" })]
+    [InlineData("INTEGRAL", new string[0])]
+    [InlineData("INTEGRAL", new[] { "NOTURNO" })]
+    [InlineData("INTEGRAL", new[] { "MATUTINO", "VESPERTINO", "NOTURNO" })]
+    [InlineData("INTEGRAL", new[] { "MATUTINO", "MATUTINO" })]
+    public async Task Check_TurnosRegime_RejeitaCardinalidadeIncompativel(string regime, string[] turnos)
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        Func<Task> act = () => InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: regime, turnos: turnos, vagas: null, baseLegal: null);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_oferta_curso_turnos_regime espelha a invariante do agregado");
+    }
+
+    [Theory(DisplayName = "CHECK de banco aceita as combinações válidas de regime e turnos")]
+    [InlineData("REGULAR", new[] { "MATUTINO" })]
+    [InlineData("REGULAR", new[] { "NOTURNO" })]
+    [InlineData("INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
+    [InlineData("INTEGRAL", new[] { "VESPERTINO", "NOTURNO" })]
+    public async Task Check_TurnosRegime_AceitaCombinacoesValidas(string regime, string[] turnos)
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        Func<Task> act = () => InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: regime, turnos: turnos, vagas: null, baseLegal: null);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Theory(DisplayName = "CHECK de banco rejeita array de turnos malformado — multidimensional ou com limite inferior fora de 1")]
+    [InlineData("[0:1]={MATUTINO,MATUTINO}", "limite inferior 0 faz turnos[2] devolver NULL")]
+    [InlineData("[2:3]={MATUTINO,VESPERTINO}", "limite inferior 2 faz turnos[1] devolver NULL")]
+    [InlineData("{{MATUTINO,VESPERTINO}}", "array 2-D tem cardinalidade 2 mas o subscrito simples devolve NULL")]
+    public async Task Check_TurnosRegime_RejeitaArrayMalformado(string literalDoArray, string porque)
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        Func<Task> act = () => InserirCruComTurnosLiteraisAsync(
+            cursoId, localId, regime: "INTEGRAL", turnosLiteral: literalDoArray);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(porque);
     }
 
     [Fact(DisplayName = "CHECK de banco rejeita vagas negativas via SQL cru, mas aceita zero e nulo")]
@@ -184,12 +297,12 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
 
         Func<Task> negativa = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", turno: null, vagas: -1, baseLegal: null);
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: -1, baseLegal: null);
         await negativa.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_oferta_curso_vagas_anuais_autorizadas impede teto negativo");
 
         Func<Task> zero = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", turno: null, vagas: 0, baseLegal: null);
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: 0, baseLegal: null);
         await zero.Should().NotThrowAsync("zero é teto válido no e-MEC");
     }
 
@@ -199,12 +312,14 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
 
         Func<Task> parforSemBase = () => InserirCruAsync(
-            cursoId, localId, programa: "PARFOR", formato: "PRESENCIAL", turno: null, vagas: null, baseLegal: null);
+            cursoId, localId, programa: "PARFOR", formato: "PRESENCIAL",
+            regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null);
         await parforSemBase.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_oferta_curso_base_legal_programa espelha o guard de domínio (ADR-0066)");
 
         Func<Task> regularSemBase = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", turno: null, vagas: null, baseLegal: null);
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null);
         await regularSemBase.Should().NotThrowAsync("REGULAR não exige base legal");
     }
 
@@ -370,7 +485,8 @@ public sealed class OfertaCursoPersistenceTests
 
     private static OfertaCurso NovaOferta(Guid cursoId, Guid localId, UnidadeOfertante unidade) =>
         OfertaCurso.Criar(
-            cursoId, localId, unidade, "PARFOR", "SEMIPRESENCIAL", "NOTURNO",
+            cursoId, localId, unidade, "PARFOR", "SEMIPRESENCIAL",
+            "INTEGRAL", ["NOTURNO", "VESPERTINO"],
             "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009").Value!;
 
     private async Task InserirCruAsync(
@@ -378,7 +494,8 @@ public sealed class OfertaCursoPersistenceTests
         Guid localId,
         string programa,
         string formato,
-        string? turno,
+        string regime,
+        string?[] turnos,
         int? vagas,
         string? baseLegal)
     {
@@ -388,13 +505,39 @@ public sealed class OfertaCursoPersistenceTests
             INSERT INTO configuracao.oferta_curso
                 (id, curso_id, local_oferta_id,
                  unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
-                 programa_de_oferta, formato_pedagogico, turno, vagas_anuais_autorizadas, base_legal,
-                 created_at, is_deleted)
+                 programa_de_oferta, formato_pedagogico, regime_de_turno, turnos,
+                 vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
             VALUES
                 ({Guid.CreateVersion7()}, {cursoId}, {localId},
                  {Guid.CreateVersion7()}, {"FACET"}, {"Faculdade de Computação"}, {"Faculdade"},
-                 {programa}, {formato}, {turno}, {vagas}, {baseLegal},
-                 {DateTimeOffset.UtcNow}, {false})
+                 {programa}, {formato}, {regime}, {turnos}::varchar(30)[],
+                 {vagas}, {baseLegal}, {DateTimeOffset.UtcNow}, {false})
+            """);
+    }
+
+    // Um array passado como string[] sempre chega unidimensional e com limite
+    // inferior 1. As formas malformadas que o CHECK precisa recusar só existem na
+    // representação textual do array — daí o parâmetro de texto com cast explícito,
+    // que o Postgres interpreta pela função de entrada do tipo.
+    private async Task InserirCruComTurnosLiteraisAsync(
+        Guid cursoId,
+        Guid localId,
+        string regime,
+        string turnosLiteral)
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await ctx.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO configuracao.oferta_curso
+                (id, curso_id, local_oferta_id,
+                 unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
+                 programa_de_oferta, formato_pedagogico, regime_de_turno, turnos,
+                 vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
+            VALUES
+                ({Guid.CreateVersion7()}, {cursoId}, {localId},
+                 {Guid.CreateVersion7()}, {"FACET"}, {"Faculdade de Computação"}, {"Faculdade"},
+                 {"REGULAR"}, {"PRESENCIAL"}, {regime}, {turnosLiteral}::varchar(30)[],
+                 NULL, NULL, {DateTimeOffset.UtcNow}, {false})
             """);
     }
 

@@ -1244,6 +1244,36 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.oferta_curso.turno_invalido",
                 "Turno fora do domínio fechado")),
 
+        new(OfertaCursoErrorCodes.RegimeDeTurnoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.regime_de_turno_obrigatorio",
+                "Regime de turno é obrigatório")),
+
+        new(OfertaCursoErrorCodes.RegimeDeTurnoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.regime_de_turno_invalido",
+                "Regime de turno fora do domínio fechado")),
+
+        new(OfertaCursoErrorCodes.TurnosObrigatorios,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.turnos_obrigatorios",
+                "A oferta deve declarar seus turnos")),
+
+        new(OfertaCursoErrorCodes.TurnoRepetido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.turno_repetido",
+                "Os turnos da oferta devem ser distintos entre si")),
+
+        new(OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.cardinalidade_turnos_incompativel_com_regime",
+                "Quantidade de turnos incompatível com o regime declarado")),
+
         new(OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

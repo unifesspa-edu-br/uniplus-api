@@ -42,10 +42,24 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .HasMaxLength(EnumTokenMaxLength)
             .IsRequired();
 
-        // Enum nullable: o converter cobre o valor não-nulo; o EF encapsula null.
-        builder.Property(o => o.Turno)
-            .HasConversion(new TurnoOfertaValueConverter())
-            .HasMaxLength(EnumTokenMaxLength);
+        builder.Property(o => o.RegimeDeTurno)
+            .HasConversion<RegimeDeTurnoValueConverter>()
+            .HasMaxLength(EnumTokenMaxLength)
+            .IsRequired();
+
+        // Coleção primitiva de 1..2 tokens de domínio fechado, mapeada a um array
+        // nativo do Postgres (varchar(30)[]). Array em vez de tabela filha porque
+        // só ele permite ao banco recusar, numa única expressão sem subquery, as
+        // três formas de violação da cardinalidade: lista vazia, turno repetido e
+        // quantidade incompatível com o regime declarado (ver ConfigurarChecks).
+        // Uma tabela filha com PK composta recusaria apenas a repetição.
+        builder.PrimitiveCollection(o => o.Turnos)
+            .HasColumnName("turnos")
+            .ElementType(elemento => elemento
+                .HasConversion<TurnoOfertaValueConverter>()
+                .HasMaxLength(EnumTokenMaxLength))
+            .UsePropertyAccessMode(PropertyAccessMode.Field)
+            .IsRequired();
 
         // Nome explícito: a convenção snake_case quebraria "EMecCodigo" de forma
         // não óbvia — fixa e_mec_codigo como contrato de schema.
@@ -118,8 +132,30 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             $"formato_pedagogico IN ({TokensSql(FormatosPedagogicos.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_oferta_curso_turno",
-            $"turno IS NULL OR turno IN ({TokensSql(TurnosOferta.TokensCanonicos)})");
+            "ck_oferta_curso_regime_de_turno",
+            $"regime_de_turno IN ({TokensSql(RegimesDeTurno.TokensCanonicos)})");
+
+        // Domínio fechado de cada elemento do array (o `<@` compara conjuntos).
+        table.HasCheckConstraint(
+            "ck_oferta_curso_turnos_dominio",
+            $"turnos::text[] <@ ARRAY[{TokensSql(TurnosOferta.TokensCanonicos)}]::text[]");
+
+        // Cardinalidade e distinção conforme o regime declarado (UNI-REQ-0137):
+        // REGULAR ocupa exatamente um turno; INTEGRAL, exatamente dois distintos.
+        // Espelha no banco a invariante de Criar/Atualizar.
+        //
+        // A comparação por subscrito (turnos[1] <> turnos[2]) só é confiável sobre
+        // um array unidimensional de limite inferior 1: o Postgres aceita arrays
+        // multidimensionais e com limite inferior arbitrário, e um subscrito fora
+        // da faixa devolve NULL — que num CHECK conta como satisfeito. Daí as duas
+        // guardas de forma antes da regra. O `coalesce` cobre o array vazio, cujos
+        // array_ndims/array_lower são NULL.
+        table.HasCheckConstraint(
+            "ck_oferta_curso_turnos_regime",
+            "coalesce(array_ndims(turnos), 0) = 1 "
+            + "AND coalesce(array_lower(turnos, 1), 1) = 1 "
+            + "AND ((regime_de_turno = 'REGULAR' AND cardinality(turnos) = 1) "
+            + "OR (regime_de_turno = 'INTEGRAL' AND cardinality(turnos) = 2 AND turnos[1] <> turnos[2]))");
 
         // Teto e-MEC: nulo aceito; zero aceito; negativo nunca.
         table.HasCheckConstraint(

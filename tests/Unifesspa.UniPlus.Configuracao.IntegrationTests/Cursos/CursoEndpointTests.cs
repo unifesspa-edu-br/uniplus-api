@@ -168,7 +168,7 @@ public sealed class CursoEndpointTests
         // A separação central da #748: o curso é matriz curricular pura; código
         // e-MEC, local de oferta e unidade pertencem à OfertaCurso (#749).
         string[] propriedadesDeOfertaProibidas =
-            ["codigoEmec", "localOfertaId", "unidadeId", "campusId", "turno", "vagas"];
+            ["codigoEmec", "localOfertaId", "unidadeId", "campusId", "regimeDeTurno", "turnos", "vagas"];
         foreach (string proibida in propriedadesDeOfertaProibidas)
         {
             doc.RootElement.TryGetProperty(proibida, out _)

@@ -18,7 +18,8 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="UnidadeOfertanteTipo">Tipo da unidade ofertante congelado.</param>
 /// <param name="ProgramaDeOferta">Programa de oferta (token; ex.: "REGULAR").</param>
 /// <param name="FormatoPedagogico">Formato pedagógico (token; ex.: "PRESENCIAL").</param>
-/// <param name="Turno">Turno (token) ou null.</param>
+/// <param name="RegimeDeTurno">Regime de turno (token; REGULAR ou INTEGRAL).</param>
+/// <param name="Turnos">Turnos ocupados (tokens), em ordem canônica: um sob REGULAR, dois sob INTEGRAL.</param>
 /// <param name="EMecCodigo">Código e-MEC por campus-sede, ou null.</param>
 /// <param name="CodigoSga">Código no sistema de gestão acadêmica, ou null.</param>
 /// <param name="VagasAnuaisAutorizadas">Teto de vagas autorizadas no e-MEC (não são vagas de certame), ou null.</param>
@@ -34,7 +35,8 @@ public sealed record OfertaCursoView(
     string UnidadeOfertanteTipo,
     string ProgramaDeOferta,
     string FormatoPedagogico,
-    string? Turno,
+    string RegimeDeTurno,
+    IReadOnlyList<string> Turnos,
     string? EMecCodigo,
     string? CodigoSga,
     int? VagasAnuaisAutorizadas,

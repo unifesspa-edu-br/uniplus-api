@@ -150,7 +150,7 @@ public sealed class LocalOfertaPersistenceTests
             Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").Value!;
         OfertaCurso oferta = OfertaCurso.Criar(
             curso.Id, local.Id, unidade, "REGULAR", "PRESENCIAL",
-            null, null, null, null, null, null).Value!;
+            "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.OfertasCurso.Add(oferta);
