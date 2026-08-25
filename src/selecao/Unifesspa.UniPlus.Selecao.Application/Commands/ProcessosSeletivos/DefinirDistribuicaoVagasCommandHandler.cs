@@ -5,7 +5,11 @@ using Abstractions;
 using Domain.Entities;
 using Domain.Interfaces;
 
+using DTOs;
+
 using Kernel.Results;
+
+using Queries.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
@@ -22,7 +26,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </summary>
 public static class DefinirDistribuicaoVagasCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result<MutacaoComDistribuicaoVagasDto>> Handle(
         DefinirDistribuicaoVagasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -45,7 +49,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result<MutacaoComDistribuicaoVagasDto>.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
@@ -65,7 +69,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
         // não a garantia.
         if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result<MutacaoComDistribuicaoVagasDto>.Failure(bloqueio);
         }
 
         // Acumula (ADR-0125) a forma de VoBase/PR de TODAS as distribuições do payload —
@@ -83,7 +87,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
 
         if (formaErros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+            return Result<MutacaoComDistribuicaoVagasDto>.ValidationFailure(formaErros);
         }
 
         List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
@@ -101,7 +105,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
             {
                 IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors
                     .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" })];
-                return Result<MutacaoAceita>.ValidationFailure(errosComIndice);
+                return Result<MutacaoComDistribuicaoVagasDto>.ValidationFailure(errosComIndice);
             }
 
             distribuicoes.Add(resultado.Value!);
@@ -110,7 +114,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
         Result result = processo.DefinirDistribuicaoVagas(distribuicoes, command.Precondicao);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(result.Error!);
+            return Result<MutacaoComDistribuicaoVagasDto>.Failure(result.Error!);
         }
 
         // Agregado tracked (ObterParaMutacaoAsync): a nova coleção e suas
@@ -119,6 +123,14 @@ public static class DefinirDistribuicaoVagasCommandHandler
         // emitindo UPDATE de linhas nunca inseridas.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        // Reprojeta do agregado (não da lista local `distribuicoes`): DefinirDistribuicaoVagas
+        // substitui a coleção inteira, então processo.DistribuicaoVagas já reflete exatamente
+        // o que foi persistido — mesma projeção do GET (ObterProcessoSeletivoQueryHandler),
+        // para o corpo da resposta nunca divergir do que um GET mostraria em seguida.
+        IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> distribuicaoPersistida =
+            [.. processo.DistribuicaoVagas.Select(ObterProcessoSeletivoQueryHandler.ProjectDistribuicaoVagas)];
+
+        return Result<MutacaoComDistribuicaoVagasDto>.Success(
+            new MutacaoComDistribuicaoVagasDto(processo.ETagDaSessaoEditorial, distribuicaoPersistida));
     }
 }

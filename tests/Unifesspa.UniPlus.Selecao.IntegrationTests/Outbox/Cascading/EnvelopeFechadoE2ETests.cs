@@ -134,9 +134,14 @@ public sealed class EnvelopeFechadoE2ETests
         // Passo 4 — distribuição de vagas: uma oferta Lei 12.711, as 8 modalidades federais + AC
         // ══════════════════════════════════════════════════════════════════════════════
 
-        await ExecutarPassoAsync(
+        // issue #1283: o PUT devolve 200 com o quadro calculado/persistido, não mais 204.
+        HttpResponseMessage distribuicaoVagasResp = await ExecutarPassoAsync(
             () => ctx.PutDistribuicaoVagasAsync(),
-            HttpStatusCode.NoContent, "PUT distribuicao-vagas", "/distribuicao-vagas");
+            HttpStatusCode.OK, "PUT distribuicao-vagas", "/distribuicao-vagas");
+        IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> distribuicaoVagasPersistida =
+            (await distribuicaoVagasResp.Content.ReadFromJsonAsync<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>())!;
+        distribuicaoVagasPersistida.Should().ContainSingle();
+        distribuicaoVagasPersistida.Single().Quadro.Should().NotBeEmpty("o quadro é calculado pela Lei 12.711 na mesma operação que persiste (issue #848/#1283)");
 
         // ══════════════════════════════════════════════════════════════════════════════
         // Passo 5 — bônus regional

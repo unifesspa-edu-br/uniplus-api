@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.ValueObjects;
 
+using DTOs;
+
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -44,4 +46,16 @@ public sealed record QuantidadeVagaInput(Guid ModalidadeId, int Quantidade);
 public sealed record DefinirDistribuicaoVagasCommand(
     Guid ProcessoSeletivoId,
     IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> DistribuicaoVagas,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoComDistribuicaoVagasDto>>;
+
+/// <summary>
+/// O que <see cref="DefinirDistribuicaoVagasCommand"/> devolve ao persistir
+/// (issue #1283): o mesmo <c>ETag</c> de <see cref="MutacaoAceita"/>, mais a
+/// distribuição recém-persistida — inclusive o quadro de vagas calculado —
+/// no mesmo shape que a simulação (issue #1282) e o <c>GET</c> do processo
+/// devolvem, para o cliente confirmar o que foi gravado sem uma segunda
+/// chamada.
+/// </summary>
+public sealed record MutacaoComDistribuicaoVagasDto(
+    string? ETag,
+    IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas);
