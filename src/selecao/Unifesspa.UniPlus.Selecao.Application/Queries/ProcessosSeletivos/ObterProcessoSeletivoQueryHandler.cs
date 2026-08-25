@@ -145,7 +145,13 @@ public static class ObterProcessoSeletivoQueryHandler
             [.. oferta.TiposDeficiencia.Select(t => new OfertaTipoDeficienciaDto(t.Id, t.TipoDeficienciaOrigemId, t.TipoDeficienciaNome))]);
     }
 
-    private static ConfiguracaoDistribuicaoVagasDto ProjectDistribuicaoVagas(ConfiguracaoDistribuicaoVagas configuracao) => new(
+    /// <summary>
+    /// <c>internal</c> (não <c>private</c>) porque <see cref="SimularDistribuicaoVagasQueryHandler"/>
+    /// (issue #1282) reaproveita esta mesma projeção — o preview de simulação e a
+    /// leitura persistida devolvem exatamente o mesmo shape, sem uma segunda
+    /// definição que poderia divergir em silêncio.
+    /// </summary>
+    internal static ConfiguracaoDistribuicaoVagasDto ProjectDistribuicaoVagas(ConfiguracaoDistribuicaoVagas configuracao) => new(
         configuracao.Id,
         configuracao.OfertaCursoOrigemId,
         configuracao.VoBase,
