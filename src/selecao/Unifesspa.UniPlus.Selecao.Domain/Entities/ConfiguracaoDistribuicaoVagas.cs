@@ -17,12 +17,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>Não modela o <c>QuadroDeVagas</c>.</strong> O quadro (quantidade
-/// de vagas por modalidade) é OUTPUT DERIVADO — resultado de aplicar a regra
-/// de distribuição sobre estes inputs — e é responsabilidade do motor de
-/// cálculo (incremento futuro), não desta configuração. Esta fatia (F2)
-/// congela apenas os inputs necessários para o motor futuro recomputar o
-/// quadro de forma idempotente.
+/// O <c>QuadroDeVagas</c> (quantidade de vagas por modalidade,
+/// <see cref="VagasOfertadas"/>) é OUTPUT DERIVADO — resultado de aplicar a
+/// regra de distribuição sobre os inputs desta configuração — materializado
+/// por <see cref="Criar"/> na mesma operação (issue #848/ADR-0115), via
+/// <see cref="Services.CalculadoraQuadroVagasLei12711"/> no ramo federal ou
+/// fixado pelo edital no ramo institucional.
 /// </para>
 /// <para>
 /// Entidade interna do agregado <see cref="ProcessoSeletivo"/>: criada,
