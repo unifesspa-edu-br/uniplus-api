@@ -68,7 +68,7 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             ProgramasDeOferta.ParaTokenCanonico(o.ProgramaDeOferta),
             FormatosPedagogicos.ParaTokenCanonico(o.FormatoPedagogico),
             RegimesDeTurno.ParaTokenCanonico(o.RegimeDeTurno),
-            [.. o.Turnos.Select(TurnosOferta.ParaTokenCanonico)],
+            [.. TurnosOferta.OrdenarCanonicamente(o.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
             o.EMecCodigo,
             o.CodigoSga,
             o.VagasAnuaisAutorizadas,

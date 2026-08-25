@@ -327,7 +327,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         // Ordem canônica (matutino, vespertino, noturno) — estável qualquer que
         // tenha sido a ordem de entrada, para leitura, snapshot e testes de
         // contrato não oscilarem.
-        turnos.Sort();
+        IReadOnlyList<TurnoOferta> turnosCanonicos = TurnosOferta.OrdenarCanonicamente(turnos);
 
         if (vagasAnuaisAutorizadas is < 0)
         {
@@ -385,7 +385,8 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         }
 
         return Result<CamposResolvidos>.Success(new CamposResolvidos(
-            programa, formato, regime, turnos, eMecNorm, codigoSgaNorm, vagasAnuaisAutorizadas, baseLegalNorm, atoNorm));
+            programa, formato, regime, turnosCanonicos, eMecNorm, codigoSgaNorm,
+            vagasAnuaisAutorizadas, baseLegalNorm, atoNorm));
     }
 
     private static string? NormalizarOpcional(string? valor) =>

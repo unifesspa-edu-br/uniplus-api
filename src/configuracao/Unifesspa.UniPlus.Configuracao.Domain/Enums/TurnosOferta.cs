@@ -56,4 +56,17 @@ public static class TurnosOferta
 
     /// <summary>Indica se <paramref name="token"/> é um dos três tokens canônicos, sem alocar resultado.</summary>
     public static bool EhValido(string? token) => TryAnalisar(token, out _);
+
+    /// <summary>
+    /// Ordena os turnos na ordem canônica do dia — matutino, vespertino, noturno —
+    /// que é a ordem dos valores do enum. Fonte única da ordenação: a escrita
+    /// normaliza antes de persistir e a leitura reordena, para que a promessa de
+    /// ordem determinística do contrato valha mesmo sobre uma linha gravada fora
+    /// do fluxo da aplicação.
+    /// </summary>
+    public static IReadOnlyList<TurnoOferta> OrdenarCanonicamente(IEnumerable<TurnoOferta> turnos)
+    {
+        ArgumentNullException.ThrowIfNull(turnos);
+        return [.. turnos.Order()];
+    }
 }

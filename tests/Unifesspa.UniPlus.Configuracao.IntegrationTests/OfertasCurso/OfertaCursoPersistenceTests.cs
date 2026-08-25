@@ -277,6 +277,25 @@ public sealed class OfertaCursoPersistenceTests
         await act.Should().NotThrowAsync();
     }
 
+    [Fact(DisplayName = "Linha gravada com os turnos fora de ordem é lida em ordem canônica")]
+    public async Task Leitura_TurnosGravadosForaDeOrdem_DevolveOrdemCanonica()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        await InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: "INTEGRAL", turnos: ["NOTURNO", "MATUTINO"], vagas: null, baseLegal: null);
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var reader = new OfertaCursoReader(readCtx);
+
+        IReadOnlyList<OfertaCursoView> vivas = await reader.ListarVivasAsync();
+        OfertaCursoView view = vivas.Single(v => v.CursoId == cursoId);
+
+        view.Turnos.Should().Equal(["MATUTINO", "NOTURNO"],
+            "a ordem canônica é promessa do contrato de leitura, não consequência da ordem gravada");
+    }
+
     [Theory(DisplayName = "CHECK de banco rejeita array de turnos malformado — multidimensional ou com limite inferior fora de 1")]
     [InlineData("[0:1]={MATUTINO,MATUTINO}", "limite inferior 0 faz turnos[2] devolver NULL")]
     [InlineData("[2:3]={MATUTINO,VESPERTINO}", "limite inferior 2 faz turnos[1] devolver NULL")]
