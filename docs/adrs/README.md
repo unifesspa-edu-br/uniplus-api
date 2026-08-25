@@ -154,12 +154,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0123](0123-tipos-etapa-configuraveis.md) | Tipos de etapa configuráveis — conformidade legal por código congelado, não por rótulo editorial | accepted | 2026-08-11 |
 | [0124](0124-comentarios-schema-postgresql-via-hascomment-ef-core.md) | Comentários do schema PostgreSQL via metadados do modelo EF Core (`HasComment`), com `COMMENT ON` manual restrito ao que o modelo não representa | accepted | 2026-08-11 |
 | [0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md) | Domínio como fonte única de validação — FluentValidation só cobre o que a entidade não cobre; `Result` ganha suporte aditivo a múltiplas violações | proposed | 2026-08-16 |
+| [0126](0126-regime-de-turno-da-oferta-de-curso.md) | Regime de turno da oferta de curso — `INTEGRAL` deixa de ser turno e passa a ser o regime que nomeia dois turnos | accepted | 2026-08-25 |
 
-> **Nota de numeração:** a sequência de `0001` a `0125` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0126+`.
+> **Nota de numeração:** a sequência de `0001` a `0126` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0127+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0125`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0126`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.

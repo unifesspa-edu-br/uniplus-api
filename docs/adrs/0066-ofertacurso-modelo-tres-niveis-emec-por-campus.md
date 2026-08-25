@@ -54,7 +54,7 @@ Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Paramet
 - `UnidadeOfertante` — snapshot-copy ([ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md)) do instituto/faculdade responsável (varia por campus — granularidade mista confirmada pelo campo `unidade` do SIGAA).
 - `Modalidade` — `Regular`, `FormaPara`, `Parfor`, `Pronera`, `Pepeti`, `ConvenioOutro`, `Outro`.
 - `FormatoPedagogico` — `Presencial` (default, não-nulo), `Semipresencial`, `Ead`.
-- `Turno` — `Matutino`, `Vespertino`, `Noturno`, `Integral`.
+- `Turno` — `Matutino`, `Vespertino`, `Noturno`, `Integral`. **Superseded pela [ADR-0126](0126-regime-de-turno-da-oferta-de-curso.md):** `Integral` deixou de ser turno, o campo virou `RegimeDeTurno` + coleção de `Turnos`, e o turno passou a ser obrigatório em todo formato pedagógico.
 - `EMecCodigo` — código e-MEC **por campus-sede** (do registro de diploma/COC), herdado pelos convênios do mesmo campus.
 - `CodigoSga` — código no Sistema de Gestão Acadêmica (do `cod_curso` do SIGAA). Nome **vendor-neutral** (ver a convenção de nome na seção "Mais informações") para não acoplar o domínio ao SIGAA.
 - `VagasAnuaisAutorizadas`.
@@ -98,4 +98,5 @@ A pesquisa sobre os programas itinerantes confirmou um padrão **híbrido nos qu
 - Os sete cursos que a busca pública não localizou foram completados pelo registro de diploma (Biologia Lic. `1442854`, Jornalismo `1276154`, Engenharia Florestal `1457294`, Arquitetura `1483808`, Zootecnia `1276151`, Medicina Veterinária `1276152`).
 - Refina a [ADR-0065](0065-localoferta-flat-um-por-endereco-emec.md): convênios de interiorização (Jacundá, Parauapebas, Canaã não-Pepeti) têm `LocalOferta.Tipo = ConvenioInteriorizacao`, com o vínculo acadêmico em `OfertaCurso.UnidadeOfertante`.
 - **Pendências a confirmar com PROEG/Procuradoria (não bloqueiam):** granularidade exata da autorização PARFOR (turma vs lote de edital); Pronera (1 projeto = 1 ou N turmas); financiador do Pepeti.
+- **Superseded parcialmente pela [ADR-0126](0126-regime-de-turno-da-oferta-de-curso.md)** no ponto de turno (`UNI-REQ-0137`). O modelo de três níveis, o snapshot-copy da unidade ofertante e o guard condicional da base legal seguem vigentes.
 - **Origem:** deliberação técnica de modelagem do Módulo Configuração de Edital conduzida pelo Tech Lead (2026-05-19), com confirmação operacional da equipe CTIC sobre os legados COC/UDOCS, validada contra quatro fontes institucionais (endereços e-MEC da IES 18440, COC, SIGAA, registro de diploma); rascunhos de trabalho não publicados.
