@@ -1,10 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Turno de funcionamento de uma <see cref="Entities.OfertaCurso"/> (story #588,
-/// ADR-0066). Atributo <b>opcional</b> da oferta (nem toda oferta declara turno —
-/// ex.: EaD); quando presente, é um dos quatro valores do domínio fechado.
-/// Persistido como token UPPER_SNAKE (<see cref="TurnosOferta"/>).
+/// Período do dia em que uma <see cref="Entities.OfertaCurso"/> funciona
+/// (UNI-REQ-0137, ADR-0126). A oferta declara de um a dois turnos, conforme o
+/// <see cref="RegimeDeTurno"/> — nenhuma oferta funciona sem turno, em qualquer
+/// formato pedagógico. Persistido como token UPPER_SNAKE
+/// (<see cref="TurnosOferta"/>).
 /// </summary>
 public enum TurnoOferta
 {
@@ -19,7 +20,4 @@ public enum TurnoOferta
 
     /// <summary>Turno noturno.</summary>
     Noturno = 3,
-
-    /// <summary>Turno integral (manhã e tarde).</summary>
-    Integral = 4,
 }

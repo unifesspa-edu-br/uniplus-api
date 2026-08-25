@@ -28,14 +28,14 @@ public sealed class AtualizarOfertaCursoCommandHandlerTests
     private static OfertaCurso OfertaExistente(UnidadeOfertante? unidade = null) =>
         OfertaCurso.Criar(
             CursoId, LocalOfertaId, unidade ?? Unidade(), "REGULAR", "PRESENCIAL",
-            "MATUTINO", "123456", "ENG-01", 40, null, null).Value!;
+            "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40, null, null).Value!;
 
     private static AtualizarOfertaCursoCommand Comando(
         Guid id,
         string programa = "REGULAR",
         string? baseLegal = null) =>
-        new(id, programa, FormatoPedagogico: "EAD", Turno: null,
-            EMecCodigo: "654321", CodigoSga: "ENG-02",
+        new(id, programa, RegimeDeTurno: "INTEGRAL", Turnos: ["NOTURNO", "VESPERTINO"],
+            FormatoPedagogico: "EAD", EMecCodigo: "654321", CodigoSga: "ENG-02",
             VagasAnuaisAutorizadas: 60, BaseLegal: baseLegal, AtoAutorizacaoMec: null);
 
     [Fact(DisplayName = "Oferta inexistente retorna NaoEncontrada (404)")]
@@ -63,7 +63,8 @@ public sealed class AtualizarOfertaCursoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         oferta.FormatoPedagogico.Should().Be(FormatoPedagogico.Ead);
-        oferta.Turno.Should().BeNull();
+        oferta.RegimeDeTurno.Should().Be(RegimeDeTurno.Integral);
+        oferta.Turnos.Should().Equal(TurnoOferta.Vespertino, TurnoOferta.Noturno);
         oferta.EMecCodigo.Should().Be("654321");
         oferta.CodigoSga.Should().Be("ENG-02");
         oferta.VagasAnuaisAutorizadas.Should().Be(60);

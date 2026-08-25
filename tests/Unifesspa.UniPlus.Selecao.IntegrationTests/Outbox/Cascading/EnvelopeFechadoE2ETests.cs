@@ -889,7 +889,8 @@ public sealed class EnvelopeFechadoE2ETests
             unidadeOfertanteResult.IsSuccess.Should().BeTrue(unidadeOfertanteResult.Error?.Message);
             Result<OfertaCurso> ofertaResult = OfertaCurso.Criar(
                 curso.Id, local.Id, unidadeOfertanteResult.Value!,
-                programaDeOferta: "REGULAR", formatoPedagogico: null, turno: null,
+                programaDeOferta: "REGULAR", formatoPedagogico: null,
+                regimeDeTurno: "REGULAR", turnos: ["MATUTINO"],
                 eMecCodigo: null, codigoSga: null, vagasAnuaisAutorizadas: null,
                 baseLegal: null, atoAutorizacaoMec: null);
             ofertaResult.IsSuccess.Should().BeTrue(ofertaResult.Error?.Message);

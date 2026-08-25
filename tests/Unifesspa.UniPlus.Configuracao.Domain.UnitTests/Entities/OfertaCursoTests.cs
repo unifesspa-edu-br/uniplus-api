@@ -20,7 +20,8 @@ public sealed class OfertaCursoTests
     private static Result<OfertaCurso> Criar(
         string? programaDeOferta = "REGULAR",
         string? formatoPedagogico = "PRESENCIAL",
-        string? turno = "MATUTINO",
+        string? regimeDeTurno = "REGULAR",
+        IReadOnlyList<string?>? turnos = null,
         string? eMecCodigo = "123456",
         string? codigoSga = "ENG-01",
         int? vagasAnuaisAutorizadas = 40,
@@ -29,7 +30,8 @@ public sealed class OfertaCursoTests
         UnidadeOfertante? unidade = null) =>
         OfertaCurso.Criar(
             CursoId, LocalOfertaId, unidade ?? Unidade(), programaDeOferta, formatoPedagogico,
-            turno, eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
+            regimeDeTurno, turnos ?? ["MATUTINO"], eMecCodigo, codigoSga,
+            vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
 
     [Fact(DisplayName = "Criar com dados válidos preenche os campos e fica ativa com Guid v7")]
     public void Criar_DadosValidos_Preenche()
@@ -44,7 +46,8 @@ public sealed class OfertaCursoTests
         oferta.UnidadeOfertante.Should().Be(unidade);
         oferta.ProgramaDeOferta.Should().Be(ProgramaDeOferta.Regular);
         oferta.FormatoPedagogico.Should().Be(FormatoPedagogico.Presencial);
-        oferta.Turno.Should().Be(TurnoOferta.Matutino);
+        oferta.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
+        oferta.Turnos.Should().Equal(TurnoOferta.Matutino);
         oferta.EMecCodigo.Should().Be("123456");
         oferta.CodigoSga.Should().Be("ENG-01");
         oferta.VagasAnuaisAutorizadas.Should().Be(40);
@@ -57,7 +60,8 @@ public sealed class OfertaCursoTests
     public void Criar_UnidadeNula_Lanca()
     {
         Action act = () => OfertaCurso.Criar(
-            CursoId, LocalOfertaId, null!, "REGULAR", null, null, null, null, null, null, null);
+            CursoId, LocalOfertaId, null!, "REGULAR", null, "REGULAR", ["MATUTINO"],
+            null, null, null, null, null);
 
         act.Should().Throw<ArgumentNullException>();
     }
@@ -132,37 +136,181 @@ public sealed class OfertaCursoTests
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.FormatoPedagogicoInvalido);
     }
 
-    // ── Turno ─────────────────────────────────────────────────────────────
+    // ── Regime de turno e turnos (UNI-REQ-0137) ───────────────────────────
 
-    [Theory(DisplayName = "Cada um dos quatro tokens canônicos de turno é aceito")]
+    [Theory(DisplayName = "Cada um dos três tokens canônicos de turno é aceito sob o regime regular")]
     [InlineData("MATUTINO", TurnoOferta.Matutino)]
     [InlineData("VESPERTINO", TurnoOferta.Vespertino)]
     [InlineData("NOTURNO", TurnoOferta.Noturno)]
-    [InlineData("INTEGRAL", TurnoOferta.Integral)]
     public void Criar_TurnoCanonico_Aceita(string token, TurnoOferta esperado)
     {
-        Criar(turno: token).Value!.Turno.Should().Be(esperado);
+        Criar(regimeDeTurno: "REGULAR", turnos: [token]).Value!.Turnos.Should().Equal(esperado);
     }
 
-    [Theory(DisplayName = "Turno ausente é aceito e normalizado para nulo — nem toda oferta declara turno")]
+    [Fact(DisplayName = "Regime integral aceita dois turnos distintos")]
+    public void Criar_IntegralComDoisTurnos_Aceita()
+    {
+        OfertaCurso oferta = Criar(regimeDeTurno: "INTEGRAL", turnos: ["MATUTINO", "VESPERTINO"]).Value!;
+
+        oferta.RegimeDeTurno.Should().Be(RegimeDeTurno.Integral);
+        oferta.Turnos.Should().Equal(TurnoOferta.Matutino, TurnoOferta.Vespertino);
+    }
+
+    [Theory(DisplayName = "Regime de turno ausente é rejeitado por erro próprio, distinto do token inválido")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Criar_SemTurno_Aceita(string? token)
+    public void Criar_SemRegimeDeTurno_Falha(string? token)
     {
-        Criar(turno: token).Value!.Turno.Should().BeNull();
+        Result<OfertaCurso> resultado = Criar(regimeDeTurno: token);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeTurnoObrigatorio);
+        resultado.Errors[0].Field.Should().Be("regimeDeTurno");
+    }
+
+    [Theory(DisplayName = "Regime de turno fora do domínio fechado é rejeitado")]
+    [InlineData("Regular")]
+    [InlineData("PARCIAL")]
+    [InlineData("MATUTINO")]
+    [InlineData("2")]
+    public void Criar_RegimeDeTurnoInvalido_Falha(string token)
+    {
+        Result<OfertaCurso> resultado = Criar(regimeDeTurno: token);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeTurnoInvalido);
+    }
+
+    [Fact(DisplayName = "Lista de turnos ausente é rejeitada")]
+    public void Criar_TurnosNulos_Falha()
+    {
+        Result<OfertaCurso> resultado = OfertaCurso.Criar(
+            CursoId, LocalOfertaId, Unidade(), "REGULAR", "PRESENCIAL",
+            "REGULAR", null, null, null, null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnosObrigatorios);
+        resultado.Errors[0].Field.Should().Be("turnos");
+    }
+
+    [Fact(DisplayName = "Lista de turnos vazia é rejeitada")]
+    public void Criar_TurnosVazios_Falha()
+    {
+        Result<OfertaCurso> resultado = Criar(turnos: []);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnosObrigatorios);
     }
 
     [Theory(DisplayName = "Turno fora do domínio fechado é rejeitado")]
     [InlineData("Matutino")]
     [InlineData("DIURNO")]
     [InlineData("3")]
-    public void Criar_TurnoInvalido_Falha(string token)
+    [InlineData("INTEGRAL")]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public void Criar_TurnoInvalido_Falha(string? token)
     {
-        Result<OfertaCurso> resultado = Criar(turno: token);
+        Result<OfertaCurso> resultado = Criar(turnos: [token]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnoInvalido);
+        resultado.Errors[0].Field.Should().Be("turnos");
+    }
+
+    [Fact(DisplayName = "Turno repetido é rejeitado — os dois turnos do integral devem ser distintos")]
+    public void Criar_TurnoRepetido_Falha()
+    {
+        Result<OfertaCurso> resultado = Criar(regimeDeTurno: "INTEGRAL", turnos: ["MATUTINO", "MATUTINO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnoRepetido);
+    }
+
+    [Fact(DisplayName = "Regime regular com dois turnos é recusado, não promovido a integral")]
+    public void Criar_RegularComDoisTurnos_RecusaSemPromover()
+    {
+        Result<OfertaCurso> resultado = Criar(regimeDeTurno: "REGULAR", turnos: ["MATUTINO", "NOTURNO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime);
+        resultado.Error!.Message.Should().Contain("REGULAR").And.Contain("1 turno");
+    }
+
+    [Fact(DisplayName = "Regime integral com um único turno é recusado")]
+    public void Criar_IntegralComUmTurno_Falha()
+    {
+        Result<OfertaCurso> resultado = Criar(regimeDeTurno: "INTEGRAL", turnos: ["NOTURNO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime);
+        resultado.Error!.Message.Should().Contain("INTEGRAL").And.Contain("2 turno");
+    }
+
+    [Fact(DisplayName = "Regime integral com três turnos é recusado")]
+    public void Criar_IntegralComTresTurnos_Falha()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            regimeDeTurno: "INTEGRAL", turnos: ["MATUTINO", "VESPERTINO", "NOTURNO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime);
+    }
+
+    [Fact(DisplayName = "Os turnos são devolvidos em ordem canônica, qualquer que seja a ordem de entrada")]
+    public void Criar_OrdemDeEntradaInvertida_NormalizaParaOrdemCanonica()
+    {
+        OfertaCurso oferta = Criar(regimeDeTurno: "INTEGRAL", turnos: ["VESPERTINO", "MATUTINO"]).Value!;
+
+        oferta.Turnos.Should().Equal(TurnoOferta.Matutino, TurnoOferta.Vespertino);
+    }
+
+    [Theory(DisplayName = "Nenhum formato pedagógico dispensa o turno — a distância inclusive")]
+    [InlineData("EAD")]
+    [InlineData("SEMIPRESENCIAL")]
+    [InlineData("PRESENCIAL")]
+    public void Criar_SemTurnoEmQualquerFormato_Falha(string formato)
+    {
+        Result<OfertaCurso> resultado = Criar(formatoPedagogico: formato, turnos: []);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnosObrigatorios);
+    }
+
+    [Fact(DisplayName = "Regime inválido não deriva erro de cardinalidade — só o token inválido é reportado")]
+    public void Criar_RegimeInvalidoComDoisTurnos_NaoDerivaCardinalidade()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            regimeDeTurno: "PARCIAL", turnos: ["MATUTINO", "VESPERTINO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(1);
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeTurnoInvalido);
+    }
+
+    [Fact(DisplayName = "Turno inválido não deriva erro de cardinalidade — só o token inválido é reportado")]
+    public void Criar_TurnoInvalidoSobIntegral_NaoDerivaCardinalidade()
+    {
+        Result<OfertaCurso> resultado = Criar(regimeDeTurno: "INTEGRAL", turnos: ["DIURNO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(1);
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnoInvalido);
+    }
+
+    [Fact(DisplayName = "Atualizar troca o regime e a coleção de turnos por inteiro")]
+    public void Atualizar_TrocaRegimeETurnos()
+    {
+        OfertaCurso oferta = Criar(regimeDeTurno: "REGULAR", turnos: ["MATUTINO"]).Value!;
+
+        Result resultado = oferta.Atualizar(
+            "REGULAR", "PRESENCIAL", "INTEGRAL", ["NOTURNO", "VESPERTINO"],
+            null, null, null, null, null);
+
+        resultado.IsSuccess.Should().BeTrue();
+        oferta.RegimeDeTurno.Should().Be(RegimeDeTurno.Integral);
+        oferta.Turnos.Should().Equal(TurnoOferta.Vespertino, TurnoOferta.Noturno);
     }
 
     // ── Vagas anuais autorizadas (teto e-MEC) ─────────────────────────────
@@ -228,7 +376,7 @@ public sealed class OfertaCursoTests
         OfertaCurso oferta = Criar(programaDeOferta: "REGULAR", baseLegal: null).Value!;
 
         Result resultado = oferta.Atualizar(
-            "PARFOR", "PRESENCIAL", "MATUTINO", "123456", "ENG-01", 40, null, null);
+            "PARFOR", "PRESENCIAL", "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40, null, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular);
@@ -242,13 +390,13 @@ public sealed class OfertaCursoTests
         OfertaCurso oferta = Criar(programaDeOferta: "REGULAR", baseLegal: null).Value!;
 
         Result resultado = oferta.Atualizar(
-            "PARFOR", "SEMIPRESENCIAL", null, "654321", "PED-02", 50,
+            "PARFOR", "SEMIPRESENCIAL", "REGULAR", ["NOTURNO"], "654321", "PED-02", 50,
             "Decreto 6.755/2009", "Portaria MEC 9/2009");
 
         resultado.IsSuccess.Should().BeTrue();
         oferta.ProgramaDeOferta.Should().Be(ProgramaDeOferta.Parfor);
         oferta.FormatoPedagogico.Should().Be(FormatoPedagogico.Semipresencial);
-        oferta.Turno.Should().BeNull();
+        oferta.Turnos.Should().Equal(TurnoOferta.Noturno);
         oferta.EMecCodigo.Should().Be("654321");
         oferta.CodigoSga.Should().Be("PED-02");
         oferta.VagasAnuaisAutorizadas.Should().Be(50);
@@ -266,7 +414,7 @@ public sealed class OfertaCursoTests
         Guid idOriginal = oferta.Id;
 
         Result resultado = oferta.Atualizar(
-            "OUTRO", "EAD", "NOTURNO", null, null, null, "Resolução CONSEPE 1/2026", null);
+            "OUTRO", "EAD", "REGULAR", ["NOTURNO"], null, null, null, "Resolução CONSEPE 1/2026", null);
 
         resultado.IsSuccess.Should().BeTrue();
         oferta.Id.Should().Be(idOriginal);
@@ -333,12 +481,12 @@ public sealed class OfertaCursoTests
     public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
     {
         Result<OfertaCurso> resultado = Criar(
-            programaDeOferta: "PROUNI", turno: "DIURNO", vagasAnuaisAutorizadas: -1);
+            programaDeOferta: "PROUNI", turnos: ["DIURNO"], vagasAnuaisAutorizadas: -1);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
         resultado.Errors[0].Field.Should().Be("programaDeOferta");
-        resultado.Errors[1].Field.Should().Be("turno");
+        resultado.Errors[1].Field.Should().Be("turnos");
         resultado.Errors[2].Field.Should().Be("vagasAnuaisAutorizadas");
     }
 
@@ -358,7 +506,7 @@ public sealed class OfertaCursoTests
     public void ValidarCamposDoPayload_CamposValidos_Aceita()
     {
         Result resultado = OfertaCurso.ValidarCamposDoPayload(
-            "REGULAR", "PRESENCIAL", "MATUTINO", "123456", "ENG-01", 40, null, null);
+            "REGULAR", "PRESENCIAL", "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40, null, null);
 
         resultado.IsSuccess.Should().BeTrue();
     }

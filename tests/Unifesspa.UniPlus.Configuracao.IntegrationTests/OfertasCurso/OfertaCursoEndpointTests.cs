@@ -131,7 +131,8 @@ public sealed class OfertaCursoEndpointTests
             unidadeOfertanteOrigemId = unidade.Id,
             programaDeOferta = "REGULAR",
             formatoPedagogico = "PRESENCIAL",
-            turno = "MATUTINO",
+            regimeDeTurno = "INTEGRAL",
+            turnos = new[] { "VESPERTINO", "MATUTINO" },
             eMecCodigo = "123456",
             codigoSga = "ENG-01",
             vagasAnuaisAutorizadas = 40,
@@ -154,7 +155,10 @@ public sealed class OfertaCursoEndpointTests
         root.GetProperty("localOfertaId").GetGuid().Should().Be(localId);
         root.GetProperty("programaDeOferta").GetString().Should().Be("REGULAR");
         root.GetProperty("formatoPedagogico").GetString().Should().Be("PRESENCIAL");
-        root.GetProperty("turno").GetString().Should().Be("MATUTINO");
+        root.GetProperty("regimeDeTurno").GetString().Should().Be("INTEGRAL");
+        root.GetProperty("turnos").EnumerateArray().Select(t => t.GetString())
+            .Should().Equal(["MATUTINO", "VESPERTINO"],
+                "a leitura devolve os turnos em ordem canônica, não na ordem enviada");
         root.GetProperty("eMecCodigo").GetString().Should().Be("123456");
         root.GetProperty("codigoSga").GetString().Should().Be("ENG-01");
         root.GetProperty("vagasAnuaisAutorizadas").GetInt32().Should().Be(40);
@@ -181,6 +185,8 @@ public sealed class OfertaCursoEndpointTests
             localOfertaId = localId,
             unidadeOfertanteOrigemId = Guid.NewGuid(),
             programaDeOferta = "REGULAR",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "MATUTINO" },
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -201,6 +207,8 @@ public sealed class OfertaCursoEndpointTests
             localOfertaId = localId,
             unidadeOfertanteOrigemId = unidade.Id,
             programaDeOferta = "REGULAR",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "MATUTINO" },
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -221,6 +229,8 @@ public sealed class OfertaCursoEndpointTests
             localOfertaId = localId,
             unidadeOfertanteOrigemId = unidade.Id,
             programaDeOferta = "PARFOR",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "MATUTINO" },
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -241,7 +251,8 @@ public sealed class OfertaCursoEndpointTests
             localOfertaId = localId,
             unidadeOfertanteOrigemId = unidade.Id,
             programaDeOferta = "REGULAR",
-            turno = "MATUTINO",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "MATUTINO" },
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -250,17 +261,25 @@ public sealed class OfertaCursoEndpointTests
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
         // PUT Regular→Parfor sem base legal: guard revalidado na transição → 422.
-        var putSemBase = new { id, programaDeOferta = "PARFOR" };
+        var putSemBase = new
+        {
+            id,
+            programaDeOferta = "PARFOR",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "MATUTINO" },
+        };
         HttpResponseMessage transicaoInvalida = await EnviarPutAdmin(client, id, putSemBase);
         transicaoInvalida.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "a transição Regular→Parfor sem base legal viola o guard condicional (ADR-0066)");
 
-        // PUT válido: Parfor com base legal, formato EAD, sem turno.
+        // PUT válido: Parfor com base legal, formato EAD — que também declara turno.
         var putValido = new
         {
             id,
             programaDeOferta = "PARFOR",
             formatoPedagogico = "EAD",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "NOTURNO" },
             eMecCodigo = "654321",
             vagasAnuaisAutorizadas = 0,
             baseLegal = "Decreto 6.755/2009",
@@ -276,7 +295,9 @@ public sealed class OfertaCursoEndpointTests
             JsonElement root = doc.RootElement;
             root.GetProperty("programaDeOferta").GetString().Should().Be("PARFOR");
             root.GetProperty("formatoPedagogico").GetString().Should().Be("EAD");
-            root.GetProperty("turno").ValueKind.Should().Be(JsonValueKind.Null, "o PUT não enviou turno");
+            root.GetProperty("regimeDeTurno").GetString().Should().Be("REGULAR");
+            root.GetProperty("turnos").EnumerateArray().Select(t => t.GetString())
+                .Should().Equal(["NOTURNO"], "a oferta a distância também declara turno");
             root.GetProperty("eMecCodigo").GetString().Should().Be("654321");
             root.GetProperty("vagasAnuaisAutorizadas").GetInt32().Should().Be(0, "zero é teto válido");
             root.GetProperty("baseLegal").GetString().Should().Be("Decreto 6.755/2009");
@@ -307,6 +328,8 @@ public sealed class OfertaCursoEndpointTests
             localOfertaId = localId,
             unidadeOfertanteOrigemId = unidade.Id,
             programaDeOferta = "REGULAR",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "MATUTINO" },
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -403,6 +426,8 @@ public sealed class OfertaCursoEndpointTests
         localOfertaId,
         unidadeOfertanteOrigemId,
         programaDeOferta = "REGULAR",
+        regimeDeTurno = "REGULAR",
+        turnos = new[] { "MATUTINO" },
         formatoPedagogico = "PRESENCIAL",
     };
 
@@ -439,6 +464,17 @@ public sealed class OfertaCursoEndpointTests
         return (curso.Id, local.Id);
     }
 
+    // Cada caso de um Theory semeia a própria unidade, e sigla e código são
+    // únicos entre unidades vivas — daí os identificadores sorteados.
+    private static string NovoSlug(string prefixo) => $"{prefixo}-{Sufixo()}";
+
+    private static string NovaSigla() => $"U{Sufixo()}".ToUpperInvariant();
+
+    private static string NovoCodigo() => $"OFC{Sufixo()}".ToUpperInvariant();
+
+    // O slug exige minúsculas (formato validado no value object da Unidade).
+    private static string Sufixo() => Guid.NewGuid().ToString("N")[..8];
+
     private async Task<Unidade> SemearUnidadeAsync(string slug, string sigla, string codigo)
     {
         Unidade unidade = Unidade.Criar(
@@ -469,6 +505,73 @@ public sealed class OfertaCursoEndpointTests
     // ── Helpers HTTP ──────────────────────────────────────────────────────
 
     private static string CodigoUnico() => $"CUR_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
+
+    [Theory(DisplayName = "POST com regime de turno e turnos incoerentes retorna 422 pelo wire code correspondente")]
+    [InlineData(null, new[] { "MATUTINO" }, "uniplus.configuracao.oferta_curso.regime_de_turno_obrigatorio")]
+    [InlineData("PARCIAL", new[] { "MATUTINO" }, "uniplus.configuracao.oferta_curso.regime_de_turno_invalido")]
+    [InlineData("REGULAR", new string[0], "uniplus.configuracao.oferta_curso.turnos_obrigatorios")]
+    [InlineData("REGULAR", new[] { "INTEGRAL" }, "uniplus.configuracao.oferta_curso.turno_invalido")]
+    [InlineData("REGULAR", new[] { "DIURNO" }, "uniplus.configuracao.oferta_curso.turno_invalido")]
+    [InlineData("INTEGRAL", new[] { "MATUTINO", "MATUTINO" }, "uniplus.configuracao.oferta_curso.turno_repetido")]
+    [InlineData("REGULAR", new[] { "MATUTINO", "NOTURNO" }, "uniplus.configuracao.oferta_curso.cardinalidade_turnos_incompativel_com_regime")]
+    [InlineData("INTEGRAL", new[] { "NOTURNO" }, "uniplus.configuracao.oferta_curso.cardinalidade_turnos_incompativel_com_regime")]
+    public async Task Criar_RegimeOuTurnosInvalidos_Retorna422ComWireCode(
+        string? regimeDeTurno, string[] turnos, string wireCodeEsperado)
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        Unidade unidade = await SemearUnidadeAsync(NovoSlug("regime"), NovaSigla(), NovoCodigo());
+
+        var body = new
+        {
+            cursoId,
+            localOfertaId = localId,
+            unidadeOfertanteOrigemId = unidade.Id,
+            programaDeOferta = "REGULAR",
+            regimeDeTurno,
+            turnos,
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("type").GetString()
+            .Should().EndWith(wireCodeEsperado,
+                "cada violação de regime ou turno tem wire code próprio no catálogo público");
+    }
+
+    [Theory(DisplayName = "POST sem turno é recusado em qualquer formato pedagógico — a distância inclusive")]
+    [InlineData("EAD")]
+    [InlineData("SEMIPRESENCIAL")]
+    [InlineData("PRESENCIAL")]
+    public async Task Criar_SemTurnoEmQualquerFormato_Retorna422(string formatoPedagogico)
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        Unidade unidade = await SemearUnidadeAsync(NovoSlug("formato"), NovaSigla(), NovoCodigo());
+
+        var body = new
+        {
+            cursoId,
+            localOfertaId = localId,
+            unidadeOfertanteOrigemId = unidade.Id,
+            programaDeOferta = "REGULAR",
+            formatoPedagogico,
+            regimeDeTurno = "REGULAR",
+            turnos = Array.Empty<string>(),
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("type").GetString()
+            .Should().EndWith("uniplus.configuracao.oferta_curso.turnos_obrigatorios",
+                "nenhum formato pedagógico abre exceção ao turno");
+    }
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
     {

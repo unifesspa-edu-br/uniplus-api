@@ -697,7 +697,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cursoId\": \"{{curso_id}}\",\n  \"localOfertaId\": \"{{local_oferta_id}}\",\n  \"unidadeOfertanteOrigemId\": \"{{unidade_id}}\",\n  \"programaDeOferta\": \"REGULAR\",\n  \"formatoPedagogico\": \"PRESENCIAL\",\n  \"turno\": null,\n  \"eMecCodigo\": null,\n  \"codigoSga\": null,\n  \"vagasAnuaisAutorizadas\": null,\n  \"baseLegal\": null,\n  \"atoAutorizacaoMec\": null\n}",
+              "raw": "{\n  \"cursoId\": \"{{curso_id}}\",\n  \"localOfertaId\": \"{{local_oferta_id}}\",\n  \"unidadeOfertanteOrigemId\": \"{{unidade_id}}\",\n  \"programaDeOferta\": \"REGULAR\",\n  \"formatoPedagogico\": \"PRESENCIAL\",\n  \"regimeDeTurno\": \"REGULAR\",\n  \"turnos\": [\"MATUTINO\"],\n  \"eMecCodigo\": null,\n  \"codigoSga\": null,\n  \"vagasAnuaisAutorizadas\": null,\n  \"baseLegal\": null,\n  \"atoAutorizacaoMec\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"

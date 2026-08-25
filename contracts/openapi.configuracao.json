@@ -9441,7 +9441,9 @@
       "AtualizarOfertaCursoCommand": {
         "required": [
           "id",
-          "programaDeOferta"
+          "programaDeOferta",
+          "regimeDeTurno",
+          "turnos"
         ],
         "type": "object",
         "properties": {
@@ -9455,13 +9457,22 @@
               "string"
             ]
           },
-          "formatoPedagogico": {
+          "regimeDeTurno": {
             "type": [
               "null",
               "string"
             ]
           },
-          "turno": {
+          "turnos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "formatoPedagogico": {
             "type": [
               "null",
               "string"
@@ -10482,7 +10493,9 @@
           "cursoId",
           "localOfertaId",
           "unidadeOfertanteOrigemId",
-          "programaDeOferta"
+          "programaDeOferta",
+          "regimeDeTurno",
+          "turnos"
         ],
         "type": "object",
         "properties": {
@@ -10504,13 +10517,22 @@
               "string"
             ]
           },
-          "formatoPedagogico": {
+          "regimeDeTurno": {
             "type": [
               "null",
               "string"
             ]
           },
-          "turno": {
+          "turnos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "formatoPedagogico": {
             "type": [
               "null",
               "string"
@@ -11647,7 +11669,8 @@
           "unidadeOfertante",
           "programaDeOferta",
           "formatoPedagogico",
-          "turno",
+          "regimeDeTurno",
+          "turnos",
           "eMecCodigo",
           "codigoSga",
           "vagasAnuaisAutorizadas",
@@ -11678,11 +11701,14 @@
           "formatoPedagogico": {
             "type": "string"
           },
-          "turno": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "regimeDeTurno": {
+            "type": "string"
+          },
+          "turnos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "eMecCodigo": {
             "type": [

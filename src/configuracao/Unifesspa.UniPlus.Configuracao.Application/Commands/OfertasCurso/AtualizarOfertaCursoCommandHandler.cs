@@ -28,7 +28,8 @@ public static class AtualizarOfertaCursoCommandHandler
         Result preCheck = OfertaCurso.ValidarCamposDoPayload(
             command.ProgramaDeOferta,
             command.FormatoPedagogico,
-            command.Turno,
+            command.RegimeDeTurno,
+            command.Turnos,
             command.EMecCodigo,
             command.CodigoSga,
             command.VagasAnuaisAutorizadas,
@@ -53,7 +54,8 @@ public static class AtualizarOfertaCursoCommandHandler
         Result atualizarResult = oferta.Atualizar(
             command.ProgramaDeOferta,
             command.FormatoPedagogico,
-            command.Turno,
+            command.RegimeDeTurno,
+            command.Turnos,
             command.EMecCodigo,
             command.CodigoSga,
             command.VagasAnuaisAutorizadas,

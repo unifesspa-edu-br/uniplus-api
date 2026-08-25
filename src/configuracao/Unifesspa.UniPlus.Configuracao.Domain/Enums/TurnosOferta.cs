@@ -6,11 +6,12 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// <para>O parsing é por <b>allowlist textual explícita</b> (<see cref="TryAnalisar"/>):
-/// só os quatro tokens canônicos são aceitos — sem <c>Enum.TryParse</c> (que
-/// aceitaria tokens numéricos e nomes PascalCase, fora do contrato da #749).</para>
-/// <para>É o vocabulário fonte do CHECK de domínio em <c>oferta_curso.turno</c>
-/// (<see cref="TokensCanonicos"/>, coluna anulável) e do value converter de
-/// persistência. A ausência de turno (nulo) é decidida pela entidade, não aqui.</para>
+/// só os três tokens canônicos são aceitos — sem <c>Enum.TryParse</c>, que
+/// aceitaria tokens numéricos e nomes PascalCase fora do contrato. <c>INTEGRAL</c>
+/// não é turno: virou <see cref="RegimeDeTurno"/> (UNI-REQ-0137, ADR-0126).</para>
+/// <para>É o vocabulário fonte do CHECK de domínio em <c>oferta_curso.turnos</c>
+/// (<see cref="TokensCanonicos"/>) e do value converter de persistência. Quantos
+/// turnos a oferta declara é decidido pelo regime, na entidade, não aqui.</para>
 /// </remarks>
 public static class TurnosOferta
 {
@@ -19,13 +20,12 @@ public static class TurnosOferta
         [TurnoOferta.Matutino] = "MATUTINO",
         [TurnoOferta.Vespertino] = "VESPERTINO",
         [TurnoOferta.Noturno] = "NOTURNO",
-        [TurnoOferta.Integral] = "INTEGRAL",
     };
 
     private static readonly Dictionary<string, TurnoOferta> DeToken =
         ParaToken.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.Ordinal);
 
-    /// <summary>Os quatro tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
+    /// <summary>Os três tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
     public static readonly IReadOnlyList<string> TokensCanonicos = [.. ParaToken.Values];
 
     /// <summary>Token textual de contrato/banco (UPPER_SNAKE) de um turno válido.</summary>
@@ -54,6 +54,6 @@ public static class TurnosOferta
         return false;
     }
 
-    /// <summary>Indica se <paramref name="token"/> é um dos quatro tokens canônicos, sem alocar resultado.</summary>
+    /// <summary>Indica se <paramref name="token"/> é um dos três tokens canônicos, sem alocar resultado.</summary>
     public static bool EhValido(string? token) => TryAnalisar(token, out _);
 }
