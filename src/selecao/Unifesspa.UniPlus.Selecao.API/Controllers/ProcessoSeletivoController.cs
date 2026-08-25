@@ -185,13 +185,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// #773): uma configuração por oferta de curso. O <c>QuadroDeVagas</c>
     /// (quantidade calculada por modalidade — Lei 12.711 no ramo federal,
     /// fixa no institucional) é materializado na mesma operação pelo motor
-    /// de cálculo da issue #848, mas esta rota persiste e responde
-    /// <c>204</c> sem devolvê-lo — ver <see cref="SimularDistribuicaoVagas"/>
-    /// para calcular sem persistir.
+    /// de cálculo da issue #848, e devolvido no corpo da resposta (issue
+    /// #1283) — o mesmo shape que <see cref="SimularDistribuicaoVagas"/>
+    /// (preview sem persistir) e o <c>GET</c> do processo devolvem.
     /// </summary>
     [HttpPut("{id:guid}/distribuicao-vagas")]
     [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
@@ -207,9 +207,38 @@ public sealed class ProcessoSeletivoController : ControllerBase
         if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
+        Result<MutacaoComDistribuicaoVagasDto> resultado = await _commandBus.Send(
             new DefinirDistribuicaoVagasCommand(id, distribuicaoVagas, precondicao), cancellationToken);
-        return ResponderMutacao(resultado);
+        return ResponderDefinicaoDistribuicaoVagas(resultado);
+    }
+
+    /// <summary>
+    /// 200 com o quadro de vagas recém-persistido e o <c>ETag</c> <b>novo</b>
+    /// quando a mutação correu sob sessão editorial; 200 com o quadro mas
+    /// sem header <c>ETag</c> quando o processo está em rascunho (não há
+    /// sessão, não há tag) — issue #1283.
+    /// </summary>
+    /// <remarks>
+    /// Diferente de <see cref="ResponderMutacao"/> (204 sempre, corpo vazio):
+    /// aqui o corpo nunca é vazio em caso de sucesso. Deliberadamente não
+    /// reaproveita <see cref="ResponderMutacao"/> nem estende
+    /// <see cref="MutacaoAceita"/> — esse tipo e esse helper são
+    /// compartilhados por todos os outros <c>Definir*</c> do controller, que
+    /// continuam em 204; mudar o shape deles quebraria os demais.
+    /// </remarks>
+    private IActionResult ResponderDefinicaoDistribuicaoVagas(Result<MutacaoComDistribuicaoVagasDto> resultado)
+    {
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        if (resultado.Value!.ETag is { } etag)
+        {
+            Response.Headers.ETag = etag;
+        }
+
+        return Ok(resultado.Value!.DistribuicaoVagas);
     }
 
     /// <summary>
