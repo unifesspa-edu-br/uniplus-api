@@ -21,7 +21,7 @@ public static class OfertaCursoMapping
             ProgramasDeOferta.ParaTokenCanonico(oferta.ProgramaDeOferta),
             FormatosPedagogicos.ParaTokenCanonico(oferta.FormatoPedagogico),
             RegimesDeTurno.ParaTokenCanonico(oferta.RegimeDeTurno),
-            [.. oferta.Turnos.Select(TurnosOferta.ParaTokenCanonico)],
+            [.. TurnosOferta.OrdenarCanonicamente(oferta.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
             oferta.EMecCodigo,
             oferta.CodigoSga,
             oferta.VagasAnuaisAutorizadas,
