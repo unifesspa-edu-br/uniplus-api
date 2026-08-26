@@ -25,7 +25,7 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
     /// a suíte é exercitada contra a versão que será promovida a produção. Avançar a tag quando o
     /// Keycloak de produção subir.
     /// </summary>
-    public const string Image = "ghcr.io/unifesspa-edu-br/uniplus-keycloak:26.6.4";
+    public const string Image = "ghcr.io/unifesspa-edu-br/uniplus-keycloak:26.7.2";
 
     /// <summary>
     /// Nome convencional da xUnit collection que compartilha esta fixture entre classes de teste.
