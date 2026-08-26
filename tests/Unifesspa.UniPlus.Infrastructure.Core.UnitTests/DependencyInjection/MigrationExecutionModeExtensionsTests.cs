@@ -53,6 +53,19 @@ public sealed class MigrationExecutionModeExtensionsTests
     public void LerModo_ValorConhecido_Resolve(string valor, MigrationExecutionMode esperado) =>
         Config(valor).LerModoDeMigration().Should().Be(esperado);
 
+    [Theory(DisplayName = "Chave declarada sem valor é recusada — não é o mesmo que chave ausente")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void LerModo_ChaveVaziaDeclarada_Lanca(string valor)
+    {
+        Action act = () => Config(valor).LerModoDeMigration();
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*sem valor*",
+                "valor de Helm que não resolveu é configuração quebrada, e cair no default "
+                + "faria um pod destinado a Skip aplicar migration durante o rollout");
+    }
+
     [Theory(DisplayName = "CA-05: valor fora do domínio é recusado no boot, listando os aceitos")]
     [InlineData("Nenhum")]
     [InlineData("true")]
