@@ -137,10 +137,15 @@ public static partial class MigrationExecutionModeExtensions
         ILogger logger = host.Services.GetRequiredService<ILoggerFactory>()
             .CreateLogger(typeof(MigrationExecutionModeExtensions).FullName!);
 
-        IHostedService[] migrations =
-            [.. host.Services.GetServices<IHostedService>().Where(EhInstanciaDeMigration)];
+        // O registro paralelo, e não GetServices<IHostedService>(): aquela chamada construiria a
+        // coleção inteira antes de qualquer filtro — warmup de criptografia, runtime de
+        // mensageria, cliente do schema registry — e o Job falharia por configuração que não
+        // tem relação com schema, abortando o rollout por um motivo falso.
+        MigrationContextRegistry? registro = host.Services.GetService<MigrationContextRegistry>();
+        IReadOnlyList<(Type Contexto, Func<IServiceProvider, CancellationToken, Task> Aplicar)> contextos =
+            registro?.Entradas ?? [];
 
-        if (migrations.Length == 0)
+        if (contextos.Count == 0)
         {
             LogNenhumaMigrationRegistrada(logger);
             return 2;
@@ -159,9 +164,9 @@ public static partial class MigrationExecutionModeExtensions
             // incluso — sem iniciar o runtime de mensageria: nenhuma fila é consumida e
             // nenhum listener sobe.
             await host.SetupResources(cancellationToken).ConfigureAwait(false);
-            foreach (IHostedService migration in migrations)
+            foreach ((Type _, Func<IServiceProvider, CancellationToken, Task> aplicar) in contextos)
             {
-                await migration.StartAsync(cancellationToken).ConfigureAwait(false);
+                await aplicar(host.Services, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (Exception excecao)
@@ -170,7 +175,7 @@ public static partial class MigrationExecutionModeExtensions
             return 1;
         }
 
-        LogMigrationsConcluidas(logger, migrations.Length);
+        LogMigrationsConcluidas(logger, contextos.Count);
         return 0;
     }
 
@@ -196,9 +201,5 @@ public static partial class MigrationExecutionModeExtensions
     private static bool EhServicoDeMigration(ServiceDescriptor descritor) =>
         descritor.ServiceType == typeof(IHostedService)
         && descritor.ImplementationType is { IsGenericType: true } tipo
-        && tipo.GetGenericTypeDefinition() == typeof(MigrationHostedService<>);
-
-    private static bool EhInstanciaDeMigration(IHostedService servico) =>
-        servico.GetType() is { IsGenericType: true } tipo
         && tipo.GetGenericTypeDefinition() == typeof(MigrationHostedService<>);
 }

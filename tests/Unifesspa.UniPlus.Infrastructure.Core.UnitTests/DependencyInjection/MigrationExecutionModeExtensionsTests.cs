@@ -180,6 +180,31 @@ public sealed class MigrationExecutionModeExtensionsTests
             "o provider em memória não suporta MigrateAsync — a falha precisa virar saída não-zero");
     }
 
+    [Fact(DisplayName = "ApplyAndExit não constrói hosted services alheios à migration")]
+    public async Task AplicarEEncerrar_NaoConstroiHostedServicesAlheios()
+    {
+        // GetServices<IHostedService>() materializaria a coleção inteira antes de qualquer
+        // filtro. Se um serviço sem relação com schema não puder ser construído — warmup de
+        // criptografia, mensageria, schema registry —, o Job falharia por motivo falso e
+        // abortaria o rollout de uma migration perfeitamente válida.
+        using IHost host = new HostBuilder()
+            .ConfigureServices(s =>
+            {
+                s.AddLogging();
+                s.AddDbContext<ContextoDeTeste>(o => o.UseInMemoryDatabase("sem-alheios"));
+                s.AddDbContextMigrationsOnStartup<ContextoDeTeste>();
+                s.AddSingleton<IHostedService, HostedServiceQueNaoConstroi>();
+            })
+            .Build();
+
+        int codigo = await host.AplicarMigrationsEEncerrarAsync(CancellationToken.None);
+
+        codigo.Should().Be(1,
+            "1 é a falha da própria migration (InMemory não suporta MigrateAsync). Se a coleção "
+            + "de hosted services fosse materializada, o construtor do serviço alheio lançaria "
+            + "antes disso e o resultado seria outro");
+    }
+
     [Theory(DisplayName = "Só Skip desliga o provisionamento de schema do Wolverine")]
     [InlineData(null, JasperFx.AutoCreate.CreateOrUpdate)]
     [InlineData("OnStartup", JasperFx.AutoCreate.CreateOrUpdate)]
@@ -202,6 +227,18 @@ public sealed class MigrationExecutionModeExtensionsTests
             : base(options)
         {
         }
+    }
+
+    private sealed class HostedServiceQueNaoConstroi : IHostedService
+    {
+        public HostedServiceQueNaoConstroi() =>
+            throw new InvalidOperationException(
+                "Simula o warmup de criptografia ou a mensageria falhando por configuração "
+                + "que nada tem a ver com o schema do banco.");
+
+        public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class HostedServiceAlheio : IHostedService

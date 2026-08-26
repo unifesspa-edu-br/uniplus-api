@@ -96,7 +96,31 @@ public static partial class MigrationServiceCollectionExtensions
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IHostedService, MigrationHostedService<TContext>>());
 
+        // Registro paralelo, para o modo ApplyAndExit aplicar as migrations sem materializar a
+        // coleção de hosted services — que traria junto warmup de criptografia, mensageria e
+        // schema registry, e faria o Job falhar por configuração alheia ao schema.
+        ObterRegistroDeContextos(services)
+            .Registrar(typeof(TContext), (provider, token) => provider.ApplyMigrationsAsync<TContext>(token));
+
         return services;
+    }
+
+    /// <summary>
+    /// O registro de contextos do <paramref name="services"/>, criando-o na primeira chamada.
+    /// </summary>
+    internal static MigrationContextRegistry ObterRegistroDeContextos(IServiceCollection services)
+    {
+        ServiceDescriptor? existente = services.FirstOrDefault(
+            d => d.ServiceType == typeof(MigrationContextRegistry));
+
+        if (existente?.ImplementationInstance is MigrationContextRegistry registro)
+        {
+            return registro;
+        }
+
+        MigrationContextRegistry novo = new();
+        services.AddSingleton(novo);
+        return novo;
     }
 
     [LoggerMessage(EventId = 3001, Level = LogLevel.Information, Message = "Nenhuma migration EF Core pendente para {Context}.")]

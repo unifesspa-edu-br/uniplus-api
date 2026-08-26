@@ -99,7 +99,19 @@ builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
 // (todos com tag "ready") e /health (alias retrocompat).
 builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "PortalDb");
 
+// Papel deste processo quanto às migrations (ADR-0127), pelas mesmas razões do host: o
+// callback compartilhado do Wolverine já respeita o modo, e sem tratá-lo aqui o Portal teria
+// `Skip` desligando o provisionamento da mensageria enquanto ainda aplicaria as migrations EF,
+// e `ApplyAndExit` subindo o servidor HTTP sem nunca encerrar.
+MigrationExecutionMode modoDeMigration = builder.Configuration.LerModoDeMigration();
+builder.Services.ConfigurarModoDeMigration(modoDeMigration);
+
 WebApplication app = builder.Build();
+
+if (modoDeMigration == MigrationExecutionMode.ApplyAndExit)
+{
+    return await app.AplicarMigrationsEEncerrarAsync().ConfigureAwait(false);
+}
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
@@ -131,6 +143,8 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
 app.MapHealthChecks("/health");
 
 await app.RunAsync();
+
+return 0;
 
 // Required for WebApplicationFactory<Program> in integration tests; CA1515
 // suppression lives in GlobalSuppressions.cs, not inline.
