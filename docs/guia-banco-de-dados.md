@@ -225,6 +225,29 @@ dotnet ef migrations has-pending-model-changes \
 
 **Convention snake_case ativa no runtime e no design-time** ([ADR-0054](adrs/0054-naming-convention-e-strategy-migrations.md)). Tanto `UseUniPlusNpgsqlConventions` (helper de runtime consumido por `AddXxxInfrastructure`) quanto `BuildDesignTimeOptions` chamam `UseSnakeCaseNamingConvention()`, então tabelas, colunas, índices e FKs ficam em snake_case e as migrations geradas batem com o modelo em runtime (`has-pending-model-changes` retorna "No changes"). O nome de `__EFMigrationsHistory` é pinado para não sofrer a convention, evitando drift em rollouts mistos com pods sem ela.
 
+### Quem aplica a migration no deploy
+
+O papel do processo é declarado por `UniPlus:Migrations:Mode` (ADR-0127):
+
+| Valor | Papel | Onde é usado |
+|---|---|---|
+| ausente ou `OnStartup` | aplica no boot do host | default; ambiente que não declara nada |
+| `ApplyAndExit` | aplica e encerra, sem servir requisições | Job de deploy |
+| `Skip` | não aplica | pod, quando o Job já cuidou |
+
+Em `ApplyAndExit` o processo devolve código de saída `0` em sucesso e não-zero em falha — é por
+esse código que o Job de deploy decide se o rollout prossegue. Só os hosted services de migration
+são executados: mensageria e pipeline HTTP não chegam a iniciar.
+
+Valor fora do domínio é recusado no boot, com a lista dos aceitos. Não há default silencioso, de
+propósito: um pod destinado a `Skip` que caísse em `OnStartup` aplicaria migration por conta
+própria, anulando a separação.
+
+**O que isso não resolve:** o Job garante que uma migration quebrada falhe *antes* de qualquer pod
+ser tocado. Não garante que o schema novo seja compatível com a versão anterior da aplicação —
+para migration destrutiva promovida sem indisponibilidade, a resposta continua sendo expandir e
+contrair em duas releases.
+
 ## 8. Forward-only revert
 
 `Down()` em migrations é **proibido em produção**. Política:
