@@ -167,6 +167,22 @@ public sealed class MigrationExecutionModeExtensionsTests
             "o provider em memória não suporta MigrateAsync — a falha precisa virar saída não-zero");
     }
 
+    [Theory(DisplayName = "Só Skip desliga o provisionamento de schema do Wolverine")]
+    [InlineData(null, JasperFx.AutoCreate.CreateOrUpdate)]
+    [InlineData("OnStartup", JasperFx.AutoCreate.CreateOrUpdate)]
+    [InlineData("ApplyAndExit", JasperFx.AutoCreate.CreateOrUpdate)]
+    [InlineData("Skip", JasperFx.AutoCreate.None)]
+    public void AutoBuildDoWolverine_SegueOModo(string? modo, JasperFx.AutoCreate esperado)
+    {
+        // O Wolverine provisiona as tabelas do outbox por conta própria. Em `Skip`, quem
+        // provisiona é o Job — deixar o pod aplicar DDL traria de volta, pela mensageria, a
+        // falha depois do rollout que a separação existe para impedir.
+        MigrationExecutionMode resolvido = Config(modo).LerModoDeMigration();
+
+        MigrationExecutionModeExtensions.ProvisionamentoDeSchemaPara(resolvido)
+            .Should().Be(esperado);
+    }
+
     private sealed class ContextoDeTeste : DbContext
     {
         public ContextoDeTeste(DbContextOptions<ContextoDeTeste> options)

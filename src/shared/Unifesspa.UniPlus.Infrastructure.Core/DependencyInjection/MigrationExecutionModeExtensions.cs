@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
+using JasperFx.Resources;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -52,6 +54,21 @@ public static partial class MigrationExecutionModeExtensions
     }
 
     /// <summary>
+    /// Como o Wolverine deve tratar o schema do outbox, dado o modo declarado.
+    /// </summary>
+    /// <remarks>
+    /// O Wolverine provisiona as próprias tabelas no start do runtime, fora do mecanismo de
+    /// migrations EF. Em <see cref="MigrationExecutionMode.Skip"/> quem provisiona é o Job de
+    /// deploy — deixar o pod aplicar DDL traria de volta, pela mensageria, a falha depois do
+    /// rollout que a separação existe para impedir. Nos demais modos o comportamento é o de
+    /// sempre.
+    /// </remarks>
+    public static JasperFx.AutoCreate ProvisionamentoDeSchemaPara(MigrationExecutionMode modo) =>
+        modo == MigrationExecutionMode.Skip
+            ? JasperFx.AutoCreate.None
+            : JasperFx.AutoCreate.CreateOrUpdate;
+
+    /// <summary>
     /// Remove os hosted services de migration quando o modo é
     /// <see cref="MigrationExecutionMode.Skip"/>. Chamar antes do <c>Build()</c>.
     /// </summary>
@@ -83,8 +100,8 @@ public static partial class MigrationExecutionModeExtensions
 
     /// <summary>
     /// Executa apenas as migrations e devolve o código de saída do processo:
-    /// <c>0</c> aplicou, <c>1</c> a migration falhou, <c>2</c> não havia contexto algum
-    /// registrado. Os dois erros são distintos porque pedem remédios distintos: o primeiro é
+    /// <c>0</c> aplicou, <c>1</c> a migration ou o provisionamento falhou, <c>2</c> não havia
+    /// contexto algum registrado. Os dois erros são distintos porque pedem remédios distintos: o primeiro é
     /// schema ou dado, o segundo é o Job montado errado — e confundi-los custaria tempo no pior
     /// momento. Nenhum outro <see cref="IHostedService"/> é iniciado — construir o host
     /// resolve o container, mas não inicia serviço algum, então mensageria e pipeline HTTP não
@@ -116,6 +133,17 @@ public static partial class MigrationExecutionModeExtensions
 
         try
         {
+            // Migrations EF não são o único schema que a aplicação provisiona: o Wolverine
+            // cria e atualiza as tabelas do outbox por conta própria, pelo
+            // AutoBuildMessageStorageOnStartup. Sem isto, o Job aplicaria só o schema dos
+            // módulos e devolveria sucesso, e o DDL do outbox continuaria acontecendo no boot
+            // do pod — trazendo de volta, pela mensageria, a falha depois do rollout que esta
+            // separação existe para impedir.
+            //
+            // SetupResources provisiona os IStatefulResource registrados — o do Wolverine
+            // incluso — sem iniciar o runtime de mensageria: nenhuma fila é consumida e
+            // nenhum listener sobe.
+            await host.SetupResources(cancellationToken).ConfigureAwait(false);
             foreach (IHostedService migration in migrations)
             {
                 await migration.StartAsync(cancellationToken).ConfigureAwait(false);

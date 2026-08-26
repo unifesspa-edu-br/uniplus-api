@@ -184,7 +184,16 @@ public static class WolverineOutboxConfiguration
             // ao próprio host é o caminho mais simples e racional para destravar bring-up de
             // pods com banco vazio (standalone/lab). EF Core migrations dos módulos são
             // aplicadas em paralelo por ApplyMigrationsAsync<TContext> no Program.cs.
-            opts.AutoBuildMessageStorageOnStartup = JasperFx.AutoCreate.CreateOrUpdate;
+            //
+            // A exceção é o modo `Skip` (ADR-0127): ali quem provisiona o schema — o das
+            // migrations EF e o do próprio Wolverine — é o Job de deploy, que roda antes do
+            // rollout. Deixar `CreateOrUpdate` no pod faria o Wolverine aplicar DDL no start
+            // mesmo assim, e uma falha nesse DDL voltaria a acontecer DEPOIS de o rollout ter
+            // começado — exatamente o que a separação existe para impedir, só que pelo schema
+            // da mensageria em vez do schema dos módulos.
+            opts.AutoBuildMessageStorageOnStartup =
+                DependencyInjection.MigrationExecutionModeExtensions.ProvisionamentoDeSchemaPara(
+                    DependencyInjection.MigrationExecutionModeExtensions.LerModoDeMigration(configuration));
 
             // Lê a seção uma única vez aqui — ValidateOnStart no DI não atinge este callback
             // (UseWolverine roda no Build, antes de StartAsync). Validação inline replica

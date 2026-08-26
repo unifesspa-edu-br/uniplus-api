@@ -49,6 +49,8 @@ A chave `UniPlus:Migrations:Mode` declara o papel do processo:
 
 `ApplyAndExit` executa **apenas** os `IHostedService` de migration que os módulos já registram, e encerra com código de saída próprio: `0` aplicou, `1` a migration falhou, `2` não havia contexto algum registrado. Os dois erros são distintos porque pedem remédios distintos — o primeiro é schema ou dado, o segundo é o Job montado errado.
 
+**Migrations EF não são o único schema que a aplicação provisiona.** O Wolverine cria e atualiza as tabelas do outbox por conta própria, no start do runtime — fora do mecanismo de migrations. Cobrir só o EF deixaria o Job devolvendo sucesso enquanto o DDL do outbox continuaria acontecendo no boot do pod, trazendo de volta pela mensageria exatamente a falha depois do rollout que a separação existe para impedir. Por isso `ApplyAndExit` também provisiona os recursos com estado registrados (sem iniciar o runtime: nenhuma fila é consumida, nenhum listener sobe), e `Skip` desliga o provisionamento automático do Wolverine no pod.
+
 Só `Skip` remove esses registros. `ApplyAndExit` precisa deles: removê-los ali faria o processo encontrar coleção vazia, não aplicar nada e ainda encerrar com sucesso, liberando o rollout contra o schema antigo. É a razão de `ApplyAndExit` sem contexto algum encerrar com erro em vez de zero — silêncio, aqui, seria indistinguível de sucesso. Construir o host resolve o container mas não inicia serviço algum, então mensageria e pipeline HTTP não chegam a subir. `Skip` remove os descritores antes do `Build()` — o expediente que os test factories já usavam para subir sem Postgres.
 
 Nenhum módulo precisa saber em que modo o processo está: os três modos operam sobre o mesmo registro existente, a partir do composition root.
@@ -75,7 +77,7 @@ Um valor fora do domínio é **recusado no boot**, com a lista dos aceitos. Cair
 
 ## Confirmação
 
-- Testes cobrem os três modos, a recusa de valor desconhecido e o código de saída em falha.
+- Testes cobrem os três modos, a recusa de valor desconhecido, o código de saída em falha, a preservação dos registros em `ApplyAndExit` e o provisionamento do Wolverine por modo.
 - Ambiente sem a chave declarada continua aplicando no boot — verificável por inspeção do manifesto e pelo teste que fixa o default.
 
 ## Prós e contras das opções

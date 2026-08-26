@@ -245,6 +245,11 @@ Valor fora do domínio é recusado no boot, com a lista dos aceitos. Não há de
 propósito: um pod destinado a `Skip` que caísse em `OnStartup` aplicaria migration por conta
 própria, anulando a separação.
 
+O Job cobre também o schema do **Wolverine**: as tabelas do outbox são provisionadas pelo próprio
+framework no start do runtime, e não pelas migrations EF. Em `ApplyAndExit` elas entram junto; em
+`Skip` o provisionamento automático fica desligado no pod. Cobrir só o EF deixaria o DDL do outbox
+acontecendo depois do rollout — o mesmo problema, por outra porta.
+
 **O que isso não resolve:** o Job garante que uma migration quebrada falhe *antes* de qualquer pod
 ser tocado. Não garante que o schema novo seja compatível com a versão anterior da aplicação —
 para migration destrutiva promovida sem indisponibilidade, a resposta continua sendo expandir e
