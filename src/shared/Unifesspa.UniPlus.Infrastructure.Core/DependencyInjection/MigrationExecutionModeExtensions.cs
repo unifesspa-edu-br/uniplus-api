@@ -22,12 +22,12 @@ public static partial class MigrationExecutionModeExtensions
     public const string ChaveDeConfiguracao = "UniPlus:Migrations:Mode";
 
     /// <summary>
-    /// Lê o modo declarado. A ausência da chave resolve para
+    /// Lê o modo declarado. A <b>ausência</b> da chave resolve para
     /// <see cref="MigrationExecutionMode.OnStartup"/>, preservando o comportamento de quem
-    /// não declara nada.
+    /// não declara nada. Chave presente sem valor é recusada, e não tratada como ausente.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// Se a chave traz um valor fora do domínio. Recusar no boot é deliberado: cair em default
+    /// Se a chave traz um valor fora do domínio, ou é declarada vazia. Recusar no boot é deliberado: cair em default
     /// silencioso faria um pod destinado a <c>Skip</c> aplicar migration por conta própria, que
     /// é exatamente o que a separação existe para impedir.
     /// </exception>
@@ -36,9 +36,24 @@ public static partial class MigrationExecutionModeExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         string? valor = configuration[ChaveDeConfiguracao];
-        if (string.IsNullOrWhiteSpace(valor))
+
+        // Chave ausente e chave presente-porém-vazia são situações diferentes. A primeira é o
+        // ambiente que não declara nada, e resolve para o comportamento de sempre. A segunda é
+        // configuração quebrada — um valor de Helm que não resolveu, uma variável exportada
+        // vazia — e cair no default ali faria um pod destinado a `Skip` aplicar migration
+        // durante o rollout, em silêncio. O default é para quem não pediu nada, não para quem
+        // pediu errado.
+        if (valor is null)
         {
             return MigrationExecutionMode.OnStartup;
+        }
+
+        if (string.IsNullOrWhiteSpace(valor))
+        {
+            throw new InvalidOperationException(
+                $"'{ChaveDeConfiguracao}' foi declarada sem valor. Remova a chave para usar o "
+                + $"padrão ({MigrationExecutionMode.OnStartup}) ou informe um de: "
+                + $"{string.Join(", ", Enum.GetNames<MigrationExecutionMode>())}.");
         }
 
         string informado = valor.Trim();
