@@ -235,9 +235,11 @@ O papel do processo é declarado por `UniPlus:Migrations:Mode` (ADR-0127):
 | `ApplyAndExit` | aplica e encerra, sem servir requisições | Job de deploy |
 | `Skip` | não aplica | pod, quando o Job já cuidou |
 
-Em `ApplyAndExit` o processo devolve código de saída `0` em sucesso e não-zero em falha — é por
-esse código que o Job de deploy decide se o rollout prossegue. Só os hosted services de migration
-são executados: mensageria e pipeline HTTP não chegam a iniciar.
+Em `ApplyAndExit` o processo devolve `0` se aplicou, `1` se a migration falhou e `2` se não havia
+contexto algum registrado — é por esse código que o Job de deploy decide se o rollout prossegue.
+Os dois erros são separados de propósito: o primeiro é schema ou dado, o segundo é o Job montado
+errado, e confundi-los custaria tempo no pior momento. Só os hosted services de migration são
+executados: mensageria e pipeline HTTP não chegam a iniciar.
 
 Valor fora do domínio é recusado no boot, com a lista dos aceitos. Não há default silencioso, de
 propósito: um pod destinado a `Skip` que caísse em `OnStartup` aplicaria migration por conta

@@ -47,7 +47,9 @@ A chave `UniPlus:Migrations:Mode` declara o papel do processo:
 | `ApplyAndExit` | aplica as migrations e encerra; é o modo do Job de deploy |
 | `Skip` | não aplica; é o modo do pod quando o Job já cuidou |
 
-`ApplyAndExit` executa **apenas** os `IHostedService` de migration que os módulos já registram, e encerra com código de saída próprio: `0` em sucesso, não-zero em falha. Construir o host resolve o container mas não inicia serviço algum, então mensageria e pipeline HTTP não chegam a subir. `Skip` remove esses mesmos descritores antes do `Build()` — o expediente que os test factories já usavam para subir sem Postgres.
+`ApplyAndExit` executa **apenas** os `IHostedService` de migration que os módulos já registram, e encerra com código de saída próprio: `0` aplicou, `1` a migration falhou, `2` não havia contexto algum registrado. Os dois erros são distintos porque pedem remédios distintos — o primeiro é schema ou dado, o segundo é o Job montado errado.
+
+Só `Skip` remove esses registros. `ApplyAndExit` precisa deles: removê-los ali faria o processo encontrar coleção vazia, não aplicar nada e ainda encerrar com sucesso, liberando o rollout contra o schema antigo. É a razão de `ApplyAndExit` sem contexto algum encerrar com erro em vez de zero — silêncio, aqui, seria indistinguível de sucesso. Construir o host resolve o container mas não inicia serviço algum, então mensageria e pipeline HTTP não chegam a subir. `Skip` remove os descritores antes do `Build()` — o expediente que os test factories já usavam para subir sem Postgres.
 
 Nenhum módulo precisa saber em que modo o processo está: os três modos operam sobre o mesmo registro existente, a partir do composition root.
 
