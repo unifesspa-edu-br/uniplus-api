@@ -39,12 +39,11 @@ public static partial class MigrationExecutionModeExtensions
             return MigrationExecutionMode.OnStartup;
         }
 
-        foreach (MigrationExecutionMode modo in Enum.GetValues<MigrationExecutionMode>())
+        string informado = valor.Trim();
+        foreach (MigrationExecutionMode modo in Enum.GetValues<MigrationExecutionMode>()
+            .Where(m => string.Equals(informado, m.ToString(), StringComparison.OrdinalIgnoreCase)))
         {
-            if (string.Equals(valor.Trim(), modo.ToString(), StringComparison.OrdinalIgnoreCase))
-            {
-                return modo;
-            }
+            return modo;
         }
 
         throw new InvalidOperationException(
@@ -53,16 +52,23 @@ public static partial class MigrationExecutionModeExtensions
     }
 
     /// <summary>
-    /// Remove os hosted services de migration quando o modo declarado não é
-    /// <see cref="MigrationExecutionMode.OnStartup"/>. Chamar antes do <c>Build()</c>.
+    /// Remove os hosted services de migration quando o modo é
+    /// <see cref="MigrationExecutionMode.Skip"/>. Chamar antes do <c>Build()</c>.
     /// </summary>
+    /// <remarks>
+    /// <b>Só <c>Skip</c> remove.</b> <c>ApplyAndExit</c> precisa desses mesmos registros — são
+    /// eles que <see cref="AplicarMigrationsEEncerrarAsync"/> executa. Removê-los ali faria o
+    /// processo encontrar uma coleção vazia, não aplicar migration alguma e ainda assim encerrar
+    /// com sucesso, liberando o rollout contra o schema antigo: uma falha que se reporta como
+    /// aprovação, que é o pior desfecho possível para este mecanismo.
+    /// </remarks>
     public static IServiceCollection ConfigurarModoDeMigration(
         this IServiceCollection services,
         MigrationExecutionMode modo)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        if (modo == MigrationExecutionMode.OnStartup)
+        if (modo != MigrationExecutionMode.Skip)
         {
             return services;
         }
@@ -76,8 +82,11 @@ public static partial class MigrationExecutionModeExtensions
     }
 
     /// <summary>
-    /// Executa apenas as migrations e devolve o código de saída do processo: <c>0</c> em sucesso,
-    /// <c>1</c> em falha. Nenhum outro <see cref="IHostedService"/> é iniciado — construir o host
+    /// Executa apenas as migrations e devolve o código de saída do processo:
+    /// <c>0</c> aplicou, <c>1</c> a migration falhou, <c>2</c> não havia contexto algum
+    /// registrado. Os dois erros são distintos porque pedem remédios distintos: o primeiro é
+    /// schema ou dado, o segundo é o Job montado errado — e confundi-los custaria tempo no pior
+    /// momento. Nenhum outro <see cref="IHostedService"/> é iniciado — construir o host
     /// resolve o container, mas não inicia serviço algum, então mensageria e pipeline HTTP não
     /// chegam a subir.
     /// </summary>
@@ -98,6 +107,12 @@ public static partial class MigrationExecutionModeExtensions
 
         IHostedService[] migrations =
             [.. host.Services.GetServices<IHostedService>().Where(EhInstanciaDeMigration)];
+
+        if (migrations.Length == 0)
+        {
+            LogNenhumaMigrationRegistrada(logger);
+            return 2;
+        }
 
         try
         {
@@ -121,6 +136,13 @@ public static partial class MigrationExecutionModeExtensions
         Level = LogLevel.Information,
         Message = "Migrations aplicadas por {Contextos} contexto(s); encerrando sem servir requisições.")]
     private static partial void LogMigrationsConcluidas(ILogger logger, int contextos);
+
+    [LoggerMessage(
+        EventId = 3012,
+        Level = LogLevel.Critical,
+        Message = "Nenhum contexto de migration registrado — o processo não teria o que aplicar. "
+            + "Encerrando sem sucesso para que o rollout não prossiga achando que o schema foi aplicado.")]
+    private static partial void LogNenhumaMigrationRegistrada(ILogger logger);
 
     [LoggerMessage(
         EventId = 3011,

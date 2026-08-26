@@ -77,17 +77,65 @@ public sealed class MigrationExecutionModeExtensionsTests
         HostedServicesDeMigration(services).Should().Be(antes).And.BeGreaterThan(0);
     }
 
-    [Theory(DisplayName = "CA-04: Skip e ApplyAndExit removem os hosted services do pipeline de boot")]
-    [InlineData(MigrationExecutionMode.Skip)]
-    [InlineData(MigrationExecutionMode.ApplyAndExit)]
-    public void ConfigurarModo_NaoOnStartup_RemoveRegistro(MigrationExecutionMode modo)
+    [Fact(DisplayName = "CA-04: Skip remove os hosted services do pipeline de boot")]
+    public void ConfigurarModo_Skip_RemoveRegistro()
     {
         ServiceCollection services = ComMigrationsRegistradas();
         HostedServicesDeMigration(services).Should().BeGreaterThan(0);
 
-        services.ConfigurarModoDeMigration(modo);
+        services.ConfigurarModoDeMigration(MigrationExecutionMode.Skip);
 
         HostedServicesDeMigration(services).Should().Be(0);
+    }
+
+    [Fact(DisplayName = "ApplyAndExit PRESERVA os registros — são eles que o modo executa")]
+    public void ConfigurarModo_ApplyAndExit_PreservaRegistro()
+    {
+        ServiceCollection services = ComMigrationsRegistradas();
+        int antes = HostedServicesDeMigration(services);
+
+        services.ConfigurarModoDeMigration(MigrationExecutionMode.ApplyAndExit);
+
+        HostedServicesDeMigration(services).Should().Be(antes).And.BeGreaterThan(0,
+            "remover aqui faria o processo encontrar coleção vazia, não aplicar nada e ainda "
+            + "encerrar com sucesso — liberando o rollout contra o schema antigo");
+    }
+
+    [Fact(DisplayName = "Caminho real: configurar ApplyAndExit e aplicar em seguida executa as migrations registradas")]
+    public async Task ConfigurarEAplicar_ApplyAndExit_ChegaAExecutarAsMigrations()
+    {
+        // Reproduz a sequência do composition root — configurar o modo, construir, aplicar —
+        // que é onde o defeito aparecia: testar as duas peças em separado não o revelava.
+        using IHost host = new HostBuilder()
+            .ConfigureServices(s =>
+            {
+                s.AddLogging();
+                s.AddDbContext<ContextoDeTeste>(o => o.UseInMemoryDatabase("caminho-real"));
+                s.AddDbContextMigrationsOnStartup<ContextoDeTeste>();
+                s.ConfigurarModoDeMigration(MigrationExecutionMode.ApplyAndExit);
+            })
+            .Build();
+
+        int codigo = await host.AplicarMigrationsEEncerrarAsync(CancellationToken.None);
+
+        codigo.Should().Be(1,
+            "1 é 'a migration falhou', e distingue-se de 2 ('nenhum contexto registrado') "
+            + "justamente para provar que o serviço continuou registrado e chegou a executar. "
+            + "Se ConfigurarModo removesse os registros, a saída seria 2");
+    }
+
+    [Fact(DisplayName = "ApplyAndExit sem contexto registrado encerra sem sucesso, em vez de aprovar o rollout")]
+    public async Task AplicarEEncerrar_SemContextos_RetornaNaoZero()
+    {
+        using IHost host = new HostBuilder()
+            .ConfigureServices(s => s.AddLogging())
+            .Build();
+
+        int codigo = await host.AplicarMigrationsEEncerrarAsync(CancellationToken.None);
+
+        codigo.Should().Be(2,
+            "composição sem contexto algum é erro de montagem do Job, não schema em dia — e "
+            + "encerrar com sucesso aqui liberaria o rollout sem ter aplicado nada");
     }
 
     [Fact(DisplayName = "ConfigurarModo não remove hosted services alheios à migration")]
@@ -101,23 +149,7 @@ public sealed class MigrationExecutionModeExtensionsTests
         services.Should().ContainSingle(d => d.ServiceType == typeof(IHostedService));
     }
 
-    [Fact(DisplayName = "CA-02: ApplyAndExit aplica as migrations e devolve código de saída zero")]
-    public async Task AplicarEEncerrar_Sucesso_RetornaZero()
-    {
-        using IHost host = new HostBuilder()
-            .ConfigureServices(s =>
-            {
-                s.AddLogging();
-                s.AddSingleton<IHostedService, MigrationDeTeste>();
-            })
-            .Build();
-
-        int codigo = await host.AplicarMigrationsEEncerrarAsync(CancellationToken.None);
-
-        codigo.Should().Be(0);
-    }
-
-    [Fact(DisplayName = "CA-03: migration que falha devolve código diferente de zero, para o Job abortar o rollout")]
+    [Fact(DisplayName = "CA-03: migration que falha devolve 1, para o Job abortar o rollout")]
     public async Task AplicarEEncerrar_Falha_RetornaNaoZero()
     {
         using IHost host = new HostBuilder()
@@ -150,10 +182,4 @@ public sealed class MigrationExecutionModeExtensionsTests
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
-    private sealed class MigrationDeTeste : IHostedService
-    {
-        public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    }
 }
