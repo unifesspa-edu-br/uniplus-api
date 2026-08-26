@@ -141,7 +141,20 @@ builder.Host.UseWolverineOutboxCascading(
     });
 builder.Services.AddWolverineMessaging();
 
+// Papel deste processo quanto às migrations (ADR-0127). Sem a chave, o
+// comportamento é o de sempre: aplicar no boot. O Job de deploy sobe a mesma
+// imagem com `ApplyAndExit`, e o pod com `Skip` — assim uma migration quebrada
+// aborta o rollout antes de qualquer pod ser tocado, em vez de ser descoberta
+// com o pod anterior já removido ou já servindo um schema alterado.
+MigrationExecutionMode modoDeMigration = builder.Configuration.LerModoDeMigration();
+builder.Services.ConfigurarModoDeMigration(modoDeMigration);
+
 WebApplication app = builder.Build();
+
+if (modoDeMigration == MigrationExecutionMode.ApplyAndExit)
+{
+    return await app.AplicarMigrationsEEncerrarAsync().ConfigureAwait(false);
+}
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
@@ -165,6 +178,8 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
 app.MapHealthChecks("/health");
 
 await app.RunAsync().ConfigureAwait(false);
+
+return 0;
 
 // Necessário para WebApplicationFactory<Program> nos testes de integração do host.
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
