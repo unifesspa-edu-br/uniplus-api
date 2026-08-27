@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosEdital;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -110,6 +111,66 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         confirmarResultado.Value!.Status.Should().Be("Confirmado");
         confirmarResultado.Value.TamanhoBytes.Should().Be(ConteudoPdfValido.Length);
         confirmarResultado.Value.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(ConteudoPdfValido)));
+    }
+
+    /// <summary>
+    /// O que nenhum teste de unidade alcança: a URL emitida abre de fato o
+    /// objeto no storage. Um handler que devolvesse uma URL bem formada e
+    /// inservível — chave errada, assinatura de outro método, bucket trocado —
+    /// passaria em qualquer mock e falharia no primeiro clique do operador.
+    /// </summary>
+    [Fact(DisplayName = "Acesso a documento confirmado devolve URL que abre o conteúdo selado")]
+    public async Task Acesso_DocumentoConfirmado_UrlAbreConteudoSelado()
+    {
+        (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoEditalRepository documentoRepository = new(context);
+        ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
+
+        Result<IniciarUploadDocumentoEditalDto> iniciar = await IniciarUploadDocumentoEditalCommandHandler.Handle(
+            new IniciarUploadDocumentoEditalCommand(processo.Id),
+            processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue();
+
+        using HttpClient http = new();
+        using ByteArrayContent conteudo = new(ConteudoPdfValido);
+        conteudo.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        (await http.PutAsync(iniciar.Value!.UrlUpload, conteudo)).EnsureSuccessStatusCode();
+
+        Result<DocumentoEditalDto> confirmar = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciar.Value.DocumentoEditalId),
+            documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+        confirmar.IsSuccess.Should().BeTrue();
+
+        Result<AcessoDocumentoEditalDto> acesso = await ObterAcessoDocumentoEditalQueryHandler.Handle(
+            new ObterAcessoDocumentoEditalQuery(processo.Id, iniciar.Value.DocumentoEditalId),
+            processoRepository, documentoRepository, _storage, TimeProvider.System, CancellationToken.None);
+
+        acesso.IsSuccess.Should().BeTrue();
+
+        HttpResponseMessage leitura = await http.GetAsync(acesso.Value!.Url);
+        leitura.EnsureSuccessStatusCode();
+        byte[] baixado = await leitura.Content.ReadAsByteArrayAsync();
+        baixado.Should().Equal(ConteudoPdfValido);
+    }
+
+    [Fact(DisplayName = "Acesso a documento pendente recusa — o conteúdo ainda não foi validado")]
+    public async Task Acesso_DocumentoPendente_Recusa()
+    {
+        (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoEditalRepository documentoRepository = new(context);
+        ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
+
+        Result<IniciarUploadDocumentoEditalDto> iniciar = await IniciarUploadDocumentoEditalCommandHandler.Handle(
+            new IniciarUploadDocumentoEditalCommand(processo.Id),
+            processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue();
+
+        Result<AcessoDocumentoEditalDto> acesso = await ObterAcessoDocumentoEditalQueryHandler.Handle(
+            new ObterAcessoDocumentoEditalQuery(processo.Id, iniciar.Value!.DocumentoEditalId),
+            processoRepository, documentoRepository, _storage, TimeProvider.System, CancellationToken.None);
+
+        acesso.IsFailure.Should().BeTrue();
+        acesso.Error!.Code.Should().Be("DocumentoEdital.NaoConfirmado");
     }
 
     [Fact(DisplayName = "Sobrescrever a object key original após confirmação não afeta o conteúdo selado (P1)")]

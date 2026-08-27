@@ -107,4 +107,34 @@ public sealed class DocumentosEditalController : ControllerBase
             return Ok(resultado.Value);
         return resultado.ToActionResult(_mapper);
     }
+
+    /// <summary>
+    /// Emite o acesso de leitura a um documento confirmado — a URL assinada é
+    /// gerada no pedido, com validade curta, e não vem embutida na listagem.
+    /// </summary>
+    /// <remarks>
+    /// A resposta carrega uma credencial de acesso ao objeto e por isso vai
+    /// com <c>no-store</c>: guardada em cache de proxy ou no histórico do
+    /// navegador, ela continuaria abrindo o arquivo para quem alcançasse o
+    /// cache, sem passar por autorização de novo.
+    /// </remarks>
+    [HttpGet("{documentoEditalId:guid}/acesso")]
+    [VendorMediaType(Resource = "acesso-documento-edital", Versions = [1])]
+    [ProducesResponseType(typeof(AcessoDocumentoEditalDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Acesso(
+        Guid processoSeletivoId, Guid documentoEditalId, CancellationToken cancellationToken)
+    {
+        Result<AcessoDocumentoEditalDto> resultado = await _queryBus
+            .Send(new ObterAcessoDocumentoEditalQuery(processoSeletivoId, documentoEditalId), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!resultado.IsSuccess)
+            return resultado.ToActionResult(_mapper);
+
+        Response.Headers.CacheControl = "no-store";
+        return Ok(resultado.Value);
+    }
 }

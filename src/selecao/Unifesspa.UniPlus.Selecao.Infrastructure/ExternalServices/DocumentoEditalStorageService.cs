@@ -32,6 +32,9 @@ public sealed class DocumentoEditalStorageService : IDocumentoEditalStorage
     public Task<string> GerarUrlUploadAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
         _storageService.GerarUrlUploadTemporariaAsync(_bucket, objectKey, expiracao, DocumentoEdital.ContentTypeEsperado, cancellationToken);
 
+    public Task<string> GerarUrlLeituraAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
+        _storageService.GerarUrlTemporariaAsync(_bucket, objectKey, expiracao, cancellationToken);
+
     public async Task<InfoObjetoArmazenado?> ObterInfoAsync(string objectKey, CancellationToken cancellationToken = default)
     {
         ObjetoMetadados? metadados = await _storageService
