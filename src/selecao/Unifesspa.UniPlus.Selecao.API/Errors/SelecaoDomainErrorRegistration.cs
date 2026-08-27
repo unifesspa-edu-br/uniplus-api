@@ -227,6 +227,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // são recusas de validação da confirmação (422); NaoEncontrado é 404
         // (registro inexistente ou de outro processo).
         new("DocumentoEdital.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.documento_edital.nao_encontrado", "Documento do Edital não encontrado")),
+        new("DocumentoEdital.NaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.nao_confirmado", "Documento do Edital ainda não confirmado")),
         new("DocumentoEdital.StatusInvalidoParaConfirmacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.status_invalido_para_confirmacao", "Somente um documento pendente pode ser confirmado")),
         new("DocumentoEdital.ObjetoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.objeto_nao_encontrado", "Objeto ainda não enviado ao storage ou expirado")),
         new("DocumentoEdital.TamanhoExcedido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.tamanho_excedido", "Documento excede o tamanho máximo permitido")),

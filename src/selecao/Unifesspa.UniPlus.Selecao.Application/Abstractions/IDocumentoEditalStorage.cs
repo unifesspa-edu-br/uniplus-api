@@ -17,6 +17,13 @@ public interface IDocumentoEditalStorage
     Task<string> GerarUrlUploadAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gera a URL pre-assinada de GET para leitura direta pelo cliente. É
+    /// assinada com o endpoint público do storage, e não com o de dentro do
+    /// cluster: o destino é um navegador fora dele.
+    /// </summary>
+    Task<string> GerarUrlLeituraAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Metadados do objeto (tamanho + content-type) sem baixar o conteúdo.
     /// Retorna <see langword="null"/> quando o objeto ainda não foi enviado.
     /// </summary>
