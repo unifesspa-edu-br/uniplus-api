@@ -125,8 +125,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
                 return BadRequest(new ProblemDetails
                 {
                     Title = "Fundamento de isenção desconhecido",
-                    Detail = "O filtro aceita apenas os códigos "
-                        + $"{FundamentoIsencaoCodigo.CadastroUnico} e {FundamentoIsencaoCodigo.DoacaoMedulaOssea}.",
+                    Detail = $"O filtro aceita apenas os códigos {FundamentoIsencaoCodigo.CodigosEmTexto}.",
                     Status = StatusCodes.Status400BadRequest,
                 });
             }

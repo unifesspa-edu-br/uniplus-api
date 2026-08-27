@@ -8237,7 +8237,8 @@
             "items": {
               "enum": [
                 "CADASTRO_UNICO",
-                "DOACAO_MEDULA_OSSEA"
+                "DOACAO_MEDULA_OSSEA",
+                "CARENCIA_SOCIOECONOMICA"
               ],
               "type": "string"
             }

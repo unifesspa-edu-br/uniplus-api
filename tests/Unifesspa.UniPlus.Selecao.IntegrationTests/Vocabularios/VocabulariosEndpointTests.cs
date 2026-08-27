@@ -41,7 +41,11 @@ public sealed class VocabulariosEndpointTests
         FundamentoIsencaoDto[] fundamentos =
             (await response.Content.ReadFromJsonAsync<FundamentoIsencaoDto[]>())!;
 
-        fundamentos.Select(f => f.Codigo).Should().Equal("CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA");
+        // A lista é afirmada por extenso, e não derivada do enum, de propósito:
+        // é o contrato publicado que está sob teste, e derivá-lo da mesma fonte
+        // que o produz faria o teste concordar com qualquer mudança.
+        fundamentos.Select(f => f.Codigo).Should()
+            .Equal("CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA", "CARENCIA_SOCIOECONOMICA");
         fundamentos.Should().AllSatisfy(f =>
         {
             f.Nome.Should().NotBeNullOrWhiteSpace();

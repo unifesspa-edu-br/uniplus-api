@@ -23,6 +23,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed record DefinirTaxaInscricaoRequest(
     [property: JsonRequired] bool? Cobra,
     decimal? Valor,
-    [property: VocabularioFechado(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea)]
+    // Único lugar em que a lista permanece explícita: argumento de atributo
+    // exige constante de compilação, e `FundamentoIsencaoCodigo.Codigos` é
+    // calculado. Acrescentar fundamento sem incluí-lo aqui deixa o schema
+    // publicado mais estreito que o vocabulário — o teste de contrato do
+    // vocabulário fechado é o que impede isso passar.
+    [property: VocabularioFechado(
+        FundamentoIsencaoCodigo.CadastroUnico,
+        FundamentoIsencaoCodigo.DoacaoMedulaOssea,
+        FundamentoIsencaoCodigo.CarenciaSocioeconomica)]
     IReadOnlyList<string>? Fundamentos,
     bool ConfirmacaoFundamentos);
