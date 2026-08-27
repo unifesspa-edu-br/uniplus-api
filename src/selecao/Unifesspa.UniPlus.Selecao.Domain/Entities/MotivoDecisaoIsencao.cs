@@ -128,7 +128,7 @@ public sealed class MotivoDecisaoIsencao : EntityBase, IAuditableEntity
             erros.Add(new("fundamento", new DomainError(
                 MotivoDecisaoIsencaoErrorCodes.FundamentoObrigatorio,
                 "Fundamento de isenção do motivo é obrigatório e deve ser um dos códigos aceitos: "
-                + $"{string.Join(", ", FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea)}.")));
+                + $"{FundamentoIsencaoCodigo.CodigosEmTexto}.")));
         }
 
         if (resultadoPermitido == ResultadoPermitido.Nenhum)

@@ -13,6 +13,12 @@ public static class FundamentoIsencaoCodigo
     public const string DoacaoMedulaOssea = "DOACAO_MEDULA_OSSEA";
 
     /// <summary>
+    /// Nomeado pelo conceito, não pela norma: a lei muda de número sem o
+    /// fundamento deixar de ser carência socioeconômica.
+    /// </summary>
+    public const string CarenciaSocioeconomica = "CARENCIA_SOCIOECONOMICA";
+
+    /// <summary>
     /// Os fundamentos referenciáveis, na ordem de declaração do enum. A lista é derivada de
     /// <see cref="FundamentoIsencao"/>, não escrita à mão: um fundamento novo entra aqui ao
     /// ser declarado no enum, e a ausência do rótulo correspondente aparece como exceção na
@@ -31,10 +37,21 @@ public static class FundamentoIsencaoCodigo
             .Select(static f => new FundamentoIsencaoDescrito(f.ToCodigo(), NomeDe(f), DescricaoDe(f))),
     ];
 
+    /// <summary>
+    /// Os códigos aceitos, na ordem do vocabulário. Existe para que mensagens
+    /// e validações não repitam a lista à mão — repetida, ela envelhece em
+    /// silêncio e a recusa passa a mentir sobre o que aceita.
+    /// </summary>
+    public static IReadOnlyList<string> Codigos { get; } = [.. Descritos.Select(static d => d.Codigo)];
+
+    /// <summary>Os códigos aceitos em texto corrido, para compor mensagens.</summary>
+    public static string CodigosEmTexto { get; } = string.Join(", ", Codigos);
+
     private static string NomeDe(FundamentoIsencao fundamento) => fundamento switch
     {
         FundamentoIsencao.CadastroUnico => "Cadastro Único",
         FundamentoIsencao.DoacaoMedulaOssea => "Doação de medula óssea",
+        FundamentoIsencao.CarenciaSocioeconomica => "Carência socioeconômica",
         _ => throw new ArgumentOutOfRangeException(nameof(fundamento), fundamento, "FundamentoIsencao sem rótulo declarado."),
     };
 
@@ -44,6 +61,10 @@ public static class FundamentoIsencaoCodigo
             "Candidato de família de baixa renda inscrita no Cadastro Único do Governo Federal.",
         FundamentoIsencao.DoacaoMedulaOssea =>
             "Candidato doador de medula óssea.",
+        FundamentoIsencao.CarenciaSocioeconomica =>
+            "Candidato com renda familiar per capita de até um salário mínimo e meio que tenha "
+            + "cursado o ensino médio completo em escola pública ou como bolsista integral da rede "
+            + "privada — os dois requisitos são cumulativos (Lei nº 12.799/2013).",
         _ => throw new ArgumentOutOfRangeException(nameof(fundamento), fundamento, "FundamentoIsencao sem descrição declarada."),
     };
 
@@ -51,6 +72,7 @@ public static class FundamentoIsencaoCodigo
     {
         FundamentoIsencao.CadastroUnico => CadastroUnico,
         FundamentoIsencao.DoacaoMedulaOssea => DoacaoMedulaOssea,
+        FundamentoIsencao.CarenciaSocioeconomica => CarenciaSocioeconomica,
         FundamentoIsencao.Nenhum => throw new ArgumentOutOfRangeException(
             nameof(fundamento), fundamento, "FundamentoIsencao.Nenhum é sentinela e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(fundamento), fundamento, "FundamentoIsencao desconhecido."),
@@ -60,6 +82,7 @@ public static class FundamentoIsencaoCodigo
     {
         CadastroUnico => FundamentoIsencao.CadastroUnico,
         DoacaoMedulaOssea => FundamentoIsencao.DoacaoMedulaOssea,
+        CarenciaSocioeconomica => FundamentoIsencao.CarenciaSocioeconomica,
         _ => FundamentoIsencao.Nenhum,
     };
 }

@@ -171,4 +171,30 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
         resultado.Errors.Should().Contain(e => e.Field == "confirmacaoFundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria");
     }
+
+    [Fact(DisplayName = "Criar aceita o fundamento de carência socioeconômica (issue #1296)")]
+    public void Criar_ComCarenciaSocioeconomica_Sucesso()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
+            cobra: true,
+            valor: 150.00m,
+            fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica],
+            confirmacaoFundamentos: true);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Fundamentos.Should().Equal(FundamentoIsencao.CarenciaSocioeconomica);
+    }
+
+    [Fact(DisplayName = "Criar aceita os três fundamentos juntos (issue #1296)")]
+    public void Criar_ComOsTresFundamentos_Sucesso()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
+            cobra: true,
+            valor: 150.00m,
+            fundamentosCodigos: [.. FundamentoIsencaoCodigo.Codigos],
+            confirmacaoFundamentos: true);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Fundamentos.Should().HaveCount(3);
+    }
 }
