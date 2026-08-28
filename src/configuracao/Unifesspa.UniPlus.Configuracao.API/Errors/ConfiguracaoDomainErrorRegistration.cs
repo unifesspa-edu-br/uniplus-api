@@ -1280,6 +1280,24 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.oferta_curso.cardinalidade_turnos_incompativel_com_regime",
                 "Quantidade de turnos incompatível com o regime declarado")),
 
+        new(OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.regime_de_funcionamento_obrigatorio",
+                "Regime de funcionamento é obrigatório")),
+
+        new(OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.regime_de_funcionamento_invalido",
+                "Regime de funcionamento fora do domínio fechado")),
+
+        new(OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.regime_de_funcionamento_incompativel_com_regime_de_turno",
+                "Regime de funcionamento incompatível com o regime de turno declarado")),
+
         new(OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
