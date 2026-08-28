@@ -156,12 +156,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md) | Domínio como fonte única de validação — FluentValidation só cobre o que a entidade não cobre; `Result` ganha suporte aditivo a múltiplas violações | proposed | 2026-08-16 |
 | [0126](0126-regime-de-turno-da-oferta-de-curso.md) | Regime de turno da oferta de curso — `INTEGRAL` deixa de ser turno e passa a ser o regime que nomeia dois turnos | accepted | 2026-08-25 |
 | [0127](0127-migrations-aplicadas-por-job-de-deploy.md) | Migrations aplicadas por Job de deploy, com o boot do pod como default preservado | accepted | 2026-08-26 |
+| [0128](0128-regime-de-funcionamento-da-oferta-de-curso.md) | Regime de funcionamento da oferta de curso — dimensão própria, conferida contra o regime de turno | accepted | 2026-08-28 |
 
-> **Nota de numeração:** a sequência de `0001` a `0127` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0128+`.
+> **Nota de numeração:** a sequência de `0001` a `0128` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0129+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0127`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0128`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
