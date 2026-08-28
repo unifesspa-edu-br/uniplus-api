@@ -133,6 +133,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.campus.sigla_tamanho",
                 "Tamanho da sigla do campus inválido")),
 
+        new(CampusErrorCodes.SiglaAcentuacaoInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.campus.sigla_acentuacao_invalida",
+                "Sigla do campus contém acentuação gráfica")),
+
         new(CampusErrorCodes.SiglaJaExiste,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,

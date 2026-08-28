@@ -200,6 +200,172 @@ public sealed class CampusTests
         resultado.Value!.CodigoEmec.Should().BeNull();
     }
 
+    // ─── Acentuação gráfica na sigla (issue #1304) ───────────────────────
+
+    [Theory(DisplayName = "Criar aceita sigla sem acentuação e a normaliza para maiúsculas")]
+    [InlineData("CMB", "CMB")]
+    [InlineData("CMRB-I", "CMRB-I")]
+    [InlineData("camar", "CAMAR")]
+    [InlineData("Campus-2", "CAMPUS-2")]
+    public void Criar_SiglaSemAcentuacao_AceitaENormalizaParaMaiusculas(string informada, string esperada)
+    {
+        // CA-05/CA-06: letras sem acentuação, números e hífen continuam válidos, e o
+        // ToUpperInvariant segue rodando depois da validação.
+        Result<Campus> resultado = Campus.Criar(
+            informada, "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Sigla.Should().Be(esperada);
+    }
+
+    [Theory(DisplayName = "Criar recusa sigla com acentuação gráfica sem transformá-la")]
+    [InlineData("CÁMAR")]
+    [InlineData("cámar")]
+    [InlineData("CAMARÃ")]
+    [InlineData("CEDILHÇ")]
+    public void Criar_SiglaComAcentuacaoPrecomposta_Recusa(string sigla)
+    {
+        // CA-01/CA-04: recusa em vez de remover o acento — o valor informado não é
+        // corrigido para a versão sem diacrítico.
+        Result<Campus> resultado = Campus.Criar(
+            sigla, "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Value.Should().BeNull();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be("sigla");
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaAcentuacaoInvalida);
+        resultado.Errors[0].Error.Message.Should().NotContain(sigla,
+            "ADR-0023: a mensagem não devolve o valor rejeitado (CA-10)");
+    }
+
+    [Fact(DisplayName = "Criar recusa sigla cujo acento chega como marca combinante, com o mesmo código")]
+    public void Criar_SiglaComMarcaCombinante_RecusaComOMesmoCodigo()
+    {
+        // CA-03: "CÁMAR" em NFD — 'A' seguido de U+0301 (COMBINING ACUTE ACCENT).
+        // Nenhuma normalização prévia acontece: a string chega decomposta ao domínio.
+        const string siglaDecomposta = "CA\u0301MAR";
+        siglaDecomposta.Should().HaveLength(6, "a marca combinante é um caractere à parte");
+        siglaDecomposta.Should().NotBe("CÁMAR", "o valor está em NFD, não em NFC");
+
+        Result<Campus> resultado = Campus.Criar(
+            siglaDecomposta, "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be("sigla");
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaAcentuacaoInvalida);
+    }
+
+    [Fact(DisplayName = "Criar com sigla acentuada e nome vazio acumula as duas violações")]
+    public void Criar_SiglaAcentuadaENomeVazio_AcumulaAsDuasViolacoes()
+    {
+        // CA-08: a violação de acentuação participa do mesmo lote das demais
+        // violações independentes (ADR-0125).
+        Result<Campus> resultado = Campus.Criar(
+            "CÁMAR", "", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("sigla");
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaAcentuacaoInvalida);
+        resultado.Errors[1].Field.Should().Be("nome");
+        resultado.Errors[1].Error.Code.Should().Be(CampusErrorCodes.NomeObrigatorio);
+    }
+
+    [Fact(DisplayName = "Atualizar recusa a introdução de acentuação e preserva a sigla armazenada")]
+    public void Atualizar_IntroduzAcentuacao_RecusaEPreservaSiglaArmazenada()
+    {
+        // CA-02: a mesma regra vale na atualização; o agregado não é mutado, então a
+        // sigla persistida continua valendo mesmo com o Wolverine chamando
+        // SaveChangesAsync depois do handler retornar falha.
+        Campus campus = Campus.Criar(
+            "CAMAR", "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+
+        Result resultado = campus.Atualizar(
+            "CÁMAR", "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors[0].Field.Should().Be("sigla");
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaAcentuacaoInvalida);
+        campus.Sigla.Should().Be("CAMAR");
+    }
+
+    [Fact(DisplayName = "ValidarAtualizacao recusa sigla acentuada sem instanciar o agregado")]
+    public void ValidarAtualizacao_SiglaAcentuada_Recusa()
+    {
+        // O handler de atualização valida por aqui antes de buscar o agregado — a
+        // regra precisa valer nesse caminho também, não só em Atualizar.
+        Result resultado = Campus.ValidarAtualizacao(
+            "CÁMAR", "Campus Marabá", "1504208", "Marabá", "PA", null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaAcentuacaoInvalida);
+    }
+
+    [Fact(DisplayName = "Criar com sigla longa demais reporta o tamanho, não a acentuação")]
+    public void Criar_SiglaAcentuadaEAcimaDoTamanho_ReportaTamanho()
+    {
+        // Regras encadeadas do mesmo campo: obrigatoriedade → tamanho → acentuação.
+        // A causa mais básica sai primeiro para orientar a correção.
+        Result<Campus> resultado = Campus.Criar(
+            new string('Á', 21), "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaTamanho);
+    }
+
+    [Fact(DisplayName = "Criar recusa diacrítico fora do plano básico, que uma checagem char a char deixaria passar")]
+    public void Criar_DiacriticoForaDoPlanoBasico_Recusa()
+    {
+        // U+1D167 (MUSICAL SYMBOL COMBINING TREMOLO-1) é marca sem avanço de largura
+        // e chega como par substituto: percorrer a sigla por char classificaria as
+        // duas metades como Surrogate e aceitaria o valor. Percorrer por Rune, não.
+        Result<Campus> resultado = Campus.Criar(
+            "CAM\U0001D167AR", "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaAcentuacaoInvalida);
+    }
+
+    [Fact(DisplayName = "Criar recusa marca invisível que compartilha a categoria dos diacríticos")]
+    public void Criar_MarcaInvisivel_Recusa()
+    {
+        // U+FE0F (VARIATION SELECTOR-16) não acentua nada, mas é marca sem avanço de
+        // largura e cai na mesma regra. Recusar é o resultado desejado — um caractere
+        // invisível na sigla produz justamente a variação visualmente indistinguível
+        // que a regra existe para evitar. Teste fixa a decisão para que ela não seja
+        // desfeita por engano.
+        Result<Campus> resultado = Campus.Criar(
+            "CAMAR\uFE0F", "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaAcentuacaoInvalida);
+    }
+
+    [Fact(DisplayName = "Criar com sigla contendo par substituto malformado não lança")]
+    public void Criar_SiglaComParSubstitutoMalformado_NaoLanca()
+    {
+        // String.Normalize lançaria ArgumentException diante de um surrogate solto —
+        // a checagem de acentuação precisa tolerá-lo para que a requisição continue
+        // sendo tratada pelas regras de campo, e não vire 500.
+        Result<Campus> resultado = Campus.Criar(
+            "CAM\ud800AR", "Campus Marabá", "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsSuccess.Should().BeTrue("um surrogate solto não é acentuação gráfica");
+    }
+
     [Fact(DisplayName = "Atualizar troca os campos e mantém validação")]
     public void Atualizar_DadosValidos_Aplica()
     {
