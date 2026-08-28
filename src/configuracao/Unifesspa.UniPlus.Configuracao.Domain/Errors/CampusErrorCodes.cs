@@ -4,6 +4,7 @@ public static class CampusErrorCodes
 {
     public const string SiglaObrigatoria = "Campus.SiglaObrigatoria";
     public const string SiglaTamanho = "Campus.SiglaTamanho";
+    public const string SiglaAcentuacaoInvalida = "Campus.SiglaAcentuacaoInvalida";
     public const string SiglaJaExiste = "Campus.SiglaJaExiste";
     public const string NomeObrigatorio = "Campus.NomeObrigatorio";
     public const string NomeTamanho = "Campus.NomeTamanho";

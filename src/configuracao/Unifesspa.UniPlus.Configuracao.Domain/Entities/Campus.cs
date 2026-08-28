@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
@@ -220,6 +222,15 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
                 CampusErrorCodes.SiglaTamanho,
                 $"Sigla do Campus deve ter entre {SiglaMinLength} e {SiglaMaxLength} caracteres.")));
         }
+        else if (ContemAcentuacaoGrafica(sigla.Trim()))
+        {
+            // Recusa em vez de remover o acento: transformar "CÁMAR" em "CAMAR"
+            // alteraria o valor informado e poderia colidir com a sigla de outro
+            // Campus vivo. Mensagem sem ecoar o valor rejeitado (ADR-0023).
+            erros.Add(new("sigla", new DomainError(
+                CampusErrorCodes.SiglaAcentuacaoInvalida,
+                "A sigla do Campus não pode conter acentuação gráfica.")));
+        }
 
         if (string.IsNullOrWhiteSpace(nome))
         {
@@ -266,6 +277,40 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
 
         return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
+
+    /// <summary>
+    /// Indica se <paramref name="valor"/> contém acentuação gráfica — qualquer
+    /// diacrítico, esteja ele pré-composto (<c>Á</c>, U+00C1) ou já recebido como
+    /// letra seguida de marca combinante (<c>A</c> + U+0301). A decomposição
+    /// canônica (NFD) reduz os dois casos ao mesmo sinal: uma marca sem avanço de
+    /// largura (<see cref="UnicodeCategory.NonSpacingMark"/>), categoria em que
+    /// caem agudo, grave, circunflexo, til, trema e cedilha — a mesma que o
+    /// restante do repositório já usa para reconhecer diacrítico.
+    /// </summary>
+    /// <remarks>
+    /// <para>Iterar por <see cref="Rune"/> em vez de <see cref="char"/> tem duas
+    /// razões: um diacrítico fora do plano básico chega como par substituto e
+    /// escaparia de uma checagem char a char; e <c>EnumerateRunes</c> substitui
+    /// par substituto malformado por U+FFFD, de modo que uma sigla mal-formada
+    /// segue para as demais regras em vez de estourar a
+    /// <see cref="ArgumentException"/> que <c>String.Normalize</c> lançaria — 422,
+    /// nunca 500. Pela mesma razão a decomposição é feita caractere a caractere,
+    /// não sobre a string inteira.</para>
+    /// <para>O recorte é toda marca sem avanço de largura, deliberadamente. Ele
+    /// deixa de fora as marcas combinantes de outros sistemas de escrita
+    /// (categorias <c>Mc</c> e <c>Me</c>), que não são acentuação gráfica, e
+    /// abrange alguns caracteres invisíveis que compartilham a categoria sem
+    /// acentuar coisa alguma — seletor de variação, juntor de grafema. Recusá-los
+    /// é o resultado desejado: a sigla é identificador institucional, e um
+    /// caractere invisível nela produz exatamente a variação visualmente
+    /// indistinguível que esta regra existe para evitar. Fora do recorte, a regra
+    /// não redefine os demais caracteres aceitos — hífen e dígitos seguem
+    /// válidos.</para>
+    /// </remarks>
+    private static bool ContemAcentuacaoGrafica(string valor) =>
+        valor.EnumerateRunes().Any(static caractere =>
+            caractere.ToString().Normalize(NormalizationForm.FormD).EnumerateRunes()
+                .Any(static parte => Rune.GetUnicodeCategory(parte) == UnicodeCategory.NonSpacingMark));
 
     /// <summary>
     /// Mapeia o código interno de <see cref="ReferenciaCidadeGeo.Validar"/> para o

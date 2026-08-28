@@ -313,6 +313,147 @@ public sealed class CampusEndpointTests
         errors[0].GetProperty("code").GetString().Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
     }
 
+    [Fact(DisplayName = "POST com sigla acentuada retorna 422 com o código público de acentuação no campo sigla")]
+    public async Task Criar_SiglaAcentuada_Retorna422ComCodigoPublico()
+    {
+        // CA-07: recusa associada ao campo sigla, com código de domínio próprio.
+        const string siglaAcentuada = "CÁMAR";
+        var body = new
+        {
+            sigla = siglaAcentuada,
+            nome = "Campus com Acento",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        string payload = await response.Content.ReadAsStringAsync();
+        using JsonDocument doc = JsonDocument.Parse(payload);
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.campus.sigla_acentuacao_invalida");
+
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(1);
+        errors[0].GetProperty("field").GetString().Should().Be("sigla");
+        errors[0].GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.campus.sigla_acentuacao_invalida");
+
+        // CA-10: nem o detail da raiz nem a message do item devolvem o valor rejeitado.
+        doc.RootElement.GetProperty("detail").GetString().Should().NotContain(siglaAcentuada);
+        errors[0].GetProperty("message").GetString().Should().NotContain(siglaAcentuada);
+    }
+
+    [Fact(DisplayName = "POST com sigla cujo acento é marca combinante retorna o mesmo código de acentuação")]
+    public async Task Criar_SiglaComMarcaCombinante_RetornaMesmoCodigo()
+    {
+        // CA-03: "CÁMAR" em NFD trafega no JSON como 'A' + U+0301 e precisa cair na
+        // mesma regra do pré-composto.
+        var body = new
+        {
+            sigla = "CA\u0301MAR",
+            nome = "Campus com Acento Combinante",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.campus.sigla_acentuacao_invalida");
+    }
+
+    [Fact(DisplayName = "POST com sigla acentuada e nome vazio devolve as duas violações em errors[]")]
+    public async Task Criar_SiglaAcentuadaENomeVazio_DevolveAsDuasViolacoes()
+    {
+        // CA-08 sobre a ADR-0125: a acentuação entra no mesmo lote das demais.
+        var body = new
+        {
+            sigla = "CÁMAR",
+            nome = "",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(2);
+        errors[0].GetProperty("field").GetString().Should().Be("sigla");
+        errors[0].GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.campus.sigla_acentuacao_invalida");
+        errors[1].GetProperty("field").GetString().Should().Be("nome");
+        errors[1].GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.campus.nome_obrigatorio");
+    }
+
+    [Fact(DisplayName = "PUT que introduz acentuação na sigla retorna 422 e o GET seguinte mantém a sigla anterior")]
+    public async Task Atualizar_IntroduzAcentuacaoNaSigla_Retorna422EPreservaSigla()
+    {
+        // CA-02: a atualização aplica a mesma validação, e o agregado rastreado pelo
+        // EF não pode ter sido mutado antes da recusa.
+        string sigla = $"C{Guid.NewGuid().ToString("N")[..6]}".ToUpperInvariant();
+        var criacao = new
+        {
+            sigla,
+            nome = "Campus para Atualizar",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", criacao);
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        var atualizacao = new
+        {
+            id,
+            sigla = $"{sigla[..^1]}Á",
+            nome = "Campus para Atualizar",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        using HttpRequestMessage request = new(
+            HttpMethod.Put, new Uri($"/api/configuracao/admin/campi/{id}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(atualizacao);
+
+        HttpResponseMessage atualizar = await client.SendAsync(request);
+
+        atualizar.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument problema = JsonDocument.Parse(await atualizar.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.campus.sigla_acentuacao_invalida");
+        problema.RootElement.GetProperty("errors")[0].GetProperty("field").GetString().Should().Be("sigla");
+
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/campi/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("sigla").GetString().Should().Be(sigla,
+            "a recusa não pode ter persistido a sigla acentuada");
+    }
+
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, string path, object body)
     {
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri(path, UriKind.Relative));
