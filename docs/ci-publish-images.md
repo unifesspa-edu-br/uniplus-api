@@ -117,7 +117,13 @@ gh api /orgs/unifesspa-edu-br/packages/container/uniplus-api-selecao/versions \
 
 ## Bump automático da tag em HML (uniplusApiHost)
 
-Após este workflow publicar com sucesso, `.github/workflows/bump-infra-tag.yml` dispara via `workflow_run` e abre um PR no `uniplus-infra` atualizando `uniplusApiHost.image.tag` em `environments/hml-standalone-single/values.yaml` para a tag recém-publicada. O ArgoCD em HML já reconcilia sozinho qualquer mudança commitada em `main` do `uniplus-infra` (`syncPolicy.automated`) — este workflow fecha o passo manual que faltava (editar o `values.yaml` à mão a cada release).
+Após este workflow publicar com sucesso, `.github/workflows/bump-infra-tag.yml` dispara via `workflow_run` e abre um PR no `uniplus-infra` atualizando `uniplusApiHost.image.tag` em `environments/hml-standalone-single/values.yaml`. O ArgoCD em HML já reconcilia sozinho qualquer mudança commitada em `main` do `uniplus-infra` (`syncPolicy.automated`) — este workflow fecha o passo manual que faltava (editar o `values.yaml` à mão a cada release).
+
+**O que ele promove não é a tag do run que o disparou, e sim a maior versão já publicada com sucesso.** A escolha vem da fila do Actions: o bump usa `concurrency` com grupo fixo para não abrir PRs concorrentes sobre a mesma linha do `values.yaml`, e o Actions retém no máximo um run pendente por grupo, substituindo-o quando outro chega — mesmo com `cancel-in-progress: false`. Com três ou mais publishes concluindo enquanto um bump corre, runs intermediários são cancelados. Promovendo o estado global em vez do estado do run, cancelamento deixa de significar release perdida: quem sobrevive à fila promove a versão correta.
+
+O candidato sai do histórico de runs bem-sucedidos deste workflow (não da lista de tags do repositório — uma tag cujo publish falhou apontaria para imagem inexistente), e a comparação é por versão, não por data: o bump é monotônico e nunca rebaixa o `values.yaml`. Reexecutar o publish de uma release antiga, portanto, não desfaz uma promoção mais nova; rollback continua sendo ato deliberado no `uniplus-infra`. O preço é que uma versão maior publicada por engano vira o teto até que se publique algo maior ou se corrija o `values.yaml` à mão.
+
+A lógica é exercitada em CI por `tools/bump-infra-tag/validate.sh`, que extrai os trechos do próprio workflow e os roda contra fixtures — o workflow em si só executa em release publicada.
 
 **Escopo atual:** só `uniplusApiHost`. `uniplus-web` fica para uma automação equivalente futura, e o PR gerado **não é auto-merged** — fica para aprovação humana.
 

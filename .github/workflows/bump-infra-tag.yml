@@ -11,10 +11,13 @@ name: Bump Infra Tag
 # uniplus-web fica para issue futura, depois de validar o mecanismo aqui.
 #
 # Dispara ao concluir com sucesso o workflow "Publish Images" (que só roda
-# em push de tag v*.*.* — ADR-0050), extrai a tag publicada e abre PR no
-# uniplus-infra. Merge NÃO é automático nesta primeira versão — fica para
-# aprovação humana; auto-merge é evolução futura, só depois do mecanismo
-# validado em produção real de HML.
+# em push de tag v*.*.* — ADR-0050) e abre PR no uniplus-infra. O que ele
+# promete NÃO é "promover a tag deste run", e sim fazer o values.yaml
+# convergir para a maior versão já publicada com sucesso (uniplus-api#1302)
+# — ver os blocos `concurrency` e "Descobrir a maior versão publicada".
+# Merge NÃO é automático nesta primeira versão — fica para aprovação humana;
+# auto-merge é evolução futura, só depois do mecanismo validado em produção
+# real de HML.
 #
 # Pré-requisito: secret INFRA_BUMP_TOKEN neste repositório — PAT fine-grained
 # dedicado, com permissão de escrita (contents + pull requests) restrita a
@@ -35,10 +38,17 @@ concurrency:
   # workflow. Com o grupo por tag, duas tags publicadas em sequência rápida
   # (ex.: v0.5.1 e o fix v0.5.2 logo em seguida) rodavam em paralelo, cada
   # uma lendo o mesmo main ainda não atualizado e abrindo PRs concorrentes
-  # que alteram a mesma linha — achado de revisão. Serializar não elimina
-  # 100% o caso de duas tags publicadas antes do primeiro PR ser mergeado
-  # (aí ficam 2 PRs abertos, um desatualizado — o humano no merge escolhe
-  # o correto), mas elimina a corrida de execução simultânea.
+  # que alteram a mesma linha — achado de revisão.
+  #
+  # O outro lado da moeda: o Actions retém no máximo um run pendente por
+  # grupo e um pendente novo substitui o anterior, mesmo com
+  # cancel-in-progress: false. Com três ou mais publishes concluindo
+  # enquanto um bump corre, runs intermediários são cancelados.
+  #
+  # Cancelamento aqui não perde release, porque o run não promove a tag que
+  # o disparou e sim a maior versão já publicada com sucesso: quem sobrevive
+  # à fila promove o estado final correto, e quem foi cancelado promoveria
+  # uma tag que o sobrevivente já superou.
   group: bump-infra-tag-uniplusApiHost
   cancel-in-progress: false
 
@@ -53,6 +63,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    # O default do repositório é `permissions: {}` (acima). `actions: read` é
+    # o mínimo para consultar o histórico de runs de "Publish Images" neste
+    # mesmo repositório; a escrita no uniplus-infra continua saindo só do
+    # INFRA_BUMP_TOKEN, nunca do GITHUB_TOKEN.
+    permissions:
+      actions: read
+
     steps:
       - name: Validar presença do secret INFRA_BUMP_TOKEN
         env:
@@ -65,24 +82,91 @@ jobs:
           fi
           echo "✓ Secret presente."
 
-      - name: Extrair e validar tag publicada
+      - name: Descobrir a maior versão publicada
         id: tag
-        # TAG vem via `env:`, nunca interpolada direto no bloco `run:` —
-        # `${{ github.event.workflow_run.head_branch }}` é conteúdo de
+        # TAG_DO_RUN vem via `env:`, nunca interpolada direto no bloco `run:`
+        # — `${{ github.event.workflow_run.head_branch }}` é conteúdo de
         # webhook (nome de branch/tag de um push), então interpolação
         # direta no shell é injeção de script clássica do GitHub Actions.
-        # Passar por env + `"$TAG"` faz o valor chegar como dado, não como
-        # texto de comando. https://docs.github.com/en/actions/concepts/security/script-injections
+        # Passar por env + `"$TAG_DO_RUN"` faz o valor chegar como dado, não
+        # como texto de comando.
+        # https://docs.github.com/en/actions/concepts/security/script-injections
         env:
-          TAG: ${{ github.event.workflow_run.head_branch }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG_DO_RUN: ${{ github.event.workflow_run.head_branch }}
         run: |
           set -euo pipefail
-          if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::head_branch '$TAG' não é uma tag semver v<X>.<Y>.<Z>. 'Publish Images' só roda em push de tag (ADR-0050), então isso não deveria acontecer — abortando sem tocar no uniplus-infra."
+
+          # A tag do disparo deixou de ser o alvo da promoção, mas continua
+          # sendo o gatilho legítimo, e a recusa dura permanece: `workflow_run`
+          # roda com acesso a secrets, e um head_branch que não é tag semver
+          # significa que "Publish Images" ganhou outro trigger sem que este
+          # job fosse revisado junto. Nesse caso não se prossegue com um bump
+          # privilegiado. A regex é a mesma que publish-images.yml aplica.
+          if ! printf '%s' "$TAG_DO_RUN" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::head_branch '$TAG_DO_RUN' não é uma tag semver v<X>.<Y>.<Z>. 'Publish Images' só roda em push de tag (ADR-0050), então isso não deveria acontecer — abortando sem tocar no uniplus-infra."
             exit 1
           fi
+
+          # "Publicada com sucesso" é o critério, não "tag existe": a lista de
+          # tags do repositório incluiria tags cujo publish falhou, e promover
+          # uma delas deixaria o HML em ImagePullBackOff. O histórico de runs
+          # de "Publish Images" é a fonte fiel do que está no GHCR.
+          #
+          # `--paginate` percorre o histórico em vez de uma janela dos runs mais
+          # recentes: nada garante que releases sejam publicadas em ordem
+          # crescente, então a maior versão pode não estar entre as últimas por
+          # data. O horizonte é a retenção de runs do repositório e o teto de
+          # 1000 resultados que a API impõe mesmo paginando — ver o aviso
+          # abaixo.
+          #
+          # Falha na consulta aborta o step (set -e) em vez de decidir com
+          # informação incompleta e promover uma tag antiga.
+          RUNS=$(gh api --paginate \
+            "repos/$REPO/actions/workflows/publish-images.yml/runs?status=success&event=push&per_page=100" \
+            --jq '.workflow_runs[].head_branch')
+
+          # `sort -V` ordena por versão, não por data. Ordem cronológica
+          # deixaria um rerun de publish de release antiga rebaixar o
+          # values.yaml; o bump é monotônico de propósito, e rollback continua
+          # sendo ato deliberado, feito à mão no uniplus-infra.
+          #
+          # O preço da monotonicidade: uma versão maior publicada por engano
+          # (não há proteção de tags no repositório) vira o teto e trava o
+          # bump automático até que se publique algo maior ou se edite o
+          # values.yaml à mão. É visível no PR gerado, e o estado sem este
+          # workflow já era a edição manual.
+          #
+          # A tag do run disparador entra sempre no conjunto: o `if:` do job
+          # já exige conclusão com sucesso, então ela é publicada por
+          # definição, e incluí-la protege contra atraso de indexação da API.
+          #
+          # O `grep` é o que valida cada candidata antes de virar output: só
+          # semver puro sobrevive, então nada da resposta da API chega cru ao
+          # nome de branch, à mensagem de commit ou ao título do PR.
+          TAG=$(printf '%s\n%s\n' "$RUNS" "$TAG_DO_RUN" \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -u -V | tail -n 1) || true
+
+          if [ -z "$TAG" ]; then
+            echo "::error::Nenhuma tag semver publicada com sucesso encontrada no histórico de 'Publish Images' — abortando sem tocar no uniplus-infra."
+            exit 1
+          fi
+
+          # A API de workflow runs devolve no máximo 1000 resultados mesmo
+          # paginando. Ao encostar nesse teto, "maior versão publicada" passa a
+          # ser "maior entre as 1000 mais recentes" — o que não rebaixa nada,
+          # porque o values.yaml é o marco persistente e o passo de edição só
+          # avança, mas deixa de ser a promessa declarada. Registrar em vez de
+          # falhar: o release não deve parar por um limite que só aparece
+          # depois de mil publicações.
+          if [ "$(printf '%s\n' "$RUNS" | grep -c .)" -ge 1000 ]; then
+            echo "::warning::O histórico de 'Publish Images' encostou no teto de 1000 runs da API. A versão promovida é a maior entre as retornadas, não necessariamente a maior já publicada — ver uniplus-api#1302."
+          fi
+
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "✓ Tag publicada: $TAG"
+          echo "✓ Maior versão publicada: $TAG (run disparado por '$TAG_DO_RUN')."
 
       - name: Checkout uniplus-infra
         uses: actions/checkout@v5
@@ -109,6 +193,9 @@ jobs:
 
           caminho = "environments/hml-standalone-single/values.yaml"
           nova_tag = os.environ["NOVA_TAG"]
+
+          def versao(tag):
+              return tuple(int(parte) for parte in tag.removeprefix("v").split("."))
 
           with open(caminho, encoding="utf-8") as f:
               linhas = f.readlines()
@@ -151,6 +238,27 @@ jobs:
               )
 
           tag_atual = re.search(r"v\d+\.\d+\.\d+", linhas[idx]).group(0)
+
+          # Só avança. O run pode ter ficado na fila enquanto outro promovia
+          # uma versão maior, e reexecução de publish antigo não deve rebaixar
+          # o HML. Sem edição, o passo seguinte vê `git diff` vazio e encerra
+          # sem abrir PR.
+          if versao(tag_atual) > versao(nova_tag):
+              # Estar à frente da maior versão publicada não é convergência: o
+              # values.yaml aponta para uma tag que não consta como publicada
+              # com sucesso, o que em HML aparece como ImagePullBackOff. O bump
+              # não corrige sozinho (seria um rollback), mas também não silencia.
+              print(
+                  f"::warning::uniplusApiHost.image.tag está em {tag_atual}, à frente "
+                  f"da maior versão publicada com sucesso ({nova_tag}). Nada a editar — "
+                  f"confira se a imagem de {tag_atual} existe no GHCR."
+              )
+              raise SystemExit(0)
+
+          if versao(tag_atual) == versao(nova_tag):
+              print(f"uniplusApiHost.image.tag já está em {nova_tag}. Nada a editar.")
+              raise SystemExit(0)
+
           linhas[idx] = re.sub(r"v\d+\.\d+\.\d+", nova_tag, linhas[idx], count=1)
 
           with open(caminho, "w", encoding="utf-8") as f:
@@ -168,7 +276,7 @@ jobs:
           set -euo pipefail
 
           if git diff --quiet; then
-            echo "Nenhuma mudança — uniplusApiHost.image.tag já está em $NOVA_TAG."
+            echo "Nenhuma mudança — uniplusApiHost.image.tag já está em $NOVA_TAG ou à frente."
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -188,7 +296,10 @@ jobs:
           BRANCH="chore/bump-uniplus-api-host-${NOVA_TAG}"
 
           # Idempotência: "Publish Images" pode ser reexecutado para a mesma tag
-          # (retry manual, rerun de job), e a branch é determinística.
+          # (retry manual, rerun de job), e a branch é determinística. Runs
+          # diferentes que convergem para a mesma tag mais recente também caem
+          # aqui, e a serialização por grupo fixo garante que só o primeiro
+          # deles chega a criar a branch.
           #
           # Quem decide é o histórico de PR, não a branch. Uma branch existente
           # não prova que o PR foi aberto — push pode ter passado e a criação
