@@ -21,7 +21,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// <c>LB ⊂ LI</c> é estrutural: cada regra <c>LB_*</c> repete os átomos da <c>LI_*</c> irmã mais o
 /// átomo de renda. A modalidade de pessoa com deficiência fora da reserva federal é <c>AC_PCD</c> —
-/// nunca o rótulo <c>V</c> — e independe do gate de escola pública (exceção do corpus).
+/// nunca o rótulo <c>V</c> — e é a única regra com átomo negativo: ela existe para o candidato PcD
+/// que a Lei de Cotas não alcança, o egresso de escola privada. Quem vem de escola pública concorre
+/// por <c>LI_PCD</c>, e <c>LB_PCD</c> quando elegível à renda (UNI-REQ-0076).
 /// </para>
 /// </remarks>
 public static class RegrasDerivacaoModalidadeLei12711
@@ -45,7 +47,7 @@ public static class RegrasDerivacaoModalidadeLei12711
         List<RegraDerivacao> regras =
         [
             Ancora("AC"),
-            Regra("AC_PCD", (ConcorrerPcd, true)),
+            Regra("AC_PCD", (ConcorrerPcd, true), (EgressoEscolaPublica, false)),
             Regra("LI_PCD", (ConcorrerPcd, true), (EgressoEscolaPublica, true)),
             Regra("LB_PCD", (ConcorrerPcd, true), (EgressoEscolaPublica, true), (ConcorrerRenda, true)),
             Regra("LI_EP", (EgressoEscolaPublica, true), (ConcorrerEp, true)),

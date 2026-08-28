@@ -68,21 +68,30 @@ public sealed class MotorDerivacaoModalidadeTests
     public void NenhumaCota_SoAC() =>
         Derivar(Fatos()).Should().Equal("AC");
 
+    /// <summary>
+    /// A vaga institucional de PcD é para quem a Lei de Cotas não alcança — o
+    /// egresso de escola privada.
+    /// </summary>
     [Fact(DisplayName = "PcD opt-in, não escola pública → {AC, AC_PCD}")]
     public void PcdSemEscolaPublica_AcEAcPcd() =>
         Derivar(Fatos(("CONCORRER_PCD", Sim))).Should().Equal("AC", "AC_PCD");
 
-    [Fact(DisplayName = "PcD opt-in, escola pública, sem renda → {AC, AC_PCD, LI_PCD}")]
+    /// <summary>
+    /// Vindo de escola pública, a via é a da Lei: `LI_PCD`. Somar `AC_PCD` daria
+    /// a este candidato a vaga institucional criada para quem não tem essa via
+    /// (UNI-REQ-0076).
+    /// </summary>
+    [Fact(DisplayName = "PcD opt-in, escola pública, sem renda → {AC, LI_PCD}")]
     public void PcdEscolaPublicaSemRenda() =>
         Derivar(Fatos(
             ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_RENDA", Nao)))
-            .Should().Equal("AC", "AC_PCD", "LI_PCD");
+            .Should().Equal("AC", "LI_PCD");
 
-    [Fact(DisplayName = "PcD opt-in, escola pública, +renda → {AC, AC_PCD, LI_PCD, LB_PCD}")]
+    [Fact(DisplayName = "PcD opt-in, escola pública, +renda → {AC, LI_PCD, LB_PCD}")]
     public void PcdEscolaPublicaComRenda() =>
         Derivar(Fatos(
             ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_RENDA", Sim)))
-            .Should().Equal("AC", "AC_PCD", "LB_PCD", "LI_PCD");
+            .Should().Equal("AC", "LB_PCD", "LI_PCD");
 
     [Fact(DisplayName = "Escola pública + CONCORRER_EP, sem renda → {AC, LI_EP}")]
     public void EscolaPublicaEpSemRenda() =>
@@ -156,12 +165,35 @@ public sealed class MotorDerivacaoModalidadeTests
             ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Sim)))
             .Should().Equal("AC", "LB_PPI", "LB_Q", "LI_PPI", "LI_Q");
 
-    [Fact(DisplayName = "PcD + PPI + EP, escola pública, +renda → união das oito modalidades")]
+    /// <summary>
+    /// O que separa as duas vagas de PcD é a origem escolar, e só ela: mesma
+    /// deficiência, mesmo opt-in, modalidades distintas. `AC_PCD` alcança quem
+    /// a Lei de Cotas não alcança, e não havendo ocupação a vaga retorna a `AC`
+    /// — somar as duas ao mesmo candidato tiraria vaga de quem só tem uma via.
+    /// </summary>
+    [Fact(DisplayName = "A origem escolar decide entre AC_PCD e LI_PCD, e nunca dá as duas")]
+    public void OrigemEscolarSeparaAsDuasVagasDePcd()
+    {
+        IReadOnlyCollection<string> escolaPrivada = Derivar(Fatos(
+            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Nao)));
+        IReadOnlyCollection<string> escolaPublica = Derivar(Fatos(
+            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim)));
+
+        escolaPrivada.Should().Contain("AC_PCD").And.NotContain("LI_PCD");
+        escolaPublica.Should().Contain("LI_PCD").And.NotContain("AC_PCD");
+    }
+
+    /// <summary>
+    /// Todas as vias da Lei ao mesmo tempo. `AC_PCD` fica de fora porque este
+    /// candidato vem de escola pública: a vaga institucional é de quem não tem
+    /// acesso às cotas.
+    /// </summary>
+    [Fact(DisplayName = "PcD + PPI + EP, escola pública, +renda → as seis modalidades da Lei, mais AC")]
     public void PcdPpiEp_UniaoCompleta() =>
         Derivar(Fatos(
             ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim),
             ("CONCORRER_EP", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_RENDA", Sim)))
-            .Should().Equal("AC", "AC_PCD", "LB_EP", "LB_PCD", "LB_PPI", "LI_EP", "LI_PCD", "LI_PPI");
+            .Should().Equal("AC", "LB_EP", "LB_PCD", "LB_PPI", "LI_EP", "LI_PCD", "LI_PPI");
 
     // ── Regras estruturais do motor ─────────────────────────────────────────────────────
 
