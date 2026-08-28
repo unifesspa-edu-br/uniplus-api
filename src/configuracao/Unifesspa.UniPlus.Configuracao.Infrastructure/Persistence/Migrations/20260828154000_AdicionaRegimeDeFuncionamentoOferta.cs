@@ -14,9 +14,16 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
     /// propósito: um default preencheria toda oferta preexistente com um valor
     /// que ninguém declarou, e o regime de funcionamento não é derivável do
     /// regime de turno, dos turnos, do formato pedagógico nem do programa. Sobre
-    /// tabela com linhas, o <c>ALTER TABLE</c> falha com <c>23502</c> — a recusa
-    /// é o comportamento desejado: o dado preexistente precisa ser classificado
-    /// explicitamente antes de a coluna existir.
+    /// tabela com linhas, o <c>ALTER TABLE</c> falha com <c>23502</c>, e a recusa
+    /// é o comportamento desejado.
+    /// <para>Classificar aqui não significa preencher a coluna antes desta
+    /// migration — isso não é executável, já que ela é quem cria a coluna.
+    /// Significa decidir, fora do código, o destino das linhas que existirem:
+    /// removê-las quando forem dado de teste, ou autorizar explicitamente um
+    /// valor para elas, caso em que a decisão vira um <c>UPDATE</c> declarado
+    /// numa migration própria, com autoria e data. O que esta migration recusa é
+    /// tomar essa decisão por conta própria, escolhendo um regime que ninguém
+    /// declarou.</para>
     /// <para>A recusa é segura. Pela ADR-0127 as migrations rodam num Job de
     /// deploy que aborta o rollout antes de qualquer pod ser tocado, então a
     /// falha interrompe a publicação em vez de deixar o ambiente meio migrado.
