@@ -1,0 +1,30 @@
+# Recorte representativo de
+# environments/hml-standalone-single/values.yaml do uniplus-infra: reproduz
+# o bloco que o editor de tag percorre (chave top-level, aninhamento de
+# `image:`, comentários entremeados) e o vizinho top-level que delimita o
+# fim do bloco. Não precisa acompanhar o arquivo real linha a linha — os
+# guards de drift do workflow é que tratam divergência estrutural em runtime.
+
+global:
+  domain: hml.uniplus.unifesspa.edu.br
+
+uniplusApiHost:
+  enabled: true
+
+  image:
+    tag: v0.9.1
+
+  # A migration passa a ser aplicada pelo Job `pre-upgrade` (ADR-0127 do
+  # uniplus-api) antes do rollout, e não mais no boot do pod.
+  migration:
+    enabled: true
+
+  resources:
+    limits:
+      memory: 1Gi
+
+uniplusGeoApi:
+  enabled: true
+
+  image:
+    tag: v0.4.2
