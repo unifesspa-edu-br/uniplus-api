@@ -107,6 +107,24 @@ jobs:
       - name: Verificar pacotes proibidos
         run: bash tools/forbidden-deps/check.sh
 
+  bump-infra-tag:
+    name: Bump de tag (lógica do workflow)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Validar a lógica de bump-infra-tag.yml
+        # O workflow de bump só roda em release publicada, contra outro
+        # repositório — sem este gate, um erro nele só apareceria com o PR
+        # de bump já aberto (ou faltando). O script extrai os trechos do
+        # próprio workflow e os exercita contra fixtures.
+        run: bash tools/bump-infra-tag/validate.sh
+
   formatacao:
     name: Formatação (dotnet format)
     runs-on: ubuntu-latest
