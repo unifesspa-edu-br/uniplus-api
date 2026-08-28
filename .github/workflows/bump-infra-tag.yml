@@ -162,6 +162,7 @@ jobs:
       - name: Criar branch, commitar e push
         id: commit
         env:
+          GH_TOKEN: ${{ secrets.INFRA_BUMP_TOKEN }}
           NOVA_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
@@ -189,11 +190,29 @@ jobs:
           # Idempotência: se "Publish Images" for reexecutado pra mesma tag
           # (retry manual, rerun de job) antes do PR anterior ser mergeado,
           # a branch determinística já existe no remoto — sem este guard,
-          # o push abaixo falha (non-fast-forward). Trata como no-op: o PR
-          # já deve estar aberto.
+          # o push abaixo falha (non-fast-forward).
+          #
+          # Branch existir não prova que o PR foi aberto: se o push passou e a
+          # criação do PR falhou, tratar como no-op deixaria a release com uma
+          # branch órfã que nenhum rerun recupera. Quem decide é o PR.
+          #
+          # A consulta ignora o estado de propósito. PR mergeado significa tag
+          # já promovida, e PR fechado sem merge significa recusa humana —
+          # abrir outro por conta própria desfaria a decisão. Só a ausência
+          # completa de PR indica trabalho interrompido.
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
-            echo "Branch $BRANCH já existe no uniplus-infra — provavelmente já há PR aberto para $NOVA_TAG. Nada a fazer."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            PRS=$(gh pr list --repo unifesspa-edu-br/uniplus-infra \
+              --head "$BRANCH" --state all --json number --jq 'length')
+
+            if [ "$PRS" != "0" ]; then
+              echo "Branch $BRANCH já tem PR no uniplus-infra. Nada a fazer."
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "::warning::Branch $BRANCH existe sem PR algum — abrindo o PR sobre ela."
+            echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
