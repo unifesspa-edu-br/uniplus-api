@@ -57,12 +57,13 @@ public static class CriarOfertaCursoCommandHandler
         ArgumentNullException.ThrowIfNull(unidadeReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // Validação sempre vence I/O: os oito campos regulatórios do payload não
+        // Validação sempre vence I/O: os dez campos regulatórios do payload não
         // dependem de curso, local nem unidade — falham rápido antes de qualquer
         // busca no próprio módulo ou em módulo cruzado.
         Result preCheck = OfertaCurso.ValidarCamposDoPayload(
             command.ProgramaDeOferta,
             command.FormatoPedagogico,
+            command.RegimeDeFuncionamento,
             command.RegimeDeTurno,
             command.Turnos,
             command.EMecCodigo,
@@ -127,6 +128,7 @@ public static class CriarOfertaCursoCommandHandler
             unidadeOfertanteResult.Value!,
             command.ProgramaDeOferta,
             command.FormatoPedagogico,
+            command.RegimeDeFuncionamento,
             command.RegimeDeTurno,
             command.Turnos,
             command.EMecCodigo,

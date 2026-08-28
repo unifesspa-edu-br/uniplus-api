@@ -28,13 +28,14 @@ public sealed class AtualizarOfertaCursoCommandHandlerTests
     private static OfertaCurso OfertaExistente(UnidadeOfertante? unidade = null) =>
         OfertaCurso.Criar(
             CursoId, LocalOfertaId, unidade ?? Unidade(), "REGULAR", "PRESENCIAL",
-            "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40, null, null).Value!;
+            "EXTENSIVO", "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40, null, null).Value!;
 
     private static AtualizarOfertaCursoCommand Comando(
         Guid id,
         string programa = "REGULAR",
         string? baseLegal = null) =>
-        new(id, programa, RegimeDeTurno: "INTEGRAL", Turnos: ["NOTURNO", "VESPERTINO"],
+        new(id, programa, RegimeDeFuncionamento: "EXTENSIVO", RegimeDeTurno: "INTEGRAL",
+            Turnos: ["NOTURNO", "VESPERTINO"],
             FormatoPedagogico: "EAD", EMecCodigo: "654321", CodigoSga: "ENG-02",
             VagasAnuaisAutorizadas: 60, BaseLegal: baseLegal, AtoAutorizacaoMec: null);
 

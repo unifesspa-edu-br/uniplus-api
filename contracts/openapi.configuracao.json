@@ -9442,6 +9442,7 @@
         "required": [
           "id",
           "programaDeOferta",
+          "regimeDeFuncionamento",
           "regimeDeTurno",
           "turnos"
         ],
@@ -9452,6 +9453,12 @@
             "format": "uuid"
           },
           "programaDeOferta": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regimeDeFuncionamento": {
             "type": [
               "null",
               "string"
@@ -10494,6 +10501,7 @@
           "localOfertaId",
           "unidadeOfertanteOrigemId",
           "programaDeOferta",
+          "regimeDeFuncionamento",
           "regimeDeTurno",
           "turnos"
         ],
@@ -10512,6 +10520,12 @@
             "format": "uuid"
           },
           "programaDeOferta": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regimeDeFuncionamento": {
             "type": [
               "null",
               "string"
@@ -11669,6 +11683,7 @@
           "unidadeOfertante",
           "programaDeOferta",
           "formatoPedagogico",
+          "regimeDeFuncionamento",
           "regimeDeTurno",
           "turnos",
           "eMecCodigo",
@@ -11699,6 +11714,9 @@
             "type": "string"
           },
           "formatoPedagogico": {
+            "type": "string"
+          },
+          "regimeDeFuncionamento": {
             "type": "string"
           },
           "regimeDeTurno": {

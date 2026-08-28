@@ -13,8 +13,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// curricular pura) a um <see cref="LocalOferta"/> e à unidade ofertante
 /// (instituto/faculdade, snapshot-copy — ADR-0061), carregando os atributos
 /// que variam por campus: código e-MEC, código no sistema de gestão acadêmica,
-/// programa, formato pedagógico, regime de turno e turnos, teto de vagas e-MEC
-/// e base legal.
+/// programa, formato pedagógico, regime de funcionamento, regime de turno e
+/// turnos, teto de vagas e-MEC e base legal.
 /// O mesmo curso tem ofertas distintas por campus, com códigos e-MEC diferentes.
 /// </summary>
 /// <remarks>
@@ -36,6 +36,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// contra a coleção — dois turnos sob <c>REGULAR</c> é recusa, não promoção
 /// silenciosa a <c>INTEGRAL</c>. A leitura devolve os turnos em ordem canônica
 /// (matutino, vespertino, noturno), qualquer que tenha sido a ordem de entrada.</para>
+/// <para><see cref="RegimeDeFuncionamento"/> é dimensão <b>própria</b> e também
+/// obrigatória (UNI-REQ-0138, ADR-0128): <c>INTENSIVO</c> ou <c>EXTENSIVO</c>,
+/// declarado e nunca inferido da quantidade de turnos, do regime de turno, do
+/// formato pedagógico ou do programa. A única compatibilidade entre as duas
+/// dimensões é que <c>INTENSIVO</c> exige regime de turno <c>INTEGRAL</c>;
+/// <c>EXTENSIVO</c> aceita ambos. A combinação incompatível é recusada — nenhuma
+/// das duas dimensões é convertida para acomodar a outra.</para>
 /// <para>Não há chave natural única entre ofertas vivas — a repetição
 /// curso×local×unidade é admitida (ex.: turnos ou programas distintos). A
 /// remoção é soft-delete simples e <b>não</b> é bloqueada por snapshots
@@ -59,6 +66,13 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
 
     public ProgramaDeOferta ProgramaDeOferta { get; private set; }
     public FormatoPedagogico FormatoPedagogico { get; private set; }
+
+    /// <summary>
+    /// Regime de funcionamento declarado — obrigatório, independente do
+    /// <see cref="RegimeDeTurno"/>. <c>INTENSIVO</c> exige regime de turno
+    /// <c>INTEGRAL</c>; <c>EXTENSIVO</c> aceita ambos.
+    /// </summary>
+    public RegimeDeFuncionamento RegimeDeFuncionamento { get; private set; }
 
     /// <summary>Regime de turno declarado — obrigatório, define quantos turnos a oferta ocupa.</summary>
     public RegimeDeTurno RegimeDeTurno { get; private set; }
@@ -96,7 +110,8 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     /// Cria uma nova Oferta de Curso. Os enums chegam como tokens textuais
     /// (UPPER_SNAKE): <paramref name="programaDeOferta"/> é obrigatório;
     /// <paramref name="formatoPedagogico"/> aplica default PRESENCIAL quando
-    /// ausente; <paramref name="regimeDeTurno"/> e <paramref name="turnos"/> são
+    /// ausente; <paramref name="regimeDeFuncionamento"/>,
+    /// <paramref name="regimeDeTurno"/> e <paramref name="turnos"/> são
     /// obrigatórios e conferidos entre si. O
     /// <paramref name="unidadeOfertante"/> já chega congelado (resolvido pelo
     /// handler via <c>IUnidadeReader</c>). A existência viva do curso e do local
@@ -108,6 +123,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         UnidadeOfertante unidadeOfertante,
         string? programaDeOferta,
         string? formatoPedagogico,
+        string? regimeDeFuncionamento,
         string? regimeDeTurno,
         IReadOnlyList<string?>? turnos,
         string? eMecCodigo,
@@ -119,8 +135,9 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         ArgumentNullException.ThrowIfNull(unidadeOfertante);
 
         Result<CamposResolvidos> camposResult = ValidarComuns(
-            programaDeOferta, formatoPedagogico, regimeDeTurno, turnos, eMecCodigo,
-            codigoSga, vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
+            programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno,
+            turnos, eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal,
+            atoAutorizacaoMec);
         if (camposResult.IsFailure)
         {
             return Result<OfertaCurso>.ValidationFailure(camposResult.Errors);
@@ -139,8 +156,8 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Atualiza os atributos editáveis da Oferta de Curso: programa, formato
-    /// pedagógico, regime de turno e turnos, códigos (e-MEC / SGA), teto de vagas, base legal e ato
-    /// de autorização. <c>CursoId</c>, <c>LocalOfertaId</c> e
+    /// pedagógico, regime de funcionamento, regime de turno e turnos, códigos
+    /// (e-MEC / SGA), teto de vagas, base legal e ato de autorização. <c>CursoId</c>, <c>LocalOfertaId</c> e
     /// <c>UnidadeOfertante</c> são <b>imutáveis</b> — mudar curso×local×unidade
     /// caracteriza outra oferta, não uma edição; este método não os recebe nem os
     /// altera. Revalida o guard condicional da base legal na transição (ex.:
@@ -149,6 +166,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     public Result Atualizar(
         string? programaDeOferta,
         string? formatoPedagogico,
+        string? regimeDeFuncionamento,
         string? regimeDeTurno,
         IReadOnlyList<string?>? turnos,
         string? eMecCodigo,
@@ -158,8 +176,9 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         string? atoAutorizacaoMec)
     {
         Result<CamposResolvidos> camposResult = ValidarComuns(
-            programaDeOferta, formatoPedagogico, regimeDeTurno, turnos, eMecCodigo,
-            codigoSga, vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
+            programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno,
+            turnos, eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal,
+            atoAutorizacaoMec);
         if (camposResult.IsFailure)
         {
             return Result.ValidationFailure(camposResult.Errors);
@@ -171,8 +190,9 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida os nove campos regulatórios editáveis (o guard condicional da base
-    /// legal e a coerência regime×turnos inclusos), sem I/O e sem construir/mutar
+    /// Valida os dez campos regulatórios editáveis (o guard condicional da base
+    /// legal, a coerência regime de turno×turnos e a compatibilidade entre os dois
+    /// regimes inclusas), sem I/O e sem construir/mutar
     /// nada — para os handlers de
     /// criação e atualização falharem rápido antes de qualquer busca no banco ou
     /// em módulo cruzado (validação sempre vence I/O). <see cref="Criar"/> e
@@ -183,6 +203,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     public static Result ValidarCamposDoPayload(
         string? programaDeOferta,
         string? formatoPedagogico,
+        string? regimeDeFuncionamento,
         string? regimeDeTurno,
         IReadOnlyList<string?>? turnos,
         string? eMecCodigo,
@@ -192,8 +213,9 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         string? atoAutorizacaoMec)
     {
         Result<CamposResolvidos> resultado = ValidarComuns(
-            programaDeOferta, formatoPedagogico, regimeDeTurno, turnos, eMecCodigo,
-            codigoSga, vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
+            programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno,
+            turnos, eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal,
+            atoAutorizacaoMec);
 
         return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
     }
@@ -202,6 +224,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     {
         ProgramaDeOferta = campos.ProgramaDeOferta;
         FormatoPedagogico = campos.FormatoPedagogico;
+        RegimeDeFuncionamento = campos.RegimeDeFuncionamento;
         RegimeDeTurno = campos.RegimeDeTurno;
         _turnos = [.. campos.Turnos];
         EMecCodigo = campos.EMecCodigo;
@@ -214,6 +237,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     private static Result<CamposResolvidos> ValidarComuns(
         string? programaDeOfertaToken,
         string? formatoPedagogicoToken,
+        string? regimeDeFuncionamentoToken,
         string? regimeDeTurnoToken,
         IReadOnlyList<string?>? turnosTokens,
         string? eMecCodigo,
@@ -241,6 +265,28 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
             erros.Add(new("formatoPedagogico", new DomainError(
                 OfertaCursoErrorCodes.FormatoPedagogicoInvalido,
                 $"Formato pedagógico deve ser um de: {string.Join(", ", FormatosPedagogicos.TokensCanonicos)}.")));
+        }
+
+        // Regime de funcionamento — obrigatório, sem default, dimensão própria
+        // (UNI-REQ-0138). Ausência e token fora do domínio são erros distintos,
+        // pelo mesmo motivo do regime de turno.
+        bool funcionamentoOk = false;
+        RegimeDeFuncionamento funcionamento = RegimeDeFuncionamento.Nenhum;
+        if (string.IsNullOrWhiteSpace(regimeDeFuncionamentoToken))
+        {
+            erros.Add(new("regimeDeFuncionamento", new DomainError(
+                OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio,
+                $"Regime de funcionamento é obrigatório e deve ser um de: {string.Join(", ", RegimesDeFuncionamento.TokensCanonicos)}.")));
+        }
+        else if (RegimesDeFuncionamento.TryAnalisar(regimeDeFuncionamentoToken, out funcionamento))
+        {
+            funcionamentoOk = true;
+        }
+        else
+        {
+            erros.Add(new("regimeDeFuncionamento", new DomainError(
+                OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido,
+                $"Regime de funcionamento deve ser um de: {string.Join(", ", RegimesDeFuncionamento.TokensCanonicos)}.")));
         }
 
         // Regime de turno — obrigatório, sem default. Ausência e token fora do
@@ -324,6 +370,24 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
             }
         }
 
+        // Compatibilidade entre as duas dimensões (UNI-REQ-0138): INTENSIVO exige
+        // regime de turno INTEGRAL; EXTENSIVO aceita ambos. Só avaliável com os
+        // dois regimes reconhecidos — senão o erro seria derivado de um token
+        // inválido, e não uma incompatibilidade independente. Nenhuma dimensão é
+        // convertida para acomodar a outra: a recusa é o resultado.
+        if (funcionamentoOk && regimeOk)
+        {
+            RegimeDeTurno? regimeExigido = RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento);
+            if (regimeExigido is not null && regime != regimeExigido)
+            {
+                erros.Add(new("regimeDeFuncionamento", new DomainError(
+                    OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno,
+                    $"A oferta {RegimesDeFuncionamento.ParaTokenCanonico(funcionamento)} exige regime de turno "
+                    + $"{RegimesDeTurno.ParaTokenCanonico(regimeExigido.Value)}; foi declarado "
+                    + $"{RegimesDeTurno.ParaTokenCanonico(regime)}.")));
+            }
+        }
+
         // Ordem canônica (matutino, vespertino, noturno) — estável qualquer que
         // tenha sido a ordem de entrada, para leitura, snapshot e testes de
         // contrato não oscilarem.
@@ -385,8 +449,8 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         }
 
         return Result<CamposResolvidos>.Success(new CamposResolvidos(
-            programa, formato, regime, turnosCanonicos, eMecNorm, codigoSgaNorm,
-            vagasAnuaisAutorizadas, baseLegalNorm, atoNorm));
+            programa, formato, funcionamento, regime, turnosCanonicos, eMecNorm,
+            codigoSgaNorm, vagasAnuaisAutorizadas, baseLegalNorm, atoNorm));
     }
 
     private static string? NormalizarOpcional(string? valor) =>
@@ -395,6 +459,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     private sealed record CamposResolvidos(
         ProgramaDeOferta ProgramaDeOferta,
         FormatoPedagogico FormatoPedagogico,
+        RegimeDeFuncionamento RegimeDeFuncionamento,
         RegimeDeTurno RegimeDeTurno,
         IReadOnlyList<TurnoOferta> Turnos,
         string? EMecCodigo,

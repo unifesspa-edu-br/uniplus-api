@@ -20,6 +20,7 @@ public static class OfertaCursoMapping
                 oferta.UnidadeOfertante.Tipo),
             ProgramasDeOferta.ParaTokenCanonico(oferta.ProgramaDeOferta),
             FormatosPedagogicos.ParaTokenCanonico(oferta.FormatoPedagogico),
+            RegimesDeFuncionamento.ParaTokenCanonico(oferta.RegimeDeFuncionamento),
             RegimesDeTurno.ParaTokenCanonico(oferta.RegimeDeTurno),
             [.. TurnosOferta.OrdenarCanonicamente(oferta.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
             oferta.EMecCodigo,
