@@ -10,14 +10,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// o handler resolve a Unidade viva via <c>IUnidadeReader</c> (ADR-0056) e
 /// congela sigla/nome/tipo por snapshot-copy (ADR-0061) — o payload nunca traz
 /// o snapshot pronto. Enums como tokens UPPER_SNAKE: programa obrigatório;
-/// formato pedagógico com default PRESENCIAL quando ausente; regime de turno e
-/// turnos obrigatórios, conferidos entre si (REGULAR exige um turno; INTEGRAL,
-/// dois distintos). A base legal é obrigatória quando o programa não é REGULAR
+/// formato pedagógico com default PRESENCIAL quando ausente; regime de
+/// funcionamento, regime de turno e turnos obrigatórios, conferidos entre si
+/// (REGULAR exige um turno; INTEGRAL, dois distintos; INTENSIVO exige INTEGRAL). A base legal é obrigatória quando o programa não é REGULAR
 /// (guard de domínio). O ator de auditoria (<c>created_by</c>) é carimbado server-side
 /// via <c>IUserContext</c>, não no payload.
 /// </summary>
 /// <remarks>
-/// <c>ProgramaDeOferta</c> e <c>RegimeDeTurno</c> são <c>string?</c>, não
+/// <c>ProgramaDeOferta</c>, <c>RegimeDeFuncionamento</c> e <c>RegimeDeTurno</c>
+/// são <c>string?</c>, não
 /// <c>string</c> (ADR-0125): sem valor default, para o schema OpenAPI continuar
 /// listando-os como obrigatórios;
 /// nulo, para o campo ausente escapar do <c>[ApiController]</c> e chegar à
@@ -29,6 +30,7 @@ public sealed record CriarOfertaCursoCommand(
     Guid LocalOfertaId,
     Guid UnidadeOfertanteOrigemId,
     string? ProgramaDeOferta,
+    string? RegimeDeFuncionamento,
     string? RegimeDeTurno,
     IReadOnlyList<string?>? Turnos,
     string? FormatoPedagogico = null,

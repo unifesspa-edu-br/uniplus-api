@@ -42,6 +42,11 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .HasMaxLength(EnumTokenMaxLength)
             .IsRequired();
 
+        builder.Property(o => o.RegimeDeFuncionamento)
+            .HasConversion<RegimeDeFuncionamentoValueConverter>()
+            .HasMaxLength(EnumTokenMaxLength)
+            .IsRequired();
+
         builder.Property(o => o.RegimeDeTurno)
             .HasConversion<RegimeDeTurnoValueConverter>()
             .HasMaxLength(EnumTokenMaxLength)
@@ -135,6 +140,10 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             "ck_oferta_curso_regime_de_turno",
             $"regime_de_turno IN ({TokensSql(RegimesDeTurno.TokensCanonicos)})");
 
+        table.HasCheckConstraint(
+            "ck_oferta_curso_regime_de_funcionamento",
+            $"regime_de_funcionamento IN ({TokensSql(RegimesDeFuncionamento.TokensCanonicos)})");
+
         // Domínio fechado de cada elemento do array (o `<@` compara conjuntos).
         table.HasCheckConstraint(
             "ck_oferta_curso_turnos_dominio",
@@ -157,6 +166,15 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             + "AND ((regime_de_turno = 'REGULAR' AND cardinality(turnos) = 1) "
             + "OR (regime_de_turno = 'INTEGRAL' AND cardinality(turnos) = 2 AND turnos[1] <> turnos[2]))");
 
+        // Compatibilidade entre as duas dimensões (UNI-REQ-0138): a oferta
+        // INTENSIVA exige regime de turno INTEGRAL; a EXTENSIVA aceita ambos.
+        // Espelha no banco a invariante de Criar/Atualizar. A expressão é derivada
+        // do mesmo roster que o agregado consulta (RegimeDeTurnoExigido), para o
+        // CHECK não divergir da regra caso o vocabulário cresça.
+        table.HasCheckConstraint(
+            "ck_oferta_curso_funcionamento_regime_de_turno",
+            CompatibilidadeFuncionamentoRegimeSql());
+
         // Teto e-MEC: nulo aceito; zero aceito; negativo nunca.
         table.HasCheckConstraint(
             "ck_oferta_curso_vagas_anuais_autorizadas",
@@ -167,6 +185,26 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         table.HasCheckConstraint(
             "ck_oferta_curso_base_legal_programa",
             "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
+    }
+
+    // Uma cláusula por regime de funcionamento que restringe o regime de turno;
+    // os que não restringem (EXTENSIVO) não entram na expressão. Com o roster
+    // atual resulta em
+    // `regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL'`.
+    private static string CompatibilidadeFuncionamentoRegimeSql()
+    {
+        IEnumerable<string> clausulas = RegimesDeFuncionamento.TokensCanonicos
+            .Select(token =>
+            {
+                RegimesDeFuncionamento.TryAnalisar(token, out RegimeDeFuncionamento funcionamento);
+                return (Token: token, Exigido: RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento));
+            })
+            .Where(par => par.Exigido is not null)
+            .Select(par =>
+                $"(regime_de_funcionamento <> '{par.Token}' "
+                + $"OR regime_de_turno = '{RegimesDeTurno.ParaTokenCanonico(par.Exigido!.Value)}')");
+
+        return string.Join(" AND ", clausulas);
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

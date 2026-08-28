@@ -71,6 +71,7 @@ public sealed class OfertaCursoPersistenceTests
         persistida.UnidadeOfertante.Should().Be(unidade, "o owned type reidrata o snapshot por igualdade estrutural");
         persistida.ProgramaDeOferta.Should().Be(ProgramaDeOferta.Parfor);
         persistida.FormatoPedagogico.Should().Be(FormatoPedagogico.Semipresencial);
+        persistida.RegimeDeFuncionamento.Should().Be(RegimeDeFuncionamento.Intensivo);
         persistida.RegimeDeTurno.Should().Be(RegimeDeTurno.Integral);
         persistida.Turnos.Should().Equal(TurnoOferta.Vespertino, TurnoOferta.Noturno);
         persistida.EMecCodigo.Should().Be("123456");
@@ -90,6 +91,7 @@ public sealed class OfertaCursoPersistenceTests
         view.UnidadeOfertanteSigla.Should().Be(unidade.Sigla);
         view.ProgramaDeOferta.Should().Be("PARFOR");
         view.FormatoPedagogico.Should().Be("SEMIPRESENCIAL");
+        view.RegimeDeFuncionamento.Should().Be("INTENSIVO");
         view.RegimeDeTurno.Should().Be("INTEGRAL");
         view.Turnos.Should().Equal("VESPERTINO", "NOTURNO");
 
@@ -102,7 +104,7 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
         OfertaCurso oferta = OfertaCurso.Criar(
             cursoId, localId, NovaUnidade(), "REGULAR", null,
-            "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
+            "EXTENSIVO", "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -114,6 +116,7 @@ public sealed class OfertaCursoPersistenceTests
         OfertaCurso persistida = await readCtx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
         persistida.FormatoPedagogico.Should().Be(FormatoPedagogico.Presencial, "default conceitual quando o token está ausente");
+        persistida.RegimeDeFuncionamento.Should().Be(RegimeDeFuncionamento.Extensivo);
         persistida.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
         persistida.Turnos.Should().Equal(TurnoOferta.Matutino);
         persistida.EMecCodigo.Should().BeNull();
@@ -140,7 +143,7 @@ public sealed class OfertaCursoPersistenceTests
             OfertaCurso rastreada = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
             Result atualizacao = rastreada.Atualizar(
-                "PARFOR", "SEMIPRESENCIAL", "REGULAR", ["MATUTINO"],
+                "PARFOR", "SEMIPRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"],
                 "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009");
             atualizacao.IsSuccess.Should().BeTrue(atualizacao.Error?.Message);
 
@@ -259,6 +262,82 @@ public sealed class OfertaCursoPersistenceTests
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_oferta_curso_turnos_regime espelha a invariante do agregado");
+    }
+
+    [Theory(DisplayName = "CHECK de banco rejeita regime de funcionamento fora do domínio via SQL cru")]
+    [InlineData("SEMI_INTENSIVO")]
+    [InlineData("Intensivo")]
+    [InlineData("INTEGRAL")]
+    [InlineData("")]
+    public async Task Check_RegimeDeFuncionamento_RejeitaForaDoDominio(string token)
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        Func<Task> act = () => InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null,
+            funcionamento: token);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_oferta_curso_regime_de_funcionamento impede token fora do domínio");
+    }
+
+    [Fact(DisplayName = "CHECK de banco recusa a oferta intensiva com regime de turno regular")]
+    public async Task Check_FuncionamentoRegimeDeTurno_RecusaIntensivoRegular()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        Func<Task> act = () => InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null,
+            funcionamento: "INTENSIVO");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_oferta_curso_funcionamento_regime_de_turno espelha a invariante do agregado");
+    }
+
+    [Theory(DisplayName = "CHECK de banco aceita as três combinações válidas de funcionamento e regime de turno")]
+    [InlineData("EXTENSIVO", "REGULAR", new[] { "MATUTINO" })]
+    [InlineData("EXTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
+    [InlineData("INTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
+    public async Task Check_FuncionamentoRegimeDeTurno_AceitaCombinacoesValidas(
+        string funcionamento, string regime, string[] turnos)
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        Func<Task> act = () => InserirCruAsync(
+            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
+            regime: regime, turnos: turnos, vagas: null, baseLegal: null,
+            funcionamento: funcionamento);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact(DisplayName = "Coluna do regime de funcionamento é NOT NULL — nenhum default preenche a ausência")]
+    public async Task Insert_SemRegimeDeFuncionamento_ViolaNotNull()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = () => ctx.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO configuracao.oferta_curso
+                (id, curso_id, local_oferta_id,
+                 unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
+                 programa_de_oferta, formato_pedagogico, regime_de_turno, turnos,
+                 vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
+            VALUES
+                ({Guid.CreateVersion7()}, {cursoId}, {localId},
+                 {Guid.CreateVersion7()}, {"FACET"}, {"Faculdade de Computação"}, {"Faculdade"},
+                 {"REGULAR"}, {"PRESENCIAL"}, {"REGULAR"}, {new[] { "MATUTINO" }}::varchar(30)[],
+                 NULL, NULL, {DateTimeOffset.UtcNow}, {false})
+            """);
+
+        Npgsql.PostgresException pg =
+            (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        pg.SqlState.Should().Be(
+            "23502",
+            "a coluna nasce NOT NULL sem defaultValue — omitir o regime não vira valor presumido");
     }
 
     [Theory(DisplayName = "CHECK de banco aceita as combinações válidas de regime e turnos")]
@@ -505,7 +584,7 @@ public sealed class OfertaCursoPersistenceTests
     private static OfertaCurso NovaOferta(Guid cursoId, Guid localId, UnidadeOfertante unidade) =>
         OfertaCurso.Criar(
             cursoId, localId, unidade, "PARFOR", "SEMIPRESENCIAL",
-            "INTEGRAL", ["NOTURNO", "VESPERTINO"],
+            "INTENSIVO", "INTEGRAL", ["NOTURNO", "VESPERTINO"],
             "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009").Value!;
 
     private async Task InserirCruAsync(
@@ -516,7 +595,8 @@ public sealed class OfertaCursoPersistenceTests
         string regime,
         string?[] turnos,
         int? vagas,
-        string? baseLegal)
+        string? baseLegal,
+        string funcionamento = "EXTENSIVO")
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
@@ -524,12 +604,14 @@ public sealed class OfertaCursoPersistenceTests
             INSERT INTO configuracao.oferta_curso
                 (id, curso_id, local_oferta_id,
                  unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
-                 programa_de_oferta, formato_pedagogico, regime_de_turno, turnos,
+                 programa_de_oferta, formato_pedagogico, regime_de_funcionamento,
+                 regime_de_turno, turnos,
                  vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
             VALUES
                 ({Guid.CreateVersion7()}, {cursoId}, {localId},
                  {Guid.CreateVersion7()}, {"FACET"}, {"Faculdade de Computação"}, {"Faculdade"},
-                 {programa}, {formato}, {regime}, {turnos}::varchar(30)[],
+                 {programa}, {formato}, {funcionamento},
+                 {regime}, {turnos}::varchar(30)[],
                  {vagas}, {baseLegal}, {DateTimeOffset.UtcNow}, {false})
             """);
     }
@@ -550,12 +632,14 @@ public sealed class OfertaCursoPersistenceTests
             INSERT INTO configuracao.oferta_curso
                 (id, curso_id, local_oferta_id,
                  unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
-                 programa_de_oferta, formato_pedagogico, regime_de_turno, turnos,
+                 programa_de_oferta, formato_pedagogico, regime_de_funcionamento,
+                 regime_de_turno, turnos,
                  vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
             VALUES
                 ({Guid.CreateVersion7()}, {cursoId}, {localId},
                  {Guid.CreateVersion7()}, {"FACET"}, {"Faculdade de Computação"}, {"Faculdade"},
-                 {"REGULAR"}, {"PRESENCIAL"}, {regime}, {turnosLiteral}::varchar(30)[],
+                 {"REGULAR"}, {"PRESENCIAL"}, {"EXTENSIVO"},
+                 {regime}, {turnosLiteral}::varchar(30)[],
                  NULL, NULL, {DateTimeOffset.UtcNow}, {false})
             """);
     }

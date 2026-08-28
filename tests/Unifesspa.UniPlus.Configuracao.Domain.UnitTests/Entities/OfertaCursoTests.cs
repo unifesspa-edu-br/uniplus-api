@@ -20,6 +20,7 @@ public sealed class OfertaCursoTests
     private static Result<OfertaCurso> Criar(
         string? programaDeOferta = "REGULAR",
         string? formatoPedagogico = "PRESENCIAL",
+        string? regimeDeFuncionamento = "EXTENSIVO",
         string? regimeDeTurno = "REGULAR",
         IReadOnlyList<string?>? turnos = null,
         string? eMecCodigo = "123456",
@@ -30,8 +31,8 @@ public sealed class OfertaCursoTests
         UnidadeOfertante? unidade = null) =>
         OfertaCurso.Criar(
             CursoId, LocalOfertaId, unidade ?? Unidade(), programaDeOferta, formatoPedagogico,
-            regimeDeTurno, turnos ?? ["MATUTINO"], eMecCodigo, codigoSga,
-            vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
+            regimeDeFuncionamento, regimeDeTurno, turnos ?? ["MATUTINO"], eMecCodigo,
+            codigoSga, vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec);
 
     [Fact(DisplayName = "Criar com dados válidos preenche os campos e fica ativa com Guid v7")]
     public void Criar_DadosValidos_Preenche()
@@ -46,6 +47,7 @@ public sealed class OfertaCursoTests
         oferta.UnidadeOfertante.Should().Be(unidade);
         oferta.ProgramaDeOferta.Should().Be(ProgramaDeOferta.Regular);
         oferta.FormatoPedagogico.Should().Be(FormatoPedagogico.Presencial);
+        oferta.RegimeDeFuncionamento.Should().Be(RegimeDeFuncionamento.Extensivo);
         oferta.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
         oferta.Turnos.Should().Equal(TurnoOferta.Matutino);
         oferta.EMecCodigo.Should().Be("123456");
@@ -60,8 +62,8 @@ public sealed class OfertaCursoTests
     public void Criar_UnidadeNula_Lanca()
     {
         Action act = () => OfertaCurso.Criar(
-            CursoId, LocalOfertaId, null!, "REGULAR", null, "REGULAR", ["MATUTINO"],
-            null, null, null, null, null);
+            CursoId, LocalOfertaId, null!, "REGULAR", null, "EXTENSIVO", "REGULAR",
+            ["MATUTINO"], null, null, null, null, null);
 
         act.Should().Throw<ArgumentNullException>();
     }
@@ -187,7 +189,7 @@ public sealed class OfertaCursoTests
     {
         Result<OfertaCurso> resultado = OfertaCurso.Criar(
             CursoId, LocalOfertaId, Unidade(), "REGULAR", "PRESENCIAL",
-            "REGULAR", null, null, null, null, null, null);
+            "EXTENSIVO", "REGULAR", null, null, null, null, null, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnosObrigatorios);
@@ -299,13 +301,190 @@ public sealed class OfertaCursoTests
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnoInvalido);
     }
 
+    // ── Regime de funcionamento (UNI-REQ-0138) ────────────────────────────
+
+    [Theory(DisplayName = "Os dois tokens canônicos de regime de funcionamento são aceitos")]
+    [InlineData("EXTENSIVO", "REGULAR", new[] { "MATUTINO" }, RegimeDeFuncionamento.Extensivo)]
+    [InlineData("EXTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" }, RegimeDeFuncionamento.Extensivo)]
+    [InlineData("INTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" }, RegimeDeFuncionamento.Intensivo)]
+    public void Criar_FuncionamentoCanonico_Aceita(
+        string funcionamento, string regimeDeTurno, string[] turnos, RegimeDeFuncionamento esperado)
+    {
+        OfertaCurso oferta = Criar(
+            regimeDeFuncionamento: funcionamento, regimeDeTurno: regimeDeTurno, turnos: turnos).Value!;
+
+        oferta.RegimeDeFuncionamento.Should().Be(esperado);
+    }
+
+    [Theory(DisplayName = "Oferta extensiva regular aceita qualquer um dos três turnos")]
+    [InlineData("MATUTINO")]
+    [InlineData("VESPERTINO")]
+    [InlineData("NOTURNO")]
+    public void Criar_ExtensivoRegular_AceitaQualquerTurno(string turno)
+    {
+        Result<OfertaCurso> resultado = Criar(
+            regimeDeFuncionamento: "EXTENSIVO", regimeDeTurno: "REGULAR", turnos: [turno]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Theory(DisplayName = "Regime de funcionamento ausente é recusado por erro próprio, não presumido")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Criar_FuncionamentoAusente_FalhaComObrigatorio(string? token)
+    {
+        Result<OfertaCurso> resultado = Criar(regimeDeFuncionamento: token);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio);
+        resultado.Errors[0].Field.Should().Be("regimeDeFuncionamento");
+    }
+
+    [Fact(DisplayName = "Regime de turno INTEGRAL com dois turnos não presume oferta intensiva")]
+    public void Criar_IntegralComDoisTurnosSemFuncionamento_NaoInfere()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            regimeDeFuncionamento: null, regimeDeTurno: "INTEGRAL",
+            turnos: ["MATUTINO", "VESPERTINO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(1);
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio);
+    }
+
+    [Theory(DisplayName = "Token de regime de funcionamento fora do domínio fechado é recusado")]
+    [InlineData("SEMI_INTENSIVO")]
+    [InlineData("Intensivo")]
+    [InlineData("intensivo")]
+    [InlineData("1")]
+    [InlineData("INTEGRAL")]
+    [InlineData("PRESENCIAL")]
+    public void Criar_FuncionamentoInvalido_Falha(string token)
+    {
+        Result<OfertaCurso> resultado = Criar(regimeDeFuncionamento: token);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido);
+        resultado.Errors[0].Field.Should().Be("regimeDeFuncionamento");
+    }
+
+    [Fact(DisplayName = "Oferta intensiva com regime de turno regular é recusada, sem converter nenhuma das dimensões")]
+    public void Criar_IntensivoComRegular_RecusaSemConverter()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            regimeDeFuncionamento: "INTENSIVO", regimeDeTurno: "REGULAR", turnos: ["MATUTINO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle(
+            e => e.Error.Code == OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno
+                 && e.Field == "regimeDeFuncionamento");
+        resultado.Error!.Message.Should().Contain("INTENSIVO").And.Contain("INTEGRAL");
+    }
+
+    [Fact(DisplayName = "Regime de funcionamento inválido não deriva erro de incompatibilidade")]
+    public void Criar_FuncionamentoInvalidoComRegular_NaoDerivaIncompatibilidade()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            regimeDeFuncionamento: "SEMI_INTENSIVO", regimeDeTurno: "REGULAR", turnos: ["MATUTINO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(1);
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido);
+    }
+
+    [Fact(DisplayName = "Regime de turno inválido não deriva erro de incompatibilidade com o funcionamento")]
+    public void Criar_IntensivoComRegimeDeTurnoInvalido_NaoDerivaIncompatibilidade()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            regimeDeFuncionamento: "INTENSIVO", regimeDeTurno: "PARCIAL", turnos: ["MATUTINO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(1);
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeTurnoInvalido);
+    }
+
+    [Fact(DisplayName = "As falhas das duas dimensões acumulam no mesmo Result, sem retorno antecipado")]
+    public void Criar_FuncionamentoEProgramaInvalidos_AcumulaAmbos()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            programaDeOferta: "PROUNI", regimeDeFuncionamento: "SEMI_INTENSIVO");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().Contain([
+            OfertaCursoErrorCodes.ProgramaDeOfertaInvalido,
+            OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido,
+        ]);
+    }
+
+    [Fact(DisplayName = "Oferta intensiva com um turno acumula a incompatibilidade e a cardinalidade")]
+    public void Criar_IntensivoRegularComUmTurno_AcumulaAmbasAsFalhas()
+    {
+        Result<OfertaCurso> resultado = Criar(
+            regimeDeFuncionamento: "INTENSIVO", regimeDeTurno: "REGULAR",
+            turnos: ["MATUTINO", "NOTURNO"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().Contain([
+            OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime,
+            OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno,
+        ]);
+    }
+
+    [Fact(DisplayName = "Atualizar aplica a mesma invariante de compatibilidade e não muta o agregado ao recusar")]
+    public void Atualizar_ParaIntensivoMantendoRegular_RecusaSemMutar()
+    {
+        OfertaCurso oferta = Criar(
+            regimeDeFuncionamento: "EXTENSIVO", regimeDeTurno: "REGULAR", turnos: ["MATUTINO"]).Value!;
+
+        Result resultado = oferta.Atualizar(
+            "REGULAR", "PRESENCIAL", "INTENSIVO", "REGULAR", ["MATUTINO"],
+            null, null, null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should()
+            .Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno);
+        oferta.RegimeDeFuncionamento.Should().Be(
+            RegimeDeFuncionamento.Extensivo, "a falha de validação não converte nem muta o agregado");
+        oferta.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
+        oferta.Turnos.Should().Equal(TurnoOferta.Matutino);
+    }
+
+    [Fact(DisplayName = "Atualizar promove a oferta a intensiva quando o regime de turno acompanha")]
+    public void Atualizar_ParaIntensivoComIntegral_Aceita()
+    {
+        OfertaCurso oferta = Criar(
+            regimeDeFuncionamento: "EXTENSIVO", regimeDeTurno: "REGULAR", turnos: ["MATUTINO"]).Value!;
+
+        Result resultado = oferta.Atualizar(
+            "REGULAR", "PRESENCIAL", "INTENSIVO", "INTEGRAL", ["MATUTINO", "VESPERTINO"],
+            null, null, null, null, null);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        oferta.RegimeDeFuncionamento.Should().Be(RegimeDeFuncionamento.Intensivo);
+        oferta.RegimeDeTurno.Should().Be(RegimeDeTurno.Integral);
+    }
+
+    [Fact(DisplayName = "Atualizar sem regime de funcionamento é recusado — o campo não é opcional na edição")]
+    public void Atualizar_SemFuncionamento_Falha()
+    {
+        OfertaCurso oferta = Criar().Value!;
+
+        Result resultado = oferta.Atualizar(
+            "REGULAR", "PRESENCIAL", null, "REGULAR", ["MATUTINO"],
+            null, null, null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio);
+    }
+
     [Fact(DisplayName = "Atualizar troca o regime e a coleção de turnos por inteiro")]
     public void Atualizar_TrocaRegimeETurnos()
     {
         OfertaCurso oferta = Criar(regimeDeTurno: "REGULAR", turnos: ["MATUTINO"]).Value!;
 
         Result resultado = oferta.Atualizar(
-            "REGULAR", "PRESENCIAL", "INTEGRAL", ["NOTURNO", "VESPERTINO"],
+            "REGULAR", "PRESENCIAL", "EXTENSIVO", "INTEGRAL", ["NOTURNO", "VESPERTINO"],
             null, null, null, null, null);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -376,7 +555,8 @@ public sealed class OfertaCursoTests
         OfertaCurso oferta = Criar(programaDeOferta: "REGULAR", baseLegal: null).Value!;
 
         Result resultado = oferta.Atualizar(
-            "PARFOR", "PRESENCIAL", "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40, null, null);
+            "PARFOR", "PRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"], "123456", "ENG-01",
+            40, null, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular);
@@ -390,8 +570,8 @@ public sealed class OfertaCursoTests
         OfertaCurso oferta = Criar(programaDeOferta: "REGULAR", baseLegal: null).Value!;
 
         Result resultado = oferta.Atualizar(
-            "PARFOR", "SEMIPRESENCIAL", "REGULAR", ["NOTURNO"], "654321", "PED-02", 50,
-            "Decreto 6.755/2009", "Portaria MEC 9/2009");
+            "PARFOR", "SEMIPRESENCIAL", "EXTENSIVO", "REGULAR", ["NOTURNO"], "654321",
+            "PED-02", 50, "Decreto 6.755/2009", "Portaria MEC 9/2009");
 
         resultado.IsSuccess.Should().BeTrue();
         oferta.ProgramaDeOferta.Should().Be(ProgramaDeOferta.Parfor);
@@ -414,7 +594,8 @@ public sealed class OfertaCursoTests
         Guid idOriginal = oferta.Id;
 
         Result resultado = oferta.Atualizar(
-            "OUTRO", "EAD", "REGULAR", ["NOTURNO"], null, null, null, "Resolução CONSEPE 1/2026", null);
+            "OUTRO", "EAD", "EXTENSIVO", "REGULAR", ["NOTURNO"], null, null, null,
+            "Resolução CONSEPE 1/2026", null);
 
         resultado.IsSuccess.Should().BeTrue();
         oferta.Id.Should().Be(idOriginal);
@@ -506,7 +687,8 @@ public sealed class OfertaCursoTests
     public void ValidarCamposDoPayload_CamposValidos_Aceita()
     {
         Result resultado = OfertaCurso.ValidarCamposDoPayload(
-            "REGULAR", "PRESENCIAL", "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40, null, null);
+            "REGULAR", "PRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"], "123456", "ENG-01",
+            40, null, null);
 
         resultado.IsSuccess.Should().BeTrue();
     }
