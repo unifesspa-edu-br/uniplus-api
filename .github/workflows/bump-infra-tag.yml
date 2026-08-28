@@ -187,29 +187,28 @@ jobs:
 
           BRANCH="chore/bump-uniplus-api-host-${NOVA_TAG}"
 
-          # Idempotência: se "Publish Images" for reexecutado pra mesma tag
-          # (retry manual, rerun de job) antes do PR anterior ser mergeado,
-          # a branch determinística já existe no remoto — sem este guard,
-          # o push abaixo falha (non-fast-forward).
+          # Idempotência: "Publish Images" pode ser reexecutado para a mesma tag
+          # (retry manual, rerun de job), e a branch é determinística.
           #
-          # Branch existir não prova que o PR foi aberto: se o push passou e a
-          # criação do PR falhou, tratar como no-op deixaria a release com uma
-          # branch órfã que nenhum rerun recupera. Quem decide é o PR.
+          # Quem decide é o histórico de PR, não a branch. Uma branch existente
+          # não prova que o PR foi aberto — push pode ter passado e a criação
+          # falhado —, e a ausência dela não prova que nada aconteceu: fechar o
+          # PR sem merge e apagar a branch é o gesto normal de recusa, e olhar
+          # só o remoto recriaria tudo, desfazendo a decisão humana.
           #
-          # A consulta ignora o estado de propósito. PR mergeado significa tag
-          # já promovida, e PR fechado sem merge significa recusa humana —
-          # abrir outro por conta própria desfaria a decisão. Só a ausência
-          # completa de PR indica trabalho interrompido.
+          # A consulta ignora o estado de propósito: mergeado é tag já
+          # promovida, fechado é recusa. Só a ausência completa de PR indica
+          # trabalho interrompido.
+          PRS=$(gh pr list --repo unifesspa-edu-br/uniplus-infra \
+            --head "$BRANCH" --state all --json number --jq 'length')
+
+          if [ "$PRS" != "0" ]; then
+            echo "Já houve PR para $BRANCH no uniplus-infra. Nada a fazer."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
-            PRS=$(gh pr list --repo unifesspa-edu-br/uniplus-infra \
-              --head "$BRANCH" --state all --json number --jq 'length')
-
-            if [ "$PRS" != "0" ]; then
-              echo "Branch $BRANCH já tem PR no uniplus-infra. Nada a fazer."
-              echo "changed=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-
             echo "::warning::Branch $BRANCH existe sem PR algum — abrindo o PR sobre ela."
             echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
             echo "changed=true" >> "$GITHUB_OUTPUT"
