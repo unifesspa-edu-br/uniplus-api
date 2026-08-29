@@ -36,6 +36,6 @@ public static class ListarProcessosSeletivosQueryHandler
             processo.TipoProcessoOrigemId,
             processo.TipoProcesso.Codigo,
             processo.TipoProcesso.Nome),
-        processo.Status.ToString(),
+        processo.Status,
         processo.CreatedAt);
 }

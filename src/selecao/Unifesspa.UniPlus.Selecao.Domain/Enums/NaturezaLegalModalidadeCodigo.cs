@@ -21,6 +21,28 @@ public static class NaturezaLegalModalidadeCodigo
     /// já rejeita com um erro de domínio (422) claro, em vez de estourar uma
     /// exceção não tratada (500).
     /// </summary>
+    /// <summary>
+    /// Converte o enum local de volta ao token cross-módulo — o mesmo que
+    /// <c>GET /api/configuracao/modalidades</c> publica para a modalidade de
+    /// origem. É o que a projeção de leitura emite, para que o cliente que
+    /// cruza as duas fontes compare tokens iguais.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Se <paramref name="natureza"/> é <see cref="NaturezaLegalModalidade.Nenhuma"/>:
+    /// o sentinela não é natureza persistível — <see cref="Entities.ModalidadeSelecionada"/>
+    /// recusa criá-la —, então encontrá-lo aqui denuncia corrupção, não um caso a projetar.
+    /// </exception>
+    public static string ToCodigo(this NaturezaLegalModalidade natureza) => natureza switch
+    {
+        NaturezaLegalModalidade.CotaReservada => CotaReservada,
+        NaturezaLegalModalidade.Ampla => Ampla,
+        NaturezaLegalModalidade.Suplementar => Suplementar,
+        NaturezaLegalModalidade.OutraModalidade => OutraModalidade,
+        NaturezaLegalModalidade.Nenhuma => throw new ArgumentOutOfRangeException(
+            nameof(natureza), natureza, "NaturezaLegalModalidade.Nenhuma é sentinela e não tem token canônico."),
+        _ => throw new ArgumentOutOfRangeException(nameof(natureza), natureza, "NaturezaLegalModalidade desconhecida."),
+    };
+
     public static NaturezaLegalModalidade FromCodigo(string? codigo) => codigo switch
     {
         CotaReservada => NaturezaLegalModalidade.CotaReservada,

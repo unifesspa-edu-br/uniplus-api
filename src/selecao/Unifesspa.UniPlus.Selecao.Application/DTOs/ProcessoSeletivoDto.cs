@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json.Serialization;
 
+using Domain.Enums;
+
 /// <summary>
 /// Projeção de leitura do agregado <c>ProcessoSeletivo</c> (Story #758,
 /// UNI-REQ-0014/0015). Cresce à medida que novas dimensões de configuração
@@ -11,8 +13,11 @@ public sealed record ProcessoSeletivoDto(
     Guid Id,
     string Nome,
     TipoProcessoSnapshotDto TipoProcesso,
-    string Status,
-    string OrigemCandidatos,
+    // Status e OrigemCandidatos são tipados pelo enum, não projetados por `.ToString()`:
+    // é o que faz o wire sair no mesmo vocabulário que a criação aceita e o que leva o
+    // OpenAPI a publicar os valores admissíveis, em vez de `string` livre (issue #1294).
+    StatusProcesso Status,
+    OrigemCandidatos OrigemCandidatos,
     UnidadeAdministradoraSnapshotDto UnidadeAdministradora,
     // Localidade que rege a contagem dos prazos (UNI-REQ-0111): read-back administrativo,
     // sem o qual a tela de edição não consegue reler o que foi declarado na criação e

@@ -6693,7 +6693,7 @@
             "format": "double"
           },
           "prazoUnidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/UnidadePrazo"
           },
           "atoAncoraCodigo": {
             "type": "string"
@@ -6708,9 +6708,13 @@
             "format": "double"
           },
           "suspensividadePrimeiraInstanciaUnidade": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazo"
+              }
             ]
           },
           "suspensividadeSegundaInstanciaValor": {
@@ -6723,9 +6727,13 @@
             "format": "double"
           },
           "suspensividadeSegundaInstanciaUnidade": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazo"
+              }
             ]
           }
         }
@@ -8471,7 +8479,7 @@
             "type": "string"
           },
           "carater": {
-            "type": "string"
+            "$ref": "#/components/schemas/CaraterEtapa"
           },
           "tipoEtapa": {
             "$ref": "#/components/schemas/TipoEtapaSnapshotDto"
@@ -9239,7 +9247,10 @@
             ]
           },
           "regraRemanejamento": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "remanejamentoDestino": {
             "type": [
@@ -9928,10 +9939,10 @@
             "$ref": "#/components/schemas/TipoProcessoSnapshotDto"
           },
           "status": {
-            "type": "string"
+            "$ref": "#/components/schemas/StatusProcesso"
           },
           "origemCandidatos": {
-            "type": "string"
+            "$ref": "#/components/schemas/OrigemCandidatos"
           },
           "unidadeAdministradora": {
             "$ref": "#/components/schemas/UnidadeAdministradoraSnapshotDto"
@@ -10115,7 +10126,7 @@
             "$ref": "#/components/schemas/TipoProcessoSnapshotDto"
           },
           "status": {
-            "type": "string"
+            "$ref": "#/components/schemas/StatusProcesso"
           },
           "criadoEm": {
             "type": "string",
@@ -10769,6 +10780,16 @@
             "$ref": "#/components/schemas/JsonNode"
           }
         }
+      },
+      "StatusProcesso": {
+        "enum": [
+          "nenhum",
+          "rascunho",
+          "publicado",
+          "encerrado",
+          "cancelado"
+        ],
+        "type": "string"
       },
       "TipoEtapaSnapshotDto": {
         "required": [

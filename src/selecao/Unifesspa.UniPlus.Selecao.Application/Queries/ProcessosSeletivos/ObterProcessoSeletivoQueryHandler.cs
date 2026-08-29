@@ -33,8 +33,8 @@ public static class ObterProcessoSeletivoQueryHandler
             processo.TipoProcessoOrigemId,
             processo.TipoProcesso.Codigo,
             processo.TipoProcesso.Nome),
-        processo.Status.ToString(),
-        processo.OrigemCandidatos.ToString(),
+        processo.Status,
+        processo.OrigemCandidatos,
         new UnidadeAdministradoraSnapshotDto(
             processo.UnidadeAdministradoraOrigemId,
             processo.UnidadeAdministradora.Sigla,
@@ -53,7 +53,7 @@ public static class ObterProcessoSeletivoQueryHandler
             .Select(e => new EtapaProcessoDto(
                 e.Id,
                 e.Nome,
-                e.Carater.ToString(),
+                e.Carater,
                 new TipoEtapaSnapshotDto(e.TipoEtapa.OrigemId, e.TipoEtapa.Codigo, e.TipoEtapa.Nome),
                 e.Peso,
                 e.NotaMinima,
@@ -165,8 +165,8 @@ public static class ObterProcessoSeletivoQueryHandler
                 demografica.OrigemId, demografica.CensoReferencia, demografica.PpiPercentual, demografica.QuilombolaPercentual, demografica.PcdPercentual, demografica.BaseLegal)
             : null,
         [.. configuracao.Modalidades.Select(m => new ModalidadeSelecionadaDto(
-            m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, m.NaturezaLegal.ToString(), m.ComposicaoVagas.ToString(),
-            m.ComposicaoOrigemCodigo, m.RegraRemanejamento.ToString(), m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
+            m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, m.NaturezaLegal.ToCodigo(), m.ComposicaoVagas.ToCodigo(),
+            m.ComposicaoOrigemCodigo, m.RegraRemanejamento.ToCodigo(), m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
             m.CriteriosCumulativos, m.AcaoQuandoIndeferido, m.BaseLegal, m.QuantidadeDeclarada))],
         [.. configuracao.VagasOfertadas.Select(v => new VagaOfertadaDto(v.Id, v.ModalidadeOrigemId, v.ModalidadeCodigo, v.Quantidade))],
         configuracao.VrNominal,
@@ -286,7 +286,7 @@ public static class ObterProcessoSeletivoQueryHandler
         fase.FaseCanonicaOrigemId,
         fase.Codigo,
         fase.DonoInstitucional,
-        fase.OrigemData.ToString(),
+        fase.OrigemData.ToCodigo(),
         fase.AgrupaEtapas,
         fase.PermiteComplementacao,
         fase.ProduzResultado,
@@ -319,7 +319,7 @@ public static class ObterProcessoSeletivoQueryHandler
     /// <summary>Projeta um nó da árvore de satisfação (<see cref="NoExigencia"/>, Story #920) recursivamente — mesmo formato de <c>NoExigenciaInput</c> (comando de escrita).</summary>
     private static NoExigenciaDto ProjectNoExigencia(NoExigencia no) => new(
         no.Id,
-        ProjectTipoNo(no.Tipo),
+        no.Tipo.ToCodigo(),
         no.Tipo == TipoNo.Folha ? ProjectDocumentoExigido(no.DocumentoExigido!) : null,
         no.QuantidadeMinima,
         no.Consequencia,
@@ -329,14 +329,6 @@ public static class ObterProcessoSeletivoQueryHandler
         no.DataReferencia,
         no.OcorrenciasEsperadas,
         no.RepetePorEntidade?.ToCodigo());
-
-    private static string ProjectTipoNo(TipoNo tipo) => tipo switch
-    {
-        TipoNo.Folha => "FOLHA",
-        TipoNo.GrupoE => "E",
-        TipoNo.GrupoOu => "OU",
-        _ => tipo.ToString(),
-    };
 
     private static BaseLegalDto ProjectBaseLegalDeNo(NoExigenciaBaseLegal baseLegal) => new(
         baseLegal.Id, baseLegal.Referencia, baseLegal.Abrangencia.ToCodigo(), baseLegal.Status.ToCodigo(), baseLegal.Observacao);
@@ -391,10 +383,10 @@ public static class ObterProcessoSeletivoQueryHandler
         new ReferenciaRegraDto(regraRecurso.Regra.Codigo, regraRecurso.Regra.Versao, regraRecurso.Regra.Hash),
         new ArgsRegraPrazoRecursoDto(
             regraRecurso.Args.PrazoValor,
-            regraRecurso.Args.PrazoUnidade.ToString(),
+            regraRecurso.Args.PrazoUnidade,
             regraRecurso.Args.AtoAncoraCodigo,
             regraRecurso.Args.SuspensividadePrimeiraInstanciaValor,
-            regraRecurso.Args.SuspensividadePrimeiraInstanciaUnidade?.ToString(),
+            regraRecurso.Args.SuspensividadePrimeiraInstanciaUnidade,
             regraRecurso.Args.SuspensividadeSegundaInstanciaValor,
-            regraRecurso.Args.SuspensividadeSegundaInstanciaUnidade?.ToString()));
+            regraRecurso.Args.SuspensividadeSegundaInstanciaUnidade));
 }
