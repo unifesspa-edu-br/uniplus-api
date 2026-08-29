@@ -23,6 +23,15 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
             AtualizarBaseLegalSeAindaFor(migrationBuilder, de: BaseLegalSemeadaOriginal, para: BaseLegalInstitucional);
 
         /// <inheritdoc />
+        /// <remarks>
+        /// A reversão é simétrica, e tem um limite que nenhuma migration resolve: se um admin
+        /// tivesse escrito, por conta própria, exatamente o texto institucional ANTES desta
+        /// migration, o <c>Up</c> corretamente não a tocaria — mas o <c>Down</c> não distingue
+        /// esse valor do que ele mesmo gravou, e o devolveria ao texto do seed. Distinguir
+        /// exigiria a migration registrar em algum lugar quais linhas ela alterou, estado que
+        /// ela não tem. Fica assim de propósito: o cenário exige coincidência exata de texto,
+        /// e <c>Down</c> é ferramenta de desenvolvimento, não de operação.
+        /// </remarks>
         protected override void Down(MigrationBuilder migrationBuilder) =>
             AtualizarBaseLegalSeAindaFor(migrationBuilder, de: BaseLegalInstitucional, para: BaseLegalSemeadaOriginal);
 
