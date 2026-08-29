@@ -1,17 +1,19 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Domain.Enums;
+
 /// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
 public sealed record BancaRequeridaDto(Guid Id, Guid TipoBancaOrigemId, string Codigo);
 
 /// <summary>Projeção de leitura de <c>ArgsRegraPrazoRecurso</c> (Story #851).</summary>
 public sealed record ArgsRegraPrazoRecursoDto(
     decimal PrazoValor,
-    string PrazoUnidade,
+    UnidadePrazo PrazoUnidade,
     string AtoAncoraCodigo,
     decimal? SuspensividadePrimeiraInstanciaValor,
-    string? SuspensividadePrimeiraInstanciaUnidade,
+    UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     decimal? SuspensividadeSegundaInstanciaValor,
-    string? SuspensividadeSegundaInstanciaUnidade);
+    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
 
 /// <summary>Projeção de leitura de <c>RegraRecursoFase</c> (0..1, Story #851) — presença = a fase admite recurso.</summary>
 public sealed record RegraRecursoFaseDto(Guid Id, ReferenciaRegraDto Regra, ArgsRegraPrazoRecursoDto Args);
@@ -23,6 +25,8 @@ public sealed record FaseCronogramaDto(
     Guid FaseCanonicaOrigemId,
     string Codigo,
     string DonoInstitucional,
+    // Token canônico UPPER_SNAKE (`PROPRIA`/`DELEGADA`), o mesmo que o catálogo de fases
+    // canônicas publica — a origem deste campo é aquele cadastro, não a escrita daqui.
     string OrigemData,
     bool AgrupaEtapas,
     bool PermiteComplementacao,

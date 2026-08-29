@@ -6,10 +6,14 @@ public sealed record ModalidadeSelecionadaDto(
     Guid ModalidadeOrigemId,
     string Codigo,
     string? Descricao,
+    // Os três tokens abaixo saem em UPPER_SNAKE, o vocabulário que
+    // `GET /api/configuracao/modalidades` publica para a modalidade de origem: é a mesma
+    // modalidade descrita por duas rotas, e o cliente cruza as duas (issue #1294).
     string NaturezaLegal,
     string ComposicaoVagas,
     string? ComposicaoOrigemCodigo,
-    string RegraRemanejamento,
+    // Opcional como na origem: ausência é a modalidade que não remaneja.
+    string? RegraRemanejamento,
     string? RemanejamentoDestino,
     string? RemanejamentoPar,
     string? RemanejamentoFallback,

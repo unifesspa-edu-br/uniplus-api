@@ -91,12 +91,7 @@ public static class DefinirCronogramaFasesCommandHandler
                     $"Fase canônica {input.FaseCanonicaId} não encontrada ou não está mais viva."));
             }
 
-            OrigemDataFase origemData = faseCanonica.OrigemData switch
-            {
-                "PROPRIA" => OrigemDataFase.Propria,
-                "DELEGADA" => OrigemDataFase.Delegada,
-                _ => OrigemDataFase.Nenhuma,
-            };
+            OrigemDataFase origemData = OrigemDataFaseCodigo.FromCodigo(faseCanonica.OrigemData);
 
             List<BancaRequerida> bancas = [];
             foreach (Guid tipoBancaId in input.TiposBancaIds)
