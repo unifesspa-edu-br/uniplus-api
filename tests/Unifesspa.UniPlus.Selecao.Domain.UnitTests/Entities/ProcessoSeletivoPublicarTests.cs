@@ -915,6 +915,30 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
+    [Fact(DisplayName = "CA-05: modalidade sem ação de indeferimento declarada não é confrontada — a consequência da exigência decide sozinha")]
+    public void Publicar_ModalidadeSemAcaoDeclarada_NaoDisparaCa05()
+    {
+        // A ausência de AcaoQuandoIndeferido é declaração, não omissão: a modalidade não
+        // reclassifica, e quem responde pelo destino do candidato indeferido é a consequência
+        // da exigência documental. Nenhuma das treze modalidades semeadas declara ação — se
+        // null passasse a ser lido como RECLASSIFICAR_AC, toda exigência ELIMINA do catálogo
+        // real deixaria de publicar. Este teste é o que segura essa leitura.
+        ModalidadeSelecionada semAcao = NovaModalidadeComAcao(
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, acaoQuandoIndeferido: null);
+        ProcessoSeletivo processo = NovoProcessoComModalidade(semAcao);
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA"), 0).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
+
+        resultado.IsSuccess.Should().BeTrue(
+            "ELIMINA seria incoerente com uma ação declarada de reclassificação, mas esta "
+            + "modalidade não declara nenhuma — não há o que confrontar");
+    }
+
     [Fact(DisplayName = "CA-05: RECLASSIFICA_AC (vocabulário de DocumentoExigido) é coerente com RECLASSIFICAR_AC (vocabulário real de ModalidadeSelecionada.AcaoQuandoIndeferido) — achado de revisão da PR #903")]
     public void Publicar_ReclassificaAcComAcaoRealReclassificarAc_Aceita()
     {

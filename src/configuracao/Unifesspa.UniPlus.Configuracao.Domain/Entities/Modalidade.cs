@@ -55,6 +55,12 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     public RegraRemanejamento? RegraRemanejamento { get; private set; }
     public RemanejamentoArgs RemanejamentoArgs { get; private set; } = RemanejamentoArgs.Vazio;
     public IReadOnlyList<string> CriteriosCumulativos { get; private set; } = [];
+    /// <summary>
+    /// O que fazer com o candidato quando a comprovação da reserva é indeferida.
+    /// <see langword="null"/> declara que esta modalidade não reclassifica — quem responde
+    /// pelo destino é a consequência de indeferimento da exigência documental. Ver
+    /// <see cref="Enums.AcaoQuandoIndeferido"/>.
+    /// </summary>
     public AcaoQuandoIndeferido? AcaoQuandoIndeferido { get; private set; }
     public string? BaseLegal { get; private set; }
 
@@ -294,8 +300,11 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             }
         }
 
-        // AcaoQuandoIndeferido — opcional (null quando ausente); quando informada,
-        // deve ser um dos dois tokens (invariante 6). Nada depende dela — sem gate.
+        // AcaoQuandoIndeferido — opcional (null quando ausente); quando informada, deve ser
+        // um dos dois tokens (invariante 6). Nenhuma invariante deste agregado depende dela
+        // — sem gate. A ausência não é lacuna: declara que a modalidade não reclassifica, e
+        // o destino do candidato indeferido passa a ser o que a exigência documental que o
+        // alcançou declarar (consequência de indeferimento, em Seleção).
         AcaoQuandoIndeferido? acao = null;
         if (!string.IsNullOrWhiteSpace(acaoQuandoIndeferidoToken))
         {

@@ -50,6 +50,13 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// para onde ir — permanece ociosa.
 /// </para>
 /// <para>
+/// <b>Nenhuma linha declara ação de indeferimento</b> — o campo fica em branco nas treze, e é
+/// declaração, não pendência: a modalidade não reclassifica ninguém, e o destino do candidato
+/// cuja comprovação é indeferida vem da consequência da exigência documental que o alcançou,
+/// declarada no processo. Vale inclusive para as oito cotas da Lei, cuja estrutura é a mais
+/// fechada do catálogo.
+/// </para>
+/// <para>
 /// Consumida tanto pela configuração EF Core (que materializa as linhas via <c>HasData</c>) quanto
 /// pelos testes: um confere o seed contra esta lista, outro prova que cada item satisfaz as
 /// invariantes de <c>Modalidade.Criar</c>.
