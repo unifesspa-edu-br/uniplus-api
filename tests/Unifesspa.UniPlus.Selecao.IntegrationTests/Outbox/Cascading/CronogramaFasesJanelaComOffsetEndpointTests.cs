@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -161,7 +162,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
             using HttpResponseMessage resposta = await Client.SendAsync(request).ConfigureAwait(false);
             resposta.StatusCode.Should().Be(HttpStatusCode.OK);
             ProcessoSeletivoDto? processo = await resposta.Content
-                .ReadFromJsonAsync<ProcessoSeletivoDto>().ConfigureAwait(false);
+                .ReadFromJsonAsync<ProcessoSeletivoDto>(JsonDoContrato.Opcoes).ConfigureAwait(false);
             return processo!.CronogramaFases.Single();
         }
     }

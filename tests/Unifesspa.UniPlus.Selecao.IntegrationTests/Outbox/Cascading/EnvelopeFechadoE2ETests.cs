@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -726,7 +727,7 @@ public sealed class EnvelopeFechadoE2ETests
                 HttpMethod.Get, $"{Rota}/{ProcessoId}", null, ifMatch: null, idempotente: false,
                 accept: "application/vnd.uniplus.processo-seletivo.v1+json").ConfigureAwait(false);
             resposta.StatusCode.Should().Be(HttpStatusCode.OK, "GET do recurso, usado para descobrir os Ids gerados pelo servidor");
-            return (await resposta.Content.ReadFromJsonAsync<ProcessoSeletivoDto>().ConfigureAwait(false))!;
+            return (await resposta.Content.ReadFromJsonAsync<ProcessoSeletivoDto>(JsonDoContrato.Opcoes).ConfigureAwait(false))!;
         }
 
         public Task<HttpResponseMessage> ObterConformidadeAsync() =>
