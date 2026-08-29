@@ -28,14 +28,16 @@ public sealed class CatalogoLegalDeModalidadesTests
             "um código que a distribuição de vagas exige mas o catálogo não protege pode "
             + "ser apagado por cadastro, inviabilizando configurar a lei depois");
 
-    [Fact(DisplayName = "O catálogo protegido acrescenta a modalidade de pessoa com deficiência fora da reserva federal")]
-    public void CatalogoProtegido_ExcedeSelecaoApenasEmAcPcd()
+    [Fact(DisplayName = "O catálogo protegido acrescenta as duas modalidades de pessoa com deficiência fora da reserva federal")]
+    public void CatalogoProtegido_ExcedeSelecaoEmAcPcdEPcdPuro()
     {
-        IEnumerable<string> exclusivosDoCatalogo = CodigoModalidade.CodigosLegaisFixos
-            .Except(ModalidadesFederaisLei12711.CodigosComAc, StringComparer.Ordinal);
+        string[] exclusivosDoCatalogo = [.. CodigoModalidade.CodigosLegaisFixos
+            .Except(ModalidadesFederaisLei12711.CodigosComAc, StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
 
-        exclusivosDoCatalogo.Should().Equal([CodigoModalidade.AcPcd],
-            "AC_PCD não entra na cascata das oito federais — as suas vagas são retiradas da "
-            + "ampla concorrência —, mas é igualmente fixada em lei");
+        exclusivosDoCatalogo.Should().Equal([CodigoModalidade.AcPcd, CodigoModalidade.PcdPuro],
+            "nenhuma das duas entra na cascata das oito federais — as suas vagas são retiradas "
+            + "da ampla concorrência —, mas ambas são reserva de pessoa com deficiência fixada "
+            + "por norma institucional, e a proteção do catálogo vale para as duas");
     }
 }

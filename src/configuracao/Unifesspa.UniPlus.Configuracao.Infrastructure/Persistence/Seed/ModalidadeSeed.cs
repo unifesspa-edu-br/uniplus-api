@@ -5,8 +5,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
 /// Seed do catálogo de <c>modalidade</c>: as oito modalidades federais da Lei 12.711/2012
-/// (red. Lei 14.723/2023) mais a ampla concorrência e a modalidade de pessoa com deficiência na
-/// ampla concorrência (<c>AC_PCD</c>).
+/// (red. Lei 14.723/2023) mais a ampla concorrência e as duas modalidades de pessoa com
+/// deficiência fora da reserva federal (<c>AC_PCD</c> e <c>PCD_PURO</c>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,6 +29,17 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// <c>AC</c>.
 /// </para>
 /// <para>
+/// <c>PCD_PURO</c> é a reserva de pessoa com deficiência do processo que <b>não</b> oferta as
+/// cotas da Lei 12.711 (UNI-REQ-0085). Ela existe porque <c>AC_PCD</c> não é "a modalidade de
+/// PcD": o critério de <c>AC_PCD</c> exclui quem cursou o ensino médio em escola pública, e essa
+/// exclusão só se justifica para manter <c>AC_PCD</c> apartada das oito cotas da Lei — num
+/// processo sem elas, reaproveitar <c>AC_PCD</c> recusaria indevidamente candidato PcD egresso de
+/// escola pública. São cadastros independentes: cada código tem a sua linha, a sua identidade e a
+/// sua base legal, e nenhum deriva do outro. A <b>mecânica</b> de vagas, essa sim, é a mesma
+/// (<c>RETIRA_DE</c> <c>AC</c>, ociosa volta a <c>AC</c>), porque devolver a vaga não preenchida à
+/// ampla concorrência não depende de a modalidade ser exclusiva da Lei.
+/// </para>
+/// <para>
 /// Consumida tanto pela configuração EF Core (que materializa as linhas via <c>HasData</c>) quanto
 /// pelos testes: um confere o seed contra esta lista, outro prova que cada item satisfaz as
 /// invariantes de <c>Modalidade.Criar</c>.
@@ -38,10 +49,15 @@ public static class ModalidadeSeed
 {
     private const string BaseLegalLei12711 = "Lei 12.711/2012 (red. Lei 14.723/2023)";
 
+    // PCD_PURO nasce para o processo fora do alcance da Lei de Cotas — citá-la aqui seria
+    // fundamentar a reserva na norma que a modalidade justamente não aplica (UNI-REQ-0088).
+    private const string BaseLegalPcdPuro =
+        "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)";
+
     // Prefixo determinístico próprio do catálogo de modalidades (distinto de fato/valor de domínio).
     private static Guid SeedId(int n) => Guid.Parse($"70da1000-0000-7000-8000-{n:D12}");
 
-    /// <summary>As dez modalidades semeadas, na ordem canônica.</summary>
+    /// <summary>As onze modalidades semeadas, na ordem canônica.</summary>
     public static IReadOnlyList<ModalidadeSeedItem> Itens { get; } =
     [
         new(SeedId(1), "AC", "Ampla concorrência",
@@ -84,6 +100,11 @@ public static class ModalidadeSeed
             NaturezaLegal.OutraModalidade, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
             RegraRemanejamento.DestinoUnico, RemanejamentoArgs.Criar("AC", par: null, fallback: null),
             BaseLegalLei12711),
+
+        new(SeedId(11), "PCD_PURO", "Pessoa com Deficiência — reserva sem as cotas da Lei 12.711",
+            NaturezaLegal.OutraModalidade, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
+            RegraRemanejamento.DestinoUnico, RemanejamentoArgs.Criar("AC", par: null, fallback: null),
+            BaseLegalPcdPuro),
     ];
 }
 

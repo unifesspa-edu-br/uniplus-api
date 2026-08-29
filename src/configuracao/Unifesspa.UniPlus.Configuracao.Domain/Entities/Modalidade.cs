@@ -32,11 +32,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Seleção (ADR-0061), apenas por referência intra-banco viva (outra modalidade
 /// viva que a aponte como origem ou destino/par/fallback) — ou por ser uma
 /// modalidade do catálogo legal fixo.</para>
-/// <para>As dez modalidades do <b>catálogo legal fixo</b>
+/// <para>As onze modalidades do <b>catálogo legal fixo</b>
 /// (<see cref="CodigoModalidade.CodigosLegaisFixos"/>) são cadastro só na forma: a
-/// estrutura de vagas de cada uma vem da Lei 12.711/2012 (red. Lei 14.723/2023), não
-/// da universidade. Nelas <see cref="Atualizar"/> aceita apenas <see cref="Descricao"/>
-/// e <see cref="BaseLegal"/>; os handlers recusam removê-las e recusam cadastrar os
+/// estrutura de vagas de cada uma vem de norma — a Lei 12.711/2012 (red. Lei
+/// 14.723/2023) ou a resolução institucional que reserva a vaga de pessoa com
+/// deficiência —, não da universidade. Nelas <see cref="Atualizar"/> aceita apenas
+/// <see cref="Descricao"/> e <see cref="BaseLegal"/>; os handlers recusam removê-las e recusam cadastrar os
 /// seus códigos. Alterar a estrutura exige mudança no seed e migração — o mesmo canal
 /// que as criou.</para>
 /// </remarks>
@@ -76,7 +77,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// são opcionais.
     /// </summary>
     /// <remarks>
-    /// A factory <b>aceita</b> os dez códigos do catálogo legal fixo — recusá-los é
+    /// A factory <b>aceita</b> os onze códigos do catálogo legal fixo — recusá-los é
     /// papel do cadastro (handler), não do domínio: o mesmo código válido pode
     /// legitimamente chegar aqui por outra via que não o endpoint de criação (ex.:
     /// reconstrução administrativa a partir do estado semeado). A unicidade do

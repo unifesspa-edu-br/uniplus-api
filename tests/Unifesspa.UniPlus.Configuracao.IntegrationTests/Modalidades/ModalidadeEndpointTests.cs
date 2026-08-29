@@ -198,10 +198,12 @@ public sealed class ModalidadeEndpointTests
             "a reserva do código é resposta distinta de 'já existe uma modalidade com este código'");
     }
 
-    [Fact(DisplayName = "DELETE de modalidade legal fixa retorna 409 e a modalidade continua viva")]
-    public async Task Remover_LegalFixa_Retorna409EPermanece()
+    [Theory(DisplayName = "DELETE de modalidade legal fixa retorna 409 e a modalidade continua viva")]
+    [InlineData("LB_PPI")]
+    [InlineData("PCD_PURO")]
+    public async Task Remover_LegalFixa_Retorna409EPermanece(string codigo)
     {
-        Guid id = IdSemeado("LB_PPI");
+        Guid id = IdSemeado(codigo);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
@@ -217,7 +219,7 @@ public sealed class ModalidadeEndpointTests
 
         HttpResponseMessage obter = await client.GetAsync(
             new Uri($"/api/configuracao/modalidades/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK, "a cota federal continua no catálogo");
+        obter.StatusCode.Should().Be(HttpStatusCode.OK, "a modalidade legal fixa continua no catálogo");
     }
 
     [Fact(DisplayName = "PUT que altera a estrutura de modalidade legal fixa retorna 422")]
