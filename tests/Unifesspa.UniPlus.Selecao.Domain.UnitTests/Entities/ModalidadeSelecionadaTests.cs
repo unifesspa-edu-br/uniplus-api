@@ -162,17 +162,33 @@ public sealed class ModalidadeSelecionadaTests
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoObrigatorio");
     }
 
-    [Fact(DisplayName = "Criar CRUZADO incompleto (só par, sem fallback) falha")]
-    public void Criar_CruzadoIncompleto_Falha()
+    [Fact(DisplayName = "Criar CRUZADO sem par falha — o par é o que define o cruzamento")]
+    public void Criar_CruzadoSemPar_Falha()
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "IND", null,
             NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.Cruzado, null, remanejamentoPar: "QUIL", remanejamentoFallback: null,
+            null, RegraRemanejamentoModalidade.Cruzado, null, remanejamentoPar: null, remanejamentoFallback: "AC",
             criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIncompleto");
+    }
+
+    [Fact(DisplayName = "Criar CRUZADO com par e sem fallback tem sucesso — certame isolado não tem destino final")]
+    public void Criar_CruzadoSemFallback_Sucesso()
+    {
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC_I", "Vaga por acréscimo — candidato indígena (PSIQ)",
+            NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Cruzado,
+            remanejamentoDestino: null, remanejamentoPar: "AC_Q", remanejamentoFallback: null,
+            criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");
+
+        resultado.IsSuccess.Should().BeTrue(
+            "o PSIQ não oferta ampla concorrência, então a vaga que nem AC_I nem AC_Q preencherem "
+            + "não tem destino final — e a ausência de fallback é como o snapshot diz isso");
+        resultado.Value!.RemanejamentoFallback.Should().BeNull();
     }
 
     [Fact(DisplayName = "Criar com destino informado fora de DESTINO_UNICO falha")]

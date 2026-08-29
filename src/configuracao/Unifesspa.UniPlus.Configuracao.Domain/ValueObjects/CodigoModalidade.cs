@@ -20,11 +20,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// remanejamento e as referências de composição (<c>ComposicaoOrigem</c>,
 /// <c>RemanejamentoArgs</c>) apontam para modalidades por código — renomear
 /// quebraria a integridade referencial intra-banco.</para>
-/// <para>Onze códigos são <b>reservados</b> ao catálogo legal fixo (ver
+/// <para>Treze códigos são <b>reservados</b> ao catálogo legal fixo (ver
 /// <see cref="CodigosLegaisFixos"/>): as oito modalidades da Lei 12.711/2012 (red. Lei
-/// 14.723/2023), a ampla concorrência e as duas modalidades de pessoa com deficiência fora
-/// da reserva federal. A proteção é exposta por <see cref="EhLegalFixa"/> e aplicada pelo
-/// agregado (atualização) e pelos handlers (criação e remoção), não pelo banco.</para>
+/// 14.723/2023), a ampla concorrência, as duas modalidades de pessoa com deficiência fora da
+/// reserva federal e as duas vagas por acréscimo do PSIQ. A proteção é exposta por
+/// <see cref="EhLegalFixa"/> e aplicada pelo agregado (atualização) e pelos handlers (criação
+/// e remoção), não pelo banco.</para>
 /// </remarks>
 public sealed partial record CodigoModalidade
 {
@@ -67,16 +68,30 @@ public sealed partial record CodigoModalidade
     public const string PcdPuro = "PCD_PURO";
 
     /// <summary>
-    /// Os onze códigos do catálogo legal fixo — piso de ações afirmativas da Lei
-    /// 12.711/2012 (red. Lei 14.723/2023) mais a ampla concorrência e as duas modalidades
-    /// de pessoa com deficiência fora da reserva federal (<see cref="AcPcd"/>, condicionada
-    /// a não ser egresso de escola pública, e <see cref="PcdPuro"/>, sem essa condição).
-    /// Não são cadastro: nascem do seed, e a estrutura de vagas de cada um (natureza,
-    /// composição, remanejamento) é ditada por norma, não pela universidade. Alterá-la
-    /// exige mudança no seed e migração.
+    /// Vaga por acréscimo para candidato indígena — modalidade institucional do PSIQ,
+    /// suplementar ao total do curso (UNI-REQ-0096). Par cruzado de <see cref="AcQ"/>.
+    /// </summary>
+    public const string AcI = "AC_I";
+
+    /// <summary>
+    /// Vaga por acréscimo para candidato quilombola — modalidade institucional do PSIQ,
+    /// suplementar ao total do curso (UNI-REQ-0096). Par cruzado de <see cref="AcI"/>.
+    /// </summary>
+    public const string AcQ = "AC_Q";
+
+    /// <summary>
+    /// Os treze códigos do catálogo legal fixo — piso de ações afirmativas da Lei
+    /// 12.711/2012 (red. Lei 14.723/2023) mais a ampla concorrência, as duas modalidades de
+    /// pessoa com deficiência fora da reserva federal (<see cref="AcPcd"/>, condicionada a
+    /// não ser egresso de escola pública, e <see cref="PcdPuro"/>, sem essa condição) e as
+    /// duas vagas por acréscimo do PSIQ (<see cref="AcI"/> e <see cref="AcQ"/>, par cruzado
+    /// uma da outra). Não são cadastro: nascem do seed, e a estrutura de vagas de cada um
+    /// (natureza, composição, remanejamento) é ditada por norma, não pela universidade.
+    /// Alterá-la exige mudança no seed e migração — o que, no par cruzado, é também o que
+    /// mantém a reciprocidade: um lado editado sozinho quebraria o cruzamento em silêncio.
     /// </summary>
     public static FrozenSet<string> CodigosLegaisFixos { get; } = FrozenSet.ToFrozenSet(
-        [Ac, AcPcd, LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp, PcdPuro],
+        [Ac, AcPcd, LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp, PcdPuro, AcI, AcQ],
         StringComparer.Ordinal);
 
     public string Valor { get; }

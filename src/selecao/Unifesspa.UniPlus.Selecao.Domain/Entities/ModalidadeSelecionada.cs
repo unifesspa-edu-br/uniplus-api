@@ -144,11 +144,15 @@ public sealed class ModalidadeSelecionada : EntityBase
                 $"Modalidade {codigo} com remanejamento DESTINO_UNICO exige o destino."));
         }
 
-        if (cruzado && (string.IsNullOrWhiteSpace(remanejamentoPar) || string.IsNullOrWhiteSpace(remanejamentoFallback)))
+        // O fallback é opcional no CRUZADO, e a ausência dele é declaração, não omissão: o par
+        // não tem destino final, e a vaga que nenhuma das duas modalidades preencher permanece
+        // ociosa — o caso do certame isolado, sem ampla concorrência para receber a sobra
+        // (UNI-REQ-0096). O par, esse sim, é o que define o cruzamento e segue obrigatório.
+        if (cruzado && string.IsNullOrWhiteSpace(remanejamentoPar))
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.RemanejamentoCruzadoIncompleto",
-                $"Modalidade {codigo} com remanejamento CRUZADO exige par e fallback."));
+                $"Modalidade {codigo} com remanejamento CRUZADO exige o par."));
         }
 
         if (!destinoUnico && remanejamentoDestino is not null)

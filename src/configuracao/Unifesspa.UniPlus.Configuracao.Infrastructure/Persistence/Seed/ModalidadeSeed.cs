@@ -5,8 +5,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
 /// Seed do catálogo de <c>modalidade</c>: as oito modalidades federais da Lei 12.711/2012
-/// (red. Lei 14.723/2023) mais a ampla concorrência e as duas modalidades de pessoa com
-/// deficiência fora da reserva federal (<c>AC_PCD</c> e <c>PCD_PURO</c>).
+/// (red. Lei 14.723/2023) mais a ampla concorrência, as duas modalidades de pessoa com
+/// deficiência fora da reserva federal (<c>AC_PCD</c> e <c>PCD_PURO</c>) e as duas vagas por
+/// acréscimo do PSIQ (<c>AC_I</c> e <c>AC_Q</c>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -40,6 +41,15 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// ampla concorrência não depende de a modalidade ser exclusiva da Lei.
 /// </para>
 /// <para>
+/// <c>AC_I</c> e <c>AC_Q</c> são as vagas do PSIQ para candidato indígena e quilombola
+/// (UNI-REQ-0096). São <b>suplementares ao total</b> — "vagas por acréscimo", no vocabulário da
+/// própria universidade: somam-se ao total do curso em vez de disputá-lo, e por isso não têm
+/// origem. O remanejamento é <c>CRUZADO</c> e recíproco: a vaga que sobra numa migra para a outra,
+/// e vice-versa. Não há <c>fallback</c>, e a ausência é declaração: o PSIQ é certame isolado, sem
+/// ampla concorrência no quadro de vagas, então a vaga que nenhum dos dois grupos preenche não tem
+/// para onde ir — permanece ociosa.
+/// </para>
+/// <para>
 /// Consumida tanto pela configuração EF Core (que materializa as linhas via <c>HasData</c>) quanto
 /// pelos testes: um confere o seed contra esta lista, outro prova que cada item satisfaz as
 /// invariantes de <c>Modalidade.Criar</c>.
@@ -54,10 +64,16 @@ public static class ModalidadeSeed
     private const string BaseLegalPcdPuro =
         "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)";
 
+    // As vagas por acréscimo do PSIQ nascem da Res. 22/2014 e seguem vigentes pela 532/2021 —
+    // duas de cada por curso, em todos os cursos (Plano de Trabalho 142/2024-NUADE).
+    private const string BaseLegalVagasPorAcrescimo =
+        "Res. Unifesspa 22/2014-CONSEPE, atualizada pela Res. Unifesspa 532/2021-CONSEPE "
+        + "(vagas por acréscimo para candidatos indígenas e quilombolas)";
+
     // Prefixo determinístico próprio do catálogo de modalidades (distinto de fato/valor de domínio).
     private static Guid SeedId(int n) => Guid.Parse($"70da1000-0000-7000-8000-{n:D12}");
 
-    /// <summary>As onze modalidades semeadas, na ordem canônica.</summary>
+    /// <summary>As treze modalidades semeadas, na ordem canônica.</summary>
     public static IReadOnlyList<ModalidadeSeedItem> Itens { get; } =
     [
         new(SeedId(1), "AC", "Ampla concorrência",
@@ -105,6 +121,16 @@ public static class ModalidadeSeed
             NaturezaLegal.OutraModalidade, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
             RegraRemanejamento.DestinoUnico, RemanejamentoArgs.Criar("AC", par: null, fallback: null),
             BaseLegalPcdPuro),
+
+        new(SeedId(12), "AC_I", "Vaga por acréscimo — candidato indígena (PSIQ)",
+            NaturezaLegal.Suplementar, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
+            RegraRemanejamento.Cruzado, RemanejamentoArgs.Criar(destino: null, par: "AC_Q", fallback: null),
+            BaseLegalVagasPorAcrescimo),
+
+        new(SeedId(13), "AC_Q", "Vaga por acréscimo — candidato quilombola (PSIQ)",
+            NaturezaLegal.Suplementar, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
+            RegraRemanejamento.Cruzado, RemanejamentoArgs.Criar(destino: null, par: "AC_I", fallback: null),
+            BaseLegalVagasPorAcrescimo),
     ];
 }
 

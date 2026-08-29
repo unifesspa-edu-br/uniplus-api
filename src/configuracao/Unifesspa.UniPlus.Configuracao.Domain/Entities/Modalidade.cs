@@ -32,7 +32,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Seleção (ADR-0061), apenas por referência intra-banco viva (outra modalidade
 /// viva que a aponte como origem ou destino/par/fallback) — ou por ser uma
 /// modalidade do catálogo legal fixo.</para>
-/// <para>As onze modalidades do <b>catálogo legal fixo</b>
+/// <para>As treze modalidades do <b>catálogo legal fixo</b>
 /// (<see cref="CodigoModalidade.CodigosLegaisFixos"/>) são cadastro só na forma: a
 /// estrutura de vagas de cada uma vem de norma — a Lei 12.711/2012 (red. Lei
 /// 14.723/2023) ou a resolução institucional que reserva a vaga de pessoa com
@@ -77,7 +77,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// são opcionais.
     /// </summary>
     /// <remarks>
-    /// A factory <b>aceita</b> os onze códigos do catálogo legal fixo — recusá-los é
+    /// A factory <b>aceita</b> os treze códigos do catálogo legal fixo — recusá-los é
     /// papel do cadastro (handler), não do domínio: o mesmo código válido pode
     /// legitimamente chegar aqui por outra via que não o endpoint de criação (ex.:
     /// reconstrução administrativa a partir do estado semeado). A unicidade do
@@ -531,13 +531,17 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
                 return null;
 
             case Enums.RegraRemanejamento.Cruzado:
-                if (args.Par is null || args.Fallback is null)
+                if (args.Par is null)
                 {
                     return new("regraRemanejamento", new DomainError(
                         ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra CRUZADO exige os argumentos 'par' e 'fallback'."));
+                        "Regra CRUZADO exige o argumento 'par'."));
                 }
 
+                // 'fallback' é opcional, e a ausência dele é uma declaração, não uma omissão:
+                // significa que o par não tem destino final — a vaga que nenhuma das duas
+                // modalidades preencher permanece ociosa. É o caso do certame isolado, que não
+                // oferta ampla concorrência para receber a sobra (UNI-REQ-0096).
                 if (args.Destino is not null)
                 {
                     return new("regraRemanejamento", new DomainError(

@@ -170,15 +170,29 @@ public sealed class ModalidadeTests
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio);
     }
 
-    [Fact(DisplayName = "CRUZADO sem par/fallback é rejeitado")]
-    public void Criar_CruzadoSemParFallback_Falha()
+    [Fact(DisplayName = "CRUZADO sem par é rejeitado — o par é o que define o cruzamento")]
+    public void Criar_CruzadoSemPar_Falha()
     {
         Result<Modalidade> r = Criar(
             natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
-            regra: "CRUZADO", par: "AC");
+            regra: "CRUZADO", fallback: "AC");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio);
+    }
+
+    [Fact(DisplayName = "CRUZADO com par e sem fallback é aceito — o par sem destino final deixa a vaga ociosa")]
+    public void Criar_CruzadoSemFallback_Aceita()
+    {
+        Modalidade m = Criar(
+            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+            regra: "CRUZADO", par: "AC_Q").Value!;
+
+        m.RemanejamentoArgs.Par.Should().Be("AC_Q");
+        m.RemanejamentoArgs.Fallback.Should().BeNull(
+            "no certame isolado não há ampla concorrência para receber a vaga que nenhuma "
+            + "das duas modalidades preencheu — a ausência de fallback declara isso");
+        m.RemanejamentoArgs.Destino.Should().BeNull();
     }
 
     [Fact(DisplayName = "Contraprova: CRUZADO com par e fallback é aceito")]
