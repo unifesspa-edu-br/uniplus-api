@@ -1637,6 +1637,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // é interpretada como "não cobra" (CA-01). Diferente de BonusRegional/Divulgacao,
             // aqui ausência não é estado publicável.
             new ItemConformidade("taxa_inscricao_nao_declarada", DimensaoConformidade.TaxaInscricao, "Taxa de inscrição e isenção", ConfiguracaoTaxaInscricao is not null),
+            // Issue #1310: processo que cobra reconhece ao menos um fundamento de isenção — a
+            // possibilidade de pedir isenção se materializa nos fundamentos declarados. A fábrica
+            // já recusa a combinação, mas ela é MATERIALIZÁVEL: o EF hidrata a linha direto da
+            // coluna, sem passar por Criar, então configuração gravada antes da regra volta ao
+            // agregado nesse estado. Sem este item, publicaria.
+            // Verdadeiro (sem pendência) quando a configuração é nula: a ausência já é o item
+            // acima, e dois vermelhos pela mesma causa fariam o operador procurar dois problemas.
+            new ItemConformidade("taxa_inscricao_sem_fundamento_de_isencao", DimensaoConformidade.TaxaInscricao, "Fundamentos de isenção do processo que cobra taxa", TemFundamentoDeIsencaoQuandoCobra()),
             // Story #554, PR #898 (issue #549, ADR-0074): toda exigência que determina
             // resultado precisa de ≥1 base legal RESOLVIDO — semântica vazia quando não há
             // exigência que determine resultado (Services.ValidadorBaseLegalExigencias).
@@ -1745,6 +1753,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
         ];
     }
+
+    /// <summary>
+    /// Processo que cobra taxa reconhece ao menos um fundamento de isenção (issue #1310).
+    /// Verdadeiro quando não há configuração declarada — a ausência é pendência do item anterior —
+    /// e quando o processo declara não cobrar, caso em que fundamento nenhum é o estado correto
+    /// (UNI-REQ-0100).
+    /// </summary>
+    /// <remarks>
+    /// Contar elementos basta: token fora do vocabulário não chega até aqui como lista "cheia de
+    /// nada". O conversor de <c>ConfiguracaoTaxaInscricaoConfiguration</c> LANÇA ao reserializar
+    /// <see cref="FundamentoIsencao.Nenhum"/>, então uma coluna adulterada estoura na carga do
+    /// agregado, alto e cedo, em vez de virar publicação silenciosa
+    /// (<c>TaxaInscricaoSemFundamentoPersistenciaTests</c> prova as duas metades).
+    /// </remarks>
+    private bool TemFundamentoDeIsencaoQuandoCobra() =>
+        ConfiguracaoTaxaInscricao is not { Cobra: true, Fundamentos.Count: 0 };
 
     /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria (Story #920) — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
     private bool GruposComConsequenciaTemBaseLegalResolvida() =>
