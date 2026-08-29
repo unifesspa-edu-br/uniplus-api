@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
@@ -560,7 +561,7 @@ public sealed class SessaoEditorialEndpointTests
             AppendTestAuth(request);
             HttpResponseMessage resposta = await Client.SendAsync(request).ConfigureAwait(false);
             resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-            return (await resposta.Content.ReadFromJsonAsync<ProcessoSeletivoDto>())!;
+            return (await resposta.Content.ReadFromJsonAsync<ProcessoSeletivoDto>(JsonDoContrato.Opcoes))!;
         }
 
         public async Task<HttpResponseMessage> PostAtalhoRetificacaoAsync(Guid documentoId, string motivo)
