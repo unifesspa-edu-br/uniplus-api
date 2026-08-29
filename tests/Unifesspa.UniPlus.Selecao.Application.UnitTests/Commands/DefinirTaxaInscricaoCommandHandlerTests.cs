@@ -48,7 +48,8 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: true, valor: 100m, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            ConfiguracaoTaxaInscricao.Criar(
+                cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico], confirmacaoFundamentos: true).Value!,
             PrecondicaoIfMatch.Ausente);
 
         Mocks mocks = NovosMocks(processo, processo.Id);
@@ -62,12 +63,13 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com Cobra=true e valor válido define a configuração e persiste")]
+    [Fact(DisplayName = "Handle com Cobra=true, valor válido e fundamento define a configuração e persiste")]
     public async Task Handle_CobraComValorValido_DefineConfiguracao()
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirTaxaInscricaoCommand command = new(processo.Id, true, 150.00m, null, false, PrecondicaoIfMatch.Ausente);
+        DefinirTaxaInscricaoCommand command = new(
+            processo.Id, true, 150.00m, [FundamentoIsencaoCodigo.CadastroUnico], true, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
@@ -76,6 +78,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         processo.ConfiguracaoTaxaInscricao.Should().NotBeNull();
         processo.ConfiguracaoTaxaInscricao!.Cobra.Should().BeTrue();
         processo.ConfiguracaoTaxaInscricao.Valor.Should().Be(150.00m);
+        processo.ConfiguracaoTaxaInscricao.Fundamentos.Should().Equal(FundamentoIsencao.CadastroUnico);
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -84,7 +87,8 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirTaxaInscricaoCommand command = new(processo.Id, true, null, null, false, PrecondicaoIfMatch.Ausente);
+        DefinirTaxaInscricaoCommand command = new(
+            processo.Id, true, null, [FundamentoIsencaoCodigo.CadastroUnico], true, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);

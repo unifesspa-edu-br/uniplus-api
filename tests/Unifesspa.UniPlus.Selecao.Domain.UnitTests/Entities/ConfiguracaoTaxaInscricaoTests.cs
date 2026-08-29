@@ -8,16 +8,16 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 public sealed class ConfiguracaoTaxaInscricaoTests
 {
-    [Fact(DisplayName = "Criar com cobra=true e valor positivo tem sucesso (CA-02)")]
+    [Fact(DisplayName = "Criar com cobra=true, valor positivo e um fundamento tem sucesso (CA-02)")]
     public void Criar_CobraComValorPositivo_Sucesso()
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
-            cobra: true, valor: 150.00m, fundamentosCodigos: null, confirmacaoFundamentos: false);
+            cobra: true, valor: 150.00m, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico], confirmacaoFundamentos: true);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Cobra.Should().BeTrue();
         resultado.Value.Valor.Should().Be(150.00m);
-        resultado.Value.Fundamentos.Should().BeEmpty();
+        resultado.Value.Fundamentos.Should().Equal(FundamentoIsencao.CadastroUnico);
     }
 
     [Theory(DisplayName = "Criar com cobra=true e valor ausente ou não positivo falha (CA-02)")]
@@ -27,10 +27,11 @@ public sealed class ConfiguracaoTaxaInscricaoTests
     public void Criar_CobraComValorInvalido_Falha(double? valor)
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
-            cobra: true, valor: (decimal?)valor, fundamentosCodigos: null, confirmacaoFundamentos: false);
+            cobra: true, valor: (decimal?)valor, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico], confirmacaoFundamentos: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra");
+        resultado.Errors.Should().ContainSingle("o fundamento está declarado — só o valor viola");
     }
 
     [Fact(DisplayName = "Criar com cobra=false e valor ausente tem sucesso (CA-03)")]
@@ -64,11 +65,51 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca");
     }
 
-    [Fact(DisplayName = "Criar com cobra=true e zero fundamentos tem sucesso — isenção é opcional (CA-04)")]
-    public void Criar_CobraSemFundamentos_Sucesso()
+    [Theory(DisplayName = "Criar com cobra=true e zero fundamentos falha — quem cobra reconhece ao menos um fundamento (issue #1310)")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Criar_CobraSemFundamentos_Falha(bool listaVazia)
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
-            cobra: true, valor: 100m, fundamentosCodigos: [], confirmacaoFundamentos: false);
+            cobra: true, valor: 100m, fundamentosCodigos: listaVazia ? [] : null, confirmacaoFundamentos: false);
+
+        resultado.IsFailure.Should().BeTrue(
+            "lista vazia e lista ausente são a mesma declaração — nenhum fundamento reconhecido");
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be("fundamentos");
+        resultado.Errors[0].Error.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra");
+    }
+
+    [Fact(DisplayName = "Criar com cobra=true, valor não positivo e zero fundamentos acumula as duas violações (ADR-0125)")]
+    public void Criar_CobraSemValorESemFundamentos_AcumulaAsDuasViolacoes()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
+            cobra: true, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2,
+            "valor e fundamentos são famílias independentes — o cliente não pode descobrir uma de cada vez");
+        resultado.Errors.Should().Contain(e => e.Field == "valor" && e.Error.Code == "ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra");
+        resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra");
+    }
+
+    [Fact(DisplayName = "Criar com cobra=true e só token desconhecido reporta apenas FundamentoDesconhecido — a obrigatoriedade não duplica a recusa (issue #1310)")]
+    public void Criar_CobraComTokenDesconhecido_NaoAcumulaObrigatoriedade()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
+            cobra: true, valor: 100m, fundamentosCodigos: ["FUNDAMENTO_INEXISTENTE"], confirmacaoFundamentos: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle(
+            "quem errou o token já sabe o que corrigir — \"informe ao menos um\" não acrescenta ação");
+        resultado.Errors[0].Error.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
+    }
+
+    [Fact(DisplayName = "Criar com cobra=false e zero fundamentos continua com sucesso — a obrigatoriedade só alcança quem cobra (UNI-REQ-0100)")]
+    public void Criar_NaoCobraSemFundamentos_Sucesso()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
+            cobra: false, valor: null, fundamentosCodigos: [], confirmacaoFundamentos: false);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Fundamentos.Should().BeEmpty();

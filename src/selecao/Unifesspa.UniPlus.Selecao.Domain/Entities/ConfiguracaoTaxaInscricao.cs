@@ -25,6 +25,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <see cref="ConfiguracaoDivulgacao.CamposPublicos"/>.
 /// </para>
 /// <para>
+/// <b>Cobrar implica poder pedir isenção</b> (issue #1310): o outro lado da mesma exclusividade
+/// é que <see cref="Cobra"/> == <see langword="true"/> exige ao menos um fundamento. Quem cobra
+/// tem de reconhecer por qual fundamento o candidato pode pedir isenção — a possibilidade de
+/// pedir se materializa nos fundamentos declarados pelo processo, e um processo que cobra sem
+/// nenhum deles não a oferece a ninguém.
+/// </para>
+/// <para>
 /// <b>CA-06 — confirmação explícita, não ramo por tipo de processo.</b> O agregado não tem
 /// discriminador confiável de "processo de Medicina" (tipo de processo é cadastro configurável;
 /// Medicina aparece como curso/oferta), e a suíte de arquitetura proíbe branch por tipo/curso
@@ -47,7 +54,7 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase
     /// <summary>Positivo quando <see cref="Cobra"/>; sempre nulo quando não cobra (CA-02/CA-03).</summary>
     public decimal? Valor { get; private set; }
 
-    /// <summary>Fundamentos de isenção referenciados, deduplicados e na ordem canônica. Vazio é estado válido (CA-04).</summary>
+    /// <summary>Fundamentos de isenção referenciados, deduplicados e na ordem canônica. Nunca vazio quando <see cref="Cobra"/> (issue #1310).</summary>
     public IReadOnlyList<FundamentoIsencao> Fundamentos { get; private set; } = [];
 
     /// <summary>Confirmação explícita do administrador ao referenciar fundamentos (CA-06) — irrelevante quando <see cref="Fundamentos"/> é vazio.</summary>
@@ -130,6 +137,16 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase
                     "ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria",
                     "Referenciar fundamento de isenção exige confirmação explícita do administrador.")));
             }
+        }
+        else if (cobra)
+        {
+            // A obrigatoriedade se apoia na LISTA DE ENTRADA vazia, não no conjunto resultante.
+            // Entrada com token fora do vocabulário já recebe FundamentoDesconhecido, que nomeia
+            // o que corrigir; acrescentar "informe ao menos um" ao mesmo lote não daria ação nova
+            // a quem tentou declarar um fundamento e errou o token.
+            erros.Add(new("fundamentos", new DomainError(
+                "ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra",
+                "Processo que cobra taxa de inscrição exige ao menos um fundamento de isenção.")));
         }
 
         if (erros.Count > 0)

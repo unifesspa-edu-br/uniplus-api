@@ -1337,6 +1337,21 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Message.Should().Contain("taxaInscricao.confirmacaoFundamentos");
     }
 
+    [Fact(DisplayName = "issue #1310: envelope que cobra taxa sem nenhum fundamento é recusado — o decoder é tão estrito quanto a escrita")]
+    public void TaxaInscricao_CobraSemFundamento_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            envelope["taxaInscricao"]!["fundamentos"] = new JsonArray();
+            envelope["taxaInscricao"]!["confirmacaoFundamentos"] = false;
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "ConfiguracaoTaxaInscricao.Criar passou a exigir fundamento de quem cobra — o encoder nunca " +
+            "emite 'cobra:true' com 'fundamentos:[]', e o decoder não pode aceitar o que a escrita recusa");
+        resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra");
+    }
+
     // ── Cidade da Unidade administradora (issue #1114) — bicondicional all-or-nothing ──
 
     [Fact(DisplayName = "issue #1114: cidade parcial (só código IBGE) em identidadesUnidade.administradora é recusada")]

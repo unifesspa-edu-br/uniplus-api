@@ -615,5 +615,6 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_exige_cobranca", "Processo que declara não cobrar taxa não pode configurar fundamento de isenção")),
         new("ConfiguracaoTaxaInscricao.FundamentoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_desconhecido", "O fundamento de isenção informado não é conhecido")),
         new("ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.confirmacao_fundamentos_obrigatoria", "Referenciar fundamento de isenção exige confirmação explícita do administrador")),
+        new("ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_obrigatorio_quando_cobra", "Processo que cobra taxa de inscrição exige ao menos um fundamento de isenção")),
     ];
 }
