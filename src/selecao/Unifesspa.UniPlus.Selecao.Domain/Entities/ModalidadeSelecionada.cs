@@ -32,6 +32,15 @@ public sealed class ModalidadeSelecionada : EntityBase
     public string? RemanejamentoPar { get; private set; }
     public string? RemanejamentoFallback { get; private set; }
     public IReadOnlyList<string> CriteriosCumulativos { get; private set; } = [];
+
+    /// <summary>
+    /// Snapshot-copy da ação de indeferimento do cadastro de <c>Modalidade</c>
+    /// (Configuração) — token UPPER_SNAKE, <c>RECLASSIFICAR_AC</c> ou
+    /// <c>RECLASSIFICAR_REGRA_EDITAL</c>. <see langword="null"/> declara que a modalidade não
+    /// reclassifica, e é assim que o gate de coerência da publicação a lê: só confronta a
+    /// consequência da exigência documental com esta ação quando ela está declarada. Sem
+    /// ação, quem responde pelo destino do candidato indeferido é a própria exigência.
+    /// </summary>
     public string? AcaoQuandoIndeferido { get; private set; }
     public string BaseLegal { get; private set; } = string.Empty;
 
