@@ -335,6 +335,28 @@ public sealed class ModalidadePersistenceTests
             "as vagas por acréscimo nascem de resolução institucional, não da Lei de Cotas");
     }
 
+    [Theory(DisplayName = "Seed: a base legal das reservas de pessoa com deficiência é institucional, não a Lei de Cotas")]
+    [InlineData("AC_PCD")]
+    [InlineData("PCD_PURO")]
+    public async Task Seed_ReservaDePcd_NaoSeFundamentaNaLeiDeCotas(string codigo)
+    {
+        CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
+
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Modalidade modalidade = await ctx.Modalidades.AsNoTracking()
+            .SingleAsync(m => !m.IsDeleted && m.Codigo == vo);
+
+        // A Lei 12.711/2012 não prevê reserva de vaga para pessoa com deficiência fora das suas
+        // oito modalidades — as duas existem justamente para quem essas oito não alcançam.
+        // base_legal congela no snapshot de publicação como fundamentação do edital, então
+        // citar a lei errada não é imprecisão de texto: é fundamentar a reserva numa norma que
+        // não a institui.
+        modalidade.BaseLegal.Should().NotBeNullOrWhiteSpace()
+            .And.NotContain("12.711")
+            .And.Contain("532/2021");
+    }
+
     [Fact(DisplayName = "Seed: PCD_PURO é linha própria, com o mecanismo de vagas de AC_PCD e base legal fora da Lei 12.711")]
     public async Task Seed_PcdPuro_CadastroIndependenteDeAcPcd()
     {

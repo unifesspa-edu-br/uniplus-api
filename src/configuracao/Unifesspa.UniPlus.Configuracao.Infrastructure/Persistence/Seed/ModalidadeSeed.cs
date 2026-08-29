@@ -27,7 +27,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// termo <c>V</c> dos editais vive apenas na <c>Descricao</c>, nunca como código. As suas vagas são
 /// <b>retiradas</b> da ampla concorrência (não acrescidas ao total), e a vaga ociosa retorna a
 /// <c>AC</c> — daí composição <c>RETIRA_DE</c> origem <c>AC</c> e remanejamento de destino único
-/// <c>AC</c>.
+/// <c>AC</c>. A <b>base legal é institucional</b>, não a Lei de Cotas: a Lei 12.711/2012 não
+/// prevê reserva de vaga para pessoa com deficiência fora das suas oito modalidades — <c>AC_PCD</c>
+/// existe exatamente para quem essas oito não alcançam.
 /// </para>
 /// <para>
 /// <c>PCD_PURO</c> é a reserva de pessoa com deficiência do processo que <b>não</b> oferta as
@@ -66,9 +68,11 @@ public static class ModalidadeSeed
 {
     private const string BaseLegalLei12711 = "Lei 12.711/2012 (red. Lei 14.723/2023)";
 
-    // PCD_PURO nasce para o processo fora do alcance da Lei de Cotas — citá-la aqui seria
-    // fundamentar a reserva na norma que a modalidade justamente não aplica (UNI-REQ-0088).
-    private const string BaseLegalPcdPuro =
+    // A reserva de vaga para pessoa com deficiência é institucional, não da Lei de Cotas: a
+    // Lei 12.711/2012 não prevê modalidade de PcD fora das suas oito. Vale para AC_PCD e para
+    // PCD_PURO — é a mesma norma sustentando as duas, e citar a Lei em qualquer uma delas
+    // fundamentaria a reserva num texto que não a institui (UNI-REQ-0088).
+    private const string BaseLegalReservaPcd =
         "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)";
 
     // As vagas por acréscimo do PSIQ nascem da Res. 22/2014 e seguem vigentes pela 532/2021 —
@@ -122,12 +126,12 @@ public static class ModalidadeSeed
         new(SeedId(10), "AC_PCD", "Ampla Concorrência – Pessoa com Deficiência (V)",
             NaturezaLegal.OutraModalidade, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
             RegraRemanejamento.DestinoUnico, RemanejamentoArgs.Criar("AC", par: null, fallback: null),
-            BaseLegalLei12711),
+            BaseLegalReservaPcd),
 
         new(SeedId(11), "PCD_PURO", "Pessoa com Deficiência — reserva sem as cotas da Lei 12.711",
             NaturezaLegal.OutraModalidade, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
             RegraRemanejamento.DestinoUnico, RemanejamentoArgs.Criar("AC", par: null, fallback: null),
-            BaseLegalPcdPuro),
+            BaseLegalReservaPcd),
 
         new(SeedId(12), "AC_I", "Vaga por acréscimo — candidato indígena (PSIQ)",
             NaturezaLegal.Suplementar, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
