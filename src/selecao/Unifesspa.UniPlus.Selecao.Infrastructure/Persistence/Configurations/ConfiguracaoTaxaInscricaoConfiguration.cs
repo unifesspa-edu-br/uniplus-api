@@ -54,14 +54,13 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
             .HasComment("Confirmação explícita do administrador ao referenciar fundamentos de isenção (CA-06) — irrelevante quando fundamentos é vazio.");
 
         // fundamentos: lista de tokens (não ordinais de enum — nomes de coluna vendor-neutral,
-        // mesmo raciocínio de ConfiguracaoDivulgacao.CamposPublicos). SEM DEFAULT: lista vazia é
-        // estado que a factory produz explicitamente (Cobra sem fundamento), não um valor a
-        // fabricar por ausência de linha.
+        // mesmo raciocínio de ConfiguracaoDivulgacao.CamposPublicos). SEM DEFAULT: quem não cobra
+        // grava a lista vazia explicitamente, e não há valor a fabricar por ausência de linha.
         builder.Property(c => c.Fundamentos)
             .HasConversion(FundamentosConverter, FundamentosComparer)
             .HasColumnType("jsonb")
             .IsRequired()
-            .HasComment("Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio é estado válido (CA-04).");
+            .HasComment("Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio somente quando cobra=false (issue #1310).");
     }
 
     private static readonly ValueConverter<IReadOnlyList<FundamentoIsencao>, string> FundamentosConverter =

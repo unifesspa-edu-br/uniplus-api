@@ -9,6 +9,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Domain.Entities;
+using Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -92,12 +93,55 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         taxa.Cobra.Should().BeFalse();
     }
 
+    // Issue #1310: quem cobra declara ao menos um fundamento de isenção — o corpo de sucesso
+    // do ramo "cobra" carrega o fundamento e a confirmação que a fábrica exige.
+    [Fact(DisplayName = "cobra=true sem fundamento de isenção é rejeitado com 422 nomeado (issue #1310)")]
+    public async Task ComCobraSemFundamento_422()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(ComCobraSemFundamento_422));
+
+        HttpResponseMessage resposta = await ctx.PutTaxaInscricaoRawAsync(
+            """{ "cobra": true, "valor": 100.00, "fundamentos": [], "confirmacaoFundamentos": false }""");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "quem cobra reconhece ao menos um fundamento — a possibilidade de pedir isenção se " +
+            "materializa nos fundamentos declarados pelo processo");
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().Contain("uniplus.selecao.configuracao_taxa_inscricao.fundamento_obrigatorio_quando_cobra");
+
+        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        ConfiguracaoTaxaInscricao taxa = await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
+            .SingleAsync(t => t.ProcessoSeletivoId == ctx.ProcessoId);
+        taxa.Cobra.Should().BeFalse(
+            "a recusa precede a escrita — a declaração de não cobrança que a semeadura gravou " +
+            "continua intacta, e não virou uma declaração de cobrança sem fundamento");
+    }
+
+    [Fact(DisplayName = "cobra=true com fundamento e confirmação é aceito e persiste o fundamento (issue #1310)")]
+    public async Task ComCobraEFundamento_204EPersisteFundamento()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(ComCobraEFundamento_204EPersisteFundamento));
+
+        HttpResponseMessage resposta = await ctx.PutTaxaInscricaoAsync(CorpoComCobranca(cobra: true, valor: 100m));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        ConfiguracaoTaxaInscricao taxa = await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
+            .SingleAsync(t => t.ProcessoSeletivoId == ctx.ProcessoId);
+        taxa.Cobra.Should().BeTrue();
+        taxa.Fundamentos.Should().Equal(FundamentoIsencao.CadastroUnico);
+    }
+
     private static object CorpoComCobranca(bool cobra, decimal? valor) => new
     {
         cobra,
         valor,
-        fundamentos = (string[]?)null,
-        confirmacaoFundamentos = false,
+        fundamentos = cobra ? [FundamentoIsencaoCodigo.CadastroUnico] : (string[]?)null,
+        confirmacaoFundamentos = cobra,
     };
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId)

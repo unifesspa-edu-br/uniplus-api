@@ -61,13 +61,15 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Passa com Fundamentos=[] — lista vazia é zero fundamentos, estado válido (CA-04, achado de revisão P1)")]
+    [Fact(DisplayName = "Passa com Fundamentos=[] — o validator não decide se Cobra exige fundamento, isso é regra de domínio (ADR-0125)")]
     public void Aceita_FundamentosListaVazia()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
             Guid.CreateVersion7(), true, 100m, [], false, PrecondicaoIfMatch.Ausente));
 
-        result.IsValid.Should().BeTrue();
+        result.IsValid.Should().BeTrue(
+            "a combinação é recusada por ConfiguracaoTaxaInscricao.Criar (issue #1310), e repeti-la " +
+            "aqui daria duas fontes para a mesma regra");
     }
 
     [Fact(DisplayName = "Passa com Fundamentos nulo")]
