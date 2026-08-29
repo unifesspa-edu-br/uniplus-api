@@ -264,7 +264,7 @@ public sealed class ModalidadePersistenceTests
         return ctx.Modalidades.Single(m => m.Codigo == vo).Id;
     }
 
-    [Fact(DisplayName = "Seed: as oito federais + AC + AC_PCD nascem com a migração, vivas e com os atributos corretos")]
+    [Fact(DisplayName = "Seed: as oito federais + AC + AC_PCD + PCD_PURO nascem com a migração, vivas e com os atributos corretos")]
     public async Task Seed_ModalidadesFederais_PresentesEVivas()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -275,7 +275,7 @@ public sealed class ModalidadePersistenceTests
 
         string[] codigos = [.. semeadas.Select(m => m.Codigo.Valor).OrderBy(c => c, StringComparer.Ordinal)];
         codigos.Should().Contain(
-            ["AC", "AC_PCD", "LB_EP", "LB_PCD", "LB_PPI", "LB_Q", "LI_EP", "LI_PCD", "LI_PPI", "LI_Q"],
+            ["AC", "AC_PCD", "LB_EP", "LB_PCD", "LB_PPI", "LB_Q", "LI_EP", "LI_PCD", "LI_PPI", "LI_Q", "PCD_PURO"],
             "o seed torna as modalidades legais fixas presentes sem digitação por edital");
 
         Modalidade acPcd = semeadas.Single(m => m.Codigo.Valor == "AC_PCD");
@@ -296,6 +296,40 @@ public sealed class ModalidadePersistenceTests
                 && m.ComposicaoVagas == ComposicaoVagas.DentroDoVr
                 && m.RegraRemanejamento == RegraRemanejamento.SegueCascata,
                 "as cotas federais são sub-reservas dentro das vagas reservadas e seguem a cascata legal");
+    }
+
+    [Fact(DisplayName = "Seed: PCD_PURO é linha própria, com o mecanismo de vagas de AC_PCD e base legal fora da Lei 12.711")]
+    public async Task Seed_PcdPuro_CadastroIndependenteDeAcPcd()
+    {
+        CodigoModalidade pcdPuroVo = CodigoModalidade.Criar(CodigoModalidade.PcdPuro).Value!;
+        CodigoModalidade acPcdVo = CodigoModalidade.Criar(CodigoModalidade.AcPcd).Value!;
+
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        List<Modalidade> semeadas = await ctx.Modalidades.AsNoTracking()
+            .Where(m => !m.IsDeleted && (m.Codigo == pcdPuroVo || m.Codigo == acPcdVo))
+            .ToListAsync();
+
+        Modalidade pcdPuro = semeadas.Single(m => m.Codigo.Valor == "PCD_PURO");
+        Modalidade acPcd = semeadas.Single(m => m.Codigo.Valor == "AC_PCD");
+
+        // Mesma mecânica de vagas — a vaga de PcD sai da ampla e volta a ela quando ociosa,
+        // e isso não depende de a modalidade ser exclusiva das cotas da Lei.
+        pcdPuro.NaturezaLegal.Should().Be(NaturezaLegal.OutraModalidade);
+        pcdPuro.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiraDe);
+        pcdPuro.ComposicaoOrigem.Should().Be("AC");
+        pcdPuro.RegraRemanejamento.Should().Be(RegraRemanejamento.DestinoUnico);
+        pcdPuro.RemanejamentoArgs.Destino.Should().Be("AC");
+
+        // Cadastros independentes: PCD_PURO não deriva de AC_PCD nem a referencia.
+        pcdPuro.Id.Should().NotBe(acPcd.Id);
+        pcdPuro.ComposicaoOrigem.Should().NotBe("AC_PCD");
+        pcdPuro.RemanejamentoArgs.Destino.Should().NotBe("AC_PCD");
+
+        pcdPuro.BaseLegal.Should().NotBeNullOrWhiteSpace()
+            .And.NotContain("12.711",
+                "PCD_PURO reserva a vaga no processo que não aplica a Lei de Cotas — fundamentá-la "
+                + "nessa lei atribuiria a reserva à norma que a modalidade justamente não aplica");
     }
 
     [Fact(DisplayName = "Seed: o conjunto semeado é exatamente o catálogo legal fixo protegido")]

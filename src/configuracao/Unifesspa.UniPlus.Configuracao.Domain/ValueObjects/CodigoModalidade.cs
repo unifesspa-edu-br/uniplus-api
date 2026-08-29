@@ -20,10 +20,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// remanejamento e as referências de composição (<c>ComposicaoOrigem</c>,
 /// <c>RemanejamentoArgs</c>) apontam para modalidades por código — renomear
 /// quebraria a integridade referencial intra-banco.</para>
-/// <para>Dez códigos são <b>reservados</b> ao catálogo legal fixo (ver
+/// <para>Onze códigos são <b>reservados</b> ao catálogo legal fixo (ver
 /// <see cref="CodigosLegaisFixos"/>): as oito modalidades da Lei 12.711/2012 (red. Lei
-/// 14.723/2023), a ampla concorrência e a modalidade de pessoa com deficiência fora da
-/// reserva federal. A proteção é exposta por <see cref="EhLegalFixa"/> e aplicada pelo
+/// 14.723/2023), a ampla concorrência e as duas modalidades de pessoa com deficiência fora
+/// da reserva federal. A proteção é exposta por <see cref="EhLegalFixa"/> e aplicada pelo
 /// agregado (atualização) e pelos handlers (criação e remoção), não pelo banco.</para>
 /// </remarks>
 public sealed partial record CodigoModalidade
@@ -61,14 +61,22 @@ public sealed partial record CodigoModalidade
     public const string LiEp = "LI_EP";
 
     /// <summary>
-    /// Os dez códigos do catálogo legal fixo — piso de ações afirmativas da Lei
-    /// 12.711/2012 (red. Lei 14.723/2023) mais a ampla concorrência e a modalidade de
-    /// pessoa com deficiência fora da reserva federal. Não são cadastro: nascem do seed,
-    /// e a estrutura de vagas de cada um (natureza, composição, remanejamento) é ditada
-    /// pela lei, não pela universidade. Alterá-la exige mudança no seed e migração.
+    /// Pessoa com deficiência sem nenhuma condição de origem escolar — a reserva de PcD
+    /// para o processo que não oferta as cotas da Lei 12.711/2012 (UNI-REQ-0085).
+    /// </summary>
+    public const string PcdPuro = "PCD_PURO";
+
+    /// <summary>
+    /// Os onze códigos do catálogo legal fixo — piso de ações afirmativas da Lei
+    /// 12.711/2012 (red. Lei 14.723/2023) mais a ampla concorrência e as duas modalidades
+    /// de pessoa com deficiência fora da reserva federal (<see cref="AcPcd"/>, condicionada
+    /// a não ser egresso de escola pública, e <see cref="PcdPuro"/>, sem essa condição).
+    /// Não são cadastro: nascem do seed, e a estrutura de vagas de cada um (natureza,
+    /// composição, remanejamento) é ditada por norma, não pela universidade. Alterá-la
+    /// exige mudança no seed e migração.
     /// </summary>
     public static FrozenSet<string> CodigosLegaisFixos { get; } = FrozenSet.ToFrozenSet(
-        [Ac, AcPcd, LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp],
+        [Ac, AcPcd, LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp, PcdPuro],
         StringComparer.Ordinal);
 
     public string Valor { get; }

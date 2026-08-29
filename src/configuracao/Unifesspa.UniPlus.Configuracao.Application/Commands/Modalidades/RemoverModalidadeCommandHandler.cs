@@ -38,10 +38,11 @@ public static class RemoverModalidadeCommandHandler
                 "Modalidade de concorrência não encontrada."));
         }
 
-        // As dez modalidades legais fixas são o piso de ações afirmativas exigido pela Lei
-        // 12.711/2012 (red. Lei 14.723/2023): sem elas não há como configurar a distribuição
-        // de vagas de um edital que aplique a lei. A checagem precede a de referência —
-        // é determinística e não vai ao banco.
+        // As onze modalidades legais fixas são o piso de ações afirmativas fixado em norma:
+        // sem as dez da Lei 12.711/2012 (red. Lei 14.723/2023) não há como configurar a
+        // distribuição de vagas de um edital que aplique a lei, e sem PCD_PURO não há como
+        // reservar vaga de pessoa com deficiência no processo que fica fora dela. A checagem
+        // precede a de referência — é determinística e não vai ao banco.
         if (modalidade.Codigo.EhLegalFixa)
         {
             return Result.Failure(new DomainError(

@@ -39,6 +39,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     [InlineData("LB_PPI")]
     [InlineData("AC")]
     [InlineData("AC_PCD")]
+    [InlineData("PCD_PURO")]
     [InlineData(" LB_PPI ")]
     public async Task Handle_CodigoReservado_RetornaConflito(string codigo)
     {
