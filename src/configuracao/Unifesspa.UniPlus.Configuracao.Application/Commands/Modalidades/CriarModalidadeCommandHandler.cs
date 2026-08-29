@@ -48,7 +48,7 @@ public static class CriarModalidadeCommandHandler
 
         Modalidade modalidade = modalidadeResult.Value!;
 
-        // Os onze códigos legais fixos só nascem do seed. A reserva é do cadastro, não
+        // Os treze códigos legais fixos só nascem do seed. A reserva é do cadastro, não
         // do domínio (a factory os aceita — reidratação administrativa depende disso),
         // e só é checada depois que o payload já está confirmado coerente: 409 é sobre
         // QUEM pode nascer, não sobre a FORMA do payload.

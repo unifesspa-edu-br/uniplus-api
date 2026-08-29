@@ -60,6 +60,8 @@ public sealed class RemoverModalidadeCommandHandlerTests
     [InlineData("AC")]
     [InlineData("AC_PCD")]
     [InlineData("PCD_PURO")]
+    [InlineData("AC_I")]
+    [InlineData("AC_Q")]
     public async Task Handle_LegalFixa_RetornaConflito(string codigo)
     {
         Modalidade modalidade = Modalidade(codigo);

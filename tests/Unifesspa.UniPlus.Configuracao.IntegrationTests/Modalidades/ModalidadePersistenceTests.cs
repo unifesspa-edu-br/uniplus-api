@@ -264,7 +264,7 @@ public sealed class ModalidadePersistenceTests
         return ctx.Modalidades.Single(m => m.Codigo == vo).Id;
     }
 
-    [Fact(DisplayName = "Seed: as oito federais + AC + AC_PCD + PCD_PURO nascem com a migração, vivas e com os atributos corretos")]
+    [Fact(DisplayName = "Seed: as oito federais + AC + as institucionais nascem com a migração, vivas e com os atributos corretos")]
     public async Task Seed_ModalidadesFederais_PresentesEVivas()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -275,7 +275,7 @@ public sealed class ModalidadePersistenceTests
 
         string[] codigos = [.. semeadas.Select(m => m.Codigo.Valor).OrderBy(c => c, StringComparer.Ordinal)];
         codigos.Should().Contain(
-            ["AC", "AC_PCD", "LB_EP", "LB_PCD", "LB_PPI", "LB_Q", "LI_EP", "LI_PCD", "LI_PPI", "LI_Q", "PCD_PURO"],
+            ["AC", "AC_I", "AC_PCD", "AC_Q", "LB_EP", "LB_PCD", "LB_PPI", "LB_Q", "LI_EP", "LI_PCD", "LI_PPI", "LI_Q", "PCD_PURO"],
             "o seed torna as modalidades legais fixas presentes sem digitação por edital");
 
         Modalidade acPcd = semeadas.Single(m => m.Codigo.Valor == "AC_PCD");
@@ -296,6 +296,43 @@ public sealed class ModalidadePersistenceTests
                 && m.ComposicaoVagas == ComposicaoVagas.DentroDoVr
                 && m.RegraRemanejamento == RegraRemanejamento.SegueCascata,
                 "as cotas federais são sub-reservas dentro das vagas reservadas e seguem a cascata legal");
+    }
+
+    [Fact(DisplayName = "Seed: AC_I e AC_Q são suplementares ao total e formam um par cruzado recíproco sem destino final")]
+    public async Task Seed_AcIAcQ_ParCruzadoReciproco()
+    {
+        CodigoModalidade acIVo = CodigoModalidade.Criar(CodigoModalidade.AcI).Value!;
+        CodigoModalidade acQVo = CodigoModalidade.Criar(CodigoModalidade.AcQ).Value!;
+
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        List<Modalidade> psiq = await ctx.Modalidades.AsNoTracking()
+            .Where(m => !m.IsDeleted && (m.Codigo == acIVo || m.Codigo == acQVo))
+            .ToListAsync();
+
+        Modalidade acI = psiq.Single(m => m.Codigo.Valor == "AC_I");
+        Modalidade acQ = psiq.Single(m => m.Codigo.Valor == "AC_Q");
+
+        // Vagas por acréscimo: somam ao total do curso, então não saem de lugar nenhum.
+        foreach (Modalidade m in psiq)
+        {
+            m.NaturezaLegal.Should().Be(NaturezaLegal.Suplementar);
+            m.ComposicaoVagas.Should().Be(ComposicaoVagas.SuplementarAoTotal);
+            m.ComposicaoOrigem.Should().BeNull("vaga suplementar não é retirada de outra modalidade");
+            m.RegraRemanejamento.Should().Be(RegraRemanejamento.Cruzado);
+            m.RemanejamentoArgs.Destino.Should().BeNull("destino é argumento de DESTINO_UNICO");
+            m.RemanejamentoArgs.Fallback.Should().BeNull(
+                "o PSIQ não oferta ampla concorrência — a vaga que nenhum dos dois grupos preencher "
+                + "permanece ociosa, e é a ausência de fallback que declara isso");
+        }
+
+        // O cruzamento tem de ser mútuo: um par unilateral deixaria a vaga de um grupo migrar
+        // para o outro sem volta.
+        acI.RemanejamentoArgs.Par.Should().Be("AC_Q");
+        acQ.RemanejamentoArgs.Par.Should().Be("AC_I");
+
+        acI.BaseLegal.Should().NotBeNullOrWhiteSpace().And.NotContain("12.711",
+            "as vagas por acréscimo nascem de resolução institucional, não da Lei de Cotas");
     }
 
     [Fact(DisplayName = "Seed: PCD_PURO é linha própria, com o mecanismo de vagas de AC_PCD e base legal fora da Lei 12.711")]
