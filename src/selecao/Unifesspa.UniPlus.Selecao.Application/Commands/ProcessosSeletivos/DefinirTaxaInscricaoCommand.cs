@@ -10,13 +10,12 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo (issue
 /// #1112). <c>Cobra</c> nulo remove a declaração — o processo volta a "ainda não declarado",
 /// que BLOQUEIA a publicação (CA-01), diferente do toggle de <c>DefinirBonusRegionalCommand</c>
-/// (onde ausência é estado publicável). <c>Fundamentos</c> não vazio exige
-/// <c>ConfirmacaoFundamentos</c> == <see langword="true"/> (CA-06).
+/// (onde ausência é estado publicável). <c>Fundamentos</c> é obrigatório quando
+/// <c>Cobra</c> == <see langword="true"/> (issue #1310).
 /// </summary>
 public sealed record DefinirTaxaInscricaoCommand(
     Guid ProcessoSeletivoId,
     bool? Cobra,
     decimal? Valor,
     IReadOnlyList<string>? Fundamentos,
-    bool ConfirmacaoFundamentos,
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

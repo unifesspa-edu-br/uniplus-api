@@ -46,8 +46,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         const string corpoSemCampo = """
             {
               "valor": 100.00,
-              "fundamentos": null,
-              "confirmacaoFundamentos": false
+              "fundamentos": null
             }
             """;
 
@@ -66,7 +65,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage resposta = await ctx.PutTaxaInscricaoRawAsync(
-            """{ "cobra": null, "valor": null, "fundamentos": null, "confirmacaoFundamentos": false }""");
+            """{ "cobra": null, "valor": null, "fundamentos": null }""");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -94,14 +93,14 @@ public sealed class DefinirTaxaInscricaoEndpointTests
     }
 
     // Issue #1310: quem cobra declara ao menos um fundamento de isenção — o corpo de sucesso
-    // do ramo "cobra" carrega o fundamento e a confirmação que a fábrica exige.
+    // do ramo "cobra" carrega o fundamento que a fábrica exige.
     [Fact(DisplayName = "cobra=true sem fundamento de isenção é rejeitado com 422 nomeado (issue #1310)")]
     public async Task ComCobraSemFundamento_422()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(ComCobraSemFundamento_422));
 
         HttpResponseMessage resposta = await ctx.PutTaxaInscricaoRawAsync(
-            """{ "cobra": true, "valor": 100.00, "fundamentos": [], "confirmacaoFundamentos": false }""");
+            """{ "cobra": true, "valor": 100.00, "fundamentos": [] }""");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "quem cobra reconhece ao menos um fundamento — a possibilidade de pedir isenção se " +
@@ -119,7 +118,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
             "continua intacta, e não virou uma declaração de cobrança sem fundamento");
     }
 
-    [Fact(DisplayName = "cobra=true com fundamento e confirmação é aceito e persiste o fundamento (issue #1310)")]
+    [Fact(DisplayName = "cobra=true com fundamento é aceito e persiste o fundamento (issue #1310)")]
     public async Task ComCobraEFundamento_204EPersisteFundamento()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(ComCobraEFundamento_204EPersisteFundamento));
@@ -141,7 +140,6 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         cobra,
         valor,
         fundamentos = cobra ? [FundamentoIsencaoCodigo.CadastroUnico] : (string[]?)null,
-        confirmacaoFundamentos = cobra,
     };
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId)

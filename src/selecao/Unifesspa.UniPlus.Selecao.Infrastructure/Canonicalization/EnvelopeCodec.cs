@@ -773,10 +773,9 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     /// <see cref="SnapshotPublicacaoCanonicalizer.OrdenarPorConteudo(IEnumerable{JsonValue})"/>
     /// usaria — o encoder nunca embaralha porque <see cref="ConfiguracaoTaxaInscricao.Criar"/> já
     /// deduplica e ordena antes de guardar; achar duplicata ou ordem diferente aqui é sinal de
-    /// bytes que não vieram desse caminho. <c>confirmacaoFundamentos:true</c> com
-    /// <c>fundamentos:[]</c> é a mesma classe de impossível: a entidade zera essa combinação
-    /// (<see cref="ConfiguracaoTaxaInscricao.ConfirmacaoFundamentos"/>) antes de qualquer
-    /// serialização, então o encoder nunca a emite.
+    /// bytes que não vieram desse caminho. <c>cobra:true</c> com <c>fundamentos:[]</c> é a mesma
+    /// classe de impossível: a fábrica recusa a combinação (issue #1310), então o encoder nunca
+    /// a emite.
     /// </remarks>
     /// <summary>
     /// Lê o bloco da convenção de contagem congelada (UNI-REQ-0112).
@@ -1069,12 +1068,11 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
                 "'taxaInscricao.presente' não pode ser falso — CA-01 recusa publicar sem declarar taxa."));
         }
 
-        leitor.ExigirChaves(bloco, "taxaInscricao", "presente", "cobra", "valor", "fundamentos", "confirmacaoFundamentos");
+        leitor.ExigirChaves(bloco, "taxaInscricao", "presente", "cobra", "valor", "fundamentos");
 
         bool cobra = leitor.Booleano(bloco, "cobra", "taxaInscricao");
         decimal? valor = leitor.DecimalOpcional(bloco, "valor", ConfiguracaoTaxaInscricao.ValorEscala, "taxaInscricao", LimitesDoEnvelope.PrecisaoTaxaInscricao);
         IReadOnlyList<string> fundamentos = leitor.Textos(bloco, "fundamentos", "taxaInscricao");
-        bool confirmacaoFundamentos = leitor.Booleano(bloco, "confirmacaoFundamentos", "taxaInscricao");
         if (leitor.Falhou)
         {
             return null;
@@ -1095,14 +1093,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
                 ErrosCodecEnvelope.EnvelopeMalformado, "'taxaInscricao.fundamentos' não está na ordem canônica."));
         }
 
-        if (fundamentos.Count == 0 && confirmacaoFundamentos)
-        {
-            return leitor.Propagar<ConfiguracaoTaxaInscricao?>(new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                "'taxaInscricao.confirmacaoFundamentos' não pode ser verdadeiro sem 'fundamentos'."));
-        }
-
-        Result<ConfiguracaoTaxaInscricao> configuracao = ConfiguracaoTaxaInscricao.Criar(cobra, valor, fundamentos, confirmacaoFundamentos);
+        Result<ConfiguracaoTaxaInscricao> configuracao = ConfiguracaoTaxaInscricao.Criar(cobra, valor, fundamentos);
         return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoTaxaInscricao>(configuracao.Error!) : configuracao.Value;
     }
 

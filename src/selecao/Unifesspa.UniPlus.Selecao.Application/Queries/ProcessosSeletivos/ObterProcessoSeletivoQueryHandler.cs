@@ -200,8 +200,7 @@ public static class ObterProcessoSeletivoQueryHandler
             : new ConfiguracaoTaxaInscricaoDto(
                 configuracao.Cobra,
                 configuracao.Valor,
-                [.. configuracao.Fundamentos.Select(static f => f.ToCodigo())],
-                configuracao.ConfirmacaoFundamentos);
+                [.. configuracao.Fundamentos.Select(static f => f.ToCodigo())]);
 
     private static ConfiguracaoCascataRemanejamentoDto? ProjectCascata(ConfiguracaoCascataRemanejamento? cascata)
     {

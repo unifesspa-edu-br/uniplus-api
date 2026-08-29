@@ -886,7 +886,7 @@ public sealed class EnvelopeCodecRecusaTests
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
@@ -1321,33 +1321,29 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Message.Should().Contain("taxaInscricao.fundamentos");
     }
 
-    [Fact(DisplayName = "issue #1112: confirmacaoFundamentos=true com fundamentos vazio é recusado — a entidade nunca emite essa combinação")]
-    public void TaxaInscricao_ConfirmacaoFundamentosSemFundamentos_Recusa()
+    [Fact(DisplayName = "issue #1319: envelope que ainda traz confirmacaoFundamentos é recusado — o bloco é de forma fechada")]
+    public void TaxaInscricao_ChaveConfirmacaoFundamentosRemovida_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-        {
-            envelope["taxaInscricao"]!["fundamentos"] = new JsonArray();
-            envelope["taxaInscricao"]!["confirmacaoFundamentos"] = true;
-        });
+            envelope["taxaInscricao"]!["confirmacaoFundamentos"] = false);
 
         resultado.IsFailure.Should().BeTrue(
-            "ConfiguracaoTaxaInscricao.Criar zera ConfirmacaoFundamentos quando Fundamentos é vazio antes de " +
-            "qualquer serialização — o encoder nunca emite 'confirmacaoFundamentos:true' junto de 'fundamentos:[]'");
+            "a confirmação saiu do agregado e da emissão — chave a mais no bloco é malformado, " +
+            "não campo tolerado por compatibilidade");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error!.Message.Should().Contain("taxaInscricao.confirmacaoFundamentos");
+        resultado.Error!.Message.Should().Contain("confirmacaoFundamentos",
+            "a recusa nomeia a chave intrusa — sem isso o teste passaria por qualquer defeito " +
+            "de forma no bloco, inclusive um alheio à remoção");
     }
 
     [Fact(DisplayName = "issue #1310: envelope que cobra taxa sem nenhum fundamento é recusado — o decoder é tão estrito quanto a escrita")]
     public void TaxaInscricao_CobraSemFundamento_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-        {
-            envelope["taxaInscricao"]!["fundamentos"] = new JsonArray();
-            envelope["taxaInscricao"]!["confirmacaoFundamentos"] = false;
-        });
+            envelope["taxaInscricao"]!["fundamentos"] = new JsonArray());
 
         resultado.IsFailure.Should().BeTrue(
-            "ConfiguracaoTaxaInscricao.Criar passou a exigir fundamento de quem cobra — o encoder nunca " +
+            "ConfiguracaoTaxaInscricao.Criar exige fundamento de quem cobra — o encoder nunca " +
             "emite 'cobra:true' com 'fundamentos:[]', e o decoder não pode aceitar o que a escrita recusa");
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra");
     }

@@ -7504,8 +7504,7 @@
         "required": [
           "cobra",
           "valor",
-          "fundamentos",
-          "confirmacaoFundamentos"
+          "fundamentos"
         ],
         "type": "object",
         "properties": {
@@ -7526,9 +7525,6 @@
             "items": {
               "type": "string"
             }
-          },
-          "confirmacaoFundamentos": {
-            "type": "boolean"
           }
         }
       },
@@ -8209,8 +8205,7 @@
         "required": [
           "cobra",
           "valor",
-          "fundamentos",
-          "confirmacaoFundamentos"
+          "fundamentos"
         ],
         "type": "object",
         "properties": {
@@ -8242,9 +8237,6 @@
               ],
               "type": "string"
             }
-          },
-          "confirmacaoFundamentos": {
-            "type": "boolean"
           }
         }
       },

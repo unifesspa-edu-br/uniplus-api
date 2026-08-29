@@ -559,7 +559,6 @@ public sealed class EnvelopeFechadoE2ETests
                 cobra = false,
                 valor = (decimal?)null,
                 fundamentos = (string[]?)null,
-                confirmacaoFundamentos = false,
             },
             ifMatch: null);
 

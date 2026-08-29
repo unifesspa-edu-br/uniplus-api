@@ -80,7 +80,7 @@ internal static class ProcessoConformeFactory
         if (declararTaxa)
         {
             processo.DefinirTaxaInscricao(
-                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
                 PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
 

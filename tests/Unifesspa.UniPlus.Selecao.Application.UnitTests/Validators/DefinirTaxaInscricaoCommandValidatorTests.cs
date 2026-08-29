@@ -18,7 +18,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Aceita_CobraNulo()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.CreateVersion7(), null, null, null, false, PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), null, null, null, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -27,7 +27,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Rejeita_ProcessoSeletivoIdVazio()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.Empty, true, 100m, null, false, PrecondicaoIfMatch.Ausente));
+            Guid.Empty, true, 100m, null, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
     }
@@ -38,7 +38,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Aceita_ValorNaoPositivo(double valor)
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.CreateVersion7(), true, (decimal)valor, null, false, PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), true, (decimal)valor, null, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -47,7 +47,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Rejeita_ValorComEscalaExcedida()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.CreateVersion7(), true, 100.001m, null, false, PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), true, 100.001m, null, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
     }
@@ -56,7 +56,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Aceita_ValorNulo()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.CreateVersion7(), true, null, null, false, PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), true, null, null, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -65,7 +65,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Aceita_FundamentosListaVazia()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.CreateVersion7(), true, 100m, [], false, PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), true, 100m, [], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue(
             "a combinação é recusada por ConfiguracaoTaxaInscricao.Criar (issue #1310), e repeti-la " +
@@ -76,7 +76,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Aceita_FundamentosNulo()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.CreateVersion7(), true, 100m, null, false, PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), true, 100m, null, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -85,7 +85,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Aceita_ComandoCompleto()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.CreateVersion7(), true, 150.00m, [FundamentoIsencaoCodigo.CadastroUnico], true, PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), true, 150.00m, [FundamentoIsencaoCodigo.CadastroUnico], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }

@@ -102,7 +102,7 @@ public sealed class ManifestoDoEnvelopeTests
         // Taxa de inscrição e isenção (issue #1112) — diferente de ConfiguracaoBonusRegional/
         // ConfiguracaoDivulgacao, ausência aqui NÃO é estado publicável (CA-01).
         [typeof(ConfiguracaoTaxaInscricao)] = (
-            ["Cobra", "Valor", "Fundamentos", "ConfirmacaoFundamentos"],
+            ["Cobra", "Valor", "Fundamentos"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
         // Localidade regente (UNI-REQ-0111) — o município cujo calendário rege a contagem dos
