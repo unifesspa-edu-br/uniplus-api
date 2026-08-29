@@ -264,6 +264,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "classificacao_ausente",
                 "cronograma_fases_ausente",
                 "taxa_inscricao_nao_declarada",
+                "taxa_inscricao_sem_fundamento_de_isencao",
                 "exigencias_base_legal_nao_resolvida",
                 "classificacao_divisor_media_invalido",
 
