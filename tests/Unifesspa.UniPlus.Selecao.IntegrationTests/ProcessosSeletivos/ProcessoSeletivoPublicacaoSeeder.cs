@@ -118,7 +118,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     private static void DefinirTaxaInscricaoNaoCobra(ProcessoSeletivo processo)
     {
         Result<ConfiguracaoTaxaInscricao> taxaResult = ConfiguracaoTaxaInscricao.Criar(
-            cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false);
+            cobra: false, valor: null, fundamentosCodigos: null);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }

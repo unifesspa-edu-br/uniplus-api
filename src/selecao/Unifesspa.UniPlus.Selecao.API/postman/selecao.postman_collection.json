@@ -1816,7 +1816,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cobra\": false,\n  \"valor\": null,\n  \"fundamentos\": null,\n  \"confirmacaoFundamentos\": false\n}",
+              "raw": "{\n  \"cobra\": false,\n  \"valor\": null,\n  \"fundamentos\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"

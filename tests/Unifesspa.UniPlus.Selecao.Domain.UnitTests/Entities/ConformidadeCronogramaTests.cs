@@ -64,7 +64,7 @@ public sealed class ConformidadeCronogramaTests
     /// </summary>
     private static void DeclararNaoCobra(ProcessoSeletivo processo) =>
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     // ── CA-11 — piso mínimo de InscricaoPropria ──

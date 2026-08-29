@@ -102,4 +102,4 @@ public sealed record ConfiguracaoDivulgacaoDto(IReadOnlyList<string> CamposPubli
 /// <see cref="ConfiguracaoDivulgacaoDto"/>, aqui ausência não é estado publicável.
 /// </summary>
 public sealed record ConfiguracaoTaxaInscricaoDto(
-    bool Cobra, decimal? Valor, IReadOnlyList<string> Fundamentos, bool ConfirmacaoFundamentos);
+    bool Cobra, decimal? Valor, IReadOnlyList<string> Fundamentos);

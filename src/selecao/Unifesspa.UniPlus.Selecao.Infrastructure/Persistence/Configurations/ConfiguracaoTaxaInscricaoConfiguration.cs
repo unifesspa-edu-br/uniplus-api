@@ -49,9 +49,6 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
         builder.Property(c => c.Valor)
             .HasPrecision(ConfiguracaoTaxaInscricao.ValorPrecisao, ConfiguracaoTaxaInscricao.ValorEscala)
             .HasComment("Valor da taxa em reais, positivo quando cobra=true; sempre nulo quando cobra=false (CA-02/CA-03).");
-        builder.Property(c => c.ConfirmacaoFundamentos)
-            .IsRequired()
-            .HasComment("Confirmação explícita do administrador ao referenciar fundamentos de isenção (CA-06) — irrelevante quando fundamentos é vazio.");
 
         // fundamentos: lista de tokens (não ordinais de enum — nomes de coluna vendor-neutral,
         // mesmo raciocínio de ConfiguracaoDivulgacao.CamposPublicos). SEM DEFAULT: quem não cobra

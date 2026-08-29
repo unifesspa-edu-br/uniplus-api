@@ -160,7 +160,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
 
         Result<ConfiguracaoTaxaInscricao> taxa = ConfiguracaoTaxaInscricao.Criar(
             cobra: true, valor: 100m,
-            fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico], confirmacaoFundamentos: true);
+            fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]);
         taxa.IsSuccess.Should().BeTrue(taxa.Error?.Message);
         processo.DefinirTaxaInscricao(taxa.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

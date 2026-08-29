@@ -706,7 +706,6 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["cobra"] = taxa.Cobra,
             ["valor"] = taxa.Valor is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, ConfiguracaoTaxaInscricao.ValorEscala) : null,
             ["fundamentos"] = new JsonArray([.. taxa.Fundamentos.Select(static f => (JsonNode)f.ToCodigo())]),
-            ["confirmacaoFundamentos"] = taxa.ConfirmacaoFundamentos,
         };
     }
 

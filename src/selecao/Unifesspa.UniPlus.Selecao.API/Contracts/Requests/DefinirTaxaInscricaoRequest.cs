@@ -32,5 +32,4 @@ public sealed record DefinirTaxaInscricaoRequest(
         FundamentoIsencaoCodigo.CadastroUnico,
         FundamentoIsencaoCodigo.DoacaoMedulaOssea,
         FundamentoIsencaoCodigo.CarenciaSocioeconomica)]
-    IReadOnlyList<string>? Fundamentos,
-    bool ConfirmacaoFundamentos);
+    IReadOnlyList<string>? Fundamentos);

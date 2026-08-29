@@ -11,7 +11,7 @@ using Kernel.Results;
 /// Handler do <see cref="DefinirTaxaInscricaoCommand"/> (issue #1112): <c>Cobra</c> nulo remove
 /// a declaração (toggle por ausência, mas ausência aqui bloqueia publicação — CA-01); caso
 /// contrário constrói <see cref="ConfiguracaoTaxaInscricao"/> via <see cref="ConfiguracaoTaxaInscricao.Criar"/>,
-/// que aplica CA-02/CA-03/CA-06.
+/// que aplica as regras de valor, de exclusividade com a isenção e de fundamento obrigatório.
 /// </summary>
 public static class DefinirTaxaInscricaoCommandHandler
 {
@@ -56,7 +56,7 @@ public static class DefinirTaxaInscricaoCommandHandler
         }
 
         Result<ConfiguracaoTaxaInscricao> configuracaoResult = ConfiguracaoTaxaInscricao.Criar(
-            command.Cobra.Value, command.Valor, command.Fundamentos, command.ConfirmacaoFundamentos);
+            command.Cobra.Value, command.Valor, command.Fundamentos);
         if (configuracaoResult.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(configuracaoResult.Errors);

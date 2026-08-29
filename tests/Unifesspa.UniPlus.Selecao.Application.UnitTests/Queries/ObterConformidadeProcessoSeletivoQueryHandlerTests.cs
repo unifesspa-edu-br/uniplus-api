@@ -92,7 +92,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
         // Issue #1112: declarada para isolar a pendência de cronograma como a ÚNICA vermelha.
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -164,7 +164,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();

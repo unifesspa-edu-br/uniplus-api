@@ -115,7 +115,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — o seeder
         // declara explicitamente "não cobra" para continuar representando um processo publicável.
         Result<ConfiguracaoTaxaInscricao> taxaResult = ConfiguracaoTaxaInscricao.Criar(
-            cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false);
+            cobra: false, valor: null, fundamentosCodigos: null);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         Result taxaDefinirResult = processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente);
         taxaDefinirResult.IsSuccess.Should().BeTrue(taxaDefinirResult.Error?.Message);

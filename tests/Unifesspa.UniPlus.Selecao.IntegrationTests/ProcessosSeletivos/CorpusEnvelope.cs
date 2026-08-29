@@ -265,8 +265,7 @@ internal static class CorpusEnvelope
             ConfiguracaoTaxaInscricao.Criar(
                 cobra: true,
                 valor: 150.00m,
-                fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar),
-                confirmacaoFundamentos: true).Value!,
+                fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar)).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;

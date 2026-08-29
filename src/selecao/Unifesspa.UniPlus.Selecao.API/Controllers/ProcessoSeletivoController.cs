@@ -378,7 +378,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirTaxaInscricaoCommand(id, request.Cobra, request.Valor, request.Fundamentos, request.ConfirmacaoFundamentos, precondicao),
+            new DefinirTaxaInscricaoCommand(id, request.Cobra, request.Valor, request.Fundamentos, precondicao),
             cancellationToken);
         return ResponderMutacao(resultado);
     }

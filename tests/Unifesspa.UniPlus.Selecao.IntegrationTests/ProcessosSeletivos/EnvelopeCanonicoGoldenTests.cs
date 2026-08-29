@@ -229,7 +229,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         // Taxa de inscrição e isenção (issue #1112): o corpus BASE declara "não cobra" — a
         // combinação "não cobra" do CA-08, complementar ao corpus RICO ("cobra com fundamentos").
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;

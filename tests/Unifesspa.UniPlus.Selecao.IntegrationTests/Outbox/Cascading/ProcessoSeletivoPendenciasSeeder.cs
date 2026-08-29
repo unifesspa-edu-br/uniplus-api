@@ -232,7 +232,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         // aqui para que cada método desta classe continue isolando SÓ o defeito que se propõe
         // a isolar (issue #1096).
         Result taxaResult = processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
 
