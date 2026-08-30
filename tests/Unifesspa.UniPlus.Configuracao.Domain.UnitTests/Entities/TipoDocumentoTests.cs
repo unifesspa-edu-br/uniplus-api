@@ -7,6 +7,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
+// Desambigua o enum de categoria da entidade homônima do cadastro de categorias:
+// as duas convivem enquanto o tipo de documento ainda guarda a categoria como
+// vocabulário fechado em código.
+using CategoriaDocumento = Unifesspa.UniPlus.Configuracao.Domain.Enums.CategoriaDocumento;
+
 public sealed class TipoDocumentoTests
 {
     private const string Codigo = "LAUDO_MEDICO";

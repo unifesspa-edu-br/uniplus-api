@@ -39,6 +39,13 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 
     public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
 
+    /// <summary>
+    /// Categorias do catálogo de tipos de documento — cadastro administrado, e não
+    /// vocabulário fechado em código: a categoria organiza a navegação do catálogo
+    /// sem participar de nenhuma regra de negócio (UNI-REQ-0013).
+    /// </summary>
+    public DbSet<CategoriaDocumento> CategoriasDocumento => Set<CategoriaDocumento>();
+
     public DbSet<CondicaoAtendimentoEspecializado> CondicoesAtendimento => Set<CondicaoAtendimentoEspecializado>();
 
     public DbSet<RecursoAcessibilidade> RecursosAcessibilidade => Set<RecursoAcessibilidade>();

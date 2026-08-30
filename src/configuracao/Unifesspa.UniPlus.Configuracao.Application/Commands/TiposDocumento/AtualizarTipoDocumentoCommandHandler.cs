@@ -7,6 +7,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
+// Desambigua o enum de categoria da entidade homônima do cadastro de categorias:
+// as duas convivem enquanto o tipo de documento ainda guarda a categoria como
+// vocabulário fechado em código.
+using CategoriaDocumento = Unifesspa.UniPlus.Configuracao.Domain.Enums.CategoriaDocumento;
+
 /// <summary>
 /// Handler do <see cref="AtualizarTipoDocumentoCommand"/>. Valida os campos (sem
 /// I/O) antes de buscar a entidade: sem o validator removido, um payload mal
