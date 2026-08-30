@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -67,5 +69,40 @@ internal sealed class CategoriaDocumentoConfiguration : IEntityTypeConfiguration
         // desempata, e o código é a chave natural estável para o desempate.
         builder.HasIndex(c => new { c.Ordem, c.Codigo })
             .HasDatabaseName("ix_categoria_documento_ordem_codigo");
+
+        builder.HasData(MaterializarSeed());
+    }
+
+    /// <summary>
+    /// Projeta o seed (<see cref="CategoriaDocumentoSeed.Itens"/>) para linhas que o
+    /// <c>HasData</c> congela como literais na migration. O instante-âncora é fixo
+    /// (as linhas não passam pelo <c>AuditableInterceptor</c>/<c>SoftDeleteInterceptor</c>);
+    /// qualquer mudança futura no seed exige uma nova migration — o EF detecta o
+    /// diff —, sem alterar as bases já migradas.
+    /// </summary>
+    /// <remarks>
+    /// O cadastro é administrado e semeado ao mesmo tempo, então as duas escritas
+    /// disputam as mesmas linhas: editar um item desta lista faz o EF gerar um
+    /// <c>UpdateData</c> que sobrescreve o que o administrador tiver mudado na
+    /// categoria semeada. É trade-off aceito para que as dez existam desde a
+    /// migração, sem ato operacional pós-deploy — o mesmo de
+    /// <c>PrecedenciaFaseConfiguration</c>. Na prática, mudar a lista é ato
+    /// deliberado e raro: acrescentar categoria é operação de tela.
+    /// </remarks>
+    private static IEnumerable<object> MaterializarSeed()
+    {
+        // Instante-âncora fixo do seed (HasData exige valor determinístico).
+        DateTimeOffset seedCriadoEm = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        return CategoriaDocumentoSeed.Itens.Select(item => new
+        {
+            item.Id,
+            Codigo = CodigoCategoriaDocumento.Criar(item.Codigo).Value!,
+            item.Nome,
+            Descricao = (string?)null,
+            item.Ordem,
+            CreatedAt = seedCriadoEm,
+            IsDeleted = false,
+        });
     }
 }

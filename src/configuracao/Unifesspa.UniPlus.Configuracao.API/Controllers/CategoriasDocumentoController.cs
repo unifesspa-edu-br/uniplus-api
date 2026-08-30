@@ -16,8 +16,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Endpoint público de leitura por identificador
-/// (<c>GET /api/configuracao/categorias-documento/{id}</c>) e endpoints admin
+/// Endpoints públicos de leitura (<c>GET /api/configuracao/categorias-documento</c>,
+/// <c>GET /api/configuracao/categorias-documento/{id}</c>) e endpoints admin
 /// (<c>POST/PUT/DELETE /api/configuracao/admin/categorias-documento</c>) restritos
 /// a <c>plataforma-admin</c> (UNI-REQ-0013).
 /// </summary>
@@ -43,6 +43,29 @@ public sealed class CategoriasDocumentoController : ControllerBase
         _queryBus = queryBus;
         _mapper = mapper;
         _linksBuilder = linksBuilder;
+    }
+
+    /// <summary>
+    /// Lista o catálogo de categorias vivas, na ordem de exibição decidida pelo
+    /// operador (<c>ordem</c>, com o código como desempate). Conjunto de
+    /// referência fechado e de baixo volume, portanto não paginado — cada item
+    /// carrega seu <c>_links.self</c> (ADR-0029).
+    /// </summary>
+    [HttpGet("categorias-documento")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "categoria-documento", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CategoriaDocumentoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> Listar(CancellationToken cancellationToken)
+    {
+        ListarCategoriasDocumentoResult resultado = await _queryBus
+            .Send(new ListarCategoriasDocumentoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        CategoriaDocumentoDto[] comLinks =
+            [.. resultado.Itens.Select(c => c with { Links = _linksBuilder.Build(c) })];
+
+        return Ok(comLinks);
     }
 
     /// <summary>Obtém uma categoria pelo Id. Retorna 404 quando inexistente.</summary>

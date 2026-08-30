@@ -125,6 +125,9 @@ public sealed class CategoriaDocumentoCorridaDeUnicidadeTests
         public Task<CategoriaDocumento?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken) =>
             _interno.ObterPorIdParaLeituraAsync(id, cancellationToken);
 
+        public Task<IReadOnlyList<CategoriaDocumento>> ListarVivasOrdenadasAsync(CancellationToken cancellationToken) =>
+            _interno.ListarVivasOrdenadasAsync(cancellationToken);
+
         public Task AdicionarAsync(CategoriaDocumento categoria, CancellationToken cancellationToken) =>
             _interno.AdicionarAsync(categoria, cancellationToken);
 
