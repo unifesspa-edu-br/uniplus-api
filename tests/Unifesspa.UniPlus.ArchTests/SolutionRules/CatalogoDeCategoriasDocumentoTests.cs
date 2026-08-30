@@ -4,7 +4,6 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Guarda o seed das categorias de documento (<see cref="CategoriaDocumentoSeed"/>)
@@ -49,15 +48,15 @@ public sealed class CatalogoDeCategoriasDocumentoTests
     [Fact(DisplayName = "Cada item do seed passa nas invariantes do agregado")]
     public void Seed_ItensRespeitamOAgregado()
     {
-        foreach (CategoriaDocumentoSeedItem item in CategoriaDocumentoSeed.Itens)
-        {
-            Result<CategoriaDocumento> resultado = CategoriaDocumento.Criar(
-                item.Codigo, item.Nome, null, item.Ordem);
+        // Coleta os recusados em vez de asserir item a item: a falha nomeia quais
+        // códigos a factory rejeitou, em vez de dizer só que "algum" item falhou.
+        string[] recusados = [.. CategoriaDocumentoSeed.Itens
+            .Where(item => CategoriaDocumento.Criar(item.Codigo, item.Nome, null, item.Ordem).IsFailure)
+            .Select(item => item.Codigo)];
 
-            resultado.IsSuccess.Should().BeTrue(
-                "o seed materializa linhas sem passar pela factory — um item que ela recusasse "
-                + "nasceria no banco como dado que o cadastro rejeita");
-        }
+        recusados.Should().BeEmpty(
+            "o seed materializa linhas sem passar pela factory — um item que ela recusasse "
+            + "nasceria no banco como dado que o cadastro rejeita");
     }
 
     [Fact(DisplayName = "O seed não repete identificador, código nem ordem")]
