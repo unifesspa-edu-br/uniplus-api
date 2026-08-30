@@ -34,6 +34,20 @@ public sealed class CategoriaDocumentoRepository : ICategoriaDocumentoRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<CategoriaDocumento>> ListarVivasOrdenadasAsync(CancellationToken cancellationToken)
+    {
+        // Ordem de exibição decidida pelo operador, com o código como desempate —
+        // é a ordenação que o índice ix_categoria_documento_ordem_codigo cobre.
+        List<CategoriaDocumento> categorias = await _dbContext.CategoriasDocumento
+            .AsNoTracking()
+            .OrderBy(c => c.Ordem)
+            .ThenBy(c => c.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return categorias;
+    }
+
     public async Task AdicionarAsync(CategoriaDocumento categoria, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(categoria);

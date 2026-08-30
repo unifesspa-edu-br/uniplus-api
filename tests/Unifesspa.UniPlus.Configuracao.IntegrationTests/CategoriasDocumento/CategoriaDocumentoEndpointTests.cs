@@ -8,6 +8,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
@@ -15,8 +16,9 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// Smoke + caminho de escrita dos endpoints de <c>CategoriaDocumento</c>
 /// (UNI-REQ-0013): routing, vendor media type, HATEOAS, autenticação/autorização,
 /// idempotência, formato fechado do código (422), ordem de exibição, unicidade do
-/// código entre vivas (409) e liberação do código pelo soft-delete — com Wolverine
-/// contra Postgres efêmero.
+/// código entre vivas (409), liberação do código pelo soft-delete e a coleção do
+/// catálogo (seed + o que o cadastro acrescenta) — com Wolverine contra Postgres
+/// efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 [SuppressMessage(
@@ -30,6 +32,76 @@ public sealed class CategoriaDocumentoEndpointTests
     public CategoriaDocumentoEndpointTests(ConfiguracaoEndpointFixture fixture)
     {
         _fixture = fixture;
+    }
+
+    [Fact(DisplayName = "GET /api/configuracao/categorias-documento devolve as dez do seed na ordem declarada, com vendor MIME")]
+    public async Task Listar_DevolveOSeedNaOrdemDeclarada()
+    {
+        string[] esperados = [.. CategoriaDocumentoSeed.Itens.OrderBy(i => i.Ordem).Select(i => i.Codigo)];
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri("/api/configuracao/categorias-documento", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType
+            .Should().Be("application/vnd.uniplus.categoria-documento.v1+json");
+
+        string[] doSeed = [.. (await LerCodigos(response)).Where(esperados.Contains)];
+        doSeed.Should().Equal(esperados,
+            "a listagem segue a ordem de exibição do catálogo, não a ordem de criação");
+    }
+
+    [Fact(DisplayName = "GET da coleção devolve a mesma sequência entre chamadas")]
+    public async Task Listar_OrdemEstavelEntreChamadas()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        string[] primeira = await LerCodigos(await client.GetAsync(
+            new Uri("/api/configuracao/categorias-documento", UriKind.Relative)));
+        string[] segunda = await LerCodigos(await client.GetAsync(
+            new Uri("/api/configuracao/categorias-documento", UriKind.Relative)));
+
+        segunda.Should().Equal(primeira);
+    }
+
+    [Fact(DisplayName = "Categoria criada pelo cadastro aparece na coleção, e some depois de removida")]
+    public async Task Listar_RefleteCriacaoERemocaoPeloCadastro()
+    {
+        string codigo = CodigoUnico();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo, nome = "Categoria administrada", ordem = 500 });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        string[] comACategoria = await LerCodigos(await client.GetAsync(
+            new Uri("/api/configuracao/categorias-documento", UriKind.Relative)));
+        comACategoria.Should().Contain(codigo, "o catálogo é cadastro, não roster fixo em código");
+
+        using HttpRequestMessage remover = new(
+            HttpMethod.Delete, new Uri($"/api/configuracao/admin/categorias-documento/{id}", UriKind.Relative));
+        AutenticarComoAdmin(remover);
+        (await client.SendAsync(remover)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        string[] semACategoria = await LerCodigos(await client.GetAsync(
+            new Uri("/api/configuracao/categorias-documento", UriKind.Relative)));
+        semACategoria.Should().NotContain(codigo);
+    }
+
+    [Fact(DisplayName = "Cada item da coleção carrega _links com self e collection")]
+    public async Task Listar_ItensCarregamLinks()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri("/api/configuracao/categorias-documento", UriKind.Relative));
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement primeiro = doc.RootElement.EnumerateArray().First();
+        JsonElement links = primeiro.GetProperty("_links");
+
+        links.GetProperty("self").GetString().Should().Contain("/api/configuracao/categorias-documento/");
+        links.GetProperty("collection").GetString().Should().EndWith("/api/configuracao/categorias-documento");
     }
 
     [Fact(DisplayName = "GET /api/configuracao/categorias-documento/{id} retorna 404 quando inexistente")]
@@ -272,6 +344,12 @@ public sealed class CategoriaDocumentoEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "sem validator FluentValidation a montante, o campo ausente precisa chegar ao domínio (ADR-0125), não virar 400 de model binding");
+    }
+
+    private static async Task<string[]> LerCodigos(HttpResponseMessage response)
+    {
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return [.. doc.RootElement.EnumerateArray().Select(item => item.GetProperty("codigo").GetString()!)];
     }
 
     private static string CodigoUnico() => $"CAT_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";

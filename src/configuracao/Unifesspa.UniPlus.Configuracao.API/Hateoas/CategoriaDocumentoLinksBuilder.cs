@@ -11,9 +11,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 
 /// <summary>
 /// Builder de <c>_links</c> hypermedia (HATEOAS Level 1, ADR-0029) para
-/// <see cref="CategoriaDocumentoDto"/>. A única relação é <c>self</c> — a relação
-/// <c>collection</c> passa a existir quando o catálogo ganhar endpoint de
-/// listagem.
+/// <see cref="CategoriaDocumentoDto"/>. Relações em V1: <c>self</c> e
+/// <c>collection</c>.
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -41,10 +40,13 @@ internal sealed class CategoriaDocumentoLinksBuilder : IResourceLinksBuilder<Cat
 
         string self = ResolverPath(
             httpContext, nameof(CategoriasDocumentoController.ObterPorId), controllerName, new { id = dto.Id });
+        string collection = ResolverPath(
+            httpContext, nameof(CategoriasDocumentoController.Listar), controllerName, values: null);
 
         return new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["self"] = self,
+            ["collection"] = collection,
         };
     }
 

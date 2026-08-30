@@ -15,6 +15,14 @@ public interface ICategoriaDocumentoRepository
     /// <summary>Carrega a categoria para leitura (<c>AsNoTracking</c>) — projeção em DTO.</summary>
     Task<CategoriaDocumento?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Lista as categorias vivas na ordem de exibição do catálogo — <c>Ordem</c>
+    /// primeiro, código como desempate estável. Sem paginação: é catálogo de
+    /// referência fechado e de baixo volume, consumido inteiro por carregamento de
+    /// tela.
+    /// </summary>
+    Task<IReadOnlyList<CategoriaDocumento>> ListarVivasOrdenadasAsync(CancellationToken cancellationToken);
+
     Task AdicionarAsync(CategoriaDocumento categoria, CancellationToken cancellationToken);
 
     /// <summary>
