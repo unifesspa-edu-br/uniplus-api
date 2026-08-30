@@ -38,6 +38,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IReferenciaReservaDemograficaRepository, ReferenciaReservaDemograficaRepository>();
         services.AddScoped<IPesoAreaEnemRepository, PesoAreaEnemRepository>();
         services.AddScoped<ITipoDocumentoRepository, TipoDocumentoRepository>();
+        services.AddScoped<ICategoriaDocumentoRepository, CategoriaDocumentoRepository>();
         services.AddScoped<ICondicaoAtendimentoRepository, CondicaoAtendimentoRepository>();
         services.AddScoped<IRecursoAcessibilidadeRepository, RecursoAcessibilidadeRepository>();
         services.AddScoped<ITipoDeficienciaRepository, TipoDeficienciaRepository>();

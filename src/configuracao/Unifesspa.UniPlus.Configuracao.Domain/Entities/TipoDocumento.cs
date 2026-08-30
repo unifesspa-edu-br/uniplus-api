@@ -41,7 +41,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
-    public CategoriaDocumento Categoria { get; private set; }
+    public Enums.CategoriaDocumento Categoria { get; private set; }
     public string? FormatosAceitos { get; private set; }
     public int? TamanhoMaximoMb { get; private set; }
     public string? TipoEquivalente { get; private set; }
@@ -69,7 +69,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         string Codigo,
         string Nome,
         string? Descricao,
-        CategoriaDocumento Categoria,
+        Enums.CategoriaDocumento Categoria,
         string? FormatosAceitos,
         int? TamanhoMaximoMb,
         string? TipoEquivalente)> ValidarCampos(
@@ -127,7 +127,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
                 $"Descrição do tipo de documento deve ter no máximo {DescricaoMaxLength} caracteres.")));
         }
 
-        bool categoriaValida = CategoriaDocumentos.TryAnalisar(categoria, out CategoriaDocumento categoriaResolvida);
+        bool categoriaValida = CategoriaDocumentos.TryAnalisar(categoria, out Enums.CategoriaDocumento categoriaResolvida);
         if (!categoriaValida)
         {
             erros.Add(new("categoria", new DomainError(
@@ -171,10 +171,10 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
 
         if (erros.Count > 0)
         {
-            return Result<(string, string, string?, CategoriaDocumento, string?, int?, string?)>.ValidationFailure(erros);
+            return Result<(string, string, string?, Enums.CategoriaDocumento, string?, int?, string?)>.ValidationFailure(erros);
         }
 
-        return Result<(string, string, string?, CategoriaDocumento, string?, int?, string?)>.Success((
+        return Result<(string, string, string?, Enums.CategoriaDocumento, string?, int?, string?)>.Success((
             codigoNorm!, nomeNorm!, descricaoNorm, categoriaResolvida, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm));
     }
 
@@ -192,7 +192,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         int? tamanhoMaximoMb,
         string? tipoEquivalente)
     {
-        Result<(string Codigo, string Nome, string? Descricao, CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        Result<(string Codigo, string Nome, string? Descricao, Enums.CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
             ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
         if (validacao.IsFailure)
         {
@@ -220,7 +220,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         int? tamanhoMaximoMb,
         string? tipoEquivalente)
     {
-        Result<(string Codigo, string Nome, string? Descricao, CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        Result<(string Codigo, string Nome, string? Descricao, Enums.CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
             ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
         if (validacao.IsFailure)
         {
@@ -233,7 +233,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     }
 
     private void AplicarCampos(
-        (string Codigo, string Nome, string? Descricao, CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente) campos)
+        (string Codigo, string Nome, string? Descricao, Enums.CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente) campos)
     {
         Codigo = campos.Codigo;
         Nome = campos.Nome;

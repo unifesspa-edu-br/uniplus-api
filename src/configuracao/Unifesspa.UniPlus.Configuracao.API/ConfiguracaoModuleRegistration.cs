@@ -52,6 +52,7 @@ public static class ConfiguracaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<ReferenciaReservaDemograficaDto>, ReferenciaReservaDemograficaLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<PesoAreaEnemDto>, PesoAreaEnemLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<TipoDocumentoDto>, TipoDocumentoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<CategoriaDocumentoDto>, CategoriaDocumentoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<CondicaoAtendimentoDto>, CondicaoAtendimentoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<RecursoAcessibilidadeDto>, RecursoAcessibilidadeLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<TipoDeficienciaDto>, TipoDeficienciaLinksBuilder>();
