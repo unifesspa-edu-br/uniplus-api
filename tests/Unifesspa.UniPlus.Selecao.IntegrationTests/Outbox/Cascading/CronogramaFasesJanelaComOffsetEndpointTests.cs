@@ -209,7 +209,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext config = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
 
-        // O catálogo tem no máximo quatorze fases vivas — materializar é mais barato que
+        // O catálogo de fases vivas é pequeno — materializar é mais barato que
         // traduzir a comparação do value object Codigo para SQL.
         List<FaseCanonica> vivas = await config.FasesCanonicas.AsNoTracking()
             .ToListAsync().ConfigureAwait(false);

@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// natural, único entre fases vivas (índice único parcial <c>WHERE is_deleted =
 /// false</c>) e <b>imutável</b>: o comando de atualização não o aceita — o
 /// vocabulário canônico é fixo. Além do formato, o código deve pertencer ao
-/// conjunto canônico das quatorze fases (<see cref="FaseCanonicaCatalogo"/>).</para>
+/// conjunto canônico de fases (<see cref="FaseCanonicaCatalogo"/>).</para>
 /// <para>As invariantes de coerência (<see cref="AgrupaEtapas"/> só para a fase de
 /// avaliação; <see cref="PermiteComplementacao"/> só nas fases legalmente permitidas;
 /// <see cref="ResultadoDefinitivo"/> só quando <see cref="ProduzResultado"/>) moram
@@ -32,7 +32,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// recurso do cronograma de um processo (Módulo Seleção); <see cref="OrigemData"/>
 /// decide se a janela da fase é obrigatória (<c>PROPRIA</c>) ou opcional
 /// (<c>DELEGADA</c>). Cadastro <b>100% CRUD-administrado, sem seed</b> — os valores
-/// reais das quatorze fases são populados via endpoint admin, ato operacional
+/// reais das fases são populados via endpoint admin, ato operacional
 /// pós-deploy, não bloqueio de código.</para>
 /// </remarks>
 public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
@@ -71,7 +71,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Valida o código: formato fechado (<see cref="CodigoFase.Criar"/>) e pertença
-    /// ao conjunto canônico das quatorze fases. Sem mutar nada — existe para
+    /// ao conjunto canônico de fases. Sem mutar nada — existe para
     /// <see cref="Criar"/> decidir se as coerências que dependem do código (
     /// <see cref="AgrupaEtapas"/>, <see cref="PermiteComplementacao"/>) fazem
     /// sentido de avaliar, e para o handler consultar unicidade só com um código
@@ -89,7 +89,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         {
             return Result<CodigoFase>.ValidationFailure([new("codigo", new DomainError(
                 FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico,
-                "Código não pertence ao conjunto canônico das quatorze fases."))]);
+                "Código não pertence ao conjunto canônico de fases."))]);
         }
 
         return Result<CodigoFase>.Success(codigoResult.Value!);

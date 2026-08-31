@@ -208,7 +208,7 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoObrigatorio);
     }
 
-    [Fact(DisplayName = "Ponto de resolução fora do conjunto canônico das quatorze fases é rejeitado")]
+    [Fact(DisplayName = "Ponto de resolução fora do conjunto canônico de fases é rejeitado")]
     public void Criar_PontoResolucaoForaDoCanonico_Falha()
     {
         Result<FatoCandidato> resultado = Criar(pontoResolucao: "FASE_INEXISTENTE");

@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// O value object valida apenas o <b>formato</b>. A pertença ao conjunto canônico
-/// fechado das quatorze fases é guarda de domínio da entidade (factory
+/// fechado de fases é guarda de domínio da entidade (factory
 /// <c>FaseCanonica.Criar</c>), não do value object — o mesmo código bem-formado
 /// pode ou não ser canônico. O código é <b>imutável</b>: o comando de atualização
 /// não o aceita como campo editável (vocabulário canônico fixo).

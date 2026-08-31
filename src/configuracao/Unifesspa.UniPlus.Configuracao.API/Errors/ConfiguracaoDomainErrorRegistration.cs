@@ -686,7 +686,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fato_candidato.ponto_resolucao_invalido",
-                "Ponto de resolução do fato fora do conjunto canônico das quatorze fases")),
+                "Ponto de resolução do fato fora do conjunto canônico de fases")),
 
         new(FatoCandidatoErrorCodes.BindingObrigatorio,
             new DomainErrorMapping(
@@ -893,7 +893,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fase_canonica.codigo_fora_do_conjunto_canonico",
-                "Código da fase fora do conjunto canônico das quatorze fases")),
+                "Código da fase fora do conjunto canônico")),
 
         new(FaseCanonicaErrorCodes.CodigoJaExiste,
             new DomainErrorMapping(
@@ -990,7 +990,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.precedencia_fase.antecessora_fora_do_conjunto_canonico",
-                "Código da fase antecessora fora do conjunto canônico das quatorze fases")),
+                "Código da fase antecessora fora do conjunto canônico")),
 
         new(PrecedenciaFaseErrorCodes.SucessoraCodigoObrigatorio,
             new DomainErrorMapping(
@@ -1008,7 +1008,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.precedencia_fase.sucessora_fora_do_conjunto_canonico",
-                "Código da fase sucessora fora do conjunto canônico das quatorze fases")),
+                "Código da fase sucessora fora do conjunto canônico")),
 
         new(PrecedenciaFaseErrorCodes.SelfLoop,
             new DomainErrorMapping(

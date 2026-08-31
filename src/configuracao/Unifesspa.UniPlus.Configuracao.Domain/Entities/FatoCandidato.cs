@@ -349,7 +349,7 @@ public sealed class FatoCandidato : EntityBase
         {
             return Result<string>.Failure(new DomainError(
                 FatoCandidatoErrorCodes.PontoResolucaoInvalido,
-                "Ponto de resolução do fato fora do conjunto canônico das quatorze fases."));
+                "Ponto de resolução do fato fora do conjunto canônico de fases."));
         }
 
         return Result<string>.Success(normalizado);

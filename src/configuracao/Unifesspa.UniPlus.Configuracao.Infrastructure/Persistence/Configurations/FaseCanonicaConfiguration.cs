@@ -83,7 +83,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             "ck_fase_canonica_codigo_formato",
             "codigo ~ '^[A-Z_]+$'");
 
-        // Domínio fechado das quatorze fases canônicas (defesa em profundidade).
+        // Domínio fechado das fases canônicas (defesa em profundidade).
         table.HasCheckConstraint(
             "ck_fase_canonica_codigo_canonico",
             $"codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");
