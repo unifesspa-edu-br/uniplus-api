@@ -7,6 +7,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
+
 /// <summary>
 /// Resolve as <see cref="ObrigatoriedadeLegal"/> vigentes para o tipo do processo na
 /// data de corte (Story #852 §3.1: <c>DadosEdital.PeriodoInscricaoInicio</c>), avalia
@@ -33,6 +35,9 @@ internal static class ConferenciaDeConformidadeLegal
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
         ProcessoSeletivo processo,
         DateOnly dataReferencia,
+        IModalidadeReader modalidadeReader,
+        ITipoDocumentoReader tipoDocumentoReader,
+        ITipoEtapaReader tipoEtapaReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
@@ -43,6 +48,17 @@ internal static class ConferenciaDeConformidadeLegal
         IReadOnlyList<ObrigatoriedadeLegal> regrasVigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(tipoProcessoCodigo, dataReferencia, cancellationToken)
             .ConfigureAwait(false);
+
+        // Antes de avaliar: uma regra que referencia cadastro inexistente é aprovada
+        // por vacuidade pelo avaliador, que é domínio puro e não consulta cadastro.
+        // Publicar sob ela seria publicar sob obrigação que ninguém pode cumprir.
+        Result referencias = await ConferenciaDeReferenciasDasRegras
+            .ConferirAsync(regrasVigentes, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken)
+            .ConfigureAwait(false);
+        if (referencias.IsFailure)
+        {
+            return Result<ResultadoConformidade>.Failure(referencias.Error!);
+        }
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
             processo, tipoProcessoCodigo, regrasVigentes);

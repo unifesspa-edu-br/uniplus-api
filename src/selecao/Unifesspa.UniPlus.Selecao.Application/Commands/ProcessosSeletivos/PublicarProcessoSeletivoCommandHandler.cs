@@ -34,6 +34,9 @@ public static class PublicarProcessoSeletivoCommandHandler
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
+        IModalidadeReader modalidadeReader,
+        ITipoDocumentoReader tipoDocumentoReader,
+        ITipoEtapaReader tipoEtapaReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
         TimeProvider timeProvider,
@@ -49,6 +52,9 @@ public static class PublicarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
+        ArgumentNullException.ThrowIfNull(modalidadeReader);
+        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
+        ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -145,7 +151,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         // Segunda dimensão de conformidade, ao lado da estrutural — mesma antecipação,
         // mesmo motivo (ADR-0109 D5): um processo não conforme não chega a ser projetado.
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
-            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, cancellationToken)
+            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken)
             .ConfigureAwait(false);
         if (conformidadeLegal.IsFailure)
         {
