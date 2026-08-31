@@ -109,6 +109,12 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
                 "Predicado é obrigatório."));
         }
 
+        Result forma = ValidarFormaDoPredicado(predicado);
+        if (forma.IsFailure)
+        {
+            return Result<ObrigatoriedadeLegal>.Failure(forma.Error!);
+        }
+
         Result<NormalizedPayload> normalized = ObrigatoriedadeLegalPayloadNormalizer.Normalizar(
             tipoProcessoCodigo,
             categoria,
@@ -195,6 +201,12 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
                 "Predicado é obrigatório."));
         }
 
+        Result forma = ValidarFormaDoPredicado(predicado);
+        if (forma.IsFailure)
+        {
+            return forma;
+        }
+
         Result<NormalizedPayload> normalized = ObrigatoriedadeLegalPayloadNormalizer.Normalizar(
             tipoProcessoCodigo,
             categoria,
@@ -213,6 +225,58 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 
         AplicarPayload(normalized.Value!, predicado);
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Recusa predicado cujo conteúdo o tornaria impossível de avaliar ou
+    /// vacuamente verdadeiro. Valida <b>forma</b>, não existência: se o código
+    /// referenciado corresponde a um cadastro vivo é pergunta com I/O, que o
+    /// handler responde (ADR-0125).
+    /// </summary>
+    /// <remarks>
+    /// <para>Público porque a ordem importa: o handler confere a forma <b>antes</b> de
+    /// resolver as referências no cadastro. Um código em branco vira busca por string
+    /// vazia, que o cadastro legitimamente não encontra — e a recusa sairia como
+    /// "código não existe", escondendo do cliente que o campo simplesmente não foi
+    /// preenchido. A factory chama esta mesma validação, então a regra continua com
+    /// uma fonte só.</para>
+    /// <para>Uma exigência de modalidades mínimas sem nenhuma modalidade é aprovada por
+    /// vacuidade em <c>AvaliadorConformidadeLegal</c> — a regra existe, aparece
+    /// como cumprida e não exige nada de ninguém. Código em branco tem o mesmo
+    /// efeito: nunca casa com o valor congelado no processo, e a cláusula vira
+    /// letra morta sem que nada sinalize.</para>
+    /// </remarks>
+    public static Result ValidarFormaDoPredicado(PredicadoObrigatoriedade predicado)
+    {
+        switch (predicado)
+        {
+            case ModalidadesMinimas modalidades
+                when modalidades.Codigos is null || modalidades.Codigos.Count == 0:
+                return Result.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.ModalidadesMinimasVazia",
+                    "Exigência de modalidades mínimas precisa de ao menos um código de modalidade."));
+
+            case ModalidadesMinimas modalidades
+                when modalidades.Codigos.Any(string.IsNullOrWhiteSpace):
+                return Result.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.ModalidadesMinimasVazia",
+                    "Exigência de modalidades mínimas não admite código em branco na lista."));
+
+            case EtapaObrigatoria etapa when string.IsNullOrWhiteSpace(etapa.TipoEtapaCodigo):
+                return Result.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
+                    "Exigência de etapa obrigatória precisa do código do tipo de etapa."));
+
+            case DocumentoObrigatorioParaModalidade documento
+                when string.IsNullOrWhiteSpace(documento.Modalidade)
+                    || string.IsNullOrWhiteSpace(documento.TipoDocumento):
+                return Result.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
+                    "Exigência de documento por modalidade precisa do código da modalidade e do tipo de documento."));
+
+            default:
+                return Result.Success();
+        }
     }
 
     private void AplicarPayload(NormalizedPayload payload, PredicadoObrigatoriedade predicado)

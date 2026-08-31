@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -23,6 +24,46 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
 
     private static ITipoEtapaReader TipoEtapaReaderAtivo() =>
         TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null));
+
+    /// <summary>Leitor que dá por viva qualquer modalidade consultada — o caso comum dos testes de outro assunto.</summary>
+    private static IModalidadeReader ModalidadeReaderViva()
+    {
+        IModalidadeReader reader = Substitute.For<IModalidadeReader>();
+        reader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(call => ModalidadeViva(call.Arg<string>()));
+        return reader;
+    }
+
+    /// <summary>Leitor que dá por vivo qualquer tipo de documento consultado.</summary>
+    private static ITipoDocumentoReader TipoDocumentoReaderVivo()
+    {
+        ITipoDocumentoReader reader = Substitute.For<ITipoDocumentoReader>();
+        reader.ObterVivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(call => TipoDocumentoVivo(call.Arg<string>()));
+        return reader;
+    }
+
+    private static IModalidadeReader ModalidadeReaderSem(string codigoAusente)
+    {
+        IModalidadeReader reader = Substitute.For<IModalidadeReader>();
+        reader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(call => call.Arg<string>() == codigoAusente ? null : ModalidadeViva(call.Arg<string>()));
+        return reader;
+    }
+
+    private static ITipoDocumentoReader TipoDocumentoReaderSem(string codigoAusente)
+    {
+        ITipoDocumentoReader reader = Substitute.For<ITipoDocumentoReader>();
+        reader.ObterVivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(call => call.Arg<string>() == codigoAusente ? null : TipoDocumentoVivo(call.Arg<string>()));
+        return reader;
+    }
+
+    private static ModalidadeView ModalidadeViva(string codigo) =>
+        new(Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, [], null, null);
+
+    private static TipoDocumentoView TipoDocumentoVivo(string codigo) =>
+        new(Guid.CreateVersion7(), codigo, "Documento", "OUTROS");
 
     private static ITipoEtapaReader TipoEtapaReaderComResposta(TipoEtapaView? resposta)
     {
@@ -43,7 +84,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await repository.Received(1).AdicionarAsync(
@@ -63,7 +104,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             .Returns((TipoProcessoView?)null);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_DESATIVADO"), repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+            NovaRegra("PS_DESATIVADO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo");
@@ -81,7 +122,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra(ObrigatoriedadeLegal.TipoProcessoUniversal), repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+            NovaRegra(ObrigatoriedadeLegal.TipoProcessoUniversal), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await tipoReader.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
@@ -99,7 +140,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             .Returns(new TipoProcessoView(Guid.CreateVersion7(), "PS_NOVO", "Processo novo", null));
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo");
@@ -135,10 +176,12 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             null);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo");
+        resultado.Error!.Code.Should().Be(
+            "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
+            "campo não preenchido é defeito da regra, não do catálogo — dizer que o tipo não existe mandaria procurar no lugar errado");
         await repository.DidNotReceive().AdicionarAsync(Arg.Any<ObrigatoriedadeLegal>(), Arg.Any<CancellationToken>());
     }
 
@@ -171,7 +214,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             null);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await repository.Received(1).AdicionarAsync(
@@ -203,7 +246,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             null);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await tipoEtapaReader.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
@@ -220,4 +263,156 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         null,
         null,
         null);
+
+    [Fact(DisplayName = "Modalidade inexistente no predicado de documento é recusada sem persistir")]
+    public async Task Handle_ModalidadeInexistente_Recusa()
+    {
+        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        ITipoProcessoReader tipoReader = TipoProcessoAtivo("PS_NOVO");
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO")),
+            repository, tipoReader, TipoEtapaReaderAtivo(),
+            ModalidadeReaderSem("LB_PPl"), TipoDocumentoReaderVivo(),
+            unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.ModalidadeNaoEncontrada");
+        await repository.DidNotReceive().AdicionarAsync(Arg.Any<ObrigatoriedadeLegal>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Tipo de documento inexistente é recusado com erro distinto do de modalidade")]
+    public async Task Handle_TipoDocumentoInexistente_RecusaComErroProprio()
+    {
+        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new DocumentoObrigatorioParaModalidade("LB_PPI", "LAUDO_INEXISTENTE")),
+            repository, TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), TipoDocumentoReaderSem("LAUDO_INEXISTENTE"),
+            unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(
+            "ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado",
+            "quem cadastra precisa saber qual dos dois códigos está errado");
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Um código órfão no meio da lista de modalidades mínimas recusa a regra inteira")]
+    public async Task Handle_ModalidadesMinimasComCodigoOrfao_Recusa()
+    {
+        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new ModalidadesMinimas(["AC", "LB_PPl", "LB_Q"])),
+            repository, TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderSem("LB_PPl"), TipoDocumentoReaderVivo(),
+            unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.ModalidadeNaoEncontrada");
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Códigos do predicado são persistidos normalizados, não como vieram no payload")]
+    public async Task Handle_CodigosComEspaco_PersisteNormalizado()
+    {
+        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        ObrigatoriedadeLegal? persistida = null;
+        await repository.AdicionarAsync(Arg.Do<ObrigatoriedadeLegal>(r => persistida = r), Arg.Any<CancellationToken>());
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new DocumentoObrigatorioParaModalidade(" LB_PPI ", " LAUDO_MEDICO ")),
+            repository, TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        DocumentoObrigatorioParaModalidade predicado =
+            persistida!.Predicado.Should().BeOfType<DocumentoObrigatorioParaModalidade>().Which;
+        predicado.Modalidade.Should().Be("LB_PPI",
+            "AvaliadorConformidadeLegal compara por igualdade ordinal contra o código congelado no processo");
+        predicado.TipoDocumento.Should().Be("LAUDO_MEDICO");
+    }
+
+    [Fact(DisplayName = "Exigência de modalidades mínimas sem nenhum código é recusada pelo agregado")]
+    public async Task Handle_ModalidadesMinimasVazia_Recusa()
+    {
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new ModalidadesMinimas([])),
+            Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(
+            "ObrigatoriedadeLegal.ModalidadesMinimasVazia",
+            "lista vazia é aprovada por vacuidade pelo avaliador — a regra existiria sem exigir nada");
+    }
+
+    [Fact(DisplayName = "Código em branco no predicado recusa pela forma, não como código inexistente")]
+    public async Task Handle_CodigoEmBranco_RecusaPelaFormaAntesDeConsultarOCadastro()
+    {
+        // Em branco vira busca por string vazia, que o cadastro legitimamente não encontra:
+        // sem conferir a forma primeiro, a resposta diria "tipo de etapa não existe" e quem
+        // cadastra procuraria o defeito no catálogo, não no campo que deixou vazio.
+        ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new EtapaObrigatoria("   ")),
+            Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), tipoEtapaReader,
+            ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoComCodigoEmBranco");
+        await tipoEtapaReader.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Código de tipo de documento é buscado como o cadastro o grava, sem recompor a forma Unicode")]
+    public async Task Handle_TipoDocumentoEmFormaDecomposta_BuscaOCodigoComoVeio()
+    {
+        // O cadastro de tipo de documento grava o código só aparado — sem NFC e sem formato
+        // fechado. Recompor aqui faria a busca procurar um texto que o banco não guarda, e
+        // um tipo existente seria recusado como inexistente.
+        const string Decomposto = "LAUDO_ME\u0301DICO";
+        ITipoDocumentoReader tipoDocumentoReader = Substitute.For<ITipoDocumentoReader>();
+        tipoDocumentoReader.ObterVivoPorCodigoAsync(Decomposto, Arg.Any<CancellationToken>())
+            .Returns(CadastrosVivos.TipoDocumento(Decomposto));
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new DocumentoObrigatorioParaModalidade("LB_PPI", $" {Decomposto} ")),
+            Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), tipoDocumentoReader,
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        await tipoDocumentoReader.Received().ObterVivoPorCodigoAsync(Decomposto, Arg.Any<CancellationToken>());
+    }
+
+    private static ITipoProcessoReader TipoProcessoAtivo(string codigo)
+    {
+        ITipoProcessoReader reader = Substitute.For<ITipoProcessoReader>();
+        reader.ObterAtivoPorCodigoAsync(codigo, Arg.Any<CancellationToken>())
+            .Returns(new TipoProcessoView(Guid.CreateVersion7(), codigo, "Processo novo", null));
+        return reader;
+    }
+
+    private static CriarObrigatoriedadeLegalCommand RegraComPredicado(PredicadoObrigatoriedade predicado) =>
+        new(
+            TipoProcessoCodigo: "PS_NOVO",
+            Categoria: CategoriaObrigatoriedade.Outros,
+            RegraCodigo: "REGRA_NOVA",
+            Predicado: predicado,
+            DescricaoHumana: "Regra de teste",
+            BaseLegal: "Lei 12.711/2012",
+            VigenciaInicio: new DateOnly(2026, 1, 1),
+            VigenciaFim: null,
+            AtoNormativoUrl: null,
+            PortariaInternaCodigo: null);
 }
