@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -66,6 +67,27 @@ public sealed class PrecedenciaFaseTests
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.SucessoraForaDoConjuntoCanonico);
+    }
+
+    [Fact(DisplayName = "Solicitação de isenção é aceita como antecessora e como sucessora")]
+    public void Criar_SolicitacaoIsencaoNosDoisSentidos_Aceita()
+    {
+        // A janela corre dentro das inscrições (UNI-REQ-0106), então a aresta que a
+        // liga à coleta permite sobreposição. Referenciá-la nos dois sentidos é o que
+        // prova que o código entrou também nas duas CHECKs de precedencia_fase — sem
+        // elas a fase existiria no cadastro e nenhuma aresta poderia apontar para ela.
+        Result<PrecedenciaFase> comoSucessora = Criar(
+            antecessora: "INSCRICAO",
+            sucessora: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
+            permiteSobreposicao: true);
+
+        Result<PrecedenciaFase> comoAntecessora = Criar(
+            antecessora: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
+            sucessora: "HOMOLOGACAO");
+
+        comoSucessora.IsSuccess.Should().BeTrue();
+        comoSucessora.Value!.PermiteSobreposicao.Should().BeTrue();
+        comoAntecessora.IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Mensagem de código fora do conjunto canônico não ecoa o valor submetido")]

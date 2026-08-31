@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
@@ -161,6 +162,27 @@ public sealed class PrecedenciaFasePersistenceTests
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de conjunto canônico impede o INSERT direto");
+    }
+
+    [Fact(DisplayName = "CHECK de banco aceita a solicitação de isenção como antecessora e como sucessora")]
+    public async Task Check_AceitaSolicitacaoIsencaoNosDoisSentidos()
+    {
+        // As duas CHECKs de precedencia_fase repetem o rol separadamente. Exercitar os
+        // dois sentidos é o que distingue "acrescentei o código nas três" de "acrescentei
+        // só na de fase_canonica" — neste último caso a fase existiria no cadastro e
+        // nenhuma aresta poderia referenciá-la.
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> comoSucessora = async () => await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"INSCRICAO"}, {FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}, {true}, {DateTimeOffset.UtcNow}, {false})");
+
+        Func<Task> comoAntecessora = async () => await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}, {"HOMOLOGACAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
+
+        await comoSucessora.Should().NotThrowAsync(
+            "a migration acrescentou o código ao CHECK da sucessora");
+        await comoAntecessora.Should().NotThrowAsync(
+            "a migration acrescentou o código ao CHECK da antecessora");
     }
 
     private static PrecedenciaFase Aresta(string antecessora, string sucessora) =>
