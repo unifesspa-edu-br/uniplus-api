@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -37,11 +38,18 @@ public interface ITipoDocumentoRepository
 
     /// <summary>
     /// Verifica se existe tipo de documento vivo com o <paramref name="codigo"/>
-    /// (case-sensitive, sobre o valor normalizado por <c>Trim</c>), excluindo
+    /// (comparação case-sensitive sobre o valor canônico do value object), excluindo
     /// opcionalmente um <paramref name="excluirId"/> (para a checagem na atualização).
     /// </summary>
+    /// <remarks>
+    /// Recebe o value object, não a string: quem chega aqui já passou pelo agregado,
+    /// e um código que não é <see cref="CodigoTipoDocumento"/> não poderia existir na
+    /// tabela. Tomar a string obrigaria a revalidar o que já foi validado e a inventar
+    /// um desfecho para o valor inválido — desfecho que, sendo <c>false</c>, seria
+    /// silencioso.
+    /// </remarks>
     Task<bool> CodigoExisteEntreVivosAsync(
-        string codigo,
+        CodigoTipoDocumento codigo,
         Guid? excluirId,
         CancellationToken cancellationToken);
 }

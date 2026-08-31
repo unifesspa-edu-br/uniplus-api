@@ -51,7 +51,7 @@ public static class CriarTipoDocumentoCommandHandler
             return Result<Guid>.ValidationFailure([new("categoria", CategoriaNaoEncontradaErro(tipo.Categoria))]);
         }
 
-        if (await repository.CodigoExisteEntreVivosAsync(tipo.Codigo.Valor, null, cancellationToken).ConfigureAwait(false))
+        if (await repository.CodigoExisteEntreVivosAsync(tipo.Codigo, null, cancellationToken).ConfigureAwait(false))
         {
             return Result<Guid>.Failure(CodigoJaExisteErro());
         }

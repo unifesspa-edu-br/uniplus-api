@@ -74,7 +74,7 @@ public static class AtualizarTipoDocumentoCommandHandler
         // equivale à comparação Ordinal de antes e só checa colisão quando o código
         // efetivamente muda.
         if (codigoAntigo != codigoNovo
-            && await repository.CodigoExisteEntreVivosAsync(codigoNovo.Valor, command.Id, cancellationToken).ConfigureAwait(false))
+            && await repository.CodigoExisteEntreVivosAsync(codigoNovo, command.Id, cancellationToken).ConfigureAwait(false))
         {
             return Result.Failure(CodigoJaExisteErro());
         }

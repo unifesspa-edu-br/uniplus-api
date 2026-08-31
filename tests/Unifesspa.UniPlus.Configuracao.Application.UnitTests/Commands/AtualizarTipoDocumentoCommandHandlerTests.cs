@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class AtualizarTipoDocumentoCommandHandlerTests
@@ -90,7 +91,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         TipoDocumento existente = TipoExistente("CIN");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         // O novo código "RG" já pertence a outro tipo vivo.
-        _repository.CodigoExisteEntreVivosAsync("RG", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.CodigoExisteEntreVivosAsync(Codigo("RG"), existente.Id, Arg.Any<CancellationToken>()).Returns(true);
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
             Comando(existente.Id, codigo: "RG"), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
@@ -105,7 +106,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
     {
         TipoDocumento existente = TipoExistente("CIN");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        _repository.CodigoExisteEntreVivosAsync("CIN_NOVO", existente.Id, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CodigoExisteEntreVivosAsync(Codigo("CIN_NOVO"), existente.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
             Comando(existente.Id, codigo: "CIN_NOVO"), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
@@ -143,7 +144,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
     {
         TipoDocumento existente = TipoExistente("CIN");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(true);
+        _repository.CodigoExisteEntreVivosAsync(Arg.Any<CodigoTipoDocumento>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(true);
 
         AtualizarTipoDocumentoCommand comando = Comando(existente.Id, codigo: "RG") with { Nome = "" };
 
@@ -153,7 +154,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NomeObrigatorio);
         await _repository.DidNotReceive()
-            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+            .CodigoExisteEntreVivosAsync(Arg.Any<CodigoTipoDocumento>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Editar sem mudar o código não consulta a unicidade")]
@@ -167,7 +168,12 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         await _repository.DidNotReceive()
-            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+            .CodigoExisteEntreVivosAsync(Arg.Any<CodigoTipoDocumento>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    /// Constrói o value object do código para casar com a assinatura do repositório,
+    /// que recebe `CodigoTipoDocumento` — não a string crua.
+    private static CodigoTipoDocumento Codigo(string valor) => CodigoTipoDocumento.Criar(valor).Value!;
+
 }
