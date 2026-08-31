@@ -4,8 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -17,7 +15,9 @@ internal sealed class TipoDocumentoConfiguration
     private const int CodigoMaxLength = 60;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
-    private const int CategoriaMaxLength = 30;
+    // Acompanha o teto do código no cadastro de categorias (2 a 50): dimensionar
+    // por baixo faria uma categoria legítima estourar o banco em vez de ser aceita.
+    private const int CategoriaMaxLength = 50;
     private const int FormatosAceitosMaxLength = 200;
     private const int TipoEquivalenteMaxLength = 60;
 
@@ -29,10 +29,13 @@ internal sealed class TipoDocumentoConfiguration
             "tipo_documento",
             t =>
             {
-                // Domínio fechado da categoria (sete tokens canônicos UPPER_SNAKE da #591).
+                // Forma do código da categoria (UPPER_SNAKE iniciando por letra) — defesa
+                // em profundidade contra insert cru. Restringe a forma, não o conjunto:
+                // qualquer categoria que o cadastro aceite passa aqui, inclusive as que
+                // ele venha a ganhar, e a que ele perder continua válida na linha antiga.
                 t.HasCheckConstraint(
-                    "ck_tipo_documento_categoria",
-                    $"categoria IN ({string.Join(", ", CategoriaDocumentos.TokensCanonicos.Select(token => $"'{token}'"))})");
+                    "ck_tipo_documento_categoria_formato",
+                    "categoria ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
                 // Tipo equivalente é rótulo classificatório: nunca aponta para o próprio
                 // código. Null-safe (a coluna é opcional). Case-sensitive, alinhado ao
@@ -55,11 +58,12 @@ internal sealed class TipoDocumentoConfiguration
         builder.Property(t => t.Nome).HasMaxLength(NomeMaxLength).IsRequired();
         builder.Property(t => t.Descricao).HasMaxLength(DescricaoMaxLength);
 
-        // Categoria é enum persistido por valor como o token canônico UPPER_SNAKE via
-        // CategoriaDocumentoValueConverter (reidratação fail-fast). O CHECK acima
-        // restringe a coluna ao domínio fechado.
+        // Categoria é o código de uma CategoriaDocumento do cadastro, guardado como
+        // texto sem chave estrangeira — referência classificatória, no molde de
+        // PrecedenciaFase → FaseCanonica. Sem CHECK de domínio: o vocabulário deixou
+        // de ser fechado em código, e quem responde pela existência é o handler.
+        // O teto acompanha o do código no cadastro (CodigoCategoriaDocumento).
         builder.Property(t => t.Categoria)
-            .HasConversion<CategoriaDocumentoValueConverter>()
             .HasMaxLength(CategoriaMaxLength)
             .IsRequired();
 

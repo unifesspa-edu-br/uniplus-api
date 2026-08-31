@@ -15,8 +15,9 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 /// <summary>
 /// Integração ponta-a-ponta do TipoDocumento contra Postgres real (UNI-REQ-0013):
 /// persistência, UNIQUE parcial do código vivo, liberação do slot por soft-delete,
-/// CHECKs de domínio (categoria) e de auto-equivalência, não-bloqueio de remoção de
-/// um tipo apontado como equivalente, e leitura cross-módulo (CA-01, CA-02, CA-04).
+/// CHECK de auto-equivalência, ausência de domínio fechado na categoria — que agora
+/// é código de cadastro —, não-bloqueio de remoção de um tipo apontado como
+/// equivalente, e leitura cross-módulo (CA-01, CA-02, CA-04).
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -52,7 +53,7 @@ public sealed class TipoDocumentoPersistenceTests
 
         persistido.Codigo.Should().Be(codigo);
         persistido.Nome.Should().Be("Laudo médico");
-        persistido.Categoria.Should().Be(Domain.Enums.CategoriaDocumento.Saude);
+        persistido.Categoria.Should().Be("SAUDE");
         persistido.CreatedBy.Should().Be(AdminA);
         persistido.IsDeleted.Should().BeFalse();
 
@@ -158,16 +159,53 @@ public sealed class TipoDocumentoPersistenceTests
         rg.TipoEquivalente.Should().Be(codigoCin, "o rótulo permanece, agora apontando para um código sem alvo vivo");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita categoria fora do domínio via SQL cru")]
-    public async Task Check_RejeitaCategoriaForaDoDominioViaSqlCru()
+    [Fact(DisplayName = "Banco aceita categoria fora dos sete tokens antigos — o domínio fechado saiu do schema")]
+    public async Task Banco_AceitaCategoriaForaDoRosterAntigo()
+    {
+        Guid id = Guid.CreateVersion7();
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted) VALUES ({id}, {CodigoUnico()}, {"X"}, {"DOCUMENTO_MILITAR"}, {DateTimeOffset.UtcNow}, {false})");
+
+        await act.Should().NotThrowAsync(
+            "a categoria virou código de cadastro: um CHECK preso aos sete tokens do enum recusaria "
+            + "qualquer categoria que o CEPS criasse");
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        TipoDocumento persistido = await readCtx.TiposDocumento.SingleAsync(t => t.Id == id);
+        persistido.Categoria.Should().Be("DOCUMENTO_MILITAR",
+            "a reidratação não passa mais por conversor de enum, que falharia rápido neste valor");
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita categoria fora do formato de código via SQL cru")]
+    public async Task Check_RejeitaCategoriaForaDoFormatoViaSqlCru()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"FINANCEIRO"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"renda familiar"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de domínio de categoria impede o INSERT direto");
+            "o domínio fechado saiu, mas a forma continua protegida: sem conversor de enum, "
+            + "uma categoria malformada gravada por fora chegaria ao snapshot de Seleção");
+    }
+
+    [Fact(DisplayName = "Coluna comporta código de categoria no tamanho máximo do cadastro")]
+    public async Task Coluna_ComportaCodigoDeCategoriaNoTamanhoMaximo()
+    {
+        // O cadastro de categorias aceita até 50 caracteres; a coluna nasceu com 30,
+        // dimensionada para os sete tokens do enum. Sem a ampliação, uma categoria
+        // legítima de 31+ caracteres viraria erro de banco em vez de cadastro aceito.
+        string categoriaLonga = "A" + new string('X', 49);
+        Guid id = Guid.CreateVersion7();
+
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted) VALUES ({id}, {CodigoUnico()}, {"X"}, {categoriaLonga}, {DateTimeOffset.UtcNow}, {false})");
+
+        await act.Should().NotThrowAsync();
     }
 
     [Fact(DisplayName = "CHECK de banco rejeita tipo_equivalente igual ao código via SQL cru")]

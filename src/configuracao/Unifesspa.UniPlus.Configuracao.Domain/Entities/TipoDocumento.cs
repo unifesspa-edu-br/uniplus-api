@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using System.Text;
+
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -20,6 +22,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (ADR-0061): editar o código vivo não altera o rótulo já congelado numa
 /// exigência de Seleção. A unicidade é checada pelo handler (com proteção de
 /// corrida via índice).</para>
+/// <para>A <c>Categoria</c> é o <b>código</b> de uma categoria do cadastro, guardado
+/// como texto sem chave estrangeira — referência classificatória, no molde de
+/// <c>PrecedenciaFase</c> → <c>FaseCanonica</c>. A existência é conferida pelo
+/// handler no momento da escrita; depois disso o rótulo é autônomo: renomear ou
+/// remover a categoria não altera nem invalida os tipos que a referenciavam, e um
+/// tipo pode acabar apontando para código sem alvo vivo. É a mesma natureza do
+/// <c>TipoEquivalente</c> abaixo, e é o que mantém a remoção de categoria livre —
+/// o desacoplamento de quem consome vem do snapshot-copy (ADR-0061), não de
+/// integridade referencial.</para>
 /// <para>O <c>TipoEquivalente</c> é <b>rótulo classificatório</b> (RG ≡ CIN), não
 /// relacionamento material: guarda o <c>Codigo</c> de outro tipo (sem FK), e o
 /// único guarda é não ser equivalente a si mesmo. Por ser rótulo e não FK,
@@ -41,7 +52,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
-    public Enums.CategoriaDocumento Categoria { get; private set; }
+    public string Categoria { get; private set; } = string.Empty;
     public string? FormatosAceitos { get; private set; }
     public int? TamanhoMaximoMb { get; private set; }
     public string? TipoEquivalente { get; private set; }
@@ -69,7 +80,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         string Codigo,
         string Nome,
         string? Descricao,
-        Enums.CategoriaDocumento Categoria,
+        string Categoria,
         string? FormatosAceitos,
         int? TamanhoMaximoMb,
         string? TipoEquivalente)> ValidarCampos(
@@ -127,12 +138,30 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
                 $"Descrição do tipo de documento deve ter no máximo {DescricaoMaxLength} caracteres.")));
         }
 
-        bool categoriaValida = CategoriaDocumentos.TryAnalisar(categoria, out Enums.CategoriaDocumento categoriaResolvida);
-        if (!categoriaValida)
+        // A categoria é o código de um cadastro, não um token de vocabulário fechado:
+        // aqui só a forma é conhecida. Se existe categoria viva com este código é
+        // pergunta para o handler, que consulta o cadastro (ADR-0125).
+        string? categoriaNorm = null;
+        if (string.IsNullOrWhiteSpace(categoria))
         {
             erros.Add(new("categoria", new DomainError(
-                TipoDocumentoErrorCodes.CategoriaInvalida,
-                $"Categoria do tipo de documento deve ser uma de: {string.Join(", ", CategoriaDocumentos.TokensCanonicos)}.")));
+                TipoDocumentoErrorCodes.CategoriaObrigatoria,
+                "Categoria do tipo de documento é obrigatória.")));
+        }
+        else
+        {
+            // Trim + NFC antes de validar: o valor normalizado é o que persiste e o
+            // que a comparação ordinal a jusante — inclusive contra o cadastro — usa.
+            categoriaNorm = categoria.Trim().Normalize(NormalizationForm.FormC);
+            if (!CodigoCategoriaDocumento.EhValido(categoriaNorm))
+            {
+                erros.Add(new("categoria", new DomainError(
+                    TipoDocumentoErrorCodes.CategoriaFormatoInvalido,
+                    "Categoria do tipo de documento deve ser um código que inicia com letra maiúscula "
+                    + "e contém apenas letras maiúsculas, dígitos e sublinhado, com 2 a 50 caracteres "
+                    + "(ex.: RENDA, DOCUMENTO_PROCESSUAL).")));
+                categoriaNorm = null;
+            }
         }
 
         string? formatosAceitosNorm = NormalizarOpcional(formatosAceitos);
@@ -171,11 +200,11 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
 
         if (erros.Count > 0)
         {
-            return Result<(string, string, string?, Enums.CategoriaDocumento, string?, int?, string?)>.ValidationFailure(erros);
+            return Result<(string, string, string?, string, string?, int?, string?)>.ValidationFailure(erros);
         }
 
-        return Result<(string, string, string?, Enums.CategoriaDocumento, string?, int?, string?)>.Success((
-            codigoNorm!, nomeNorm!, descricaoNorm, categoriaResolvida, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm));
+        return Result<(string, string, string?, string, string?, int?, string?)>.Success((
+            codigoNorm!, nomeNorm!, descricaoNorm, categoriaNorm!, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm));
     }
 
     /// <summary>
@@ -192,7 +221,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         int? tamanhoMaximoMb,
         string? tipoEquivalente)
     {
-        Result<(string Codigo, string Nome, string? Descricao, Enums.CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        Result<(string Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
             ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
         if (validacao.IsFailure)
         {
@@ -220,7 +249,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         int? tamanhoMaximoMb,
         string? tipoEquivalente)
     {
-        Result<(string Codigo, string Nome, string? Descricao, Enums.CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        Result<(string Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
             ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
         if (validacao.IsFailure)
         {
@@ -233,7 +262,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     }
 
     private void AplicarCampos(
-        (string Codigo, string Nome, string? Descricao, Enums.CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente) campos)
+        (string Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente) campos)
     {
         Codigo = campos.Codigo;
         Nome = campos.Nome;
