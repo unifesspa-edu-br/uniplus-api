@@ -44,7 +44,7 @@ public sealed class ConformidadeLegalGateTests
     // fio do gate sem repetir as 7 variantes já cobertas por AvaliadorConformidadeLegalTests
     // (Domain).
     private static ObrigatoriedadeLegal RegraQueReprova() =>
-        NovaRegra("GATE-REPROVA", new EtapaObrigatoria("TIPO_QUE_NAO_EXISTE"));
+        NovaRegra("GATE-REPROVA", new EtapaObrigatoria("ETAPA_NAO_OFERTADA"));
 
     private static ObrigatoriedadeLegal RegraQueAprova() =>
         NovaRegra("GATE-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
