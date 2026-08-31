@@ -28,7 +28,7 @@ public sealed class TipoDocumentoTests
         TipoDocumento tipo = Criar(descricao: "Laudo emitido por profissional de saúde").Value!;
 
         tipo.Id.Should().NotBe(Guid.Empty);
-        tipo.Codigo.Should().Be(Codigo);
+        tipo.Codigo.Valor.Should().Be(Codigo);
         tipo.Nome.Should().Be(Nome);
         tipo.Descricao.Should().Be("Laudo emitido por profissional de saúde");
         tipo.Categoria.Should().Be("SAUDE");
@@ -60,13 +60,52 @@ public sealed class TipoDocumentoTests
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoObrigatorio);
     }
 
-    [Fact(DisplayName = "Código acima do tamanho máximo é rejeitado")]
+    [Theory(DisplayName = "Código no formato fechado é aceito")]
+    [InlineData("RG")]
+    [InlineData("LAUDO_MEDICO")]
+    [InlineData("DECLARACAO_IRPF_2025")]
+    [InlineData("LEI_12711")]
+    public void Criar_CodigoNoFormato_Aceita(string codigo)
+    {
+        Result<TipoDocumento> resultado = Criar(codigo: codigo);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Codigo.Valor.Should().Be(codigo);
+    }
+
+    [Theory(DisplayName = "Código fora do formato fechado é rejeitado")]
+    [InlineData("01", "começa com dígito — é a numeração sequencial que o formato barra")]
+    [InlineData("1", "dígito único")]
+    [InlineData("laudo_medico", "minúsculas")]
+    [InlineData("LAUDO-MEDICO", "hífen fora do alfabeto aceito")]
+    [InlineData("LAUDO MEDICO", "espaço")]
+    [InlineData("L", "menos de 2 caracteres")]
+    [InlineData("_RG", "começa com sublinhado")]
+    [InlineData("LAUDO_MÉDICO", "acentuação")]
+    public void Criar_CodigoForaDoFormato_Falha(string codigo, string motivo)
+    {
+        Result<TipoDocumento> resultado = Criar(codigo: codigo);
+
+        resultado.IsFailure.Should().BeTrue(motivo);
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoFormatoInvalido, motivo);
+    }
+
+    [Fact(DisplayName = "Código acima do tamanho máximo é rejeitado pelo formato")]
     public void Criar_CodigoLongo_Falha()
     {
-        Result<TipoDocumento> resultado = Criar(codigo: new string('A', 61));
+        Result<TipoDocumento> resultado = Criar(codigo: new string('A', 51));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoTamanho);
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoFormatoInvalido);
+    }
+
+    [Fact(DisplayName = "Erro de formato é distinguível do de código obrigatório")]
+    public void Criar_CodigoForaDoFormato_NaoUsaCodigoObrigatorio()
+    {
+        Result<TipoDocumento> resultado = Criar(codigo: "01");
+
+        resultado.Error!.Code.Should().NotBe(TipoDocumentoErrorCodes.CodigoObrigatorio);
+        resultado.Error!.Code.Should().NotBe(TipoDocumentoErrorCodes.CodigoJaExiste);
     }
 
     [Theory(DisplayName = "Nome ausente ou em branco é rejeitado")]
@@ -248,7 +287,7 @@ public sealed class TipoDocumentoTests
             "CIN_NOVO", "Carteira de Identidade Nacional", "Documento unificado", "IDENTIFICACAO", "pdf", 5, null);
 
         resultado.IsSuccess.Should().BeTrue();
-        tipo.Codigo.Should().Be("CIN_NOVO");
+        tipo.Codigo.Valor.Should().Be("CIN_NOVO");
         tipo.Nome.Should().Be("Carteira de Identidade Nacional");
         tipo.Categoria.Should().Be("IDENTIFICACAO");
         tipo.Id.Should().Be(idOriginal, "o Id é imutável mesmo com o código editável");

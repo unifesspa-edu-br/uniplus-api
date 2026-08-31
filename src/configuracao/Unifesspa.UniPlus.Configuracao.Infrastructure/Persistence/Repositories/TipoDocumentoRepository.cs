@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -67,13 +69,23 @@ public sealed class TipoDocumentoRepository : ITipoDocumentoRepository
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // Espelha a normalização do agregado (Trim) para casar com o valor persistido.
-        // Comparação case-sensitive (default do Postgres) — alinhada ao índice único.
-        string codigoNorm = codigo.Trim();
+        // Código fora do formato não pode existir na tabela: o value object recusa
+        // a escrita e o CHECK recusa o insert cru. Responder "não existe" sem ir ao
+        // banco evita uma consulta que só poderia voltar vazia — e evita converter
+        // um valor inválido, o que estouraria no conversor.
+        Result<CodigoTipoDocumento> codigoResult = CodigoTipoDocumento.Criar(codigo);
+        if (codigoResult.IsFailure || codigoResult.Value is null)
+        {
+            return Task.FromResult(false);
+        }
+
+        // Comparação entre value objects: o conversor traduz para varchar e a
+        // comparação é case-sensitive (default do Postgres), alinhada ao índice único.
+        CodigoTipoDocumento codigoVo = codigoResult.Value;
 
         return _dbContext.TiposDocumento
             .AsNoTracking()
             .Where(t => excluirId == null || t.Id != excluirId)
-            .AnyAsync(t => t.Codigo == codigoNorm, cancellationToken);
+            .AnyAsync(t => t.Codigo == codigoVo, cancellationToken);
     }
 }

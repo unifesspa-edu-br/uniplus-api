@@ -323,11 +323,11 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.tipo_documento.codigo_obrigatorio",
                 "Código do tipo de documento é obrigatório")),
 
-        new(TipoDocumentoErrorCodes.CodigoTamanho,
+        new(TipoDocumentoErrorCodes.CodigoFormatoInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.tipo_documento.codigo_tamanho",
-                "Tamanho do código do tipo de documento inválido")),
+                "uniplus.configuracao.tipo_documento.codigo_formato_invalido",
+                "Formato do código do tipo de documento inválido")),
 
         new(TipoDocumentoErrorCodes.CodigoJaExiste,
             new DomainErrorMapping(

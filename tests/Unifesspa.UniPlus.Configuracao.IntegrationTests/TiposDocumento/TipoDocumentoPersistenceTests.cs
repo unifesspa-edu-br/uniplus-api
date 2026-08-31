@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
@@ -51,7 +52,7 @@ public sealed class TipoDocumentoPersistenceTests
         await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoDocumento persistido = await readCtx.TiposDocumento.SingleAsync(t => t.Id == tipo.Id);
 
-        persistido.Codigo.Should().Be(codigo);
+        persistido.Codigo.Valor.Should().Be(codigo);
         persistido.Nome.Should().Be("Laudo médico");
         persistido.Categoria.Should().Be("SAUDE");
         persistido.CreatedBy.Should().Be(AdminA);
@@ -148,14 +149,16 @@ public sealed class TipoDocumentoPersistenceTests
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
-            TipoDocumento cin = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == codigoCin);
+            CodigoTipoDocumento cinVo = Vo(codigoCin);
+            TipoDocumento cin = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == cinVo);
             ctx.TiposDocumento.Remove(cin);
             Func<Task> act = async () => await ctx.SaveChangesAsync();
             await act.Should().NotThrowAsync("tipo_equivalente é rótulo, não FK — a remoção não é bloqueada");
         }
 
         await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        TipoDocumento rg = await readCtx.TiposDocumento.SingleAsync(t => t.Codigo == codigoRg);
+        CodigoTipoDocumento rgVo = Vo(codigoRg);
+        TipoDocumento rg = await readCtx.TiposDocumento.SingleAsync(t => t.Codigo == rgVo);
         rg.TipoEquivalente.Should().Be(codigoCin, "o rótulo permanece, agora apontando para um código sem alvo vivo");
     }
 
@@ -251,7 +254,8 @@ public sealed class TipoDocumentoPersistenceTests
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
-            TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == codExcluido);
+            CodigoTipoDocumento excluidoVo = Vo(codExcluido);
+            TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == excluidoVo);
             ctx.TiposDocumento.Remove(aExcluir);
             await ctx.SaveChangesAsync();
         }
@@ -288,7 +292,8 @@ public sealed class TipoDocumentoPersistenceTests
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
-            TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == codigoRemovido);
+            CodigoTipoDocumento removidoVo = Vo(codigoRemovido);
+            TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == removidoVo);
             ctx.TiposDocumento.Remove(aExcluir);
             await ctx.SaveChangesAsync();
         }
@@ -307,6 +312,66 @@ public sealed class TipoDocumentoPersistenceTests
         removido.Should().BeNull("o filtro global de soft-delete tira o tipo removido do cadastro vivo");
     }
 
+    [Fact(DisplayName = "CHECK de formato do código rejeita insert cru fora do padrão canônico")]
+    public async Task CheckConstraint_Codigo_RejeitaFormatoInvalido()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+
+        // Bypassa o value object de propósito: o CHECK é defesa em profundidade
+        // contra escrita fora do fluxo da aplicação. Sem ele, uma única linha com
+        // código sequencial derrubaria toda leitura da tabela na reidratação.
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
+            """
+            INSERT INTO configuracao.tipo_documento
+                (id, codigo, nome, categoria, created_at, is_deleted)
+            VALUES ({0}, '01', 'Certificado', 'ESCOLARIDADE', now(), false)
+            """,
+            Guid.CreateVersion7());
+
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
+        pg.ConstraintName.Should().Be("ck_tipo_documento_codigo_formato");
+    }
+
+    [Fact(DisplayName = "Código sobrevive ao round-trip pelo banco como value object")]
+    public async Task Codigo_RoundTrip_PreservaValueObject()
+    {
+        string codigo = CodigoUnico();
+        Guid id;
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            TipoDocumento tipo = Novo(codigo);
+            id = tipo.Id;
+            ctx.TiposDocumento.Add(tipo);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        TipoDocumento lido = await readCtx.TiposDocumento.AsNoTracking().SingleAsync(t => t.Id == id);
+
+        lido.Codigo.Should().Be(CodigoTipoDocumento.Criar(codigo).Value!,
+            "o conversor devolve o value object, não a string crua");
+        lido.Codigo.Valor.Should().Be(codigo);
+    }
+
+    [Fact(DisplayName = "Ordenação por código é traduzida para SQL, sem avaliação no cliente")]
+    public async Task OrdenacaoPorCodigo_TraduzParaSql()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        // A tradução do OrderBy sobre a propriedade convertida é o que sustenta a
+        // listagem do leitor cross-módulo; se o EF não traduzisse, o provider
+        // lançaria em vez de ordenar.
+        Func<Task> act = async () => await ctx.TiposDocumento
+            .AsNoTracking()
+            .OrderBy(t => t.Codigo)
+            .Take(1)
+            .ToListAsync();
+
+        await act.Should().NotThrowAsync();
+    }
+
     private static TipoDocumento Novo(
         string codigo,
         string categoria = "SAUDE",
@@ -314,4 +379,9 @@ public sealed class TipoDocumentoPersistenceTests
         TipoDocumento.Criar(codigo, "Laudo médico", null, categoria, "pdf,jpg", 10, tipoEquivalente).Value!;
 
     private static string CodigoUnico() => $"DOC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+
+    // A comparação em LINQ é entre value objects: o conversor traduz o lado da
+    // coluna para varchar, mas `t.Codigo.Valor` não tem tradução e cairia em
+    // avaliação no cliente.
+    private static CodigoTipoDocumento Vo(string codigo) => CodigoTipoDocumento.Criar(codigo).Value!;
 }

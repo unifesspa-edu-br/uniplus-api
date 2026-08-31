@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -12,14 +13,15 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 internal sealed class TipoDocumentoConfiguration
     : IEntityTypeConfiguration<TipoDocumento>
 {
-    private const int CodigoMaxLength = 60;
+    private const int CodigoMaxLength = 50;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     // Acompanha o teto do código no cadastro de categorias (2 a 50): dimensionar
     // por baixo faria uma categoria legítima estourar o banco em vez de ser aceita.
     private const int CategoriaMaxLength = 50;
     private const int FormatosAceitosMaxLength = 200;
-    private const int TipoEquivalenteMaxLength = 60;
+    // Acompanha o teto do próprio código: o campo guarda o código de outro tipo.
+    private const int TipoEquivalenteMaxLength = 50;
 
     public void Configure(EntityTypeBuilder<TipoDocumento> builder)
     {
@@ -36,6 +38,14 @@ internal sealed class TipoDocumentoConfiguration
                 t.HasCheckConstraint(
                     "ck_tipo_documento_categoria_formato",
                     "categoria ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+
+                // Forma do próprio código — defesa em profundidade do invariante de
+                // domínio (CodigoTipoDocumento) contra insert cru. Sem ele, um valor
+                // gravado por fora só apareceria como falha de reidratação, e aí toda
+                // leitura da tabela estouraria por causa de uma única linha.
+                t.HasCheckConstraint(
+                    "ck_tipo_documento_codigo_formato",
+                    "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
                 // Tipo equivalente é rótulo classificatório: nunca aponta para o próprio
                 // código. Null-safe (a coluna é opcional). Case-sensitive, alinhado ao
@@ -54,7 +64,12 @@ internal sealed class TipoDocumentoConfiguration
 
         builder.HasKey(t => t.Id);
 
-        builder.Property(t => t.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        // Codigo é value object — persistido por valor como varchar via
+        // CodigoTipoDocumentoValueConverter (reidratação fail-fast).
+        builder.Property(t => t.Codigo)
+            .HasConversion<CodigoTipoDocumentoValueConverter>()
+            .HasMaxLength(CodigoMaxLength)
+            .IsRequired();
         builder.Property(t => t.Nome).HasMaxLength(NomeMaxLength).IsRequired();
         builder.Property(t => t.Descricao).HasMaxLength(DescricaoMaxLength);
 
