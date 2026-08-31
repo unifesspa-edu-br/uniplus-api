@@ -2,15 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-
-// Desambigua o enum de categoria da entidade homônima do cadastro de categorias:
-// as duas convivem enquanto o tipo de documento ainda guarda a categoria como
-// vocabulário fechado em código.
-using CategoriaDocumento = Unifesspa.UniPlus.Configuracao.Domain.Enums.CategoriaDocumento;
 
 /// <summary>
 /// Handler do <see cref="AtualizarTipoDocumentoCommand"/>. Valida os campos (sem
@@ -30,14 +24,16 @@ public static class AtualizarTipoDocumentoCommandHandler
     public static async Task<Result> Handle(
         AtualizarTipoDocumentoCommand command,
         ITipoDocumentoRepository repository,
+        ICategoriaDocumentoRepository categoriaRepository,
         IConfiguracaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(categoriaRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<(string Codigo, string Nome, string? Descricao, CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        Result<(string Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
             TipoDocumento.ValidarCampos(
                 command.Codigo,
                 command.Nome,
@@ -57,6 +53,17 @@ public static class AtualizarTipoDocumentoCommandHandler
             return Result.Failure(new DomainError(
                 TipoDocumentoErrorCodes.NaoEncontrado,
                 "Tipo de documento não encontrado."));
+        }
+
+        // A categoria só é conferida contra o cadastro quando muda — a referência é
+        // autônoma depois da escrita, e exigir a categoria viva a cada edição
+        // travaria a manutenção de um tipo cuja categoria foi removida ou renomeada,
+        // impedindo até corrigir o nome dele.
+        if (!string.Equals(validacao.Value.Categoria, tipo.Categoria, StringComparison.Ordinal)
+            && !await categoriaRepository.CodigoExisteEntreVivosAsync(validacao.Value.Categoria, null, cancellationToken).ConfigureAwait(false))
+        {
+            return Result.ValidationFailure(
+                [new("categoria", CriarTipoDocumentoCommandHandler.CategoriaNaoEncontradaErro(validacao.Value.Categoria))]);
         }
 
         string codigoAntigo = tipo.Codigo;

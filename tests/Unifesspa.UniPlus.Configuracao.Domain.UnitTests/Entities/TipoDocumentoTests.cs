@@ -3,14 +3,8 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
-
-// Desambigua o enum de categoria da entidade homônima do cadastro de categorias:
-// as duas convivem enquanto o tipo de documento ainda guarda a categoria como
-// vocabulário fechado em código.
-using CategoriaDocumento = Unifesspa.UniPlus.Configuracao.Domain.Enums.CategoriaDocumento;
 
 public sealed class TipoDocumentoTests
 {
@@ -37,7 +31,7 @@ public sealed class TipoDocumentoTests
         tipo.Codigo.Should().Be(Codigo);
         tipo.Nome.Should().Be(Nome);
         tipo.Descricao.Should().Be("Laudo emitido por profissional de saúde");
-        tipo.Categoria.Should().Be(CategoriaDocumento.Saude);
+        tipo.Categoria.Should().Be("SAUDE");
         tipo.FormatosAceitos.Should().Be("pdf,jpg");
         tipo.TamanhoMaximoMb.Should().Be(10);
         tipo.TipoEquivalente.Should().BeNull();
@@ -86,17 +80,51 @@ public sealed class TipoDocumentoTests
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NomeObrigatorio);
     }
 
-    [Theory(DisplayName = "Categoria fora do domínio fechado é rejeitada (incl. numérico e PascalCase)")]
-    [InlineData("FINANCEIRO")]
+    [Theory(DisplayName = "Categoria fora do formato de código é rejeitada (numérico, PascalCase, acento)")]
     [InlineData("1")]
     [InlineData("Saude")]
-    [InlineData("")]
-    public void Criar_CategoriaInvalida_Falha(string categoria)
+    [InlineData("SAÚDE")]
+    [InlineData("SAUDE-GERAL")]
+    public void Criar_CategoriaForaDoFormato_Falha(string categoria)
     {
         Result<TipoDocumento> resultado = Criar(categoria: categoria);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaInvalida);
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaFormatoInvalido);
+    }
+
+    [Theory(DisplayName = "Categoria em branco é rejeitada como obrigatória, não como formato")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Criar_CategoriaEmBranco_Falha(string categoria)
+    {
+        Result<TipoDocumento> resultado = Criar(categoria: categoria);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaObrigatoria);
+    }
+
+    [Fact(DisplayName = "Categoria bem formada fora do catálogo é aceita pelo agregado — quem confere existência é o handler")]
+    public void Criar_CategoriaBemFormadaForaDoCatalogo_Aceita()
+    {
+        Result<TipoDocumento> resultado = Criar(categoria: "DOCUMENTO_MILITAR");
+
+        resultado.IsSuccess.Should().BeTrue(
+            "o agregado não conhece mais o roster: validar existência exigiria I/O, que o domínio não faz");
+        resultado.Value!.Categoria.Should().Be("DOCUMENTO_MILITAR");
+    }
+
+    [Fact(DisplayName = "Categoria é normalizada antes de persistir, não só na comparação")]
+    public void Criar_CategoriaComEspacoEmVolta_PersisteNormalizada()
+    {
+        // A comparação com o cadastro é ordinal: o valor que persiste tem de ser o
+        // normalizado, senão " RENDA " nunca casaria com a categoria RENDA viva.
+        // A normalização Unicode acompanha o Trim, mas é inócua enquanto o formato
+        // aceita só ASCII — nenhuma letra de A a Z tem forma decomposta.
+        Result<TipoDocumento> resultado = Criar(categoria: "  RENDA  ");
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Categoria.Should().Be("RENDA");
     }
 
     [Theory(DisplayName = "Tamanho máximo zero ou negativo é rejeitado; positivo e nulo são aceitos")]
@@ -152,7 +180,7 @@ public sealed class TipoDocumentoTests
     public void Criar_QuatroCamposInvalidos_AcumulaAsQuatroViolacoesRotuladas()
     {
         Result<TipoDocumento> resultado = TipoDocumento.Criar(
-            "", "", null, "INEXISTENTE", null, 0, null);
+            "", "", null, "1", null, 0, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(4);
@@ -161,7 +189,7 @@ public sealed class TipoDocumentoTests
         resultado.Errors[1].Field.Should().Be("nome");
         resultado.Errors[1].Error.Code.Should().Be(TipoDocumentoErrorCodes.NomeObrigatorio);
         resultado.Errors[2].Field.Should().Be("categoria");
-        resultado.Errors[2].Error.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaInvalida);
+        resultado.Errors[2].Error.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaFormatoInvalido);
         resultado.Errors[3].Field.Should().Be("tamanhoMaximoMb");
         resultado.Errors[3].Error.Code.Should().Be(TipoDocumentoErrorCodes.TamanhoMaximoInvalido);
     }
@@ -222,7 +250,7 @@ public sealed class TipoDocumentoTests
         resultado.IsSuccess.Should().BeTrue();
         tipo.Codigo.Should().Be("CIN_NOVO");
         tipo.Nome.Should().Be("Carteira de Identidade Nacional");
-        tipo.Categoria.Should().Be(CategoriaDocumento.Identificacao);
+        tipo.Categoria.Should().Be("IDENTIFICACAO");
         tipo.Id.Should().Be(idOriginal, "o Id é imutável mesmo com o código editável");
     }
 }

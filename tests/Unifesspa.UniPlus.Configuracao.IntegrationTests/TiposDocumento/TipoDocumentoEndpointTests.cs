@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>TipoDocumento</c> (UNI-REQ-0013):
 /// routing, vendor media type, HATEOAS, autenticação/autorização, idempotência,
-/// domínio fechado da categoria (422), unicidade do código (409) e contrato
+/// forma e existência da categoria no cadastro (422), unicidade do código (409) e contrato
 /// classificatório puro (sem regra material) — com Wolverine contra Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
@@ -159,15 +159,99 @@ public sealed class TipoDocumentoEndpointTests
         }
     }
 
-    [Fact(DisplayName = "POST com categoria fora do domínio fechado retorna 422")]
-    public async Task Criar_CategoriaInvalida_Retorna422()
+    [Fact(DisplayName = "POST com categoria fora do formato de código retorna 422 com erro de forma")]
+    public async Task Criar_CategoriaForaDoFormato_Retorna422()
     {
-        var body = new { codigo = CodigoUnico(), nome = "Categoria inválida", categoria = "FINANCEIRO" };
+        var body = new { codigo = CodigoUnico(), nome = "Categoria mal formada", categoria = "financeiro" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.tipo_documento.categoria_formato_invalido");
+    }
+
+    [Fact(DisplayName = "POST com categoria bem formada mas ausente do cadastro retorna 422 distinguível do erro de forma")]
+    public async Task Criar_CategoriaInexistenteNoCadastro_Retorna422()
+    {
+        var body = new { codigo = CodigoUnico(), nome = "Categoria inexistente", categoria = "CATEGORIA_QUE_NAO_EXISTE" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.tipo_documento.categoria_nao_encontrada",
+                "o operador precisa distinguir 'escrevi errado' de 'essa categoria não existe'");
+    }
+
+    [Fact(DisplayName = "POST com categoria removida do cadastro retorna 422")]
+    public async Task Criar_CategoriaRemovidaDoCadastro_Retorna422()
+    {
+        string codigoCategoria = $"CAT_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid categoriaId = await CriarCategoria(client, codigoCategoria);
+
+        HttpResponseMessage aceito = await EnviarPostAdmin(
+            client, new { codigo = CodigoUnico(), nome = "Antes da remoção", categoria = codigoCategoria });
+        aceito.StatusCode.Should().Be(HttpStatusCode.Created, "a categoria estava viva");
+
+        using HttpRequestMessage remover = new(
+            HttpMethod.Delete, new Uri($"/api/configuracao/admin/categorias-documento/{categoriaId}", UriKind.Relative));
+        AutenticarComoAdmin(remover);
+        (await client.SendAsync(remover)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage recusado = await EnviarPostAdmin(
+            client, new { codigo = CodigoUnico(), nome = "Depois da remoção", categoria = codigoCategoria });
+
+        recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "só categoria viva vale — o soft-delete tira a categoria de circulação para novos tipos");
+    }
+
+    [Fact(DisplayName = "Categoria com espaço em volta é persistida normalizada, não só comparada normalizada")]
+    public async Task Criar_CategoriaComEspaco_PersisteNormalizada()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(
+            client, new { codigo = CodigoUnico(), nome = "Comprovante de renda", categoria = " RENDA " });
+
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+
+        doc.RootElement.GetProperty("categoria").GetString().Should().Be("RENDA",
+            "o valor que persiste é o normalizado — a comparação a jusante é ordinal");
+    }
+
+    [Fact(DisplayName = "Categoria com o tamanho máximo do cadastro é aceita no tipo de documento")]
+    public async Task Criar_CategoriaNoTamanhoMaximo_Aceita()
+    {
+        // O cadastro aceita código de até 50 caracteres; a coluna do tipo de documento
+        // nasceu com 30, dimensionada para os sete tokens do enum antigo. Sem a
+        // ampliação, esta categoria legítima viraria erro de banco (500) em vez de
+        // cadastro aceito.
+        string categoriaLonga = $"CAT_{new string('X', 46)}";
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        await CriarCategoria(client, categoriaLonga);
+
+        HttpResponseMessage response = await EnviarPostAdmin(
+            client, new { codigo = CodigoUnico(), nome = "Tipo de categoria longa", categoria = categoriaLonga });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await response.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("categoria").GetString().Should().Be(categoriaLonga);
     }
 
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
@@ -184,10 +268,10 @@ public sealed class TipoDocumentoEndpointTests
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    [Fact(DisplayName = "ADR-0125: POST com nome vazio e categoria inválida devolve as duas violações em errors[], campo em camelCase")]
-    public async Task Criar_NomeVazioECategoriaInvalida_DevolveAsDuasViolacoesEmErrors()
+    [Fact(DisplayName = "ADR-0125: POST com nome vazio e categoria mal formada devolve as duas violações em errors[], campo em camelCase")]
+    public async Task Criar_NomeVazioECategoriaMalFormada_DevolveAsDuasViolacoesEmErrors()
     {
-        var body = new { codigo = CodigoUnico(), nome = "", categoria = "FINANCEIRO" };
+        var body = new { codigo = CodigoUnico(), nome = "", categoria = "financeiro" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -250,11 +334,30 @@ public sealed class TipoDocumentoEndpointTests
 
     private static string CodigoUnico() => $"DOC_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
 
+    private static void AutenticarComoAdmin(HttpRequestMessage request)
+    {
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+    }
+
+    /// <summary>Cria uma categoria pelo cadastro e devolve o Id, para os testes que precisam removê-la depois.</summary>
+    private static async Task<Guid> CriarCategoria(HttpClient client, string codigo)
+    {
+        using HttpRequestMessage request = new(
+            HttpMethod.Post, new Uri("/api/configuracao/admin/categorias-documento", UriKind.Relative));
+        AutenticarComoAdmin(request);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(new { codigo, nome = "Categoria de teste" });
+
+        HttpResponseMessage response = await client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return await response.Content.ReadFromJsonAsync<Guid>();
+    }
+
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
     {
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-documento", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        AutenticarComoAdmin(request);
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         request.Content = JsonContent.Create(body);
         return await client.SendAsync(request);

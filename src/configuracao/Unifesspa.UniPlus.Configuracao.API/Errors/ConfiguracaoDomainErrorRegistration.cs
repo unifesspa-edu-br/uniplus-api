@@ -353,11 +353,23 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.tipo_documento.descricao_tamanho",
                 "Tamanho da descrição do tipo de documento inválido")),
 
-        new(TipoDocumentoErrorCodes.CategoriaInvalida,
+        new(TipoDocumentoErrorCodes.CategoriaObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.tipo_documento.categoria_invalida",
-                "Categoria do tipo de documento fora do domínio fechado")),
+                "uniplus.configuracao.tipo_documento.categoria_obrigatoria",
+                "Categoria do tipo de documento é obrigatória")),
+
+        new(TipoDocumentoErrorCodes.CategoriaFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.categoria_formato_invalido",
+                "Código da categoria do tipo de documento em formato inválido")),
+
+        new(TipoDocumentoErrorCodes.CategoriaNaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.categoria_nao_encontrada",
+                "Categoria de documento não encontrada entre as vivas do cadastro")),
 
         new(TipoDocumentoErrorCodes.FormatosAceitosTamanho,
             new DomainErrorMapping(

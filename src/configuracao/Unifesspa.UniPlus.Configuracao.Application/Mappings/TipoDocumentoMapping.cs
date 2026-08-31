@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 public static class TipoDocumentoMapping
 {
@@ -14,7 +13,7 @@ public static class TipoDocumentoMapping
             tipo.Codigo,
             tipo.Nome,
             tipo.Descricao,
-            CategoriaDocumentos.ParaTokenCanonico(tipo.Categoria),
+            tipo.Categoria,
             tipo.FormatosAceitos,
             tipo.TamanhoMaximoMb,
             tipo.TipoEquivalente,
