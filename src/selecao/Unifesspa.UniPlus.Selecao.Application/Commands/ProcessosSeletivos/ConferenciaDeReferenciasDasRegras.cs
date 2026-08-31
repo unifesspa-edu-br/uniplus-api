@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.Collections.Frozen;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -45,6 +47,14 @@ internal static class ConferenciaDeReferenciasDasRegras
         ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
 
+        if (regras.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        CatalogosVivos catalogos = await CarregarCatalogosAsync(
+            modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken).ConfigureAwait(false);
+
         Dictionary<Guid, string> inavaliaveis = [];
 
         foreach (ObrigatoriedadeLegal regra in regras)
@@ -58,10 +68,7 @@ internal static class ConferenciaDeReferenciasDasRegras
                 continue;
             }
 
-            string? referenciaOrfa = await PrimeiraReferenciaOrfaAsync(
-                regra.Predicado, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken)
-                .ConfigureAwait(false);
-
+            string? referenciaOrfa = PrimeiraReferenciaOrfa(regra.Predicado, catalogos);
             if (referenciaOrfa is not null)
             {
                 inavaliaveis[regra.Id] = $"{referenciaOrfa} não existe no cadastro";
@@ -103,46 +110,67 @@ internal static class ConferenciaDeReferenciasDasRegras
             + "Corrija a regra ou o cadastro antes de publicar."));
     }
 
-    private static async Task<string?> PrimeiraReferenciaOrfaAsync(
-        PredicadoObrigatoriedade predicado,
+    /// <summary>
+    /// Os três catálogos que os predicados referenciam, carregados de uma vez e indexados
+    /// por código, com comparação ordinal.
+    /// </summary>
+    /// <remarks>
+    /// <para>Um lookup por código faria uma ida ao banco por item de cada predicado, de cada
+    /// regra vigente — nem a lista de modalidades mínimas nem a quantidade de regras têm
+    /// teto, e a publicação e o checklist do editor pagariam esse custo em série. Os três
+    /// catálogos são pequenos e já têm listagem própria: três consultas resolvem.</para>
+    /// <para>O conjunto compara por igualdade ordinal, que é exatamente a pergunta a
+    /// responder — a avaliação de conformidade compara assim contra o código congelado no
+    /// processo. Encontrar o registro por busca normalizada não bastaria: uma regra gravada
+    /// como <c>"LB_PPI "</c> acha a modalidade viva e mesmo assim nunca casaria.</para>
+    /// </remarks>
+    private sealed record CatalogosVivos(
+        FrozenSet<string> Modalidades,
+        FrozenSet<string> TiposDocumento,
+        FrozenSet<string> TiposEtapa);
+
+    private static async Task<CatalogosVivos> CarregarCatalogosAsync(
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
         ITipoEtapaReader tipoEtapaReader,
         CancellationToken cancellationToken)
     {
+        IReadOnlyList<ModalidadeView> modalidades = await modalidadeReader
+            .ListarVivosAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<TipoDocumentoView> tiposDocumento = await tipoDocumentoReader
+            .ListarVivosAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<TipoEtapaView> tiposEtapa = await tipoEtapaReader
+            .ListarAtivosAsync(cancellationToken).ConfigureAwait(false);
+
+        return new CatalogosVivos(
+            modalidades.Select(static m => m.Codigo).ToFrozenSet(StringComparer.Ordinal),
+            tiposDocumento.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
+            tiposEtapa.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal));
+    }
+
+    private static string? PrimeiraReferenciaOrfa(PredicadoObrigatoriedade predicado, CatalogosVivos catalogos)
+    {
         switch (predicado)
         {
             case EtapaObrigatoria etapa:
-                return await CasaComOCadastroAsync(
-                        etapa.TipoEtapaCodigo,
-                        async codigo => (await tipoEtapaReader.ObterAtivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false))?.Codigo)
-                    .ConfigureAwait(false)
+                return catalogos.TiposEtapa.Contains(etapa.TipoEtapaCodigo ?? string.Empty)
                     ? null
                     : $"tipo de etapa '{etapa.TipoEtapaCodigo}'";
 
             case DocumentoObrigatorioParaModalidade documento:
-                if (!await CasaComOCadastroAsync(
-                        documento.Modalidade,
-                        async codigo => (await modalidadeReader.ObterVivaPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false))?.Codigo)
-                    .ConfigureAwait(false))
+                if (!catalogos.Modalidades.Contains(documento.Modalidade ?? string.Empty))
                 {
                     return $"modalidade '{documento.Modalidade}'";
                 }
 
-                return await CasaComOCadastroAsync(
-                        documento.TipoDocumento,
-                        async codigo => (await tipoDocumentoReader.ObterVivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false))?.Codigo)
-                    .ConfigureAwait(false)
+                return catalogos.TiposDocumento.Contains(documento.TipoDocumento ?? string.Empty)
                     ? null
                     : $"tipo de documento '{documento.TipoDocumento}'";
 
             case ModalidadesMinimas modalidades:
                 foreach (string codigo in modalidades.Codigos ?? [])
                 {
-                    if (!await CasaComOCadastroAsync(
-                            codigo,
-                            async c => (await modalidadeReader.ObterVivaPorCodigoAsync(c, cancellationToken).ConfigureAwait(false))?.Codigo)
-                        .ConfigureAwait(false))
+                    if (!catalogos.Modalidades.Contains(codigo ?? string.Empty))
                     {
                         return $"modalidade '{codigo}'";
                     }
@@ -153,30 +181,5 @@ internal static class ConferenciaDeReferenciasDasRegras
             default:
                 return null;
         }
-    }
-
-    /// <summary>
-    /// Casa sse o cadastro devolve um registro vivo <b>e</b> o código dele é idêntico ao
-    /// gravado na regra.
-    /// </summary>
-    /// <remarks>
-    /// Encontrar o registro não basta: os leitores aparam e normalizam o valor buscado, então
-    /// uma regra gravada como <c>"LB_PPI "</c> acha a modalidade <c>"LB_PPI"</c>. Quem avalia a
-    /// conformidade compara por igualdade ordinal contra o código congelado no processo, e para
-    /// ela os dois valores continuam diferentes — a cláusula seguiria aprovada por vacuidade,
-    /// que é justamente o que este gate existe para impedir. Regras gravadas antes da
-    /// normalização na escrita são o caso real disso.
-    /// </remarks>
-    private static async Task<bool> CasaComOCadastroAsync(
-        string? codigoGravado,
-        Func<string, Task<string?>> codigoVivoDoCadastro)
-    {
-        if (string.IsNullOrEmpty(codigoGravado))
-        {
-            return false;
-        }
-
-        string? codigoVivo = await codigoVivoDoCadastro(codigoGravado).ConfigureAwait(false);
-        return string.Equals(codigoVivo, codigoGravado, StringComparison.Ordinal);
     }
 }
