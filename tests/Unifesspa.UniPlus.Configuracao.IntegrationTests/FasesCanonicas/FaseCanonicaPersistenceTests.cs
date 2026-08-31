@@ -116,6 +116,21 @@ public sealed class FaseCanonicaPersistenceTests
         await act.Should().NotThrowAsync("o slot do código foi liberado pelo soft-delete");
     }
 
+    [Fact(DisplayName = "CHECK de banco aceita a fase de solicitação de isenção")]
+    public async Task Check_AceitaSolicitacaoIsencao()
+    {
+        FaseCanonica fase = Fase(
+            FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, "Solicitação de isenção", "CEPS");
+
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.FasesCanonicas.Add(fase);
+
+        Func<Task> act = async () => await ctx.SaveChangesAsync();
+
+        await act.Should().NotThrowAsync(
+            "a migration acrescentou o código ao CHECK de conjunto canônico");
+    }
+
     [Fact(DisplayName = "CHECK de banco rejeita código fora do conjunto canônico via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoCanonicoViaSqlCru()
     {

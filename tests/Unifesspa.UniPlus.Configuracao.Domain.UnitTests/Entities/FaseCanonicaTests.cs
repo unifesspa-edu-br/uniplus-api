@@ -83,11 +83,55 @@ public sealed class FaseCanonicaTests
     [InlineData("HETEROIDENTIFICACAO")]
     [InlineData("HOMOLOGACAO_RESULTADO_FINAL")]
     [InlineData("CHAMADA")]
+    [InlineData("SOLICITACAO_ISENCAO")]
     public void Criar_CodigoCanonico_Aceita(string codigo)
     {
         Result<FaseCanonica> r = Criar(codigo: codigo);
 
         r.IsSuccess.Should().BeTrue();
+    }
+
+    // ── Solicitação de isenção (UNI-REQ-0106) ──────────────────────────────────
+
+    [Fact(DisplayName = "Constante da solicitação de isenção pertence ao rol canônico")]
+    public void Catalogo_CodigoSolicitacaoIsencao_EhCanonico()
+    {
+        FaseCanonicaCatalogo.Codigos.Should().Contain(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao);
+        FaseCanonicaCatalogo.EhCanonico(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Solicitação de isenção produz resultado não definitivo — o indeferimento admite recurso")]
+    public void Criar_SolicitacaoIsencao_ProduzResultadoNaoDefinitivo_Aceita()
+    {
+        FaseCanonica f = Criar(
+            codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
+            nome: "Solicitação de isenção",
+            produzResultado: true,
+            resultadoDefinitivo: false).Value!;
+
+        f.ProduzResultado.Should().BeTrue();
+        f.ResultadoDefinitivo.Should().BeFalse();
+        f.ColetaInscricao.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Solicitação de isenção não agrupa etapas — só a avaliação agrupa")]
+    public void Criar_SolicitacaoIsencaoAgrupandoEtapas_Falha()
+    {
+        Result<FaseCanonica> r = Criar(
+            codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, agrupaEtapas: true);
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
+    }
+
+    [Fact(DisplayName = "Solicitação de isenção não permite complementação documental")]
+    public void Criar_SolicitacaoIsencaoComComplementacao_Falha()
+    {
+        Result<FaseCanonica> r = Criar(
+            codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, permiteComplementacao: true);
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.ComplementacaoApenasFasesPermitidas);
     }
 
     // ── Nome ───────────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    partial class ConfiguracaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260831204124_AdicionaFaseSolicitacaoIsencao")]
+    partial class AdicionaFaseSolicitacaoIsencao
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2392,8 +2395,8 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
                         .HasColumnName("codigo");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -2438,8 +2441,8 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnName("tamanho_maximo_mb");
 
                     b.Property<string>("TipoEquivalente")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
                         .HasColumnName("tipo_equivalente");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -2465,8 +2468,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     b.ToTable("tipo_documento", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_tipo_documento_categoria_formato", "categoria ~ '^[A-Z][A-Z0-9_]{1,49}$'");
-
-                            t.HasCheckConstraint("ck_tipo_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
                             t.HasCheckConstraint("ck_tipo_documento_equivalente_diferente_codigo", "tipo_equivalente IS NULL OR tipo_equivalente <> codigo");
 
