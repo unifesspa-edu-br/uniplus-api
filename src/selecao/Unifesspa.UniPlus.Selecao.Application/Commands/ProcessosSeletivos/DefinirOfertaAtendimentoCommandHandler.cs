@@ -118,7 +118,7 @@ public static class DefinirOfertaAtendimentoCommandHandler
                     $"Tipo de deficiência {tipoDeficienciaId} não encontrado ou não está mais vivo."));
             }
 
-            tiposDeficiencia.Add(OfertaTipoDeficiencia.Criar(tipo.Id, tipo.Nome));
+            tiposDeficiencia.Add(OfertaTipoDeficiencia.Criar(tipo.Id, tipo.Codigo, tipo.Nome));
         }
 
         Result<OfertaAtendimentoEspecializado> ofertaResult =

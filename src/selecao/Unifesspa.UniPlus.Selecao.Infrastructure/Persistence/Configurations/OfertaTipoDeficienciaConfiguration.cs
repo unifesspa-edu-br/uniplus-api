@@ -19,8 +19,9 @@ public sealed class OfertaTipoDeficienciaConfiguration : IEntityTypeConfiguratio
         builder.Property(t => t.Id).ValueGeneratedNever();
 
         builder.Property(t => t.TipoDeficienciaOrigemId).IsRequired();
+        builder.Property(t => t.TipoDeficienciaCodigo).HasMaxLength(50).IsRequired();
         builder.Property(t => t.TipoDeficienciaNome).HasMaxLength(300).IsRequired();
 
-        builder.HasIndex(t => new { t.OfertaAtendimentoEspecializadoId, t.TipoDeficienciaOrigemId }).IsUnique();
+        builder.HasIndex(t => new { t.OfertaAtendimentoEspecializadoId, t.TipoDeficienciaCodigo }).IsUnique();
     }
 }

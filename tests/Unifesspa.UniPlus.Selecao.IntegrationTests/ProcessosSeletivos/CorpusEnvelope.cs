@@ -161,8 +161,8 @@ internal static class CorpusEnvelope
                 OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000002"), "Prova ampliada"),
             ], permutar),
             tiposDeficiencia: Ordem<OfertaTipoDeficiencia>([
-                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "Deficiência visual"),
-                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "Deficiência auditiva"),
+                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "DEFICIENCIA_VISUAL", "Deficiência visual"),
+                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
             ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional()], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -567,14 +567,14 @@ internal static class CorpusEnvelope
     {
         List<ValorDominioDeclaradoCongelado> corRaca =
         [
-            new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
-            new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
-            new ValorDominioDeclaradoCongelado("PARDA", "Autodeclaração de cor/raça parda.", 2),
+            new ValorDominioDeclaradoCongelado("BRANCA", null, "Autodeclaração de cor/raça branca.", 0),
+            new ValorDominioDeclaradoCongelado("PRETA", null, "Autodeclaração de cor/raça preta.", 1),
+            new ValorDominioDeclaradoCongelado("PARDA", null, "Autodeclaração de cor/raça parda.", 2),
         ];
         List<ValorDominioDeclaradoCongelado> renda =
         [
-            new ValorDominioDeclaradoCongelado("ATE_1_SM", "Renda familiar per capita de até 1 salário mínimo.", 0),
-            new ValorDominioDeclaradoCongelado("ACIMA_1_SM", "Renda familiar per capita acima de 1 salário mínimo.", 1),
+            new ValorDominioDeclaradoCongelado("ATE_1_SM", null, "Renda familiar per capita de até 1 salário mínimo.", 0),
+            new ValorDominioDeclaradoCongelado("ACIMA_1_SM", null, "Renda familiar per capita acima de 1 salário mínimo.", 1),
         ];
 
         if (permutarValores)

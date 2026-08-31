@@ -771,16 +771,17 @@ internal static class EnvelopeCodecV11
         {
             string path = $"atendimento.tiposDeficiencia[{i}]";
             JsonObject item = leitor.ItemObjeto(arrayTipos, i, "atendimento.tiposDeficiencia");
-            leitor.ExigirChaves(item, path, "tipoDeficienciaOrigemId", "tipoDeficienciaNome");
+            leitor.ExigirChaves(item, path, "tipoDeficienciaOrigemId", "tipoDeficienciaCodigo", "tipoDeficienciaNome");
 
             Guid origemId = leitor.Identificador(item, "tipoDeficienciaOrigemId", path);
+            string codigo = leitor.TextoNaoVazio(item, "tipoDeficienciaCodigo", path, LimitesDoEnvelope.TipoDeficienciaCodigo);
             string nome = leitor.TextoNaoVazio(item, "tipoDeficienciaNome", path, LimitesDoEnvelope.NomeDeCadastro);
             if (leitor.Falhou)
             {
                 return null;
             }
 
-            tipos.Add(OfertaTipoDeficiencia.Criar(origemId, nome));
+            tipos.Add(OfertaTipoDeficiencia.Criar(origemId, codigo, nome));
         }
 
         Result<OfertaAtendimentoEspecializado> oferta = OfertaAtendimentoEspecializado.Criar(condicoes, recursos, tipos);

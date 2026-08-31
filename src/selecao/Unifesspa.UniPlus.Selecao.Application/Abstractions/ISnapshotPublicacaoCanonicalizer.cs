@@ -35,7 +35,7 @@ public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 /// vem do catálogo). <c>Ativo</c> continua fora daqui — o gate de valor inativo do congelamento
 /// garante que só valor ativo na publicação chega a ser congelado.
 /// </param>
-public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descricao, int Ordem);
+public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Rotulo, string? Descricao, int Ordem);
 
 /// <summary>
 /// Metadado de um fato do candidato (ADR-0111) congelado no envelope de publicação

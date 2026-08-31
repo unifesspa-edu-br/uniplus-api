@@ -615,7 +615,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
                     ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}': o valor '{valorCodigo}' aparece mais de uma vez."));
             }
 
-            valores.Add(new ValorDominioDeclaradoCongelado(valorCodigo, descricao, ordem));
+            valores.Add(new ValorDominioDeclaradoCongelado(valorCodigo, null, descricao, ordem));
         }
 
         // issue #1077: a bicondicional exige array, mas array VAZIO para um fato de seleção não

@@ -136,7 +136,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             IReadOnlyList<ValorDominioDeclaradoCongelado> valores = [.. declarados
                 .OrderBy(static v => v.Ordem)
                 .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
-                .Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))];
+                .Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, null, v.Descricao, v.Ordem))];
             return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(valores);
         }
 
@@ -163,11 +163,12 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     private static IReadOnlyList<ValorDominioDeclaradoCongelado> ResolverCondicaoAtendimento(ProcessoSeletivo processo) =>
         [.. (processo.OfertaAtendimento?.Condicoes ?? [])
             .OrderBy(static c => c.CondicaoCodigo, StringComparer.Ordinal)
-            .Select(static (c, indice) => new ValorDominioDeclaradoCongelado(c.CondicaoCodigo, c.CondicaoNome, indice))];
+            .Select(static (c, indice) => new ValorDominioDeclaradoCongelado(c.CondicaoCodigo, c.CondicaoNome, null, indice))];
 
-    /// <summary>Mesmo raciocínio de <see cref="ResolverCondicaoAtendimento"/> — <c>TipoDeficienciaNome</c> faz o papel de código, sem descrição própria.</summary>
+    /// <summary>Mesmo raciocínio de <see cref="ResolverCondicaoAtendimento"/> —
+    /// <see cref="ValorDominioDeclaradoCongelado"/> agora traz <c>TipoDeficienciaCodigo</c> e <c>TipoDeficienciaNome vira Rotulo</c></summary>
     private static IReadOnlyList<ValorDominioDeclaradoCongelado> ResolverTipoDeficiencia(ProcessoSeletivo processo) =>
         [.. (processo.OfertaAtendimento?.TiposDeficiencia ?? [])
-            .OrderBy(static t => t.TipoDeficienciaNome, StringComparer.Ordinal)
-            .Select(static (t, indice) => new ValorDominioDeclaradoCongelado(t.TipoDeficienciaNome, null, indice))];
+            .OrderBy(static t => t.TipoDeficienciaCodigo, StringComparer.Ordinal)
+            .Select(static (t, indice) => new ValorDominioDeclaradoCongelado(t.TipoDeficienciaCodigo, t.TipoDeficienciaNome, null, indice))];
 }

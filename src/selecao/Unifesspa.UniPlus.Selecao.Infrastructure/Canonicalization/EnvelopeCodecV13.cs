@@ -240,7 +240,7 @@ internal static class EnvelopeCodecV13
                     $"'{path}': o valor '{codigoValor}' aparece mais de uma vez."));
             }
 
-            valores.Add(new ValorDominioDeclaradoCongelado(codigoValor, descricao, ordem));
+            valores.Add(new ValorDominioDeclaradoCongelado(codigoValor, null, descricao, ordem));
         }
 
         return valores;

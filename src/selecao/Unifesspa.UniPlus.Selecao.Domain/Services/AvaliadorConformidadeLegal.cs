@@ -210,8 +210,8 @@ public static class AvaliadorConformidadeLegal
 
         HashSet<string> ofertados = new(
             processo.OfertaAtendimento.TiposDeficiencia.Select(
-                static t => t.TipoDeficienciaNome.Normalize(NormalizationForm.FormC)),
-            StringComparer.OrdinalIgnoreCase);
+                static t => t.TipoDeficienciaCodigo),
+            StringComparer.Ordinal);
 
         string[] ausentes = [.. predicado.Necessidades
             .Where(necessidade => !ofertados.Contains(necessidade.Normalize(NormalizationForm.FormC)))];

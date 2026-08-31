@@ -9677,6 +9677,7 @@
         "required": [
           "id",
           "tipoDeficienciaOrigemId",
+          "tipoDeficienciaCodigo",
           "tipoDeficienciaNome"
         ],
         "type": "object",
@@ -9688,6 +9689,9 @@
           "tipoDeficienciaOrigemId": {
             "type": "string",
             "format": "uuid"
+          },
+          "tipoDeficienciaCodigo": {
+            "type": "string"
           },
           "tipoDeficienciaNome": {
             "type": "string"
@@ -10978,6 +10982,7 @@
       "ValorSelecionavelDto": {
         "required": [
           "codigo",
+          "rotulo",
           "descricao",
           "ordem"
         ],
@@ -10985,6 +10990,12 @@
         "properties": {
           "codigo": {
             "type": "string"
+          },
+          "rotulo": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
             "type": [

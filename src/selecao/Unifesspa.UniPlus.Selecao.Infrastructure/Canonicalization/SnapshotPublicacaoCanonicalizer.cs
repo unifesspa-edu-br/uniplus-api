@@ -500,6 +500,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 .Select(static t => (JsonNode)new JsonObject
                 {
                     ["tipoDeficienciaOrigemId"] = t.TipoDeficienciaOrigemId,
+                    ["tipoDeficienciaCodigo"] = t.TipoDeficienciaCodigo,
                     ["tipoDeficienciaNome"] = HashCanonicalComputer.NormalizeNfc(t.TipoDeficienciaNome),
                 })]),
         };

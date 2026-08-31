@@ -342,9 +342,9 @@ public sealed class EnvelopeCanonicoGoldenTests
                 Binding: "CAMPO_INSCRICAO:COR_RACA",
                 ValoresDominio: ["BRANCA", "PRETA", "PARDA"],
                 ValoresDominioDeclarados: [
-                    new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
-                    new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
-                    new ValorDominioDeclaradoCongelado("PARDA", "Autodeclaração de cor/raça parda.", 2),
+                    new ValorDominioDeclaradoCongelado("PRETA", null, "Autodeclaração de cor/raça preta.", 1),
+                    new ValorDominioDeclaradoCongelado("BRANCA", null, "Autodeclaração de cor/raça branca.", 0),
+                    new ValorDominioDeclaradoCongelado("PARDA", null, "Autodeclaração de cor/raça parda.", 2),
                 ]),
         };
 
@@ -358,13 +358,13 @@ public sealed class EnvelopeCanonicoGoldenTests
         new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
         {
             ["COR_RACA"] = [
-                new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
-                new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
-                new ValorDominioDeclaradoCongelado("PARDA", "Autodeclaração de cor/raça parda.", 2),
+                new ValorDominioDeclaradoCongelado("PRETA", null, "Autodeclaração de cor/raça preta.", 1),
+                new ValorDominioDeclaradoCongelado("BRANCA", null, "Autodeclaração de cor/raça branca.", 0),
+                new ValorDominioDeclaradoCongelado("PARDA", null, "Autodeclaração de cor/raça parda.", 2),
             ],
             ["RENDA"] = [
-                new ValorDominioDeclaradoCongelado("ATE_1_SM", "Renda familiar per capita de até 1 salário mínimo.", 0),
-                new ValorDominioDeclaradoCongelado("ACIMA_1_SM", "Renda familiar per capita acima de 1 salário mínimo.", 1),
+                new ValorDominioDeclaradoCongelado("ATE_1_SM", null, "Renda familiar per capita de até 1 salário mínimo.", 0),
+                new ValorDominioDeclaradoCongelado("ACIMA_1_SM", null, "Renda familiar per capita acima de 1 salário mínimo.", 1),
             ],
         };
 
@@ -650,8 +650,8 @@ public sealed class EnvelopeCanonicoGoldenTests
     {
         IReadOnlyList<ValorDominioDeclaradoCongelado> empatados =
         [
-            new ValorDominioDeclaradoCongelado("ZETA", "Zeta.", 0),
-            new ValorDominioDeclaradoCongelado("ALFA", "Alfa.", 0),
+            new ValorDominioDeclaradoCongelado("ZETA", "Zeta.", null, 0),
+            new ValorDominioDeclaradoCongelado("ALFA", "Alfa.", null, 0),
         ];
 
         ProcessoSeletivo processo = ProcessoDeReferencia();

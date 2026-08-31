@@ -285,7 +285,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 return false;
             }
 
-            valores.Add(new ValorSelecionavelDto(valorCodigo, descricao, ordem));
+            valores.Add(new ValorSelecionavelDto(valorCodigo, null, descricao, ordem));
         }
 
         // issue #1077: defesa em profundidade — o decoder já recusa um envelope persistido com

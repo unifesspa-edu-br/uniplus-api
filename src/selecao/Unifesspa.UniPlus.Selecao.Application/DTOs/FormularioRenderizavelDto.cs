@@ -5,7 +5,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// UNI-REQ-0072) — o código que o candidato escolhe, a descrição que orienta a escolha e a
 /// ordem de apresentação.
 /// </summary>
-public sealed record ValorSelecionavelDto(string Codigo, string? Descricao, int Ordem);
+public sealed record ValorSelecionavelDto(string Codigo, string? Rotulo, string? Descricao, int Ordem);
 
 /// <summary>
 /// Um fato coletado pronto para renderização pública (Story #559, issue #1059): mesmos campos

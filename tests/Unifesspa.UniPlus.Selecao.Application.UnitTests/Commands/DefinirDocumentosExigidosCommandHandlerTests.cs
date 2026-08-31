@@ -312,7 +312,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
-        OfertaTipoDeficiencia tipoTea = OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "TEA");
+        OfertaTipoDeficiencia tipoTea = OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "TEA", "TEA");
         OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], [tipoTea]).Value!;
         processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

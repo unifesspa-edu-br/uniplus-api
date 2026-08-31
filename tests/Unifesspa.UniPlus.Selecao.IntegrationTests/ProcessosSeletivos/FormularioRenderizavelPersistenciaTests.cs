@@ -143,12 +143,12 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = new(StringComparer.Ordinal)
         {
             ["COR_RACA"] = [
-                new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
-                new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
-                new ValorDominioDeclaradoCongelado("PARDA", "Autodeclaração de cor/raça parda.", 2),
-                new ValorDominioDeclaradoCongelado("AMARELA", "Autodeclaração de cor/raça amarela.", 3),
-                new ValorDominioDeclaradoCongelado("INDIGENA", "Autodeclaração de cor/raça indígena.", 4),
-                new ValorDominioDeclaradoCongelado("NAO_DECLARADO", "Prefere não declarar.", 5),
+                new ValorDominioDeclaradoCongelado("BRANCA", null, "Autodeclaração de cor/raça branca.", 0),
+                new ValorDominioDeclaradoCongelado("PRETA", null, "Autodeclaração de cor/raça preta.", 1),
+                new ValorDominioDeclaradoCongelado("PARDA", null, "Autodeclaração de cor/raça parda.", 2),
+                new ValorDominioDeclaradoCongelado("AMARELA", null, "Autodeclaração de cor/raça amarela.", 3),
+                new ValorDominioDeclaradoCongelado("INDIGENA", null, "Autodeclaração de cor/raça indígena.", 4),
+                new ValorDominioDeclaradoCongelado("NAO_DECLARADO", null, "Prefere não declarar.", 5),
             ],
         };
 

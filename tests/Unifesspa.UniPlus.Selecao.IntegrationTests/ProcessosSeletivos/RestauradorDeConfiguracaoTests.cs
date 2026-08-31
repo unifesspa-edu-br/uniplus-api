@@ -585,8 +585,8 @@ public sealed class RestauradorDeConfiguracaoTests
                 // (Pcd, LACTANTE), ordenados por CondicaoCodigo — "LACTANTE" antes de "PCD".
                 ["CONDICAO_ATENDIMENTO"] =
                 [
-                    new ValorDominioDeclaradoCongelado("LACTANTE", "Lactante", 0),
-                    new ValorDominioDeclaradoCongelado(OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", 1),
+                    new ValorDominioDeclaradoCongelado("LACTANTE", "Lactante", null, 0),
+                    new ValorDominioDeclaradoCongelado(OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", null, 1),
                 ],
             };
 

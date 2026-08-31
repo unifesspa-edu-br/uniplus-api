@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    partial class SelecaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260827204803_AddCodigoEmOfertaTipoDeficiencia")]
+    partial class AddCodigoEmOfertaTipoDeficiencia
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -541,6 +544,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnName("cobra")
                         .HasComment("Declaração explícita de cobrança de taxa — nunca inferida pela ausência da linha (CA-01).");
 
+                    b.Property<bool>("ConfirmacaoFundamentos")
+                        .HasColumnType("boolean")
+                        .HasColumnName("confirmacao_fundamentos")
+                        .HasComment("Confirmação explícita do administrador ao referenciar fundamentos de isenção (CA-06) — irrelevante quando fundamentos é vazio.");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
@@ -550,7 +558,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("fundamentos")
-                        .HasComment("Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio somente quando cobra=false (issue #1310).");
+                        .HasComment("Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio é estado válido (CA-04).");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")

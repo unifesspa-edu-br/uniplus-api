@@ -214,10 +214,10 @@ public sealed class AvaliadorConformidadeLegalTests
             OfertaAtendimentoEspecializado.Criar(
                 [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "auditiva")]).Value!,
+                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "AUDITIVA", "auditiva")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["Auditiva"]));
+        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
 

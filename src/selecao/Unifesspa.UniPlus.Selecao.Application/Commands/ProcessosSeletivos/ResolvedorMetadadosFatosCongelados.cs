@@ -74,7 +74,7 @@ internal static class ResolvedorMetadadosFatosCongelados
                 fato.Binding,
                 fato.ValoresDominio,
                 fato.ValoresDominioDeclarados?.Count > 0
-                    ? [.. fato.ValoresDominioDeclarados.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))]
+                    ? [.. fato.ValoresDominioDeclarados.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, null, v.Descricao, v.Ordem))]
                     : null);
         }
 
