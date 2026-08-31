@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
@@ -370,6 +371,21 @@ public sealed class TipoDocumentoPersistenceTests
             .ToListAsync();
 
         await act.Should().NotThrowAsync();
+    }
+
+    [Theory(DisplayName = "Busca por código fora do formato responde não-encontrado sem consultar o banco")]
+    [InlineData("01")]
+    [InlineData("laudo_medico")]
+    [InlineData("LAUDO-MEDICO")]
+    public async Task ObterVivoPorCodigo_ForaDoFormato_DevolveNulo(string codigoInvalido)
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        TipoDocumentoReader reader = new(ctx);
+
+        TipoDocumentoView? encontrado = await reader.ObterVivoPorCodigoAsync(codigoInvalido);
+
+        encontrado.Should().BeNull(
+            "nenhum registro pode ter esse código — converter o valor para comparar estouraria no conversor");
     }
 
     private static TipoDocumento Novo(
