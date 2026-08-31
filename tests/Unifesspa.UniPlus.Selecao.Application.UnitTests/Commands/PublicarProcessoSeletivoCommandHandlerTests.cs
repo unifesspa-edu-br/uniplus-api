@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -154,6 +155,9 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             mocks.TipoDeAtoReader,
             mocks.VagaDeLinhagemReader,
             mocks.ObrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
             mocks.FatoCandidatoReader,
             calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente(),
             TimeProvider.System,

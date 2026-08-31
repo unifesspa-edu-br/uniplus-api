@@ -254,6 +254,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     {
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);
+        await TiposDeEtapaSeeder.SemearAsync(api.Services, ProcessoSeletivoPendenciasSeeder.TipoEtapaNaoOfertada);
         using HttpClient client = api.CreateClient();
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();

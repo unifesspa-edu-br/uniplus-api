@@ -48,6 +48,9 @@ public static class FecharRetificacaoCommandHandler
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
+        IModalidadeReader modalidadeReader,
+        ITipoDocumentoReader tipoDocumentoReader,
+        ITipoEtapaReader tipoEtapaReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
         TimeProvider timeProvider,
@@ -63,6 +66,9 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
+        ArgumentNullException.ThrowIfNull(modalidadeReader);
+        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
+        ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -193,7 +199,7 @@ public static class FecharRetificacaoCommandHandler
         }
 
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
-            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, cancellationToken)
+            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken)
             .ConfigureAwait(false);
         if (conformidadeLegal.IsFailure)
         {

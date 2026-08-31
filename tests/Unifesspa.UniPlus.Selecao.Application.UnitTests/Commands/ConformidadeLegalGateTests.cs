@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -48,6 +49,125 @@ public sealed class ConformidadeLegalGateTests
     private static ObrigatoriedadeLegal RegraQueAprova() =>
         NovaRegra("GATE-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
+    [Fact(DisplayName = "Regra vigente que referencia modalidade inexistente recusa a publicação em vez de aprovar em silêncio")]
+    public async Task Publicar_ComRegraQueReferenciaCadastroInexistente_Recusa()
+    {
+        // A regra é semeada direto no repositório, como uma que já estava gravada antes de a
+        // validação de escrita existir. O avaliador é domínio puro: "modalidade não ofertada"
+        // e "modalidade que não existe" são indistinguíveis para ele, e o ramo aprova vazio —
+        // era assim que o edital publicava sob cláusula impossível de cumprir.
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(
+            NovaRegra("GATE-ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO")));
+        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
+
+        IModalidadeReader modalidadeReader = Substitute.For<IModalidadeReader>();
+        modalidadeReader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((ModalidadeView?)null);
+
+        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
+            new PublicarProcessoSeletivoCommand(
+                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
+            RepositorioDoProcesso(processo),
+            RepositorioDeDocumento(processo.Id),
+            canonicalizer, new ResolvedorFusoDeTeste(),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            UsuarioAutenticado(),
+            TipoDeAtoReader(),
+            Substitute.For<IVagaDeLinhagemReader>(),
+            obrigatoriedadeLegalRepository,
+            modalidadeReader,
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
+            new RelogioFixo(Agora),
+            CancellationToken.None);
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.RegraLegalInavaliavel");
+        resposta.Error.Message.Should().Contain("LB_PPl", "a mensagem tem de dizer qual referência não existe");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Regra de modalidades mínimas gravada sem nenhum código é inavaliável, não cumprida")]
+    public async Task Publicar_ComRegraDeModalidadesMinimasVazia_Recusa()
+    {
+        // A escrita passou a recusar esta forma, mas nenhuma migração garante que as regras
+        // gravadas antes disso tenham conteúdo. O avaliador percorre zero exigências e aprova:
+        // a cláusula aparece cumprida sem exigir nada de ninguém — vacuidade idêntica à do
+        // código órfão, por outro caminho.
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(
+            RegraGravadaSemPassarPelaFactory("GATE-VAZIA", new ModalidadesMinimas([])));
+
+        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
+            new PublicarProcessoSeletivoCommand(
+                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
+            RepositorioDoProcesso(processo),
+            RepositorioDeDocumento(processo.Id),
+            CanonicalizerSubstituto(), new ResolvedorFusoDeTeste(),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            UsuarioAutenticado(),
+            TipoDeAtoReader(),
+            Substitute.For<IVagaDeLinhagemReader>(),
+            obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
+            new RelogioFixo(Agora),
+            CancellationToken.None);
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.RegraLegalInavaliavel");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Regra gravada com espaço no código é órfã, mesmo com o cadastro devolvendo a modalidade")]
+    public async Task Publicar_ComRegraCujoCodigoNaoCasaOrdinalmente_Recusa()
+    {
+        // Regra gravada antes de a escrita normalizar o código. O leitor apara o valor buscado
+        // e devolve a modalidade viva, então "existe" — mas quem avalia a conformidade compara
+        // por igualdade ordinal contra o código congelado no processo, e "LB_PPI " nunca casa
+        // com "LB_PPI". Sem conferir o código devolvido, o gate aprovaria a mesma cláusula
+        // vazia que ele existe para barrar.
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(
+            NovaRegra("GATE-ESPACO", new DocumentoObrigatorioParaModalidade("LB_PPI ", "LAUDO_MEDICO")));
+
+        IModalidadeReader modalidadeReader = Substitute.For<IModalidadeReader>();
+        modalidadeReader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(call => CadastrosVivos.Modalidade(call.Arg<string>().Trim()));
+
+        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
+            new PublicarProcessoSeletivoCommand(
+                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
+            RepositorioDoProcesso(processo),
+            RepositorioDeDocumento(processo.Id),
+            CanonicalizerSubstituto(), new ResolvedorFusoDeTeste(),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            UsuarioAutenticado(),
+            TipoDeAtoReader(),
+            Substitute.For<IVagaDeLinhagemReader>(),
+            obrigatoriedadeLegalRepository,
+            modalidadeReader,
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
+            new RelogioFixo(Agora),
+            CancellationToken.None);
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.RegraLegalInavaliavel");
+        eventos.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "CA-12 (Publicar): regra legal vigente reprovada recusa ANTES da canonicalização")]
     public async Task Publicar_ComRegraLegalReprovada_RecusaSemCanonicalizar()
     {
@@ -67,6 +187,9 @@ public sealed class ConformidadeLegalGateTests
             TipoDeAtoReader(),
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
@@ -101,6 +224,9 @@ public sealed class ConformidadeLegalGateTests
             TipoDeAtoReader(),
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
@@ -139,6 +265,9 @@ public sealed class ConformidadeLegalGateTests
             TipoDeAtoReader(),
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
@@ -178,6 +307,9 @@ public sealed class ConformidadeLegalGateTests
             TipoDeAtoReader(),
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
@@ -277,5 +409,25 @@ public sealed class ConformidadeLegalGateTests
     private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => instante;
+    }
+
+    /// <summary>
+    /// Regra com predicado que a factory recusa hoje, no estado em que o EF a reidrataria
+    /// a partir de uma linha gravada antes de a validação de forma existir.
+    /// </summary>
+    /// <remarks>
+    /// A propriedade é escrita por reflexão porque não há caminho legítimo até este estado:
+    /// a única factory da entidade recusa a forma, e é justamente isso que torna a linha
+    /// antiga invisível para quem só monta a regra pelo domínio. O EF chega lá todo dia, pelo
+    /// setter privado, ao materializar o que está no banco.
+    /// </remarks>
+    private static ObrigatoriedadeLegal RegraGravadaSemPassarPelaFactory(
+        string regraCodigo, PredicadoObrigatoriedade predicadoInvalido)
+    {
+        ObrigatoriedadeLegal regra = NovaRegra(regraCodigo, new EtapaObrigatoria("PROVA_OBJETIVA"));
+        typeof(ObrigatoriedadeLegal)
+            .GetProperty(nameof(ObrigatoriedadeLegal.Predicado))!
+            .SetValue(regra, predicadoInvalido);
+        return regra;
     }
 }

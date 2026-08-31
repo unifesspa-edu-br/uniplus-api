@@ -136,6 +136,9 @@ internal static class ProcessoSeletivoPendenciasSeeder
             : await PersistirComDocumentoPendenteAsync(db, processo);
     }
 
+    /// <summary>Código do tipo de etapa que a regra exige e o processo base não tem.</summary>
+    public const string TipoEtapaNaoOfertada = "ENTREVISTA_NAO_OFERTADA";
+
     /// <summary>
     /// Semeia uma obrigatoriedade legal universal (Story #853) que exige uma etapa que o
     /// processo base (<see cref="ProcessoSeletivoPublicavelSeeder"/>) não tem — a publicação
@@ -143,13 +146,19 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// ESTRUTURAL 100% verde (CA-05/CA-07: <c>obrigatoriedadesReprovadas</c> aparece,
     /// <c>pendencias</c> não).
     /// </summary>
+    /// <remarks>
+    /// O tipo de etapa exigido precisa estar vivo no cadastro de Configuração
+    /// (<see cref="TiposDeEtapaSeeder"/>): a publicação recusa antes de avaliar quando a
+    /// regra referencia código inexistente, e a recusa seria por outro motivo — a regra
+    /// ficaria inavaliável em vez de reprovada.
+    /// </remarks>
     public static async Task<Guid> SemearObrigatoriedadeNaoAtendidaAsync(SelecaoDbContext db, string regraCodigo)
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
             tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
             categoria: CategoriaObrigatoriedade.Outros,
             regraCodigo: regraCodigo,
-            predicado: new EtapaObrigatoria("ENTREVISTA_NAO_OFERTADA"),
+            predicado: new EtapaObrigatoria(TipoEtapaNaoOfertada),
             descricaoHumana: "Etapa de entrevista obrigatória (teste de integração issue #1096)",
             baseLegal: "Base legal de teste",
             vigenciaInicio: new DateOnly(2020, 1, 1)).Value!;
