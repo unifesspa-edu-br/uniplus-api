@@ -267,6 +267,46 @@ public sealed class TipoDocumentoPersistenceTests
         meus.Should().Equal([codA, codB]);
     }
 
+    [Fact(DisplayName = "Reader.ObterVivoPorCodigoAsync não devolve tipo removido, e normaliza o código buscado")]
+    public async Task ObterVivoPorCodigo_ExcluiSoftDeletedENormalizaBusca()
+    {
+        // A regra legal referencia o tipo de documento por código, e quem valida a referência
+        // é este leitor. Se um tipo removido continuasse respondendo, a regra que o exige
+        // seria aceita e o edital publicaria sob exigência de um documento que saiu do
+        // catálogo. O espaço supérfluo entra pelo mesmo caminho: quem digita " CODIGO " no
+        // cadastro da regra precisa encontrar o mesmo registro, ou a validação recusa o que
+        // existe.
+        string codigoVivo = CodigoUnico();
+        string codigoRemovido = CodigoUnico();
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.TiposDocumento.Add(Novo(codigoVivo));
+            ctx.TiposDocumento.Add(Novo(codigoRemovido));
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == codigoRemovido);
+            ctx.TiposDocumento.Remove(aExcluir);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var reader = new TipoDocumentoReader(readCtx);
+
+        TipoDocumentoView? vivo = await reader.ObterVivoPorCodigoAsync(codigoVivo);
+        TipoDocumentoView? comEspaco = await reader.ObterVivoPorCodigoAsync($"  {codigoVivo} ");
+        TipoDocumentoView? removido = await reader.ObterVivoPorCodigoAsync(codigoRemovido);
+
+        vivo.Should().NotBeNull();
+        vivo!.Codigo.Should().Be(codigoVivo);
+        comEspaco.Should().NotBeNull("o leitor apara o código antes de comparar");
+        comEspaco!.Id.Should().Be(vivo.Id);
+        removido.Should().BeNull("o filtro global de soft-delete tira o tipo removido do cadastro vivo");
+    }
+
     private static TipoDocumento Novo(
         string codigo,
         string categoria = "SAUDE",

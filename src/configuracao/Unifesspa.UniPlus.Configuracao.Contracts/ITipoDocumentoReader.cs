@@ -23,4 +23,22 @@ public interface ITipoDocumentoReader
     Task<TipoDocumentoView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Obtém um tipo de documento vivo pela chave natural — o
+    /// <paramref name="codigo"/> —, ou <see langword="null"/> se inexistente /
+    /// soft-deleted. O valor de busca é aparado antes da comparação, que é ordinal.
+    /// </summary>
+    /// <remarks>
+    /// <para>Existe para quem referencia o tipo por código e precisa recusar a referência
+    /// na escrita — sem isso a única alternativa é listar tudo e filtrar em memória.
+    /// Espelha <see cref="ITipoEtapaReader.ObterAtivoPorCodigoAsync"/>.</para>
+    /// <para><c>Trim</c> e nada mais, de propósito: é a normalização que o cadastro aplica
+    /// ao gravar. Diferente do tipo de etapa e da modalidade, o código do tipo de documento
+    /// não passa por NFC nem por formato fechado na escrita — buscar em forma composta o
+    /// que o banco guarda decomposto daria por inexistente um tipo que existe.</para>
+    /// </remarks>
+    Task<TipoDocumentoView?> ObterVivoPorCodigoAsync(
+        string codigo,
+        CancellationToken cancellationToken = default);
 }
