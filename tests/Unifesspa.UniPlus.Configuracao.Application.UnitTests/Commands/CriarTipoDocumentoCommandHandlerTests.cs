@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CriarTipoDocumentoCommandHandlerTests
@@ -31,7 +32,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
     [Fact(DisplayName = "Código livre cria o tipo, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
     {
-        _repository.CodigoExisteEntreVivosAsync("LAUDO_MEDICO", null, Arg.Any<CancellationToken>())
+        _repository.CodigoExisteEntreVivosAsync(Codigo("LAUDO_MEDICO"), null, Arg.Any<CancellationToken>())
             .Returns(false);
 
         Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
@@ -46,7 +47,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
     [Fact(DisplayName = "Código já existente entre vivos retorna conflito (CodigoJaExiste) sem persistir")]
     public async Task Handle_CodigoDuplicado_RetornaConflito()
     {
-        _repository.CodigoExisteEntreVivosAsync("LAUDO_MEDICO", null, Arg.Any<CancellationToken>())
+        _repository.CodigoExisteEntreVivosAsync(Codigo("LAUDO_MEDICO"), null, Arg.Any<CancellationToken>())
             .Returns(true);
 
         Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
@@ -67,7 +68,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaFormatoInvalido);
-        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<CodigoTipoDocumento>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -101,4 +102,9 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
         resultado.Errors[0].Field.Should().Be("nome");
         resultado.Errors[1].Field.Should().Be("categoria");
     }
+
+    /// Constrói o value object do código para casar com a assinatura do repositório,
+    /// que recebe `CodigoTipoDocumento` — não a string crua.
+    private static CodigoTipoDocumento Codigo(string valor) => CodigoTipoDocumento.Criar(valor).Value!;
+
 }
