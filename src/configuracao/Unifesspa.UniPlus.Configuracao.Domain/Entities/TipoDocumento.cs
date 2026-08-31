@@ -41,15 +41,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
 {
-    private const int CodigoMinLength = 1;
-    private const int CodigoMaxLength = 60;
     private const int NomeMinLength = 2;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     private const int FormatosAceitosMaxLength = 200;
-    private const int TipoEquivalenteMaxLength = 60;
+    // Acompanha o teto do próprio código (2 a 50): o campo guarda o Codigo de outro
+    // tipo, então dimensioná-lo acima aceitaria texto que jamais poderá ser um código.
+    private const int TipoEquivalenteMaxLength = 50;
 
-    public string Codigo { get; private set; } = string.Empty;
+    public CodigoTipoDocumento Codigo { get; private set; } = null!;
     public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
     public string Categoria { get; private set; } = string.Empty;
@@ -77,7 +77,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     /// dois atrás de uma relação inválida.
     /// </summary>
     public static Result<(
-        string Codigo,
+        CodigoTipoDocumento Codigo,
         string Nome,
         string? Descricao,
         string Categoria,
@@ -94,22 +94,17 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     {
         List<FieldError> erros = [];
 
-        string? codigoNorm = null;
-        if (string.IsNullOrWhiteSpace(codigo))
+        // Obrigatoriedade e formato são do value object: ele é a única definição do
+        // que conta como código, e a mesma que o conversor aplica na reidratação.
+        CodigoTipoDocumento? codigoVo = null;
+        Result<CodigoTipoDocumento> codigoResult = CodigoTipoDocumento.Criar(codigo);
+        if (codigoResult.IsFailure)
         {
-            erros.Add(new("codigo", new DomainError(
-                TipoDocumentoErrorCodes.CodigoObrigatorio, "Código do tipo de documento é obrigatório.")));
+            erros.Add(new("codigo", codigoResult.Error!));
         }
         else
         {
-            codigoNorm = codigo.Trim();
-            if (codigoNorm.Length is < CodigoMinLength or > CodigoMaxLength)
-            {
-                erros.Add(new("codigo", new DomainError(
-                    TipoDocumentoErrorCodes.CodigoTamanho,
-                    $"Código do tipo de documento deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres.")));
-                codigoNorm = null;
-            }
+            codigoVo = codigoResult.Value;
         }
 
         string? nomeNorm = null;
@@ -188,8 +183,8 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
             tipoEquivalenteNorm = null;
         }
 
-        if (codigoNorm is not null && tipoEquivalenteNorm is not null
-            && string.Equals(tipoEquivalenteNorm, codigoNorm, StringComparison.Ordinal))
+        if (codigoVo is not null && tipoEquivalenteNorm is not null
+            && string.Equals(tipoEquivalenteNorm, codigoVo.Valor, StringComparison.Ordinal))
         {
             // Guard de auto-equivalência case-sensitive (Ordinal), alinhado ao CHECK
             // `tipo_equivalente <> codigo` do banco (também case-sensitive).
@@ -200,11 +195,11 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
 
         if (erros.Count > 0)
         {
-            return Result<(string, string, string?, string, string?, int?, string?)>.ValidationFailure(erros);
+            return Result<(CodigoTipoDocumento, string, string?, string, string?, int?, string?)>.ValidationFailure(erros);
         }
 
-        return Result<(string, string, string?, string, string?, int?, string?)>.Success((
-            codigoNorm!, nomeNorm!, descricaoNorm, categoriaNorm!, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm));
+        return Result<(CodigoTipoDocumento, string, string?, string, string?, int?, string?)>.Success((
+            codigoVo!, nomeNorm!, descricaoNorm, categoriaNorm!, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm));
     }
 
     /// <summary>
@@ -221,7 +216,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         int? tamanhoMaximoMb,
         string? tipoEquivalente)
     {
-        Result<(string Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
             ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
         if (validacao.IsFailure)
         {
@@ -249,7 +244,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         int? tamanhoMaximoMb,
         string? tipoEquivalente)
     {
-        Result<(string Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
             ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
         if (validacao.IsFailure)
         {
@@ -262,7 +257,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     }
 
     private void AplicarCampos(
-        (string Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente) campos)
+        (CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente) campos)
     {
         Codigo = campos.Codigo;
         Nome = campos.Nome;

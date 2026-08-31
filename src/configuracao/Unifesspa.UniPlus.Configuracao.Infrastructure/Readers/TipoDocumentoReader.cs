@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Implementação de <see cref="ITipoDocumentoReader"/> (ADR-0056): leitura direta
@@ -57,17 +59,22 @@ internal sealed class TipoDocumentoReader : ITipoDocumentoReader
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // Só Trim, e nada de NFC: é exatamente o que TipoDocumento.ValidarCampos grava.
-        // O código deste cadastro não tem formato fechado nem normalização Unicode na
-        // escrita — compor aqui o que o banco guarda decomposto faria a busca procurar um
-        // texto que não está lá, dando por inexistente um tipo que existe. Quando o código
-        // ganhar value object com formato fechado e os registros forem migrados, a
-        // normalização passa a valer dos dois lados.
-        string codigoNormalizado = codigo.Trim();
+        // O código tem formato fechado (CodigoTipoDocumento): só letras maiúsculas,
+        // dígitos e sublinhado, o que dispensa normalização Unicode — não há caractere
+        // componível no conjunto. Um código fora do formato não pode estar gravado, então
+        // a busca responde "não encontrado" sem consultar o banco, em vez de estourar no
+        // conversor ao traduzir um valor que o value object recusaria.
+        Result<CodigoTipoDocumento> codigoResult = CodigoTipoDocumento.Criar(codigo);
+        if (codigoResult.IsFailure || codigoResult.Value is null)
+        {
+            return null;
+        }
+
+        CodigoTipoDocumento codigoVo = codigoResult.Value;
 
         TipoDocumento? entidade = await _dbContext.TiposDocumento
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Codigo == codigoNormalizado, cancellationToken)
+            .FirstOrDefaultAsync(t => t.Codigo == codigoVo, cancellationToken)
             .ConfigureAwait(false);
 
         return entidade is null ? null : ParaView(entidade);
@@ -76,7 +83,7 @@ internal sealed class TipoDocumentoReader : ITipoDocumentoReader
     private static TipoDocumentoView ParaView(TipoDocumento t) =>
         new(
             t.Id,
-            t.Codigo,
+            t.Codigo.Valor,
             t.Nome,
             t.Categoria);
 }

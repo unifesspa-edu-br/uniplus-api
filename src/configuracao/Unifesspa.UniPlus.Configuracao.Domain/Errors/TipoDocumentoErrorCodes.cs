@@ -3,7 +3,13 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 public static class TipoDocumentoErrorCodes
 {
     public const string CodigoObrigatorio = "TipoDocumento.CodigoObrigatorio";
-    public const string CodigoTamanho = "TipoDocumento.CodigoTamanho";
+
+    /// <summary>
+    /// Código fora do formato fechado <c>^[A-Z][A-Z0-9_]{1,49}$</c>
+    /// (<see cref="Unifesspa.UniPlus.Configuracao.Domain.ValueObjects.CodigoTipoDocumento"/>).
+    /// Cobre também o comprimento, de 2 a 50 caracteres.
+    /// </summary>
+    public const string CodigoFormatoInvalido = "TipoDocumento.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "TipoDocumento.CodigoJaExiste";
     public const string NomeObrigatorio = "TipoDocumento.NomeObrigatorio";
     public const string NomeTamanho = "TipoDocumento.NomeTamanho";

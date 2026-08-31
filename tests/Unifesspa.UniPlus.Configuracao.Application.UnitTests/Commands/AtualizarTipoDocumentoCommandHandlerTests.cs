@@ -111,7 +111,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
             Comando(existente.Id, codigo: "CIN_NOVO"), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
-        existente.Codigo.Should().Be("CIN_NOVO");
+        existente.Codigo.Valor.Should().Be("CIN_NOVO");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

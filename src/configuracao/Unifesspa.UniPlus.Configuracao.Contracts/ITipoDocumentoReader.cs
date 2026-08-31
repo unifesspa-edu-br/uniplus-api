@@ -33,10 +33,11 @@ public interface ITipoDocumentoReader
     /// <para>Existe para quem referencia o tipo por código e precisa recusar a referência
     /// na escrita — sem isso a única alternativa é listar tudo e filtrar em memória.
     /// Espelha <see cref="ITipoEtapaReader.ObterAtivoPorCodigoAsync"/>.</para>
-    /// <para><c>Trim</c> e nada mais, de propósito: é a normalização que o cadastro aplica
-    /// ao gravar. Diferente do tipo de etapa e da modalidade, o código do tipo de documento
-    /// não passa por NFC nem por formato fechado na escrita — buscar em forma composta o
-    /// que o banco guarda decomposto daria por inexistente um tipo que existe.</para>
+    /// <para>O código tem formato fechado — letra maiúscula inicial, depois maiúsculas,
+    /// dígitos e sublinhado —, o que dispensa normalização Unicode: não há caractere
+    /// componível no conjunto aceito. Um valor de busca fora desse formato não pode
+    /// corresponder a registro algum e devolve <see langword="null"/> sem consultar o
+    /// banco.</para>
     /// </remarks>
     Task<TipoDocumentoView?> ObterVivoPorCodigoAsync(
         string codigo,

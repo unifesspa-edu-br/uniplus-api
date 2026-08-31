@@ -10,7 +10,7 @@ public static class TipoDocumentoMapping
         ArgumentNullException.ThrowIfNull(tipo);
         return new TipoDocumentoDto(
             tipo.Id,
-            tipo.Codigo,
+            tipo.Codigo.Valor,
             tipo.Nome,
             tipo.Descricao,
             tipo.Categoria,

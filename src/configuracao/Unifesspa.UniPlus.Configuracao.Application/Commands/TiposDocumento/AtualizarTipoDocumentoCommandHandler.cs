@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -33,7 +34,7 @@ public static class AtualizarTipoDocumentoCommandHandler
         ArgumentNullException.ThrowIfNull(categoriaRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<(string Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
             TipoDocumento.ValidarCampos(
                 command.Codigo,
                 command.Nome,
@@ -66,13 +67,14 @@ public static class AtualizarTipoDocumentoCommandHandler
                 [new("categoria", CriarTipoDocumentoCommandHandler.CategoriaNaoEncontradaErro(validacao.Value.Categoria))]);
         }
 
-        string codigoAntigo = tipo.Codigo;
-        string codigoNovo = validacao.Value.Codigo;
+        CodigoTipoDocumento codigoAntigo = tipo.Codigo;
+        CodigoTipoDocumento codigoNovo = validacao.Value.Codigo;
 
-        // Código é case-sensitive (Ordinal) — só checa colisão quando o código
-        // normalizado efetivamente muda.
-        if (!string.Equals(codigoAntigo, codigoNovo, StringComparison.Ordinal)
-            && await repository.CodigoExisteEntreVivosAsync(codigoNovo, command.Id, cancellationToken).ConfigureAwait(false))
+        // Igualdade estrutural do value object (record), sobre o valor já canônico —
+        // equivale à comparação Ordinal de antes e só checa colisão quando o código
+        // efetivamente muda.
+        if (codigoAntigo != codigoNovo
+            && await repository.CodigoExisteEntreVivosAsync(codigoNovo.Valor, command.Id, cancellationToken).ConfigureAwait(false))
         {
             return Result.Failure(CodigoJaExisteErro());
         }
