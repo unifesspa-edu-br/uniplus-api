@@ -24,6 +24,22 @@ informed:
 >
 > **O que permanece válido:** registry (GHCR), naming `uniplus-api-<modulo>`, estratégia lockstep semver, gates de validação (formato semver, tag em commit em `main`), smoke estrutural pré-push. A emenda toca apenas a cláusula de plataformas.
 
+> **Emenda de 2026-08-31 — `linux/arm64` desabilitado; a plataforma volta a ser `linux/amd64`**
+>
+> A emenda de 2026-05-17 habilitou o multi-arch porque a Epic [`uniplus-infra#317`](https://github.com/unifesspa-edu-br/uniplus-infra/issues/317) migraria o lab para `VM.Standard.A1.Flex` (ARM Ampere) **antes de o trial OCI expirar em 2026-06-03**. O prazo passou há quase três meses, a migração não ocorreu e a Epic segue aberta. O ambiente real é amd64 — o único nó do cluster de homologação reporta `architecture: amd64` (`uname -m` na VM: `x86_64`).
+>
+> Ou seja, o gatilho que justificou a emenda anterior disparou como previsão e não se confirmou como fato. Cada release passou a pagar cross-build por emulação QEMU para produzir um layer que nenhum nó consome. O custo é observável: na release `v0.12.0`/`v0.10.0`, as quatro imagens do `uniplus-web` — que sempre foi single-arch — publicaram em poucos minutos, enquanto as duas da `uniplus-api` seguiam construindo mais de vinte minutos depois.
+>
+> **O que muda:**
+>
+> - `publish-images.yml` volta a publicar apenas `linux/amd64`. Não há mais manifest list multi-arch; a tag `vX.Y.Z` aponta para uma imagem de plataforma única.
+> - O step `docker/setup-qemu-action` sai do workflow: existia unicamente para registrar os handlers `binfmt_misc` do cross-build arm64.
+> - O cache de build passa a ter um scope por módulo, em vez de um por módulo × arquitetura.
+>
+> **O que permanece válido:** tudo o mais da decisão original e da emenda de maio — registry, naming, lockstep semver, gates de tag, smoke estrutural pré-push (que já era amd64-only, agora pela razão mais simples de ser a mesma plataforma que se publica).
+>
+> **Condição de retomada:** se a Epic `uniplus-infra#317` voltar à execução, esta cláusula precisa ser emendada **antes** de o primeiro nó ARM entrar no cluster — do contrário o pod não encontra manifest compatível no GHCR e falha no pull. A reversão técnica é reacrescentar `linux/arm64` em `platforms` e o step de QEMU.
+
 ## Contexto e enunciado do problema
 
 A Fase 5 do plano de deploy (cluster standalone) está bloqueada porque as imagens dos módulos `uniplus-api-selecao` e `uniplus-api-ingresso` ainda não são publicadas em um registry acessível pelo cluster. Os Dockerfiles existem (`docker/Dockerfile.selecao`, `docker/Dockerfile.ingresso`), o pipeline de build/test já roda em PR ([ADR-0017](0017-kubernetes-com-helm-para-orquestracao.md), Feature [#7](https://github.com/unifesspa-edu-br/uniplus-api/issues/7)) e os Helm charts (Feature [#10](https://github.com/unifesspa-edu-br/uniplus-api/issues/10)) já assumem que as imagens estão disponíveis em runtime — mas não há workflow de publish, não há convenção de naming nem política de tagging.
