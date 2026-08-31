@@ -22,4 +22,18 @@ public interface IModalidadeReader
     Task<ModalidadeView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Obtém uma modalidade viva pela chave natural — o <paramref name="codigo"/> —,
+    /// ou <see langword="null"/> se inexistente / soft-deleted. O valor de busca é
+    /// normalizado (<c>Trim</c> + NFC) antes da comparação, que é ordinal.
+    /// </summary>
+    /// <remarks>
+    /// Existe para quem referencia a modalidade por código e precisa recusar a
+    /// referência na escrita: o código congelado no edital é comparado por igualdade
+    /// ordinal, então uma referência que nunca vai bater tem de morrer no cadastro.
+    /// </remarks>
+    Task<ModalidadeView?> ObterVivaPorCodigoAsync(
+        string codigo,
+        CancellationToken cancellationToken = default);
 }

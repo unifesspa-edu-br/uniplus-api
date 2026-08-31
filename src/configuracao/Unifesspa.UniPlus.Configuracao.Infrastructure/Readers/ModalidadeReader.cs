@@ -1,11 +1,15 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 
+using System.Text;
+
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Implementação de <see cref="IModalidadeReader"/> (ADR-0056): leitura direta do
@@ -47,6 +51,33 @@ internal sealed class ModalidadeReader : IModalidadeReader
         Modalidade? entidade = await _dbContext.Modalidades
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+
+        return entidade is null ? null : ParaView(entidade);
+    }
+
+    public async Task<ModalidadeView?> ObterVivaPorCodigoAsync(
+        string codigo,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        // Trim + NFC antes da query pelo mesmo motivo do leitor de tipo de etapa: o EF
+        // não traduz normalização Unicode para SQL, e o cadastro guarda o código já
+        // normalizado — comparar sem isso erraria o "mesmo" texto em outra forma.
+        // Código fora do formato do value object não tem modalidade viva alguma, então
+        // a consulta é dispensável.
+        string codigoNormalizado = codigo.Trim().Normalize(NormalizationForm.FormC);
+        Result<CodigoModalidade> codigoResult = CodigoModalidade.Criar(codigoNormalizado);
+        if (codigoResult.IsFailure)
+        {
+            return null;
+        }
+
+        CodigoModalidade codigoVo = codigoResult.Value!;
+        Modalidade? entidade = await _dbContext.Modalidades
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.Codigo == codigoVo, cancellationToken)
             .ConfigureAwait(false);
 
         return entidade is null ? null : ParaView(entidade);

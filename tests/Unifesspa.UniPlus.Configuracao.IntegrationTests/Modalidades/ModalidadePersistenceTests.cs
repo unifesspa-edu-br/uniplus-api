@@ -258,6 +258,48 @@ public sealed class ModalidadePersistenceTests
         meus.Should().Equal([codA, codB]);
     }
 
+    [Fact(DisplayName = "Reader.ObterVivaPorCodigoAsync não devolve modalidade removida nem código fora do formato")]
+    public async Task ObterVivaPorCodigo_ExcluiSoftDeletedERecusaFormatoInvalido()
+    {
+        // Quem cadastra regra legal referencia a modalidade por código, e é este leitor que
+        // decide se a referência existe. Modalidade removida respondendo aqui faria a regra
+        // ser aceita e o edital publicar sob cláusula que ninguém pode cumprir. Código fora
+        // do formato do value object não tem modalidade viva alguma — devolver null é a
+        // resposta certa, e evita a consulta.
+        string codigoVivo = CodigoUnico();
+        string codigoRemovido = CodigoUnico();
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Modalidades.Add(Ampla(codigoVivo));
+            ctx.Modalidades.Add(Ampla(codigoRemovido));
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            CodigoModalidade voRemovido = CodigoModalidade.Criar(codigoRemovido).Value!;
+            Modalidade aExcluir = await ctx.Modalidades.SingleAsync(m => m.Codigo == voRemovido);
+            ctx.Modalidades.Remove(aExcluir);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var reader = new ModalidadeReader(readCtx);
+
+        ModalidadeView? viva = await reader.ObterVivaPorCodigoAsync(codigoVivo);
+        ModalidadeView? comEspaco = await reader.ObterVivaPorCodigoAsync($" {codigoVivo}  ");
+        ModalidadeView? removida = await reader.ObterVivaPorCodigoAsync(codigoRemovido);
+        ModalidadeView? foraDoFormato = await reader.ObterVivaPorCodigoAsync("lb ppi!");
+
+        viva.Should().NotBeNull();
+        viva!.Codigo.Should().Be(codigoVivo);
+        comEspaco.Should().NotBeNull("o leitor apara o código antes de comparar");
+        comEspaco!.Id.Should().Be(viva.Id);
+        removida.Should().BeNull("o filtro global de soft-delete tira a modalidade removida do cadastro vivo");
+        foraDoFormato.Should().BeNull();
+    }
+
     private static Guid ExcluirId(ConfiguracaoDbContext ctx, string codigo)
     {
         CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;

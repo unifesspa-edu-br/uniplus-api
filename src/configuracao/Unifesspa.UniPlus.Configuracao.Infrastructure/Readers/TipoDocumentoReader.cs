@@ -51,6 +51,28 @@ internal sealed class TipoDocumentoReader : ITipoDocumentoReader
         return entidade is null ? null : ParaView(entidade);
     }
 
+    public async Task<TipoDocumentoView?> ObterVivoPorCodigoAsync(
+        string codigo,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        // Só Trim, e nada de NFC: é exatamente o que TipoDocumento.ValidarCampos grava.
+        // O código deste cadastro não tem formato fechado nem normalização Unicode na
+        // escrita — compor aqui o que o banco guarda decomposto faria a busca procurar um
+        // texto que não está lá, dando por inexistente um tipo que existe. Quando o código
+        // ganhar value object com formato fechado e os registros forem migrados, a
+        // normalização passa a valer dos dois lados.
+        string codigoNormalizado = codigo.Trim();
+
+        TipoDocumento? entidade = await _dbContext.TiposDocumento
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Codigo == codigoNormalizado, cancellationToken)
+            .ConfigureAwait(false);
+
+        return entidade is null ? null : ParaView(entidade);
+    }
+
     private static TipoDocumentoView ParaView(TipoDocumento t) =>
         new(
             t.Id,
