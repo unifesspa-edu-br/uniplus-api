@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -100,5 +102,42 @@ internal sealed class TipoDocumentoConfiguration
         // Índice de filtro por categoria na interface administrativa.
         builder.HasIndex(t => t.Categoria)
             .HasDatabaseName("ix_tipo_documento_categoria");
+
+        builder.HasData(MaterializarSeed());
+    }
+
+    /// <summary>
+    /// Projeta o seed (<see cref="TipoDocumentoSeed.Itens"/>) para linhas que o
+    /// <c>HasData</c> congela como literais na migration. O instante-âncora é fixo
+    /// (as linhas não passam pelo <c>AuditableInterceptor</c>/<c>SoftDeleteInterceptor</c>);
+    /// qualquer mudança futura no seed exige uma nova migration — o EF detecta o
+    /// diff —, sem alterar as bases já migradas.
+    /// </summary>
+    /// <remarks>
+    /// O cadastro é administrado e semeado ao mesmo tempo, então as duas escritas
+    /// disputam as mesmas linhas: editar um item desta lista faz o EF gerar um
+    /// <c>UpdateData</c> que sobrescreve o que o administrador tiver mudado no tipo
+    /// semeado. É o mesmo trade-off já aceito em <c>CategoriaDocumentoConfiguration</c>
+    /// e <c>PrecedenciaFaseConfiguration</c>, e o que faz o catálogo existir desde a
+    /// migração, sem ato operacional pós-deploy.
+    /// </remarks>
+    private static IEnumerable<object> MaterializarSeed()
+    {
+        // Instante-âncora fixo do seed (HasData exige valor determinístico).
+        DateTimeOffset seedCriadoEm = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        return TipoDocumentoSeed.Itens.Select(item => new
+        {
+            item.Id,
+            Codigo = CodigoTipoDocumento.Criar(item.Codigo).Value!,
+            item.Nome,
+            Descricao = (string?)null,
+            item.Categoria,
+            FormatosAceitos = (string?)null,
+            TamanhoMaximoMb = (int?)null,
+            TipoEquivalente = (string?)null,
+            CreatedAt = seedCriadoEm,
+            IsDeleted = false,
+        });
     }
 }
