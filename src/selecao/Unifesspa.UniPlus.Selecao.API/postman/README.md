@@ -216,6 +216,10 @@ risco desproporcional a um problema cosmético. Documentado como comentário em
 
 - `Modalidade.Codigo` recusa hífen (`PredicateValidator` — só maiúsculas, dígitos
   e `_`); a coleção usa `AC_SMK_{{run_suffix}}`.
+- `TipoDocumento.Codigo` passou a ter o mesmo formato fechado
+  (`^[A-Z][A-Z0-9_]{1,49}$`); a coleção usa `IDENTIDADE_SMK_{{run_suffix}}`. Com
+  hífen, o `POST` responde `422` e a coleção segue sem `tipo_documento_id`, o que
+  derruba toda a cadeia de documentos exigidos adiante.
 - `FaseCanonica.AgrupaEtapas=true` só é aceito para o código canônico
   `AVALIACAO` (`FaseCanonica.AgrupaEtapasApenasAvaliacao`) — a coleção cria a fase
   canônica com esse código, não um código arbitrário como `RESULTADO_FINAL`.

@@ -1022,7 +1022,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"IDENTIDADE-SMK-{{run_suffix}}\",\n  \"nome\": \"Documento de identidade (smoke)\",\n  \"categoria\": \"IDENTIFICACAO\",\n  \"descricao\": null,\n  \"formatosAceitos\": \"PDF,JPEG,PNG\",\n  \"tamanhoMaximoMb\": 5,\n  \"tipoEquivalente\": null\n}",
+              "raw": "{\n  \"codigo\": \"IDENTIDADE_SMK_{{run_suffix}}\",\n  \"nome\": \"Documento de identidade (smoke)\",\n  \"categoria\": \"IDENTIFICACAO\",\n  \"descricao\": null,\n  \"formatosAceitos\": \"PDF,JPEG,PNG\",\n  \"tamanhoMaximoMb\": 5,\n  \"tipoEquivalente\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
