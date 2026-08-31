@@ -226,7 +226,7 @@ public sealed class PrecedenciaFase : SoftDeletableEntity, IAuditableEntity
             // Mensagem genérica de propósito (ADR-0023): nunca ecoar o dado rejeitado.
             return Result<string>.Failure(new DomainError(
                 codigoForaDoCanonico,
-                $"{rotulo} não pertence ao conjunto canônico das quatorze fases."));
+                $"{rotulo} não pertence ao conjunto canônico."));
         }
 
         return Result<string>.Success(normalizado);

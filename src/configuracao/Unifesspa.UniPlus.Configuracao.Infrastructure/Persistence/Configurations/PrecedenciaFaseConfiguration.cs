@@ -65,7 +65,7 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
             "ck_precedencia_fase_sucessora_formato",
             "sucessora_codigo ~ '^[A-Z_]+$'");
 
-        // Domínio fechado das quatorze fases canônicas (defesa em profundidade).
+        // Domínio fechado das fases canônicas (defesa em profundidade).
         table.HasCheckConstraint(
             "ck_precedencia_fase_antecessora_canonica",
             $"antecessora_codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");

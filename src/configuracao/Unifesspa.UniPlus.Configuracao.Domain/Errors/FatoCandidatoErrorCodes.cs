@@ -37,7 +37,7 @@ public static class FatoCandidatoErrorCodes
     /// <summary>Fase em que o valor do fato fica conhecido (ADR-0116) ausente.</summary>
     public const string PontoResolucaoObrigatorio = "FatoCandidato.PontoResolucaoObrigatorio";
 
-    /// <summary>Ponto de resolução fora do conjunto canônico das quatorze fases (<c>FaseCanonicaCatalogo</c>).</summary>
+    /// <summary>Ponto de resolução fora do conjunto canônico de fases (<c>FaseCanonicaCatalogo</c>).</summary>
     public const string PontoResolucaoInvalido = "FatoCandidato.PontoResolucaoInvalido";
 
     /// <summary>Referência de onde/como o valor do fato é produzido (ADR-0116) ausente.</summary>
