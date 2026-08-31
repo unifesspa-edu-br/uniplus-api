@@ -4,8 +4,10 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -58,6 +60,9 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, dataDeCorte),
             processoSeletivoRepository,
             obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
             CancellationToken.None);
 
         dto.Should().NotBeNull();
@@ -86,6 +91,46 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         }
     }
 
+    [Fact(DisplayName = "CA-16: regra que referencia cadastro inexistente aparece reprovada na consulta, não aprovada por vacuidade")]
+    public async Task Consulta_ComRegraDeReferenciaOrfa_ReprovaComOMotivoDaOrfandade()
+    {
+        // Sem esta conferência, a consulta pública diria que o processo está conforme
+        // instantes antes de a publicação recusá-lo por referência órfã: o avaliador é
+        // domínio puro e lê "modalidade não ofertada" — que aprova vazio — onde na verdade
+        // há uma modalidade que não existe.
+        ProcessoSeletivo processo = ProcessoBase();
+        ObrigatoriedadeLegal regraOrfa = NovaRegra(
+            "CONSULTA-ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO"));
+
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([regraOrfa]);
+
+        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
+            .Returns(processo);
+
+        IModalidadeReader modalidadeReader = Substitute.For<IModalidadeReader>();
+        modalidadeReader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((ModalidadeView?)null);
+
+        ConformidadeLegalProcessoSeletivoDto? dto = await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, new DateOnly(2026, 1, 1)),
+            processoSeletivoRepository,
+            obrigatoriedadeLegalRepository,
+            modalidadeReader,
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CancellationToken.None);
+
+        dto.Should().NotBeNull();
+        RegraAvaliadaDto avaliada = dto!.Regras.Should().ContainSingle().Which;
+        avaliada.Aprovada.Should().BeFalse(
+            "a publicação recusa esta regra — a consulta não pode dizer que ela está cumprida");
+        avaliada.Motivo.Should().Contain("LB_PPl", "o motivo tem de dizer qual referência não existe");
+    }
+
     [Fact(DisplayName = "Processo inexistente devolve null, sem consultar o catálogo de obrigatoriedades")]
     public async Task ProcessoInexistente_DevolveNull()
     {
@@ -98,10 +143,19 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             new ObterConformidadeLegalProcessoSeletivoQuery(Guid.CreateVersion7(), new DateOnly(2026, 1, 1)),
             processoSeletivoRepository,
             obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
             CancellationToken.None);
 
         dto.Should().BeNull();
         _ = await obrigatoriedadeLegalRepository.DidNotReceive().ObterVigentesParaTipoProcessoAsync(
             Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
+
+    private static ProcessoSeletivo ProcessoBase() =>
+        ProcessoSeletivo.Criar(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 }
