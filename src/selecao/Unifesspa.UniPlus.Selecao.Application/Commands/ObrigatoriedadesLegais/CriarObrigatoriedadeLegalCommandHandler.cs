@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
-using System.Text;
-
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -25,6 +23,8 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         IObrigatoriedadeLegalRepository repository,
         ITipoProcessoReader tipoProcessoReader,
         ITipoEtapaReader tipoEtapaReader,
+        IModalidadeReader modalidadeReader,
+        ITipoDocumentoReader tipoDocumentoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -32,6 +32,8 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
+        ArgumentNullException.ThrowIfNull(modalidadeReader);
+        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         if (!await TipoProcessoEhUniversalOuAtivoAsync(command.TipoProcessoCodigo, tipoProcessoReader, cancellationToken).ConfigureAwait(false))
@@ -39,37 +41,15 @@ public static class CriarObrigatoriedadeLegalCommandHandler
             return Result<Guid>.Failure(TipoProcessoNaoEncontradoOuInativo(command.TipoProcessoCodigo));
         }
 
-        // Issue #1071: uma obrigatoriedade nova só pode usar código de tipo de etapa ativo —
-        // a validação de fronteira (shape) já garantiu que o predicado existe; aqui é a
-        // checagem cross-módulo (existência + atividade) que só o handler pode fazer.
-        //
-        // O código é normalizado (Trim) ANTES de persistir, não só na consulta ao reader: se
-        // guardássemos o valor com espaços supérfluos, a regra seria aceita na criação (o
-        // reader normaliza a busca) mas nunca mais bateria em AvaliadorConformidadeLegal, que
-        // compara por igualdade ordinal exata contra o código congelado da etapa.
-        PredicadoObrigatoriedade predicado = command.Predicado;
-        if (predicado is EtapaObrigatoria etapaObrigatoria)
+        Result<PredicadoObrigatoriedade> predicadoResult = await ReferenciasDoPredicado
+            .NormalizarEValidarAsync(command.Predicado, tipoEtapaReader, modalidadeReader, tipoDocumentoReader, cancellationToken)
+            .ConfigureAwait(false);
+        if (predicadoResult.IsFailure)
         {
-            // TipoEtapaCodigo é non-nullable só em compile-time: FluentValidation só garante
-            // Predicado não-nulo (RuleFor(x => x.Predicado).NotNull()), sem descer aos campos do
-            // subtipo polimórfico — e System.Text.Json não impõe NRT em runtime, então um
-            // payload com "tipoEtapaCodigo": null desserializa sem erro. Sem o '?.', isso seria
-            // NullReferenceException nesta linha (500) em vez de 422 pelo reader logo abaixo.
-            //
-            // NFC além do Trim: TipoEtapaSnapshot.Criar já congela o código da etapa em NFC
-            // (mesma normalização do payload canônico) — sem normalizar aqui também, um código
-            // digitado em forma decomposta aprovaria a checagem de existência (o reader
-            // normaliza a busca) mas nunca bateria ordinalmente contra o código congelado da
-            // etapa em AvaliadorConformidadeLegal.
-            string codigoNormalizado = (etapaObrigatoria.TipoEtapaCodigo?.Trim() ?? string.Empty)
-                .Normalize(NormalizationForm.FormC);
-            if (!await TipoEtapaEhAtivoAsync(codigoNormalizado, tipoEtapaReader, cancellationToken).ConfigureAwait(false))
-            {
-                return Result<Guid>.Failure(TipoEtapaNaoEncontradoOuInativo(codigoNormalizado));
-            }
-
-            predicado = etapaObrigatoria with { TipoEtapaCodigo = codigoNormalizado };
+            return Result<Guid>.Failure(predicadoResult.Error!);
         }
+
+        PredicadoObrigatoriedade predicado = predicadoResult.Value!;
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(
             command.RegraCodigo,
@@ -141,14 +121,4 @@ public static class CriarObrigatoriedadeLegalCommandHandler
     internal static DomainError TipoProcessoNaoEncontradoOuInativo(string codigo) => new(
         "ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo",
         $"Tipo de processo seletivo '{codigo?.Trim()}' não encontrado ou não está ativo.");
-
-    internal static async Task<bool> TipoEtapaEhAtivoAsync(
-        string codigo,
-        ITipoEtapaReader tipoEtapaReader,
-        CancellationToken cancellationToken) =>
-        await tipoEtapaReader.ObterAtivoPorCodigoAsync(codigo ?? string.Empty, cancellationToken).ConfigureAwait(false) is not null;
-
-    internal static DomainError TipoEtapaNaoEncontradoOuInativo(string codigo) => new(
-        "ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo",
-        $"Tipo de etapa '{codigo?.Trim()}' não encontrado ou não está ativo.");
 }

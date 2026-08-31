@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
-using System.Text;
-
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -25,6 +23,8 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         IObrigatoriedadeLegalRepository repository,
         ITipoProcessoReader tipoProcessoReader,
         ITipoEtapaReader tipoEtapaReader,
+        IModalidadeReader modalidadeReader,
+        ITipoDocumentoReader tipoDocumentoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -32,6 +32,8 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
+        ArgumentNullException.ThrowIfNull(modalidadeReader);
+        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ObrigatoriedadeLegal? regra = await repository
@@ -51,29 +53,15 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
             return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoProcessoNaoEncontradoOuInativo(command.TipoProcessoCodigo));
         }
 
-        // Mesma normalização do Criar: o código é aparado ANTES de persistir, não só na
-        // consulta ao reader — do contrário a regra aceita na atualização nunca mais bateria
-        // em AvaliadorConformidadeLegal (igualdade ordinal exata contra o código congelado).
-        PredicadoObrigatoriedade predicado = command.Predicado;
-        if (predicado is EtapaObrigatoria etapaObrigatoria)
+        Result<PredicadoObrigatoriedade> predicadoResult = await ReferenciasDoPredicado
+            .NormalizarEValidarAsync(command.Predicado, tipoEtapaReader, modalidadeReader, tipoDocumentoReader, cancellationToken)
+            .ConfigureAwait(false);
+        if (predicadoResult.IsFailure)
         {
-            // Mesma defesa do Criar: TipoEtapaCodigo pode chegar null em runtime apesar do tipo
-            // non-nullable (System.Text.Json não impõe NRT; FluentValidation só valida Predicado
-            // não-nulo, não os campos do subtipo) — sem o '?.' seria NullReferenceException (500)
-            // em vez de 422 pelo reader logo abaixo. NFC pelo mesmo motivo do Criar: o código
-            // congelado da etapa (TipoEtapaSnapshot) é normalizado em NFC — sem normalizar aqui
-            // também, forma decomposta aprovaria a existência mas nunca bateria ordinalmente.
-            string codigoNormalizado = (etapaObrigatoria.TipoEtapaCodigo?.Trim() ?? string.Empty)
-                .Normalize(NormalizationForm.FormC);
-            if (!await CriarObrigatoriedadeLegalCommandHandler
-                    .TipoEtapaEhAtivoAsync(codigoNormalizado, tipoEtapaReader, cancellationToken)
-                    .ConfigureAwait(false))
-            {
-                return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoEtapaNaoEncontradoOuInativo(codigoNormalizado));
-            }
-
-            predicado = etapaObrigatoria with { TipoEtapaCodigo = codigoNormalizado };
+            return Result.Failure(predicadoResult.Error!);
         }
+
+        PredicadoObrigatoriedade predicado = predicadoResult.Value!;
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(
             command.RegraCodigo,

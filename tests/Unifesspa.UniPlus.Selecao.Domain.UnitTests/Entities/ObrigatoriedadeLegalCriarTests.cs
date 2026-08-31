@@ -267,4 +267,72 @@ public sealed class ObrigatoriedadeLegalCriarTests
         regra.Categoria.Should().Be(CategoriaObrigatoriedade.Outros);
         regra.VigenciaFim.Should().BeNull();
     }
+
+    [Theory(DisplayName = "Predicado com código em branco é recusado pela factory, sem chegar a persistir")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Criar_PredicadoComCodigoEmBranco_Falha(string? codigo)
+    {
+        // Código em branco nunca casa com o valor congelado no processo seletivo, que a
+        // avaliação de conformidade compara por igualdade ordinal: a cláusula legal existiria
+        // como cumprida sem exigir nada de ninguém.
+        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
+            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
+            categoria: CategoriaObrigatoriedade.Etapa,
+            regraCodigo: "ETAPA_SEM_CODIGO",
+            predicado: new EtapaObrigatoria(codigo!),
+            descricaoHumana: "Edital deve incluir a etapa.",
+            baseLegal: "Lei 12.711/2012 art.1º",
+            vigenciaInicio: new DateOnly(2026, 1, 1));
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoComCodigoEmBranco");
+    }
+
+    [Fact(DisplayName = "Documento por modalidade sem o código do tipo de documento é recusado")]
+    public void Criar_DocumentoParaModalidadeSemTipoDocumento_Falha()
+    {
+        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
+            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
+            categoria: CategoriaObrigatoriedade.Outros,
+            regraCodigo: "DOCUMENTO_SEM_TIPO",
+            predicado: new DocumentoObrigatorioParaModalidade("LB_PPI", "  "),
+            descricaoHumana: "Modalidade exige o documento.",
+            baseLegal: "Lei 12.711/2012 art.1º",
+            vigenciaInicio: new DateOnly(2026, 1, 1));
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoComCodigoEmBranco");
+    }
+
+    [Fact(DisplayName = "Atualizar para modalidades mínimas com código em branco na lista é recusado")]
+    public void Atualizar_ModalidadesMinimasComCodigoEmBranco_Falha()
+    {
+        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
+            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
+            categoria: CategoriaObrigatoriedade.Outros,
+            regraCodigo: "MODALIDADES_MINIMAS",
+            predicado: new ModalidadesMinimas(["AC"]),
+            descricaoHumana: "Edital deve ofertar as modalidades.",
+            baseLegal: "Lei 12.711/2012 art.1º",
+            vigenciaInicio: new DateOnly(2026, 1, 1)).Value!;
+
+        Result r = regra.Atualizar(
+            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
+            categoria: CategoriaObrigatoriedade.Outros,
+            regraCodigo: "MODALIDADES_MINIMAS",
+            predicado: new ModalidadesMinimas(["AC", "   "]),
+            descricaoHumana: "Edital deve ofertar as modalidades.",
+            baseLegal: "Lei 12.711/2012 art.1º",
+            vigenciaInicio: new DateOnly(2026, 1, 1),
+            vigenciaFim: null,
+            atoNormativoUrl: null,
+            portariaInternaCodigo: null);
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.ModalidadesMinimasVazia");
+        regra.Predicado.Should().BeOfType<ModalidadesMinimas>()
+            .Which.Codigos.Should().ContainSingle("a recusa acontece antes de aplicar o payload");
+    }
 }

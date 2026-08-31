@@ -48,6 +48,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ObrigatoriedadeLegal.NaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.obrigatoriedade_legal.nao_encontrada", "ObrigatoriedadeLegal não encontrada")),
         new("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo", "Tipo de processo seletivo não encontrado ou não está ativo")),
         new("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_etapa_nao_encontrado_ou_inativo", "Tipo de etapa não encontrado ou não está ativo")),
+        new("ObrigatoriedadeLegal.ModalidadeNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.modalidade_nao_encontrada", "Modalidade não encontrada entre as vivas do cadastro")),
+        new("ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_documento_nao_encontrado", "Tipo de documento não encontrado entre os vivos do cadastro")),
+        new("ObrigatoriedadeLegal.ModalidadesMinimasVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.modalidades_minimas_vazia", "Exigência de modalidades mínimas sem nenhuma modalidade")),
+        new("ObrigatoriedadeLegal.PredicadoComCodigoEmBranco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.predicado_com_codigo_em_branco", "Predicado da regra legal com código em branco")),
         // Configuração do Processo Seletivo (Story #758, UNI-REQ-0014/0015) — F0.
         // Invariantes do agregado-raiz nesta fatia: etapas e atendimento
         // especializado (ADR-0067). Vagas/bônus/desempate/classificação entram
