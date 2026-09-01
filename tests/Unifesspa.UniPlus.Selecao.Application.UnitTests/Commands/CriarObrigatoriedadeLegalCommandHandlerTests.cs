@@ -493,4 +493,23 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             .Which.Necessidades.Should().Equal(["DEFICIENCIA_VISUAL"]);
     }
 
+
+    [Fact(DisplayName = "Critério de desempate com caractere decomponível é encontrado como o catálogo o grava")]
+    public async Task Handle_CriterioDesempateDecomposto_Encontra()
+    {
+        // O catálogo apara o código e não compõe. Se a conferência normalizasse em NFC,
+        // um código gravado em forma decomposta seria procurado na forma composta — e
+        // dado como inexistente, embora esteja lá.
+        const string CodigoDecomposto = "CRITERIO_ANTIGUIDADE\u0301";
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new DesempateDeveIncluir($" {CodigoDecomposto} ")),
+            Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(CodigoDecomposto),
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
 }
