@@ -8,6 +8,8 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Npgsql;
+
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
@@ -103,6 +105,8 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST cria (201) e o GET subsequente retorna os campos + HATEOAS")]
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
+        await LiberarSlotDoSeedAsync("CHAMADA");
+
         var body = new
         {
             codigo = "CHAMADA",
@@ -157,6 +161,8 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
     public async Task Criar_CodigoDuplicado_Retorna409()
     {
+        await LiberarSlotDoSeedAsync("LISTA_ESPERA");
+
         var body = new { codigo = "LISTA_ESPERA", nome = "Lista de espera", donoTipico = "CEPS", origemData = "PROPRIA" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -227,4 +233,23 @@ public sealed class FaseCanonicaEndpointTests
         request.Content = JsonContent.Create(body);
         return await client.SendAsync(request);
     }
+    /// <summary>
+    /// Libera o slot de um codigo ocupado pelo seed das quinze fases. Desde que
+    /// <c>FaseCanonica</c> passou a nascer semeada, todo codigo do vocabulario ja tem
+    /// linha viva ao subir o banco de teste, e um POST de criacao responderia 409.
+    /// O filtro pelo prefixo do id restringe o apagamento as linhas do seed.
+    /// </summary>
+    private async Task LiberarSlotDoSeedAsync(string codigo)
+    {
+        await using var conexao = new NpgsqlConnection(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+
+        await using NpgsqlCommand comando = conexao.CreateCommand();
+        comando.CommandText =
+            "DELETE FROM configuracao.fase_canonica " +
+            "WHERE id::text LIKE 'f45e0000-0000-7000-8000-%' AND codigo = @codigo";
+        comando.Parameters.AddWithValue("codigo", codigo);
+        await comando.ExecuteNonQueryAsync();
+    }
+
 }

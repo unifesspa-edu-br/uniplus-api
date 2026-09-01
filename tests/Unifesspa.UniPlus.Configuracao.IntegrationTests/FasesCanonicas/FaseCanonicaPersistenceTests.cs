@@ -6,6 +6,8 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Npgsql;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -41,6 +43,7 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "Criar persiste os campos e fica visível pelo leitor cross-módulo")]
     public async Task Insert_PersisteEFicaVisivelPeloReader()
     {
+        await LiberarSlotDoSeedAsync("INSCRICAO");
         FaseCanonica fase = Fase("INSCRICAO", "Inscrição", "CEPS");
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
@@ -67,6 +70,8 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segunda fase viva com mesmo código")]
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
+        await LiberarSlotDoSeedAsync("ENSALAMENTO");
+
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento", "CEPS"));
@@ -87,6 +92,7 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do código")]
     public async Task SoftDelete_LiberaSlot()
     {
+        await LiberarSlotDoSeedAsync("CLASSIFICACAO");
         FaseCanonica fase = Fase("CLASSIFICACAO", "Classificação", "CEPS");
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -119,6 +125,8 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "CHECK de banco aceita a fase de solicitação de isenção")]
     public async Task Check_AceitaSolicitacaoIsencao()
     {
+        await LiberarSlotDoSeedAsync(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao);
+
         FaseCanonica fase = Fase(
             FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, "Solicitação de isenção", "CEPS");
 
@@ -218,6 +226,8 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "Reader.ListarVivosAsync ordena por código ascendente e exclui soft-deleted")]
     public async Task ListarVivos_OrdenaPorCodigoEExcluiSoftDeleted()
     {
+        await LiberarSlotDoSeedAsync("MATRICULA", "HETEROIDENTIFICACAO", "CHAMADA");
+
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.FasesCanonicas.Add(Fase("MATRICULA", "Matrícula", "CRCA"));
@@ -246,4 +256,30 @@ public sealed class FaseCanonicaPersistenceTests
 
     private static FaseCanonica Fase(string codigo, string nome, string dono) =>
         FaseCanonica.Criar(codigo, nome, null, dono, false, false, null, false, false, false, "PROPRIA").Value!;
+
+    /// <summary>
+    /// Libera o slot de um código ocupado pelo seed das quinze fases, usando o mesmo
+    /// soft-delete que o sistema usa — o índice único é parcial
+    /// (<c>WHERE is_deleted = false</c>), então a linha semeada sai do caminho sem ser
+    /// destruída.
+    /// </summary>
+    /// <remarks>
+    /// Desde que <c>FaseCanonica</c> passou a nascer semeada, todo código do vocabulário
+    /// já tem linha viva ao subir o banco de teste. Testes que exercitam a criação
+    /// precisam do slot livre; usar o soft-delete em vez de apagar a linha mantém o teste
+    /// sobre o comportamento real do cadastro.
+    /// </remarks>
+    private async Task LiberarSlotDoSeedAsync(params string[] codigos)
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        // SQL direto em vez de LINQ: `Codigo` e value object com converter, e um
+        // `Contains` sobre ele nao traduz para SQL. O filtro pelo prefixo do id
+        // restringe o apagamento as linhas do seed.
+        const string comando =
+            "DELETE FROM configuracao.fase_canonica " +
+            "WHERE id::text LIKE 'f45e0000-0000-7000-8000-%' AND codigo = ANY(@p0)";
+
+        await ctx.Database.ExecuteSqlRawAsync(comando, new NpgsqlParameter("p0", codigos));
+    }
 }

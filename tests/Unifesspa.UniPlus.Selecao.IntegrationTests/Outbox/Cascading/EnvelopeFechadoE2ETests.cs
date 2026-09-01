@@ -629,6 +629,19 @@ public sealed class EnvelopeFechadoE2ETests
                     tiposBancaIds = new[] { Catalogos.TipoBancaId },
                     regraRecurso = (object?)null,
                 },
+                new
+                {
+                    // A etapa pontuada exige a fase que agrupa etapas no mesmo cronograma
+                    // (ProcessoSeletivo.EtapaSemFaseDeAvaliacao). No catalogo fechado, so a
+                    // avaliacao tem esse sinalizador — e ela nao publica ato.
+                    ordem = 3,
+                    faseCanonicaId = Catalogos.FaseAvaliacaoId,
+                    inicio = new DateTimeOffset(2026, 3, 22, 8, 0, 0, TimeSpan.Zero),
+                    fim = new DateTimeOffset(2026, 3, 22, 18, 0, 0, TimeSpan.Zero),
+                    atoProduzidoCodigo = (string?)null,
+                    tiposBancaIds = Array.Empty<Guid>(),
+                    regraRecurso = (object?)null,
+                },
             ];
 
             return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/cronograma-fases", fases, ifMatch: null);
@@ -821,6 +834,7 @@ public sealed class EnvelopeFechadoE2ETests
         Guid ReferenciaReservaDemograficaId,
         Guid FaseInscricaoId,
         Guid FaseResultadoPreliminarId,
+        Guid FaseAvaliacaoId,
         Guid TipoBancaId,
         Guid TipoProcessoId,
         IReadOnlyDictionary<string, Guid> ModalidadeIdPorCodigo);
@@ -829,8 +843,9 @@ public sealed class EnvelopeFechadoE2ETests
     /// Semeia, direto pelo <c>DbContext</c> de cada módulo (mesmo Postgres compartilhado pela
     /// <see cref="CascadingFixture"/>), os catálogos que os handlers de Seleção resolvem e que não
     /// têm <c>HasData</c>: Unidade administradora (Organização Institucional), Curso + LocalOferta
-    /// + OfertaCurso + ReferenciaReservaDemografica (Configuração), FaseCanonica + TipoBanca
-    /// (Configuração). As 10 <see cref="Modalidade"/> federais já vêm semeadas por migration
+    /// + OfertaCurso + ReferenciaReservaDemografica (Configuração), TipoBanca (Configuração).
+    /// As quinze <see cref="FaseCanonica"/> passaram a vir semeadas por migration e são apenas
+    /// resolvidas aqui pelo código. As 10 <see cref="Modalidade"/> federais já vêm semeadas por migration
     /// (<see cref="ModalidadeSeed"/>) — só referenciadas aqui pelo código.
     /// </summary>
     private static async Task<CatalogosSemeados> SemearCatalogosRicosAsync(CascadingApiFactory api, string sufixo)
@@ -864,6 +879,7 @@ public sealed class EnvelopeFechadoE2ETests
         Guid referenciaDemograficaId;
         Guid faseInscricaoId;
         Guid faseResultadoPreliminarId;
+        Guid faseAvaliacaoId;
         Guid tipoBancaId;
         Guid tipoProcessoId;
         await using (AsyncServiceScope scopeConfig = api.Services.CreateAsyncScope())
@@ -902,24 +918,24 @@ public sealed class EnvelopeFechadoE2ETests
             referenciaResult.IsSuccess.Should().BeTrue(referenciaResult.Error?.Message);
             ReferenciaReservaDemografica referencia = referenciaResult.Value!;
 
-            Result<FaseCanonica> faseInscricaoResult = FaseCanonica.Criar(
-                "INSCRICAO", "Inscrição", null, "CRCA",
-                agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
-                produzResultado: false, resultadoDefinitivo: false, coletaInscricao: true,
-                origemData: "PROPRIA");
-            faseInscricaoResult.IsSuccess.Should().BeTrue(faseInscricaoResult.Error?.Message);
-            FaseCanonica faseInscricao = faseInscricaoResult.Value!;
+            // As fases canonicas nascem semeadas pela migration — o vocabulario e fechado,
+            // entao criar aqui colidiria com o indice unico do codigo vivo. O teste passa a
+            // usar as linhas que o proprio sistema garante existirem.
+            List<FaseCanonica> fasesVivas = await config.FasesCanonicas.ToListAsync().ConfigureAwait(false);
+            FaseCanonica faseInscricao = fasesVivas.Single(f =>
+                string.Equals(f.Codigo.Valor, "INSCRICAO", StringComparison.Ordinal));
 
             // "Apenas a fase de avaliação agrupa etapas pontuadas" (FaseCanonica.Criar) — o
             // único código do catálogo fechado com essa permissão é AVALIACAO
             // (FaseCanonicaCatalogo.CodigoAvaliacao).
-            Result<FaseCanonica> faseResultadoPreliminarResult = FaseCanonica.Criar(
-                FaseCanonicaCatalogo.CodigoAvaliacao, "Avaliação", null, "CEPS",
-                agrupaEtapas: true, permiteComplementacao: false, baseLegal: null,
-                produzResultado: true, resultadoDefinitivo: false, coletaInscricao: false,
-                origemData: "PROPRIA");
-            faseResultadoPreliminarResult.IsSuccess.Should().BeTrue(faseResultadoPreliminarResult.Error?.Message);
-            FaseCanonica faseResultadoPreliminar = faseResultadoPreliminarResult.Value!;
+            // A fase precisa produzir resultado — o cronograma declara o ato dela, e a
+            // conformidade recusa vagas ofertadas sem nenhuma fase que produza. A avaliacao
+            // agrupa etapas, mas nao publica ato: quem publica e o resultado.
+            FaseCanonica faseResultadoPreliminar = fasesVivas.Single(f =>
+                string.Equals(f.Codigo.Valor, "RESULTADO_PRELIMINAR", StringComparison.Ordinal));
+
+            FaseCanonica faseAvaliacao = fasesVivas.Single(f =>
+                string.Equals(f.Codigo.Valor, FaseCanonicaCatalogo.CodigoAvaliacao, StringComparison.Ordinal));
 
             Result<TipoBanca> bancaResult = TipoBanca.Criar(
                 "BANCA_ANALISE_DOCUMENTAL", "Banca de análise documental", "RESULTADO_PRELIMINAR", null);
@@ -928,8 +944,6 @@ public sealed class EnvelopeFechadoE2ETests
 
             config.OfertasCurso.Add(oferta);
             config.ReferenciasReservaDemografica.Add(referencia);
-            config.FasesCanonicas.Add(faseInscricao);
-            config.FasesCanonicas.Add(faseResultadoPreliminar);
             config.TiposBanca.Add(banca);
             await config.SaveChangesAsync().ConfigureAwait(false);
 
@@ -937,6 +951,7 @@ public sealed class EnvelopeFechadoE2ETests
             referenciaDemograficaId = referencia.Id;
             faseInscricaoId = faseInscricao.Id;
             faseResultadoPreliminarId = faseResultadoPreliminar.Id;
+            faseAvaliacaoId = faseAvaliacao.Id;
             tipoBancaId = banca.Id;
             tipoProcessoId = await config.TiposProcesso
                 .Where(tipo => tipo.Codigo == "SiSU" && tipo.Ativo)
@@ -949,7 +964,7 @@ public sealed class EnvelopeFechadoE2ETests
             .ToDictionary(i => i.Codigo, i => i.Id, StringComparer.Ordinal);
 
         return new CatalogosSemeados(
-            unidadeId, ofertaCursoId, referenciaDemograficaId, faseInscricaoId, faseResultadoPreliminarId, tipoBancaId, tipoProcessoId,
+            unidadeId, ofertaCursoId, referenciaDemograficaId, faseInscricaoId, faseResultadoPreliminarId, faseAvaliacaoId, tipoBancaId, tipoProcessoId,
             modalidadeIdPorCodigo);
     }
 
