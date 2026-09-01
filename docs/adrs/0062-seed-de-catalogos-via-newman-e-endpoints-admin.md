@@ -331,6 +331,13 @@ guarda o nome anterior.)
 O critério reclassifica exatamente o que a prática já havia movido — sinal de que descreve a razão
 que os autores seguiram sem nomear.
 
+A exceção é `FaseCanonica`, que a prática **não** havia movido: a classificação aqui é
+prospectiva. A implementação, e com ela a emenda da
+[ADR-0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) — que hoje declara a fase
+100% CRUD-administrada, sem seed —, vêm na mudança que a semeia. Até lá, base recém-migrada
+continua sem as fases, que é justamente o problema que motivou este critério: as arestas de
+`PrecedenciaFase` já nascem semeadas apontando para vértices que não existem.
+
 ### Efeito sobre os arquivos de seed previstos
 
 `seeds/seed-modalidades.json`, `seeds/seed-tipos-documento.json`, `seeds/seed-tipos-etapa.json` e
