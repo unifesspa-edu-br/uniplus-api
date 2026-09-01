@@ -16,12 +16,25 @@ public sealed class OfertaTipoDeficiencia : EntityBase
 {
     public Guid OfertaAtendimentoEspecializadoId { get; private set; }
     public Guid TipoDeficienciaOrigemId { get; private set; }
+
+    /// <summary>
+    /// Código do tipo no cadastro, congelado junto com a origem e o nome. É por ele
+    /// que a regra legal referencia o tipo: o nome é rótulo editorial e muda sem
+    /// aviso — renomear "Deficiência visual" para "Visual" faria toda regra escrita
+    /// com o rótulo antigo deixar de casar.
+    /// </summary>
+    public string TipoDeficienciaCodigo { get; private set; } = string.Empty;
+
     public string TipoDeficienciaNome { get; private set; } = string.Empty;
 
     private OfertaTipoDeficiencia() { }
 
-    public static OfertaTipoDeficiencia Criar(Guid tipoDeficienciaOrigemId, string tipoDeficienciaNome)
+    public static OfertaTipoDeficiencia Criar(
+        Guid tipoDeficienciaOrigemId,
+        string tipoDeficienciaCodigo,
+        string tipoDeficienciaNome)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDeficienciaCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDeficienciaNome);
         if (tipoDeficienciaOrigemId == Guid.Empty)
         {
@@ -31,6 +44,7 @@ public sealed class OfertaTipoDeficiencia : EntityBase
         return new OfertaTipoDeficiencia
         {
             TipoDeficienciaOrigemId = tipoDeficienciaOrigemId,
+            TipoDeficienciaCodigo = tipoDeficienciaCodigo.Trim(),
             TipoDeficienciaNome = tipoDeficienciaNome.Trim(),
         };
     }

@@ -480,7 +480,7 @@ public sealed class RestauradorDeConfiguracaoTests
             ValoresSelecionaveisCongelados: valoresSelecionaveis,
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico());
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.13", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.14", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
