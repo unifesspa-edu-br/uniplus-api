@@ -49,6 +49,47 @@ public sealed class ConformidadeLegalGateTests
     private static ObrigatoriedadeLegal RegraQueAprova() =>
         NovaRegra("GATE-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
+    [Fact(DisplayName = "Regra vigente que referencia tipo de documento inexistente recusa a publicação")]
+    public async Task Publicar_ComRegraQueReferenciaTipoDocumentoInexistente_Recusa()
+    {
+        // A cobertura de referência órfã existia só para modalidade — o dublê de cadastro
+        // de tipos de documento devolvia sempre o código citado, então este caminho nunca
+        // era exercitado. O gate recusa pelo mesmo motivo: uma regra que exige documento
+        // que não existe no cadastro não pode ser avaliada, e aprovar em silêncio seria
+        // publicar sob cláusula que ninguém pode cumprir.
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(
+            NovaRegra("GATE-DOC-ORFAO", new DocumentoObrigatorioParaModalidade("LB_PPI", "TIPO_QUE_NAO_EXISTE")));
+        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
+
+        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
+            new PublicarProcessoSeletivoCommand(
+                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
+            RepositorioDoProcesso(processo),
+            RepositorioDeDocumento(processo.Id),
+            canonicalizer, new ResolvedorFusoDeTeste(),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            UsuarioAutenticado(),
+            TipoDeAtoReader(),
+            Substitute.For<IVagaDeLinhagemReader>(),
+            obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
+            new RelogioFixo(Agora),
+            CancellationToken.None);
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.RegraLegalInavaliavel");
+        resposta.Error!.Message.Should().Contain("TIPO_QUE_NAO_EXISTE");
+        eventos.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "Regra vigente que referencia modalidade inexistente recusa a publicação em vez de aprovar em silêncio")]
     public async Task Publicar_ComRegraQueReferenciaCadastroInexistente_Recusa()
     {
