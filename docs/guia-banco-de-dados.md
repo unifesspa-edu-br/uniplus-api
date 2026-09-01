@@ -467,6 +467,7 @@ Story que **cria o agregado** (`<Nome>` em `Selecao.Domain.Entities`) com todos 
 - A coluna FK introduzida na Etapa 1 ainda é `NULL`able. Adiciona `HasOne(e => e.<Nome>).WithMany().HasForeignKey(e => e.<Nome>Id)` em Configuration.
 - Enum legado (`Selecao.Domain.Enums.<EnumLegado>`) é **removido nesta etapa** — não na Etapa 1 — para evitar refactor amplo enquanto schema migration ainda está em vôo.
 - Seed via Newman popula linhas-template em todos os ambientes (dev local, CI, HML, prod) — o CD não cria entries em runtime.
+- **Qual caminho de seed usar** depende da natureza do dado, per [ADR-0062](adrs/0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) Emenda 2: vocabulário normativo, que não tem autor a registrar, entra por `HasData` em migration; dado que a instituição administra entra pelos endpoints admin, com o `sub` real do JWT. Update é sempre pelo endpoint, nos dois casos.
 
 Referência: [Story #455](https://github.com/unifesspa-edu-br/uniplus-api/issues/455) — promove `TipoProcesso → TipoEdital` entidade.
 
