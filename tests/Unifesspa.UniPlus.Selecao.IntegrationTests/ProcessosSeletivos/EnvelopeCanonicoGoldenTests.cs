@@ -459,7 +459,7 @@ public sealed class EnvelopeCanonicoGoldenTests
 
         atual.Should().Be(LerFixture(),
             "o envelope mudou de forma sem que a golden fixture fosse atualizada. Se a mudança é intencional, " +
-            "bumpe a schema_version e congele a forma nova numa fixture própria.");
+            "rode UPDATE_ENVELOPE_FIXTURE=1 e leve o diff da fixture para a revisão — que é todo o ponto dela.");
     }
 
     /// <summary>

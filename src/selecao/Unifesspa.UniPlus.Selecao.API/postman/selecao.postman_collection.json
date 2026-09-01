@@ -2811,7 +2811,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"numero\": \"001/2026\",\n  \"periodoInscricaoInicio\": \"2026-01-01\",\n  \"periodoInscricaoFim\": \"2026-01-31\",\n  \"documentoEditalId\": \"{{documento_edital_id}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"\n  }\n}",
+              "raw": "{\n  \"numero\": \"001/2026\",\n  \"documentoEditalId\": \"{{documento_edital_id}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3184,7 +3184,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"Correção do prazo de inscrição (smoke)\",\n  \"numero\": \"001/2026-R1\",\n  \"periodoInscricaoInicio\": \"2026-01-02\",\n  \"periodoInscricaoFim\": \"2026-02-09\",\n  \"documentoEditalId\": \"{{documento_edital_id_ret}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
+              "raw": "{\n  \"motivo\": \"Correção do número do Edital (smoke)\",\n  \"numero\": \"001/2026-R1\",\n  \"documentoEditalId\": \"{{documento_edital_id_ret}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3733,7 +3733,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"numero\": \"001/2026-R2\",\n  \"periodoInscricaoInicio\": \"2026-01-02\",\n  \"periodoInscricaoFim\": \"2026-02-10\",\n  \"documentoEditalId\": \"{{documento_edital_id_fecha}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
+              "raw": "{\n  \"numero\": \"001/2026-R2\",\n  \"documentoEditalId\": \"{{documento_edital_id_fecha}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"

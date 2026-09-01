@@ -586,12 +586,12 @@ public sealed class ProcessoSeletivoPublicarTests
             "Ordem) poderia resolver outra data e quebrar o round-trip");
     }
 
-    [Fact(DisplayName = "B-03: ResolverDataReferenciaFatos converte para o fuso America/Sao_Paulo — um Fim de madrugada em UTC cai no dia anterior local")]
-    public void ResolverDataReferenciaFatos_FimDeMadrugadaEmUtc_ResolveODiaAnteriorEmBrasilia()
+    [Fact(DisplayName = "B-03: ResolverDataReferenciaFatos converte para o fuso institucional — um Fim de madrugada em UTC cai no dia anterior local")]
+    public void ResolverDataReferenciaFatos_FimDeMadrugadaEmUtc_ResolveODiaAnteriorNoFusoInstitucional()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        // 2026-03-02T01:30:00Z, subtraídas 3h de fuso (America/Sao_Paulo, sem horário de
+        // 2026-03-02T01:30:00Z, subtraídas 3h de fuso (America/Belem, sem horário de
         // verão), cai em 2026-03-01T22:30 local — dia DIFERENTE do dia UTC. Uma resolução
         // que apenas truncasse a data (sem converter o fuso) devolveria 02/03, um dia
         // inteiro adiantado em relação ao que o administrador viu na tela.
@@ -627,7 +627,7 @@ public sealed class ProcessoSeletivoPublicarTests
             .IsSuccess.Should().BeTrue();
 
         processo.ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 3, 1),
-            "o Fim (2026-03-02T01:30:00Z) convertido para America/Sao_Paulo (UTC-3, sem DST) é 2026-03-01T22:30 — o dia LOCAL, não o dia UTC");
+            "o Fim (2026-03-02T01:30:00Z) convertido para o fuso institucional (America/Belem, UTC-3, sem DST) é 2026-03-01T22:30 — o dia LOCAL, não o dia UTC");
     }
 
     // ── Story #554 (PR #903, issue #548) — CA-05: coerência consequência↔ação da vaga ──
