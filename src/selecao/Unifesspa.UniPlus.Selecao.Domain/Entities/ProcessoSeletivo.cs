@@ -2057,13 +2057,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// chama os MESMOS quatro predicados para projetar um item por razão. A precedência
     /// (qual falha é devolvida primeiro) continua decidida só aqui, pela ORDEM dos
     /// <c>if</c>; o checklist não reordena nem filtra — só projeta todos os quatro.
-    /// </remarks>
-    /// <remarks>
-    /// Público, e não privado como os demais gates do cronograma: o handler o antecipa antes de
-    /// canonicalizar (issue #1350). Sem isso a recusa da fase de coleta sem janela chegaria depois
-    /// de PendenciaPreCanonicalizacao, e um processo que também tivesse referência temporal
-    /// irresolvível receberia pelo endpoint a recusa da referência — diagnóstico obscuro para quem
-    /// só precisa saber que falta datar a inscrição.
+    /// <para>
+    /// Público porque o handler o antecipa antes de canonicalizar (issue #1350): sem isso, um
+    /// processo com fase de coleta sem janela E referência temporal irresolvível receberia pelo
+    /// endpoint a recusa da referência, diagnóstico obscuro para quem só precisa datar a inscrição.
+    /// </para>
     /// </remarks>
     public DomainError? PendenciaDoCronograma()
     {
@@ -2128,11 +2126,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _etapas.Count > 0 && !_cronogramaFases.Any(static f => f.AgrupaEtapas);
 
     /// <summary>Origem InscricaoPropria sem nenhuma fase que colete inscrição (§3.4).</summary>
-    /// <summary>
-    /// A fase que ancora o período de inscrição quando ela existe e está sem janela (issue #1350)
-    /// — <see langword="null"/> quando não há fase de coleta, ou quando a que há tem os dois
-    /// extremos definidos.
-    /// </summary>
+    private bool HaInscricaoPropriaSemFaseDeColeta() =>
+        OrigemCandidatos == OrigemCandidatos.InscricaoPropria && !_cronogramaFases.Any(static f => f.ColetaInscricao);
+
+    /// <summary>A fase que ancora o período de inscrição, quando existe e está sem janela (issue #1350).</summary>
     /// <remarks>
     /// Incide sobre a MESMA fase que <see cref="FaseQueAncoraOPeriodoDeInscricao"/> elege, e não
     /// sobre "alguma fase de coleta": fossem conjuntos diferentes, a projeção poderia tirar o
@@ -2142,9 +2139,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         FaseQueAncoraOPeriodoDeInscricao() is { } ancora && (ancora.Inicio is null || ancora.Fim is null)
             ? ancora
             : null;
-
-    private bool HaInscricaoPropriaSemFaseDeColeta() =>
-        OrigemCandidatos == OrigemCandidatos.InscricaoPropria && !_cronogramaFases.Any(static f => f.ColetaInscricao);
 
     /// <summary>Há vagas ofertadas (VoBase > 0), mas nenhuma fase do cronograma produz resultado (§3.4).</summary>
     private bool HaVagasSemFaseQueProduzResultado() =>
@@ -2617,35 +2611,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// que o envelope congela como <c>dataReferenciaFatos</c> (Story #554, PR #903, B-03) — o
     /// mesmo par (Tipo, âncora) que <see cref="PendenciaDaReferenciaTemporalFatos"/> já
     /// provou resolvível antes da transição chamar este método; aqui só se resolve, sem
-    /// revalidar. A virada do dia UTC→local é a razão de
-    /// existir deste método em vez de o encoder ler <see cref="DateTimeOffset"/> cru.
+    /// revalidar. A virada do dia UTC→local é a razão de existir deste método, em vez de o
+    /// encoder ler <see cref="DateTimeOffset"/> cru.
     /// </summary>
     /// <returns>
     /// <see langword="null"/> quando não há gatilho por <c>FAIXA_ETARIA</c> — a resolução
     /// não foi provada nem é necessária, e congelar uma data não pedida por ninguém seria
     /// dado morto no envelope, não uma garantia a mais.
     /// </returns>
-    /// <summary>
-    /// A fase do cronograma que ancora o período de inscrição do Edital (issue #1350) — a de
-    /// menor <see cref="FaseCronograma.Ordem"/> entre as que coletam inscrição, ou
-    /// <see langword="null"/> quando o certame não coleta inscrição pelo sistema.
-    /// </summary>
-    /// <remarks>
-    /// Nada impede mais de uma fase com <see cref="FaseCronograma.ColetaInscricao"/>, e a coleção
-    /// preserva a ordem de ENTRADA, não a de <c>Ordem</c> — mesma armadilha que
-    /// <see cref="ResolverDataReferenciaFatos"/> documenta: o envelope escreve as fases ordenadas
-    /// por <c>Ordem</c>, então escolher posicionalmente faria a reidratação eleger outra fase e
-    /// quebrar o round-trip. <c>Ordem</c> é única por processo, o que torna a escolha determinística.
-    /// <para>
-    /// Havendo duas janelas de coleta, o período publicado é o da primeira. É consequência aceita:
-    /// a segunda janela (tipicamente remanejamento) não estende o período declarado no Edital.
-    /// </para>
-    /// </remarks>
-    public FaseCronograma? FaseQueAncoraOPeriodoDeInscricao() => _cronogramaFases
-        .Where(static f => f.ColetaInscricao)
-        .OrderBy(static f => f.Ordem)
-        .FirstOrDefault();
-
     /// <param name="fusoHorario">
     /// Zona em que a âncora vira dia civil. Vem da canonicalização — na publicação é o fuso
     /// institucional corrente, e ao provar uma versão já publicada é o que ela congelou. Deixar o
@@ -2701,6 +2674,27 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instante, fusoHorario).DateTime);
     }
+
+    /// <summary>
+    /// A fase do cronograma que ancora o período de inscrição do Edital (issue #1350) — a de
+    /// menor <see cref="FaseCronograma.Ordem"/> entre as que coletam inscrição, ou
+    /// <see langword="null"/> quando o certame não coleta inscrição pelo sistema.
+    /// </summary>
+    /// <remarks>
+    /// Nada impede mais de uma fase com <see cref="FaseCronograma.ColetaInscricao"/>, e a coleção
+    /// preserva a ordem de ENTRADA, não a de <c>Ordem</c> — mesma armadilha que
+    /// <see cref="ResolverDataReferenciaFatos"/> documenta: o envelope escreve as fases ordenadas
+    /// por <c>Ordem</c>, então escolher posicionalmente faria a reidratação eleger outra fase e
+    /// quebrar o round-trip. <c>Ordem</c> é única por processo, o que torna a escolha determinística.
+    /// <para>
+    /// Havendo duas janelas de coleta, o período publicado é o da primeira. É consequência aceita:
+    /// a segunda janela (tipicamente remanejamento) não estende o período declarado no Edital.
+    /// </para>
+    /// </remarks>
+    public FaseCronograma? FaseQueAncoraOPeriodoDeInscricao() => _cronogramaFases
+        .Where(static f => f.ColetaInscricao)
+        .OrderBy(static f => f.Ordem)
+        .FirstOrDefault();
 
     /// <summary>
     /// CA-03 (Story #554, issue #892): um gatilho DNF sobre um

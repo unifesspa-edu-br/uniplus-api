@@ -88,27 +88,6 @@ public static class RetificarProcessoSeletivoCommandHandler
                 "Somente um documento confirmado pode ser referenciado na retificação.")), []);
         }
 
-        // Issue #1350: precede a resolução do período porque o cronograma é a fonte dele. Um
-        // processo de inscrição própria sem fase de coleta tem duas leituras possíveis — "falta a
-        // fase" e "informe o período" —, e a que orienta é a primeira: o operador precisa saber
-        // que o cronograma está incompleto, não que preencheu um campo de menos.
-        if (processo.PendenciaDoCronograma() is { } pendenciaCronograma)
-        {
-            return (Result.Failure(pendenciaCronograma), []);
-        }
-
-        Result<DadosEdital> dadosResult = ResolucaoDoPeriodoDeInscricao.Resolver(
-            processo,
-            command.Numero,
-            command.PeriodoInscricaoInicio,
-            command.PeriodoInscricaoFim,
-            command.DocumentoEditalId);
-        if (dadosResult.IsFailure)
-        {
-            return (Result.Failure(dadosResult.Error!), []);
-        }
-
-        DadosEdital dados = dadosResult.Value!;
 
         // O ato é registrado depois, por mensagem durável (ADR-0108). O que o catálogo de
         // Publicações recusaria tem de ser recusado AQUI, com 422, antes de qualquer escrita
@@ -196,11 +175,28 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCascata), []);
         }
 
-        // Resolvido aqui, e não junto da canonicalização, porque a conferência legal abaixo
-        // precisa do fuso para derivar o dia civil do início da inscrição (issue #1350). O ponto
-        // é entre a cascata e a conferência de propósito: preserva todas as precedências já
-        // fixadas e só altera a relação fuso <-> gate legal. Uma falha aqui continua sendo defeito
-        // de instalação, mapeado para 500 — o fuso não vira gate de publicação.
+        // Precede a resolução do período: sem fase de coleta há duas leituras — "falta a
+        // fase" e "informe o período" — e a que orienta é a primeira (issue #1350).
+        if (processo.PendenciaDoCronograma() is { } pendenciaCronograma)
+        {
+            return (Result.Failure(pendenciaCronograma), []);
+        }
+
+        Result<DadosEdital> dadosResult = ResolucaoDoPeriodoDeInscricao.Resolver(
+            processo,
+            command.Numero,
+            command.PeriodoInscricaoInicio,
+            command.PeriodoInscricaoFim,
+            command.DocumentoEditalId);
+        if (dadosResult.IsFailure)
+        {
+            return (Result.Failure(dadosResult.Error!), []);
+        }
+
+        DadosEdital dados = dadosResult.Value!;
+
+        // Antecipado: a conferência legal abaixo precisa do fuso para derivar o dia civil do
+        // início da inscrição. Falha aqui é defeito de instalação (500), não gate (issue #1350).
         Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
         if (fusoResult.IsFailure)
         {
