@@ -382,9 +382,9 @@ nenhum dos dois comandos:
 
 Onde o EF geraria qualquer um deles, a migration é escrita à mão: `Sql` com `INSERT … ON CONFLICT
 DO NOTHING` para acrescentar. **Corrigir e remover têm forma própria** — descrita adiante em
-"Como se corrige um item semeado que nasceu errado" —, com o comando guardado pelas colunas de
-auditoria e, quando o alvo é referenciado, pela ausência de referência viva. O que não existe é o
-`UpdateData`/`DeleteData` **gerado pelo scaffold**, que não tem nenhuma dessas guardas.
+"Corrigir um item semeado que nasceu errado" —, com o comando guardado conforme o contrato do
+agregado. O que não existe é o `UpdateData`/`DeleteData` **gerado pelo scaffold**, que não tem
+guarda nenhuma.
 
 ### Corrigir um item semeado que nasceu errado
 
