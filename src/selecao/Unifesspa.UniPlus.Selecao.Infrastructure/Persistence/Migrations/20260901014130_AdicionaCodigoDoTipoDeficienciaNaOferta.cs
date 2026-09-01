@@ -26,16 +26,25 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             // tipo tenha sido removido depois de configurado. Descartar a configuração
             // do operador quando ela pode ser reconstruída seria perda evitável.
             //
-            // O guard de existência não é zelo excessivo: cada módulo migra o próprio
-            // schema, e nada garante que o de Configuração já exista quando esta
-            // migration roda — num banco onde Seleção migra primeiro, referenciar a
-            // tabela diretamente abortaria a migração inteira. Sem a tabela também não
-            // há oferta configurada a preservar, então pular o backfill é correto.
+            // O guard não é zelo excessivo: cada módulo migra o próprio schema, e nada
+            // garante o estado do de Configuração quando esta migration roda. Num banco
+            // onde Seleção migra primeiro, a tabela pode não existir; num que esteja numa
+            // revisão anterior à que introduziu o código, a tabela existe mas a coluna
+            // não — e referenciar qualquer um dos dois diretamente abortaria a migração,
+            // num caso por `undefined_table` e no outro por `undefined_column`.
+            //
+            // Por isso a checagem é pela COLUNA, que cobre os dois casos: sem ela não há
+            // código a copiar, e sem a tabela não há sequer oferta a preservar.
             migrationBuilder.Sql(
                 """
                 DO $$
                 BEGIN
-                    IF to_regclass('configuracao.tipo_deficiencia') IS NOT NULL THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                         WHERE table_schema = 'configuracao'
+                           AND table_name = 'tipo_deficiencia'
+                           AND column_name = 'codigo'
+                    ) THEN
                         UPDATE selecao.ofertas_tipo_deficiencia AS oferta
                            SET tipo_deficiencia_codigo = cadastro.codigo
                           FROM configuracao.tipo_deficiencia AS cadastro

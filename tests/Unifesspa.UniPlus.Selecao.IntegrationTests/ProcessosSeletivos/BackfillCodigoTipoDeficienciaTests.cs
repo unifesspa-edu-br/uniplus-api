@@ -89,6 +89,40 @@ public sealed class BackfillCodigoTipoDeficienciaTests : IAsyncLifetime
             + "produziria snapshot que nenhuma regra casaria");
     }
 
+    [Fact(DisplayName = "Migration atravessa cadastro em revisão anterior, sem a coluna de código")]
+    public async Task Migration_ComCadastroSemColunaDeCodigo_NaoAborta()
+    {
+        // Cada módulo migra o próprio schema, e nada garante o estado do de Configuração
+        // aqui. Se a tabela existir numa revisão anterior à que introduziu o código, uma
+        // referência direta à coluna abortaria a migração inteira por `undefined_column`.
+        await using (SelecaoDbContext contexto = CriarContexto())
+        {
+            IMigrator migrator = contexto.GetService<IMigrator>();
+            await migrator.MigrateAsync(MigrationAnterior);
+        }
+
+        await using (NpgsqlConnection conexao = new(_postgres.GetConnectionString()))
+        {
+            await conexao.OpenAsync();
+            await ExecutarAsync(conexao,
+                """
+                CREATE SCHEMA IF NOT EXISTS configuracao;
+                CREATE TABLE IF NOT EXISTS configuracao.tipo_deficiencia (
+                    id uuid PRIMARY KEY,
+                    nome varchar(200) NOT NULL,
+                    is_deleted boolean NOT NULL DEFAULT false
+                );
+                """);
+        }
+
+        await using (SelecaoDbContext contexto = CriarContexto())
+        {
+            Func<Task> migrar = async () => await contexto.Database.MigrateAsync();
+            await migrar.Should().NotThrowAsync(
+                "o guard confere a coluna, não só a tabela");
+        }
+    }
+
     private SelecaoDbContext CriarContexto()
     {
         DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
