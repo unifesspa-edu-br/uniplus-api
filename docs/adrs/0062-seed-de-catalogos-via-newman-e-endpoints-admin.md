@@ -435,9 +435,19 @@ DELETE FROM configuracao.categoria_documento
                     WHERE t.categoria = configuracao.categoria_documento.codigo);
 ```
 
-Havendo referência, a remoção não acontece por migration: é decisão que exige tratar o que aponta
-para a linha, e isso é ato administrativo. Onde a linha tiver dono, idem — e a divergência que
-sobra é deliberada, não acidente de idade do banco.
+Havendo referência, a resposta depende de **quem aponta**:
+
+- **Referência que é ela mesma linha semeada e intocada** — um `TipoDocumento` do seed apontando
+  para uma `CategoriaDocumento` do seed: a remoção continua sendo por migration, em cascata e na
+  ordem certa (primeiro quem referencia, depois o referenciado), cada comando sob as mesmas guardas
+  de auditoria. Mandar o operador fazer pela tela consertaria só o ambiente onde ele rodasse, e a
+  base seguinte recriaria as duas linhas obsoletas — o problema de replay que esta seção existe
+  para evitar.
+- **Referência com dono** — linha que o operador criou ou editou: a remoção sai da migration. Ela
+  exige decidir o que fazer com o que aponta, e essa decisão tem responsável.
+
+Onde a própria linha a remover tiver dono, idem. A divergência que sobra é deliberada, não acidente
+de idade do banco.
 
 **A proibição é do catálogo administrável, não da migration.** Nos catálogos de fato —
 `FatoCandidato` e `FatoValorDominio` — a migration de seed é o único caminho de escrita que existe,
