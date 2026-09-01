@@ -182,6 +182,36 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             Arg.Any<string>(), new DateOnly(2026, 1, 1), Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Fuso irresolvível propaga como defeito de instalação, e não como processo inexistente")]
+    public async Task Consulta_ComFusoIrresolvivel_PropagaAFalha()
+    {
+        // O fuso irresolvível é defeito de instalação, mapeado para 500 pelos gates de publicação.
+        // Se a consulta o convertesse em null, o endpoint devolveria 404 — diria que o processo
+        // não existe e esconderia a configuração quebrada que ela deveria antecipar.
+        ProcessoSeletivo processo = ProcessoBase();
+
+        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
+            .Returns(processo);
+
+        Func<Task> consulta = () => ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeLegalProcessoSeletivoQuery(
+                processo.Id,
+                PeriodoInscricaoInformado: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3))),
+            processoSeletivoRepository,
+            Substitute.For<IObrigatoriedadeLegalRepository>(),
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            new ResolvedorFusoIndisponivelDeTeste(),
+            CancellationToken.None);
+
+        await consulta.Should().ThrowAsync<InvalidOperationException>(
+            "404 diria que o processo não existe, quando o que falta é a base de fusos do ambiente");
+    }
+
     [Fact(DisplayName = "Processo inexistente devolve null, sem consultar o catálogo de obrigatoriedades")]
     public async Task ProcessoInexistente_DevolveNull()
     {
