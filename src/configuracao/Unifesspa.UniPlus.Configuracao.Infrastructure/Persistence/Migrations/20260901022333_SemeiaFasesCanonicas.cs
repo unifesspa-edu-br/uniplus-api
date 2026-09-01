@@ -56,12 +56,21 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Apaga só pelo prefixo determinístico do seed — linha que o operador
-            // cadastrou tem outro id e permanece.
+            // Apaga só o que o seed criou E ninguém tocou. O prefixo do id exclui a linha
+            // que o operador cadastrou por conta própria; as duas colunas de auditoria
+            // excluem a linha semeada que ele depois editou — ela mantém o id
+            // determinístico, então o prefixo sozinho a levaria junto, apagando a edição
+            // e a trilha de forma física, sem o soft-delete que o cadastro usa.
+            //
+            // É a mesma regra do Up, na direção inversa: a migration não altera nem remove
+            // o que tem dono. Rollback de base onde alguém editou deixa a linha para trás —
+            // preferível a destruir trabalho administrativo.
             migrationBuilder.Sql(
                 """
                 DELETE FROM configuracao.fase_canonica
-                 WHERE id::text LIKE 'f45e0000-0000-7000-8000-%';
+                 WHERE id::text LIKE 'f45e0000-0000-7000-8000-%'
+                   AND updated_at IS NULL
+                   AND created_by IS NULL;
                 """);
         }
     }
