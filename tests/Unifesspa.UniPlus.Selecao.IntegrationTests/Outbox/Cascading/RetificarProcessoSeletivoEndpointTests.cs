@@ -195,8 +195,6 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     private static object NovoCorpoPublicacao(Guid documentoEditalId) => new
     {
         numero = "001/2026",
-        periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
         ato = new
         {
@@ -213,8 +211,6 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     {
         motivo,
         numero = "001/2026-R1",
-        periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(40)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
         ato = new
         {

@@ -126,6 +126,15 @@ public static class FecharRetificacaoCommandHandler
                 "Somente um documento confirmado pode ser referenciado no fechamento da retificação.")), []);
         }
 
+        // Issue #1350: precede a resolução do período porque o cronograma é a fonte dele. Um
+        // processo de inscrição própria sem fase de coleta tem duas leituras possíveis — "falta a
+        // fase" e "informe o período" —, e a que orienta é a primeira: o operador precisa saber
+        // que o cronograma está incompleto, não que preencheu um campo de menos.
+        if (processo.PendenciaDoCronograma() is { } pendenciaCronograma)
+        {
+            return (Result.Failure(pendenciaCronograma), []);
+        }
+
         Result<DadosEdital> dadosResult = ResolucaoDoPeriodoDeInscricao.Resolver(
             processo,
             command.Numero,
@@ -199,16 +208,6 @@ public static class FecharRetificacaoCommandHandler
         if (processo.PendenciaDaCascata() is { } pendenciaCascata)
         {
             return (Result.Failure(pendenciaCascata), []);
-        }
-
-        // Issue #1350: antecipado aqui porque a projeção do período depende da janela da fase
-        // que coleta inscrição. Deixá-lo para dentro de Publicar() faria o endpoint devolver a
-        // recusa de PendenciaPreCanonicalizacao — que roda antes, no handler — quando as duas se
-        // aplicam, e o operador leria "referência temporal irresolvível" em vez de "falta datar a
-        // fase de inscrição".
-        if (processo.PendenciaDoCronograma() is { } pendenciaCronograma)
-        {
-            return (Result.Failure(pendenciaCronograma), []);
         }
 
         // Resolvido aqui, e não junto da canonicalização, porque a conferência legal abaixo

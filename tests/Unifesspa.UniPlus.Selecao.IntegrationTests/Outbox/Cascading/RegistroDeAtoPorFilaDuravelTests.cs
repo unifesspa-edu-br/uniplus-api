@@ -663,8 +663,6 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         {
             motivo = "Correção do prazo de inscrição",
             numero = "001/2026-R1",
-            periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(40)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             documentoEditalId = documentoId,
             ato = new
             {
@@ -715,8 +713,6 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         object corpo = new
         {
             numero = "001/2026",
-            periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             documentoEditalId = documentoId,
             ato = new
             {

@@ -303,8 +303,6 @@ public sealed class CicloDaRetificacaoEndpointTests
                 ? new
                 {
                     numero = "001/2026-R",
-                    periodoInscricaoInicio = HojeMais(1),
-                    periodoInscricaoFim = HojeMais(40),
                     documentoEditalId = documentoId,
                     ato,
                 }
@@ -312,8 +310,6 @@ public sealed class CicloDaRetificacaoEndpointTests
                 {
                     motivo,
                     numero = "001/2026-R",
-                    periodoInscricaoInicio = HojeMais(1),
-                    periodoInscricaoFim = HojeMais(40),
                     documentoEditalId = documentoId,
                     ato,
                 };
@@ -381,8 +377,6 @@ public sealed class CicloDaRetificacaoEndpointTests
             Content = JsonContent.Create(new
             {
                 numero = "001/2026",
-                periodoInscricaoInicio = Hoje(),
-                periodoInscricaoFim = HojeMais(30),
                 documentoEditalId = documentoId,
                 ato = new
                 {

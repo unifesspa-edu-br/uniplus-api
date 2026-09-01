@@ -69,8 +69,9 @@ public sealed class CascadingScenariosTests
         var command = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
-            PeriodoInscricaoInicio: DateTimeOffset.UtcNow,
-            PeriodoInscricaoFim: DateTimeOffset.UtcNow.AddDays(30),
+            // O processo do cenário tem fase que coleta inscrição: o período vem dela (#1350).
+            PeriodoInscricaoInicio: null,
+            PeriodoInscricaoFim: null,
             DocumentoEditalId: documentoId,
             Ato: DadosDoAtoDeTeste.Padrao);
 

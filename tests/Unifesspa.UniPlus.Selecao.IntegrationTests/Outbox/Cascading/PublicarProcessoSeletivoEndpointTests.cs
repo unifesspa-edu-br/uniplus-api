@@ -452,8 +452,6 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     private static object NovoCorpoPublicacao(Guid documentoEditalId, string? numero = null) => new
     {
         numero,
-        periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
         ato = new
         {

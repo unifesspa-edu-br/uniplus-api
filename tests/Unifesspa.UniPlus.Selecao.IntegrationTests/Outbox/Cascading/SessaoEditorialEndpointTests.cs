@@ -574,8 +574,6 @@ public sealed class SessaoEditorialEndpointTests
                 {
                     motivo,
                     numero = "001/2026-R1",
-                    periodoInscricaoInicio = HojeMais(1),
-                    periodoInscricaoFim = HojeMais(40),
                     documentoEditalId = documentoId,
                     ato = NovoAto("EDITAL_RETIFICACAO"),
                 }),
@@ -612,8 +610,6 @@ public sealed class SessaoEditorialEndpointTests
             Content = JsonContent.Create(new
             {
                 numero = "001/2026",
-                periodoInscricaoInicio = Hoje(),
-                periodoInscricaoFim = HojeMais(30),
                 documentoEditalId = documentoId,
                 ato = NovoAto(),
             }),
