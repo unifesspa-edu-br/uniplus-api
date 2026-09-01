@@ -923,8 +923,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         "001/2026",
-        new DateOnly(2026, 1, 1),
-        new DateOnly(2026, 1, 31),
+        new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+        new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
         new Guid("dddd0000-0000-4000-8000-000000000001")).Value!;
 
     /// <summary>

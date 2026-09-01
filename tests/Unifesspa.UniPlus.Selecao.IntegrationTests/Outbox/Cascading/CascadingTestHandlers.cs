@@ -47,8 +47,8 @@ public sealed class FalharAposPublicarCascadingHandler
 
         Result<DadosEdital> dadosResult = DadosEdital.Criar(
             numero: null,
-            periodoInscricaoInicio: DateOnly.FromDateTime(DateTime.UtcNow),
-            periodoInscricaoFim: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)),
+            periodoInscricaoInicio: DateTimeOffset.UtcNow,
+            periodoInscricaoFim: DateTimeOffset.UtcNow.AddDays(30),
             documentoEditalId: documento.Id);
 
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId));

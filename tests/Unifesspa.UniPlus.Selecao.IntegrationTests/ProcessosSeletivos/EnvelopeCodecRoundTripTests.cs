@@ -411,8 +411,8 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("etapas.0.notaMinima", "12.3400")]
     [InlineData("etapas.0.carater", "Classificatoria")]
     [InlineData("periodo.numero", "099/2026")]
-    [InlineData("periodo.inicio", "2026-03-09")]
-    [InlineData("periodo.fim", "2026-04-30")]
+    [InlineData("periodo.inicio", "2026-03-09T03:00:00Z")]
+    [InlineData("periodo.fim", "2026-04-30T02:59:59Z")]
     [InlineData("distribuicao.0.regraDistribuicao.versao", "v9")]
     [InlineData("distribuicao.0.referenciaDemografica.censoReferencia", "Censo IBGE 2010")]
     [InlineData("distribuicao.0.referenciaDemografica.baseLegal", "Lei 14.723/2023 art. 3º")]
@@ -786,8 +786,8 @@ public sealed class EnvelopeCodecRoundTripTests
 
         DadosEdital dados = DadosEdital.Criar(
             numero: "099/2026",
-            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
-            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             documentoEditalId: Guid.CreateVersion7()).Value!;
         const string hashDocumento = "2222222222222222222222222222222222222222222222222222222222222222";
 
@@ -996,8 +996,8 @@ public sealed class EnvelopeCodecRoundTripTests
 
         DadosEdital dados = DadosEdital.Criar(
             numero: "099/2026",
-            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
-            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             documentoEditalId: Guid.CreateVersion7()).Value!;
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
 

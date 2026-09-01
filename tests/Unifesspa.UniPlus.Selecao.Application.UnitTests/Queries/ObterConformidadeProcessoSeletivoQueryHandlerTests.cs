@@ -111,7 +111,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         // A mesma pendência que o checklist agora denuncia é a que Publicar já recusava — as
         // duas superfícies concordam depois da correção (a prova da bicondicional).
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            DadosEdital.Criar("001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!,
+            DadosEdital.Criar("001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!,
             "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", new string('a', 64), "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         publicar.IsFailure.Should().BeTrue();
@@ -180,7 +180,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         // checklist inteiramente verde TEM de significar que Publicar aceita. Fora do escopo
         // estrutural (não afetado aqui): conformidade legal, documento confirmado, tipo de ato.
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            DadosEdital.Criar("001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!,
+            DadosEdital.Criar("001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!,
             "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", new string('a', 64), "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
 
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);

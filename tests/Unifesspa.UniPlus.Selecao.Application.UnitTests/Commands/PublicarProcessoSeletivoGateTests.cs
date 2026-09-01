@@ -89,8 +89,10 @@ public sealed class PublicarProcessoSeletivoGateTests
             new PublicarProcessoSeletivoCommand(
                 ProcessoSeletivoId: processo.Id,
                 Numero: "001/2026",
-                PeriodoInscricaoInicio: new DateOnly(2026, 1, 1),
-                PeriodoInscricaoFim: new DateOnly(2026, 1, 31),
+                // Processo sem cronograma, portanto sem fase que colete inscrição: aqui o período
+                // continua vindo do ato, e não da fase (issue #1350).
+                PeriodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+                PeriodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
                 DocumentoEditalId: documento.Id,
                 Ato: new DadosDoAto(
                     Orgao: "CEPS",
@@ -218,8 +220,8 @@ public sealed class PublicarProcessoSeletivoGateTests
             new PublicarProcessoSeletivoCommand(
                 ProcessoSeletivoId: processo.Id,
                 Numero: "001/2026",
-                PeriodoInscricaoInicio: new DateOnly(2026, 1, 1),
-                PeriodoInscricaoFim: new DateOnly(2026, 1, 31),
+                PeriodoInscricaoInicio: null,
+                PeriodoInscricaoFim: null,
                 DocumentoEditalId: documento.Id,
                 Ato: new DadosDoAto(
                     Orgao: "CEPS",

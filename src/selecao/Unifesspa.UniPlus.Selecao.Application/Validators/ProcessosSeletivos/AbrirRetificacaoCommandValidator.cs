@@ -84,16 +84,6 @@ public sealed class FecharRetificacaoCommandValidator : AbstractValidator<Fechar
         RuleFor(x => x.Numero)
             .MaximumLength(NumeroMaxLength)
             .WithMessage($"Número do Edital deve ter no máximo {NumeroMaxLength} caracteres.");
-
-        RuleFor(x => x.PeriodoInscricaoInicio)
-            .NotEqual(default(DateOnly))
-            .WithMessage("Início do período de inscrição é obrigatório.");
-
-        RuleFor(x => x.PeriodoInscricaoFim)
-            .NotEqual(default(DateOnly))
-            .WithMessage("Fim do período de inscrição é obrigatório.")
-            .GreaterThanOrEqualTo(x => x.PeriodoInscricaoInicio)
-            .WithMessage("O fim do período de inscrição não pode anteceder o início.");
     }
 }
 

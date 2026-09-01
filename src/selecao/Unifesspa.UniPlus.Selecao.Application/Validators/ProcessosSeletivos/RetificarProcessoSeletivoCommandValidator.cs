@@ -51,18 +51,5 @@ public sealed class RetificarProcessoSeletivoCommandValidator : AbstractValidato
         RuleFor(x => x.Numero)
             .MaximumLength(NumeroMaxLength)
             .WithMessage($"Número do Edital deve ter no máximo {NumeroMaxLength} caracteres.");
-
-        // DateOnly não-nullable: campo omitido do JSON binda para
-        // default(DateOnly) — sem esta checagem, os dois defaults passariam
-        // trivialmente na comparação abaixo, congelando período inválido.
-        RuleFor(x => x.PeriodoInscricaoInicio)
-            .NotEqual(default(DateOnly))
-            .WithMessage("Início do período de inscrição é obrigatório.");
-
-        RuleFor(x => x.PeriodoInscricaoFim)
-            .NotEqual(default(DateOnly))
-            .WithMessage("Fim do período de inscrição é obrigatório.")
-            .GreaterThanOrEqualTo(x => x.PeriodoInscricaoInicio)
-            .WithMessage("O fim do período de inscrição não pode anteceder o início.");
     }
 }

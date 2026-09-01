@@ -2590,6 +2590,27 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// não foi provada nem é necessária, e congelar uma data não pedida por ninguém seria
     /// dado morto no envelope, não uma garantia a mais.
     /// </returns>
+    /// <summary>
+    /// A fase do cronograma que ancora o período de inscrição do Edital (issue #1350) — a de
+    /// menor <see cref="FaseCronograma.Ordem"/> entre as que coletam inscrição, ou
+    /// <see langword="null"/> quando o certame não coleta inscrição pelo sistema.
+    /// </summary>
+    /// <remarks>
+    /// Nada impede mais de uma fase com <see cref="FaseCronograma.ColetaInscricao"/>, e a coleção
+    /// preserva a ordem de ENTRADA, não a de <c>Ordem</c> — mesma armadilha que
+    /// <see cref="ResolverDataReferenciaFatos"/> documenta: o envelope escreve as fases ordenadas
+    /// por <c>Ordem</c>, então escolher posicionalmente faria a reidratação eleger outra fase e
+    /// quebrar o round-trip. <c>Ordem</c> é única por processo, o que torna a escolha determinística.
+    /// <para>
+    /// Havendo duas janelas de coleta, o período publicado é o da primeira. É consequência aceita:
+    /// a segunda janela (tipicamente remanejamento) não estende o período declarado no Edital.
+    /// </para>
+    /// </remarks>
+    public FaseCronograma? FaseQueAncoraOPeriodoDeInscricao() => _cronogramaFases
+        .Where(static f => f.ColetaInscricao)
+        .OrderBy(static f => f.Ordem)
+        .FirstOrDefault();
+
     /// <param name="fusoHorario">
     /// Zona em que a âncora vira dia civil. Vem da canonicalização — na publicação é o fuso
     /// institucional corrente, e ao provar uma versão já publicada é o que ela congelou. Deixar o

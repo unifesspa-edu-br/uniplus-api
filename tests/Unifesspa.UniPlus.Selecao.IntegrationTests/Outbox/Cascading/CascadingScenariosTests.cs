@@ -69,8 +69,8 @@ public sealed class CascadingScenariosTests
         var command = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
-            PeriodoInscricaoInicio: DateOnly.FromDateTime(DateTime.UtcNow),
-            PeriodoInscricaoFim: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)),
+            PeriodoInscricaoInicio: DateTimeOffset.UtcNow,
+            PeriodoInscricaoFim: DateTimeOffset.UtcNow.AddDays(30),
             DocumentoEditalId: documentoId,
             Ato: DadosDoAtoDeTeste.Padrao);
 

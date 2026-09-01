@@ -135,7 +135,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         const string hashDocumento = "2222222222222222222222222222222222222222222222222222222222222222";
         DadosEdital dados = DadosEdital.Criar(
-            "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!;
+            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
         // As SEIS categorias do IBGE — o vocabulário completo que o catálogo declarava íntegro
         // no instante da publicação. É este dicionário, e só ele, que o formulário lido depois

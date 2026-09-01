@@ -12,10 +12,15 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// </summary>
 /// <param name="ProcessoSeletivoId">Processo avaliado.</param>
 /// <param name="DataReferencia">
-/// Data de corte (Story #852 §3.1). Explícita e obrigatória — um processo em
-/// rascunho não tem <c>DadosEdital.PeriodoInscricaoInicio</c> persistido
-/// ainda, e o avaliador nunca lê o relógio (ADR-0068).
+/// Dia em que se pergunta quais obrigatoriedades estavam em vigor (Story #852 §3.1).
+/// <para>
+/// Opcional: quando ausente, o handler o deriva da janela da fase que coleta inscrição, no
+/// fuso institucional — a MESMA derivação que o gate de publicação faz (issue #1350), o que
+/// mantém de pé a garantia do CA-16/CA-17 de que a consulta responde pela data do gate.
+/// Continua aceito explicitamente porque um processo em rascunho pode ainda não ter cronograma
+/// que resolva a data, e o avaliador nunca lê o relógio (ADR-0068).
+/// </para>
 /// </param>
 public sealed record ObterConformidadeLegalProcessoSeletivoQuery(
     Guid ProcessoSeletivoId,
-    DateOnly DataReferencia) : IQuery<ConformidadeLegalProcessoSeletivoDto?>;
+    DateOnly? DataReferencia = null) : IQuery<ConformidadeLegalProcessoSeletivoDto?>;

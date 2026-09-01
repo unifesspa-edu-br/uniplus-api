@@ -252,7 +252,7 @@ public sealed class ValoresSelecionaveisResolverTests
 
         return PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: documento.Id,
                 Ato: new DadosDoAto(
                     Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataPublicacao: new DateOnly(2026, 1, 1),

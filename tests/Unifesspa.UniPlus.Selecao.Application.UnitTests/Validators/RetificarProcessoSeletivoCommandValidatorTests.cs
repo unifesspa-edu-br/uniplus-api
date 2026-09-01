@@ -20,8 +20,8 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
         ProcessoSeletivoId: Guid.CreateVersion7(),
         Motivo: "Correção do prazo de inscrição",
         Numero: "001/2026-R1",
-        PeriodoInscricaoInicio: new DateOnly(2026, 1, 2),
-        PeriodoInscricaoFim: new DateOnly(2026, 2, 1),
+        PeriodoInscricaoInicio: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.FromHours(-3)),
+        PeriodoInscricaoFim: new DateTimeOffset(2026, 2, 1, 23, 59, 59, TimeSpan.FromHours(-3)),
         Ato: new DadosDoAto("CEPS", "EDITAL", 2026, new DateOnly(2026, 1, 2), "Diretor do CEPS", "EDITAL_RETIFICACAO"),
         DocumentoEditalId: Guid.CreateVersion7());
 
@@ -64,28 +64,5 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
 
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo));
-    }
-
-    [Fact(DisplayName = "Fim do período anterior ao início é recusado")]
-    public void PeriodoInvertido_Recusado()
-    {
-        ValidationResult resultado = Validator.Validate(ComandoValido() with
-        {
-            PeriodoInscricaoInicio = new DateOnly(2026, 2, 1),
-            PeriodoInscricaoFim = new DateOnly(2026, 1, 2),
-        });
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.PeriodoInscricaoFim));
-    }
-
-    [Fact(DisplayName = "Período com defaults (campos omitidos) é recusado")]
-    public void PeriodoDefault_Recusado()
-    {
-        ValidationResult resultado = Validator.Validate(ComandoValido() with
-        {
-            PeriodoInscricaoInicio = default,
-            PeriodoInscricaoFim = default,
-        });
-        resultado.IsValid.Should().BeFalse();
     }
 }

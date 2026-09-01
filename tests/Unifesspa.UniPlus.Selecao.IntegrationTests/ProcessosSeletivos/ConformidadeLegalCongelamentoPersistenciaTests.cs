@@ -28,6 +28,14 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     private static readonly SnapshotPublicacaoCanonicalizer Canonicalizer = new();
     private static readonly DateOnly DataDeCorte = new(2026, 1, 1);
 
+    /// <summary>
+    /// A janela da inscrição em horário de Belém — meia-noite local, não UTC. Fosse
+    /// <c>TimeSpan.Zero</c>, o dia civil derivado cairia em 31/12/2025 e a conferência
+    /// responderia pela vigência do dia anterior (issue #1350).
+    /// </summary>
+    private static readonly DateTimeOffset InicioDaInscricao =
+        new(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3));
+
     private readonly ProcessoSeletivoDbFixture _fixture;
 
     public ConformidadeLegalCongelamentoPersistenciaTests(ProcessoSeletivoDbFixture fixture)
@@ -138,8 +146,8 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
 
         Result<DadosEdital> dadosResult = DadosEdital.Criar(
             numero: "001/2026",
-            periodoInscricaoInicio: DataDeCorte,
-            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            periodoInscricaoInicio: InicioDaInscricao,
+            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 

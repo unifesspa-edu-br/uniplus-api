@@ -380,8 +380,8 @@ public sealed class RestauradorDeConfiguracaoTests
         SnapshotPublicacaoCanonicalizer canonicalizer = new();
         DadosEdital dados = DadosEdital.Criar(
             numero: "001/2026",
-            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
-            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             documentoEditalId: Guid.CreateVersion7()).Value!;
         string hashFixo = new('a', 64);
         SnapshotCanonico congelado = canonicalizer.Canonicalizar(

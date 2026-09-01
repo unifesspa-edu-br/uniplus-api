@@ -8,7 +8,7 @@ using Controllers;
 /// </summary>
 public sealed record PublicarProcessoSeletivoRequest(
     string? Numero,
-    DateOnly PeriodoInscricaoInicio,
-    DateOnly PeriodoInscricaoFim,
+    DateTimeOffset? PeriodoInscricaoInicio,
+    DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
     DadosDoAtoRequest Ato);
