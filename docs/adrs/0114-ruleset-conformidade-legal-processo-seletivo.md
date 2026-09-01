@@ -54,6 +54,31 @@ fornece essa data; `ObterVigentesParaTipoProcessoAsync` e
 `ObterObrigatoriedadesAplicaveisQueryHandler` não leem `TimeProvider`,
 `DateTimeOffset.UtcNow` nem `DateTimeOffset.Now`.
 
+### Confirmação revisada (issue #1350, 01/09/2026)
+
+A **decisão não muda**: a data jurídica de referência continua sendo o início do
+período de inscrição. Duas afirmações do parágrafo acima, porém, deixaram de
+descrever o código.
+
+O tipo passou de `DateOnly` a `DateTimeOffset`. O período é projetado da janela da
+fase do cronograma que coleta inscrição, que sempre foi instante — e sem os
+segundos não há como exprimir o último instante de um dia, que é o que a janela de
+isenção exige. Vigência de norma continua sendo por dia; a diferença é que a
+derivação do dia virou explícita, em `DadosEdital.DiaDeReferenciaLegal`, e acontece
+no fuso institucional. Derivá-la sobre UTC faria um certame publicado às 22h de
+Belém responder pela vigência do dia seguinte.
+
+E "o chamador sempre fornece essa data" deixou de valer no caminho principal. Quando
+o processo coleta inscrição, o chamador não informa mais o período — ele vem da
+fase. O que motivou a exigência original permanece atendido: a fonte é persistida,
+congelada no envelope e reproduzível na reidratação, então duas publicações do mesmo
+certame não escolhem datas diferentes sem que o fato jurídico tenha mudado. Segue
+valendo que nenhum ponto do caminho lê o relógio.
+
+A consulta de preflight passou a aceitar a data como opcional e derivá-la da mesma
+forma que o gate. Informá-la continua possível para processo em rascunho, que pode
+ainda não ter cronograma que a resolva.
+
 O ruleset aplicável é a união das regras com `TipoProcessoCodigo = "*"` e das
 regras cujo código é exatamente o código congelado em `ProcessoSeletivo.TipoProcesso`.
 As duas partes obedecem a `VigenciaInicio <= dataReferencia < VigenciaFim`,

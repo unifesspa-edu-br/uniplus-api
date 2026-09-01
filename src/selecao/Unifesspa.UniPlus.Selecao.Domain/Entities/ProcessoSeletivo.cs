@@ -2617,7 +2617,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// que o envelope congela como <c>dataReferenciaFatos</c> (Story #554, PR #903, B-03) — o
     /// mesmo par (Tipo, âncora) que <see cref="PendenciaDaReferenciaTemporalFatos"/> já
     /// provou resolvível antes da transição chamar este método; aqui só se resolve, sem
-    /// revalidar. Fuso <c>America/Sao_Paulo</c> — a virada do dia UTC→local é a razão de
+    /// revalidar. A virada do dia UTC→local é a razão de
     /// existir deste método em vez de o encoder ler <see cref="DateTimeOffset"/> cru.
     /// </summary>
     /// <returns>
