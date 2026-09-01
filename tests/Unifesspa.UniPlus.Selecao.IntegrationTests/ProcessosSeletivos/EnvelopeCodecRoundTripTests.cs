@@ -643,7 +643,7 @@ public sealed class EnvelopeCodecRoundTripTests
         // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
         // EnvelopeCodecV13 já documenta para si).
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.13", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.14", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -793,7 +793,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));
-        congelado.SchemaVersion.Should().Be("0.0.13", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.14", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1004,7 +1004,7 @@ public sealed class EnvelopeCodecRoundTripTests
         EntradaCanonicalizacao entrada = new(
             processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.13", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.14", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

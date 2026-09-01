@@ -53,7 +53,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         Result<OfertaAtendimentoEspecializado> ofertaResult = OfertaAtendimentoEspecializado.Criar(
             condicoes: [OfertaCondicao.Criar(condicaoOrigemId, "PCD", "Pessoa com deficiência")],
             recursos: [OfertaRecurso.Criar(recursoOrigemId, "Ledor")],
-            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(tipoDeficienciaOrigemId, "Deficiência visual")]);
+            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(tipoDeficienciaOrigemId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
         ofertaResult.IsSuccess.Should().BeTrue();
         processo.DefinirOfertaAtendimento(ofertaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

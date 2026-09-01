@@ -39,6 +39,12 @@ public static class LimitesDoEnvelope
     public const int Token = 30;
     public const int BaseLegal = 500;
     public const int CondicaoCodigo = 50;
+
+    /// <summary>
+    /// Código do tipo de deficiência congelado na oferta de atendimento — mesmo teto
+    /// do value object <c>CodigoTipoDeficiencia</c> no cadastro de origem.
+    /// </summary>
+    public const int TipoDeficienciaCodigo = 50;
     public const int NomeDeCadastro = 300;
     public const int MunicipioConvenio = 200;
     public const int CensoReferencia = 20;

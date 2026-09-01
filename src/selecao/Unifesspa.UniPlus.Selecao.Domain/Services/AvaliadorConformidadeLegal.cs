@@ -208,13 +208,20 @@ public static class AvaliadorConformidadeLegal
             return (false, "nenhuma oferta de atendimento especializado cadastrada", null);
         }
 
+        // Comparação pelo CÓDIGO do tipo, não pelo nome. O nome é rótulo editorial e
+        // muda sem aviso: renomear "Deficiência visual" para "Visual" faria toda regra
+        // escrita com o rótulo antigo deixar de casar, e a cláusula legal passaria a
+        // reprovar processos conformes. O código é a identidade estável, e é o que a
+        // escrita da regra agora confere contra o cadastro.
+        //
+        // Ordinal, sem NFC nem tolerância a caixa: o formato fechado do código não tem
+        // caractere componível nem minúscula, então normalizar aqui só mascararia
+        // divergência que a escrita já recusa.
         HashSet<string> ofertados = new(
-            processo.OfertaAtendimento.TiposDeficiencia.Select(
-                static t => t.TipoDeficienciaNome.Normalize(NormalizationForm.FormC)),
-            StringComparer.OrdinalIgnoreCase);
+            processo.OfertaAtendimento.TiposDeficiencia.Select(static t => t.TipoDeficienciaCodigo),
+            StringComparer.Ordinal);
 
-        string[] ausentes = [.. predicado.Necessidades
-            .Where(necessidade => !ofertados.Contains(necessidade.Normalize(NormalizationForm.FormC)))];
+        string[] ausentes = [.. predicado.Necessidades.Where(necessidade => !ofertados.Contains(necessidade))];
 
         return ausentes.Length == 0
             ? (true, null, null)

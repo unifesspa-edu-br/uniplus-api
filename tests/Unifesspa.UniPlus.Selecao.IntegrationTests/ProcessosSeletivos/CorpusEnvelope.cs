@@ -161,8 +161,8 @@ internal static class CorpusEnvelope
                 OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000002"), "Prova ampliada"),
             ], permutar),
             tiposDeficiencia: Ordem<OfertaTipoDeficiencia>([
-                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "Deficiência visual"),
-                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "Deficiência auditiva"),
+                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "DEFICIENCIA_VISUAL", "Deficiência visual"),
+                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
             ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional()], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

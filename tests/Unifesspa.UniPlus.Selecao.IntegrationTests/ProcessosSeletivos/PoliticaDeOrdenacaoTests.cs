@@ -613,8 +613,8 @@ public sealed class PoliticaDeOrdenacaoTests
         OfertaRecurso recursoComOrigemMenor = OfertaRecurso.Criar(IdFixo(1), "Zeta Recurso");
         OfertaRecurso recursoComOrigemMaior = OfertaRecurso.Criar(IdFixo(2), "Alfa Recurso");
 
-        OfertaTipoDeficiencia tipoComOrigemMenor = OfertaTipoDeficiencia.Criar(IdFixo(1), "Zeta Tipo");
-        OfertaTipoDeficiencia tipoComOrigemMaior = OfertaTipoDeficiencia.Criar(IdFixo(2), "Alfa Tipo");
+        OfertaTipoDeficiencia tipoComOrigemMenor = OfertaTipoDeficiencia.Criar(IdFixo(1), "ZETA_TIPO", "Zeta Tipo");
+        OfertaTipoDeficiencia tipoComOrigemMaior = OfertaTipoDeficiencia.Criar(IdFixo(2), "ALFA_TIPO", "Alfa Tipo");
 
         new[] { condicaoComOrigemMenor, condicaoComOrigemMaior }.OrderBy(static c => c.CondicaoNome, StringComparer.Ordinal).Select(static c => c.CondicaoNome)
             .Should().Equal(["Alfa Nome", "Zeta Nome"], "pré-condição: ordenar pelo nome (proxy de conteúdo) dá o oposto do oráculo de identidade abaixo");

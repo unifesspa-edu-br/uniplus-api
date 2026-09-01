@@ -49,6 +49,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("Token", LimitesDoEnvelope.Token, typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.AcaoQuandoIndeferido)),
         ("BaseLegal", LimitesDoEnvelope.BaseLegal, typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.BaseLegal)),
         ("CondicaoCodigo", LimitesDoEnvelope.CondicaoCodigo, typeof(OfertaCondicao), nameof(OfertaCondicao.CondicaoCodigo)),
+        ("TipoDeficienciaCodigo", LimitesDoEnvelope.TipoDeficienciaCodigo, typeof(OfertaTipoDeficiencia), nameof(OfertaTipoDeficiencia.TipoDeficienciaCodigo)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaCondicao), nameof(OfertaCondicao.CondicaoNome)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaRecurso), nameof(OfertaRecurso.RecursoNome)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaTipoDeficiencia), nameof(OfertaTipoDeficiencia.TipoDeficienciaNome)),

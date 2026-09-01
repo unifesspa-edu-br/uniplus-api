@@ -19,6 +19,11 @@ public sealed class OfertaTipoDeficienciaConfiguration : IEntityTypeConfiguratio
         builder.Property(t => t.Id).ValueGeneratedNever();
 
         builder.Property(t => t.TipoDeficienciaOrigemId).IsRequired();
+
+        // Teto do código no cadastro de origem (CodigoTipoDeficiencia). É por ele que
+        // a regra legal referencia o tipo — o nome fica como rótulo de exibição.
+        builder.Property(t => t.TipoDeficienciaCodigo).HasMaxLength(50).IsRequired();
+
         builder.Property(t => t.TipoDeficienciaNome).HasMaxLength(300).IsRequired();
 
         builder.HasIndex(t => new { t.OfertaAtendimentoEspecializadoId, t.TipoDeficienciaOrigemId }).IsUnique();
