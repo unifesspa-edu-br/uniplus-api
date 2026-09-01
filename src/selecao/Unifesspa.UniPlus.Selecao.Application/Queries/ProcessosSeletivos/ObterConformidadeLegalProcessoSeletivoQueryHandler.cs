@@ -63,7 +63,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         // (issue #1350). Derivar aqui, e não deixar o chamador informar, é o que impede o
         // preflight de dizer "conforme" numa data que o comando contradiz.
         DateOnly? dataReferencia = query.DataReferencia
-            ?? DiaDeReferenciaLegalDoCronograma(processo, resolvedorFuso);
+            ?? DiaDeReferenciaLegal(processo, query.PeriodoInscricaoInformado, resolvedorFuso);
         if (dataReferencia is not { } diaDeReferencia)
         {
             return null;
@@ -114,15 +114,20 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
     }
 
     /// <summary>
-    /// O dia que o gate de publicação usaria: início da janela da fase que coleta inscrição,
-    /// convertido no fuso institucional. <see langword="null"/> quando o processo não tem fase de
-    /// coleta com janela — aí não há como a consulta responder sozinha, e o chamador precisa
-    /// informar a data.
+    /// O dia que o gate de publicação usaria, pela MESMA resolução dele: a janela da fase que
+    /// coleta inscrição quando ela existe, o período informado no ato quando não existe.
     /// </summary>
-    private static DateOnly? DiaDeReferenciaLegalDoCronograma(
-        ProcessoSeletivo processo, IResolvedorFusoInstitucional resolvedorFuso)
+    /// <remarks>
+    /// Espelhar o gate é o que sustenta a garantia do CA-16/CA-17. Olhar só o cronograma deixaria
+    /// o certame de importação externa — que não tem fase de coleta e informa o período — sem data,
+    /// e o 422 dele sairia sem a lista de regras reprovadas.
+    /// </remarks>
+    private static DateOnly? DiaDeReferenciaLegal(
+        ProcessoSeletivo processo,
+        DateTimeOffset? periodoInscricaoInformado,
+        IResolvedorFusoInstitucional resolvedorFuso)
     {
-        if (processo.FaseQueAncoraOPeriodoDeInscricao()?.Inicio is not { } inicio)
+        if ((processo.FaseQueAncoraOPeriodoDeInscricao()?.Inicio ?? periodoInscricaoInformado) is not { } inicio)
         {
             return null;
         }

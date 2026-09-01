@@ -21,6 +21,12 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// que resolva a data, e o avaliador nunca lê o relógio (ADR-0068).
 /// </para>
 /// </param>
+/// <param name="PeriodoInscricaoInformado">
+/// O início do período que o ato declarou, quando o certame não coleta inscrição pelo sistema e
+/// portanto o informa. Sem ele, o enriquecimento do 422 desses processos perderia a lista de
+/// regras reprovadas: não há fase de coleta de onde derivar a data.
+/// </param>
 public sealed record ObterConformidadeLegalProcessoSeletivoQuery(
     Guid ProcessoSeletivoId,
-    DateOnly? DataReferencia = null) : IQuery<ConformidadeLegalProcessoSeletivoDto?>;
+    DateOnly? DataReferencia = null,
+    DateTimeOffset? PeriodoInscricaoInformado = null) : IQuery<ConformidadeLegalProcessoSeletivoDto?>;

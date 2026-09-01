@@ -138,6 +138,50 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         avaliada.Motivo.Should().Contain("LB_PPl", "o motivo tem de dizer qual referência não existe");
     }
 
+    [Fact(DisplayName = "Sem fase que colete inscrição, a data vem do período informado no ato — o 422 não perde as regras reprovadas")]
+    public async Task Consulta_SemFaseDeColeta_UsaOPeriodoInformado()
+    {
+        // O certame de importação externa não tem fase de coleta e informa o período no ato. Se a
+        // consulta olhasse só o cronograma, ficaria sem data, devolveria null, e o 422 de
+        // conformidade legal desses processos sairia sem `obrigatoriedadesReprovadas` — em
+        // silêncio, que é o modo de falha que o BindRequired do endpoint documenta.
+        ProcessoSeletivo processo = ProcessoBase();
+        processo.CronogramaFases.Should().NotContain(
+            f => f.ColetaInscricao, "o cenário exige um processo sem fase de coleta");
+
+        ObrigatoriedadeLegal regra = NovaRegra("CONSULTA-SEM-COLETA", new EtapaObrigatoria("PROVA_OBJETIVA"));
+
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([regra]);
+
+        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
+            .Returns(processo);
+
+        ConformidadeLegalProcessoSeletivoDto? dto = await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeLegalProcessoSeletivoQuery(
+                processo.Id,
+                PeriodoInscricaoInformado: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3))),
+            processoSeletivoRepository,
+            obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            new ResolvedorFusoDeTeste(),
+            CancellationToken.None);
+
+        dto.Should().NotBeNull("sem a data do ato a consulta devolveria null e o 422 perderia o diagnóstico");
+        dto!.DataReferencia.Should().Be(new DateOnly(2026, 1, 1), "o dia sai do instante informado, no fuso institucional");
+        dto.Regras.Should().ContainSingle();
+
+        await obrigatoriedadeLegalRepository.Received(1).ObterVigentesParaTipoProcessoAsync(
+            Arg.Any<string>(), new DateOnly(2026, 1, 1), Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Processo inexistente devolve null, sem consultar o catálogo de obrigatoriedades")]
     public async Task ProcessoInexistente_DevolveNull()
     {

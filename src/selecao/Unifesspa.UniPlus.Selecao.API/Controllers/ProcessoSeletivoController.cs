@@ -750,7 +750,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         actionResult = await EnriquecerComPendenciasEstruturaisAsync(actionResult, id, cancellationToken)
             .ConfigureAwait(false);
         return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, cancellationToken).ConfigureAwait(false);
+            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -800,7 +800,11 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <c>Extensions["obrigatoriedadesReprovadas"]</c>.
     /// </summary>
     private async Task<IActionResult> EnriquecerComObrigatoriedadesReprovadasAsync(
-        Result resultado, IActionResult actionResult, Guid id, CancellationToken cancellationToken)
+        Result resultado,
+        IActionResult actionResult,
+        Guid id,
+        DateTimeOffset? periodoInscricaoInformado,
+        CancellationToken cancellationToken)
     {
         if (!resultado.HasErrorCode("ProcessoSeletivo.ConformidadeLegalInsuficiente")
             || actionResult is not ObjectResult { Value: ProblemDetails problem })
@@ -809,7 +813,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         }
 
         ConformidadeLegalProcessoSeletivoDto? conformidade = await _queryBus
-            .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id), cancellationToken)
+            .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id, PeriodoInscricaoInformado: periodoInscricaoInformado), cancellationToken)
             .ConfigureAwait(false);
         if (conformidade is not null)
         {
@@ -871,7 +875,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
         return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, cancellationToken).ConfigureAwait(false);
+            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1055,7 +1059,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
         return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, cancellationToken).ConfigureAwait(false);
+            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
