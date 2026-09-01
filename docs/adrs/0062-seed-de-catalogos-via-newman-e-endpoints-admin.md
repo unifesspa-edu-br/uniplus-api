@@ -86,7 +86,7 @@ A collection Postman tem:
   - `Authorization: Bearer {{access_token}}`
   - `Accept: application/vnd.uniplus.{recurso}.v1+json` (vendor MIME per [ADR-0028](0028-versionamento-per-resource-content-negotiation.md))
   - `Content-Type: application/vnd.uniplus.{recurso}.v1+json`
-  - `Idempotency-Key: {recurso}-{{codigo}}` (determinístico — re-run é idempotente per [ADR-0027](0027-idempotency-key-store.md))
+  - `Idempotency-Key: {recurso}-{{codigo}}` (determinístico — re-run é idempotente per [ADR-0027](0027-idempotency-key-store-postgresql.md))
   - Body: uma linha do arquivo de seed.
 - **Teste por request** — assert response `201` (primeira execução) ou `200` (re-run via cache de idempotência); falha caso contrário.
 
@@ -406,7 +406,7 @@ redigi-la mostrou que cada cadastro tem contrato próprio:
   estrutura de vagas que vem de norma — uma guarda por **linha** bloquearia corrigir a estrutura só
   porque alguém editou a descrição; ali a guarda é por **campo**.
 - `CategoriaDocumento` **não** bloqueia remoção por referência, por decisão explícita: o consumo
-  cross-módulo é snapshot-copy desacoplado ([ADR-0061](0061-snapshot-copy-entre-modulos.md)) e o
+  cross-módulo é snapshot-copy desacoplado ([ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md)) e o
   edital publicado carrega a categoria congelada por valor. Uma verificação de referência viva
   contrariaria esse contrato.
 
@@ -448,8 +448,8 @@ na mudança que a semeia, ainda não aplicada.
 
 ## Mais informações
 
-- [ADR-0023](0023-problemdetails-rfc-9457.md) — ProblemDetails RFC 9457 (Newman tests checam contra).
-- [ADR-0027](0027-idempotency-key-store.md) — Idempotency-Key store (semântica de replay).
+- [ADR-0023](0023-wire-formato-erro-rfc-9457.md) — ProblemDetails RFC 9457 (Newman tests checam contra).
+- [ADR-0027](0027-idempotency-key-store-postgresql.md) — Idempotency-Key store (semântica de replay).
 - [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — Vendor MIME per resource (Accept/Content-Type por linha).
 - [ADR-0054](0054-naming-convention-e-strategy-migrations.md) — Naming snake_case + migrations.
 - `docs/guia-banco-de-dados.md` §5 — Pattern opt-in do `IAuditableEntity`.

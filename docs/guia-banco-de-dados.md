@@ -383,7 +383,7 @@ SELECT * FROM "__EFMigrationsHistory";
 
 Dados sensíveis (Idempotency-Key requests, PII) são cifrados **antes** de gravar no banco via `IUniPlusEncryptionService` (Vault Transit em prod/standalone, AES-GCM local em dev).
 
-- **Path canônico**: `Idempotency-Key` ([ADR-0027](adrs/0027-idempotency-key-opt-in-com-store-postgresql.md)).
+- **Path canônico**: `Idempotency-Key` ([ADR-0027](adrs/0027-idempotency-key-store-postgresql.md)).
 - **Não criar criptografia ad-hoc** em entity — use `IUniPlusEncryptionService` se a Story exigir.
 - **Não cifrar campos como PK/FK** — quebra índices.
 - **CPF e demais PII em logs**: mascarados via `PiiMaskingEnricher` do Serilog (regra de domínio, não banco).
