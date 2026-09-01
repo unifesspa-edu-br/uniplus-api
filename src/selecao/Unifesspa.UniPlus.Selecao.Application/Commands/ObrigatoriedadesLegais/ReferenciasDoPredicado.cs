@@ -153,7 +153,11 @@ internal static class ReferenciasDoPredicado
         IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
-        string codigo = Normalizar(predicado.Criterio);
+        // Trim e nada mais, alinhado ao que o catálogo grava: RegraCatalogo.Criar apara
+        // o código e não compõe. Normalizar aqui em NFC faria a comparação ordinal
+        // procurar uma forma que o catálogo não guarda, e um código com caractere
+        // decomponível seria dado como inexistente mesmo estando lá.
+        string codigo = NormalizarComoOCatalogoDeRegrasGrava(predicado.Criterio);
 
         IReadOnlyList<RegraCatalogo> regras = await regraCatalogoReader
             .ListarPorTipoAsync(TipoRegra.CriterioDesempate, cancellationToken).ConfigureAwait(false);
@@ -256,5 +260,16 @@ internal static class ReferenciasDoPredicado
     /// lados e esta distinção desaparece.
     /// </remarks>
     private static string NormalizarComoOCadastroDeTipoDocumentoGrava(string? codigo) =>
+        codigo?.Trim() ?? string.Empty;
+
+    /// <summary>
+    /// Normalização do código de regra do catálogo, que também é <b>só</b> <c>Trim</c>.
+    /// </summary>
+    /// <remarks>
+    /// O catálogo é seed-governado e append-only, e a factory da regra apara o código sem
+    /// compor. Aplicar NFC aqui faria a busca procurar uma forma que o catálogo não
+    /// guarda — o código existiria e seria recusado como inexistente.
+    /// </remarks>
+    private static string NormalizarComoOCatalogoDeRegrasGrava(string? codigo) =>
         codigo?.Trim() ?? string.Empty;
 }
