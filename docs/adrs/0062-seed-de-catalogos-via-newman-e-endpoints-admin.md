@@ -374,8 +374,10 @@ nenhum dos dois comandos:
   trilha junto.
 
 Onde o EF geraria qualquer um deles, a migration é escrita à mão: `Sql` com `INSERT … ON CONFLICT
-DO NOTHING` para acrescentar, e nada mais. Retirar um código do vocabulário é decisão que passa
-pelo caminho administrativo, não por scaffold.
+DO NOTHING` para acrescentar. **Corrigir e remover têm forma própria** — descrita adiante em
+"Como se corrige um item semeado que nasceu errado" —, com o comando guardado pelas colunas de
+auditoria e, quando o alvo é referenciado, pela ausência de referência viva. O que não existe é o
+`UpdateData`/`DeleteData` **gerado pelo scaffold**, que não tem nenhuma dessas guardas.
 
 ### Como se corrige um item semeado que nasceu errado
 
@@ -405,7 +407,7 @@ como texto, sem chave estrangeira —, então renomeá-lo por `UPDATE` deixa as 
 para o valor antigo, exatamente como o `DELETE` faria. Corrigir código errado exige a mesma
 verificação de referência viva descrita abaixo, e, havendo alguma, deixa de ser correção por
 migration: vira substituição com tratamento do que aponta, como a
-[ADR-0112](0112-substituicao-de-entrada-de-catalogo-antes-do-primeiro-congelamento.md) descreve
+[ADR-0112](0112-fronteira-append-only-do-catalogo-de-regras.md) descreve
 para o catálogo de regras.
 
 **Remoção exige uma condição a mais: nenhuma referência viva.** As colunas de auditoria não
@@ -441,7 +443,7 @@ O discriminador é o mesmo da tabela de momentos: **se a tela permite editar aqu
 migration não pode tocá-lo.**
 
 **Ausência de CRUD não basta, porém.** `RegraCatalogo` também é seed-governado com API somente de
-leitura, e ainda assim a [ADR-0112](0112-substituicao-de-entrada-de-catalogo-antes-do-primeiro-congelamento.md)
+leitura, e ainda assim a [ADR-0112](0112-fronteira-append-only-do-catalogo-de-regras.md)
 só admite substituir uma entrada **enquanto nenhuma `VersaoConfiguracao` a referenciar**; a partir
 do primeiro congelamento que a use, a linha vira fato e vale append-only estrito. Alterá-la por
 migration depois disso mudaria a definição por trás de um processo seletivo já congelado, e o
