@@ -474,7 +474,7 @@ Story que **cria o agregado** (`<Nome>` em `Selecao.Domain.Entities`) com todos 
 | dado que a instituição administra | endpoints admin, via Newman (CSV/JSON sob `seeds/`) | `sub` real do JWT |
 
 - **Não usar os dois** para o mesmo vocabulário: numa base recém-migrada, a collection Newman faria `POST` de códigos que a migration já inseriu, recebendo conflito onde espera 200/201 — e o passo pós-deploy falha. Foi o que aconteceu com `TipoEtapa`, semeado por `20260811221349_CriaCadastroTiposEtapa` e ainda listado no bootstrap.
-- Escolhido o seed em migration: alterar linha existente por migration é proibido quando o cadastro é **administrável** — a edição do operador seria sobrescrita sem registro. Correção nesse caso é ato administrativo, pela tela. Catálogo **sem CRUD** (append-only, como `FatoCandidato`) evolui por nova migration de seed, e o blame fica no PR.
+- Escolhido o seed em migration: **`UpdateData` e `DeleteData` gerados não entram**. O primeiro sobrescreveria a edição do operador; o segundo apagaria a linha fisicamente, sem o soft-delete auditado da API. A migration de seed só acrescenta (`INSERT … ON CONFLICT DO NOTHING`); alterar ou remover é ato administrativo, pela tela. Catálogo **sem CRUD** (append-only, como `FatoCandidato`) evolui por nova migration de seed, e o blame fica no PR.
 
 Referência: [Story #455](https://github.com/unifesspa-edu-br/uniplus-api/issues/455) — promove `TipoProcesso → TipoEdital` entidade.
 

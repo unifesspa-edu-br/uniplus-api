@@ -318,22 +318,26 @@ preservado — não relaxado.
 | Seed em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `TipoEtapa`, `FaseCanonica` |
 | Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento` |
 
-`TipoEtapa` entra na primeira coluna por constatação, não por decisão nova: a migration
-`20260811221349_CriaCadastroTiposEtapa` já insere os sete códigos legados com autor nulo. Mantê-lo
-no bootstrap por Newman faria a collection, numa base recém-migrada, tentar `POST` de códigos que já
-existem — conflito onde ela espera 200/201, e o passo pós-deploy falha. Acrescentar tipo novo
-permanece administrativo.
+`TipoEtapa` e `TipoProcesso` entram na primeira coluna por constatação, não por decisão nova: as
+migrations `20260811221349_CriaCadastroTiposEtapa` e `20260810180213_TiposProcessoConfiguraveis` já
+inserem os sete e os oito códigos legados, com autor nulo. Os dois vieram de enum promovido a
+entidade — vocabulário, por definição. Mantê-los no bootstrap por Newman faria a collection, numa
+base recém-migrada, tentar `POST` de códigos que já existem: conflito onde ela espera 200/201, e o
+passo pós-deploy falha. Acrescentar código novo permanece administrativo.
+
+(`TipoEdital` é o nome antigo de `TipoProcesso`; o arquivo de seed previsto na decisão original
+guarda o nome anterior.)
 
 O critério reclassifica exatamente o que a prática já havia movido — sinal de que descreve a razão
 que os autores seguiram sem nomear.
 
 ### Efeito sobre os arquivos de seed previstos
 
-`seeds/seed-modalidades.json`, `seeds/seed-tipos-documento.json` e `seeds/seed-tipos-etapa.json`
-**saem do escopo do bootstrap por Newman**: os três são vocabulário normativo, e `TipoDocumento` e
-`TipoEtapa` já são semeados por migration. Manter qualquer um deles na collection produz conflito
-numa base recém-migrada, não idempotência. Os demais arquivos da lista original permanecem no
-regime de endpoint admin.
+`seeds/seed-modalidades.json`, `seeds/seed-tipos-documento.json`, `seeds/seed-tipos-etapa.json` e
+`seeds/seed-tipos-edital.json` **saem do escopo do bootstrap por Newman**: os quatro são vocabulário
+normativo, e `TipoDocumento`, `TipoEtapa` e `TipoProcesso` já são semeados por migration. Manter
+qualquer um deles na collection produz conflito numa base recém-migrada, não idempotência. Os
+demais arquivos da lista original permanecem no regime de endpoint admin.
 
 ### O que permanece válido
 
@@ -345,10 +349,19 @@ por qual caminho.
 
 ### Consequência conhecida, e como o critério a evita
 
-`HasData` em cadastro **também** administrável tem o risco de, ao editar a lista, o EF gerar
-`UpdateData` e sobrescrever o que o administrador mudou naquela linha. A segunda metade do critério
-elimina isso por construção: a migration de seed não emite `UPDATE`. Onde o EF geraria um, a
-migration é escrita à mão com `Sql` e `ON CONFLICT DO NOTHING`.
+`HasData` em cadastro **também** administrável tem dois riscos, e a segunda metade do critério
+elimina os dois por construção — a migration de seed não emite nenhum dos dois comandos:
+
+- **`UpdateData`**, gerado ao editar um item da lista, sobrescreveria o que o administrador mudou
+  naquela linha;
+- **`DeleteData`**, gerado ao **remover** um item da lista, apagaria a linha **fisicamente** — sem
+  passar pelo soft-delete auditado da API, que é como o cadastro registra remoção. Em catálogo
+  administrável como `CategoriaDocumento` ou `TipoDocumento`, isso destrói dado do operador e a
+  trilha junto.
+
+Onde o EF geraria qualquer um deles, a migration é escrita à mão: `Sql` com `INSERT … ON CONFLICT
+DO NOTHING` para acrescentar, e nada mais. Retirar um código do vocabulário é decisão que passa
+pelo caminho administrativo, não por scaffold.
 
 ## Mais informações
 
