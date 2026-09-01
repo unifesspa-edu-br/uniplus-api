@@ -24,6 +24,18 @@ informed:
 >
 > **O que permanece válido:** registry (GHCR), naming `uniplus-api-<modulo>`, estratégia lockstep semver, gates de validação (formato semver, tag em commit em `main`), smoke estrutural pré-push. A emenda toca apenas a cláusula de plataformas.
 
+> **Emenda de 2026-08-31 — multi-arch (`linux/arm64`) desativado de novo**
+>
+> O gatilho que justificou a emenda de 2026-05-17 nunca se concretizou: a Epic [`uniplus-infra#317`](https://github.com/unifesspa-edu-br/uniplus-infra/issues/317) segue aberta e sem execução, e o ambiente real (VM de HML, cluster k3s) continua x86_64. Cada release pagava cross-build via emulação QEMU (~2–3× mais lento que nativo) para produzir um layer `linux/arm64` que nenhum cluster puxava — na comparação da release v0.12.0/v0.10.0 de 31/08/2026, as imagens single-arch do `uniplus-web` publicaram em poucos minutos, enquanto as multi-arch do `uniplus-api` ainda construíam vinte minutos depois. Decisão do Tech Lead: desativar `linux/arm64` até o Epic ser retomado (issue [`#1363`](https://github.com/unifesspa-edu-br/uniplus-api/issues/1363)).
+>
+> **O que muda:**
+>
+> - `publish-images.yml` volta a publicar apenas `linux/amd64` — a manifest list multi-arch da emenda de 2026-05-17 deixa de existir.
+> - O step `Set up QEMU` é removido; sem alvo arm64, não há mais cross-build para habilitar.
+> - O cache GHA passa a usar só o scope `-amd64`; o scope `-arm64` (populado pela emenda de 2026-05-17) para de ser escrito e lido.
+>
+> **O que permanece válido:** o restante da emenda de 2026-05-17 (smoke estrutural em `linux/amd64`, SBOM/attestation parqueados) e a decisão original (registry GHCR, naming, lockstep, gates de validação). Se a Epic `uniplus-infra#317` for retomada, reintroduzir a plataforma e o step de QEMU é a reversão documentada no PR [`#1366`](https://github.com/unifesspa-edu-br/uniplus-api/pull/1366).
+
 ## Contexto e enunciado do problema
 
 A Fase 5 do plano de deploy (cluster standalone) está bloqueada porque as imagens dos módulos `uniplus-api-selecao` e `uniplus-api-ingresso` ainda não são publicadas em um registry acessível pelo cluster. Os Dockerfiles existem (`docker/Dockerfile.selecao`, `docker/Dockerfile.ingresso`), o pipeline de build/test já roda em PR ([ADR-0017](0017-kubernetes-com-helm-para-orquestracao.md), Feature [#7](https://github.com/unifesspa-edu-br/uniplus-api/issues/7)) e os Helm charts (Feature [#10](https://github.com/unifesspa-edu-br/uniplus-api/issues/10)) já assumem que as imagens estão disponíveis em runtime — mas não há workflow de publish, não há convenção de naming nem política de tagging.
