@@ -165,9 +165,15 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             .OrderBy(static c => c.CondicaoCodigo, StringComparer.Ordinal)
             .Select(static (c, indice) => new ValorDominioDeclaradoCongelado(c.CondicaoCodigo, c.CondicaoNome, indice))];
 
-    /// <summary>Mesmo raciocínio de <see cref="ResolverCondicaoAtendimento"/> — <c>TipoDeficienciaNome</c> faz o papel de código, sem descrição própria.</summary>
+    /// <summary>
+    /// Mesmo raciocínio de <see cref="ResolverCondicaoAtendimento"/>, e agora com a
+    /// mesma forma: o <c>TipoDeficienciaCodigo</c> é o valor, e o nome é a descrição
+    /// exibida. Enquanto o snapshot não guardava o código, o nome fazia o papel dele —
+    /// o que amarrava o valor visto pelo candidato a um rótulo que o cadastro pode
+    /// renomear a qualquer momento.
+    /// </summary>
     private static IReadOnlyList<ValorDominioDeclaradoCongelado> ResolverTipoDeficiencia(ProcessoSeletivo processo) =>
         [.. (processo.OfertaAtendimento?.TiposDeficiencia ?? [])
-            .OrderBy(static t => t.TipoDeficienciaNome, StringComparer.Ordinal)
-            .Select(static (t, indice) => new ValorDominioDeclaradoCongelado(t.TipoDeficienciaNome, null, indice))];
+            .OrderBy(static t => t.TipoDeficienciaCodigo, StringComparer.Ordinal)
+            .Select(static (t, indice) => new ValorDominioDeclaradoCongelado(t.TipoDeficienciaCodigo, t.TipoDeficienciaNome, indice))];
 }

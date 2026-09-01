@@ -277,7 +277,7 @@ public static class DefinirFatosColetadosCommandHandler
             .Select(static c => c.CondicaoCodigo)];
 
         HashSet<string> tiposDeficiencia = [.. (processo.OfertaAtendimento?.TiposDeficiencia ?? [])
-            .Select(static t => t.TipoDeficienciaNome)];
+            .Select(static t => t.TipoDeficienciaCodigo)];
 
         return new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
         {

@@ -334,6 +334,73 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         exigencia.Condicoes.Should().ContainSingle(c => c.Fato == "TIPO_DEFICIENCIA");
     }
 
+    [Fact(DisplayName = "Gatilho por TIPO_DEFICIENCIA usa o código do tipo, não o nome de exibição")]
+    public async Task Handle_GatilhoTipoDeficiencia_UsaCodigoNaoNome()
+    {
+        // O domínio dinâmico de TIPO_DEFICIENCIA era montado a partir do NOME do tipo
+        // ofertado, enquanto o irmão CONDICAO_ATENDIMENTO já usava o código. A
+        // consequência: uma condição escrita com o código canônico era recusada como
+        // valor fora do domínio, e renomear o rótulo invalidava condições existentes.
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Código e nome deliberadamente diferentes: é o que separa os dois regimes.
+        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        OfertaTipoDeficiencia tipo = OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual");
+        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], [tipo]).Value!;
+        processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
+
+        CondicaoGatilhoInput porCodigo = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"DEFICIENCIA_VISUAL\"");
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [porCodigo], [], null, Qualquer, null);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(
+            mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente));
+
+        resultado.IsSuccess.Should().BeTrue(
+            "o código do tipo ofertado é o valor de domínio — antes só o nome era aceito");
+    }
+
+    [Fact(DisplayName = "Gatilho por TIPO_DEFICIENCIA com o nome de exibição é recusado")]
+    public async Task Handle_GatilhoTipoDeficienciaPeloNome_Recusa()
+    {
+        // A contraprova: se o domínio ainda viesse do nome, este cenário passaria.
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        OfertaTipoDeficiencia tipo = OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual");
+        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], [tipo]).Value!;
+        processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
+
+        CondicaoGatilhoInput porNome = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"Deficiência visual\"");
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [porNome], [], null, Qualquer, null);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(
+            mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente));
+
+        resultado.IsFailure.Should().BeTrue("o nome é rótulo de exibição, não valor de domínio");
+    }
+
     [Fact(DisplayName = "Story #917/CA-03: gatilho por TIPO_DEFICIENCIA não ofertado pelo processo é recusado (integridade referencial)")]
     public async Task Handle_GatilhoTipoDeficienciaNaoOfertado_RetornaErroNomeado()
     {
