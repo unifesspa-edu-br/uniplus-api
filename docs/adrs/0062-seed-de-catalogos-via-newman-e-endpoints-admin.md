@@ -316,7 +316,12 @@ preservado — não relaxado.
 **Seed em migration** — lista fechada, e é a que importa manter atualizada:
 
 `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`,
-`TipoDocumento`, `TipoEtapa`, `TipoProcesso` e `FaseCanonica`.
+`RegraCatalogo`, `TipoDocumento`, `TipoEtapa`, `TipoProcesso` e `FaseCanonica`.
+
+`RegraCatalogo` tem regime próprio dentro do grupo: além de não ter CRUD — `RegrasCatalogoController`
+expõe só `GET` —, a [ADR-0112](0112-fronteira-append-only-do-catalogo-de-regras.md) o submete a
+congelamento. Substituir uma entrada só é possível enquanto nenhuma `VersaoConfiguracao` a
+referenciar; depois disso vale append-only estrito, e a correção deixa de existir como opção.
 
 **Todo o resto é endpoint admin.** A regra é de fechamento, não de enumeração: o módulo tem mais de
 vinte cadastros — `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`,
