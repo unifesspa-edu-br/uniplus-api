@@ -31,9 +31,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <see cref="ColetaInscricao"/> decidem o piso mínimo e a admissibilidade de
 /// recurso do cronograma de um processo (Módulo Seleção); <see cref="OrigemData"/>
 /// decide se a janela da fase é obrigatória (<c>PROPRIA</c>) ou opcional
-/// (<c>DELEGADA</c>). Cadastro <b>100% CRUD-administrado, sem seed</b> — os valores
-/// reais das fases são populados via endpoint admin, ato operacional
-/// pós-deploy, não bloqueio de código.</para>
+/// (<c>DELEGADA</c>). O cadastro <b>nasce semeado</b> com as fases do vocabulário
+/// (ADR-0113, Emenda 1): elas existem porque o ciclo do certame as tem, e não há
+/// autor a registrar — daí <c>CreatedBy</c> nulo nas linhas do seed. O CRUD admin
+/// continua sendo o caminho para editar o que se administra de fato: nome,
+/// descrição e base legal.</para>
 /// </remarks>
 public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 {

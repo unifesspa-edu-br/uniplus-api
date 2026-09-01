@@ -84,6 +84,7 @@ fase é obrigatória ou opcional). Nenhum desses atributos é seed: `FaseCanonic
 permanece 100% CRUD-administrado, e os valores reais das quatorze fases são um
 ato operacional pós-deploy via endpoint admin — a mesma política já vigente para
 `DonoTipico`/`AgrupaEtapas`/`PermiteComplementacao`.
+<!-- Cláusula revogada pela Emenda 1 (2026-09-01), no fim deste documento. -->
 
 A precedência entre fases é **dado de cadastro, não código**: `PrecedenciaFase`
 (Configuração, novo cadastro) declara arestas `(AntecessoraCodigo,
@@ -188,6 +189,52 @@ nunca por literal solto.
 - Ruim, porque qualquer novo par de precedência exigiria deploy, e o histórico do
   projeto já mostrou (ADR-0056, ADR-0111) que vocabulário institucional pertence
   a cadastro, não a `switch`.
+
+## Emenda 1 (2026-09-01) — a fase canônica passa a nascer semeada
+
+A decisão original determinou que `FaseCanonica` permanece 100% CRUD-administrado, e que os valores
+reais das fases são ato operacional pós-deploy via endpoint admin — a mesma política de
+`DonoTipico`/`AgrupaEtapas`/`PermiteComplementacao`. **Essa cláusula é revogada.**
+
+### O que a prática mostrou
+
+A mesma decisão tornou `PrecedenciaFase` seed-governada, com as seis arestas estruturais nascendo
+por `HasData`. O resultado é que **as arestas do grafo nasciam semeadas e os vértices não**: toda
+base migrada tinha seis precedências apontando para fases que só existiam se alguém rodasse a carga
+por API. Nenhuma constraint impede — os CHECK de `precedencia_fase` conferem o código contra o
+vocabulário fechado, não contra a existência da linha em `fase_canonica`.
+
+O custo apareceu ao promover a `v0.12.0`: o código da solicitação de isenção entrou no vocabulário
+e a fase não existia em homologação, porque aquela migration relaxa as CHECK constraints e nada
+mais. O ambiente ficou com um vocabulário que aceita quinze códigos e um cadastro com quatorze
+registros, nenhum deles com os sinalizadores corretos — a carga por API omitira as booleanas.
+
+### O critério que decide
+
+[ADR-0062](0062-seed-de-catalogos-via-newman-e-endpoints-admin.md), Emenda 2: **`HasData` é para o
+que não precisa de blame; endpoint admin é para o que exige registro de quem fez a operação.**
+
+As quinze fases existem porque o ciclo do certame as tem, não porque alguém as escolheu. Não há
+autor a registrar, e `created_by` nulo é a marca honesta disso — não a lacuna de auditoria que a
+decisão original quis evitar.
+
+### O que muda
+
+- `FaseCanonica` passa a nascer semeada com as quinze fases, por migration escrita à mão com
+  `INSERT … ON CONFLICT DO NOTHING` — o cadastro é administrável e um ambiente pode já ter a fase
+  viva ocupando o código.
+- A migration **não emite `UPDATE` nem `DELETE`**: alterar ou remover linha existente continua sendo
+  ato administrativo, com autor. O `Down` apaga apenas o que o seed criou e ninguém editou.
+
+### O que permanece válido
+
+Tudo o mais: o eixo temporal da fase e o de pontuação da etapa, o vocabulário fechado, os
+sinalizadores e o que cada um decide, e a natureza de cadastro de `PrecedenciaFase`. O CRUD admin
+continua disponível — e é o único caminho para editar nome, descrição e base legal, que são o que
+de fato se administra numa fase.
+
+A contagem também mudou: são **quinze** fases desde que a solicitação de isenção entrou no
+vocabulário, não quatorze.
 
 ## Mais informações
 
