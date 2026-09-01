@@ -316,7 +316,14 @@ preservado — não relaxado.
 | Regime | Entidades |
 |---|---|
 | Seed em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `TipoEtapa`, `TipoProcesso`, `FaseCanonica` |
-| Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento`, `CondicaoAtendimentoEspecializado`, `CriterioDesempate`, `ObrigatoriedadeLegal` |
+| Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento`, `CondicaoAtendimentoEspecializado`, `ObrigatoriedadeLegal` |
+
+`CriterioDesempate` fica fora das duas colunas: deixou de ser parametrização global e hoje é
+**configuração por processo seletivo** — a única rota é
+`PUT /api/selecao/processos-seletivos/{id}/criterios-desempate`. Não há cadastro institucional a
+semear nem a carregar, então `seed-criterios-desempate.json` sai do bootstrap junto com os demais,
+por motivo diferente: não porque migrou de regime, mas porque o recurso que ele povoaria não existe
+mais nessa forma.
 
 Das dez entidades da decisão original, **quatro não existem mais**: `NecessidadeEspecial`,
 `Endereco`, `AreaOrganizacional` e `LocalProva` foram removidas ou substituídas na evolução do
