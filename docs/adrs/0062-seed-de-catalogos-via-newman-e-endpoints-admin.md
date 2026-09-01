@@ -313,10 +313,18 @@ preservado — não relaxado.
 
 ### Classificação das entidades
 
-| Regime | Entidades |
-|---|---|
-| Seed em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `TipoEtapa`, `TipoProcesso`, `FaseCanonica` |
-| Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento`, `CondicaoAtendimentoEspecializado`, `ObrigatoriedadeLegal` |
+**Seed em migration** — lista fechada, e é a que importa manter atualizada:
+
+`Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`,
+`TipoDocumento`, `TipoEtapa`, `TipoProcesso` e `FaseCanonica`.
+
+**Todo o resto é endpoint admin.** A regra é de fechamento, não de enumeração: o módulo tem mais de
+vinte cadastros — `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`,
+`TermoConsentimento`, `TipoBanca`, `TipoDeficiencia`, `RecursoAcessibilidade`,
+`ReferenciaReservaDemografica`, `PesoAreaEnem`, `CondicaoAtendimentoEspecializado`,
+`ObrigatoriedadeLegal` e os que vierem —, e listar os dois lados garantiria uma tabela desatualizada
+no primeiro cadastro novo. Quem cria um cadastro responde à pergunta do critério: **há autor a
+registrar?** Se sim, e é a resposta usual, não precisa fazer nada — o regime padrão já é o dele.
 
 `CriterioDesempate` fica fora das duas colunas: deixou de ser parametrização global e hoje é
 **configuração por processo seletivo** — a única rota é
@@ -370,8 +378,8 @@ por qual caminho.
 ### Consequência conhecida, e como o critério a evita
 
 `HasData` em cadastro **também** administrável tem dois riscos, e a segunda metade do critério
-elimina os dois por construção — **em catálogo administrável**, a migration de seed não emite
-nenhum dos dois comandos:
+elimina os dois por construção — em catálogo administrável, a migration de seed **não emite comando
+sem guarda**:
 
 - **`UpdateData`**, gerado ao editar um item da lista, sobrescreveria o que o administrador mudou
   naquela linha;
