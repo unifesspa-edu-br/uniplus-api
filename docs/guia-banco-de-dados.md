@@ -460,14 +460,21 @@ Story de schema-only que **dropa a coluna `<nome>_<enum>` (`int`)** e **adiciona
 
 Referência: [Story #454](https://github.com/unifesspa-edu-br/uniplus-api/issues/454) — migration `DropEnumColumnsPrePromotion` em `SelecaoDbContext`.
 
-### Etapa 2 — Criação da entidade + seed Newman
+### Etapa 2 — Criação da entidade + carga inicial
 
-Story que **cria o agregado** (`<Nome>` em `Selecao.Domain.Entities`) com todos os atributos planejados, incluindo `Codigo` strongly-typed (substitui o enum), `Descricao`, audit fields. Configurações EF, repositório, command de criação e seed via Newman (CSV/JSON committed sob `seeds/`).
+Story que **cria o agregado** (`<Nome>` em `Selecao.Domain.Entities`) com todos os atributos planejados, incluindo `Codigo` strongly-typed (substitui o enum), `Descricao`, audit fields. Configurações EF, repositório, command de criação e a carga inicial do vocabulário.
 
 - A coluna FK introduzida na Etapa 1 ainda é `NULL`able. Adiciona `HasOne(e => e.<Nome>).WithMany().HasForeignKey(e => e.<Nome>Id)` em Configuration.
 - Enum legado (`Selecao.Domain.Enums.<EnumLegado>`) é **removido nesta etapa** — não na Etapa 1 — para evitar refactor amplo enquanto schema migration ainda está em vôo.
-- Seed via Newman popula linhas-template em todos os ambientes (dev local, CI, HML, prod) — o CD não cria entries em runtime.
-- **Qual caminho de seed usar** depende da natureza do dado, per [ADR-0062](adrs/0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) Emenda 2: vocabulário normativo, que não tem autor a registrar, entra por `HasData` em migration; dado que a instituição administra entra pelos endpoints admin, com o `sub` real do JWT. Update é sempre pelo endpoint, nos dois casos.
+- **O caminho da carga depende da natureza do dado**, per [ADR-0062](adrs/0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) Emenda 2. Promoção de enum para entidade cai quase sempre no primeiro caso, porque o que era enum é vocabulário:
+
+| Natureza | Caminho | Autor |
+|---|---|---|
+| vocabulário normativo — ninguém o escolheu | seed em migration (`HasData` + `INSERT … ON CONFLICT DO NOTHING`) | `created_by` nulo, honesto |
+| dado que a instituição administra | endpoints admin, via Newman (CSV/JSON sob `seeds/`) | `sub` real do JWT |
+
+- **Não usar os dois** para o mesmo vocabulário: numa base recém-migrada, a collection Newman faria `POST` de códigos que a migration já inseriu, recebendo conflito onde espera 200/201 — e o passo pós-deploy falha. Foi o que aconteceu com `TipoEtapa`, semeado por `20260811221349_CriaCadastroTiposEtapa` e ainda listado no bootstrap.
+- Escolhido o seed em migration: alterar linha existente por migration é proibido quando o cadastro é **administrável** — a edição do operador seria sobrescrita sem registro. Correção nesse caso é ato administrativo, pela tela. Catálogo **sem CRUD** (append-only, como `FatoCandidato`) evolui por nova migration de seed, e o blame fica no PR.
 
 Referência: [Story #455](https://github.com/unifesspa-edu-br/uniplus-api/issues/455) — promove `TipoProcesso → TipoEdital` entidade.
 
