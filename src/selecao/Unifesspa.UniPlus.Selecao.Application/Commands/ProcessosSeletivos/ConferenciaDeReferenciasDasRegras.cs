@@ -37,7 +37,7 @@ internal static class ConferenciaDeReferenciasDasRegras
     /// quando a regra é avaliável. Leitura e transição consomem este mesmo levantamento,
     /// para que a consulta pública nunca dê por conforme o que a publicação vai recusar.
     /// </summary>
-    public static async Task<IReadOnlyDictionary<Guid, string>> LevantarRegrasInavaliaveisAsync(
+    public static async Task<RelatorioDeReferencias> LevantarAsync(
         IReadOnlyList<ObrigatoriedadeLegal> regras,
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
@@ -52,11 +52,6 @@ internal static class ConferenciaDeReferenciasDasRegras
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(tipoDeficienciaReader);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
-
-        if (regras.Count == 0)
-        {
-            return new Dictionary<Guid, string>();
-        }
 
         CatalogosVivos catalogos = await CarregarCatalogosAsync(
             modalidadeReader,
@@ -86,14 +81,14 @@ internal static class ConferenciaDeReferenciasDasRegras
             }
         }
 
-        return inavaliaveis;
+        return new RelatorioDeReferencias(inavaliaveis, catalogos.TiposDocumento);
     }
 
     /// <summary>Motivo com que a regra inavaliável aparece reprovada na leitura pública.</summary>
     public static string MotivoDaInavaliabilidade(string motivo) =>
         $"regra não pode ser avaliada: {motivo}";
 
-    public static async Task<Result> ConferirAsync(
+    public static async Task<Result<RelatorioDeReferencias>> ConferirAsync(
         IReadOnlyList<ObrigatoriedadeLegal> regras,
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
@@ -104,20 +99,21 @@ internal static class ConferenciaDeReferenciasDasRegras
     {
         ArgumentNullException.ThrowIfNull(regras);
 
-        IReadOnlyDictionary<Guid, string> inavaliaveis = await LevantarRegrasInavaliaveisAsync(
+        RelatorioDeReferencias relatorio = await LevantarAsync(
             regras, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
             .ConfigureAwait(false);
 
+        IReadOnlyDictionary<Guid, string> inavaliaveis = relatorio.RegrasInavaliaveis;
         if (inavaliaveis.Count == 0)
         {
-            return Result.Success();
+            return Result<RelatorioDeReferencias>.Success(relatorio);
         }
 
         string descritas = string.Join(", ", regras
             .Where(r => inavaliaveis.ContainsKey(r.Id))
             .Select(r => $"{r.RegraCodigo} ({inavaliaveis[r.Id]})"));
 
-        return Result.Failure(new DomainError(
+        return Result<RelatorioDeReferencias>.Failure(new DomainError(
             "ProcessoSeletivo.RegraLegalInavaliavel",
             $"Há regra legal vigente que não pode ser avaliada: {descritas}. "
             + "Corrija a regra ou o cadastro antes de publicar."));
@@ -139,10 +135,25 @@ internal static class ConferenciaDeReferenciasDasRegras
     /// </remarks>
     private sealed record CatalogosVivos(
         FrozenSet<string> Modalidades,
-        FrozenSet<string> TiposDocumento,
+        FrozenDictionary<string, Guid> TiposDocumento,
         FrozenSet<string> TiposEtapa,
         FrozenSet<string> TiposDeficiencia,
         FrozenSet<string> CriteriosDesempate);
+
+    /// <summary>
+    /// O que a conferência apurou numa passada: as regras que não podem ser avaliadas e
+    /// a identidade viva de cada código de tipo de documento.
+    /// </summary>
+    /// <remarks>
+    /// Os dois consumidores — o gate de publicação e a consulta pública — precisam das
+    /// duas coisas, e precisam das <b>mesmas</b> duas: é o que sustenta o invariante de
+    /// que a regra mostrada reprovada na consulta é a mesma que bloqueia a transição.
+    /// Devolver só as inavaliáveis obrigaria um deles a reler o catálogo, e duas leituras
+    /// podem divergir entre si.
+    /// </remarks>
+    internal sealed record RelatorioDeReferencias(
+        IReadOnlyDictionary<Guid, string> RegrasInavaliaveis,
+        IReadOnlyDictionary<string, Guid> IdentidadeDoTipoDocumentoPorCodigo);
 
     private static async Task<CatalogosVivos> CarregarCatalogosAsync(
         IModalidadeReader modalidadeReader,
@@ -165,7 +176,7 @@ internal static class ConferenciaDeReferenciasDasRegras
 
         return new CatalogosVivos(
             modalidades.Select(static m => m.Codigo).ToFrozenSet(StringComparer.Ordinal),
-            tiposDocumento.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
+            tiposDocumento.ToFrozenDictionary(static t => t.Codigo, static t => t.Id, StringComparer.Ordinal),
             tiposEtapa.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
             tiposDeficiencia.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
             regrasDesempate.Select(static r => r.Codigo).ToFrozenSet(StringComparer.Ordinal));
@@ -186,7 +197,7 @@ internal static class ConferenciaDeReferenciasDasRegras
                     return $"modalidade '{documento.Modalidade}'";
                 }
 
-                return catalogos.TiposDocumento.Contains(documento.TipoDocumento ?? string.Empty)
+                return catalogos.TiposDocumento.ContainsKey(documento.TipoDocumento ?? string.Empty)
                     ? null
                     : $"tipo de documento '{documento.TipoDocumento}'";
 
