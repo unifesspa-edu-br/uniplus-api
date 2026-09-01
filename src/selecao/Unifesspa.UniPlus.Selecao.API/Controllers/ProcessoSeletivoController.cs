@@ -799,13 +799,6 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <see cref="ObterConformidadeLegalProcessoSeletivoQuery"/> para montar
     /// <c>Extensions["obrigatoriedadesReprovadas"]</c>.
     /// </summary>
-    /// <remarks>
-    /// A data deixou de ser repassada daqui (issue #1350): o período de inscrição não vem mais do
-    /// request quando o processo tem fase que coleta inscrição, então o controller não tem — nem
-    /// deve ter — a data que o gate usou. Quem a deriva é o handler da consulta, pela mesma regra
-    /// do gate; é isso que mantém de pé a garantia do CA-16/CA-17 de que as duas respostas falam
-    /// do mesmo dia.
-    /// </remarks>
     private async Task<IActionResult> EnriquecerComObrigatoriedadesReprovadasAsync(
         Result resultado, IActionResult actionResult, Guid id, CancellationToken cancellationToken)
     {
@@ -1112,11 +1105,9 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterConformidadeLegal(
         Guid id,
-        // Anulável, e não BindRequired: omitir a data agora significa "use a mesma que o gate
-        // usaria", e o handler a deriva da janela da fase que coleta inscrição (issue #1350).
-        // O tipo anulável é o que separa "omitida" de DateOnly.MinValue — informar 0001-01-01
-        // filtraria toda regra por vigência e devolveria "nenhuma regra vigente", que se leria
-        // como conformidade aprovada em vez de ausência real de obrigatoriedades.
+        // Anulável (e não BindRequired): omitir significa "use a data que o gate usaria", que o
+        // handler deriva. O tipo separa "omitida" de DateOnly.MinValue, que filtraria toda regra
+        // por vigência e se leria como conformidade aprovada (issue #1350).
         [FromQuery] DateOnly? dataReferencia,
         CancellationToken cancellationToken)
     {

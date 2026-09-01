@@ -261,9 +261,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DadosEdital.DocumentoEditalIdObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.documento_edital_id_obrigatorio", "Referência ao documento do Edital é obrigatória")),
         new("DadosEdital.PeriodoInscricaoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.periodo_inscricao_invalido", "O fim do período de inscrição não pode anteceder o início")),
         new("DadosEdital.PeriodoInscricaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.periodo_inscricao_obrigatorio", "O período de inscrição exige início e fim definidos")),
-        // Issue #1350: o período passou a vir da janela da fase que coleta inscrição. Os três
-        // erros abaixo separam as três situações que o operador precisa distinguir — informar o
-        // que o sistema projeta, não informar o que só ele sabe, e configurar a fase sem janela.
+        // Issue #1350: as situações que o operador precisa distinguir ao datar a inscrição.
         new("ProcessoSeletivo.PeriodoInscricaoNaoInformavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.periodo_inscricao_nao_informavel", "O período de inscrição vem da janela da fase do cronograma que coleta inscrição e não pode ser informado na publicação")),
         new("ProcessoSeletivo.PeriodoInscricaoObrigatorioSemFaseDeColeta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.periodo_inscricao_obrigatorio_sem_fase_de_coleta", "O processo não tem fase do cronograma que colete inscrição, então o período precisa ser informado na publicação")),
         new("ProcessoSeletivo.FaseQueColetaInscricaoSemJanela", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_que_coleta_inscricao_sem_janela", "A fase que coleta inscrição precisa de início e fim definidos para que o Edital declare o período")),

@@ -9,13 +9,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <see cref="Entities.VersaoConfiguracao"/>. Não é persistido isoladamente —
 /// só existe como entrada de <see cref="Entities.ProcessoSeletivo.Publicar"/>.
 /// </summary>
-/// <remarks>
-/// O período é <see cref="DateTimeOffset"/>, não <c>DateOnly</c>: quando o processo
-/// coleta inscrição, ele é projetado da janela da fase do cronograma, que é instante
-/// (issue #1350). O dia civil continua sendo o que importa para vigência de norma, mas
-/// a derivação passa a ser explícita e no fuso institucional, em vez de implícita na
-/// granularidade do tipo.
-/// </remarks>
 public sealed record DadosEdital
 {
     private DadosEdital(
@@ -45,10 +38,9 @@ public sealed record DadosEdital
     /// certame (ADR-0114) — o início do período de inscrição, no fuso institucional.
     /// </summary>
     /// <remarks>
-    /// Vigência de norma é por dia, mas o período passou a ser instante (issue #1350), então a
-    /// conversão precisa ser explícita. Derivar o dia sobre UTC faria um processo publicado às 22h
-    /// de Belém — 01h UTC do dia seguinte — resolver a vigência do dia errado, e com ela outro
-    /// conjunto de regras. Não quebra teste nenhum: muda qual norma se aplica.
+    /// Derivar o dia sobre UTC faz um processo publicado às 22h de Belém — 01h UTC do dia
+    /// seguinte — resolver a vigência do dia errado, e com ela outro conjunto de regras. Não
+    /// quebra teste nenhum: muda qual norma se aplica.
     /// </remarks>
     /// <param name="fusoInstitucional">
     /// Zona em que o instante vira dia civil. Vem de fora pelo mesmo motivo de
