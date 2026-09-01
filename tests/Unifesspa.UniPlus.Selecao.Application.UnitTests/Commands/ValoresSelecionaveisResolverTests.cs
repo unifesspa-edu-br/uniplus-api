@@ -268,6 +268,8 @@ public sealed class ValoresSelecionaveisResolverTests
             CadastrosVivos.Modalidades(),
             CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             mocks.FatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             TimeProvider.System,

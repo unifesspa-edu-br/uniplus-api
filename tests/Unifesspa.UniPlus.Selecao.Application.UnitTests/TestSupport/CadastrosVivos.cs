@@ -1,8 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
+using System.Text.Json;
+
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Cadastros de Configuração como os testes de outro assunto precisam vê-los: contendo os
@@ -22,6 +28,55 @@ internal static class CadastrosVivos
     private static readonly string[] ModalidadesDaSuite = ["AC", "LB_PPI", "LB_Q", "LB_EP"];
     private static readonly string[] TiposDocumentoDaSuite = ["LAUDO_MEDICO"];
     private static readonly string[] TiposEtapaDaSuite = ["PROVA_OBJETIVA", "ENTREVISTA", "ETAPA_NAO_OFERTADA"];
+    private static readonly string[] TiposDeficienciaDaSuite = ["DEFICIENCIA_VISUAL", "TEA"];
+    private static readonly string[] RegrasDesempateDaSuite = ["IDADE_MAIOR", "MAIOR_NOTA_REDACAO"];
+
+    public static ITipoDeficienciaReader TiposDeficiencia(params string[] codigos)
+    {
+        string[] vivos = codigos.Length == 0 ? TiposDeficienciaDaSuite : codigos;
+        ITipoDeficienciaReader reader = Substitute.For<ITipoDeficienciaReader>();
+        reader.ListarVivosAsync(Arg.Any<CancellationToken>())
+            .Returns([.. vivos.Select(TipoDeficiencia)]);
+        return reader;
+    }
+
+    public static TipoDeficienciaView TipoDeficiencia(string codigo) =>
+        new(Guid.CreateVersion7(), codigo, codigo, $"Descrição de {codigo}", null);
+
+    /// <summary>
+    /// Catálogo de regras de desempate contendo os códigos que os cenários citam. O
+    /// predicado cita só o código; a versão é irrelevante para a conferência.
+    /// </summary>
+    public static IRegraCatalogoReader RegrasDesempate(params string[] codigos)
+    {
+        string[] vivas = codigos.Length == 0 ? RegrasDesempateDaSuite : codigos;
+        IRegraCatalogoReader reader = Substitute.For<IRegraCatalogoReader>();
+        reader.ListarPorTipoAsync(TipoRegra.CriterioDesempate, Arg.Any<CancellationToken>())
+            .Returns([.. vivas.Select(RegraDesempate)]);
+        return reader;
+    }
+
+    private static RegraCatalogo RegraDesempate(string codigo)
+    {
+        // esquema_args precisa ser objeto e invariantes precisa ser array — a factory
+        // recusa qualquer outra forma, e um dublê que devolvesse null aqui só apareceria
+        // como NullReferenceException lá adiante, na conferência.
+        using JsonDocument esquema = JsonDocument.Parse("{}");
+        using JsonDocument invariantes = JsonDocument.Parse("[]");
+
+        Result<RegraCatalogo> resultado = RegraCatalogo.Criar(
+            codigo,
+            "v1",
+            TipoRegra.CriterioDesempate,
+            esquema.RootElement.Clone(),
+            invariantes.RootElement.Clone(),
+            "Regra de teste");
+
+        return resultado.IsSuccess
+            ? resultado.Value!
+            : throw new InvalidOperationException(
+                $"Dublê de regra de desempate inválido para '{codigo}': {resultado.Error?.Message}");
+    }
 
     public static IModalidadeReader Modalidades(params string[] codigos)
     {

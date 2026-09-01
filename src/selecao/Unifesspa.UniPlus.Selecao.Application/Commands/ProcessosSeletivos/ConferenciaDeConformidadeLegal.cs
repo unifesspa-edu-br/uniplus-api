@@ -38,6 +38,8 @@ internal static class ConferenciaDeConformidadeLegal
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
         ITipoEtapaReader tipoEtapaReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
@@ -53,7 +55,7 @@ internal static class ConferenciaDeConformidadeLegal
         // por vacuidade pelo avaliador, que é domínio puro e não consulta cadastro.
         // Publicar sob ela seria publicar sob obrigação que ninguém pode cumprir.
         Result referencias = await ConferenciaDeReferenciasDasRegras
-            .ConferirAsync(regrasVigentes, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken)
+            .ConferirAsync(regrasVigentes, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
             .ConfigureAwait(false);
         if (referencias.IsFailure)
         {

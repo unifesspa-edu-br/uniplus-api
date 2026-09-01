@@ -25,6 +25,8 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         ITipoEtapaReader tipoEtapaReader,
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -42,7 +44,12 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         }
 
         Result<PredicadoObrigatoriedade> predicadoResult = await ReferenciasDoPredicado
-            .NormalizarEValidarAsync(command.Predicado, tipoEtapaReader, modalidadeReader, tipoDocumentoReader, cancellationToken)
+            .NormalizarEValidarAsync(command.Predicado, tipoEtapaReader,
+                modalidadeReader,
+                tipoDocumentoReader,
+                tipoDeficienciaReader,
+                regraCatalogoReader,
+                cancellationToken)
             .ConfigureAwait(false);
         if (predicadoResult.IsFailure)
         {

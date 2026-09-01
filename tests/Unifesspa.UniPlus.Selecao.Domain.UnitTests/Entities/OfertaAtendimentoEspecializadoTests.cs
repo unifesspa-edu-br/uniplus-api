@@ -19,7 +19,7 @@ public sealed class OfertaAtendimentoEspecializadoTests
         Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
             [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
             [],
-            [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "Deficiência visual")]);
+            [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.TiposDeficiencia.Should().ContainSingle();
@@ -43,7 +43,7 @@ public sealed class OfertaAtendimentoEspecializadoTests
         Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
             [OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante")],
             [],
-            [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "Deficiência visual")]);
+            [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("OfertaAtendimento.TipoDeficienciaSemCondicaoPcd");
@@ -58,7 +58,7 @@ public sealed class OfertaAtendimentoEspecializadoTests
         Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
             [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
             [OfertaRecurso.Criar(recursoId, "Ledor"), OfertaRecurso.Criar(recursoId, "Ledor")],
-            [OfertaTipoDeficiencia.Criar(tipoId, "Deficiência visual"), OfertaTipoDeficiencia.Criar(tipoId, "Deficiência visual")]);
+            [OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"), OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
@@ -76,7 +76,7 @@ public sealed class OfertaAtendimentoEspecializadoTests
         Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
             [],
             [],
-            [OfertaTipoDeficiencia.Criar(tipoId, "Deficiência visual"), OfertaTipoDeficiencia.Criar(tipoId, "Deficiência visual")]);
+            [OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"), OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(

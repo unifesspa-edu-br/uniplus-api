@@ -162,7 +162,7 @@ public sealed class ProcessoSeletivoTests
         Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
             condicoes: [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
             recursos: [OfertaRecurso.Criar(Guid.CreateVersion7(), "Ledor")],
-            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "Deficiência visual")]);
+            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.TiposDeficiencia.Should().HaveCount(1);
@@ -174,7 +174,7 @@ public sealed class ProcessoSeletivoTests
         Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
             condicoes: [OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante")],
             recursos: [],
-            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "Deficiência visual")]);
+            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("OfertaAtendimento.TipoDeficienciaSemCondicaoPcd");
@@ -222,8 +222,8 @@ public sealed class ProcessoSeletivoTests
             recursos: [],
             tiposDeficiencia:
             [
-                OfertaTipoDeficiencia.Criar(tipoId, "Deficiência visual"),
-                OfertaTipoDeficiencia.Criar(tipoId, "Deficiência visual"),
+                OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"),
+                OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"),
             ]);
 
         result.IsFailure.Should().BeTrue();

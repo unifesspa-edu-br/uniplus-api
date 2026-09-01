@@ -37,6 +37,8 @@ public static class PublicarProcessoSeletivoCommandHandler
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
         ITipoEtapaReader tipoEtapaReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
         TimeProvider timeProvider,
@@ -151,7 +153,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         // Segunda dimensão de conformidade, ao lado da estrutural — mesma antecipação,
         // mesmo motivo (ADR-0109 D5): um processo não conforme não chega a ser projetado.
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
-            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken)
+            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
             .ConfigureAwait(false);
         if (conformidadeLegal.IsFailure)
         {

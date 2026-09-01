@@ -5,6 +5,8 @@ using System.Text;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -43,12 +45,16 @@ internal static class ReferenciasDoPredicado
         ITipoEtapaReader tipoEtapaReader,
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(predicado);
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(modalidadeReader);
         ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
+        ArgumentNullException.ThrowIfNull(tipoDeficienciaReader);
+        ArgumentNullException.ThrowIfNull(regraCatalogoReader);
 
         // Forma primeiro: código em branco vira busca por string vazia, que o cadastro
         // legitimamente não encontra — a recusa sairia como "código não existe" e
@@ -71,6 +77,12 @@ internal static class ReferenciasDoPredicado
             ModalidadesMinimas modalidades =>
                 await NormalizarModalidadesMinimasAsync(modalidades, modalidadeReader, cancellationToken).ConfigureAwait(false),
 
+            AtendimentoDisponivel atendimento =>
+                await NormalizarAtendimentoDisponivelAsync(atendimento, tipoDeficienciaReader, cancellationToken).ConfigureAwait(false),
+
+            DesempateDeveIncluir desempate =>
+                await NormalizarDesempateDeveIncluirAsync(desempate, regraCatalogoReader, cancellationToken).ConfigureAwait(false),
+
             _ => Result<PredicadoObrigatoriedade>.Success(predicado),
         };
     }
@@ -86,6 +98,75 @@ internal static class ReferenciasDoPredicado
     internal static DomainError TipoDocumentoNaoEncontrado(string codigo) => new(
         "ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado",
         $"Tipo de documento '{codigo}' não encontrado entre os tipos vivos do cadastro.");
+
+    internal static DomainError TipoDeficienciaNaoEncontrada(string codigo) => new(
+        "ObrigatoriedadeLegal.TipoDeficienciaNaoEncontrada",
+        $"Tipo de deficiência '{codigo}' não encontrado entre os tipos vivos do cadastro.");
+
+    internal static DomainError CriterioDesempateNaoEncontrado(string codigo) => new(
+        "ObrigatoriedadeLegal.CriterioDesempateNaoEncontrado",
+        $"Critério de desempate '{codigo}' não encontrado no catálogo de regras.");
+
+    /// <summary>
+    /// Confere cada código de tipo de deficiência exigido contra o cadastro vivo.
+    /// </summary>
+    /// <remarks>
+    /// O predicado passou a referenciar o tipo pelo <b>código</b>, não pelo nome: o
+    /// nome é rótulo editorial e muda sem aviso, e uma regra escrita com o rótulo
+    /// antigo deixaria de casar depois de uma renomeação cosmética — reprovando
+    /// processos conformes sem que nada no cadastro sinalizasse o motivo.
+    /// </remarks>
+    private static async Task<Result<PredicadoObrigatoriedade>> NormalizarAtendimentoDisponivelAsync(
+        AtendimentoDisponivel predicado,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<TipoDeficienciaView> vivos = await tipoDeficienciaReader
+            .ListarVivosAsync(cancellationToken).ConfigureAwait(false);
+        HashSet<string> codigosVivos = new(vivos.Select(t => t.Codigo), StringComparer.Ordinal);
+
+        List<string> normalizados = [];
+        foreach (string necessidade in predicado.Necessidades)
+        {
+            string codigo = Normalizar(necessidade);
+            if (!codigosVivos.Contains(codigo))
+            {
+                return Result<PredicadoObrigatoriedade>.Failure(TipoDeficienciaNaoEncontrada(codigo));
+            }
+
+            normalizados.Add(codigo);
+        }
+
+        return Result<PredicadoObrigatoriedade>.Success(predicado with { Necessidades = normalizados });
+    }
+
+    /// <summary>
+    /// Confere o código do critério contra as regras de desempate do catálogo.
+    /// </summary>
+    /// <remarks>
+    /// Sem esta conferência, um código inexistente reprovava toda publicação com a
+    /// mensagem "critério de desempate ausente" — que descreve o processo seletivo e
+    /// manda o operador procurar o defeito no lugar errado, quando ele está na regra.
+    /// </remarks>
+    private static async Task<Result<PredicadoObrigatoriedade>> NormalizarDesempateDeveIncluirAsync(
+        DesempateDeveIncluir predicado,
+        IRegraCatalogoReader regraCatalogoReader,
+        CancellationToken cancellationToken)
+    {
+        string codigo = Normalizar(predicado.Criterio);
+
+        IReadOnlyList<RegraCatalogo> regras = await regraCatalogoReader
+            .ListarPorTipoAsync(TipoRegra.CriterioDesempate, cancellationToken).ConfigureAwait(false);
+
+        // O catálogo é versionado: o predicado cita só o código, e basta existir uma
+        // versão dele para a regra ser avaliável. Qual versão vale num certame é
+        // decisão de quem configura o processo, não da obrigatoriedade legal.
+        bool existe = regras.Any(r => string.Equals(r.Codigo, codigo, StringComparison.Ordinal));
+
+        return existe
+            ? Result<PredicadoObrigatoriedade>.Success(predicado with { Criterio = codigo })
+            : Result<PredicadoObrigatoriedade>.Failure(CriterioDesempateNaoEncontrado(codigo));
+    }
 
     private static async Task<Result<PredicadoObrigatoriedade>> NormalizarEtapaAsync(
         EtapaObrigatoria predicado,

@@ -63,6 +63,8 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.Modalidades(),
             CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             CancellationToken.None);
 
         dto.Should().NotBeNull();
@@ -122,6 +124,8 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             modalidadeReader,
             CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             CancellationToken.None);
 
         dto.Should().NotBeNull();
@@ -146,6 +150,8 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.Modalidades(),
             CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             CancellationToken.None);
 
         dto.Should().BeNull();
