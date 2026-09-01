@@ -357,7 +357,8 @@ por qual caminho.
 ### Consequência conhecida, e como o critério a evita
 
 `HasData` em cadastro **também** administrável tem dois riscos, e a segunda metade do critério
-elimina os dois por construção — a migration de seed não emite nenhum dos dois comandos:
+elimina os dois por construção — **em catálogo administrável**, a migration de seed não emite
+nenhum dos dois comandos:
 
 - **`UpdateData`**, gerado ao editar um item da lista, sobrescreveria o que o administrador mudou
   naquela linha;
@@ -370,6 +371,16 @@ Onde o EF geraria qualquer um deles, a migration é escrita à mão: `Sql` com `
 DO NOTHING` para acrescentar, e nada mais. Retirar um código do vocabulário é decisão que passa
 pelo caminho administrativo, não por scaffold.
 
+**A proibição é do catálogo administrável, não da migration.** Em vocabulário **sem CRUD** —
+`FatoCandidato` e `FatoValorDominio` — a migration de seed é o único caminho de escrita que existe,
+e reclassificar um fato exige alterar a linha: é o que a
+[ADR-0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) determina, e `INSERT … ON
+CONFLICT DO NOTHING` não faria. Ali o `UPDATE` em migration é legítimo, porque não há operador cuja
+edição possa ser sobrescrita — o blame da mudança fica no PR, que é onde ele existe.
+
+O discriminador é o mesmo da tabela de momentos: **se a tela permite editar aquele campo, a
+migration não pode tocá-lo.**
+
 **A prescrição vale daqui em diante, e não cobre o que já foi aplicado.** As três migrations de
 `Modalidade` — `20260723111701_SeedModalidadesFederais`, `20260829000213_SemeiaModalidadePcdPuro` e
 `20260829005332_SemeiaModalidadesInstitucionaisPsiq` — usam `InsertData`, anterior a esta emenda.
@@ -377,7 +388,8 @@ Num ambiente onde um administrador já tenha criado um dos códigos semeados, o 
 único **aborta a migração** em vez de pular a linha, e com ela o deploy. O risco é baixo (os códigos
 são das modalidades legais, que ninguém cadastra à mão) mas real, e converter essas migrations
 exigiria reescrever migration já aplicada — trabalho próprio, não desta emenda. As de
-`CategoriaDocumento`, `TipoDocumento` e `FaseCanonica` já seguem a forma tolerante.
+`CategoriaDocumento` e `TipoDocumento` já seguem a forma tolerante; a de `FaseCanonica` nasce assim
+na mudança que a semeia, ainda não aplicada.
 
 ## Mais informações
 
