@@ -44,10 +44,17 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 END $$;
                 """);
 
-            // Resíduo: linha cuja origem não existe mais nem sob exclusão lógica — só
-            // acontece se o cadastro tiver sido apagado fisicamente, fora do fluxo da
-            // aplicação. Não há de onde tirar o código, e mantê-la com valor inventado
-            // deixaria um snapshot que nenhuma regra casaria.
+            // Resíduo: linha cuja origem não existe mais nem sob exclusão lógica. Não há
+            // de onde tirar o código, e mantê-la com valor inventado deixaria um snapshot
+            // que nenhuma regra casaria.
+            //
+            // Há um caso conhecido em que isso alcança tudo: um banco que ainda não tinha
+            // aplicado a migration de Configuração que introduziu o código do tipo de
+            // deficiência, porque ela apaga fisicamente o cadastro antes de criar a
+            // coluna. Como Configuração migra antes de Seleção, o backfill acima encontra
+            // o cadastro já vazio. A perda, nesse caso, é anterior a esta migration — a
+            // oferta já apontava para origem inexistente desde aquele apagamento —, e o
+            // que sobrava era o nome sem identidade que o resolvesse.
             migrationBuilder.Sql(
                 """
                 DELETE FROM selecao.ofertas_tipo_deficiencia
