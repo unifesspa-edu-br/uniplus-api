@@ -394,6 +394,14 @@ que **ninguém tocou** — em base nova e em base antiga igualmente — e não a
 editou, que é a única que a regra protege. O `AuditableInterceptor` preenche as duas colunas em
 qualquer escrita pela API, então a distinção é mecânica.
 
+**Vale para atributo, não para o código.** O código é a identidade que as outras tabelas guardam —
+como texto, sem chave estrangeira —, então renomeá-lo por `UPDATE` deixa as referências apontando
+para o valor antigo, exatamente como o `DELETE` faria. Corrigir código errado exige a mesma
+verificação de referência viva descrita abaixo, e, havendo alguma, deixa de ser correção por
+migration: vira substituição com tratamento do que aponta, como a
+[ADR-0112](0112-substituicao-de-entrada-de-catalogo-antes-do-primeiro-congelamento.md) descreve
+para o catálogo de regras.
+
 **Remoção exige uma condição a mais: nenhuma referência viva.** As colunas de auditoria não
 denunciam uso — usar uma categoria não atualiza a linha dela —, e as referências entre cadastros
 deste módulo são **texto sem chave estrangeira**: `TipoDocumento.categoria` guarda o código de
