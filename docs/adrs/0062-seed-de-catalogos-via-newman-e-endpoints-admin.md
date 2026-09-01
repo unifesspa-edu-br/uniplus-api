@@ -265,10 +265,26 @@ Diretriz do Tech Lead (2026-09-01), em duas metades:
 |---|---|
 | criação de dado normativo | seed **ou** carga admin — indiferente |
 | criação de dado operacional | endpoint admin, com autor |
-| qualquer update | endpoint admin, com autor |
+| update de dado **administrável** | endpoint admin, com autor |
+| evolução de **vocabulário sem CRUD** | migration de seed, revisada em PR |
 
 O critério classifica pela **natureza do dado**, não pela consequência da ausência: não depende de
 julgar o quanto uma falta dói.
+
+### A quarta linha, e por que ela não é exceção ao critério
+
+`FatoCandidato` e `FatoValorDominio` são **append-only e não têm CRUD**: o controller expõe apenas
+`GET fatos-candidato` e `GET fatos-candidato/{codigo}`, e a [ADR-0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md)
+determina que reclassificar um fato se faz por migration de seed. Exigir "update via API" desses
+catálogos mandaria usar um caminho que não existe.
+
+A regra do update continua valendo pelo que ela protege: **alterar dado que alguém administra exige
+saber quem alterou**. Nesses catálogos não há dado administrado — há vocabulário, e mudá-lo é
+mudança de código. O blame não some: está no commit e no PR que alterou a lista, com revisão. O que
+não se admite é migration que altere linha de cadastro **administrável**, porque ali existe um
+operador cuja edição seria sobrescrita sem registro.
+
+Distinção prática: se a tela permite editar aquele campo, a migration não pode tocá-lo.
 
 ### Por que isto não contradiz o driver de auditoria honesta
 
@@ -299,17 +315,25 @@ preservado — não relaxado.
 
 | Regime | Entidades |
 |---|---|
-| `HasData` em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `FaseCanonica` |
+| Seed em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `TipoEtapa`, `FaseCanonica` |
 | Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento` |
+
+`TipoEtapa` entra na primeira coluna por constatação, não por decisão nova: a migration
+`20260811221349_CriaCadastroTiposEtapa` já insere os sete códigos legados com autor nulo. Mantê-lo
+no bootstrap por Newman faria a collection, numa base recém-migrada, tentar `POST` de códigos que já
+existem — conflito onde ela espera 200/201, e o passo pós-deploy falha. Acrescentar tipo novo
+permanece administrativo.
 
 O critério reclassifica exatamente o que a prática já havia movido — sinal de que descreve a razão
 que os autores seguiram sem nomear.
 
 ### Efeito sobre os arquivos de seed previstos
 
-`seeds/seed-modalidades.json` e `seeds/seed-tipos-documento.json` **saem do escopo do bootstrap por
-Newman**: ambos são vocabulário normativo, e `TipoDocumento` já é semeado por migration. Os demais
-arquivos da lista original permanecem no regime de endpoint admin.
+`seeds/seed-modalidades.json`, `seeds/seed-tipos-documento.json` e `seeds/seed-tipos-etapa.json`
+**saem do escopo do bootstrap por Newman**: os três são vocabulário normativo, e `TipoDocumento` e
+`TipoEtapa` já são semeados por migration. Manter qualquer um deles na collection produz conflito
+numa base recém-migrada, não idempotência. Os demais arquivos da lista original permanecem no
+regime de endpoint admin.
 
 ### O que permanece válido
 
