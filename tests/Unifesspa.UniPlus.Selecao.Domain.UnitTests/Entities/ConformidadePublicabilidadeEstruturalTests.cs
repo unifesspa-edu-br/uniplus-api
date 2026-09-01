@@ -182,6 +182,33 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta");
     }
 
+    [Fact(DisplayName = "Cronograma: fase que coleta inscrição sem janela — item vermelho e Publicar recusa com FaseQueColetaInscricaoSemJanela")]
+    public void Cronograma_FaseQueColetaInscricaoSemJanela()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Matriz Estrutural", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
+                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // A fase coleta inscrição e é DELEGADA, então a janela é opcional para o cadastro (§3.2)
+        // — mas não para publicar: é dela que o Edital tira o prazo (issue #1350).
+        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+            .Which.Codigo.Should().Be("cronograma_fase_que_coleta_inscricao_sem_janela");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseQueColetaInscricaoSemJanela");
+    }
+
     [Fact(DisplayName = "Cronograma: vagas ofertadas sem fase que produz resultado — item vermelho e Publicar recusa com VagasSemFaseQueProduzResultado")]
     public void Cronograma_VagasSemFaseQueProduzResultado()
     {

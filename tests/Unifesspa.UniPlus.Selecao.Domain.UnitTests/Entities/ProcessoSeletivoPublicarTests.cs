@@ -35,9 +35,10 @@ public sealed class ProcessoSeletivoPublicarTests
     /// atendimento, distribuição de vagas, classificação) — o par exigido
     /// pelo gate de conformidade de <see cref="ProcessoSeletivo.Publicar"/>.
     /// </summary>
-    private static ProcessoSeletivo NovoProcessoConforme()
+    private static ProcessoSeletivo NovoProcessoConforme(
+        OrigemCandidatos origemCandidatos = OrigemCandidatos.InscricaoPropria)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, origemCandidatos, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1).Value!,
@@ -459,26 +460,23 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente");
     }
 
-    /// <summary>Cronograma com a coleta de inscrição numa fase DELEGADA (sem janela) e o resultado numa fase PROPRIA separada — a única forma de ter uma fase ColetaInscricao=true sem Fim.</summary>
-    private static Guid DefinirCronogramaComColetaSemFim(ProcessoSeletivo processo)
+    /// <summary>
+    /// Cronograma SEM nenhuma fase que colete inscrição, com o resultado numa fase PROPRIA.
+    /// </summary>
+    /// <remarks>
+    /// Era, antes da issue #1350, um cronograma com a coleta numa fase DELEGADA sem janela — "a
+    /// única forma de ter uma fase ColetaInscricao=true sem Fim". Aquele estado deixou de ser
+    /// publicável: a fase que coleta inscrição passou a exigir janela, e a recusa dela roda no
+    /// gate do cronograma, ANTES do B-03. O teste continuaria verde recusando pelo motivo errado.
+    /// <para>
+    /// O caminho que sobrou para alcançar o B-03 é este: nenhuma fase de coleta, com FIM_INSCRICAO
+    /// declarado assim mesmo — <c>DefinirReferenciaTemporalFatos</c> não guarda contra isso, e é
+    /// por isso que o gate segue sendo a única barreira. Sem ele,
+    /// <c>ResolverDataReferenciaFatos</c> lança e o 422 vira 500.
+    /// </para>
+    /// </remarks>
+    private static Guid DefinirCronogramaSemFaseDeColeta(ProcessoSeletivo processo)
     {
-        FaseCronograma coleta = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "INSCRICAO",
-            donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Delegada,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            produzResultado: false,
-            resultadoDefinitivo: false,
-            coletaInscricao: true,
-            inicio: null,
-            fim: null,
-            atoProduzidoCodigo: null,
-            atoProduzidoEfeitoIrreversivel: false,
-            bancasRequeridas: [],
-            regraRecurso: null).Value!;
         FaseCronograma resultado = FaseCronograma.Criar(
             ordem: 2,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
@@ -496,15 +494,27 @@ public sealed class ProcessoSeletivoPublicarTests
             atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
-        processo.DefinirCronogramaFases([coleta, resultado], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        return coleta.Id;
+        processo.DefinirCronogramaFases([resultado], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        return resultado.Id;
     }
 
-    [Fact(DisplayName = "B-03: FIM_INSCRICAO sem nenhuma fase de coleta com Fim definido bloqueia publicação")]
+    /// <summary>
+    /// O único caminho que resta até o B-03 depois da issue #1350, e o motivo de ele continuar
+    /// existindo.
+    /// </summary>
+    /// <remarks>
+    /// Os outros dois caminhos foram fechados por gates que rodam antes: com inscrição própria,
+    /// a ausência de fase de coleta é recusada por <c>InscricaoPropriaSemFaseDeColeta</c>; com
+    /// fase de coleta presente, a falta de janela é recusada por
+    /// <c>FaseQueColetaInscricaoSemJanela</c>. Sobra a importação externa, que legitimamente não
+    /// tem fase de coleta e ainda assim aceita declarar FIM_INSCRICAO —
+    /// <c>DefinirReferenciaTemporalFatos</c> não guarda contra isso.
+    /// </remarks>
+    [Fact(DisplayName = "B-03: FIM_INSCRICAO sem nenhuma fase que colete inscrição bloqueia publicação")]
     public void Publicar_FimInscricaoSemFaseComFimDefinido_BloqueadoPorB03()
     {
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        Guid faseColetaId = DefinirCronogramaComColetaSemFim(processo);
+        ProcessoSeletivo processo = NovoProcessoConforme(OrigemCandidatos.ImportacaoExterna);
+        Guid faseColetaId = DefinirCronogramaSemFaseDeColeta(processo);
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(

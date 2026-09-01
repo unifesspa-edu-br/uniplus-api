@@ -63,7 +63,11 @@ public sealed class GateDoCalendarioVigenteTests
         FaseCronograma.Criar(
             1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
-            resultadoDefinitivo: false, coletaInscricao: true, inicio: null, fim: null,
+            // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
+            // DELEGADA (issue #1350) — as demais fases deste cronograma seguem sem data.
+            resultadoDefinitivo: false, coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+            fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [], regraRecurso: null).Value!,
         FaseCronograma.Criar(
