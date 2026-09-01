@@ -1727,6 +1727,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_fase_agrupadora_sem_etapa_pontuada", DimensaoConformidade.Cronograma, "Cronograma: fase que agrupa etapas só quando há etapa pontuada", !HaFaseDeAvaliacaoSemEtapa()),
         new ItemConformidade("cronograma_etapa_pontuada_sem_fase_agrupadora", DimensaoConformidade.Cronograma, "Cronograma: etapa pontuada tem fase que agrupa etapas", !HaEtapaSemFaseDeAvaliacao()),
         new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !HaInscricaoPropriaSemFaseDeColeta()),
+        new ItemConformidade("cronograma_fase_que_coleta_inscricao_sem_janela", DimensaoConformidade.Cronograma, "Cronograma: a fase que coleta inscrição tem início e fim definidos", FaseQueColetaInscricaoSemJanela() is null),
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
@@ -2057,7 +2058,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// (qual falha é devolvida primeiro) continua decidida só aqui, pela ORDEM dos
     /// <c>if</c>; o checklist não reordena nem filtra — só projeta todos os quatro.
     /// </remarks>
-    private DomainError? PendenciaDoCronograma()
+    /// <remarks>
+    /// Público, e não privado como os demais gates do cronograma: o handler o antecipa antes de
+    /// canonicalizar (issue #1350). Sem isso a recusa da fase de coleta sem janela chegaria depois
+    /// de PendenciaPreCanonicalizacao, e um processo que também tivesse referência temporal
+    /// irresolvível receberia pelo endpoint a recusa da referência — diagnóstico obscuro para quem
+    /// só precisa saber que falta datar a inscrição.
+    /// </remarks>
+    public DomainError? PendenciaDoCronograma()
     {
         // §3.5, direção "fase de avaliação sem etapa" — defesa em profundidade: o mesmo
         // sentido já é bloqueado eagerly em DefinirCronogramaFases, mas uma etapa
@@ -2087,6 +2095,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A origem dos candidatos é inscrição própria, e nenhuma fase do cronograma coleta inscrição.");
         }
 
+        // Issue #1350: a fase que coleta inscrição declara o prazo que o Edital publica, então
+        // ela precisa de janela mesmo quando a origem da data é DELEGADA. É a única exceção à
+        // §3.2 — nas demais fases, "sem data" continua sendo estado válido, porque o setor
+        // responsável não congela data que não controla. Um Edital que admite inscrição sem
+        // prazo definido, esse não se sustenta.
+        if (FaseQueColetaInscricaoSemJanela() is { } faseSemJanela)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
+                $"A fase '{faseSemJanela.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período.");
+        }
+
         // §3.4 — havendo vagas ofertadas, o cronograma precisa de ao menos uma fase que
         // produza resultado.
         if (HaVagasSemFaseQueProduzResultado())
@@ -2108,6 +2128,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _etapas.Count > 0 && !_cronogramaFases.Any(static f => f.AgrupaEtapas);
 
     /// <summary>Origem InscricaoPropria sem nenhuma fase que colete inscrição (§3.4).</summary>
+    /// <summary>
+    /// A fase que ancora o período de inscrição quando ela existe e está sem janela (issue #1350)
+    /// — <see langword="null"/> quando não há fase de coleta, ou quando a que há tem os dois
+    /// extremos definidos.
+    /// </summary>
+    /// <remarks>
+    /// Incide sobre a MESMA fase que <see cref="FaseQueAncoraOPeriodoDeInscricao"/> elege, e não
+    /// sobre "alguma fase de coleta": fossem conjuntos diferentes, a projeção poderia tirar o
+    /// período de uma fase enquanto a recusa olhasse outra.
+    /// </remarks>
+    private FaseCronograma? FaseQueColetaInscricaoSemJanela() =>
+        FaseQueAncoraOPeriodoDeInscricao() is { } ancora && (ancora.Inicio is null || ancora.Fim is null)
+            ? ancora
+            : null;
+
     private bool HaInscricaoPropriaSemFaseDeColeta() =>
         OrigemCandidatos == OrigemCandidatos.InscricaoPropria && !_cronogramaFases.Any(static f => f.ColetaInscricao);
 

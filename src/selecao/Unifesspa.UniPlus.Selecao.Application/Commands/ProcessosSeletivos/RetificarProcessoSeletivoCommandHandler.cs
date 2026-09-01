@@ -187,6 +187,16 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCascata), []);
         }
 
+        // Issue #1350: antecipado aqui porque a projeção do período depende da janela da fase
+        // que coleta inscrição. Deixá-lo para dentro de Publicar() faria o endpoint devolver a
+        // recusa de PendenciaPreCanonicalizacao — que roda antes, no handler — quando as duas se
+        // aplicam, e o operador leria "referência temporal irresolvível" em vez de "falta datar a
+        // fase de inscrição".
+        if (processo.PendenciaDoCronograma() is { } pendenciaCronograma)
+        {
+            return (Result.Failure(pendenciaCronograma), []);
+        }
+
         // Resolvido aqui, e não junto da canonicalização, porque a conferência legal abaixo
         // precisa do fuso para derivar o dia civil do início da inscrição (issue #1350). O ponto
         // é entre a cascata e a conferência de propósito: preserva todas as precedências já
