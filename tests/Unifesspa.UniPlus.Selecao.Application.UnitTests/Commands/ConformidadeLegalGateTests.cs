@@ -49,6 +49,43 @@ public sealed class ConformidadeLegalGateTests
     private static ObrigatoriedadeLegal RegraQueAprova() =>
         NovaRegra("GATE-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
+    [Fact(DisplayName = "Processo sem regra vigente não consulta catálogo algum")]
+    public async Task Publicar_SemRegraVigente_NaoConsultaCatalogos()
+    {
+        // O atalho não é só desempenho: sem ele, todo tipo de processo que ainda não tem
+        // obrigatoriedade legal cadastrada passa a depender da leitura de cinco cadastros
+        // que não vai usar.
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        IModalidadeReader modalidadeReader = Substitute.For<IModalidadeReader>();
+        ITipoDocumentoReader tipoDocumentoReader = Substitute.For<ITipoDocumentoReader>();
+
+        (Result resposta, _) = await PublicarProcessoSeletivoCommandHandler.Handle(
+            new PublicarProcessoSeletivoCommand(
+                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
+            RepositorioDoProcesso(processo),
+            RepositorioDeDocumento(processo.Id),
+            CanonicalizerSubstituto(), new ResolvedorFusoDeTeste(),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            UsuarioAutenticado(),
+            TipoDeAtoReader(),
+            Substitute.For<IVagaDeLinhagemReader>(),
+            RepositorioCom(),
+            modalidadeReader,
+            tipoDocumentoReader,
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
+            new RelogioFixo(Agora),
+            CancellationToken.None);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        await modalidadeReader.DidNotReceive().ListarVivosAsync(Arg.Any<CancellationToken>());
+        await tipoDocumentoReader.DidNotReceive().ListarVivosAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Regra vigente que referencia tipo de documento inexistente recusa a publicação")]
     public async Task Publicar_ComRegraQueReferenciaTipoDocumentoInexistente_Recusa()
     {

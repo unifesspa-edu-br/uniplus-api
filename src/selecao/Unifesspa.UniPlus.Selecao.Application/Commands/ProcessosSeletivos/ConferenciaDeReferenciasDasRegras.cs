@@ -53,6 +53,17 @@ internal static class ConferenciaDeReferenciasDasRegras
         ArgumentNullException.ThrowIfNull(tipoDeficienciaReader);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
 
+        // Sem regra vigente não há referência a conferir nem predicado a avaliar: o mapa
+        // de identidade só serve para casar exigência com regra, e não há regra. Consultar
+        // os cinco catálogos aqui cobraria latência de banco de todo tipo de processo que
+        // ainda não tem obrigatoriedade legal cadastrada.
+        if (regras.Count == 0)
+        {
+            return new RelatorioDeReferencias(
+                new Dictionary<Guid, string>(),
+                new Dictionary<string, Guid>(StringComparer.Ordinal));
+        }
+
         CatalogosVivos catalogos = await CarregarCatalogosAsync(
             modalidadeReader,
             tipoDocumentoReader,
