@@ -371,6 +371,33 @@ Onde o EF geraria qualquer um deles, a migration é escrita à mão: `Sql` com `
 DO NOTHING` para acrescentar, e nada mais. Retirar um código do vocabulário é decisão que passa
 pelo caminho administrativo, não por scaffold.
 
+### Como se corrige um item semeado que nasceu errado
+
+Descartar o `UpdateData`/`DeleteData` gerado resolve o risco de sobrescrever o operador, mas
+sozinho cria outro: a migration original continua inalterada, então **toda base criada depois ainda
+recebe a linha obsoleta**. Corrigir só pela API conserta o ambiente onde alguém rodou a correção e
+deixa o conteúdo do catálogo dependendo da idade do banco — e os arquivos de bootstrap desses
+catálogos saíram do Newman, então não há passo pós-deploy que reponha.
+
+A correção é **nova migration**, nunca edição da migration já aplicada, com o comando condicionado
+a a linha continuar como o seed a criou:
+
+```sql
+UPDATE configuracao.<tabela> SET <coluna> = <valor novo>
+ WHERE id = '<id determinístico do seed>'
+   AND updated_at IS NULL
+   AND created_by IS NULL;
+```
+
+As duas condições de auditoria são o que distingue este `UPDATE` do proibido: ele alcança a linha
+que **ninguém tocou** — em base nova e em base antiga igualmente — e não alcança a que o operador
+editou, que é a única que a regra protege. O `AuditableInterceptor` preenche as duas colunas em
+qualquer escrita pela API, então a distinção é mecânica.
+
+Remoção segue a mesma forma, com `DELETE` sob as mesmas condições. Onde a linha tiver dono, a
+correção é ato administrativo — e a divergência que sobra é deliberada, não acidente de idade do
+banco.
+
 **A proibição é do catálogo administrável, não da migration.** Nos catálogos de fato —
 `FatoCandidato` e `FatoValorDominio` — a migration de seed é o único caminho de escrita que existe,
 e reclassificar um fato exige alterar a linha: é o que a
