@@ -40,6 +40,8 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
             CadastrosVivos.TiposEtapa(),
             ModalidadeReaderSem(ModalidadeAusente),
             CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             unitOfWork,
             CancellationToken.None);
 
@@ -65,6 +67,8 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.Modalidades(),
             TipoDocumentoReaderSem(TipoDocumentoAusente),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             unitOfWork,
             CancellationToken.None);
 
@@ -88,6 +92,8 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.Modalidades(),
             CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             Substitute.For<ISelecaoUnitOfWork>(),
             CancellationToken.None);
 
@@ -156,4 +162,5 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
             VigenciaFim: null,
             AtoNormativoUrl: null,
             PortariaInternaCodigo: null);
+
 }

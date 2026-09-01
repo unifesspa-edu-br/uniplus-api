@@ -84,7 +84,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
+            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await repository.Received(1).AdicionarAsync(
@@ -104,7 +104,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             .Returns((TipoProcessoView?)null);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_DESATIVADO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
+            NovaRegra("PS_DESATIVADO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo");
@@ -122,7 +122,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra(ObrigatoriedadeLegal.TipoProcessoUniversal), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
+            NovaRegra(ObrigatoriedadeLegal.TipoProcessoUniversal), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await tipoReader.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
@@ -140,7 +140,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             .Returns(new TipoProcessoView(Guid.CreateVersion7(), "PS_NOVO", "Processo novo", null));
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
+            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo");
@@ -176,7 +176,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             null);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
+            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(
@@ -214,7 +214,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             null);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
+            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await repository.Received(1).AdicionarAsync(
@@ -246,7 +246,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             null);
 
         Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), unitOfWork, CancellationToken.None);
+            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await tipoEtapaReader.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
@@ -275,6 +275,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             RegraComPredicado(new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO")),
             repository, tipoReader, TipoEtapaReaderAtivo(),
             ModalidadeReaderSem("LB_PPl"), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
             unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -293,6 +294,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             RegraComPredicado(new DocumentoObrigatorioParaModalidade("LB_PPI", "LAUDO_INEXISTENTE")),
             repository, TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
             ModalidadeReaderViva(), TipoDocumentoReaderSem("LAUDO_INEXISTENTE"),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
             unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -312,6 +314,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             RegraComPredicado(new ModalidadesMinimas(["AC", "LB_PPl", "LB_Q"])),
             repository, TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
             ModalidadeReaderSem("LB_PPl"), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
             unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -330,6 +333,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             RegraComPredicado(new DocumentoObrigatorioParaModalidade(" LB_PPI ", " LAUDO_MEDICO ")),
             repository, TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
             ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
             Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -347,6 +351,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             RegraComPredicado(new ModalidadesMinimas([])),
             Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
             ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
             Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -367,6 +372,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             RegraComPredicado(new EtapaObrigatoria("   ")),
             Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), tipoEtapaReader,
             ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
             Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -389,6 +395,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             RegraComPredicado(new DocumentoObrigatorioParaModalidade("LB_PPI", $" {Decomposto} ")),
             Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
             ModalidadeReaderViva(), tipoDocumentoReader,
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
             Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -415,4 +422,75 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
             VigenciaFim: null,
             AtoNormativoUrl: null,
             PortariaInternaCodigo: null);
+
+
+    [Fact(DisplayName = "Regra que exige tipo de deficiência inexistente é recusada na escrita")]
+    public async Task Handle_TipoDeficienciaInexistente_Recusa()
+    {
+        // Antes, o código do predicado não era conferido contra cadastro nenhum: a regra
+        // entrava, e só na publicação aparecia como necessidade não ofertada — mensagem
+        // que descreve o processo seletivo e manda procurar o defeito no lugar errado.
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new AtendimentoDisponivel(["TIPO_QUE_NAO_EXISTE"])),
+            Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia("DEFICIENCIA_VISUAL"), CadastrosVivos.RegrasDesempate(),
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoDeficienciaNaoEncontrada");
+    }
+
+    [Fact(DisplayName = "Regra que exige critério de desempate fora do catálogo é recusada na escrita")]
+    public async Task Handle_CriterioDesempateInexistente_Recusa()
+    {
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new DesempateDeveIncluir("CRITERIO_INVENTADO")),
+            Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate("IDADE_MAIOR"),
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.CriterioDesempateNaoEncontrado");
+    }
+
+    [Fact(DisplayName = "Exigência de atendimento sem nenhum código é recusada pelo agregado")]
+    public async Task Handle_AtendimentoDisponivelVazio_Recusa()
+    {
+        // Lista vazia é satisfeita por qualquer processo — a cláusula legal ficaria
+        // aprovada por vacuidade, que é o oposto do que quem a cadastra pretende.
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new AtendimentoDisponivel([])),
+            Substitute.For<IObrigatoriedadeLegalRepository>(), TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.AtendimentoDisponivelVazio");
+    }
+
+    [Fact(DisplayName = "Código de tipo de deficiência com espaço supérfluo é normalizado antes de persistir")]
+    public async Task Handle_CodigoComEspaco_Normaliza()
+    {
+        // O avaliador compara por igualdade exata contra o código congelado no processo:
+        // gravar " DEFICIENCIA_VISUAL " passaria no cadastro e nunca casaria depois.
+        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        ObrigatoriedadeLegal? persistida = null;
+        await repository.AdicionarAsync(Arg.Do<ObrigatoriedadeLegal>(r => persistida = r), Arg.Any<CancellationToken>());
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            RegraComPredicado(new AtendimentoDisponivel([" DEFICIENCIA_VISUAL "])),
+            repository, TipoProcessoAtivo("PS_NOVO"), TipoEtapaReaderAtivo(),
+            ModalidadeReaderViva(), TipoDocumentoReaderVivo(),
+            CadastrosVivos.TiposDeficiencia("DEFICIENCIA_VISUAL"), CadastrosVivos.RegrasDesempate(),
+            Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        persistida.Should().NotBeNull();
+        persistida!.Predicado.Should().BeOfType<AtendimentoDisponivel>()
+            .Which.Necessidades.Should().Equal(["DEFICIENCIA_VISUAL"]);
+    }
+
 }

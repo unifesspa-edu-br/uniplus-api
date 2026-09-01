@@ -158,6 +158,8 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             CadastrosVivos.Modalidades(),
             CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             mocks.FatoCandidatoReader,
             calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente(),
             TimeProvider.System,

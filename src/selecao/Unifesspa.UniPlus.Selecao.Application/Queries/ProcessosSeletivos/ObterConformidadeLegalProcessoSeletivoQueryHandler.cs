@@ -33,6 +33,8 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
         ITipoEtapaReader tipoEtapaReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -58,7 +60,13 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
 
         IReadOnlyDictionary<Guid, string> inavaliaveis = await ConferenciaDeReferenciasDasRegras
             .LevantarRegrasInavaliaveisAsync(
-                regrasVigentes, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken)
+                regrasVigentes,
+                modalidadeReader,
+                tipoDocumentoReader,
+                tipoEtapaReader,
+                tipoDeficienciaReader,
+                regraCatalogoReader,
+                cancellationToken)
             .ConfigureAwait(false);
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(

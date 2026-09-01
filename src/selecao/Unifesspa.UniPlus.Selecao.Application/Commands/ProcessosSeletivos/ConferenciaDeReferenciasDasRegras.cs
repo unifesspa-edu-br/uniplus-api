@@ -5,6 +5,8 @@ using System.Collections.Frozen;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -40,12 +42,16 @@ internal static class ConferenciaDeReferenciasDasRegras
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
         ITipoEtapaReader tipoEtapaReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(modalidadeReader);
         ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
+        ArgumentNullException.ThrowIfNull(tipoDeficienciaReader);
+        ArgumentNullException.ThrowIfNull(regraCatalogoReader);
 
         if (regras.Count == 0)
         {
@@ -53,7 +59,12 @@ internal static class ConferenciaDeReferenciasDasRegras
         }
 
         CatalogosVivos catalogos = await CarregarCatalogosAsync(
-            modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken).ConfigureAwait(false);
+            modalidadeReader,
+            tipoDocumentoReader,
+            tipoEtapaReader,
+            tipoDeficienciaReader,
+            regraCatalogoReader,
+            cancellationToken).ConfigureAwait(false);
 
         Dictionary<Guid, string> inavaliaveis = [];
 
@@ -87,12 +98,14 @@ internal static class ConferenciaDeReferenciasDasRegras
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
         ITipoEtapaReader tipoEtapaReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(regras);
 
         IReadOnlyDictionary<Guid, string> inavaliaveis = await LevantarRegrasInavaliaveisAsync(
-            regras, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, cancellationToken)
+            regras, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
             .ConfigureAwait(false);
 
         if (inavaliaveis.Count == 0)
@@ -127,12 +140,16 @@ internal static class ConferenciaDeReferenciasDasRegras
     private sealed record CatalogosVivos(
         FrozenSet<string> Modalidades,
         FrozenSet<string> TiposDocumento,
-        FrozenSet<string> TiposEtapa);
+        FrozenSet<string> TiposEtapa,
+        FrozenSet<string> TiposDeficiencia,
+        FrozenSet<string> CriteriosDesempate);
 
     private static async Task<CatalogosVivos> CarregarCatalogosAsync(
         IModalidadeReader modalidadeReader,
         ITipoDocumentoReader tipoDocumentoReader,
         ITipoEtapaReader tipoEtapaReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
         IReadOnlyList<ModalidadeView> modalidades = await modalidadeReader
@@ -141,11 +158,17 @@ internal static class ConferenciaDeReferenciasDasRegras
             .ListarVivosAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyList<TipoEtapaView> tiposEtapa = await tipoEtapaReader
             .ListarAtivosAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<TipoDeficienciaView> tiposDeficiencia = await tipoDeficienciaReader
+            .ListarVivosAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<RegraCatalogo> regrasDesempate = await regraCatalogoReader
+            .ListarPorTipoAsync(TipoRegra.CriterioDesempate, cancellationToken).ConfigureAwait(false);
 
         return new CatalogosVivos(
             modalidades.Select(static m => m.Codigo).ToFrozenSet(StringComparer.Ordinal),
             tiposDocumento.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
-            tiposEtapa.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal));
+            tiposEtapa.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
+            tiposDeficiencia.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
+            regrasDesempate.Select(static r => r.Codigo).ToFrozenSet(StringComparer.Ordinal));
     }
 
     private static string? PrimeiraReferenciaOrfa(PredicadoObrigatoriedade predicado, CatalogosVivos catalogos)
@@ -166,6 +189,22 @@ internal static class ConferenciaDeReferenciasDasRegras
                 return catalogos.TiposDocumento.Contains(documento.TipoDocumento ?? string.Empty)
                     ? null
                     : $"tipo de documento '{documento.TipoDocumento}'";
+
+            case AtendimentoDisponivel atendimento:
+                foreach (string necessidade in atendimento.Necessidades ?? [])
+                {
+                    if (!catalogos.TiposDeficiencia.Contains(necessidade ?? string.Empty))
+                    {
+                        return $"tipo de deficiência '{necessidade}'";
+                    }
+                }
+
+                return null;
+
+            case DesempateDeveIncluir desempate:
+                return catalogos.CriteriosDesempate.Contains(desempate.Criterio ?? string.Empty)
+                    ? null
+                    : $"critério de desempate '{desempate.Criterio}'";
 
             case ModalidadesMinimas modalidades:
                 foreach (string codigo in modalidades.Codigos ?? [])

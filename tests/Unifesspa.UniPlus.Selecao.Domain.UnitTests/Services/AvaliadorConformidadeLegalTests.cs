@@ -206,7 +206,54 @@ public sealed class AvaliadorConformidadeLegalTests
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "CA-06 (AtendimentoDisponivel): aprova quando todas as necessidades aparecem entre os nomes ofertados (NFC, case-insensitive)")]
+    [Fact(DisplayName = "AtendimentoDisponivel: renomear o tipo de deficiência não quebra a regra escrita antes")]
+    public void AtendimentoDisponivel_AposRenomearOTipo_ContinuaAprovando()
+    {
+        // O defeito que este teste fecha: a avaliação comparava pelo NOME do tipo
+        // congelado na oferta. Renomear "Deficiência auditiva" para "Auditiva" — mudança
+        // cosmética e legítima no cadastro — fazia toda regra escrita antes deixar de
+        // casar, e a cláusula legal passava a reprovar processos conformes.
+        //
+        // Com a comparação pelo código, o rótulo pode mudar à vontade: a identidade que
+        // a regra cita é a mesma.
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar(
+                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+                [],
+                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "AUDITIVA", "Nome completamente diferente do que a regra cita")]).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue(
+            "a regra cita o código, e o código não mudou — só o rótulo de exibição");
+    }
+
+    [Fact(DisplayName = "AtendimentoDisponivel: o nome ofertado não satisfaz a regra que cita o código")]
+    public void AtendimentoDisponivel_ComNomeNoLugarDoCodigo_Reprova()
+    {
+        // A contraprova do teste acima: se a comparação ainda caísse no nome, este
+        // cenário aprovaria — o nome bate, o código não.
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar(
+                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+                [],
+                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_AUDITIVA", "AUDITIVA")]).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeFalse(
+            "o tipo ofertado tem código DEFICIENCIA_AUDITIVA; AUDITIVA é apenas o nome dele");
+    }
+
+    [Fact(DisplayName = "CA-06 (AtendimentoDisponivel): aprova quando todo código exigido está entre os tipos ofertados")]
     public void AtendimentoDisponivel_ComNecessidadeOfertada_Aprova()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -214,10 +261,10 @@ public sealed class AvaliadorConformidadeLegalTests
             OfertaAtendimentoEspecializado.Criar(
                 [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "auditiva")]).Value!,
+                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "AUDITIVA", "auditiva")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["Auditiva"]));
+        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
 
@@ -227,7 +274,7 @@ public sealed class AvaliadorConformidadeLegalTests
     [Fact(DisplayName = "CA-06 (AtendimentoDisponivel): reprova SEM lançar quando OfertaAtendimento é nula")]
     public void AtendimentoDisponivel_OfertaNula_ReprovaSemLancar()
     {
-        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["Auditiva"]));
+        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
 
         Action act = () =>
         {

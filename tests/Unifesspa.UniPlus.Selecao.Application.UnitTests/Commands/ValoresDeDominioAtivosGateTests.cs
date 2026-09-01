@@ -346,6 +346,8 @@ public sealed class ValoresDeDominioAtivosGateTests
             CadastrosVivos.Modalidades(),
             CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             new RelogioFixo(Agora),

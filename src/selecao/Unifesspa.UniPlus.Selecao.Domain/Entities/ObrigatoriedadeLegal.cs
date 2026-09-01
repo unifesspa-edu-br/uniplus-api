@@ -274,6 +274,23 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
                     "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
                     "Exigência de documento por modalidade precisa do código da modalidade e do tipo de documento."));
 
+            case AtendimentoDisponivel atendimento
+                when atendimento.Necessidades is null || atendimento.Necessidades.Count == 0:
+                return Result.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.AtendimentoDisponivelVazio",
+                    "Exigência de atendimento disponível precisa de ao menos um código de tipo de deficiência."));
+
+            case AtendimentoDisponivel atendimento
+                when atendimento.Necessidades.Any(string.IsNullOrWhiteSpace):
+                return Result.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
+                    "Exigência de atendimento disponível não admite código em branco na lista."));
+
+            case DesempateDeveIncluir desempate when string.IsNullOrWhiteSpace(desempate.Criterio):
+                return Result.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
+                    "Exigência de critério de desempate precisa do código do critério."));
+
             default:
                 return Result.Success();
         }
