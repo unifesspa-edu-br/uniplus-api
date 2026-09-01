@@ -7,7 +7,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 [SuppressMessage(
     "Performance",
@@ -74,6 +76,47 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ix_fase_canonica_codigo_vivo");
+
+        builder.HasData(MaterializarSeed());
+    }
+
+    /// <summary>
+    /// Projeta o seed (<see cref="FaseCanonicaSeed.Itens"/>) para linhas que o
+    /// <c>HasData</c> congela como literais na migration. O instante-âncora é fixo
+    /// (as linhas não passam pelo <c>AuditableInterceptor</c>/<c>SoftDeleteInterceptor</c>),
+    /// e <c>CreatedBy</c> fica nulo — a marca honesta de quem não tem autor a
+    /// registrar, per ADR-0062 Emenda 2.
+    /// </summary>
+    /// <remarks>
+    /// A migration correspondente **não** usa o <c>InsertData</c> que o EF geraria:
+    /// é escrita à mão com <c>INSERT … ON CONFLICT DO NOTHING</c>, porque o cadastro
+    /// é administrável e um ambiente pode já ter a fase viva ocupando o código — o
+    /// índice único parcial rejeitaria a linha e travaria o deploy. Pela mesma
+    /// decisão, mudança futura nesta lista <b>não</b> pode virar <c>UpdateData</c>:
+    /// alterar linha existente é ato administrativo, com autor, não efeito de deploy.
+    /// </remarks>
+    private static IEnumerable<object> MaterializarSeed()
+    {
+        // Instante-âncora fixo do seed (HasData exige valor determinístico).
+        DateTimeOffset seedCriadoEm = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        return FaseCanonicaSeed.Itens.Select(item => new
+        {
+            item.Id,
+            Codigo = CodigoFase.Criar(item.Codigo).Value!,
+            item.Nome,
+            item.Descricao,
+            item.DonoTipico,
+            item.OrigemData,
+            item.ProduzResultado,
+            item.ResultadoDefinitivo,
+            item.ColetaInscricao,
+            item.AgrupaEtapas,
+            item.PermiteComplementacao,
+            item.BaseLegal,
+            CreatedAt = seedCriadoEm,
+            IsDeleted = false,
+        });
     }
 
     private static void ConfigurarChecks(TableBuilder<FaseCanonica> table)

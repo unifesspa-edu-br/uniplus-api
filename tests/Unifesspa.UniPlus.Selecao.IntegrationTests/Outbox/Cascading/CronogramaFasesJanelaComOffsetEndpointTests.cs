@@ -58,7 +58,11 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     /// semear qualquer um deles aqui faria aquela suíte violar a unicidade dependendo da
     /// ordem de execução.
     /// </remarks>
-    private const string CodigoFaseComJanela = "HOMOLOGACAO";
+    // Fase sem resultado publicado de proposito: o assunto aqui e o offset da janela,
+    // e uma fase que produz resultado exigiria tambem o tipo de ato, ruido que nao
+    // pertence a este teste. Desde que o catalogo de fases passou a nascer semeado,
+    // HOMOLOGACAO chega com produz_resultado verdadeiro e o POST responderia 422.
+    private const string CodigoFaseComJanela = "ENSALAMENTO";
 
     private static readonly DateTimeOffset InicioEsperadoUtc = new(2027, 1, 25, 11, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset FimEsperadoUtc = new(2027, 1, 27, 21, 0, 0, TimeSpan.Zero);
@@ -221,7 +225,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         }
 
         Result<FaseCanonica> criada = FaseCanonica.Criar(
-            CodigoFaseComJanela, "Homologação", null, "CRCA",
+            CodigoFaseComJanela, "Ensalamento", null, "CEPS",
             agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
             produzResultado: false, resultadoDefinitivo: false, coletaInscricao: false,
             origemData: "PROPRIA");
