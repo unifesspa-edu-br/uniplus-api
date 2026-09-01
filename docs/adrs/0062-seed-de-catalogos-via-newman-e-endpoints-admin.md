@@ -315,7 +315,7 @@ preservado — não relaxado.
 
 | Regime | Entidades |
 |---|---|
-| Seed em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `TipoEtapa`, `FaseCanonica` |
+| Seed em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `TipoEtapa`, `TipoProcesso`, `FaseCanonica` |
 | Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento` |
 
 `TipoEtapa` e `TipoProcesso` entram na primeira coluna por constatação, não por decisão nova: as
