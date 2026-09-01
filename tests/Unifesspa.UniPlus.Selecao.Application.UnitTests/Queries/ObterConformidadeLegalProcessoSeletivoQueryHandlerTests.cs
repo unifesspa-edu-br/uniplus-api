@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -65,6 +66,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
+            new ResolvedorFusoDeTeste(),
             CancellationToken.None);
 
         dto.Should().NotBeNull();
@@ -126,6 +128,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
+            new ResolvedorFusoDeTeste(),
             CancellationToken.None);
 
         dto.Should().NotBeNull();
@@ -152,6 +155,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
+            new ResolvedorFusoDeTeste(),
             CancellationToken.None);
 
         dto.Should().BeNull();

@@ -544,10 +544,19 @@ internal static class CorpusEnvelope
                     ["autodeclaracao"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
             ]).Value!;
 
+    /// <summary>
+    /// O período espelha a janela da fase que coleta inscrição (<c>INSCRICAO</c>), porque é dela
+    /// que a publicação passou a projetá-lo (issue #1350).
+    /// </summary>
+    /// <remarks>
+    /// Antes desta issue o corpus declarava o fim em 15/04 enquanto a fase fechava em 20/03 — 26
+    /// dias de divergência, que era exatamente o estado que a issue tornou impossível. Manter a
+    /// fixture naquele formato congelaria a prova de um certame que o sistema não produz mais.
+    /// </remarks>
     internal static DadosEdital DadosRicos() => DadosEdital.Criar(
         numero: "042/2026",
-        periodoInscricaoInicio: new DateOnly(2026, 3, 2),
-        periodoInscricaoFim: new DateOnly(2026, 4, 15),
+        periodoInscricaoInicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
+        periodoInscricaoFim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
         documentoEditalId: Documento).Value!;
 
     /// <summary>

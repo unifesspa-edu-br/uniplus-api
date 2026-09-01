@@ -264,8 +264,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonObject SerializarPeriodo(DadosEdital dados) => new()
     {
         ["numero"] = dados.Numero is { } numero ? HashCanonicalComputer.NormalizeNfc(numero) : null,
-        ["inicio"] = dados.PeriodoInscricaoInicio.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        ["fim"] = dados.PeriodoInscricaoFim.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        ["inicio"] = HashCanonicalComputer.SerializeInstantCanonical(dados.PeriodoInscricaoInicio),
+        ["fim"] = HashCanonicalComputer.SerializeInstantCanonical(dados.PeriodoInscricaoFim),
     };
 
     /// <summary>

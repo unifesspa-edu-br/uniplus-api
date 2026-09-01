@@ -753,8 +753,8 @@ public sealed class EnvelopeFechadoE2ETests
                 new
                 {
                     numero,
-                    periodoInscricaoInicio = "2026-03-02",
-                    periodoInscricaoFim = "2026-04-15",
+                    // O período não é mais informado: o processo do cenário tem fase que coleta
+                    // inscrição, e é da janela dela que o Edital passa a declarar o prazo (#1350).
                     documentoEditalId,
                     ato = NovoAto(tipoAtoCodigo),
                 },
@@ -769,8 +769,8 @@ public sealed class EnvelopeFechadoE2ETests
                 new
                 {
                     numero,
-                    periodoInscricaoInicio = "2026-03-02",
-                    periodoInscricaoFim = "2026-04-15",
+                    // O período não é mais informado: o processo do cenário tem fase que coleta
+                    // inscrição, e é da janela dela que o Edital passa a declarar o prazo (#1350).
                     documentoEditalId,
                     ato = NovoAto(tipoAtoCodigo),
                 },

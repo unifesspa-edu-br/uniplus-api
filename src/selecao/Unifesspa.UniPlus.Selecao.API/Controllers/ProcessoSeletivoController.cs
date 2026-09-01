@@ -750,7 +750,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         actionResult = await EnriquecerComPendenciasEstruturaisAsync(actionResult, id, cancellationToken)
             .ConfigureAwait(false);
         return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
+            resultado, actionResult, id, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -796,11 +796,18 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <summary>
     /// Story #853: enriquece o 422 de conformidade LEGAL insuficiente com as regras
     /// reprovadas (código, descrição, base legal) — reconsulta
-    /// <see cref="ObterConformidadeLegalProcessoSeletivoQuery"/> na MESMA data de corte que
-    /// o gate usou (CA-16/CA-17), para montar <c>Extensions["obrigatoriedadesReprovadas"]</c>.
+    /// <see cref="ObterConformidadeLegalProcessoSeletivoQuery"/> para montar
+    /// <c>Extensions["obrigatoriedadesReprovadas"]</c>.
     /// </summary>
+    /// <remarks>
+    /// A data deixou de ser repassada daqui (issue #1350): o período de inscrição não vem mais do
+    /// request quando o processo tem fase que coleta inscrição, então o controller não tem — nem
+    /// deve ter — a data que o gate usou. Quem a deriva é o handler da consulta, pela mesma regra
+    /// do gate; é isso que mantém de pé a garantia do CA-16/CA-17 de que as duas respostas falam
+    /// do mesmo dia.
+    /// </remarks>
     private async Task<IActionResult> EnriquecerComObrigatoriedadesReprovadasAsync(
-        Result resultado, IActionResult actionResult, Guid id, DateOnly dataReferencia, CancellationToken cancellationToken)
+        Result resultado, IActionResult actionResult, Guid id, CancellationToken cancellationToken)
     {
         if (!resultado.HasErrorCode("ProcessoSeletivo.ConformidadeLegalInsuficiente")
             || actionResult is not ObjectResult { Value: ProblemDetails problem })
@@ -809,7 +816,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         }
 
         ConformidadeLegalProcessoSeletivoDto? conformidade = await _queryBus
-            .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id, dataReferencia), cancellationToken)
+            .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id), cancellationToken)
             .ConfigureAwait(false);
         if (conformidade is not null)
         {
@@ -871,7 +878,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
         return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
+            resultado, actionResult, id, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1055,7 +1062,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
         return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
+            resultado, actionResult, id, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1105,12 +1112,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterConformidadeLegal(
         Guid id,
-        // BindRequired: DateOnly é value type não anulável — sem isto, uma requisição que
-        // omite dataReferencia não falha o model binding, e o parâmetro chega como
-        // DateOnly.MinValue (0001-01-01). O motor filtraria toda regra por vigência e
-        // devolveria "nenhuma regra vigente" — conformidade aprovada por engano, não pela
-        // ausência real de obrigatoriedades.
-        [FromQuery, BindRequired] DateOnly dataReferencia,
+        // Anulável, e não BindRequired: omitir a data agora significa "use a mesma que o gate
+        // usaria", e o handler a deriva da janela da fase que coleta inscrição (issue #1350).
+        // O tipo anulável é o que separa "omitida" de DateOnly.MinValue — informar 0001-01-01
+        // filtraria toda regra por vigência e devolveria "nenhuma regra vigente", que se leria
+        // como conformidade aprovada em vez de ausência real de obrigatoriedades.
+        [FromQuery] DateOnly? dataReferencia,
         CancellationToken cancellationToken)
     {
         ConformidadeLegalProcessoSeletivoDto? conformidade = await _queryBus

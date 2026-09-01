@@ -126,7 +126,8 @@ public static class FecharRetificacaoCommandHandler
                 "Somente um documento confirmado pode ser referenciado no fechamento da retificação.")), []);
         }
 
-        Result<DadosEdital> dadosResult = DadosEdital.Criar(
+        Result<DadosEdital> dadosResult = ResolucaoDoPeriodoDeInscricao.Resolver(
+            processo,
             command.Numero,
             command.PeriodoInscricaoInicio,
             command.PeriodoInscricaoFim,
@@ -200,8 +201,21 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(pendenciaCascata), []);
         }
 
+        // Resolvido aqui, e não junto da canonicalização, porque a conferência legal abaixo
+        // precisa do fuso para derivar o dia civil do início da inscrição (issue #1350). O ponto
+        // é entre a cascata e a conferência de propósito: preserva todas as precedências já
+        // fixadas e só altera a relação fuso <-> gate legal. Uma falha aqui continua sendo defeito
+        // de instalação, mapeado para 500 — o fuso não vira gate de publicação.
+        Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
+        if (fusoResult.IsFailure)
+        {
+            return (Result.Failure(fusoResult.Error!), []);
+        }
+
+        TimeZoneInfo fusoInstitucional = fusoResult.Value!;
+
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
-            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
+            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.DiaDeReferenciaLegal(fusoInstitucional), modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
             .ConfigureAwait(false);
         if (conformidadeLegal.IsFailure)
         {
@@ -266,17 +280,6 @@ public static class FecharRetificacaoCommandHandler
         if (valoresSelecionaveisResult.IsFailure)
         {
             return (Result.Failure(valoresSelecionaveisResult.Error!), []);
-        }
-
-        // A configuração canonicalizada é a VIVA — que é, agora, a EDITADA pela sessão. É a
-        // diferença inteira em relação ao que a retificação fazia antes desta Feature: ela
-        // recanonicalizava a mesma configuração de sempre, e a versão N+1 saía idêntica à N.
-        // Resolvido antes de canonicalizar: o bloco de localidade precisa do fuso, e uma falha
-        // aqui é da instalação — não faz sentido descobri-la no meio da projeção.
-        Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
-        if (fusoResult.IsFailure)
-        {
-            return (Result.Failure(fusoResult.Error!), []);
         }
 
         // UNI-REQ-0116: UMA leitura do calendário vigente por operação. A mesma resposta

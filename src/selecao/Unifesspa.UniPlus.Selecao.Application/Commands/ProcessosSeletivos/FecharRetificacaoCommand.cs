@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 public sealed record FecharRetificacaoCommand(
     Guid ProcessoSeletivoId,
     string? Numero,
-    DateOnly PeriodoInscricaoInicio,
-    DateOnly PeriodoInscricaoFim,
+    DateTimeOffset? PeriodoInscricaoInicio,
+    DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
     DadosDoAto Ato,
     PrecondicaoIfMatch Precondicao) : ICommand<Result>;

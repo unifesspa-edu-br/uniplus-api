@@ -61,7 +61,7 @@ public sealed class ConformidadeLegalGateTests
 
         (Result resposta, _) = await PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),
@@ -101,7 +101,7 @@ public sealed class ConformidadeLegalGateTests
 
         (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),
@@ -145,7 +145,7 @@ public sealed class ConformidadeLegalGateTests
 
         (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),
@@ -184,7 +184,7 @@ public sealed class ConformidadeLegalGateTests
 
         (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),
@@ -227,7 +227,7 @@ public sealed class ConformidadeLegalGateTests
 
         (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),
@@ -261,7 +261,7 @@ public sealed class ConformidadeLegalGateTests
 
         (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),
@@ -300,7 +300,7 @@ public sealed class ConformidadeLegalGateTests
 
         (Result resposta, IEnumerable<object> _) = await PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),
@@ -343,7 +343,7 @@ public sealed class ConformidadeLegalGateTests
         (Result resposta, IEnumerable<object> eventos) = await RetificarProcessoSeletivoCommandHandler.Handle(
             new RetificarProcessoSeletivoCommand(
                 processo.Id, "Correção do prazo", "001/2026-R1",
-                new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             repositorio,
             RepositorioDeDocumento(processo.Id),
@@ -387,7 +387,7 @@ public sealed class ConformidadeLegalGateTests
 
         (Result resposta, IEnumerable<object> eventos) = await FecharRetificacaoCommandHandler.Handle(
             new FecharRetificacaoCommand(
-                processo.Id, "001/2026-R1", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026-R1", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga),
             repositorio,
             RepositorioDeDocumento(processo.Id),
@@ -485,7 +485,7 @@ public sealed class ConformidadeLegalGateTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         DadosEdital dados = DadosEdital.Criar(
-            "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!;
+            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
         VersaoConfiguracao versao = processo.Publicar(
             dados, "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",

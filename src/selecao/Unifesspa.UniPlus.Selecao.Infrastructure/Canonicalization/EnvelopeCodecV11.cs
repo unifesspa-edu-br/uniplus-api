@@ -193,8 +193,8 @@ internal static class EnvelopeCodecV11
         JsonObject periodo = leitor.Objeto(payload, "periodo", "$");
         leitor.ExigirChaves(periodo, "periodo", "numero", "inicio", "fim");
         string? numero = leitor.TextoOpcional(periodo, "numero", "periodo", LimitesDoEnvelope.NumeroDoAto);
-        DateOnly inicio = leitor.Data(periodo, "inicio", "periodo");
-        DateOnly fim = leitor.Data(periodo, "fim", "periodo");
+        DateTimeOffset inicio = leitor.Instante(periodo, "inicio", "periodo");
+        DateTimeOffset fim = leitor.Instante(periodo, "fim", "periodo");
 
         JsonObject hashes = leitor.Objeto(payload, "hashesEdital", "$");
         leitor.ExigirChaves(hashes, "hashesEdital", "documentoEditalId", "hashSha256");

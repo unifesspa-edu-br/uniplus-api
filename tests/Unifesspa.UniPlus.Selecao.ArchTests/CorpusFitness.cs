@@ -77,8 +77,8 @@ internal static class CorpusFitness
 
         DadosEdital dados = DadosEdital.Criar(
             numero: "001/2026",
-            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
-            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             documentoEditalId: new Guid("33333333-3333-3333-3333-333333333333")).Value!;
 
         return new EntradaCanonicalizacao(processo, dados, new string('a', 64), FusoInstitucional.ZoneId);

@@ -88,7 +88,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
     }
 
     private static DadosEdital NovosDados(Guid documentoId) => DadosEdital.Criar(
-        "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), documentoId).Value!;
+        "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), documentoId).Value!;
 
     /// <summary>
     /// Publica um processo e o retifica em seguida — persistindo as duas versões da

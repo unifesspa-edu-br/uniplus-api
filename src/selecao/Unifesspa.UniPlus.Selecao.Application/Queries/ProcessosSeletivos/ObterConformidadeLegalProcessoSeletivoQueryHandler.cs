@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
+using Abstractions;
+
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Services;
@@ -8,6 +10,7 @@ using Domain.ValueObjects;
 using DTOs;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
@@ -35,6 +38,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         ITipoEtapaReader tipoEtapaReader,
         ITipoDeficienciaReader tipoDeficienciaReader,
         IRegraCatalogoReader regraCatalogoReader,
+        IResolvedorFusoInstitucional resolvedorFuso,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -43,6 +47,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         ArgumentNullException.ThrowIfNull(modalidadeReader);
         ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken)
@@ -54,8 +59,18 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
 
         string tipoProcessoCodigo = processo.TipoProcesso.Codigo;
 
+        // Sem data explícita, a consulta responde pelo mesmo dia que o gate de publicação usaria
+        // (issue #1350). Derivar aqui, e não deixar o chamador informar, é o que impede o
+        // preflight de dizer "conforme" numa data que o comando contradiz.
+        DateOnly? dataReferencia = query.DataReferencia
+            ?? DiaDeReferenciaLegalDoCronograma(processo, resolvedorFuso);
+        if (dataReferencia is not { } diaDeReferencia)
+        {
+            return null;
+        }
+
         IReadOnlyList<ObrigatoriedadeLegal> regrasVigentes = await obrigatoriedadeLegalRepository
-            .ObterVigentesParaTipoProcessoAsync(tipoProcessoCodigo, query.DataReferencia, cancellationToken)
+            .ObterVigentesParaTipoProcessoAsync(tipoProcessoCodigo, diaDeReferencia, cancellationToken)
             .ConfigureAwait(false);
 
         ConferenciaDeReferenciasDasRegras.RelatorioDeReferencias referencias = await ConferenciaDeReferenciasDasRegras
@@ -95,6 +110,28 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
             r.Hash))];
 
         return new ConformidadeLegalProcessoSeletivoDto(
-            processo.Id, query.DataReferencia, regrasDto, resultado.Avisos);
+            processo.Id, diaDeReferencia, regrasDto, resultado.Avisos);
     }
+
+    /// <summary>
+    /// O dia que o gate de publicação usaria: início da janela da fase que coleta inscrição,
+    /// convertido no fuso institucional. <see langword="null"/> quando o processo não tem fase de
+    /// coleta com janela — aí não há como a consulta responder sozinha, e o chamador precisa
+    /// informar a data.
+    /// </summary>
+    private static DateOnly? DiaDeReferenciaLegalDoCronograma(
+        ProcessoSeletivo processo, IResolvedorFusoInstitucional resolvedorFuso)
+    {
+        if (processo.FaseQueAncoraOPeriodoDeInscricao()?.Inicio is not { } inicio)
+        {
+            return null;
+        }
+
+        Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
+
+        return fuso.IsFailure
+            ? null
+            : DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(inicio, fuso.Value!).DateTime);
+    }
+
 }

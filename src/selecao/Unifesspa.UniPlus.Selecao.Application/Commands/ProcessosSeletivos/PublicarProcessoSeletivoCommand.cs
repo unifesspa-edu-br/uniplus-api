@@ -16,10 +16,18 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// desses dados, por mensagem durável (ADR-0108).
 /// </para>
 /// </summary>
+/// <param name="PeriodoInscricaoInicio">
+/// Início do período, informado APENAS quando o certame não coleta inscrição pelo sistema
+/// (issue #1350). Coletando, o período vem da janela da fase do cronograma que coleta, e
+/// informá-lo aqui é recusado — descartar em silêncio o que o operador digitou esconde a
+/// divergência que esta mudança existe para eliminar. Anulável para distinguir "omitido" de
+/// instante zerado.
+/// </param>
+/// <param name="PeriodoInscricaoFim">Fim do período, com a mesma regra do início.</param>
 public sealed record PublicarProcessoSeletivoCommand(
     Guid ProcessoSeletivoId,
     string? Numero,
-    DateOnly PeriodoInscricaoInicio,
-    DateOnly PeriodoInscricaoFim,
+    DateTimeOffset? PeriodoInscricaoInicio,
+    DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
     DadosDoAto Ato) : ICommand<Result>;

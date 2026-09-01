@@ -11,7 +11,7 @@ using Controllers;
 public sealed record RetificarProcessoSeletivoRequest(
     string Motivo,
     string? Numero,
-    DateOnly PeriodoInscricaoInicio,
-    DateOnly PeriodoInscricaoFim,
+    DateTimeOffset? PeriodoInscricaoInicio,
+    DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
     DadosDoAtoRequest Ato);

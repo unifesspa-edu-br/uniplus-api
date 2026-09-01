@@ -901,7 +901,7 @@ public sealed class EnvelopeCodecRecusaTests
             .IsSuccess.Should().BeTrue();
 
         DadosEdital dados = DadosEdital.Criar(
-            "088/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!;
+            "088/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));

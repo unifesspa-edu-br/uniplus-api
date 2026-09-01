@@ -333,7 +333,7 @@ public sealed class ValoresDeDominioAtivosGateTests
         ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
         await PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31),
+                processo.Id, "001/2026", null, null,
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),

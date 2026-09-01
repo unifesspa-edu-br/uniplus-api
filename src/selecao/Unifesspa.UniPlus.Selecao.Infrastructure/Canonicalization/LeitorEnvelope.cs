@@ -313,6 +313,40 @@ internal sealed class LeitorEnvelope
     }
 
     /// <summary>
+    /// Instante no formato canônico e <b>obrigatório</b> — o período de inscrição do Edital
+    /// (issue #1350), que existe em toda versão publicada.
+    /// </summary>
+    /// <remarks>
+    /// A rejeição do valor default vive em <c>DadosEdital.Criar</c>, por onde este valor passa
+    /// logo em seguida: lá ela cobre também o caminho da publicação, que não passa por aqui.
+    /// </remarks>
+    public DateTimeOffset Instante(JsonObject pai, string chave, string path)
+    {
+        if (Falhou)
+        {
+            return default;
+        }
+
+        string texto = Texto(pai, chave, path);
+        if (Falhou)
+        {
+            return default;
+        }
+
+        if (!DateTimeOffset.TryParseExact(
+                texto, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTimeOffset valor))
+        {
+            return Malformado<DateTimeOffset>(
+                $"{path}.{chave}", $"esperado um instante canônico ('yyyy-MM-ddTHH:mm:ssZ'), encontrado '{texto}'.");
+        }
+
+        return string.Equals(HashCanonicalComputer.SerializeInstantCanonical(valor), texto, StringComparison.Ordinal)
+            ? valor
+            : Malformado<DateTimeOffset>($"{path}.{chave}", "o instante não está na forma canônica.");
+    }
+
+    /// <summary>
     /// Data opcional no formato canônico (Story #853, <c>ObrigatoriedadeLegal.VigenciaFim</c>
     /// — vigência aberta é estado válido). <see langword="null"/> quando a chave é
     /// <c>null</c>; do contrário, mesma validação estrita de <see cref="Data"/> (nunca o
