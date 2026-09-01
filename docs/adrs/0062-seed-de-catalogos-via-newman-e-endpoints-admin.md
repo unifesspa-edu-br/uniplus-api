@@ -371,7 +371,7 @@ Onde o EF geraria qualquer um deles, a migration é escrita à mão: `Sql` com `
 DO NOTHING` para acrescentar, e nada mais. Retirar um código do vocabulário é decisão que passa
 pelo caminho administrativo, não por scaffold.
 
-**A proibição é do catálogo administrável, não da migration.** Em vocabulário **sem CRUD** —
+**A proibição é do catálogo administrável, não da migration.** Nos catálogos de fato —
 `FatoCandidato` e `FatoValorDominio` — a migration de seed é o único caminho de escrita que existe,
 e reclassificar um fato exige alterar a linha: é o que a
 [ADR-0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) determina, e `INSERT … ON
@@ -380,6 +380,17 @@ edição possa ser sobrescrita — o blame da mudança fica no PR, que é onde e
 
 O discriminador é o mesmo da tabela de momentos: **se a tela permite editar aquele campo, a
 migration não pode tocá-lo.**
+
+**Ausência de CRUD não basta, porém.** `RegraCatalogo` também é seed-governado com API somente de
+leitura, e ainda assim a [ADR-0112](0112-substituicao-de-entrada-de-catalogo-antes-do-primeiro-congelamento.md)
+só admite substituir uma entrada **enquanto nenhuma `VersaoConfiguracao` a referenciar**; a partir
+do primeiro congelamento que a use, a linha vira fato e vale append-only estrito. Alterá-la por
+migration depois disso mudaria a definição por trás de um processo seletivo já congelado, e o
+snapshot deixaria de ser reproduzível.
+
+Ou seja: o caminho de escrita responde **quem** pode alterar; o regime de congelamento responde
+**se** ainda pode. Onde houver referência congelada, a resposta é não — por migration ou por
+qualquer outro caminho.
 
 **A prescrição vale daqui em diante, e não cobre o que já foi aplicado.** As três migrations de
 `Modalidade` — `20260723111701_SeedModalidadesFederais`, `20260829000213_SemeiaModalidadePcdPuro` e
