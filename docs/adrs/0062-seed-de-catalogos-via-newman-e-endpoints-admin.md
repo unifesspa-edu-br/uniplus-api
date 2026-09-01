@@ -370,6 +370,15 @@ Onde o EF geraria qualquer um deles, a migration é escrita à mão: `Sql` com `
 DO NOTHING` para acrescentar, e nada mais. Retirar um código do vocabulário é decisão que passa
 pelo caminho administrativo, não por scaffold.
 
+**A prescrição vale daqui em diante, e não cobre o que já foi aplicado.** As três migrations de
+`Modalidade` — `20260723111701_SeedModalidadesFederais`, `20260829000213_SemeiaModalidadePcdPuro` e
+`20260829005332_SemeiaModalidadesInstitucionaisPsiq` — usam `InsertData`, anterior a esta emenda.
+Num ambiente onde um administrador já tenha criado um dos códigos semeados, o conflito de código
+único **aborta a migração** em vez de pular a linha, e com ela o deploy. O risco é baixo (os códigos
+são das modalidades legais, que ninguém cadastra à mão) mas real, e converter essas migrations
+exigiria reescrever migration já aplicada — trabalho próprio, não desta emenda. As de
+`CategoriaDocumento`, `TipoDocumento` e `FaseCanonica` já seguem a forma tolerante.
+
 ## Mais informações
 
 - [ADR-0023](0023-problemdetails-rfc-9457.md) — ProblemDetails RFC 9457 (Newman tests checam contra).
