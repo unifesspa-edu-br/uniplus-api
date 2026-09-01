@@ -10,34 +10,71 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // O código não é derivável do que já está gravado: o snapshot guardava só o
-            // identificador de origem e o nome, e nome não é código. Preencher as linhas
-            // existentes com string vazia — o default que o EF geraria sozinho — deixaria
-            // um snapshot que nenhuma regra jamais casaria, e que a própria factory do
-            // agregado recusaria ao reidratar.
-            //
-            // As linhas saem, e a oferta de atendimento é reconfigurada pela tela. O
-            // agregado aceita oferta sem tipo de deficiência, então a oferta pai
-            // permanece íntegra; o que se perde é a lista de tipos, que o operador
-            // repõe escolhendo do cadastro — agora com o código junto.
-            migrationBuilder.Sql("DELETE FROM selecao.ofertas_tipo_deficiencia;");
-
-            // Sem defaultValue: o DELETE acima garante que não há linha a preencher, e um
-            // default de string vazia ficaria permanente no schema, disponível para
-            // gravar snapshot inválido em qualquer insert futuro que omitisse a coluna.
+            // A coluna nasce anulável para o backfill acontecer antes de a
+            // obrigatoriedade valer.
             migrationBuilder.AddColumn<string>(
                 name: "tipo_deficiencia_codigo",
                 schema: "selecao",
                 table: "ofertas_tipo_deficiencia",
                 type: "character varying(50)",
                 maxLength: 50,
-                nullable: false);
+                nullable: true);
+
+            // O código é derivável do que já está gravado: o snapshot guarda o
+            // identificador de origem, e o cadastro preserva suas linhas sob exclusão
+            // lógica — então a linha de origem continua lá, com o código, mesmo que o
+            // tipo tenha sido removido depois de configurado. Descartar a configuração
+            // do operador quando ela pode ser reconstruída seria perda evitável.
+            //
+            // O guard de existência não é zelo excessivo: cada módulo migra o próprio
+            // schema, e nada garante que o de Configuração já exista quando esta
+            // migration roda — num banco onde Seleção migra primeiro, referenciar a
+            // tabela diretamente abortaria a migração inteira. Sem a tabela também não
+            // há oferta configurada a preservar, então pular o backfill é correto.
+            migrationBuilder.Sql(
+                """
+                DO $$
+                BEGIN
+                    IF to_regclass('configuracao.tipo_deficiencia') IS NOT NULL THEN
+                        UPDATE selecao.ofertas_tipo_deficiencia AS oferta
+                           SET tipo_deficiencia_codigo = cadastro.codigo
+                          FROM configuracao.tipo_deficiencia AS cadastro
+                         WHERE cadastro.id = oferta.tipo_deficiencia_origem_id;
+                    END IF;
+                END $$;
+                """);
+
+            // Resíduo: linha cuja origem não existe mais nem sob exclusão lógica — só
+            // acontece se o cadastro tiver sido apagado fisicamente, fora do fluxo da
+            // aplicação. Não há de onde tirar o código, e mantê-la com valor inventado
+            // deixaria um snapshot que nenhuma regra casaria.
+            migrationBuilder.Sql(
+                """
+                DELETE FROM selecao.ofertas_tipo_deficiencia
+                 WHERE tipo_deficiencia_codigo IS NULL;
+                """);
+
+            // Agora sim obrigatória, e sem defaultValue: um default de string vazia
+            // ficaria permanente no schema, disponível para gravar snapshot inválido em
+            // qualquer insert futuro que omitisse a coluna.
+            migrationBuilder.AlterColumn<string>(
+                name: "tipo_deficiencia_codigo",
+                schema: "selecao",
+                table: "ofertas_tipo_deficiencia",
+                type: "character varying(50)",
+                maxLength: 50,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "character varying(50)",
+                oldMaxLength: 50,
+                oldNullable: true);
         }
 
         /// <inheritdoc />
         /// <remarks>
-        /// A reversão devolve o schema ao estado anterior, mas não restaura as linhas
-        /// removidas no <c>Up</c> — as ofertas voltam sem tipos de deficiência.
+        /// A reversão devolve o schema ao estado anterior. As linhas preservadas pelo
+        /// backfill continuam lá; só não voltam as que o <c>Up</c> removeu por não ter
+        /// origem viva de onde derivar o código.
         /// </remarks>
         protected override void Down(MigrationBuilder migrationBuilder)
         {
