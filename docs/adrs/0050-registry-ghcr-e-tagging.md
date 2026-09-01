@@ -24,6 +24,8 @@ informed:
 >
 > **O que permanece válido:** registry (GHCR), naming `uniplus-api-<modulo>`, estratégia lockstep semver, gates de validação (formato semver, tag em commit em `main`), smoke estrutural pré-push. A emenda toca apenas a cláusula de plataformas.
 
+<!-- As emendas são blocos de citação distintos, em ordem cronológica. -->
+
 > **Emenda de 2026-08-31 — `linux/arm64` desabilitado; a plataforma volta a ser `linux/amd64`**
 >
 > A emenda de 2026-05-17 habilitou o multi-arch porque a Epic [`uniplus-infra#317`](https://github.com/unifesspa-edu-br/uniplus-infra/issues/317) migraria o lab para `VM.Standard.A1.Flex` (ARM Ampere) **antes de o trial OCI expirar em 2026-06-03**. O prazo passou há quase três meses, a migração não ocorreu e a Epic segue aberta. O ambiente real é amd64 — o único nó do cluster de homologação reporta `architecture: amd64` (`uname -m` na VM: `x86_64`).
