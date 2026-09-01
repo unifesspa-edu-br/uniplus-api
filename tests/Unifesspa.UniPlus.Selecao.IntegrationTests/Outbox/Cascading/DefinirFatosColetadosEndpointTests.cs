@@ -163,8 +163,6 @@ public sealed class DefinirFatosColetadosEndpointTests
                 Content = JsonContent.Create(new
                 {
                     numero = "001/2026",
-                    periodoInscricaoInicio = Hoje(),
-                    periodoInscricaoFim = HojeMais(30),
                     documentoEditalId = DocumentoId,
                     ato = new
                     {

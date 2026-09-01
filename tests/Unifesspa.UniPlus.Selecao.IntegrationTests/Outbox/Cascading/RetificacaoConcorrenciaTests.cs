@@ -61,8 +61,8 @@ public sealed class RetificacaoConcorrenciaTests
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
-            PeriodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            PeriodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+            PeriodoInscricaoInicio: null,
+            PeriodoInscricaoFim: null,
             DocumentoEditalId: documentoId,
             Ato: DadosDoAtoDeTeste.Padrao);
 
@@ -113,8 +113,8 @@ public sealed class RetificacaoConcorrenciaTests
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
-            PeriodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            PeriodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+            PeriodoInscricaoInicio: null,
+            PeriodoInscricaoFim: null,
             DocumentoEditalId: documentoAbertura,
             Ato: DadosDoAtoDeTeste.Padrao);
         await using (AsyncServiceScope publicarScope = api.Services.CreateAsyncScope())
@@ -141,8 +141,8 @@ public sealed class RetificacaoConcorrenciaTests
             processoId,
             "Correção concorrente do prazo de inscrição",
             Numero: "001/2026-R1",
-            PeriodoInscricaoInicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            PeriodoInscricaoFim: new DateTimeOffset(2026, 2, 28, 23, 59, 59, TimeSpan.FromHours(-3)),
+            PeriodoInscricaoInicio: null,
+            PeriodoInscricaoFim: null,
             DocumentoEditalId: documentoRetificacao,
             Ato: DadosDoAtoDeTeste.Padrao);
 

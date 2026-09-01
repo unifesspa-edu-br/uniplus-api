@@ -6173,7 +6173,6 @@
           {
             "name": "dataReferencia",
             "in": "query",
-            "required": true,
             "schema": {
               "type": "string",
               "format": "date"
@@ -8899,12 +8898,18 @@
             ]
           },
           "periodoInscricaoInicio": {
-            "type": "string",
-            "format": "date"
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "periodoInscricaoFim": {
-            "type": "string",
-            "format": "date"
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "documentoEditalId": {
             "type": "string",
@@ -10151,12 +10156,18 @@
             ]
           },
           "periodoInscricaoInicio": {
-            "type": "string",
-            "format": "date"
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "periodoInscricaoFim": {
-            "type": "string",
-            "format": "date"
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "documentoEditalId": {
             "type": "string",
@@ -10728,12 +10739,18 @@
             ]
           },
           "periodoInscricaoInicio": {
-            "type": "string",
-            "format": "date"
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "periodoInscricaoFim": {
-            "type": "string",
-            "format": "date"
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "documentoEditalId": {
             "type": "string",

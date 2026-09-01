@@ -279,6 +279,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "cronograma_fase_agrupadora_sem_etapa_pontuada",
                 "cronograma_etapa_pontuada_sem_fase_agrupadora",
                 "cronograma_inscricao_propria_sem_fase_de_coleta",
+                "cronograma_fase_que_coleta_inscricao_sem_janela",
                 "cronograma_vagas_sem_fase_que_produz_resultado",
                 // ── PendenciaDaCascata, detalhamento por razão ──
                 "cascata_modalidade_fora_do_regime_federal",

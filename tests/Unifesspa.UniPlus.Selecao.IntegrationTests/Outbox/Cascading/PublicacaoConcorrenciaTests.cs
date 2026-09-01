@@ -71,8 +71,8 @@ public sealed class PublicacaoConcorrenciaTests
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
-            PeriodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            PeriodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+            PeriodoInscricaoInicio: null,
+            PeriodoInscricaoFim: null,
             DocumentoEditalId: documentoId,
             Ato: DadosDoAtoDeTeste.Padrao);
 
@@ -209,8 +209,8 @@ public sealed class PublicacaoConcorrenciaTests
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
-            PeriodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            PeriodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+            PeriodoInscricaoInicio: null,
+            PeriodoInscricaoFim: null,
             DocumentoEditalId: documentoId,
             Ato: DadosDoAtoDeTeste.Padrao);
 
