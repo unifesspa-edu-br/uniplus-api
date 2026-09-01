@@ -50,6 +50,19 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                        ('f45e0000-0000-7000-8000-000000000014', 'LISTA_ESPERA', 'Lista de espera', 'Fila de candidatos classificados além das vagas, convocados conforme as vagas são liberadas.', 'MEC', 'DELEGADA', false, false, false, false, false, NULL, TIMESTAMPTZ '2026-01-01 00:00:00+00', false),
                        ('f45e0000-0000-7000-8000-000000000015', 'CHAMADA', 'Chamada', 'Convocação dos candidatos da lista de espera para ocupar vagas remanescentes.', 'MEC', 'DELEGADA', true, false, false, false, false, NULL, TIMESTAMPTZ '2026-01-01 00:00:00+00', false)
                 ON CONFLICT DO NOTHING;
+
+                -- Fase que o operador removeu deliberadamente não volta pelo deploy. O
+                -- ON CONFLICT acima não a alcança: o índice único é parcial
+                -- (WHERE is_deleted = false), e a linha removida tem id próprio, que não
+                -- colide com o do seed. Sem esta limpeza, o código passaria a ter duas
+                -- linhas — a removida e a recém-semeada —, ressuscitando na prática o que
+                -- alguém tirou de circulação.
+                DELETE FROM configuracao.fase_canonica novo
+                 WHERE novo.id::text LIKE 'f45e0000-0000-7000-8000-%'
+                   AND EXISTS (SELECT 1 FROM configuracao.fase_canonica antigo
+                                WHERE antigo.codigo = novo.codigo
+                                  AND antigo.is_deleted = true
+                                  AND antigo.id <> novo.id);
                 """);
         }
 
@@ -75,12 +88,26 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
             // trás — preferível a quebrar processo configurado.
             migrationBuilder.Sql(
                 """
-                DELETE FROM configuracao.fase_canonica f
-                 WHERE f.id::text LIKE 'f45e0000-0000-7000-8000-%'
-                   AND f.updated_at IS NULL
-                   AND f.created_by IS NULL
-                   AND NOT EXISTS (SELECT 1 FROM selecao.fases_cronograma c
-                                    WHERE c.fase_canonica_origem_id = f.id);
+                DO $$
+                DECLARE
+                    referenciadas text := '';
+                BEGIN
+                    -- A referencia a selecao.fases_cronograma vai por SQL dinamico porque o
+                    -- Postgres resolve nomes de tabela no parse: um NOT EXISTS estatico
+                    -- abortaria o rollback com "relation does not exist" num banco que so
+                    -- tenha o schema de Configuracao, ou onde Selecao ja tenha sido removido.
+                    IF to_regclass('selecao.fases_cronograma') IS NOT NULL THEN
+                        referenciadas := ' AND NOT EXISTS (SELECT 1 FROM selecao.fases_cronograma c'
+                                      || ' WHERE c.fase_canonica_origem_id = f.id)';
+                    END IF;
+
+                    EXECUTE 'DELETE FROM configuracao.fase_canonica f'
+                         || ' WHERE f.id::text LIKE ''f45e0000-0000-7000-8000-%'''
+                         || ' AND f.updated_at IS NULL'
+                         || ' AND f.created_by IS NULL'
+                         || referenciadas;
+                END
+                $$;
                 """);
         }
     }
