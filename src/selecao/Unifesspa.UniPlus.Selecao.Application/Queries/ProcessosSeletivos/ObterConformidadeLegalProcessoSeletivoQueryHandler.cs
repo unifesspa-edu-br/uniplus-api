@@ -133,10 +133,15 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         }
 
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
+        if (fuso.IsFailure)
+        {
+            // Zona irresolvível é defeito de instalação, e os gates de publicação a mapeiam para
+            // 500. Devolver null aqui viraria 404 — a consulta diria que o processo não existe e
+            // esconderia a falha de configuração que ela deveria justamente antecipar.
+            throw new InvalidOperationException(fuso.Error!.Message);
+        }
 
-        return fuso.IsFailure
-            ? null
-            : DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(inicio, fuso.Value!).DateTime);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(inicio, fuso.Value!).DateTime);
     }
 
 }
