@@ -245,6 +245,87 @@ As URLs admin alvo dos POSTs do Newman seguem a ADR-0064:
 `docs/guia-banco-de-dados.md` e `seeds/README.md` (quando criado em #463)
 devem refletir o novo vocabulário e os paths atualizados.
 
+## Emenda 2 (2026-09-01) — critério que separa seed por migration de carga por Newman
+
+A decisão original vale para **dado que a instituição administra**. Não vale para **vocabulário
+normativo**, e a prática divergiu disso desde julho de 2026: `Modalidade`, `PrecedenciaFase`,
+`FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento` e `TipoDocumento` são materializados por
+`HasData` em migration. A ADR seguia `accepted` dizendo o contrário, e quem lia a decisão e o
+código encontrava duas respostas para a mesma pergunta.
+
+### O critério
+
+Diretriz do Tech Lead (2026-09-01), em duas metades:
+
+1. **Newman/endpoint admin é para dado que exige registro de quem fez a operação.
+   `HasData`/migration é para o que não precisa de blame.**
+2. **Update é sempre via API** — alterar é sempre alguém decidindo mudar.
+
+| Momento | Regime |
+|---|---|
+| criação de dado normativo | seed **ou** carga admin — indiferente |
+| criação de dado operacional | endpoint admin, com autor |
+| qualquer update | endpoint admin, com autor |
+
+O critério classifica pela **natureza do dado**, não pela consequência da ausência: não depende de
+julgar o quanto uma falta dói.
+
+### Por que isto não contradiz o driver de auditoria honesta
+
+A decisão original rejeitou a opção A por **auditoria fabricada** — o sentinel
+`"seed:embedded@v1"`, ator sintético sem correspondente no Keycloak. Esse fundamento continua
+válido e esta emenda não o toca.
+
+O que a análise de 2026-05-14 equiparou indevidamente foi `CreatedBy` **nulo** ao sentinel: a
+opção B foi rejeitada porque *"`CreatedBy` fica null ou hardcoded — mesma fabricação de auditoria
+da alternativa A"*. **Nulo e sentinel são opostos.** Sentinel inventa um autor que não existe;
+nulo declara que não há autor a registrar. Para a Lei 12.711, atribuir a criação a um operador é
+que seria a informação desonesta.
+
+Logo: `created_by` nulo **é** auditoria honesta para dado normativo, e o driver original fica
+preservado — não relaxado.
+
+### Os demais contras da opção B foram resolvidos na prática
+
+- **GUID não-determinístico:** os seeds em uso derivam id determinístico com prefixo próprio
+  (`PrecedenciaFaseSeed`, `CategoriaDocumentoSeed`), o que também torna o `Down` seletivo.
+- **"Toda correção no seed gera migration destrutiva":** resolvido pela segunda metade do critério.
+  Seed usa `INSERT … ON CONFLICT DO NOTHING` e **nunca `UPDATE`** — o deploy acrescenta o que falta
+  e não toca no que existe. Corrigir linha existente é ato administrativo, com responsável.
+- **Polimorfismo do `Predicado`:** alcançava `ObrigatoriedadeLegal`, que permanece fora do grupo
+  de seed.
+
+### Classificação das entidades
+
+| Regime | Entidades |
+|---|---|
+| `HasData` em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `FaseCanonica` |
+| Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento` |
+
+O critério reclassifica exatamente o que a prática já havia movido — sinal de que descreve a razão
+que os autores seguiram sem nomear.
+
+### Efeito sobre os arquivos de seed previstos
+
+`seeds/seed-modalidades.json` e `seeds/seed-tipos-documento.json` **saem do escopo do bootstrap por
+Newman**: ambos são vocabulário normativo, e `TipoDocumento` já é semeado por migration. Os demais
+arquivos da lista original permanecem no regime de endpoint admin.
+
+### O que permanece válido
+
+Registry de decisão sobre o caminho de escrita **para dado administrado**: os endpoints admin
+seguem sendo a superfície canônica, a collection Newman segue como documentação viva do shape da
+API, a semântica de auditoria com `sub` real do JWT vale para tudo que entra por ali, e a
+precondição de `IAuditableEntity` continua. A emenda toca apenas a fronteira de qual entidade entra
+por qual caminho.
+
+### Consequência conhecida, e como o critério a evita
+
+`HasData` em cadastro **também** administrável tem o risco de, ao editar a lista, o EF gerar
+`UpdateData` e sobrescrever o que o administrador mudou naquela linha. A segunda metade do critério
+elimina isso por construção: a migration de seed não emite `UPDATE`. Onde o EF geraria um, a
+migration é escrita à mão com `Sql` e `ON CONFLICT DO NOTHING`.
+
 ## Mais informações
 
 - [ADR-0023](0023-problemdetails-rfc-9457.md) — ProblemDetails RFC 9457 (Newman tests checam contra).
