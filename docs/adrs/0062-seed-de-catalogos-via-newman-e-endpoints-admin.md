@@ -386,68 +386,34 @@ DO NOTHING` para acrescentar. **Corrigir e remover têm forma própria** — des
 auditoria e, quando o alvo é referenciado, pela ausência de referência viva. O que não existe é o
 `UpdateData`/`DeleteData` **gerado pelo scaffold**, que não tem nenhuma dessas guardas.
 
-### Como se corrige um item semeado que nasceu errado
+### Corrigir um item semeado que nasceu errado
 
-Descartar o `UpdateData`/`DeleteData` gerado resolve o risco de sobrescrever o operador, mas
-sozinho cria outro: a migration original continua inalterada, então **toda base criada depois ainda
-recebe a linha obsoleta**. Corrigir só pela API conserta o ambiente onde alguém rodou a correção e
-deixa o conteúdo do catálogo dependendo da idade do banco — e os arquivos de bootstrap desses
-catálogos saíram do Newman, então não há passo pós-deploy que reponha.
+Descartar o `UpdateData`/`DeleteData` gerado protege a edição do operador, mas sozinho deixa a
+migration original intacta: **toda base criada depois recebe a linha obsoleta**. Corrigir só pela
+API conserta o ambiente onde alguém rodou a correção e faz o conteúdo do catálogo depender da idade
+do banco — e os arquivos de bootstrap desses catálogos saíram do Newman, então não há passo
+pós-deploy que reponha.
 
-A correção é **nova migration**, nunca edição da migration já aplicada, com o comando condicionado
-a a linha continuar como o seed a criou:
+O princípio, portanto, é: **a correção precisa ser replayável.** Nova migration, nunca edição da já
+aplicada, com o comando guardado para não sobrescrever o que tem dono — as colunas de auditoria
+(`updated_at`, `created_by`) são o discriminador mecânico, porque o `AuditableInterceptor` as
+preenche em qualquer escrita pela API.
 
-```sql
-UPDATE configuracao.<tabela> SET <coluna> = <valor novo>
- WHERE id = '<id determinístico do seed>'
-   AND updated_at IS NULL
-   AND created_by IS NULL;
-```
+**A forma exata da guarda depende do agregado, e não cabe nesta emenda.** O levantamento feito ao
+redigi-la mostrou que cada cadastro tem contrato próprio:
 
-As duas condições de auditoria são o que distingue este `UPDATE` do proibido: ele alcança a linha
-que **ninguém tocou** — em base nova e em base antiga igualmente — e não alcança a que o operador
-editou, que é a única que a regra protege. O `AuditableInterceptor` preenche as duas colunas em
-qualquer escrita pela API, então a distinção é mecânica.
+- `Modalidade` legal fixa admite edição administrativa de `Descricao` e `BaseLegal`, mas tem
+  estrutura de vagas que vem de norma — uma guarda por **linha** bloquearia corrigir a estrutura só
+  porque alguém editou a descrição; ali a guarda é por **campo**.
+- `CategoriaDocumento` **não** bloqueia remoção por referência, por decisão explícita: o consumo
+  cross-módulo é snapshot-copy desacoplado ([ADR-0061](0061-snapshot-copy-entre-modulos.md)) e o
+  edital publicado carrega a categoria congelada por valor. Uma verificação de referência viva
+  contrariaria esse contrato.
 
-**Vale para atributo, não para o código.** O código é a identidade que as outras tabelas guardam —
-como texto, sem chave estrangeira —, então renomeá-lo por `UPDATE` deixa as referências apontando
-para o valor antigo, exatamente como o `DELETE` faria. Corrigir código errado exige a mesma
-verificação de referência viva descrita abaixo, e, havendo alguma, deixa de ser correção por
-migration: vira substituição com tratamento do que aponta, como a
-[ADR-0112](0112-fronteira-append-only-do-catalogo-de-regras.md) descreve
-para o catálogo de regras.
-
-**Remoção exige uma condição a mais: nenhuma referência viva.** As colunas de auditoria não
-denunciam uso — usar uma categoria não atualiza a linha dela —, e as referências entre cadastros
-deste módulo são **texto sem chave estrangeira**: `TipoDocumento.categoria` guarda o código de
-`CategoriaDocumento`, e `PrecedenciaFase` guarda os códigos de `FaseCanonica`, ambos por decisão
-deliberada, com a existência garantida pelo handler no caminho de escrita. O banco, portanto, não
-recusa o `DELETE` — ele deixa a referência pendurada.
-
-Antes de remover, a migration confere quem aponta para o código:
-
-```sql
-DELETE FROM configuracao.categoria_documento
- WHERE codigo = '<código a remover>'
-   AND updated_at IS NULL
-   AND created_by IS NULL
-   AND NOT EXISTS (SELECT 1 FROM configuracao.tipo_documento t
-                    WHERE t.categoria = configuracao.categoria_documento.codigo);
-```
-
-Havendo referência, a resposta depende de **quem aponta**:
-
-- **Referência que é ela mesma linha semeada e intocada** — um `TipoDocumento` do seed apontando
-  para uma `CategoriaDocumento` do seed: a remoção continua sendo por migration, em cascata e na
-  ordem certa (primeiro quem referencia, depois o referenciado), cada comando sob as mesmas guardas
-  de auditoria. Mandar o operador fazer pela tela consertaria só o ambiente onde ele rodasse, e a
-  base seguinte recriaria as duas linhas obsoletas — o problema de replay que esta seção existe
-  para evitar.
-- **Referência com dono** — linha que o operador criou ou editou: a remoção sai da migration. Ela
-  exige decidir o que fazer com o que aponta, e essa decisão tem responsável.
-
-Onde a própria linha a remover tiver dono, idem. A divergência que sobra é deliberada, não acidente
-de idade do banco.
+Especificar a guarda de cada cadastro é trabalho próprio, com o contrato de cada agregado na mão —
+rastreado em [uniplus-api#1370](https://github.com/unifesspa-edu-br/uniplus-api/issues/1370).
+Esta emenda fixa o critério de **por onde o dado entra**; o procedimento de correção fica declarado
+no princípio e detalhado à parte.
 
 **A proibição é do catálogo administrável, não da migration.** Nos catálogos de fato —
 `FatoCandidato` e `FatoValorDominio` — a migration de seed é o único caminho de escrita que existe,
