@@ -394,9 +394,27 @@ que **ninguém tocou** — em base nova e em base antiga igualmente — e não a
 editou, que é a única que a regra protege. O `AuditableInterceptor` preenche as duas colunas em
 qualquer escrita pela API, então a distinção é mecânica.
 
-Remoção segue a mesma forma, com `DELETE` sob as mesmas condições. Onde a linha tiver dono, a
-correção é ato administrativo — e a divergência que sobra é deliberada, não acidente de idade do
-banco.
+**Remoção exige uma condição a mais: nenhuma referência viva.** As colunas de auditoria não
+denunciam uso — usar uma categoria não atualiza a linha dela —, e as referências entre cadastros
+deste módulo são **texto sem chave estrangeira**: `TipoDocumento.categoria` guarda o código de
+`CategoriaDocumento`, e `PrecedenciaFase` guarda os códigos de `FaseCanonica`, ambos por decisão
+deliberada, com a existência garantida pelo handler no caminho de escrita. O banco, portanto, não
+recusa o `DELETE` — ele deixa a referência pendurada.
+
+Antes de remover, a migration confere quem aponta para o código:
+
+```sql
+DELETE FROM configuracao.categoria_documento
+ WHERE codigo = '<código a remover>'
+   AND updated_at IS NULL
+   AND created_by IS NULL
+   AND NOT EXISTS (SELECT 1 FROM configuracao.tipo_documento t
+                    WHERE t.categoria = configuracao.categoria_documento.codigo);
+```
+
+Havendo referência, a remoção não acontece por migration: é decisão que exige tratar o que aponta
+para a linha, e isso é ato administrativo. Onde a linha tiver dono, idem — e a divergência que
+sobra é deliberada, não acidente de idade do banco.
 
 **A proibição é do catálogo administrável, não da migration.** Nos catálogos de fato —
 `FatoCandidato` e `FatoValorDominio` — a migration de seed é o único caminho de escrita que existe,
