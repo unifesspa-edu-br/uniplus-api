@@ -82,7 +82,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // MESMO avaliador (Domain, chamado pelo gate na Application) produz para o mesmo
         // processo/regras/data — a consulta não tem lógica própria de decisão.
         Dictionary<Guid, (bool Aprovada, string? Motivo)> avaliacaoDireta = AvaliadorConformidadeLegal
-            .Avaliar(processo, processo.Tipo.ToString(), [regraAprovada, regraReprovada])
+            .Avaliar(processo, processo.Tipo.ToString(), [regraAprovada, regraReprovada], IdentidadesDe(processo))
             .Regras.ToDictionary(r => r.RegraId, r => (r.Aprovada, r.Motivo));
 
         foreach (RegraAvaliadaDto regraDaConsulta in dto.Regras)
@@ -164,4 +164,11 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+
+    /// <summary>Identidades derivadas das próprias exigências — estado sem renomeação nem reciclagem.</summary>
+    private static Dictionary<string, Guid> IdentidadesDe(ProcessoSeletivo processo) =>
+        processo.DocumentosExigidos
+            .GroupBy(e => e.TipoDocumentoCodigo, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().TipoDocumentoOrigemId, StringComparer.Ordinal);
+
 }

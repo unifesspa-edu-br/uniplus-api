@@ -38,7 +38,7 @@ public sealed class AvaliadorConformidadeLegalTests
     public void SemRegras_Aprova()
     {
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            NovoProcesso(), TipoProcessoAvaliado, []);
+            NovoProcesso(), TipoProcessoAvaliado, [], new Dictionary<string, Guid>(StringComparer.Ordinal));
 
         resultado.Regras.Should().BeEmpty();
         resultado.Avisos.Should().BeEmpty();
@@ -51,7 +51,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra2 = NovaRegra("R2", new ConcorrenciaDuplaObrigatoria());
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            NovoProcesso(), TipoProcessoAvaliado, [regra1, regra2]);
+            NovoProcesso(), TipoProcessoAvaliado, [regra1, regra2], new Dictionary<string, Guid>(StringComparer.Ordinal));
 
         resultado.Regras.Should().HaveCount(2);
         resultado.Regras.Select(r => r.RegraCodigo).Should().BeEquivalentTo(["R1", "R2"]);
@@ -73,7 +73,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue(
             "o rótulo editorial ('Primeira avaliação') não participa da avaliação — só o código congelado do tipo");
@@ -92,7 +92,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         RegraAvaliada avaliada = resultado.Regras.Single();
         avaliada.Aprovada.Should().BeFalse(
@@ -113,7 +113,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         RegraAvaliada avaliada = resultado.Regras.Single();
         avaliada.Aprovada.Should().BeFalse();
@@ -163,7 +163,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("MODALIDADES", new ModalidadesMinimas(["LB_PPI"]));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
@@ -180,7 +180,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("MODALIDADES", new ModalidadesMinimas(["LB_PPI"]));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         RegraAvaliada avaliada = resultado.Regras.Single();
         avaliada.Aprovada.Should().BeFalse(
@@ -201,7 +201,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("DESEMPATE", new DesempateDeveIncluir("DESEMPATE-IDOSO"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
@@ -226,7 +226,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue(
             "a regra cita o código, e o código não mudou — só o rótulo de exibição");
@@ -247,7 +247,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeFalse(
             "o tipo ofertado tem código DEFICIENCIA_AUDITIVA; AUDITIVA é apenas o nome dele");
@@ -266,7 +266,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
@@ -278,7 +278,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         Action act = () =>
         {
-            ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra]);
+            ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra], new Dictionary<string, Guid>(StringComparer.Ordinal));
             RegraAvaliada avaliada = resultado.Regras.Single();
             avaliada.Aprovada.Should().BeFalse();
             avaliada.Motivo.Should().NotBeNullOrWhiteSpace();
@@ -297,7 +297,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("CONCORRENCIA", new ConcorrenciaDuplaObrigatoria());
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
@@ -312,7 +312,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ObrigatoriedadeLegal regra = NovaRegra("CONCORRENCIA", new ConcorrenciaDuplaObrigatoria());
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         RegraAvaliada avaliada = resultado.Regras.Single();
         avaliada.Aprovada.Should().BeFalse(
@@ -330,13 +330,90 @@ public sealed class AvaliadorConformidadeLegalTests
 
         Action act = () =>
         {
-            ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra]);
+            ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra], new Dictionary<string, Guid>(StringComparer.Ordinal));
             resultado.Regras.Single().Aprovada.Should().BeTrue();
             resultado.Avisos.Should().ContainSingle();
         };
 
         act.Should().NotThrow();
     }
+
+    [Fact(DisplayName = "Renomear o tipo e atualizar a regra continua aprovando — a identidade não mudou")]
+    public void DocumentoObrigatorio_AposRenomearOTipoEAtualizarARegra_Aprova()
+    {
+        // O desfecho de quem faz o certo: renomeia o tipo no cadastro e atualiza a regra
+        // para o código novo. A exigência congelou o código velho, mas aponta para o
+        // mesmo documento. Casando por código, o gate recusava publicação legítima com
+        // uma mensagem que mandava procurar uma exigência que já estava na tela.
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        Guid identidadeDoLaudo = Guid.CreateVersion7();
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaGeralDe(faseId, identidadeDoLaudo, "LAUDO_MEDICO"), 0).Value!],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "LAUDO_MEDICO_PCD"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO_PCD"] = identidadeDoLaudo });
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue(
+            "a exigência designa o mesmo documento que a regra exige — só o rótulo mudou");
+    }
+
+    [Fact(DisplayName = "Código reatribuído a outro documento reprova, mesmo com a string batendo")]
+    public void DocumentoObrigatorio_ComCodigoReatribuido_Reprova()
+    {
+        // O inverso: o código continua o mesmo, mas passou a designar outro documento.
+        // Casando por string, o edital era publicado como conforme, satisfeito pelo
+        // documento errado — e o snapshot congelava a exigência errada no envelope.
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaGeralDe(faseId, Guid.CreateVersion7(), "LAUDO_MEDICO"), 0).Value!],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "LAUDO_MEDICO"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO"] = Guid.CreateVersion7() });
+
+        RegraAvaliada avaliada = resultado.Regras.Single();
+        avaliada.Aprovada.Should().BeFalse();
+        avaliada.Motivo.Should().Contain("designa outro documento",
+            "a mensagem precisa dizer o que houve — mandar procurar exigência ausente faria o editor caçar o que está na tela");
+    }
+
+    [Fact(DisplayName = "Sem exigência alguma, a mensagem continua sendo a de cobertura ausente")]
+    public void DocumentoObrigatorio_SemExigencia_MantemMotivoDeCoberturaAusente()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        PrepararProcessoComModalidade(processo, "LB_PPI");
+
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "LAUDO_MEDICO"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO"] = Guid.CreateVersion7() });
+
+        RegraAvaliada avaliada = resultado.Regras.Single();
+        avaliada.Aprovada.Should().BeFalse();
+        avaliada.Motivo.Should().Contain("cobre incondicionalmente");
+        avaliada.Motivo.Should().NotContain("designa outro documento");
+    }
+
+    /// <summary>Exigência geral com a identidade do tipo escolhida pelo cenário.</summary>
+    private static DocumentoExigido ExigenciaGeralDe(Guid exigidoNaFaseId, Guid tipoDocumentoOrigemId, string tipoDocumentoCodigo) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId, tipoDocumentoOrigemId, tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     // ── CA-09 (DocumentoObrigatorioParaModalidade) — Story #554, PR #903, issue #548: gate
     // real, substitui a reprovação conservadora que vigorava enquanto a guarda B-01
@@ -389,7 +466,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
@@ -402,7 +479,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         RegraAvaliada avaliada = resultado.Regras.Single();
         avaliada.Aprovada.Should().BeFalse();
@@ -420,7 +497,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
@@ -441,7 +518,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeFalse(
             "uma exigência que não determina resultado (Obrigatorio=false, sem ConsequenciaIndeferimento) é " +
@@ -459,7 +536,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
@@ -475,7 +552,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeFalse(
             "a exigência só cobre quem também satisfaz FAIXA_ETARIA — nem todo candidato de LB_PPI seria coberto, " +
@@ -497,7 +574,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeFalse(
             "Indeterminado conta como \"não provado\", mesma conclusão que Falso já dava — nenhuma mudança de comportamento observável");
@@ -514,8 +591,19 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra], IdentidadesDe(processo));
 
         resultado.Regras.Single().Aprovada.Should().BeFalse();
     }
+
+    /// <summary>
+    /// Mapa de identidade derivado das próprias exigências do processo — o estado normal,
+    /// em que nada foi renomeado nem reciclado: cada código designa o tipo que a exigência
+    /// congelou. Os cenários de divergência montam o mapa à mão, que é o ponto deles.
+    /// </summary>
+    private static Dictionary<string, Guid> IdentidadesDe(ProcessoSeletivo processo) =>
+        processo.DocumentosExigidos
+            .GroupBy(e => e.TipoDocumentoCodigo, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().TipoDocumentoOrigemId, StringComparer.Ordinal);
+
 }

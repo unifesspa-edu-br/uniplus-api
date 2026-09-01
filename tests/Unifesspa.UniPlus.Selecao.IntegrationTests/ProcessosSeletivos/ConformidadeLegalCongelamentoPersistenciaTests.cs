@@ -150,7 +150,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         ObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = new(readContext, TimeProvider.System);
         IReadOnlyList<ObrigatoriedadeLegal> vigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(processo.Tipo.ToString(), DataDeCorte, CancellationToken.None);
-        ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.Tipo.ToString(), vigentes);
+        ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.Tipo.ToString(), vigentes, IdentidadesDe(processo));
         conformidade.Regras.Should().OnlyContain(static r => r.Aprovada, "pré-condição do teste — o processo satisfaz a regra semeada");
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
@@ -211,7 +211,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         IReadOnlyList<ObrigatoriedadeLegal> vigentesAgora = await freshRepository
             .ObterVigentesParaTipoProcessoAsync(processoVivo.Tipo.ToString(), DataDeCorte, CancellationToken.None);
         ResultadoConformidade recomputado = AvaliadorConformidadeLegal.Avaliar(
-            processoVivo, processoVivo.Tipo.ToString(), vigentesAgora);
+            processoVivo, processoVivo.Tipo.ToString(), vigentesAgora, IdentidadesDe(processoVivo));
 
         (Guid RegraId, string Hash)[] recomputadoSet = [.. recomputado.Regras
             .Select(r => (r.RegraId, r.Hash))
@@ -261,4 +261,11 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     }
 
     private static string UniqueRegraCodigo() => $"TEST_GATE_{Guid.CreateVersion7():N}";
+
+    /// <summary>Identidades derivadas das próprias exigências — estado sem renomeação nem reciclagem.</summary>
+    private static Dictionary<string, Guid> IdentidadesDe(ProcessoSeletivo processo) =>
+        processo.DocumentosExigidos
+            .GroupBy(e => e.TipoDocumentoCodigo, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().TipoDocumentoOrigemId, StringComparer.Ordinal);
+
 }

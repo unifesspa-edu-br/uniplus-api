@@ -58,8 +58,8 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
             .ObterVigentesParaTipoProcessoAsync(tipoProcessoCodigo, query.DataReferencia, cancellationToken)
             .ConfigureAwait(false);
 
-        IReadOnlyDictionary<Guid, string> inavaliaveis = await ConferenciaDeReferenciasDasRegras
-            .LevantarRegrasInavaliaveisAsync(
+        ConferenciaDeReferenciasDasRegras.RelatorioDeReferencias referencias = await ConferenciaDeReferenciasDasRegras
+            .LevantarAsync(
                 regrasVigentes,
                 modalidadeReader,
                 tipoDocumentoReader,
@@ -69,8 +69,12 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
                 cancellationToken)
             .ConfigureAwait(false);
 
+        IReadOnlyDictionary<Guid, string> inavaliaveis = referencias.RegrasInavaliaveis;
+
+        // Mesmo relatório do gate: a regra que aparece reprovada aqui é a mesma que
+        // bloqueia a publicação, inclusive quando o motivo é identidade e não código.
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            processo, tipoProcessoCodigo, regrasVigentes);
+            processo, tipoProcessoCodigo, regrasVigentes, referencias.IdentidadeDoTipoDocumentoPorCodigo);
 
         RegraAvaliadaDto[] regrasDto = [.. resultado.Regras.Select(r => new RegraAvaliadaDto(
             r.RegraId,

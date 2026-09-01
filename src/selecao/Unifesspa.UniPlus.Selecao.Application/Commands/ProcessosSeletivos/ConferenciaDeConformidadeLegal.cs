@@ -54,7 +54,7 @@ internal static class ConferenciaDeConformidadeLegal
         // Antes de avaliar: uma regra que referencia cadastro inexistente é aprovada
         // por vacuidade pelo avaliador, que é domínio puro e não consulta cadastro.
         // Publicar sob ela seria publicar sob obrigação que ninguém pode cumprir.
-        Result referencias = await ConferenciaDeReferenciasDasRegras
+        Result<ConferenciaDeReferenciasDasRegras.RelatorioDeReferencias> referencias = await ConferenciaDeReferenciasDasRegras
             .ConferirAsync(regrasVigentes, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
             .ConfigureAwait(false);
         if (referencias.IsFailure)
@@ -62,8 +62,11 @@ internal static class ConferenciaDeConformidadeLegal
             return Result<ResultadoConformidade>.Failure(referencias.Error!);
         }
 
+        // O mesmo levantamento alimenta a avaliação: a identidade que o gate usa para
+        // casar exigência com regra é a que a conferência acabou de ler, não uma segunda
+        // leitura que poderia divergir dela.
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            processo, tipoProcessoCodigo, regrasVigentes);
+            processo, tipoProcessoCodigo, regrasVigentes, referencias.Value!.IdentidadeDoTipoDocumentoPorCodigo);
 
         bool todasAprovadas = resultado.Regras.All(static r => r.Aprovada);
         if (!todasAprovadas)

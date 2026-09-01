@@ -41,10 +41,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public static class AvaliadorConformidadeLegal
 {
+    /// <param name="identidadeDoTipoDocumentoPorCodigo">
+    /// Identidade viva de cada código de tipo de documento, resolvida pela camada de
+    /// aplicação. Chega como dado, não como leitor: este serviço é domínio puro e não
+    /// consulta cadastro. Um código ausente do mapa não designa tipo vivo algum — a
+    /// conferência de referências já recusa a regra antes de chegar aqui.
+    /// </param>
     public static ResultadoConformidade Avaliar(
         ProcessoSeletivo processo,
         string tipoProcessoCodigoAvaliado,
-        IReadOnlyList<ObrigatoriedadeLegal> regras)
+        IReadOnlyList<ObrigatoriedadeLegal> regras,
+        IReadOnlyDictionary<string, Guid> identidadeDoTipoDocumentoPorCodigo)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoProcessoCodigoAvaliado);
@@ -55,7 +62,7 @@ public static class AvaliadorConformidadeLegal
 
         foreach (ObrigatoriedadeLegal regra in regras)
         {
-            (bool aprovada, string? motivo, string? aviso) = AvaliarPredicado(processo, regra.Predicado);
+            (bool aprovada, string? motivo, string? aviso) = AvaliarPredicado(processo, identidadeDoTipoDocumentoPorCodigo, regra.Predicado);
 
             avaliadas.Add(new RegraAvaliada(
                 regra.Id,
@@ -89,12 +96,14 @@ public static class AvaliadorConformidadeLegal
     /// <see cref="Customizado"/>.
     /// </summary>
     private static (bool Aprovada, string? Motivo, string? Aviso) AvaliarPredicado(
-        ProcessoSeletivo processo, PredicadoObrigatoriedade predicado) => predicado switch
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, Guid> identidadeDoTipoDocumentoPorCodigo,
+        PredicadoObrigatoriedade predicado) => predicado switch
         {
             EtapaObrigatoria p => AvaliarEtapaObrigatoria(processo, p),
             ModalidadesMinimas p => AvaliarModalidadesMinimas(processo, p),
             DesempateDeveIncluir p => AvaliarDesempateDeveIncluir(processo, p),
-            DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, p),
+            DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, identidadeDoTipoDocumentoPorCodigo, p),
             AtendimentoDisponivel p => AvaliarAtendimentoDisponivel(processo, p),
             ConcorrenciaDuplaObrigatoria => AvaliarConcorrenciaDuplaObrigatoria(processo),
             Customizado => (true, null, "predicado customizado — aprovado por padrão, sem verificação automática"),
@@ -158,7 +167,9 @@ public static class AvaliadorConformidadeLegal
     /// </para>
     /// </remarks>
     private static (bool, string?, string?) AvaliarDocumentoObrigatorioParaModalidade(
-        ProcessoSeletivo processo, DocumentoObrigatorioParaModalidade predicado)
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, Guid> identidadeDoTipoDocumentoPorCodigo,
+        DocumentoObrigatorioParaModalidade predicado)
     {
         bool modalidadeOfertada = processo.DistribuicaoVagas
             .SelectMany(static d => d.Modalidades)
@@ -184,13 +195,46 @@ public static class AvaliadorConformidadeLegal
         // Story #916: AplicavelPara agora é ternário — só Verdadeiro (certamente aplicável)
         // prova cobertura incondicional; Indeterminado conta como "não provado", mesma
         // conclusão que Falso já dava, sem mudança de comportamento observável aqui.
+        // A regra cita o tipo por código; a exigência congelou a IDENTIDADE do tipo no
+        // momento em que foi configurada. Casar pelo código compararia dois retratos
+        // tirados em instantes diferentes de algo que muda: renomear o tipo faria a
+        // exigência legítima deixar de casar, e reciclar o código faria um documento
+        // diferente passar por ele.
+        //
+        // Um código ausente do mapa não designa tipo vivo algum. A conferência de
+        // referências recusa a regra antes de chegar aqui, e na consulta pública ela já
+        // vem marcada como inavaliável — aqui a ausência apenas não casa, sem inventar
+        // diagnóstico sobre uma identidade que não existe.
+        if (!identidadeDoTipoDocumentoPorCodigo.TryGetValue(predicado.TipoDocumento ?? string.Empty, out Guid identidadeExigida))
+        {
+            return (false, $"nenhuma exigência documental do tipo '{predicado.TipoDocumento}' cobre incondicionalmente a modalidade '{predicado.Modalidade}'", null);
+        }
+
         bool cobertaIncondicionalmente = processo.DocumentosExigidos.Any(e =>
-            string.Equals(e.TipoDocumentoCodigo, predicado.TipoDocumento, StringComparison.Ordinal)
+            e.TipoDocumentoOrigemId == identidadeExigida
             && e.DeterminaResultado()
             && e.AplicavelPara(fatoDaModalidade) == Ternario.Verdadeiro);
 
-        return cobertaIncondicionalmente
-            ? (true, null, null)
+        if (cobertaIncondicionalmente)
+        {
+            return (true, null, null);
+        }
+
+        // Distinguir "não há exigência" de "há, mas para outro documento": a segunda só
+        // acontece quando o código foi reatribuído depois que a regra foi escrita, e
+        // mandar procurar uma exigência ausente faria o editor caçar o que está na tela.
+        // A exigência sem identidade não prova reatribuição nenhuma: ela apenas não diz a
+        // que documento pertence. Diagnosticar "o código foi reatribuído" ali seria afirmar
+        // um fato que o dado não sustenta. O decoder do envelope recusa identificador
+        // vazio e a factory também, então este é caminho residual — mas o diagnóstico
+        // errado seria pior que o genérico.
+        bool casaPeloCodigoMasNaoPelaIdentidade = processo.DocumentosExigidos.Any(e =>
+            string.Equals(e.TipoDocumentoCodigo, predicado.TipoDocumento, StringComparison.Ordinal)
+            && e.TipoDocumentoOrigemId != Guid.Empty
+            && e.TipoDocumentoOrigemId != identidadeExigida);
+
+        return casaPeloCodigoMasNaoPelaIdentidade
+            ? (false, $"a exigência documental do tipo '{predicado.TipoDocumento}' designa outro documento — o código foi reatribuído depois que a regra foi escrita", null)
             : (false, $"nenhuma exigência documental do tipo '{predicado.TipoDocumento}' cobre incondicionalmente a modalidade '{predicado.Modalidade}'", null);
     }
 
