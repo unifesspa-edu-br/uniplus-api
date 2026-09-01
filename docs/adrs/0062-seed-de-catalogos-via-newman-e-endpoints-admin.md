@@ -316,7 +316,13 @@ preservado — não relaxado.
 | Regime | Entidades |
 |---|---|
 | Seed em migration | `Modalidade`, `FatoCandidato`, `FatoValorDominio`, `CategoriaDocumento`, `PrecedenciaFase`, `TipoDocumento`, `TipoEtapa`, `TipoProcesso`, `FaseCanonica` |
-| Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento` |
+| Endpoint admin | `Campus`, `Curso`, `LocalOferta`, `OfertaCurso`, `CalendarioDiasUteis`, `TermoConsentimento`, `CondicaoAtendimentoEspecializado`, `CriterioDesempate`, `ObrigatoriedadeLegal` |
+
+Das dez entidades da decisão original, **quatro não existem mais**: `NecessidadeEspecial`,
+`Endereco`, `AreaOrganizacional` e `LocalProva` foram removidas ou substituídas na evolução do
+modelo desde maio de 2026 — `CondicaoAtendimentoEspecializado` ocupa hoje o lugar da primeira, e
+`TipoEdital` foi renomeado para `TipoProcesso`. Os arquivos de seed correspondentes, previstos no
+layout original, seguem a mesma sorte das entidades.
 
 `TipoEtapa` e `TipoProcesso` entram na primeira coluna por constatação, não por decisão nova: as
 migrations `20260811221349_CriaCadastroTiposEtapa` e `20260810180213_TiposProcessoConfiguraveis` já
