@@ -87,6 +87,15 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
         builder.Property(v => v.PeriodoIngresso)
             .HasComment("Período letivo de ingresso do discente no curso.");
 
+        builder.Property(v => v.ResumoDoConteudo)
+            .HasMaxLength(64)
+            .IsRequired()
+            .HasComment(
+                "Resumo do conteúdo trazido do SIGAA na última sincronização — permite reconhecer "
+                + "que o vínculo não mudou e poupar a reescrita. Não cobre o CPF: como as demais "
+                + "colunas ficam legíveis, um resumo que o cobrisse permitiria recuperá-lo por "
+                + "tentativa e erro, desfazendo a cifra em repouso.");
+
         // Chave natural do módulo (id_discente do SIGAA) — a réplica localiza e faz
         // upsert por este identificador, nunca por CPF (ADR-0121: sem índice de
         // igualdade sobre o campo cifrado, pois o módulo não precisa buscar por CPF).

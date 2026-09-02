@@ -1187,6 +1187,13 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
+      "unifesspa.uniplus.discentes.api": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Discentes.Application": "[1.0.0, )",
+          "Unifesspa.UniPlus.Discentes.Infrastructure": "[1.0.0, )"
+        }
+      },
       "unifesspa.uniplus.discentes.application": {
         "type": "Project",
         "dependencies": {

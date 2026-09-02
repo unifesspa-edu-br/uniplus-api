@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Discentes.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -10,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record VinculoDiscenteSnapshot
 {
+
     public long IdDiscenteSigaa { get; }
     public string Matricula { get; }
     public Cpf Cpf { get; }
@@ -55,13 +57,33 @@ public sealed record VinculoDiscenteSnapshot
         if (string.IsNullOrWhiteSpace(matricula))
             return Result<VinculoDiscenteSnapshot>.Failure(new DomainError("VinculoDiscente.MatriculaVazia", "Matrícula é obrigatória."));
 
+        if (!ApenasDigitos(matricula))
+            return Result<VinculoDiscenteSnapshot>.Failure(new DomainError(
+                "VinculoDiscente.MatriculaNaoNumerica",
+                "Matrícula precisa ser composta apenas por dígitos."));
+
+        if (matricula.Length > LimitesDaReplica.Matricula)
+            return Result<VinculoDiscenteSnapshot>.Failure(new DomainError(
+                "VinculoDiscente.MatriculaLonga",
+                $"Matrícula excede {LimitesDaReplica.Matricula} caracteres, o máximo que a réplica comporta."));
+
         ArgumentNullException.ThrowIfNull(cpf);
 
         if (string.IsNullOrWhiteSpace(nome))
             return Result<VinculoDiscenteSnapshot>.Failure(new DomainError("VinculoDiscente.NomeVazio", "Nome é obrigatório."));
 
+        if (nome.Length > LimitesDaReplica.Nome)
+            return Result<VinculoDiscenteSnapshot>.Failure(new DomainError(
+                DiscentesErrorCodes.VinculoDiscente.NomeLongo,
+                $"Nome excede {LimitesDaReplica.Nome} caracteres, o máximo que a réplica comporta."));
+
         if (string.IsNullOrWhiteSpace(nivel))
             return Result<VinculoDiscenteSnapshot>.Failure(new DomainError("VinculoDiscente.NivelVazio", "Nível é obrigatório."));
+
+        if (nivel.Length > LimitesDaReplica.Nivel)
+            return Result<VinculoDiscenteSnapshot>.Failure(new DomainError(
+                "VinculoDiscente.NivelLongo",
+                $"Nível excede {LimitesDaReplica.Nivel} caracteres, o máximo que a réplica comporta."));
 
         ArgumentNullException.ThrowIfNull(curso);
         ArgumentNullException.ThrowIfNull(situacao);
@@ -69,6 +91,17 @@ public sealed record VinculoDiscenteSnapshot
 
         return Result<VinculoDiscenteSnapshot>.Success(
             new VinculoDiscenteSnapshot(idDiscenteSigaa, matricula, cpf, nome, nivel, curso, situacao, ingresso));
+    }
+
+    /// <summary>
+    /// Diz se o texto é composto apenas por dígitos, que é o formato de matrícula que a
+    /// origem promete.
+    /// </summary>
+    public static bool ApenasDigitos(string valor)
+    {
+        ArgumentNullException.ThrowIfNull(valor);
+
+        return valor.Length > 0 && !valor.AsSpan().ContainsAnyExceptInRange('0', '9');
     }
 
     /// <summary>

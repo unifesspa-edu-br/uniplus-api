@@ -14,4 +14,23 @@ public interface IVinculoDiscenteRepository
     /// síncrona.
     /// </summary>
     Task AtualizarAsync(VinculoDiscente entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Grava um lote vindo da sincronização, inserindo o que ainda não existe, atualizando
+    /// o que mudou e deixando intacto o que continua igual.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A comparação é pelo resumo do conteúdo, não campo a campo: a esmagadora maioria dos
+    /// vínculos não muda de um dia para o outro, e reescrevê-los custaria uma recifragem
+    /// de CPF por linha, todos os dias, sem nada mudar no banco.
+    /// </para>
+    /// <para>
+    /// Vínculo que não aparece no lote <b>não é tocado</b>. Ausência não é remoção: uma
+    /// execução que só alcançou parte das páginas não pode apagar o que não chegou a ver.
+    /// </para>
+    /// </remarks>
+    Task<ResultadoDaGravacao> GravarLoteAsync(
+        IReadOnlyList<VinculoSincronizavel> lote,
+        CancellationToken cancellationToken = default);
 }

@@ -91,7 +91,13 @@ public static class DecodificadorDeVinculos
             return null;
         }
 
-        // Daqui em diante, só o que o contrato permite em branco e a réplica exige.
+        if (TextoAlemDoPermitido(item) is { } excedente)
+        {
+            descartados.Add(new VinculoDescartado(
+                identificador, excedente.Motivo, excedente.Campo));
+            return null;
+        }
+
         if (item.Curso!.Unidade is not { } unidade)
         {
             descartados.Add(new VinculoDescartado(
@@ -110,6 +116,74 @@ public static class DecodificadorDeVinculos
     }
 
     /// <summary>
+    /// Um campo de texto e os dois tetos que ele precisa respeitar.
+    /// </summary>
+    /// <param name="NoContrato">
+    /// Nulo quando o contrato não declara limite para o campo; então só o da réplica vale.
+    /// </param>
+    private readonly record struct TetoDeTexto(
+        string Campo,
+        Func<VinculoDiscentePayload, string?> Ler,
+        int? NoContrato,
+        int NaReplica);
+
+    /// <summary>
+    /// Os dois tetos de cada campo de texto, na ordem em que são conferidos.
+    /// </summary>
+    private static readonly TetoDeTexto[] TetosDeTexto =
+    [
+        new("matricula", i => i.Matricula, null, LimitesDaReplica.Matricula),
+        new("nivel", i => i.Nivel, null, LimitesDaReplica.Nivel),
+        new("nome", i => i.Nome, LimitesDoContrato.Nome, LimitesDaReplica.Nome),
+        new("curso.nome", i => i.Curso?.Nome, LimitesDoContrato.NomeDoCurso, LimitesDaReplica.NomeDoCurso),
+        new("curso.codigoEmec", i => i.Curso?.CodigoEmec,
+            LimitesDoContrato.CodigoEmecDoCurso, LimitesDaReplica.CodigoEmecDoCurso),
+        new("curso.unidade.nome", i => i.Curso?.Unidade?.Nome,
+            LimitesDoContrato.NomeDaUnidade, LimitesDaReplica.NomeDaUnidade),
+        new("situacao.descricao", i => i.Situacao?.Descricao,
+            LimitesDoContrato.DescricaoDaSituacao, LimitesDaReplica.DescricaoDaSituacao),
+        new("situacao.situacaoVinculo", i => i.Situacao?.SituacaoVinculo,
+            LimitesDoContrato.VinculoDaSituacao, LimitesDaReplica.VinculoDaSituacao),
+    ];
+
+    /// <summary>
+    /// Devolve o primeiro campo de texto que estoura algum dos dois tetos, junto do motivo,
+    /// ou nulo quando todos cabem.
+    /// </summary>
+    /// <remarks>
+    /// Os dois tetos dizem coisas diferentes e não podem ser confundidos. Passar do que o
+    /// contrato declara é a origem entregando além do que promete, e precisa aparecer como
+    /// tal — as colunas são mais largas do que o contrato em quase todo campo, então um
+    /// teto só pela coluna deixaria a origem divergir por uma faixa larga sem que nada
+    /// apontasse a divergência. Passar do que a coluna comporta, aí sim, é o registro que a
+    /// réplica não guarda; sem esta conferência ele só seria recusado na gravação,
+    /// derrubando o lote inteiro e levando junto os vínculos válidos que o acompanhassem.
+    /// </remarks>
+    private static (string Campo, MotivoDeDescarte Motivo)? TextoAlemDoPermitido(
+        VinculoDiscentePayload item)
+    {
+        foreach (TetoDeTexto teto in TetosDeTexto)
+        {
+            if (teto.Ler(item) is not { } valor)
+            {
+                continue;
+            }
+
+            if (teto.NoContrato is { } declarado && valor.Length > declarado)
+            {
+                return (teto.Campo, MotivoDeDescarte.ForaDoContrato);
+            }
+
+            if (valor.Length > teto.NaReplica)
+            {
+                return (teto.Campo, MotivoDeDescarte.NaoCabeNaReplica);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Devolve o nome do primeiro campo obrigatório que a origem não entregou, ou nulo
     /// quando todos vieram.
     /// </summary>
@@ -121,6 +195,13 @@ public static class DecodificadorDeVinculos
         }
 
         if (string.IsNullOrWhiteSpace(item.Matricula))
+        {
+            return "matricula";
+        }
+
+        // A origem promete matrícula composta só por dígitos. Letra ou pontuação aqui é
+        // entrega fora do combinado, não valor que a réplica não comporta.
+        if (!VinculoDiscenteSnapshot.ApenasDigitos(item.Matricula))
         {
             return "matricula";
         }
@@ -160,7 +241,11 @@ public static class DecodificadorDeVinculos
             return "situacao";
         }
 
-        if (item.Situacao.Id <= 0)
+        // O contrato declara a situação como conjunto fechado, então aqui não basta ser
+        // positiva: um identificador que a origem não declara é um estado que ela própria
+        // não trata como vínculo, e guardá-lo faria a réplica afirmar algo que a origem não
+        // afirma — com o CPF cifrado junto e contado como sucesso.
+        if (!SituacoesDoContrato.Declarada(item.Situacao.Id))
         {
             return "situacao.id";
         }

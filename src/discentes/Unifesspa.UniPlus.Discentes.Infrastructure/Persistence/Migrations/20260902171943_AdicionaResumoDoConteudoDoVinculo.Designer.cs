@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(DiscentesDbContext))]
-    partial class DiscentesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260902171943_AdicionaResumoDoConteudoDoVinculo")]
+    partial class AdicionaResumoDoConteudoDoVinculo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,11 +38,6 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
-
-                    b.Property<DateOnly>("DataDeReferencia")
-                        .HasColumnType("date")
-                        .HasColumnName("data_de_referencia")
-                        .HasComment("Dia a que a execução se refere — não o instante em que rodou. Uma execução disparada de madrugada refere-se ao dia que começou.");
 
                     b.Property<int>("ErrorCount")
                         .HasColumnType("integer")
@@ -83,9 +81,6 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_sync_run");
-
-                    b.HasIndex("DataDeReferencia")
-                        .HasDatabaseName("ix_sync_run_data_de_referencia");
 
                     b.HasIndex("StartedAt")
                         .HasDatabaseName("ix_sync_run_started_at");

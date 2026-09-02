@@ -74,6 +74,172 @@ public sealed class DecodificadorDeVinculosTests
             .Which.Motivo.Should().Be(MotivoDeDescarte.SemPeriodoDeIngresso);
     }
 
+    [Theory]
+    [InlineData("2014A6010001")]
+    [InlineData("2014.6010001")]
+    [InlineData("2014 6010001")]
+    public void Matricula_com_caractere_que_nao_e_digito_conta_como_fora_do_contrato(string matricula)
+    {
+        // A origem promete sequência de dígitos. Letra ou pontuação é entrega fora do
+        // combinado — e sem esta conferência o valor malformado entraria na réplica.
+        ResultadoDaDecodificacao resultado = DecodificarPagina(Completo() with { Matricula = matricula });
+
+        resultado.Aceitos.Should().BeEmpty();
+        resultado.QuantidadeForaDoContrato.Should().Be(1);
+        resultado.Descartados.Should().ContainSingle().Which.Detalhe.Should().Be("matricula");
+    }
+
+    [Fact]
+    public void Matricula_maior_que_a_replica_comporta_e_descartada_antes_da_gravacao()
+    {
+        // O contrato da origem aceita qualquer sequência de dígitos; a coluna, não. Se o
+        // vínculo chegasse ao banco, a gravação seria recusada e derrubaria o lote inteiro,
+        // levando junto os vínculos válidos que o acompanhassem.
+        VinculoDiscentePayload longa = Completo() with
+        {
+            Matricula = new string('9', LimitesDaReplica.Matricula + 1),
+        };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(longa, Completo());
+
+        resultado.Aceitos.Should().ContainSingle("o vínculo válido da mesma página entra");
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Motivo.Should().Be(MotivoDeDescarte.NaoCabeNaReplica);
+        resultado.QuantidadeForaDoContrato.Should().Be(
+            0, "a origem cumpriu o contrato; o limite é da réplica");
+    }
+
+    [Fact]
+    public void Nivel_maior_que_a_replica_comporta_e_descartado_antes_da_gravacao()
+    {
+        // Mesma natureza do limite da matrícula: o contrato não impõe tamanho ao nível, a
+        // coluna sim, e o excesso derrubaria o lote inteiro na gravação.
+        VinculoDiscentePayload longo = Completo() with
+        {
+            Nivel = new string('G', LimitesDaReplica.Nivel + 1),
+        };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(longo, Completo());
+
+        resultado.Aceitos.Should().ContainSingle();
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Motivo.Should().Be(MotivoDeDescarte.NaoCabeNaReplica);
+    }
+
+    [Theory]
+    [InlineData("nome")]
+    [InlineData("curso.nome")]
+    [InlineData("curso.codigoEmec")]
+    [InlineData("curso.unidade.nome")]
+    [InlineData("situacao.descricao")]
+    [InlineData("situacao.situacaoVinculo")]
+    public void Texto_alem_do_que_a_replica_comporta_e_descartado_antes_da_gravacao(string campo)
+    {
+        // O contrato declara limite menor para estes campos, então passar do que a coluna
+        // comporta é, antes disso, passar do que a origem prometeu entregar.
+        VinculoDiscentePayload b = Completo();
+        VinculoDiscentePayload excedente = campo switch
+        {
+            "nome" => b with { Nome = Texto(LimitesDaReplica.Nome + 1) },
+            "curso.nome" => b with { Curso = b.Curso! with { Nome = Texto(LimitesDaReplica.NomeDoCurso + 1) } },
+            "curso.codigoEmec" => b with { Curso = b.Curso! with { CodigoEmec = Texto(LimitesDaReplica.CodigoEmecDoCurso + 1) } },
+            "curso.unidade.nome" => b with
+            {
+                Curso = b.Curso! with { Unidade = new UnidadePayload { Id = 12, Nome = Texto(LimitesDaReplica.NomeDaUnidade + 1) } },
+            },
+            "situacao.descricao" => b with { Situacao = b.Situacao! with { Descricao = Texto(LimitesDaReplica.DescricaoDaSituacao + 1) } },
+            _ => b with { Situacao = b.Situacao! with { SituacaoVinculo = Texto(LimitesDaReplica.VinculoDaSituacao + 1) } },
+        };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(excedente, Completo());
+
+        resultado.Aceitos.Should().ContainSingle("o vínculo válido da mesma página entra");
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Motivo.Should().Be(MotivoDeDescarte.ForaDoContrato);
+    }
+
+    // Tamanhos declarados no schema do contrato, escritos aqui por extenso de propósito: se
+    // o teste reusasse a constante da implementação, uma alteração dela passaria despercebida.
+    [Theory]
+    [InlineData("nome", 201)]
+    [InlineData("curso.nome", 201)]
+    [InlineData("curso.unidade.nome", 201)]
+    [InlineData("situacao.descricao", 21)]
+    [InlineData("situacao.situacaoVinculo", 5)]
+    public void Texto_que_cabe_na_coluna_mas_excede_o_contrato_conta_como_fora_do_contrato(
+        string campo, int tamanho)
+    {
+        // As colunas são mais largas que o contrato em todos estes campos. Um valor nessa
+        // faixa grava sem erro, e é justamente por isso que precisa ser recusado aqui: se
+        // passasse, a origem entregaria além do que promete sem que nada apontasse.
+        VinculoDiscentePayload b = Completo();
+        VinculoDiscentePayload excedente = campo switch
+        {
+            "nome" => b with { Nome = Texto(tamanho) },
+            "curso.nome" => b with { Curso = b.Curso! with { Nome = Texto(tamanho) } },
+            "curso.unidade.nome" => b with
+            {
+                Curso = b.Curso! with { Unidade = new UnidadePayload { Id = 12, Nome = Texto(tamanho) } },
+            },
+            "situacao.descricao" => b with { Situacao = b.Situacao! with { Descricao = Texto(tamanho) } },
+            _ => b with { Situacao = b.Situacao! with { SituacaoVinculo = Texto(tamanho) } },
+        };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(excedente, Completo());
+
+        resultado.Aceitos.Should().ContainSingle("o vínculo válido da mesma página entra");
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Motivo.Should().Be(MotivoDeDescarte.ForaDoContrato);
+        resultado.QuantidadeForaDoContrato.Should().Be(
+            1, "a origem entregou além do que o contrato dela declara");
+    }
+
+    // O contrato declara a situação como conjunto fechado. Os valores abaixo são positivos e
+    // ficam de fora dele de propósito — a origem não os trata como vínculo.
+    [Theory]
+    [InlineData(10)]
+    [InlineData(13)]
+    [InlineData(15)]
+    public void Situacao_fora_do_vocabulario_do_contrato_e_descartada(int situacao)
+    {
+        VinculoDiscentePayload b = Completo();
+        VinculoDiscentePayload forade = b with { Situacao = b.Situacao! with { Id = situacao } };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(forade, Completo());
+
+        resultado.Aceitos.Should().ContainSingle("o vínculo válido da mesma página entra");
+        resultado.QuantidadeForaDoContrato.Should().Be(1);
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Detalhe.Should().Be("situacao.id");
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(9)]
+    [InlineData(11)]
+    [InlineData(14)]
+    [InlineData(100)]
+    public void Situacao_declarada_no_contrato_e_aceita(int situacao)
+    {
+        VinculoDiscentePayload b = Completo();
+
+        DecodificarPagina(b with { Situacao = b.Situacao! with { Id = situacao } })
+            .Aceitos.Should().ContainSingle();
+    }
+
+    private static string Texto(int tamanho) => new('A', tamanho);
+
+    [Fact]
+    public void Matricula_no_limite_e_aceita()
+    {
+        VinculoDiscentePayload noLimite = Completo() with
+        {
+            Matricula = new string('9', LimitesDaReplica.Matricula),
+        };
+
+        DecodificarPagina(noLimite).Aceitos.Should().ContainSingle();
+    }
+
     [Fact]
     public void Descarte_nao_contamina_os_vizinhos_da_mesma_pagina()
     {
@@ -228,13 +394,16 @@ public sealed class DecodificadorDeVinculosTests
         // o segundo tem o qualificador começando. Se a fronteira entre campos fosse marcada
         // por um caractere que o próprio conteúdo pode conter, os dois produziriam o mesmo
         // resumo — e uma alteração real na origem passaria por "nada mudou".
+        // Os valores são curtos porque o contrato limita o qualificador da situação a
+        // quatro caracteres; o que o teste exige deles é só que a emenda de um par caia no
+        // mesmo ponto que a do outro.
         const char Caractere = '\u001f';
 
         VinculoDiscentePayload primeiro = Completo() with
         {
             Situacao = Completo().Situacao! with
             {
-                Descricao = $"ATIVO{Caractere}REGULAR",
+                Descricao = $"AT{Caractere}R",
                 SituacaoVinculo = "X",
             },
         };
@@ -243,8 +412,8 @@ public sealed class DecodificadorDeVinculosTests
         {
             Situacao = Completo().Situacao! with
             {
-                Descricao = "ATIVO",
-                SituacaoVinculo = $"REGULAR{Caractere}X",
+                Descricao = "AT",
+                SituacaoVinculo = $"R{Caractere}X",
             },
         };
 

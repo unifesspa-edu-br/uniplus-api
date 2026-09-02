@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Repositories;
 
+using System.Linq;
 using System.Text;
 
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +65,15 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         _dbContext.VinculosDiscentes.Add(record);
     }
 
+    /// <summary>
+    /// Atualiza um vínculo fora da sincronização.
+    /// </summary>
+    /// <remarks>
+    /// Limpa o resumo do conteúdo, porque ele deixou de descrever o que está guardado. Sem
+    /// isso, a próxima sincronização compararia o resumo antigo com o da origem, concluiria
+    /// que nada mudou, e a alteração feita aqui permaneceria indefinidamente — divergindo
+    /// da origem sem que nada apontasse a divergência.
+    /// </remarks>
     public async Task AtualizarAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -73,6 +83,84 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
             .ConfigureAwait(false);
 
         await AtualizarCamposAsync(record, entity, cancellationToken).ConfigureAwait(false);
+        record.ResumoDoConteudo = string.Empty;
+    }
+
+    /// <summary>
+    /// Grava um lote da sincronização.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Trabalha no modelo de persistência, e não nas entidades de domínio, por uma razão
+    /// que decide o custo da sincronização inteira: o CPF só é decifrado quando alguém pede
+    /// o vínculo como domínio. Comparando aqui os registros como estão guardados, uma
+    /// execução diária de dezenas de milhares de linhas não decifra nenhum CPF — apenas
+    /// cifra os poucos que de fato mudaram.
+    /// </para>
+    /// <para>
+    /// Quem não está no lote não é tocado. Uma execução que só alcançou parte das páginas
+    /// não pode apagar o que não chegou a ver.
+    /// </para>
+    /// </remarks>
+    public async Task<ResultadoDaGravacao> GravarLoteAsync(
+        IReadOnlyList<VinculoSincronizavel> lote,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(lote);
+
+        if (lote.Count == 0)
+        {
+            return new ResultadoDaGravacao(0, 0, 0);
+        }
+
+        long[] identificadores = [.. lote.Select(v => v.Vinculo.Snapshot.IdDiscenteSigaa)];
+
+        Dictionary<long, VinculoDiscenteRecord> existentes = await _dbContext.VinculosDiscentes
+            .Where(r => identificadores.Contains(r.IdDiscenteSigaa))
+            .ToDictionaryAsync(r => r.IdDiscenteSigaa, cancellationToken)
+            .ConfigureAwait(false);
+
+        int inseridos = 0;
+        int atualizados = 0;
+        int inalterados = 0;
+
+        foreach (VinculoSincronizavel item in lote)
+        {
+            long idDeOrigem = item.Vinculo.Snapshot.IdDiscenteSigaa;
+
+            try
+            {
+                if (!existentes.TryGetValue(idDeOrigem, out VinculoDiscenteRecord? existente))
+                {
+                    VinculoDiscenteRecord novo = new() { Id = item.Vinculo.Id };
+                    await AtualizarCamposAsync(novo, item.Vinculo, cancellationToken).ConfigureAwait(false);
+                    novo.ResumoDoConteudo = item.ResumoDoConteudo;
+                    _dbContext.VinculosDiscentes.Add(novo);
+                    inseridos++;
+                    continue;
+                }
+
+                if (string.Equals(existente.ResumoDoConteudo, item.ResumoDoConteudo, StringComparison.Ordinal))
+                {
+                    inalterados++;
+                    continue;
+                }
+
+                await AtualizarCamposAsync(existente, item.Vinculo, cancellationToken).ConfigureAwait(false);
+                existente.ResumoDoConteudo = item.ResumoDoConteudo;
+                atualizados++;
+            }
+            catch (Exception excecao) when (excecao is not OperationCanceledException)
+            {
+                // Cifrar o CPF deste vínculo falhou. O que já foi classificado até aqui sobe
+                // junto: sem isso, os vínculos reconhecidos como iguais — que continuam
+                // corretos na réplica — seriam contados como não gravados.
+                throw new FalhaAoPrepararLoteException(
+                    new ResultadoDaGravacao(inseridos, atualizados, inalterados), excecao);
+            }
+        }
+
+        return new ResultadoDaGravacao(inseridos, atualizados, inalterados);
     }
 
     private async Task<VinculoDiscente> ParaDominioAsync(VinculoDiscenteRecord record, CancellationToken cancellationToken)

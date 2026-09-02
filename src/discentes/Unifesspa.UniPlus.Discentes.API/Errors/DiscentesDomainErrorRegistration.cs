@@ -46,6 +46,18 @@ internal sealed class DiscentesDomainErrorRegistration : IDomainErrorRegistratio
             Interno("uniplus.discentes.curso.unidade_nome_vazio",
                 "Unidade acadêmica do curso veio da origem sem nome")),
 
+        new(DiscentesErrorCodes.Curso.NomeLongo,
+            Interno("uniplus.discentes.curso.nome_longo",
+                "Nome do curso veio da origem maior do que a réplica comporta")),
+
+        new(DiscentesErrorCodes.Curso.CodigoEmecLongo,
+            Interno("uniplus.discentes.curso.codigo_emec_longo",
+                "Código e-MEC do curso veio da origem maior do que a réplica comporta")),
+
+        new(DiscentesErrorCodes.Curso.UnidadeNomeLongo,
+            Interno("uniplus.discentes.curso.unidade_nome_longo",
+                "Nome da unidade acadêmica veio da origem maior do que a réplica comporta")),
+
         new(DiscentesErrorCodes.PeriodoIngresso.AnoInvalido,
             Interno("uniplus.discentes.periodo_ingresso.ano_invalido",
                 "Ano de ingresso do vínculo veio da origem fora do intervalo aceito")),
@@ -62,6 +74,14 @@ internal sealed class DiscentesDomainErrorRegistration : IDomainErrorRegistratio
             Interno("uniplus.discentes.situacao_academica.descricao_vazia",
                 "Situação acadêmica do vínculo veio da origem sem descrição")),
 
+        new(DiscentesErrorCodes.SituacaoAcademica.DescricaoLonga,
+            Interno("uniplus.discentes.situacao_academica.descricao_longa",
+                "Descrição da situação veio da origem maior do que a réplica comporta")),
+
+        new(DiscentesErrorCodes.SituacaoAcademica.VinculoLongo,
+            Interno("uniplus.discentes.situacao_academica.vinculo_longo",
+                "Qualificador da situação veio da origem maior do que a réplica comporta")),
+
         new(DiscentesErrorCodes.VinculoDiscente.IdSigaaInvalido,
             Interno("uniplus.discentes.vinculo.id_origem_invalido",
                 "Vínculo veio da origem sem identificador válido")),
@@ -70,13 +90,29 @@ internal sealed class DiscentesDomainErrorRegistration : IDomainErrorRegistratio
             Interno("uniplus.discentes.vinculo.matricula_vazia",
                 "Vínculo veio da origem sem matrícula")),
 
+        new(DiscentesErrorCodes.VinculoDiscente.MatriculaLonga,
+            Interno("uniplus.discentes.vinculo.matricula_longa",
+                "Matrícula veio da origem maior do que a réplica comporta")),
+
+        new(DiscentesErrorCodes.VinculoDiscente.MatriculaNaoNumerica,
+            Interno("uniplus.discentes.vinculo.matricula_nao_numerica",
+                "Matrícula veio da origem com caracteres que não são dígitos")),
+
         new(DiscentesErrorCodes.VinculoDiscente.NomeVazio,
             Interno("uniplus.discentes.vinculo.nome_vazio",
                 "Vínculo veio da origem sem nome do discente")),
 
+        new(DiscentesErrorCodes.VinculoDiscente.NomeLongo,
+            Interno("uniplus.discentes.vinculo.nome_longo",
+                "Nome do discente veio da origem maior do que a réplica comporta")),
+
         new(DiscentesErrorCodes.VinculoDiscente.NivelVazio,
             Interno("uniplus.discentes.vinculo.nivel_vazio",
                 "Vínculo veio da origem sem nível de ensino")),
+
+        new(DiscentesErrorCodes.VinculoDiscente.NivelLongo,
+            Interno("uniplus.discentes.vinculo.nivel_longo",
+                "Nível de ensino veio da origem maior do que a réplica comporta")),
     ];
 
     private static DomainErrorMapping Interno(string codigo, string titulo) =>

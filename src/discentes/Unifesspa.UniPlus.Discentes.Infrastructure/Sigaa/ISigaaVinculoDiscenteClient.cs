@@ -18,11 +18,21 @@ public interface ISigaaVinculoDiscenteClient
     /// <summary>
     /// Busca uma página de vínculos.
     /// </summary>
-    /// <param name="filtro">Recorte pedido à origem.</param>
-    /// <param name="pagina">Página desejada, começando em um.</param>
+    /// <param name="pagina">Numerada a partir de um.</param>
     Task<PaginaDeVinculos> ObterPaginaAsync(
         FiltroDeVinculos filtro,
         int pagina,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Percorre todas as páginas do recorte, entregando uma de cada vez.
+    /// </summary>
+    /// <remarks>
+    /// Entregar página a página, em vez de tudo de uma vez, mantém em memória apenas o que
+    /// está sendo processado: são dezenas de milhares de vínculos, cada um com um CPF.
+    /// </remarks>
+    IAsyncEnumerable<PaginaDeVinculos> PercorrerAsync(
+        FiltroDeVinculos filtro,
         CancellationToken cancellationToken = default);
 }
 
@@ -30,13 +40,8 @@ public interface ISigaaVinculoDiscenteClient
 /// Recorte de vínculos pedido à origem. Só expõe os cortes que ela sabe aplicar.
 /// </summary>
 /// <param name="Nivel">Nível de ensino; a sincronização pede graduação.</param>
-/// <param name="AnoIngressoMinimo">
-/// Ano de ingresso a partir do qual os vínculos interessam, quando o recorte é por idade
-/// do vínculo.
-/// </param>
-/// <param name="Situacoes">
-/// Situações acadêmicas de interesse. Vazio não filtra por situação.
-/// </param>
+/// <param name="AnoIngressoMinimo">Limite inferior; nulo não recorta por idade.</param>
+/// <param name="Situacoes">Vazio não recorta por situação.</param>
 public sealed record FiltroDeVinculos(
     string Nivel,
     int? AnoIngressoMinimo = null,
@@ -45,7 +50,7 @@ public sealed record FiltroDeVinculos(
 /// <summary>
 /// Uma página de vínculos como a origem a devolveu.
 /// </summary>
-/// <param name="Itens">Vínculos da página. Página vazia é resposta legítima.</param>
+/// <param name="Itens">Página vazia é resposta legítima.</param>
 /// <param name="TotalDeItensNaOrigem">
 /// Quantos vínculos o filtro alcança ao todo, segundo a origem, no instante desta
 /// resposta. Serve para dimensionar a varredura — não é promessa de que a varredura

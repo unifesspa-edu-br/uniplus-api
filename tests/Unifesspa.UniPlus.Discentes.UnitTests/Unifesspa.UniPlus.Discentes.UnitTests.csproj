@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\discentes\Unifesspa.UniPlus.Discentes.Domain\Unifesspa.UniPlus.Discentes.Domain.csproj" />
     <ProjectReference Include="..\..\src\discentes\Unifesspa.UniPlus.Discentes.Infrastructure\Unifesspa.UniPlus.Discentes.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\discentes\Unifesspa.UniPlus.Discentes.API\Unifesspa.UniPlus.Discentes.API.csproj" />
   </ItemGroup>
 
   <!-- O contrato publicado pela origem, copiado do repositório que a implementa. Serve de

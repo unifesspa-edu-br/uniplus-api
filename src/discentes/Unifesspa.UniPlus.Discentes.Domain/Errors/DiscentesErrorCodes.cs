@@ -17,6 +17,9 @@ public static class DiscentesErrorCodes
         public const string NomeVazio = "Curso.NomeVazio";
         public const string UnidadeIdInvalido = "Curso.UnidadeIdInvalido";
         public const string UnidadeNomeVazio = "Curso.UnidadeNomeVazio";
+        public const string NomeLongo = "Curso.NomeLongo";
+        public const string CodigoEmecLongo = "Curso.CodigoEmecLongo";
+        public const string UnidadeNomeLongo = "Curso.UnidadeNomeLongo";
     }
 
     /// <summary>Erros do período de ingresso.</summary>
@@ -31,6 +34,8 @@ public static class DiscentesErrorCodes
     {
         public const string IdInvalido = "SituacaoAcademica.IdInvalido";
         public const string DescricaoVazia = "SituacaoAcademica.DescricaoVazia";
+        public const string DescricaoLonga = "SituacaoAcademica.DescricaoLonga";
+        public const string VinculoLongo = "SituacaoAcademica.VinculoLongo";
     }
 
     /// <summary>Erros do vínculo em si.</summary>
@@ -38,7 +43,11 @@ public static class DiscentesErrorCodes
     {
         public const string IdSigaaInvalido = "VinculoDiscente.IdSigaaInvalido";
         public const string MatriculaVazia = "VinculoDiscente.MatriculaVazia";
+        public const string MatriculaLonga = "VinculoDiscente.MatriculaLonga";
+        public const string MatriculaNaoNumerica = "VinculoDiscente.MatriculaNaoNumerica";
         public const string NomeVazio = "VinculoDiscente.NomeVazio";
+        public const string NomeLongo = "VinculoDiscente.NomeLongo";
         public const string NivelVazio = "VinculoDiscente.NivelVazio";
+        public const string NivelLongo = "VinculoDiscente.NivelLongo";
     }
 }

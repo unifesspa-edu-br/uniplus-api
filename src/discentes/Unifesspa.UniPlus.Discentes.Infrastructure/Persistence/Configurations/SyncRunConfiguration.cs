@@ -27,6 +27,11 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
         builder.Property(s => s.Status)
             .HasComment("Estado da execução (Running/Completed/Partial/Failed).");
 
+        builder.Property(s => s.DataDeReferencia)
+            .HasComment(
+                "Dia a que a execução se refere — não o instante em que rodou. Uma execução "
+                + "disparada de madrugada refere-se ao dia que começou.");
+
         builder.Property(s => s.TotalItems)
             .HasComment("Quantidade total de itens previstos para esta execução.");
 
@@ -53,5 +58,8 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
 
         builder.HasIndex(s => s.StartedAt)
             .HasDatabaseName("ix_sync_run_started_at");
+
+        builder.HasIndex(s => s.DataDeReferencia)
+            .HasDatabaseName("ix_sync_run_data_de_referencia");
     }
 }

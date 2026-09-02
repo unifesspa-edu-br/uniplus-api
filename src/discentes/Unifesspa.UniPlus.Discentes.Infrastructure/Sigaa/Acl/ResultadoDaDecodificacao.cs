@@ -89,4 +89,14 @@ public enum MotivoDeDescarte
     /// olhada — ver <see cref="ResultadoDaDecodificacao.QuantidadeForaDoContrato"/>.
     /// </remarks>
     ForaDoContrato = 3,
+
+    /// <summary>
+    /// O vínculo traz um valor que a réplica não comporta, embora o contrato o permita —
+    /// hoje, matrícula acima do tamanho que a coluna aceita.
+    /// </summary>
+    /// <remarks>
+    /// Descartado antes de chegar ao banco: lá ele seria recusado na gravação e derrubaria
+    /// o lote inteiro, levando junto os vínculos válidos que o acompanhassem.
+    /// </remarks>
+    NaoCabeNaReplica = 4,
 }

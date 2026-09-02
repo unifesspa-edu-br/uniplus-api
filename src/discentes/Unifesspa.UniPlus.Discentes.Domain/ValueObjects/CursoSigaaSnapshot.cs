@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Discentes.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -37,6 +38,18 @@ public sealed record CursoSigaaSnapshot
 
         if (string.IsNullOrWhiteSpace(unidadeNome))
             return Result<CursoSigaaSnapshot>.Failure(new DomainError("Curso.UnidadeNomeVazio", "Nome da unidade é obrigatório."));
+
+        if (nome.Length > LimitesDaReplica.NomeDoCurso)
+            return Result<CursoSigaaSnapshot>.Failure(new DomainError(
+                DiscentesErrorCodes.Curso.NomeLongo, "Nome do curso excede o que a réplica comporta."));
+
+        if (codigoEmec is { Length: > LimitesDaReplica.CodigoEmecDoCurso })
+            return Result<CursoSigaaSnapshot>.Failure(new DomainError(
+                DiscentesErrorCodes.Curso.CodigoEmecLongo, "Código e-MEC excede o que a réplica comporta."));
+
+        if (unidadeNome.Length > LimitesDaReplica.NomeDaUnidade)
+            return Result<CursoSigaaSnapshot>.Failure(new DomainError(
+                DiscentesErrorCodes.Curso.UnidadeNomeLongo, "Nome da unidade excede o que a réplica comporta."));
 
         return Result<CursoSigaaSnapshot>.Success(new CursoSigaaSnapshot(id, nome, codigoEmec, unidadeId, unidadeNome));
     }
