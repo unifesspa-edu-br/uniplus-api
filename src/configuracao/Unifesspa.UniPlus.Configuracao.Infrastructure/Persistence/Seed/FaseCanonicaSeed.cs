@@ -56,7 +56,7 @@ public static class FaseCanonicaSeed
             DonoTipico.Ceps, OrigemDataFase.Propria,
             ProduzResultado: true, ResultadoDefinitivo: false,
             ColetaInscricao: false, AgrupaEtapas: false, PermiteComplementacao: false,
-            BaseLegal: "Lei nº 12.799/2013"),
+            BaseLegal: "Lei nº 12.799/2013", ColetaSolicitacaoIsencao: true),
 
         new(SeedId(3), "HOMOLOGACAO", "Homologação das inscrições",
             "Conferência das inscrições recebidas e publicação de quais foram homologadas.",
@@ -169,4 +169,5 @@ public sealed record FaseCanonicaSeedItem(
     bool ColetaInscricao,
     bool AgrupaEtapas,
     bool PermiteComplementacao,
-    string? BaseLegal);
+    string? BaseLegal,
+    bool ColetaSolicitacaoIsencao = false);

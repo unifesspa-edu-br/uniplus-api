@@ -1214,6 +1214,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["produzResultado"] = fase.ProduzResultado,
                 ["resultadoDefinitivo"] = fase.ResultadoDefinitivo,
                 ["coletaInscricao"] = fase.ColetaInscricao,
+                ["coletaSolicitacaoIsencao"] = fase.ColetaSolicitacaoIsencao,
                 ["inicio"] = fase.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null,
                 ["fim"] = fase.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null,
                 ["atoProduzidoCodigo"] = fase.AtoProduzidoCodigo is { } atoCodigo ? HashCanonicalComputer.NormalizeNfc(atoCodigo) : null,

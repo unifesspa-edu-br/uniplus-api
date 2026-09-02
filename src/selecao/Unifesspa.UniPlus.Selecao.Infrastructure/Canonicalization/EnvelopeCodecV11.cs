@@ -1303,7 +1303,8 @@ internal static class EnvelopeCodecV11
             [
                 "ordem", "faseCanonicaOrigemId", "codigo", "donoInstitucional", "origemData",
                 "agrupaEtapas", "permiteComplementacao", "produzResultado", "resultadoDefinitivo",
-                "coletaInscricao", "inicio", "fim", "atoProduzidoCodigo", "atoProduzidoEfeitoIrreversivel",
+                "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "atoProduzidoCodigo",
+                "atoProduzidoEfeitoIrreversivel",
                 "bancasRequeridas", "regraRecurso",
             ];
             leitor.ExigirChaves(item, path, comId ? [.. chavesBase, "id"] : chavesBase);
@@ -1319,6 +1320,7 @@ internal static class EnvelopeCodecV11
             bool produzResultado = leitor.Booleano(item, "produzResultado", path);
             bool resultadoDefinitivo = leitor.Booleano(item, "resultadoDefinitivo", path);
             bool coletaInscricao = leitor.Booleano(item, "coletaInscricao", path);
+            bool coletaSolicitacaoIsencao = leitor.Booleano(item, "coletaSolicitacaoIsencao", path);
             DateTimeOffset? inicio = leitor.InstanteOpcional(item, "inicio", path);
             DateTimeOffset? fim = leitor.InstanteOpcional(item, "fim", path);
             string? atoProduzidoCodigo = leitor.TextoOpcional(item, "atoProduzidoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
@@ -1345,10 +1347,12 @@ internal static class EnvelopeCodecV11
                 ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(
                     id!.Value, ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
                     agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
+                    coletaSolicitacaoIsencao,
                     inicio, fim, atoProduzidoCodigo, atoProduzidoEfeitoIrreversivel, bancas, regraRecurso))
                 : FaseCronograma.Criar(
                     ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
                     agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
+                    coletaSolicitacaoIsencao,
                     inicio, fim, atoProduzidoCodigo, atoProduzidoEfeitoIrreversivel, bancas, regraRecurso);
             if (fase.IsFailure)
             {

@@ -231,7 +231,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria,
             agrupaEtapas: true, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true,
-            coletaInscricao: coletaInscricao,
+            coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,

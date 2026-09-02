@@ -27,7 +27,8 @@ public sealed class ProcessoSeletivoCronogramaTests
         bool coletaInscricao = false,
         DateTimeOffset? inicio = null,
         DateTimeOffset? fim = null,
-        Guid? faseCanonicaOrigemId = null) =>
+        Guid? faseCanonicaOrigemId = null,
+        bool coletaSolicitacaoIsencao = false) =>
         FaseCronograma.Criar(
             ordem,
             faseCanonicaOrigemId ?? Guid.CreateVersion7(),
@@ -39,6 +40,7 @@ public sealed class ProcessoSeletivoCronogramaTests
             produzResultado,
             resultadoDefinitivo,
             coletaInscricao,
+            coletaSolicitacaoIsencao,
             inicio,
             fim,
             atoProduzidoCodigo: produzResultado ? codigo : null,
@@ -162,7 +164,7 @@ public sealed class ProcessoSeletivoCronogramaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma inscricao = Fase(
-            1, "INSCRICAO", coletaInscricao: true,
+            1, "INSCRICAO", coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero)).Value!;
         FaseCronograma homologacao = Fase(
@@ -182,7 +184,7 @@ public sealed class ProcessoSeletivoCronogramaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma inscricao = Fase(
-            1, "INSCRICAO", coletaInscricao: true,
+            1, "INSCRICAO", coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero)).Value!;
         FaseCronograma homologacao = Fase(

@@ -58,6 +58,7 @@ public static class AtualizarFaseCanonicaCommandHandler
             command.ProduzResultado,
             command.ResultadoDefinitivo,
             command.ColetaInscricao,
+            command.ColetaSolicitacaoIsencao,
             command.OrigemData);
 
         if (atualizarResult.IsFailure)

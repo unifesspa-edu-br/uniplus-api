@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    partial class ConfiguracaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260902014210_AdicionaColetaSolicitacaoIsencaoNaFaseCanonica")]
+    partial class AdicionaColetaSolicitacaoIsencaoNaFaseCanonica
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1785,7 +1788,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("70da1000-0000-7000-8000-000000000011"),
-                            BaseLegal = "Res. Unifesspa 64/2015-CONSEPE (reserva de vaga para pessoa com deficiência)",
+                            BaseLegal = "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)",
                             Codigo = "PCD_PURO",
                             ComposicaoOrigem = "AC",
                             ComposicaoVagas = "RETIRA_DE",

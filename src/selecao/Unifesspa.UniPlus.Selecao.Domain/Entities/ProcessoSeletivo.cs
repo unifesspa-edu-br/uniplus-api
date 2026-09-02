@@ -954,6 +954,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     nova.ProduzResultado,
                     nova.ResultadoDefinitivo,
                     nova.ColetaInscricao,
+                    nova.ColetaSolicitacaoIsencao,
                     nova.Inicio,
                     nova.Fim,
                     nova.AtoProduzidoCodigo,
@@ -2063,7 +2064,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// endpoint a recusa da referência, diagnóstico obscuro para quem só precisa datar a inscrição.
     /// </para>
     /// </remarks>
-    public DomainError? PendenciaDoCronograma()
+    public DomainError? PendenciaDoCronograma(TimeZoneInfo? fusoInstitucional)
     {
         // §3.5, direção "fase de avaliação sem etapa" — defesa em profundidade: o mesmo
         // sentido já é bloqueado eagerly em DefinirCronogramaFases, mas uma etapa
@@ -2105,6 +2106,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"A fase '{faseSemJanela.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período.");
         }
 
+        if (PendenciaDaJanelaDeIsencao(fusoInstitucional) is { } pendenciaIsencao)
+        {
+            return pendenciaIsencao;
+        }
+
         // §3.4 — havendo vagas ofertadas, o cronograma precisa de ao menos uma fase que
         // produza resultado.
         if (HaVagasSemFaseQueProduzResultado())
@@ -2128,6 +2134,74 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Origem InscricaoPropria sem nenhuma fase que colete inscrição (§3.4).</summary>
     private bool HaInscricaoPropriaSemFaseDeColeta() =>
         OrigemCandidatos == OrigemCandidatos.InscricaoPropria && !_cronogramaFases.Any(static f => f.ColetaInscricao);
+
+    /// <summary>
+    /// As três regras de contorno da janela de isenção (UNI-REQ-0106): abre junto com a inscrição,
+    /// fecha antes dela, e dura no mínimo cinco dias corridos.
+    /// </summary>
+    /// <remarks>
+    /// A contagem é em dias corridos e não passa pelo calendário de dias úteis nem pelo algoritmo de
+    /// contagem do processo — a janela é período do cronograma, não interposição de recurso. É o
+    /// ponto mais fácil de errar por analogia com o prazo recursal, que segue outro contrato.
+    /// </remarks>
+    private DomainError? PendenciaDaJanelaDeIsencao(TimeZoneInfo? fusoInstitucional)
+    {
+        if (_cronogramaFases.FirstOrDefault(static f => f.ColetaSolicitacaoIsencao) is not { } isencao)
+        {
+            return null;
+        }
+
+        if (isencao.Inicio is not { } inicioIsencao || isencao.Fim is not { } fimIsencao)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.JanelaDeIsencaoSemPrazo",
+                $"A fase '{isencao.Codigo}' abre a solicitação de isenção e precisa de início e fim definidos.");
+        }
+
+        if (FaseQueAncoraOPeriodoDeInscricao() is not { Inicio: { } inicioInscricao, Fim: { } fimInscricao })
+        {
+            return null;
+        }
+
+        if (inicioIsencao != inicioInscricao)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.JanelaDeIsencaoNaoAbreComAInscricao",
+                "A janela de solicitação de isenção abre no mesmo instante em que abrem as inscrições.");
+        }
+
+        if (fimIsencao >= fimInscricao)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.JanelaDeIsencaoNaoTerminaAntesDaInscricao",
+                "A solicitação de isenção precisa terminar antes do fim das inscrições — quem tem o pedido indeferido ainda se inscreve pagando.");
+        }
+
+        if (fusoInstitucional is { } fuso && fimIsencao < UltimoInstanteDoQuintoDia(inicioIsencao, fuso))
+        {
+            return new DomainError(
+                "ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias",
+                "A janela de solicitação de isenção precisa de ao menos cinco dias corridos, contados a partir do dia seguinte à abertura.");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// O instante em que o quinto dia corrido se completa: o dia da abertura é excluído, o primeiro
+    /// é o dia seguinte, e o quinto só termina no último instante do dia, no fuso institucional.
+    /// </summary>
+    /// <remarks>
+    /// O piso é <c>23:59:59</c>, não o último tick do dia. A comparação é <c>&gt;=</c>, então uma
+    /// janela gravada com fração de segundo continua aceita; exigir o tick final é que recusaria o
+    /// caso comum, porque é em segundos que o operador declara a janela e que o envelope a congela.
+    /// </remarks>
+    private static DateTimeOffset UltimoInstanteDoQuintoDia(DateTimeOffset abertura, TimeZoneInfo fuso)
+    {
+        DateTime fimDoQuintoDiaLocal = TimeZoneInfo.ConvertTime(abertura, fuso).Date.AddDays(6).AddSeconds(-1);
+
+        return new DateTimeOffset(fimDoQuintoDiaLocal, fuso.GetUtcOffset(fimDoQuintoDiaLocal));
+    }
 
     /// <summary>A fase que ancora o período de inscrição, quando existe e está sem janela (issue #1350).</summary>
     /// <remarks>
@@ -2810,7 +2884,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendencia);
         }
 
-        if (PendenciaDoCronograma() is { } pendenciaCronograma)
+        if (PendenciaDoCronograma(contexto.FusoInstitucional) is { } pendenciaCronograma)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
@@ -3163,7 +3237,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendencia);
         }
 
-        if (PendenciaDoCronograma() is { } pendenciaCronograma)
+        if (PendenciaDoCronograma(contexto.FusoInstitucional) is { } pendenciaCronograma)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
@@ -3852,6 +3926,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     congelada.ProduzResultado,
                     congelada.ResultadoDefinitivo,
                     congelada.ColetaInscricao,
+                    congelada.ColetaSolicitacaoIsencao,
                     congelada.Inicio,
                     congelada.Fim,
                     congelada.AtoProduzidoCodigo,

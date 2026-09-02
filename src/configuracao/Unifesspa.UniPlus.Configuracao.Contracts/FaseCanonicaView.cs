@@ -31,4 +31,5 @@ public sealed record FaseCanonicaView(
     bool ProduzResultado,
     bool ResultadoDefinitivo,
     bool ColetaInscricao,
+    bool ColetaSolicitacaoIsencao,
     string OrigemData);

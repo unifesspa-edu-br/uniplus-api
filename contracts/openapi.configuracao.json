@@ -9728,6 +9728,10 @@
             "type": "boolean",
             "default": false
           },
+          "coletaSolicitacaoIsencao": {
+            "type": "boolean",
+            "default": false
+          },
           "origemData": {
             "type": [
               "null",
@@ -10874,6 +10878,10 @@
             "type": "boolean",
             "default": false
           },
+          "coletaSolicitacaoIsencao": {
+            "type": "boolean",
+            "default": false
+          },
           "origemData": {
             "type": [
               "null",
@@ -11881,6 +11889,7 @@
           "produzResultado",
           "resultadoDefinitivo",
           "coletaInscricao",
+          "coletaSolicitacaoIsencao",
           "origemData",
           "criadoEm"
         ],
@@ -11924,6 +11933,9 @@
             "type": "boolean"
           },
           "coletaInscricao": {
+            "type": "boolean"
+          },
+          "coletaSolicitacaoIsencao": {
             "type": "boolean"
           },
           "origemData": {

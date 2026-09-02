@@ -70,12 +70,12 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
     private static FaseCanonicaView FaseCanonicaResultado(Guid id) => new(
         id, "RESULTADO_FINAL", "Resultado Final", null, "CEPS",
         AgrupaEtapas: false, PermiteComplementacao: false, BaseLegal: null,
-        ProduzResultado: true, ResultadoDefinitivo: true, ColetaInscricao: false, OrigemData: "PROPRIA");
+        ProduzResultado: true, ResultadoDefinitivo: true, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrigemData: "PROPRIA");
 
     private static FaseCanonicaView FaseCanonicaRecorrivel(Guid id) => new(
         id, "RESULTADO_PRELIMINAR", "Resultado preliminar", null, "CEPS",
         AgrupaEtapas: false, PermiteComplementacao: false, BaseLegal: null,
-        ProduzResultado: true, ResultadoDefinitivo: false, ColetaInscricao: false, OrigemData: "PROPRIA");
+        ProduzResultado: true, ResultadoDefinitivo: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrigemData: "PROPRIA");
 
     private static FaseCronogramaInput InputResultado(Guid faseCanonicaId) => new(
         Ordem: 1,

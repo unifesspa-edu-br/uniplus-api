@@ -126,7 +126,7 @@ public sealed class PoliticaDeOrdenacaoTests
         permiteComplementacao: true,
         produzResultado: true,
         resultadoDefinitivo: true,
-        coletaInscricao: true,
+        coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "INSCRICAO",
@@ -290,7 +290,7 @@ public sealed class PoliticaDeOrdenacaoTests
         FaseCronograma faseSemAgruparEtapas = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
             origemData: OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: true, produzResultado: true,
-            resultadoDefinitivo: true, coletaInscricao: true,
+            resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "INSCRICAO", atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
 
@@ -333,13 +333,13 @@ public sealed class PoliticaDeOrdenacaoTests
         FaseCronograma faseZeta = FaseCronograma.Reidratar(
             id: IdFixo(2), ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ZETA_FASE",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
-            permiteComplementacao: true, produzResultado: true, resultadoDefinitivo: true, coletaInscricao: true,
+            permiteComplementacao: true, produzResultado: true, resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "ZETA_FASE", atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null);
         FaseCronograma faseAlfa = FaseCronograma.Reidratar(
             id: IdFixo(1), ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ALFA_FASE",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
-            permiteComplementacao: true, produzResultado: true, resultadoDefinitivo: true, coletaInscricao: true,
+            permiteComplementacao: true, produzResultado: true, resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "ALFA_FASE", atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null);
 
@@ -369,7 +369,7 @@ public sealed class PoliticaDeOrdenacaoTests
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
             origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: true, produzResultado: true,
-            resultadoDefinitivo: true, coletaInscricao: true,
+            resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "INSCRICAO", atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [bancaComOrigemMaior, bancaComOrigemMenor], regraRecurso: null).Value!;

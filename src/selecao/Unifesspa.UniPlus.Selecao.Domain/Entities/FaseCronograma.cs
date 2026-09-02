@@ -68,6 +68,9 @@ public sealed class FaseCronograma : EntityBase
     /// <summary>Se a fase coleta inscrição — decide o piso mínimo quando <see cref="OrigemCandidatos.InscricaoPropria"/>.</summary>
     public bool ColetaInscricao { get; private set; }
 
+    /// <summary>Verdadeiro quando a fase abre a janela de pedido de isenção da taxa.</summary>
+    public bool ColetaSolicitacaoIsencao { get; private set; }
+
     /// <summary>
     /// Início da janela, sempre em UTC (<c>Offset</c> zero) — ver o <c>&lt;remarks&gt;</c> da
     /// classe sobre a representação da janela.
@@ -110,6 +113,7 @@ public sealed class FaseCronograma : EntityBase
         bool produzResultado,
         bool resultadoDefinitivo,
         bool coletaInscricao,
+        bool coletaSolicitacaoIsencao,
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
         string? atoProduzidoCodigo,
@@ -244,6 +248,7 @@ public sealed class FaseCronograma : EntityBase
             ProduzResultado = produzResultado,
             ResultadoDefinitivo = resultadoDefinitivo,
             ColetaInscricao = coletaInscricao,
+            ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao,
             Inicio = inicio,
             Fim = fim,
             AtoProduzidoCodigo = atoProduzidoCodigo,
@@ -294,6 +299,7 @@ public sealed class FaseCronograma : EntityBase
         bool produzResultado,
         bool resultadoDefinitivo,
         bool coletaInscricao,
+        bool coletaSolicitacaoIsencao,
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
         string? atoProduzidoCodigo,
@@ -322,6 +328,7 @@ public sealed class FaseCronograma : EntityBase
             ProduzResultado = produzResultado,
             ResultadoDefinitivo = resultadoDefinitivo,
             ColetaInscricao = coletaInscricao,
+            ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao,
             Inicio = EmUtc(inicio),
             Fim = EmUtc(fim),
             AtoProduzidoCodigo = atoProduzidoCodigo,
@@ -379,6 +386,7 @@ public sealed class FaseCronograma : EntityBase
         bool produzResultado,
         bool resultadoDefinitivo,
         bool coletaInscricao,
+        bool coletaSolicitacaoIsencao,
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
         string? atoProduzidoCodigo,
@@ -400,6 +408,7 @@ public sealed class FaseCronograma : EntityBase
         ProduzResultado = produzResultado;
         ResultadoDefinitivo = resultadoDefinitivo;
         ColetaInscricao = coletaInscricao;
+        ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao;
         Inicio = EmUtc(inicio);
         Fim = EmUtc(fim);
         AtoProduzidoCodigo = atoProduzidoCodigo;

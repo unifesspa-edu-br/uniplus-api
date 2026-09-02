@@ -194,7 +194,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
             permiteComplementacao: false,
             produzResultado: true,
             resultadoDefinitivo: false,
-            coletaInscricao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
