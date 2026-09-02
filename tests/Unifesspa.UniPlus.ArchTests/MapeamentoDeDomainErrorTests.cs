@@ -57,17 +57,7 @@ public sealed partial class MapeamentoDeDomainErrorTests
     [MemberData(nameof(Modulos))]
     public void Codes_NaoSaoMontadosPorInterpolacao(string modulo)
     {
-        // A cobertura acima alcança literal e constante, mas um code montado em tempo de
-        // execução não existe no fonte nem nos metadados: a Theory passaria verde sem
-        // cobri-lo. Recusar a construção é o que impede o gate de silenciar.
-        IEnumerable<string> interpolados = ArquivosDeOrigem(modulo)
-            .Where(arquivo => ChamadaInterpoladaRegex().IsMatch(SemComentarios(File.ReadAllText(arquivo))))
-            .Select(arquivo => Path.GetFileName(arquivo))
-            .Order();
-
-        interpolados.Should().BeEmpty(
-            "o code precisa ser literal ou constante para que a cobertura do registry "
-                + "consiga enxergá-lo; monte a mensagem dinamicamente, nunca o code");
+        NenhumCodeMontadoPorInterpolacao(CamadasDeOrigem(modulo));
     }
 
     [Fact(DisplayName = "codes de DomainError no kernel compartilhado estão registrados")]
@@ -87,6 +77,29 @@ public sealed partial class MapeamentoDeDomainErrorTests
             "todo code emitido no kernel compartilhado precisa de mapeamento em "
                 + "IDomainErrorRegistration; sem ele o mapper devolve 500 genérico em vez do "
                 + $"ProblemDetails canônico (ADR-0024). Sem mapeamento: {string.Join(", ", orfaos)}");
+
+        // A recusa da interpolação vale aqui pelo mesmo motivo que vale nos módulos:
+        // sem ela um code montado no kernel escaparia às duas coletas e este Fact
+        // continuaria verde.
+        NenhumCodeMontadoPorInterpolacao([kernel]);
+    }
+
+    /// <remarks>
+    /// A cobertura por code alcança literal e constante, mas um code montado em tempo
+    /// de execução não existe no fonte nem nos metadados: o teste passaria verde sem
+    /// cobri-lo. Recusar a construção é o que impede o gate de silenciar.
+    /// </remarks>
+    private static void NenhumCodeMontadoPorInterpolacao(IEnumerable<string> camadas)
+    {
+        IEnumerable<string> interpolados = ArquivosDe(camadas)
+            .Where(arquivo => ChamadaInterpoladaRegex().IsMatch(SemComentarios(File.ReadAllText(arquivo))))
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .Order();
+
+        interpolados.Should().BeEmpty(
+            "o code precisa ser literal ou constante para que a cobertura do registry "
+                + "consiga enxergá-lo; monte a mensagem dinamicamente, nunca o code");
     }
 
     [Fact(DisplayName = "a descoberta de módulos alcança os módulos de negócio do monólito")]
