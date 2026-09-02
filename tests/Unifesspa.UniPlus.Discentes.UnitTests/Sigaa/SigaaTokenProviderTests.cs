@@ -158,6 +158,29 @@ public sealed class SigaaTokenProviderTests : IDisposable
         obtido.Should().Be(tokenEstranho, "o token é repassado como veio; quem o valida é a origem");
     }
 
+    [Theory]
+    [InlineData(253_402_300_800L)]        // um segundo além da maior data representável
+    [InlineData(1_800_000_000_000L)]      // expiração gravada em milissegundos, por engano
+    [InlineData(-62_135_596_801L)]        // antes da menor data representável
+    public async Task Instante_de_expiracao_fora_de_faixa_cai_na_validade_assumida(long expiracao)
+    {
+        // Um instante que não cabe na faixa de datas representáveis é mais um caso de
+        // validade ilegível. Não pode impedir o token de chegar à origem — que é quem
+        // decide se ele vale.
+        string token = RespostasDoSigaa.TokenComExpiracaoBruta(expiracao);
+        RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(token));
+
+        SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio);
+
+        string obtido = await provedor.ObterAsync(CancellationToken.None);
+        obtido.Should().Be(token);
+
+        // E a validade assumida passa a valer: antes dela, não se renova.
+        relogio.Avancar(TimeSpan.FromMinutes(1));
+        await provedor.ObterAsync(CancellationToken.None);
+        rede.AutenticacoesRealizadas.Should().Be(1);
+    }
+
     [Fact]
     public async Task Recusa_de_credencial_falha_sem_expor_o_corpo_da_resposta()
     {

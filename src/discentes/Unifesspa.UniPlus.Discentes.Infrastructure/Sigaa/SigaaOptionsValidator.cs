@@ -22,10 +22,19 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
         {
             falhas.Add("Sigaa:BaseUrl é obrigatório.");
         }
-        else if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out Uri? endereco)
-            || (endereco.Scheme != Uri.UriSchemeHttps && endereco.Scheme != Uri.UriSchemeHttp))
+        else if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out Uri? endereco))
         {
-            falhas.Add("Sigaa:BaseUrl precisa ser um endereço absoluto http ou https.");
+            falhas.Add("Sigaa:BaseUrl precisa ser um endereço absoluto.");
+        }
+        else if (endereco.Scheme != Uri.UriSchemeHttps)
+        {
+            // Sem canal cifrado, a senha do usuário de serviço, o token e o CPF de cada
+            // vínculo trafegam em texto claro. Nenhum ambiente justifica isso: o que se
+            // perderia num teste local é menos do que o risco de a exceção virar hábito.
+            falhas.Add(
+                "Sigaa:BaseUrl precisa usar https. A integração transporta credencial de "
+                + "serviço, token de acesso e CPF; em canal não cifrado, tudo isso vai "
+                + "legível na rede.");
         }
 
         if (string.IsNullOrWhiteSpace(options.Usuario))
@@ -85,11 +94,24 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
             falhas.Add("Sigaa:ValidadeMaximaDoTokenEmSegundos precisa ser pelo menos 1.");
         }
 
+        // A margem precisa caber nas duas validades, não só no teto. Se ela alcançar a
+        // validade assumida, todo token obtido quando a expiração não é legível já nasce
+        // vencido, e cada chamada ao SIGAA passa a esperar por uma autenticação nova —
+        // uma por chamada, em fila.
         if (options.MargemDeRenovacaoDoTokenEmSegundos >= options.ValidadeMaximaDoTokenEmSegundos)
         {
             falhas.Add(
                 "Sigaa:MargemDeRenovacaoDoTokenEmSegundos precisa ser menor que a validade máxima "
                 + "do token — do contrário todo token nasceria vencido e cada requisição renovaria.");
+        }
+
+        if (options.MargemDeRenovacaoDoTokenEmSegundos >= options.ValidadeAssumidaDoTokenEmSegundos)
+        {
+            falhas.Add(
+                "Sigaa:MargemDeRenovacaoDoTokenEmSegundos precisa ser menor que "
+                + "Sigaa:ValidadeAssumidaDoTokenEmSegundos — quando a expiração do token não é "
+                + "legível, vale a validade assumida, e uma margem que a consome inteira faz "
+                + "todo token nascer vencido.");
         }
 
         if (options.ChamadasMinimasParaAvaliarCorte < 1)
