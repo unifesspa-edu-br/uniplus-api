@@ -197,6 +197,8 @@ public sealed partial class MapeamentoDeDomainErrorTests
     /// como o sufixo que declara. Vale para os 373 codes do repositório e para
     /// nenhuma das constantes que apenas guardam nome de tipo.
     /// </remarks>
+    private static bool EhFormatoDeCode(string valor) => FormatoDeCodeRegex().IsMatch(valor);
+
     private static bool EhCode(string nomeDoCampo, string valor)
     {
         if (!FormatoDeCodeRegex().IsMatch(valor))
@@ -216,8 +218,13 @@ public sealed partial class MapeamentoDeDomainErrorTests
 
         foreach (string arquivo in ArquivosDe(camadas))
         {
-            foreach (Match encontro in chamada.Matches(SemComentarios(File.ReadAllText(arquivo))))
-                codes.Add(encontro.Groups[1].Value);
+            string conteudo = SemDeclaracaoDeConstante(SemComentarios(File.ReadAllText(arquivo)));
+
+            foreach (Match encontro in chamada.Matches(conteudo))
+            {
+                if (EhFormatoDeCode(encontro.Groups[1].Value))
+                    codes.Add(encontro.Groups[1].Value);
+            }
         }
 
         return codes;
@@ -237,6 +244,14 @@ public sealed partial class MapeamentoDeDomainErrorTests
     /// </remarks>
     private static string SemComentarios(string conteudo) =>
         ComentarioDeLinhaRegex().Replace(ComentarioEmBlocoRegex().Replace(conteudo, string.Empty), string.Empty);
+
+    /// <remarks>
+    /// A declaração de uma constante é território da coleta por reflexão, que sabe
+    /// conferir a convenção de nomeação. Deixá-la aqui faria o literal de uma
+    /// constante que só guarda nome de tipo entrar como se fosse code.
+    /// </remarks>
+    private static string SemDeclaracaoDeConstante(string conteudo) =>
+        DeclaracaoDeConstanteRegex().Replace(conteudo, string.Empty);
 
     private static HashSet<string> LerCodesRegistrados(string modulo)
     {
@@ -343,7 +358,7 @@ public sealed partial class MapeamentoDeDomainErrorTests
     /// ambas as coletas — declará-lo como constante ou literal é o que mantém este
     /// gate capaz de enxergá-lo.
     /// </remarks>
-    [GeneratedRegex(@"new\s+DomainError\(\s*""([^""]+)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"""([A-Z][A-Za-z0-9]*\.[A-Za-z][A-Za-z0-9]*)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ChamadaDeDomainErrorRegex();
 
     [GeneratedRegex(@"^[A-Z][A-Za-z0-9]*\.[A-Za-z][A-Za-z0-9]*$", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
@@ -351,6 +366,9 @@ public sealed partial class MapeamentoDeDomainErrorTests
 
     [GeneratedRegex(@"new\s+DomainError\(\s*\$", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ChamadaInterpoladaRegex();
+
+    [GeneratedRegex(@"const\s+string\s+\w+\s*=\s*""[^""]*""", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex DeclaracaoDeConstanteRegex();
 
     [GeneratedRegex(@"/\*[\s\S]*?\*/", RegexOptions.Compiled, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ComentarioEmBlocoRegex();
