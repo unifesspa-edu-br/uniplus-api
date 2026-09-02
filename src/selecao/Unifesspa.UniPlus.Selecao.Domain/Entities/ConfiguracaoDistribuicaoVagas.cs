@@ -536,53 +536,82 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// <summary>Código da ampla concorrência no cadastro de modalidades.</summary>
     private const string AmplaConcorrenciaCodigo = "AC";
 
+    /// <summary>
+    /// Referências que uma modalidade faz a outra pelo código, e que só valem se a citada
+    /// estiver no mesmo conjunto ofertado.
+    /// </summary>
+    private static readonly (Func<ModalidadeSelecionada, string?> Ler, string Erro, string Rotulo, string Concordancia)[] ReferenciasAoConjunto =
+    [
+        (static m => m.ComposicaoOrigemCodigo, "ComposicaoOrigemNaoSelecionada", "a origem", "selecionada"),
+        (static m => m.RemanejamentoDestino, "RemanejamentoDestinoNaoSelecionado", "o destino de remanejamento", "selecionado"),
+        (static m => m.RemanejamentoPar, "RemanejamentoParNaoSelecionado", "o par de remanejamento", "selecionado"),
+        (static m => m.RemanejamentoFallback, "RemanejamentoFallbackNaoSelecionado", "o fallback de remanejamento", "selecionado"),
+    ];
+
     private static DomainError? ValidarReferenciasCruzadas(
-        IReadOnlyList<ModalidadeSelecionada> modalidades, IReadOnlyList<string> codigosInformados)
+        IReadOnlyList<ModalidadeSelecionada> modalidades, IReadOnlyList<string> codigosInformados) =>
+        modalidades
+            .Select(modalidade => PrimeiraViolacaoDe(modalidade, modalidades, codigosInformados))
+            .FirstOrDefault(static violacao => violacao is not null);
+
+    private static DomainError? PrimeiraViolacaoDe(
+        ModalidadeSelecionada modalidade,
+        IReadOnlyList<ModalidadeSelecionada> modalidades,
+        IReadOnlyList<string> codigosInformados)
     {
-        foreach (ModalidadeSelecionada modalidade in modalidades)
+        foreach ((Func<ModalidadeSelecionada, string?> ler, string erro, string rotulo, string concordancia) in ReferenciasAoConjunto)
         {
-            if (modalidade.ComposicaoOrigemCodigo is { } origem && !codigosInformados.Contains(origem, StringComparer.Ordinal))
+            if (ler(modalidade) is { } referencia && !codigosInformados.Contains(referencia, StringComparer.Ordinal))
             {
                 return new DomainError(
-                    "ConfiguracaoDistribuicaoVagas.ComposicaoOrigemNaoSelecionada",
-                    $"Modalidade {modalidade.Codigo} referencia a origem {origem}, que não está selecionada nesta oferta.");
-            }
-
-            if (modalidade.RemanejamentoDestino is { } destino && !codigosInformados.Contains(destino, StringComparer.Ordinal))
-            {
-                return new DomainError(
-                    "ConfiguracaoDistribuicaoVagas.RemanejamentoDestinoNaoSelecionado",
-                    $"Modalidade {modalidade.Codigo} referencia o destino de remanejamento {destino}, que não está selecionado nesta oferta.");
-            }
-
-            if (modalidade.RemanejamentoPar is { } par && !codigosInformados.Contains(par, StringComparer.Ordinal))
-            {
-                return new DomainError(
-                    "ConfiguracaoDistribuicaoVagas.RemanejamentoParNaoSelecionado",
-                    $"Modalidade {modalidade.Codigo} referencia o par de remanejamento {par}, que não está selecionado nesta oferta.");
-            }
-
-            if (modalidade.RemanejamentoFallback is { } fallback && !codigosInformados.Contains(fallback, StringComparer.Ordinal))
-            {
-                return new DomainError(
-                    "ConfiguracaoDistribuicaoVagas.RemanejamentoFallbackNaoSelecionado",
-                    $"Modalidade {modalidade.Codigo} referencia o fallback de remanejamento {fallback}, que não está selecionado nesta oferta.");
-            }
-
-            // As quatro acima comparam um código que o operador declarou; esta compara o
-            // conjunto contra um código implícito no token — RECLASSIFICAR_AC significa
-            // "reclassifica em AC", e num certame exclusivo, como o do PSIQ, a ampla
-            // concorrência não é ofertada. Sem a recusa o destino congela no envelope, que é
-            // imutável, e sobrevive à retificação.
-            if (string.Equals(modalidade.AcaoQuandoIndeferido, AcaoQuandoIndeferidoReclassificarAc, StringComparison.Ordinal)
-                && !codigosInformados.Contains(AmplaConcorrenciaCodigo, StringComparer.Ordinal))
-            {
-                return new DomainError(
-                    "ConfiguracaoDistribuicaoVagas.ReclassificacaoParaAmplaSemAmplaOfertada",
-                    $"Modalidade {modalidade.Codigo} reclassifica em {AmplaConcorrenciaCodigo}, que não está selecionada nesta oferta.");
+                    $"ConfiguracaoDistribuicaoVagas.{erro}",
+                    $"Modalidade {modalidade.Codigo} referencia {rotulo} {referencia}, que não está {concordancia} nesta oferta.");
             }
         }
 
-        return null;
+        return ParCruzadoNaoReciproco(modalidade, modalidades)
+            ?? ReclassificacaoSemAmplaOfertada(modalidade, codigosInformados);
     }
+
+    /// <remarks>
+    /// A reciprocidade é exigida aqui, e não no cadastro, porque a primeira modalidade de um
+    /// par não teria a que apontar quando é criada.
+    /// </remarks>
+    private static DomainError? ParCruzadoNaoReciproco(
+        ModalidadeSelecionada modalidade,
+        IReadOnlyList<ModalidadeSelecionada> modalidades)
+    {
+        if (modalidade is not { RegraRemanejamento: RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar: { } par })
+        {
+            return null;
+        }
+
+        ModalidadeSelecionada? contraparte = modalidades
+            .FirstOrDefault(m => string.Equals(m.Codigo, par, StringComparison.Ordinal));
+
+        bool reciproco = contraparte is null
+            || (contraparte.RegraRemanejamento == RegraRemanejamentoModalidade.Cruzado
+                && string.Equals(contraparte.RemanejamentoPar, modalidade.Codigo, StringComparison.Ordinal));
+
+        return reciproco
+            ? null
+            : new DomainError(
+                "ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco",
+                $"Modalidade {modalidade.Codigo} forma par cruzado com {par}, que não aponta de volta para ela.");
+    }
+
+    /// <remarks>
+    /// Diferente das demais, o código de destino não é declarado pelo operador: está implícito
+    /// no token. Sem a recusa, um certame que não oferta ampla concorrência congela no
+    /// envelope — imutável — uma instrução de reclassificar para modalidade que ele não tem.
+    /// </remarks>
+    private static DomainError? ReclassificacaoSemAmplaOfertada(
+        ModalidadeSelecionada modalidade,
+        IReadOnlyList<string> codigosInformados) =>
+        string.Equals(modalidade.AcaoQuandoIndeferido, AcaoQuandoIndeferidoReclassificarAc, StringComparison.Ordinal)
+        && !codigosInformados.Contains(AmplaConcorrenciaCodigo, StringComparer.Ordinal)
+            ? new DomainError(
+                "ConfiguracaoDistribuicaoVagas.ReclassificacaoParaAmplaSemAmplaOfertada",
+                $"Modalidade {modalidade.Codigo} reclassifica em {AmplaConcorrenciaCodigo}, que não está selecionada nesta oferta.")
+            : null;
 }
