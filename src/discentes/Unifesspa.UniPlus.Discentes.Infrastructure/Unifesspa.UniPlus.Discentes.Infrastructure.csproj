@@ -4,6 +4,9 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Refit" />
+    <PackageReference Include="Refit.HttpClientFactory" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,6 +18,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Unifesspa.UniPlus.Discentes.IntegrationTests" />
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Discentes.UnitTests" />
   </ItemGroup>
 
 </Project>
