@@ -81,12 +81,28 @@ public static class SigaaClientRegistration
     private static void RegistrarClienteDeAutenticacao(IServiceCollection services)
     {
         services.AddHttpClient(SigaaTokenProvider.NomeDoClienteHttp, ConfigurarEndereco)
+            .ConfigurePrimaryHttpMessageHandler(SemSeguirRedirecionamento)
             .RedactLoggedHeaders(["Authorization"])
             .AddStandardResilienceHandler()
             .Configure(ConfigurarResilienciaDaAutenticacao);
 
         services.TryAddSingleton<SigaaTokenProvider>();
     }
+
+    /// <summary>
+    /// Cria o manipulador de rede que não segue redirecionamento.
+    /// </summary>
+    /// <remarks>
+    /// Nem a autenticação nem a consulta de vínculos têm motivo legítimo para serem
+    /// redirecionadas: o endereço da origem é configurado, não descoberto. Seguir
+    /// redirecionamento aqui só abriria caminho para as credenciais e os dados pessoais
+    /// saírem para um destino que ninguém configurou — em resposta que preserva método e
+    /// corpo, o corpo do pedido de autenticação, com usuário e senha, iria junto para o
+    /// novo destino. Um redirecionamento passa a ser resposta inesperada, tratada como
+    /// falha, em vez de desvio silencioso.
+    /// </remarks>
+    private static HttpMessageHandler SemSeguirRedirecionamento() =>
+        new HttpClientHandler { AllowAutoRedirect = false };
 
     private static void RegistrarClienteDeConsulta(IServiceCollection services)
     {
@@ -99,6 +115,7 @@ public static class SigaaClientRegistration
         // chamada acontece, em vez de na compilação.
         IHttpClientBuilder cliente = services.AddRefitGeneratedClient<ISigaaVinculoDiscenteApi>()
             .ConfigureHttpClient(ConfigurarEndereco)
+            .ConfigurePrimaryHttpMessageHandler(SemSeguirRedirecionamento)
 
             // O cabeçalho de autorização é omitido do log. O registrador do próprio
             // cliente HTTP grava todos os cabeçalhos no nível mais detalhado e não
