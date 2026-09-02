@@ -104,45 +104,6 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         pendencia!.Code.Should().Be("ProcessoSeletivo.JanelaDeIsencaoSemPrazo");
     }
 
-    [Fact(DisplayName = "Fase de isenção sem regra de recurso é recusada — o indeferimento é recorrível")]
-    public void SemRegraDeRecurso_Recusada()
-    {
-        ProcessoSeletivo processo = ProcessoComCronograma([
-            FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes),
-            FaseCronograma.Criar(
-                ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "SOLICITACAO_ISENCAO",
-                donoInstitucional: "CEPS", origemData: OrigemDataFase.Delegada, agrupaEtapas: false,
-                permiteComplementacao: false, produzResultado: false, resultadoDefinitivo: false,
-                coletaInscricao: false, coletaSolicitacaoIsencao: true,
-                inicio: AberturaDasInscricoes,
-                fim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.FromHours(-3)),
-                atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
-                bancasRequeridas: [], regraRecurso: null).Value!,
-        ]);
-
-        processo.PendenciaDoCronograma(Belem)!.Code
-            .Should().Be("ProcessoSeletivo.JanelaDeIsencaoSemRegraDeRecurso");
-    }
-
-    [Theory(DisplayName = "O recurso da isenção conta em dias úteis, com mínimo de dois")]
-    [InlineData(1, false)]
-    [InlineData(2, true)]
-    public void PrazoDeRecurso(int diasUteis, bool aceito)
-    {
-        DomainError? pendencia = Avaliar(
-            aberturaIsencao: AberturaDasInscricoes,
-            fimIsencao: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.FromHours(-3)),
-            recurso: RecursoEmDiasUteis(diasUteis));
-
-        if (aceito)
-        {
-            pendencia.Should().BeNull();
-            return;
-        }
-
-        pendencia!.Code.Should().Be("ProcessoSeletivo.PrazoDeRecursoDaIsencaoMenorQueDoisDiasUteis");
-    }
-
     [Fact(DisplayName = "Cronograma sem fase de isenção não é recusado — quem não cobra taxa não tem a fase")]
     public void SemFaseDeIsencao_NaoRecusa()
     {

@@ -2158,22 +2158,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"A fase '{isencao.Codigo}' abre a solicitação de isenção e precisa de início e fim definidos.");
         }
 
-        // O indeferimento fecha a porta de quem não pode pagar, então a fase publica com recurso —
-        // e o prazo dele é interposição, não período do cronograma: conta em dias ÚTEIS.
-        if (isencao.RegraRecurso is not { } recurso)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.JanelaDeIsencaoSemRegraDeRecurso",
-                $"A fase '{isencao.Codigo}' precisa de regra de recurso — o indeferimento da isenção é recorrível.");
-        }
-
-        if (recurso.Args.PrazoUnidade != UnidadePrazo.DiasUteis || recurso.Args.PrazoValor < 2m)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.PrazoDeRecursoDaIsencaoMenorQueDoisDiasUteis",
-                "O recurso contra o indeferimento da isenção exige prazo de ao menos dois dias úteis.");
-        }
-
         if (FaseQueAncoraOPeriodoDeInscricao() is not { Inicio: { } inicioInscricao, Fim: { } fimInscricao })
         {
             return null;
