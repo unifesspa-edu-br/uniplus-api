@@ -3,10 +3,12 @@ namespace Unifesspa.UniPlus.Discentes.API;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Discentes.API.Errors;
 using Unifesspa.UniPlus.Discentes.Infrastructure;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 /// <summary>
 /// Registro self-describing do módulo Discentes para o composition root do
@@ -27,6 +29,10 @@ public static class DiscentesModuleRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        // Sem este registro, um erro de domínio do módulo que alcance uma resposta HTTP
+        // sai como falha genérica, sem identificar a causa.
+        services.AddSingleton<IDomainErrorRegistration, DiscentesDomainErrorRegistration>();
 
         services.AddDiscentesInfrastructure();
 

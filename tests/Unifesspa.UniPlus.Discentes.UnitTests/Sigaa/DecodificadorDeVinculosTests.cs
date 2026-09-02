@@ -1,0 +1,341 @@
+namespace Unifesspa.UniPlus.Discentes.UnitTests.Sigaa;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Discentes.Domain.Errors;
+using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
+using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Acl;
+using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Contracts;
+using Unifesspa.UniPlus.Kernel.Results;
+
+public sealed class DecodificadorDeVinculosTests
+{
+    [Fact]
+    public void Traduz_vinculo_completo_com_todos_os_campos()
+    {
+        ResultadoDaDecodificacao resultado = DecodificarPagina(Completo());
+
+        resultado.Aceitos.Should().HaveCount(1);
+        resultado.Descartados.Should().BeEmpty();
+
+        VinculoDiscenteSnapshot snapshot = resultado.Aceitos[0].Vinculo.Snapshot;
+        snapshot.IdDiscenteSigaa.Should().Be(24786);
+        snapshot.Matricula.Should().Be("201446010001");
+        snapshot.Cpf.Valor.Should().Be("52998224725");
+        snapshot.Nivel.Should().Be("G");
+        snapshot.Curso.Nome.Should().Be("CIÊNCIA DA COMPUTAÇÃO");
+        snapshot.Curso.CodigoEmec.Should().Be("1269997");
+        snapshot.Curso.UnidadeNome.Should().Be("INSTITUTO DE CIENCIAS EXATAS");
+        snapshot.Ingresso.Ano.Should().Be(2020);
+    }
+
+    [Fact]
+    public void Reflete_a_situacao_como_a_origem_a_entrega()
+    {
+        ResultadoDaDecodificacao resultado = DecodificarPagina(Completo());
+
+        SituacaoAcademicaSnapshot situacao = resultado.Aceitos[0].Vinculo.Snapshot.Situacao;
+        situacao.Id.Should().Be(1);
+        situacao.Descricao.Should().Be("ATIVO", "a situação é espelhada, não traduzida");
+        situacao.Vinculo.Should().Be("ATV");
+    }
+
+    [Fact]
+    public void Descarta_vinculo_de_curso_sem_unidade_academica_e_segue()
+    {
+        // É o caso de mais de mil vínculos da origem. Descartar é decisão registrada;
+        // interromper a leitura por causa deles pararia a sincronização todo dia.
+        VinculoDiscentePayload semUnidade = Completo() with
+        {
+            Curso = Completo().Curso! with { Unidade = null },
+        };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(semUnidade);
+
+        resultado.Aceitos.Should().BeEmpty();
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Motivo.Should().Be(MotivoDeDescarte.CursoSemUnidadeAcademica);
+    }
+
+    [Theory]
+    [InlineData(null, 1)]
+    [InlineData(2020, null)]
+    [InlineData(null, null)]
+    public void Descarta_vinculo_sem_periodo_de_ingresso_e_segue(int? ano, int? periodo)
+    {
+        VinculoDiscentePayload semIngresso = Completo() with
+        {
+            AnoIngresso = ano,
+            PeriodoIngresso = periodo,
+        };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(semIngresso);
+
+        resultado.Aceitos.Should().BeEmpty();
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Motivo.Should().Be(MotivoDeDescarte.SemPeriodoDeIngresso);
+    }
+
+    [Fact]
+    public void Descarte_nao_contamina_os_vizinhos_da_mesma_pagina()
+    {
+        VinculoDiscentePayload descartavel = Completo() with
+        {
+            IdDiscente = 99,
+            Curso = Completo().Curso! with { Unidade = null },
+        };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(
+            Completo(), descartavel, Completo() with { IdDiscente = 77 });
+
+        resultado.Aceitos.Should().HaveCount(2, "os vínculos completos continuam entrando");
+        resultado.Descartados.Should().ContainSingle()
+            .Which.IdDiscenteSigaa.Should().Be(99);
+    }
+
+    [Theory]
+    [InlineData("matricula")]
+    [InlineData("nome")]
+    [InlineData("nivel")]
+    [InlineData("cpf")]
+    [InlineData("curso")]
+    [InlineData("situacao")]
+    [InlineData("idDiscente")]
+    public void Ausencia_de_campo_obrigatorio_do_contrato_recusa_a_pagina(string campo)
+    {
+        // O contraste com os descartes acima é o núcleo desta camada: aqui a origem
+        // deixou de entregar o que prometeu, e seguir em frente corromperia a réplica.
+        VinculoDiscentePayload quebrado = campo switch
+        {
+            "matricula" => Completo() with { Matricula = null },
+            "nome" => Completo() with { Nome = null },
+            "nivel" => Completo() with { Nivel = null },
+            "cpf" => Completo() with { Cpf = null },
+            "curso" => Completo() with { Curso = null },
+            "situacao" => Completo() with { Situacao = null },
+            _ => Completo() with { IdDiscente = 0 },
+        };
+
+        Result<ResultadoDaDecodificacao> resultado =
+            DecodificadorDeVinculos.Decodificar([quebrado]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(DiscentesErrorCodes.Payload.CampoObrigatorioAusente);
+    }
+
+    [Fact]
+    public void Cpf_fora_do_formato_acordado_recusa_a_pagina()
+    {
+        Result<ResultadoDaDecodificacao> resultado = DecodificadorDeVinculos.Decodificar(
+            [Completo() with { Cpf = "00000000000" }]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(DiscentesErrorCodes.Payload.CpfInvalido);
+    }
+
+    [Fact]
+    public void Cpf_malformado_recusa_a_pagina_mesmo_quando_o_vinculo_seria_descartado()
+    {
+        // A conferência do formato do CPF precisa vir antes dos descartes. Se viesse
+        // depois, este vínculo — que também não tem unidade acadêmica, o caso mais
+        // frequente da origem — seria contado como "registro que não serve", e a quebra do
+        // contrato passaria despercebida justamente onde ela é mais provável de se esconder.
+        VinculoDiscentePayload quebrado = Completo() with
+        {
+            Cpf = "00000000000",
+            Curso = Completo().Curso! with { Unidade = null },
+        };
+
+        Result<ResultadoDaDecodificacao> resultado =
+            DecodificadorDeVinculos.Decodificar([quebrado]);
+
+        resultado.IsFailure.Should().BeTrue("quebra de contrato prevalece sobre descarte");
+        resultado.Error!.Code.Should().Be(DiscentesErrorCodes.Payload.CpfInvalido);
+    }
+
+    [Theory]
+    [InlineData("curso.id")]
+    [InlineData("curso.nome")]
+    [InlineData("situacao.id")]
+    [InlineData("situacao.descricao")]
+    public void Campo_obrigatorio_aninhado_ausente_recusa_a_pagina_mesmo_com_descarte(string campo)
+    {
+        CursoPayload cursoSemUnidade = Completo().Curso! with { Unidade = null };
+
+        VinculoDiscentePayload quebrado = campo switch
+        {
+            "curso.id" => Completo() with { Curso = cursoSemUnidade with { Id = 0 } },
+            "curso.nome" => Completo() with { Curso = cursoSemUnidade with { Nome = null } },
+            "situacao.id" => Completo() with
+            {
+                Curso = cursoSemUnidade,
+                Situacao = Completo().Situacao! with { Id = 0 },
+            },
+            _ => Completo() with
+            {
+                Curso = cursoSemUnidade,
+                Situacao = Completo().Situacao! with { Descricao = null },
+            },
+        };
+
+        Result<ResultadoDaDecodificacao> resultado =
+            DecodificadorDeVinculos.Decodificar([quebrado]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(DiscentesErrorCodes.Payload.CampoObrigatorioAusente);
+    }
+
+    [Fact]
+    public void Conteudo_de_campo_nao_consegue_imitar_a_fronteira_entre_campos()
+    {
+        // Dois vínculos diferentes: o primeiro tem a descrição da situação terminando onde
+        // o segundo tem o qualificador começando. Se a fronteira entre campos fosse marcada
+        // por um caractere que o próprio conteúdo pode conter, os dois produziriam o mesmo
+        // resumo — e uma alteração real na origem passaria por "nada mudou".
+        const char Caractere = '\u001f';
+
+        VinculoDiscentePayload primeiro = Completo() with
+        {
+            Situacao = Completo().Situacao! with
+            {
+                Descricao = $"ATIVO{Caractere}REGULAR",
+                SituacaoVinculo = "X",
+            },
+        };
+
+        VinculoDiscentePayload segundo = Completo() with
+        {
+            Situacao = Completo().Situacao! with
+            {
+                Descricao = "ATIVO",
+                SituacaoVinculo = $"REGULAR{Caractere}X",
+            },
+        };
+
+        DecodificarUm(segundo).ResumoDoConteudo.Should().NotBe(
+            DecodificarUm(primeiro).ResumoDoConteudo,
+            "vínculos com conteúdos diferentes precisam ter resumos diferentes");
+    }
+
+    [Fact]
+    public void Mesmo_conteudo_produz_o_mesmo_resumo()
+    {
+        string primeiro = DecodificarUm(Completo()).ResumoDoConteudo;
+        string segundo = DecodificarUm(Completo()).ResumoDoConteudo;
+
+        segundo.Should().Be(primeiro, "sem isso a sincronização reescreveria tudo todo dia");
+    }
+
+    [Theory]
+    [MemberData(nameof(CamposQueMudamOConteudo))]
+    public void Mudanca_em_qualquer_campo_guardado_altera_o_resumo(
+        string nomeDoCampo,
+        VinculoDiscentePayload alterado)
+    {
+        string original = DecodificarUm(Completo()).ResumoDoConteudo;
+        string depois = DecodificarUm(alterado).ResumoDoConteudo;
+
+        depois.Should().NotBe(
+            original,
+            "mudança em {0} precisa chegar à réplica, e é o resumo que decide se a escrita acontece",
+            nomeDoCampo);
+    }
+
+    public static TheoryData<string, VinculoDiscentePayload> CamposQueMudamOConteudo()
+    {
+        VinculoDiscentePayload b = Completo();
+
+        return new TheoryData<string, VinculoDiscentePayload>
+        {
+            { "matricula", b with { Matricula = "201446010002" } },
+            { "nome", b with { Nome = "OUTRO NOME" } },
+            { "nivel", b with { Nivel = "M" } },
+            { "identificador do curso", b with { Curso = b.Curso! with { Id = 999 } } },
+            { "nome do curso", b with { Curso = b.Curso! with { Nome = "MATEMÁTICA" } } },
+            { "código e-MEC", b with { Curso = b.Curso! with { CodigoEmec = "86318" } } },
+            { "unidade", b with { Curso = b.Curso! with { Unidade = new UnidadePayload { Id = 7, Nome = "OUTRA" } } } },
+            { "situação", b with { Situacao = b.Situacao! with { Id = 8, Descricao = "TRANCADO" } } },
+            { "qualificador da situação", b with { Situacao = b.Situacao! with { SituacaoVinculo = "TRC" } } },
+            { "ano de ingresso", b with { AnoIngresso = 2021 } },
+            { "período de ingresso", b with { PeriodoIngresso = 2 } },
+        };
+    }
+
+    [Fact]
+    public void Resumo_nao_cobre_o_cpf_para_nao_desfazer_a_cifra_em_repouso()
+    {
+        // O resumo fica guardado ao lado dos demais campos, legíveis na mesma linha. Se
+        // cobrisse o CPF, quem tivesse a tabela conheceria todo o resto e poderia testar
+        // os pouco mais de um bilhão de CPFs válidos até reproduzir o resumo — devolvendo
+        // em claro o dado que a cifra protege.
+        //
+        // O preço está aqui declarado: correção isolada de CPF na origem não é percebida.
+        string original = DecodificarUm(Completo()).ResumoDoConteudo;
+        string comOutroCpf = DecodificarUm(Completo() with { Cpf = "11144477735" }).ResumoDoConteudo;
+
+        comOutroCpf.Should().Be(
+            original,
+            "cobrir o CPF tornaria o resumo um caminho para recuperá-lo por tentativa e erro");
+    }
+
+    [Fact]
+    public void Resumo_distingue_campo_ausente_de_campo_vazio()
+    {
+        VinculoDiscentePayload semCodigo = Completo() with
+        {
+            Curso = Completo().Curso! with { CodigoEmec = null },
+        };
+        VinculoDiscentePayload codigoVazio = Completo() with
+        {
+            Curso = Completo().Curso! with { CodigoEmec = "" },
+        };
+
+        string comAusente = DecodificarUm(semCodigo).ResumoDoConteudo;
+        string comVazio = DecodificarUm(codigoVazio).ResumoDoConteudo;
+
+        comVazio.Should().NotBe(comAusente, "ausência e vazio são estados diferentes na origem");
+    }
+
+    [Fact]
+    public void Pagina_vazia_e_resposta_legitima()
+    {
+        ResultadoDaDecodificacao resultado = DecodificarPagina();
+
+        resultado.Aceitos.Should().BeEmpty();
+        resultado.Descartados.Should().BeEmpty();
+    }
+
+    private static VinculoDecodificado DecodificarUm(VinculoDiscentePayload unico) =>
+        DecodificarPagina(unico).Aceitos[0];
+
+    private static ResultadoDaDecodificacao DecodificarPagina(params VinculoDiscentePayload[] pagina)
+    {
+        Result<ResultadoDaDecodificacao> resultado = DecodificadorDeVinculos.Decodificar(pagina);
+        resultado.IsSuccess.Should().BeTrue(
+            "a página é válida neste cenário; erro aqui é defeito do teste");
+        return resultado.Value!;
+    }
+
+    /// <summary>
+    /// Vínculo com todos os campos, nos moldes do exemplo que o contrato da origem publica.
+    /// </summary>
+    private static VinculoDiscentePayload Completo() => new()
+    {
+        IdDiscente = 24786,
+        Matricula = "201446010001",
+        Cpf = "52998224725",
+        Nome = "FULANO DE TAL",
+        Nivel = "G",
+        Curso = new CursoPayload
+        {
+            Id = 42,
+            Nome = "CIÊNCIA DA COMPUTAÇÃO",
+            CodigoEmec = "1269997",
+            Unidade = new UnidadePayload { Id = 12, Nome = "INSTITUTO DE CIENCIAS EXATAS" },
+        },
+        Situacao = new SituacaoPayload { Id = 1, Descricao = "ATIVO", SituacaoVinculo = "ATV" },
+        AnoIngresso = 2020,
+        PeriodoIngresso = 1,
+        DateRequest = "2026-07-15 13:09:52",
+    };
+}
