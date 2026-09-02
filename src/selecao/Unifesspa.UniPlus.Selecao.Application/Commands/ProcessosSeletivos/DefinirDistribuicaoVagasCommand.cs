@@ -27,7 +27,8 @@ public sealed record ConfiguracaoDistribuicaoVagasInput(
     string? RegraAjusteVersao,
     Guid? ReferenciaReservaDemograficaId,
     IReadOnlyList<Guid> ModalidadeIds,
-    IReadOnlyList<QuantidadeVagaInput> Quadro);
+    IReadOnlyList<QuantidadeVagaInput> Quadro,
+    ArgsRegraAjusteDistribuicao? ArgsAjuste = null);
 
 /// <summary>
 /// Quantidade que o edital fixa para uma modalidade — obrigatória para as

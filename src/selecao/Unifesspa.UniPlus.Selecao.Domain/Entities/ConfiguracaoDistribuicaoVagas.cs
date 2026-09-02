@@ -128,6 +128,10 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// coerência de composição/remanejamento) já foram validadas em
     /// <see cref="ModalidadeSelecionada.Criar"/>.
     /// </summary>
+    /// <param name="argsAjuste">
+    /// Motor que reconcilia o quadro fixo cuja soma passa do <paramref name="voBase"/>.
+    /// <see langword="null"/> deixa a recusa valer: sem motor declarado não há de onde tirar.
+    /// </param>
     /// <param name="modalidadesAdmitidas">
     /// Códigos que a regra de distribuição reconhece, declarados no catálogo e resolvidos
     /// pela camada de aplicação. <see langword="null"/> quando a regra não restringe o rol.
@@ -146,7 +150,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         ReferenciaReservaDemograficaSnapshot? referenciaDemografica,
         IReadOnlyList<ModalidadeSelecionada> modalidades,
         int? vagasAnuaisAutorizadas = null,
-        IReadOnlyCollection<string>? modalidadesAdmitidas = null)
+        IReadOnlyCollection<string>? modalidadesAdmitidas = null,
+        ArgsRegraAjusteDistribuicao? argsAjuste = null)
     {
         ArgumentNullException.ThrowIfNull(regraDistribuicao);
         ArgumentNullException.ThrowIfNull(modalidades);
@@ -189,6 +194,17 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
                     "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra",
                     $"A regra {regraDistribuicao.Codigo} não admite a(s) modalidade(s) {string.Join(", ", naoAdmitidas)}.")));
             }
+        }
+
+        // Os motores são de distribuição institucional. Sob a Lei 12.711 a reconciliação é a
+        // da calculadora — cap no VO e prioridade da reserva de baixa renda, art. 11 §único —,
+        // e aceitar args aqui os deixaria inertes: o operador declararia um ajuste que nunca
+        // roda, e o quadro sairia diferente do que ele configurou sem nada dizer.
+        if (argsAjuste is not null && regraDistribuicao.Codigo == RegraDistribuicaoVagasCodigo.Lei12711)
+        {
+            erros.Add(new("regraAjuste", new DomainError(
+                "ConfiguracaoDistribuicaoVagas.MotorDeAjusteVedadoNaLei12711",
+                "Os motores de redução não se aplicam à distribuição pela Lei 12.711 — a reconciliação dela é a do art. 11, parágrafo único.")));
         }
 
         List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
@@ -279,7 +295,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
 
             quadro = ehLei12711
                 ? MontarQuadroFederal(voBase, pr, referenciaDemografica!, modalidades)
-                : MontarQuadroInstitucional(voBase, modalidades);
+                : MontarQuadroInstitucional(voBase, modalidades, argsAjuste);
         }
         else
         {
@@ -439,43 +455,60 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// </remarks>
     private static Result<QuadroMontado> MontarQuadroInstitucional(
         int voBase,
-        IReadOnlyList<ModalidadeSelecionada> modalidades)
+        IReadOnlyList<ModalidadeSelecionada> modalidades,
+        ArgsRegraAjusteDistribuicao? argsAjuste)
     {
-        List<VagaOfertada> vagas = [];
-        int totalPublicado = 0;
+        string[] codigos = [.. modalidades.Select(static m => m.Codigo)];
+        int[] quantidades = [.. modalidades.Select(static m => m.QuantidadeDeclarada!.Value)];
+        int totalDeclarado = quantidades.Sum();
 
-        foreach (ModalidadeSelecionada modalidade in modalidades)
+        // Faltar não tem motor: acrescer seria o sistema criar vaga que ninguém autorizou, e a
+        // quantidade de vagas do certame é ato administrativo.
+        if (totalDeclarado < voBase)
         {
-            int quantidade = modalidade.QuantidadeDeclarada!.Value;
-            Result<VagaOfertada> vaga = VagaOfertada.Criar(modalidade.ModalidadeOrigemId, modalidade.Codigo, quantidade);
+            return Result<QuadroMontado>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase",
+                $"As quantidades do quadro somam {totalDeclarado}, e a oferta tem {voBase} vagas a distribuir."));
+        }
+
+        int excesso = totalDeclarado - voBase;
+        if (excesso > 0 && argsAjuste is null)
+        {
+            return Result<QuadroMontado>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase",
+                $"As quantidades do quadro somam {totalDeclarado}, acima das {voBase} vagas da oferta."));
+        }
+
+        Result<ReconciliadorQuadroInstitucional.QuadroReconciliado> reconciliado =
+            ReconciliadorQuadroInstitucional.Reduzir(codigos, quantidades, excesso, argsAjuste ?? SemAjuste);
+        if (reconciliado.IsFailure)
+        {
+            return Result<QuadroMontado>.Failure(reconciliado.Error!);
+        }
+
+        List<VagaOfertada> vagas = new(modalidades.Count);
+        for (int i = 0; i < modalidades.Count; i++)
+        {
+            Result<VagaOfertada> vaga = VagaOfertada.Criar(
+                modalidades[i].ModalidadeOrigemId, modalidades[i].Codigo, reconciliado.Value!.Quantidades[i]);
             if (vaga.IsFailure)
             {
                 return Result<QuadroMontado>.Failure(vaga.Error!);
             }
 
             vagas.Add(vaga.Value!);
-            totalPublicado += quantidade;
         }
 
-        // Exceder e faltar são erros distintos para quem configura: um passou do total, o
-        // outro ainda não terminou de distribuir. Uma mensagem só faria o operador procurar
-        // o problema que não tem.
-        if (totalPublicado > voBase)
-        {
-            return Result<QuadroMontado>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase",
-                $"As quantidades do quadro somam {totalPublicado}, acima das {voBase} vagas da oferta."));
-        }
-
-        if (totalPublicado < voBase)
-        {
-            return Result<QuadroMontado>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase",
-                $"As quantidades do quadro somam {totalPublicado}, e a oferta tem {voBase} vagas a distribuir."));
-        }
-
-        return Result<QuadroMontado>.Success(new QuadroMontado(vagas, VrNominal: 0, VrFinal: 0, Estouro: 0, CapadoEmVo: false, totalPublicado));
+        // Estouro e CapadoEmVo dizem, no mesmo vocabulário que o quadro federal já publica,
+        // que houve reconciliação e de quanto — o edital sai com o quadro ajustado, e quem o
+        // configurou precisa ver que ele não é o que digitou.
+        int reduzido = reconciliado.Value!.Reduzido;
+        return Result<QuadroMontado>.Success(new QuadroMontado(
+            vagas, VrNominal: 0, VrFinal: 0, Estouro: reduzido, CapadoEmVo: reduzido > 0, voBase));
     }
+
+    /// <summary>Motor inerte: sem excesso a reduzir, o reconciliador devolve o quadro intacto.</summary>
+    private static readonly ArgsReduzirDe SemAjuste = new(string.Empty);
 
     /// <summary>
     /// Estado intermediário privado entre montar o quadro (calculado ou
