@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -48,7 +49,7 @@ public sealed record GrupoCurso
         if (!EhValido(valor))
         {
             return Result<GrupoCurso>.Failure(new DomainError(
-                "GrupoCurso.ForaDoDominio",
+                GrupoCursoErrorCodes.ForaDoDominio,
                 $"Grupo de curso deve ser um de: {string.Join(", ", Valores)}."));
         }
 

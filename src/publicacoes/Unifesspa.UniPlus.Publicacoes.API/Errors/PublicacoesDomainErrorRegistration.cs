@@ -24,6 +24,18 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
+        new(ReferenciaVersaoConfiguracaoErrorCodes.IdObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.referencia_versao_configuracao.id_obrigatorio",
+                "Identificador da versão de configuração é obrigatório")),
+
+        new(ReferenciaVersaoConfiguracaoErrorCodes.HashInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.referencia_versao_configuracao.hash_invalido",
+                "Hash da versão de configuração deve ser um SHA-256 em hexadecimal minúsculo")),
+
         new(TipoAtoPublicadoErrorCodes.VigenciaSobreposta,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,

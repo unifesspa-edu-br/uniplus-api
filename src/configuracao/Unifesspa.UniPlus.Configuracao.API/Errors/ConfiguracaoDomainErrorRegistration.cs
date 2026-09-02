@@ -262,6 +262,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.peso_area_enem.resolucao_tamanho",
                 "Tamanho da resolução inválido")),
 
+        new(GrupoCursoErrorCodes.ForaDoDominio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.grupo_curso.fora_do_dominio",
+                "Grupo de curso fora do vocabulário da Resolução INEP/ENEM 805/2024")),
+
         new(PesoAreaEnemErrorCodes.GrupoCursoInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
