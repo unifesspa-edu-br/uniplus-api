@@ -310,6 +310,72 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase");
     }
 
+    [Fact(DisplayName = "Modalidade que reclassifica na ampla é recusada quando a ampla não é ofertada")]
+    public void Criar_ReclassificarAcSemAcOfertada_Falha()
+    {
+        // O formato do PSIQ: certame exclusivo de vagas por acréscimo, sem ampla concorrência.
+        // Sem esta recusa o destino congela no envelope, que é imutável, e sobrevive à
+        // retificação — o motor de classificação encontraria instrução de reclassificar para
+        // uma modalidade que o processo nunca ofertou.
+        List<ModalidadeSelecionada> modalidades =
+        [
+            ModalidadeComAcao("AC_I", "RECLASSIFICAR_AC", quantidadeDeclarada: 2),
+            ModalidadeComAcao("AC_Q", acaoQuandoIndeferido: null, quantidadeDeclarada: 2),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().Contain(e =>
+            e.Error.Code == "ConfiguracaoDistribuicaoVagas.ReclassificacaoParaAmplaSemAmplaOfertada"
+            && e.Error.Message.Contains("AC_I", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Reclassificar na ampla é aceito quando a ampla está entre as ofertadas")]
+    public void Criar_ReclassificarAcComAcOfertada_Sucesso()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            ModalidadeComAcao("AC", acaoQuandoIndeferido: null, quantidadeDeclarada: 38),
+            ModalidadeComAcao("PCD_PURO", "RECLASSIFICAR_AC", quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraEduCampo(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsSuccess.Should().BeTrue("a ampla está ofertada — o destino da reclassificação existe");
+    }
+
+    [Fact(DisplayName = "RECLASSIFICAR_REGRA_EDITAL não exige a ampla ofertada — o destino vem da regra, não de um código")]
+    public void Criar_ReclassificarRegraEditalSemAc_Sucesso()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            ModalidadeComAcao("AC_I", "RECLASSIFICAR_REGRA_EDITAL", quantidadeDeclarada: 2),
+            ModalidadeComAcao("AC_Q", acaoQuandoIndeferido: null, quantidadeDeclarada: 2),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsSuccess.Should().BeTrue(
+            "o token delega o destino à regra do edital e não nomeia modalidade nenhuma");
+    }
+
+    private static ModalidadeSelecionada ModalidadeComAcao(
+        string codigo,
+        string? acaoQuandoIndeferido,
+        int quantidadeDeclarada,
+        string? composicaoOrigemCodigo = null) =>
+        ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, null,
+            NaturezaLegalModalidade.Suplementar,
+            composicaoOrigemCodigo is null ? ComposicaoVagasModalidade.SuplementarAoTotal : ComposicaoVagasModalidade.RetiraDe,
+            composicaoOrigemCodigo,
+            RegraRemanejamentoModalidade.Nenhuma,
+            null, null, null, [], acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
+
     [Theory(DisplayName = "Criar com VO_base não positivo falha")]
     [InlineData(0)]
     [InlineData(-1)]
