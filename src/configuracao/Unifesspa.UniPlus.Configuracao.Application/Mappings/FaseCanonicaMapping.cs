@@ -21,6 +21,7 @@ public static class FaseCanonicaMapping
             fase.ProduzResultado,
             fase.ResultadoDefinitivo,
             fase.ColetaInscricao,
+            fase.ColetaSolicitacaoIsencao,
             OrigensDataFase.ParaTokenCanonico(fase.OrigemData),
             fase.CreatedAt);
     }

@@ -103,7 +103,7 @@ internal static class ProcessoConformeFactory
             permiteComplementacao: false,
             produzResultado: true,
             resultadoDefinitivo: regraRecurso is null,
-            coletaInscricao: true,
+            coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_FINAL",

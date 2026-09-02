@@ -643,7 +643,7 @@ public sealed class AvaliadorConformidadeLegalTests
         FaseCronograma fase = FaseCronograma.Criar(
             1, Guid.CreateVersion7(), "ENVIO_DOCUMENTOS", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: false, resultadoDefinitivo: false,
-            coletaInscricao: false, inicio: null, fim: null, atoProduzidoCodigo: null,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null, atoProduzidoCodigo: null,
             atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

@@ -8582,6 +8582,7 @@
           "produzResultado",
           "resultadoDefinitivo",
           "coletaInscricao",
+          "coletaSolicitacaoIsencao",
           "inicio",
           "fim",
           "atoProduzidoCodigo",
@@ -8629,6 +8630,9 @@
             "type": "boolean"
           },
           "coletaInscricao": {
+            "type": "boolean"
+          },
+          "coletaSolicitacaoIsencao": {
             "type": "boolean"
           },
           "inicio": {

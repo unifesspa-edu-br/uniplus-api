@@ -49,6 +49,7 @@ public sealed class CatalogoDeFasesCanonicasTests
                 item.ProduzResultado,
                 item.ResultadoDefinitivo,
                 item.ColetaInscricao,
+                item.ColetaSolicitacaoIsencao,
                 OrigensDataFase.ParaTokenCanonico(item.OrigemData));
 
             resultado.IsSuccess.Should().BeTrue(

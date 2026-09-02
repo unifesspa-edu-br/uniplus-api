@@ -37,6 +37,7 @@ public static class CriarFaseCanonicaCommandHandler
             command.ProduzResultado,
             command.ResultadoDefinitivo,
             command.ColetaInscricao,
+            command.ColetaSolicitacaoIsencao,
             command.OrigemData);
 
         if (criar.IsFailure)

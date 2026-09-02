@@ -85,7 +85,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true,
-            coletaInscricao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseSemColeta], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -153,7 +153,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             permiteComplementacao: false,
             produzResultado: true,
             resultadoDefinitivo: true,
-            coletaInscricao: true,
+            coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_FINAL",

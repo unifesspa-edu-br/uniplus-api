@@ -41,11 +41,12 @@ public sealed class ConformidadeCronogramaTests
         string codigo,
         bool agrupaEtapas = false,
         bool produzResultado = false,
-        bool coletaInscricao = false) =>
+        bool coletaInscricao = false,
+        bool coletaSolicitacaoIsencao = false) =>
         FaseCronograma.Criar(
             ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas, permiteComplementacao: false, produzResultado,
-            resultadoDefinitivo: produzResultado, coletaInscricao,
+            resultadoDefinitivo: produzResultado, coletaInscricao, coletaSolicitacaoIsencao,
             inicio: null, fim: null,
             atoProduzidoCodigo: produzResultado ? codigo : null,
             atoProduzidoEfeitoIrreversivel: false,

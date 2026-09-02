@@ -255,7 +255,7 @@ public sealed class FaseCanonicaPersistenceTests
     }
 
     private static FaseCanonica Fase(string codigo, string nome, string dono) =>
-        FaseCanonica.Criar(codigo, nome, null, dono, false, false, null, false, false, false, "PROPRIA").Value!;
+        FaseCanonica.Criar(codigo, nome, null, dono, false, false, null, false, false, false, false, "PROPRIA").Value!;
 
     /// <summary>
     /// Libera o slot de um código ocupado pelo seed das quinze fases, usando o mesmo

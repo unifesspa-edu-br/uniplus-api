@@ -400,7 +400,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_PRELIMINAR",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
-            permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: false, coletaInscricao: false,
+            permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_PRELIMINAR", atoProduzidoEfeitoIrreversivel: false,

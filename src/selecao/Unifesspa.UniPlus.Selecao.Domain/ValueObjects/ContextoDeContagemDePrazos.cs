@@ -43,7 +43,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record ContextoDeContagemDePrazos(
     CalendarioDiasUteisCongelado? CalendarioVigente,
     bool FusoInstitucionalReconhecido,
-    DomainError? FalhaDoCalendarioVigente = null)
+    DomainError? FalhaDoCalendarioVigente = null,
+    TimeZoneInfo? FusoInstitucional = null)
 {
     /// <summary>
     /// Contexto de um ambiente sem calendário vigente e com fuso reconhecido — o estado de um
