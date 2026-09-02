@@ -17,6 +17,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\discentes\Unifesspa.UniPlus.Discentes.Domain\Unifesspa.UniPlus.Discentes.Domain.csproj" />
+    <ProjectReference Include="..\..\src\discentes\Unifesspa.UniPlus.Discentes.Infrastructure\Unifesspa.UniPlus.Discentes.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- O contrato publicado pela origem, copiado do repositório que a implementa. Serve de
+       corpo real nos testes de decodificação: sem ele, o cliente seria exercitado só
+       contra respostas inventadas aqui, que sempre casam com o que o código espera. -->
+  <ItemGroup>
+    <None Include="Recursos\sigaa-vinculo-discentes.schema.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

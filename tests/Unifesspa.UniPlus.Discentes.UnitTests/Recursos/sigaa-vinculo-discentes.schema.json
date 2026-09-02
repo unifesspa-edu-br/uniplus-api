@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api-sigaa-v2.unifesspa.edu.br/schemas/vinculo-discentes-collection.json",
+  "title": "VinculoDiscentesCollection",
+  "description": "Contract for GET /api/vinculo_discentes on the SIGAA API (api-unifesspa, API Platform 3.3). Hydra/JSON-LD collection, one member per vínculo (matrícula). Designed jointly by Uni+ and the SIGAA API team; the Uni+ Anti-Corruption Layer mirrors this shape. Grain: one active/known graduation (Ensino G) enrollment per member — the same CPF may appear in multiple members.",
+  "type": "object",
+  "required": [
+    "hydra:member",
+    "hydra:totalItems"
+  ],
+  "properties": {
+    "@context": {
+      "type": "string",
+      "examples": [
+        "/api/contexts/VinculoDiscente"
+      ]
+    },
+    "@id": {
+      "type": "string",
+      "examples": [
+        "/api/vinculo_discentes"
+      ]
+    },
+    "@type": {
+      "type": "string",
+      "const": "hydra:Collection"
+    },
+    "hydra:totalItems": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "hydra:member": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/VinculoDiscente"
+      }
+    },
+    "hydra:view": {
+      "type": "object",
+      "description": "Pagination view. Mirrors the existing status_discentes envelope.",
+      "properties": {
+        "@id": {
+          "type": "string"
+        },
+        "@type": {
+          "type": "string",
+          "const": "hydra:PartialCollectionView"
+        },
+        "hydra:first": {
+          "type": "string"
+        },
+        "hydra:last": {
+          "type": "string"
+        },
+        "hydra:previous": {
+          "type": "string"
+        },
+        "hydra:next": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "VinculoDiscente": {
+      "type": "object",
+      "description": "A single graduation enrollment (vínculo discente). Natural key: idDiscente (the SIGAA PK id_discente). matricula is an attribute and is NOT unique — validated against the source, the same matrícula value occurs for distinct people.",
+      "required": [
+        "idDiscente",
+        "matricula",
+        "cpf",
+        "nome",
+        "nivel",
+        "curso",
+        "situacao"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "type": "string",
+          "description": "Hydra IRI. Path uses idDiscente as the resource identifier.",
+          "examples": [
+            "/api/vinculo_discentes/24786"
+          ]
+        },
+        "@type": {
+          "type": "string",
+          "const": "VinculoDiscente"
+        },
+        "idDiscente": {
+          "type": "integer",
+          "description": "SIGAA enrollment PK (public.discente.id_discente). Unique and stable — the natural key of the record and the consumer's upsert key.",
+          "examples": [
+            24786
+          ]
+        },
+        "matricula": {
+          "type": "string",
+          "description": "Enrollment number (SIGAA matrícula). Attribute, NOT a unique key (the same value occurs for distinct people in the source). Serialized as a string to preserve leading zeros and avoid bigint precision loss.",
+          "pattern": "^[0-9]+$",
+          "examples": [
+            "201446010001"
+          ]
+        },
+        "cpf": {
+          "type": "string",
+          "description": "Person CPF, 11 digits, UNMASKED (required as the person identifier for the downstream double-bond check). SENSITIVE (LGPD): transported over TLS only; the consumer encrypts at rest and masks in logs.",
+          "pattern": "^[0-9]{11}$",
+          "examples": [
+            "12345678901"
+          ]
+        },
+        "nome": {
+          "type": "string",
+          "description": "Civil name of the person. Carried for display/audit; the load-bearing identifiers are cpf and matricula.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "nivel": {
+          "type": "string",
+          "description": "Academic level. V1 syncs graduation only; expected value 'G'.",
+          "examples": [
+            "G"
+          ]
+        },
+        "curso": {
+          "type": "object",
+          "description": "Course, identified by id (id_curso) + nome, plus the e-MEC code for external cross-referencing. The SIGAA-internal course code is omitted: it means nothing outside the institution.",
+          "required": [
+            "id",
+            "nome"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "integer",
+              "description": "SIGAA course id (id_curso). Course key."
+            },
+            "nome": {
+              "type": "string",
+              "maxLength": 200,
+              "examples": [
+                "CIÊNCIA DA COMPUTAÇÃO"
+              ]
+            },
+            "codigoEmec": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Course code in the MEC registry (e-MEC). Identifies the course outside the university and is what allows cross-referencing it with MEC data. Null for a course that has not registered one (1 of 131 today). Carried as a string: it is an identifier, not a quantity.",
+              "maxLength": 20,
+              "examples": [
+                "1269997",
+                "86318"
+              ]
+            },
+            "unidade": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "Academic unit responsible for the course (public.curso.id_unidade). Usually an institute, but not always — some courses hang directly off a campus. Null for a course with no unit recorded (1,004 of 27,267 vínculos today).",
+              "required": [
+                "id",
+                "nome"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "nome": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "examples": [
+                    "INSTITUTO DE CIENCIAS EXATAS"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "situacao": {
+          "type": "object",
+          "description": "Enrollment status, mirrored from StatusDiscente. Reflected as-is by the consumer.",
+          "required": [
+            "id",
+            "descricao"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "integer",
+              "description": "StatusDiscente id from the closed vocabulary (see /api/status_discentes). Restricted to the 13 statuses that denote a real vínculo: the endpoint guard never emits DESCONHECIDO (-1), NÃO CADASTRADO (10), PENDENTE DE CADASTRO (13) or PRÉ CADASTRO (15).",
+              "enum": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                11,
+                12,
+                14,
+                100
+              ]
+            },
+            "descricao": {
+              "type": "string",
+              "maxLength": 20,
+              "examples": [
+                "ATIVO",
+                "CONCLUÍDO",
+                "TRANCADO"
+              ]
+            },
+            "situacaoVinculo": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Vínculo situation code carried by StatusDiscente.situacao_vinculo (≤4 chars), when present.",
+              "maxLength": 4
+            }
+          }
+        },
+        "anoIngresso": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "examples": [
+            2020
+          ]
+        },
+        "periodoIngresso": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "examples": [
+            1
+          ]
+        },
+        "dateRequest": {
+          "type": "string",
+          "description": "Source-side generation timestamp of the response row (house style, same as status_discentes). Format 'YYYY-MM-DD HH:MM:SS'.",
+          "examples": [
+            "2026-07-15 13:09:52"
+          ]
+        }
+      }
+    }
+  }
+}

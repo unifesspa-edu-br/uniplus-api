@@ -158,8 +158,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0127](0127-migrations-aplicadas-por-job-de-deploy.md) | Migrations aplicadas por Job de deploy, com o boot do pod como default preservado | accepted | 2026-08-26 |
 | [0128](0128-regime-de-funcionamento-da-oferta-de-curso.md) | Regime de funcionamento da oferta de curso — dimensão própria, conferida contra o regime de turno | accepted | 2026-08-28 |
 | [0129](0129-identidade-da-origem-decide-conformidade.md) | Identidade da origem decide conformidade; o código é o que se mostra ao humano | accepted | 2026-09-01 |
+| [0130](0130-integracao-com-o-sigaa-por-consulta-http-paginada.md) | Integração com o SIGAA por consulta HTTP paginada, não por tópico de mensageria | accepted | 2026-09-02 |
 
-> **Nota de numeração:** a sequência de `0001` a `0129` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0130+`.
+> **Nota de numeração:** a sequência de `0001` a `0130` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0131+`.
 
 ## Como adicionar um novo ADR
 

@@ -53,6 +53,21 @@
          que o do SDK das imagens Docker e quebraria o publish (CS9057). -->
     <PackageVersion Include="MR.EntityFrameworkCore.KeysetPagination" Version="1.6.0" />
 
+    <!-- Cliente HTTP tipado para integração com sistema externo (réplica de vínculos de
+         discentes vinda do SIGAA, ADR-0130). Refit gera o cliente a partir da interface em
+         tempo de compilação; o handler de resiliência traz retry com backoff, circuit breaker
+         e timeout sobre Polly v8, que já chegava como transitivo sem nunca ser configurado.
+
+         Refit arrasta ReactiveUI.Primitives, ReactiveUI.Disposables, ReactiveUI.Primitives.Core
+         e System.Reactive como transitivos — nada disso é usado pelo Uni+, mas entra na
+         superfície de auditoria. Como aviso de segurança é tratado como erro, um advisory em
+         qualquer um deles interrompe o restore da solução inteira; o remédio, se acontecer, é
+         declarar aqui a versão corrigida (o gerenciamento central a aplica transitivamente),
+         como já foi feito para Microsoft.OpenApi. -->
+    <PackageVersion Include="Refit" Version="15.2.0" />
+    <PackageVersion Include="Refit.HttpClientFactory" Version="15.2.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.9.0" />
+
     <!-- Storage -->
     <PackageVersion Include="Minio" Version="7.0.0" />
 

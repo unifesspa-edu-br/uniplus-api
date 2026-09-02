@@ -5,14 +5,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Discentes.Infrastructure;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 /// <summary>
 /// Registro self-describing do módulo Discentes para o composition root do
-/// monólito modular. Nesta fase (réplica de dados, sem endpoints públicos) só
-/// registra Infrastructure e as migrations on startup — OpenAPI, HATEOAS,
-/// Idempotency-Key e Application entram quando o módulo ganhar endpoints/handlers
-/// (tasks seguintes de sincronização SIGAA).
+/// monólito modular. Nesta fase (réplica de dados, sem endpoints públicos) registra
+/// Infrastructure, as migrations on startup e o cliente de leitura do SIGAA — OpenAPI,
+/// HATEOAS, Idempotency-Key e Application entram quando o módulo ganhar
+/// endpoints/handlers (tasks seguintes de sincronização SIGAA).
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Design",
@@ -28,6 +29,10 @@ public static class DiscentesModuleRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddDiscentesInfrastructure();
+
+        // Leitura dos vínculos na origem. Só se registra com endereço configurado; sem
+        // ele, o módulo continua subindo com a réplica e sem a integração.
+        services.AddSigaaVinculoDiscenteClient(configuration);
 
         // Migrations EF Core aplicadas no host StartAsync via IHostedService, ANTES
         // do runtime Wolverine (invariante #419 — MigrationBeforeWolverineRuntimeOrder).
