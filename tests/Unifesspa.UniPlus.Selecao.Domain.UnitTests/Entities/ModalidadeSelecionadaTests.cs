@@ -15,6 +15,21 @@ public sealed class ModalidadeSelecionadaTests
         remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
         criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
 
+    [Fact(DisplayName = "Criar sem a identidade da modalidade de origem recusa")]
+    public void Criar_SemIdentidadeDeOrigem_Recusa()
+    {
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
+            Guid.Empty, "AC", "Ampla concorrência",
+            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+
+        resultado.IsFailure.Should().BeTrue(
+            "a identidade da origem é o que decide se esta oferta é a modalidade que uma regra legal exige");
+        resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ModalidadeOrigemIdObrigatorio");
+    }
+
     [Fact(DisplayName = "Criar modalidade ampla (residual, sem remanejamento) tem sucesso")]
     public void Criar_Ampla_Sucesso()
     {

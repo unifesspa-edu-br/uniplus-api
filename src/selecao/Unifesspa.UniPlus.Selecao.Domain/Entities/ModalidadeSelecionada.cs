@@ -80,6 +80,17 @@ public sealed class ModalidadeSelecionada : EntityBase
     {
         ArgumentNullException.ThrowIfNull(criteriosCumulativos);
 
+        // A identidade da origem decide se esta oferta é a mesma modalidade que uma
+        // obrigatoriedade legal exige (ADR-0129). Identidade vazia não identifica nada:
+        // gravaria uma oferta que jamais casa, e a cláusula legal seria dada por não
+        // ofertada sem que nada sinalizasse.
+        if (modalidadeOrigemId == Guid.Empty)
+        {
+            return Result<ModalidadeSelecionada>.Failure(new DomainError(
+                "ModalidadeSelecionada.ModalidadeOrigemIdObrigatorio",
+                "Identidade da modalidade de origem é obrigatória."));
+        }
+
         if (string.IsNullOrWhiteSpace(codigo))
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
