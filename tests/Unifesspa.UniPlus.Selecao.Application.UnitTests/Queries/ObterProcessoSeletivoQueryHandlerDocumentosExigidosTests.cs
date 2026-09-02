@@ -24,7 +24,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     private static FaseCronograma FaseQualquer() => FaseCronograma.Criar(
         1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
-        resultadoDefinitivo: false, coletaInscricao: false, inicio: null, fim: null,
+        resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
         atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [], regraRecurso: null).Value!;
 

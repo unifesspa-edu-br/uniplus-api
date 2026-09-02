@@ -65,7 +65,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
             Guid.CreateVersion7(),
             "2026",
             [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
-        FusoInstitucionalReconhecido: true);
+        FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
         ProcessoConformeFactory.Dados(),

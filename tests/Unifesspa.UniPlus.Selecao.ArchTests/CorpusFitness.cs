@@ -39,7 +39,7 @@ internal static class CorpusFitness
                 permiteComplementacao: false,
                 produzResultado: true,
                 resultadoDefinitivo: true,
-                coletaInscricao: false,
+                coletaInscricao: false, coletaSolicitacaoIsencao: false,
                 inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
                 atoProduzidoCodigo: "RESULTADO_FINAL",

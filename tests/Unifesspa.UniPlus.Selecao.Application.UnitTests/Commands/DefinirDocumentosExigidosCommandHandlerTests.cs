@@ -60,7 +60,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     private static FaseCronograma FaseQualquer() => FaseCronograma.Criar(
         1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
-        resultadoDefinitivo: false, coletaInscricao: false, inicio: null, fim: null,
+        resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
         atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [], regraRecurso: null).Value!;
 
@@ -75,7 +75,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(
         ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
-        resultadoDefinitivo: false, coletaInscricao: false, inicio: null, fim: null,
+        resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
         atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [], regraRecurso: null).Value!;
 

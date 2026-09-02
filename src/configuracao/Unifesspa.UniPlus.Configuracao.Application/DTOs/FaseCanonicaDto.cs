@@ -19,6 +19,7 @@ public sealed record FaseCanonicaDto(
     bool ProduzResultado,
     bool ResultadoDefinitivo,
     bool ColetaInscricao,
+    bool ColetaSolicitacaoIsencao,
     string OrigemData,
     DateTimeOffset CriadoEm)
 {

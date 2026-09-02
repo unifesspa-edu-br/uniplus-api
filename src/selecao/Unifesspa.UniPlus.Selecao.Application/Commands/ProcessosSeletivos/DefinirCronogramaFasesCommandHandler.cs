@@ -212,6 +212,7 @@ public static class DefinirCronogramaFasesCommandHandler
                 faseCanonica.ProduzResultado,
                 faseCanonica.ResultadoDefinitivo,
                 faseCanonica.ColetaInscricao,
+                faseCanonica.ColetaSolicitacaoIsencao,
                 input.Inicio,
                 input.Fim,
                 input.AtoProduzidoCodigo,

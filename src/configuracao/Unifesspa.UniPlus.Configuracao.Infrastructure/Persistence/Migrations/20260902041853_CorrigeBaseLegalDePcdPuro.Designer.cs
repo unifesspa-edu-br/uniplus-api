@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    partial class ConfiguracaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260902041853_CorrigeBaseLegalDePcdPuro")]
+    partial class CorrigeBaseLegalDePcdPuro
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -605,12 +608,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("coleta_inscricao");
 
-                    b.Property<bool>("ColetaSolicitacaoIsencao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("coleta_solicitacao_isencao");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -714,7 +711,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "INSCRICAO",
                             ColetaInscricao = true,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Período em que o candidato se inscreve no processo seletivo.",
                             DonoTipico = "CEPS",
@@ -732,7 +728,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             BaseLegal = "Lei nº 12.799/2013",
                             Codigo = "SOLICITACAO_ISENCAO",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.",
                             DonoTipico = "CEPS",
@@ -749,7 +744,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "HOMOLOGACAO",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Conferência das inscrições recebidas e publicação de quais foram homologadas.",
                             DonoTipico = "CEPS",
@@ -766,7 +760,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "ENSALAMENTO",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Distribuição dos candidatos pelos locais de prova.",
                             DonoTipico = "CEPS",
@@ -783,7 +776,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = true,
                             Codigo = "AVALIACAO",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Fase que agrupa as etapas pontuadas do certame.",
                             DonoTipico = "CEPS",
@@ -800,7 +792,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "CLASSIFICACAO",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Apuração das notas e ordenação dos candidatos por modalidade.",
                             DonoTipico = "CEPS",
@@ -817,7 +808,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "RESULTADO_PRELIMINAR",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Publicação do resultado que ainda admite recurso.",
                             DonoTipico = "CEPS",
@@ -834,7 +824,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "RECURSOS",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Interposição e análise dos recursos contra o resultado preliminar.",
                             DonoTipico = "CEPS",
@@ -851,7 +840,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "RESULTADO_FINAL",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Publicação do resultado depois de julgados os recursos.",
                             DonoTipico = "CEPS",
@@ -869,7 +857,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             BaseLegal = "Lei nº 12.711/2012; Portaria Normativa MEC nº 4/2018",
                             Codigo = "HETEROIDENTIFICACAO",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Procedimento de heteroidentificação étnico-racial dos candidatos que concorrem por cota.",
                             DonoTipico = "CEPS",
@@ -886,7 +873,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "HABILITACAO",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Comprovação documental dos requisitos declarados pelo candidato.",
                             DonoTipico = "CRCA",
@@ -903,7 +889,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "HOMOLOGACAO_RESULTADO_FINAL",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Ato do conselho que homologa o resultado final do processo seletivo.",
                             DonoTipico = "CONSEPE",
@@ -920,7 +905,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "MATRICULA",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Efetivação do vínculo do candidato aprovado com a instituição.",
                             DonoTipico = "CRCA",
@@ -937,7 +921,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "LISTA_ESPERA",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Fila de candidatos classificados além das vagas, convocados conforme as vagas são liberadas.",
                             DonoTipico = "MEC",
@@ -954,7 +937,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             AgrupaEtapas = false,
                             Codigo = "CHAMADA",
                             ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Convocação dos candidatos da lista de espera para ocupar vagas remanescentes.",
                             DonoTipico = "MEC",

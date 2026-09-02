@@ -172,7 +172,8 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
             referenciaRegraResult.Value!,
             regraAjusteResult.Value,
             demografica,
-            modalidades);
+            modalidades,
+            oferta.VagasAnuaisAutorizadas);
     }
 
     /// <summary>

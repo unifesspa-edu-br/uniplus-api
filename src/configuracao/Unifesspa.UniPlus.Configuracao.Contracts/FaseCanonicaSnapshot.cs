@@ -34,4 +34,5 @@ public sealed record FaseCanonicaSnapshot(
     bool ProduzResultado,
     bool ResultadoDefinitivo,
     bool ColetaInscricao,
+    bool ColetaSolicitacaoIsencao,
     string OrigemData);

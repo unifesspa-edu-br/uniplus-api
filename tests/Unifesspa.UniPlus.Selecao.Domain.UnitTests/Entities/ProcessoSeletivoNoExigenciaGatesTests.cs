@@ -25,7 +25,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
     private static FaseCronograma NovaFase(Guid faseCanonicaOrigemId, bool permiteComplementacao) => FaseCronograma.Criar(
         1, faseCanonicaOrigemId, "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: permiteComplementacao, produzResultado: false,
-        resultadoDefinitivo: false, coletaInscricao: false, inicio: null, fim: null,
+        resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
         atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [], regraRecurso: null).Value!;
 

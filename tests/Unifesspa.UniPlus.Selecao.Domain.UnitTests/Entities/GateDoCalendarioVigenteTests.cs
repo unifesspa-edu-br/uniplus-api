@@ -29,7 +29,7 @@ public sealed class GateDoCalendarioVigenteTests
             Guid.CreateVersion7(),
             "2026",
             [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
-        FusoInstitucionalReconhecido: true);
+        FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
@@ -65,7 +65,7 @@ public sealed class GateDoCalendarioVigenteTests
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
             // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
             // DELEGADA (issue #1350) — as demais fases deste cronograma seguem sem data.
-            resultadoDefinitivo: false, coletaInscricao: true,
+            resultadoDefinitivo: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
@@ -73,13 +73,13 @@ public sealed class GateDoCalendarioVigenteTests
         FaseCronograma.Criar(
             2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: true, permiteComplementacao: false, produzResultado: true,
-            resultadoDefinitivo: false, coletaInscricao: false, inicio: null, fim: null,
+            resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             atoProduzidoCodigo: "RESULTADO_PRELIMINAR", atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [], regraRecurso: Recurso(unidade)).Value!,
         FaseCronograma.Criar(
             3, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: true,
-            resultadoDefinitivo: true, coletaInscricao: false, inicio: null, fim: null,
+            resultadoDefinitivo: true, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [], regraRecurso: null).Value!,
     ];
@@ -178,7 +178,7 @@ public sealed class GateDoCalendarioVigenteTests
         var falha = new DomainError(
             "CalendarioVigente.FormaTerritorialInvalida",
             "O calendário vigente traz 2026-01-01 em forma incoerente: dia estadual não carrega município.");
-        var contexto = new ContextoDeContagemDePrazos(null, FusoInstitucionalReconhecido: true, FalhaDoCalendarioVigente: falha);
+        var contexto = new ContextoDeContagemDePrazos(null, FalhaDoCalendarioVigente: falha, FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
         ProcessoSeletivo comRecurso = ProcessoComRecurso(UnidadePrazo.DiasUteis);
 
@@ -195,7 +195,7 @@ public sealed class GateDoCalendarioVigenteTests
     {
         var contexto = new ContextoDeContagemDePrazos(
             null,
-            FusoInstitucionalReconhecido: true,
+
             FalhaDoCalendarioVigente: new DomainError("CalendarioVigente.FormaTerritorialInvalida", "incoerente"));
 
         ProcessoSeletivo semRecurso = ProcessoConformeFactory.Criar();
@@ -224,7 +224,7 @@ public sealed class GateDoCalendarioVigenteTests
         // preflight o mostra: sem isso, o checklist diria "pronto" e a publicação devolveria
         // um erro que quem publica não teria como prever nem corrigir.
         var ambienteQuebrado = new ContextoDeContagemDePrazos(
-            ComCalendario().CalendarioVigente, FusoInstitucionalReconhecido: false);
+            ComCalendario().CalendarioVigente, FusoInstitucional: null);
 
         processo.AvaliarConformidade(ambienteQuebrado)
             .Should().ContainSingle(static i => i.Codigo == "fuso_institucional_nao_reconhecido" && !i.Ok);

@@ -23,6 +23,8 @@ public static class FaseCanonicaErrorCodes
     public const string DonoTipicoInvalido = "FaseCanonica.DonoTipicoInvalido";
     public const string AgrupaEtapasApenasAvaliacao = "FaseCanonica.AgrupaEtapasApenasAvaliacao";
     public const string ComplementacaoApenasFasesPermitidas = "FaseCanonica.ComplementacaoApenasFasesPermitidas";
+    public const string SolicitacaoIsencaoApenasNaFaseDeIsencao = "FaseCanonica.SolicitacaoIsencaoApenasNaFaseDeIsencao";
+    public const string ColetaInscricaoEIsencaoMutuamenteExclusivas = "FaseCanonica.ColetaInscricaoEIsencaoMutuamenteExclusivas";
     public const string BaseLegalTamanho = "FaseCanonica.BaseLegalTamanho";
     public const string NaoEncontrada = "FaseCanonica.NaoEncontrada";
     public const string OrigemDataObrigatoria = "FaseCanonica.OrigemDataObrigatoria";

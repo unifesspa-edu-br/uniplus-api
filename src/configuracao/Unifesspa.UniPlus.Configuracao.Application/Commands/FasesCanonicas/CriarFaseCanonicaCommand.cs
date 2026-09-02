@@ -30,4 +30,5 @@ public sealed record CriarFaseCanonicaCommand(
     bool ProduzResultado = false,
     bool ResultadoDefinitivo = false,
     bool ColetaInscricao = false,
+    bool ColetaSolicitacaoIsencao = false,
     string? OrigemData = null) : ICommand<Result<Guid>>;

@@ -60,6 +60,16 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     /// <summary>Verdadeiro quando a fase coleta inscrições — decide o piso mínimo quando a origem dos candidatos é inscrição própria.</summary>
     public bool ColetaInscricao { get; private set; }
 
+    /// <summary>
+    /// Verdadeiro quando a fase abre a janela em que o candidato pede isenção da taxa. Exclusiva da
+    /// fase de solicitação de isenção, e incompatível com <see cref="ColetaInscricao"/>.
+    /// </summary>
+    /// <remarks>
+    /// Booleana, e não comparação com o código: o código é rótulo administrável, e renomeá-lo pelo
+    /// CRUD faria toda regra escrita contra ele deixar de casar (ADR-0061).
+    /// </remarks>
+    public bool ColetaSolicitacaoIsencao { get; private set; }
+
     /// <summary>Quem controla a data da fase: <see cref="OrigemDataFase.Propria"/> (janela obrigatória) ou <see cref="OrigemDataFase.Delegada"/> (janela opcional).</summary>
     public OrigemDataFase OrigemData { get; private set; }
 
@@ -194,16 +204,36 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida as duas coerências que dependem do código da fase — <see cref="AgrupaEtapas"/>
-    /// só para a fase de avaliação, <see cref="PermiteComplementacao"/> só nas fases
-    /// legalmente permitidas — acumulando as duas violações independentes. Só faz
+    /// Valida as coerências que dependem do código da fase — <see cref="AgrupaEtapas"/> só para a
+    /// fase de avaliação, <see cref="PermiteComplementacao"/> só nas fases legalmente permitidas,
+    /// <see cref="ColetaSolicitacaoIsencao"/> exatamente na fase de isenção e nunca junto de
+    /// <see cref="ColetaInscricao"/> — acumulando as violações independentes. Só faz
     /// sentido avaliar contra um <paramref name="codigoValor"/> já confiável (formato
     /// válido e pertencente ao conjunto canônico); por isso <see cref="Criar"/> só a
     /// chama quando <see cref="ValidarCodigo"/> teve sucesso.
     /// </summary>
-    public static Result ValidarCoerenciaDeCodigo(string codigoValor, bool agrupaEtapas, bool permiteComplementacao)
+    public static Result ValidarCoerenciaDeCodigo(
+        string codigoValor, bool agrupaEtapas, bool permiteComplementacao, bool coletaInscricao, bool coletaSolicitacaoIsencao)
     {
         List<FieldError> erros = [];
+
+        // Bidirecional: a marca só existe na fase de isenção, e nela é obrigatória. Aceitá-la
+        // falsa ali deixaria a fase indistinguível das demais no cronograma, e a janela publicaria
+        // sem passar por nenhuma das regras que existem para ela.
+        if (coletaSolicitacaoIsencao != string.Equals(
+                codigoValor, FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, StringComparison.Ordinal))
+        {
+            erros.Add(new("coletaSolicitacaoIsencao", new DomainError(
+                FaseCanonicaErrorCodes.SolicitacaoIsencaoApenasNaFaseDeIsencao,
+                "A marca de solicitação de isenção pertence à fase de isenção, e só a ela.")));
+        }
+
+        if (coletaInscricao && coletaSolicitacaoIsencao)
+        {
+            erros.Add(new("coletaSolicitacaoIsencao", new DomainError(
+                FaseCanonicaErrorCodes.ColetaInscricaoEIsencaoMutuamenteExclusivas,
+                "Uma fase não coleta inscrição e solicitação de isenção ao mesmo tempo — são janelas distintas, com prazos distintos.")));
+        }
 
         if (agrupaEtapas && !string.Equals(codigoValor, FaseCanonicaCatalogo.CodigoAvaliacao, StringComparison.Ordinal))
         {
@@ -239,6 +269,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         bool produzResultado,
         bool resultadoDefinitivo,
         bool coletaInscricao,
+        bool coletaSolicitacaoIsencao,
         string? origemData)
     {
         List<FieldError> erros = [];
@@ -263,7 +294,8 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         // violação independente.
         if (codigoResult.IsSuccess)
         {
-            Result coerencia = ValidarCoerenciaDeCodigo(codigoResult.Value!.Valor, agrupaEtapas, permiteComplementacao);
+            Result coerencia = ValidarCoerenciaDeCodigo(
+                codigoResult.Value!.Valor, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao);
             if (coerencia.IsFailure)
             {
                 erros.AddRange(coerencia.Errors);
@@ -279,7 +311,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         fase.AplicarCampos(
             comunsResult.Value.Nome, comunsResult.Value.Descricao, comunsResult.Value.DonoTipico,
             agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal, comunsResult.Value.ProduzResultado,
-            comunsResult.Value.ResultadoDefinitivo, coletaInscricao, comunsResult.Value.OrigemData);
+            comunsResult.Value.ResultadoDefinitivo, coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
 
         return Result<FaseCanonica>.Success(fase);
     }
@@ -301,6 +333,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         bool produzResultado,
         bool resultadoDefinitivo,
         bool coletaInscricao,
+        bool coletaSolicitacaoIsencao,
         string? origemData)
     {
         List<FieldError> erros = [];
@@ -313,7 +346,8 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
             erros.AddRange(comunsResult.Errors);
         }
 
-        Result coerencia = ValidarCoerenciaDeCodigo(Codigo.Valor, agrupaEtapas, permiteComplementacao);
+        Result coerencia = ValidarCoerenciaDeCodigo(
+            Codigo.Valor, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao);
         if (coerencia.IsFailure)
         {
             erros.AddRange(coerencia.Errors);
@@ -327,14 +361,15 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         AplicarCampos(
             comunsResult.Value.Nome, comunsResult.Value.Descricao, comunsResult.Value.DonoTipico,
             agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal, comunsResult.Value.ProduzResultado,
-            comunsResult.Value.ResultadoDefinitivo, coletaInscricao, comunsResult.Value.OrigemData);
+            comunsResult.Value.ResultadoDefinitivo, coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
 
         return Result.Success();
     }
 
     private void AplicarCampos(
         string nome, string? descricao, DonoTipico donoTipico, bool agrupaEtapas, bool permiteComplementacao,
-        string? baseLegal, bool produzResultado, bool resultadoDefinitivo, bool coletaInscricao, OrigemDataFase origemData)
+        string? baseLegal, bool produzResultado, bool resultadoDefinitivo, bool coletaInscricao,
+        bool coletaSolicitacaoIsencao, OrigemDataFase origemData)
     {
         Nome = nome;
         Descricao = descricao;
@@ -345,6 +380,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         ProduzResultado = produzResultado;
         ResultadoDefinitivo = resultadoDefinitivo;
         ColetaInscricao = coletaInscricao;
+        ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao;
         OrigemData = origemData;
     }
 

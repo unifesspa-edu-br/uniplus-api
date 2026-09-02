@@ -128,6 +128,11 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// coerência de composição/remanejamento) já foram validadas em
     /// <see cref="ModalidadeSelecionada.Criar"/>.
     /// </summary>
+    /// <param name="vagasAnuaisAutorizadas">
+    /// Teto de vagas anuais autorizadas no e-MEC para a oferta, resolvido pela camada de
+    /// aplicação. <see langword="null"/> quando a oferta não o declara — ausência não é
+    /// permissão nem proibição, e nenhum teto é imposto.
+    /// </param>
     public static Result<ConfiguracaoDistribuicaoVagas> Criar(
         Guid ofertaCursoOrigemId,
         int voBase,
@@ -135,7 +140,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         ReferenciaRegra regraDistribuicao,
         ReferenciaRegra? regraAjuste,
         ReferenciaReservaDemograficaSnapshot? referenciaDemografica,
-        IReadOnlyList<ModalidadeSelecionada> modalidades)
+        IReadOnlyList<ModalidadeSelecionada> modalidades,
+        int? vagasAnuaisAutorizadas = null)
     {
         ArgumentNullException.ThrowIfNull(regraDistribuicao);
         ArgumentNullException.ThrowIfNull(modalidades);
@@ -149,6 +155,17 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         // mesma decisão de escopo de CriterioDesempate (PR #1216) para checks
         // dependentes de dado já resolvido.
         List<FieldError> erros = ValidarFormaBasica(voBase, pr, modalidades.Count);
+
+        // O teto é anual e o VO é de um certame: uma oferta de 40 vagas comporta dois
+        // processos de 20. Comparar contra o VO de um certame é o limite superior seguro —
+        // nunca recusa caso legítimo — e não alcança dois certames que somados ultrapassem
+        // o ano, o que exigiria conhecer os demais certames da oferta.
+        if (vagasAnuaisAutorizadas is int teto && voBase > teto)
+        {
+            erros.Add(new("voBase", new DomainError(
+                "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas",
+                $"O VO_base ({voBase}) excede as {teto} vagas anuais autorizadas para a oferta.")));
+        }
 
         List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
         if (codigosInformados.Distinct(StringComparer.Ordinal).Count() != codigosInformados.Count)
@@ -238,7 +255,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
 
             quadro = ehLei12711
                 ? MontarQuadroFederal(voBase, pr, referenciaDemografica!, modalidades)
-                : MontarQuadroInstitucional(modalidades);
+                : MontarQuadroInstitucional(voBase, modalidades);
         }
         else
         {
@@ -389,7 +406,16 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
             vagas, calculado.VrNominal, calculado.VrFinal, calculado.Estouro, calculado.CapadoEmVo, calculado.TotalPublicado));
     }
 
-    private static Result<QuadroMontado> MontarQuadroInstitucional(IReadOnlyList<ModalidadeSelecionada> modalidades)
+    /// <remarks>
+    /// As quantidades <b>dividem</b> o total da oferta; não o ampliam nem o deixam
+    /// incompleto. Nenhuma composição fica de fora da soma: neste ramo não há conjunto
+    /// calculado ao lado ao qual uma suplementar pudesse acrescer — o total publicado é a
+    /// soma do quadro, e dispensar a suplementar dele aceitaria um certame inteiro de
+    /// suplementares como se distribuísse zero.
+    /// </remarks>
+    private static Result<QuadroMontado> MontarQuadroInstitucional(
+        int voBase,
+        IReadOnlyList<ModalidadeSelecionada> modalidades)
     {
         List<VagaOfertada> vagas = [];
         int totalPublicado = 0;
@@ -405,6 +431,23 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
 
             vagas.Add(vaga.Value!);
             totalPublicado += quantidade;
+        }
+
+        // Exceder e faltar são erros distintos para quem configura: um passou do total, o
+        // outro ainda não terminou de distribuir. Uma mensagem só faria o operador procurar
+        // o problema que não tem.
+        if (totalPublicado > voBase)
+        {
+            return Result<QuadroMontado>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase",
+                $"As quantidades do quadro somam {totalPublicado}, acima das {voBase} vagas da oferta."));
+        }
+
+        if (totalPublicado < voBase)
+        {
+            return Result<QuadroMontado>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase",
+                $"As quantidades do quadro somam {totalPublicado}, e a oferta tem {voBase} vagas a distribuir."));
         }
 
         return Result<QuadroMontado>.Success(new QuadroMontado(vagas, VrNominal: 0, VrFinal: 0, Estouro: 0, CapadoEmVo: false, totalPublicado));

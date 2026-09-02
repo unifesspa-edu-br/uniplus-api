@@ -393,7 +393,7 @@ internal static class CorpusEnvelope
         permiteComplementacao: true,
         produzResultado: false,
         resultadoDefinitivo: false,
-        coletaInscricao: true,
+        coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
         atoProduzidoCodigo: null,
@@ -420,7 +420,7 @@ internal static class CorpusEnvelope
         permiteComplementacao: false,
         produzResultado: true,
         resultadoDefinitivo: false,
-        coletaInscricao: false,
+        coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
@@ -622,7 +622,7 @@ internal static class CorpusEnvelope
 
     /// <summary>Contexto do corpus: o calendário rico, com o fuso reconhecido.</summary>
     internal static ContextoDeContagemDePrazos ContextoRico() =>
-        new(CalendarioRico(), FusoInstitucionalReconhecido: true);
+        new(CalendarioRico(), FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
     internal static EntradaCanonicalizacao Entrada(
         ProcessoSeletivo processo,
@@ -759,7 +759,7 @@ internal static class CorpusEnvelope
         permiteComplementacao: false,
         produzResultado: true,
         resultadoDefinitivo: true,
-        coletaInscricao: false,
+        coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "RESULTADO_FINAL",

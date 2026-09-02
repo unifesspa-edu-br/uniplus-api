@@ -33,6 +33,7 @@ public sealed record FaseCronogramaDto(
     bool ProduzResultado,
     bool ResultadoDefinitivo,
     bool ColetaInscricao,
+    bool ColetaSolicitacaoIsencao,
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
     string? AtoProduzidoCodigo,

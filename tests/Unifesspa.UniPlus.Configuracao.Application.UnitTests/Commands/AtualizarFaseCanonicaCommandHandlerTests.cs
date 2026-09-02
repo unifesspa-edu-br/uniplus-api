@@ -17,7 +17,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static FaseCanonica Existente(string codigo = "ENSALAMENTO") =>
-        FaseCanonica.Criar(codigo, "Ensalamento", null, "CEPS", false, false, null, false, false, false, "PROPRIA").Value!;
+        FaseCanonica.Criar(codigo, "Ensalamento", null, "CEPS", false, false, null, false, false, false, false, "PROPRIA").Value!;
 
     [Fact(DisplayName = "Fase inexistente retorna NaoEncontrada (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrada()

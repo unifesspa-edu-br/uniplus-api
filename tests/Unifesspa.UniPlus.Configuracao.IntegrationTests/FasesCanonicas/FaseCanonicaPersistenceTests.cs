@@ -255,7 +255,11 @@ public sealed class FaseCanonicaPersistenceTests
     }
 
     private static FaseCanonica Fase(string codigo, string nome, string dono) =>
-        FaseCanonica.Criar(codigo, nome, null, dono, false, false, null, false, false, false, "PROPRIA").Value!;
+        FaseCanonica.Criar(
+            codigo, nome, null, dono, false, false, null, false, false, coletaInscricao: false,
+            // A marca acompanha o código: a factory recusa a fase de isenção sem ela.
+            coletaSolicitacaoIsencao: codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
+            "PROPRIA").Value!;
 
     /// <summary>
     /// Libera o slot de um código ocupado pelo seed das quinze fases, usando o mesmo

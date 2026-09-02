@@ -61,6 +61,8 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.Property(f => f.ColetaInscricao).IsRequired().HasDefaultValue(false);
 
+        builder.Property(f => f.ColetaSolicitacaoIsencao).IsRequired().HasDefaultValue(false);
+
         builder.Property(f => f.OrigemData)
             .HasConversion<OrigemDataFaseValueConverter>()
             .HasMaxLength(EnumTokenMaxLength)
@@ -111,6 +113,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             item.ProduzResultado,
             item.ResultadoDefinitivo,
             item.ColetaInscricao,
+            item.ColetaSolicitacaoIsencao,
             item.AgrupaEtapas,
             item.PermiteComplementacao,
             item.BaseLegal,

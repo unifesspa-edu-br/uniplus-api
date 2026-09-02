@@ -175,9 +175,20 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCascata), []);
         }
 
-        // Precede a resolução do período: sem fase de coleta há duas leituras — "falta a
-        // fase" e "informe o período" — e a que orienta é a primeira (issue #1350).
-        if (processo.PendenciaDoCronograma() is { } pendenciaCronograma)
+
+        // Antecipado: a conferência legal abaixo precisa do fuso para derivar o dia civil do
+        // início da inscrição. Falha aqui é defeito de instalação (500), não gate (issue #1350).
+        Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
+        if (fusoResult.IsFailure)
+        {
+            return (Result.Failure(fusoResult.Error!), []);
+        }
+
+        TimeZoneInfo fusoInstitucional = fusoResult.Value!;
+
+        // Depois da resolução do fuso: a janela de isenção conta cinco dias corridos, e o quinto
+        // dia só se completa no último instante do dia no fuso institucional.
+        if (processo.PendenciaDoCronograma(fusoInstitucional) is { } pendenciaCronograma)
         {
             return (Result.Failure(pendenciaCronograma), []);
         }
@@ -195,15 +206,6 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         DadosEdital dados = dadosResult.Value!;
 
-        // Antecipado: a conferência legal abaixo precisa do fuso para derivar o dia civil do
-        // início da inscrição. Falha aqui é defeito de instalação (500), não gate (issue #1350).
-        Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
-        if (fusoResult.IsFailure)
-        {
-            return (Result.Failure(fusoResult.Error!), []);
-        }
-
-        TimeZoneInfo fusoInstitucional = fusoResult.Value!;
 
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
             .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.DiaDeReferenciaLegal(fusoInstitucional), modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
@@ -288,8 +290,9 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         var contexto = new ContextoDeContagemDePrazos(
             calendarioResult.IsSuccess ? calendarioResult.Value : null,
-            FusoInstitucionalReconhecido: true,
-            FalhaDoCalendarioVigente: calendarioResult.IsFailure ? calendarioResult.Error : null);
+
+            FalhaDoCalendarioVigente: calendarioResult.IsFailure ? calendarioResult.Error : null,
+            FusoInstitucional: fusoInstitucional);
 
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(

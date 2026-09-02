@@ -292,6 +292,7 @@ public static class ObterProcessoSeletivoQueryHandler
         fase.ProduzResultado,
         fase.ResultadoDefinitivo,
         fase.ColetaInscricao,
+        fase.ColetaSolicitacaoIsencao,
         fase.Inicio,
         fase.Fim,
         fase.AtoProduzidoCodigo,

@@ -69,10 +69,11 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         // útil — que de fato não usa o dado — enquanto a publicação recusava por causa dele.
         Result<CalendarioDiasUteisCongelado?> calendario = LeituraDoCalendarioVigente.Traduzir(vigente);
 
+        Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         var contexto = new ContextoDeContagemDePrazos(
             calendario.IsSuccess ? calendario.Value : null,
-            FusoInstitucionalReconhecido: resolvedorFuso.Resolver().IsSuccess,
-            FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null);
+                        FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
+            FusoInstitucional: fuso.IsSuccess ? fuso.Value : null);
 
         ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
