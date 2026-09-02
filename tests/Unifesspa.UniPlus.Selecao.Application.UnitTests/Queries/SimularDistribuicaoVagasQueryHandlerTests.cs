@@ -48,7 +48,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     private static OfertaCursoView NovaOferta(Guid id) => new(
         id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
         "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
-        "REGULAR", ["MATUTINO"], null, null, 50, null, null);
+        "REGULAR", ["MATUTINO"], null, null, 100, null, null);
 
     private static ModalidadeView NovaModalidadeAmpla(Guid id) => new(
         id, "AC", "Ampla concorrência", "AMPLA", "RESIDUAL_DO_VO",
@@ -80,6 +80,34 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         await mocks.Repository.Received(1).ExisteAsync(processoId, Arg.Any<CancellationToken>());
         await mocks.OfertaCursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
         await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+    }
+
+    [Fact(DisplayName = "Simulação recusa VO_base acima das vagas anuais autorizadas da oferta")]
+    public async Task Handle_VoBaseAcimaDoTetoDaOferta_Recusa()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        Guid ofertaCursoId = Guid.CreateVersion7();
+        Guid modalidadeId = Guid.CreateVersion7();
+
+        Mocks mocks = NovosMocks(processoExiste: true, processoId);
+        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
+
+        SimularDistribuicaoVagasQuery query = new(
+            processoId,
+            [new ConfiguracaoDistribuicaoVagasInput(
+                ofertaCursoId, 99999, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 99999)])]);
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
+            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
+            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue(
+            "a simulação percorre o mesmo resolvedor da escrita — quem chama a API direto não pode contornar o teto");
+        result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas");
     }
 
     [Fact(DisplayName = "Handle institucional devolve o quadro igual ao declarado, sem persistir")]

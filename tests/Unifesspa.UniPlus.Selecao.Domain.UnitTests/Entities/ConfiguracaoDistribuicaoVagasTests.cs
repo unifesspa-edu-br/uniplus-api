@@ -141,6 +141,40 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Value!.TotalPublicado.Should().Be(55);
     }
 
+    [Fact(DisplayName = "VO_base acima das vagas anuais autorizadas da oferta é recusado")]
+    public void Criar_VoBaseAcimaDoTetoDaOferta_Falha()
+    {
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 99999, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(),
+            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: 40);
+
+        resultado.IsFailure.Should().BeTrue(
+            "o certame que ultrapassa o teto publica mais vagas do que o e-MEC autoriza para a oferta");
+        resultado.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas");
+    }
+
+    [Fact(DisplayName = "VO_base igual às vagas anuais autorizadas é aceito")]
+    public void Criar_VoBaseIgualAoTetoDaOferta_Sucesso()
+    {
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(),
+            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: 40);
+
+        resultado.IsSuccess.Should().BeTrue("o teto é o limite, e alcançá-lo é legítimo");
+    }
+
+    [Fact(DisplayName = "Oferta sem vagas anuais declaradas não impõe teto")]
+    public void Criar_OfertaSemTetoDeclarado_NaoImpoeLimite()
+    {
+        // Ausência do dado não é permissão nem proibição: sem o teto declarado não há contra
+        // o que confrontar, e recusar equivaleria a tratar a lacuna como zero.
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 99999, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(),
+            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: null);
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
     [Theory(DisplayName = "Criar com VO_base não positivo falha")]
     [InlineData(0)]
     [InlineData(-1)]
