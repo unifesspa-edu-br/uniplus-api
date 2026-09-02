@@ -943,6 +943,18 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fase_canonica.complementacao_apenas_fases_permitidas",
                 "Complementação documental só é permitida nas fases de homologação e recursos")),
 
+        new(FaseCanonicaErrorCodes.SolicitacaoIsencaoApenasNaFaseDeIsencao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.solicitacao_isencao_apenas_na_fase_de_isencao",
+                "Apenas a fase de solicitação de isenção abre a janela de pedido de isenção")),
+
+        new(FaseCanonicaErrorCodes.ColetaInscricaoEIsencaoMutuamenteExclusivas,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.coleta_inscricao_e_isencao_mutuamente_exclusivas",
+                "Uma fase não coleta inscrição e solicitação de isenção ao mesmo tempo")),
+
         new(FaseCanonicaErrorCodes.BaseLegalTamanho,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
