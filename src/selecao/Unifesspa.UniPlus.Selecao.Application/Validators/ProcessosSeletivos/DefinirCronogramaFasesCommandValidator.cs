@@ -13,13 +13,16 @@ using FluentValidation;
 /// (ADR-0102).
 /// </summary>
 /// <remarks>
-/// A checagem de janela (Fim ≥ Início) NÃO está aqui, de propósito — desde a ADR-0125,
+/// A lista de fases vazia também não está aqui: <c>ProcessoSeletivo.CronogramaFasesVazio</c>
+/// a recusa com erro nomeado, e a regra de borda tornava essa causa inalcançável por um
+/// cliente HTTP.
+/// <para>A checagem de janela (Fim ≥ Início) NÃO está aqui, de propósito — desde a ADR-0125,
 /// <c>FaseCronograma.JanelaInvertida</c> acumula no domínio junto das demais violações da
 /// mesma fase (ex.: ato produzido ausente). Mantê-la também aqui faria o FluentValidation
 /// (middleware, sempre roda primeiro) bloquear sozinho um payload com janela invertida +
 /// outra violação, entregando ao cliente só o erro de janela — a acumulação do domínio
 /// nunca chegaria a rodar. Ordem (só <c>throw</c> no domínio, nunca acumulada) não tem
-/// esse conflito e continua validada aqui.
+/// esse conflito e continua validada aqui.</para>
 /// </remarks>
 public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<DefinirCronogramaFasesCommand>
 {
@@ -28,13 +31,6 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
-
-        // CA-06 (§4 do modelo — cardinalidade 1..*): a lista NUNCA é vazia; o domínio
-        // ainda recusa com o erro nomeado ProcessoSeletivo.CronogramaFasesVazio, mas a
-        // exigência de payload não-vazio já vale na borda.
-        RuleFor(x => x.Fases)
-            .NotEmpty()
-            .WithMessage("O cronograma deve ter ao menos uma fase.");
 
         RuleForEach(x => x.Fases)
             .NotNull()

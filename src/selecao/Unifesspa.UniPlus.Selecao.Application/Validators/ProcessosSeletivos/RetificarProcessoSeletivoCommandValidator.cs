@@ -38,8 +38,6 @@ public sealed class RetificarProcessoSeletivoCommandValidator : AbstractValidato
             .WithMessage("Id do processo seletivo é obrigatório.");
 
         RuleFor(x => x.Motivo)
-            .NotEmpty()
-            .WithMessage("Motivo da retificação é obrigatório.")
             .Must(motivo => motivo is null
                 || HashCanonicalComputer.NormalizeNfc(motivo.Trim()).Length <= MotivoMaxLength)
             .WithMessage($"Motivo da retificação deve ter no máximo {MotivoMaxLength} caracteres.");

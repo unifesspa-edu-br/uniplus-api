@@ -45,6 +45,18 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         ],
         PrecondicaoIfMatch.Ausente);
 
+    [Fact(DisplayName = "Lista de fases vazia atravessa a validação de forma — quem recusa é o domínio")]
+    public void Aceita_ListaDeFasesVazia_ParaODominioRecusar()
+    {
+        DefinirCronogramaFasesCommand comando = new(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator().Validate(comando);
+
+        resultado.Errors.Should().NotContain(
+            e => e.PropertyName == nameof(DefinirCronogramaFasesCommand.Fases),
+            "ProcessoSeletivo.CronogramaFasesVazio é a causa nomeada, e recusar aqui a tornava inalcançável");
+    }
+
     [Fact(DisplayName = "Aceita suspensividade ausente (null) — é a forma de desativar uma instância")]
     public void Aceita_SuspensividadeAusente()
     {

@@ -15,6 +15,18 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     private static ConfiguracaoDistribuicaoVagasInput ItemValido() => new(
         Guid.CreateVersion7(), 50, 0.5m, "DISTRIB-VAGAS-LEI-12711", "v1", null, null, null, [Guid.CreateVersion7()], []);
 
+    [Fact(DisplayName = "Lista de distribuição vazia atravessa a validação de forma — quem recusa é o domínio")]
+    public void Validar_ListaVazia_AtravessaOValidator()
+    {
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = _validator.Validate(command);
+
+        resultado.Errors.Should().NotContain(
+            e => e.PropertyName == nameof(DefinirDistribuicaoVagasCommand.DistribuicaoVagas),
+            "ProcessoSeletivo.DistribuicaoVagasVazia é a causa nomeada, e recusar aqui a tornava inalcançável");
+    }
+
     [Fact(DisplayName = "Command válido não gera erros")]
     public void Validar_Valido_SemErros()
     {
@@ -23,16 +35,6 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         ValidationResult resultado = _validator.Validate(command);
 
         resultado.IsValid.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Lista de distribuição vazia gera erro")]
-    public void Validar_ListaVazia_GeraErro()
-    {
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente);
-
-        ValidationResult resultado = _validator.Validate(command);
-
-        resultado.IsValid.Should().BeFalse();
     }
 
     [Theory(DisplayName = "Validator passa com VO_base não positivo — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]

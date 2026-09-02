@@ -32,12 +32,14 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Motivo vazio é recusado (ADR-0101)")]
-    public void MotivoVazio_Recusado()
+    [Fact(DisplayName = "Motivo vazio atravessa a validação de forma — quem recusa é o domínio")]
+    public void MotivoVazio_AtravessaOValidator()
     {
         ValidationResult resultado = Validator.Validate(ComandoValido() with { Motivo = "" });
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo));
+
+        resultado.Errors.Should().NotContain(
+            e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo),
+            "ProcessoSeletivo.MotivoRetificacaoObrigatorio é a causa nomeada, e recusar aqui a tornava inalcançável");
     }
 
     [Fact(DisplayName = "Motivo dentro do limite cru mas que estoura o limite após NFC é recusado")]
