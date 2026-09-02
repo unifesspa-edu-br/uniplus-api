@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// Referência, <b>por valor</b>, à versão de configuração que governou um ato
@@ -44,14 +45,14 @@ public sealed record ReferenciaVersaoConfiguracao
         if (id == Guid.Empty)
         {
             return Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                "ReferenciaVersaoConfiguracao.IdObrigatorio",
+                ReferenciaVersaoConfiguracaoErrorCodes.IdObrigatorio,
                 "Identificador da versão de configuração é obrigatório."));
         }
 
         if (!HashSha256.TemFormatoValido(hash))
         {
             return Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                "ReferenciaVersaoConfiguracao.HashInvalido",
+                ReferenciaVersaoConfiguracaoErrorCodes.HashInvalido,
                 "Hash da versão de configuração deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres)."));
         }
 
