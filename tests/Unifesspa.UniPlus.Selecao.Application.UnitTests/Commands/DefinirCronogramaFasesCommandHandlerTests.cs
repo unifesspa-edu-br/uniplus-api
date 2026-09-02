@@ -86,6 +86,20 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         TiposBancaIds: [],
         RegraRecurso: null);
 
+    [Fact(DisplayName = "Handle com lista de fases vazia devolve a causa de domínio, não a recusa de forma")]
+    public async Task Handle_FasesVazias_DevolveCausaDeDominio()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirCronogramaFasesCommand command = new(processo.Id, [], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CronogramaFasesVazio",
+            "a regra de forma no validator tornava esta causa inalcançável por um cliente HTTP");
+    }
+
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {

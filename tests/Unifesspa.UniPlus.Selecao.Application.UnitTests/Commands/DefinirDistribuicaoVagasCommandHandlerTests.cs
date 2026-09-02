@@ -61,6 +61,22 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         id, codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR",
         null, "SEGUE_CASCATA", null, null, null, [], null, "Lei 12.711/2012 art. 3º");
 
+    [Fact(DisplayName = "Handle com lista vazia devolve a causa de domínio, não a recusa de forma")]
+    public async Task Handle_ListaVazia_DevolveCausaDeDominio()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirDistribuicaoVagasCommand command = new(processo.Id, [], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
+            mocks.ReferenciaReservaDemograficaReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia",
+            "a regra de forma no validator tornava esta causa inalcançável por um cliente HTTP");
+    }
+
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
