@@ -8,18 +8,18 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Tipo de banca (UNI-REQ-0064): cadastro classificatório das bancas que atuam na
+/// Tipo de banca (UNI-REQ-0139): cadastro classificatório das bancas que atuam na
 /// seleção (análise documental, entrevista, correção de redações, análise de
-/// recursos). Dado institucional de referência sem PII (LGPD inaplicável). A
-/// <b>composição</b> de uma banca (membros, atas, deliberações) é matéria de um
-/// incremento futuro e <b>não</b> é modelada aqui — este cadastro entrega apenas o
-/// <b>tipo</b> da banca.
+/// recursos, heteroidentificação étnico-racial e avaliação biopsicossocial). Dado
+/// institucional de referência sem PII (LGPD inaplicável). A <b>composição</b> de
+/// uma banca (membros, atas, deliberações) é matéria de um incremento futuro e
+/// <b>não</b> é modelada aqui — este cadastro entrega apenas o <b>tipo</b> da banca.
 /// </summary>
 /// <remarks>
 /// <para>O <see cref="Codigo"/> (value object <see cref="CodigoBanca"/>) é a chave
 /// natural, único entre bancas vivas (índice único parcial <c>WHERE is_deleted =
 /// false</c>) e <b>imutável</b>. Além do formato, deve pertencer ao conjunto
-/// canônico das quatro bancas (<see cref="TipoBancaCatalogo"/>).</para>
+/// canônico das seis bancas (<see cref="TipoBancaCatalogo"/>).</para>
 /// <para>A <see cref="FaseTipica"/> é a fase em que a banca usualmente atua — um
 /// rótulo de texto <b>orientativo e não vinculante</b>, <b>não</b> uma referência
 /// para o cadastro de fases. Pode ser nula e pode conter um valor que não
@@ -47,7 +47,7 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida o código (formato + pertença ao conjunto canônico das quatro
+    /// Valida o código (formato + pertença ao conjunto canônico das seis
     /// bancas), sem mutar nada — existe para o handler de criação decidir se vale
     /// a pena consultar a unicidade antes mesmo de chamar <see cref="Criar"/>, que
     /// revalida por conta própria e nunca confia num resultado calculado por fora.
@@ -66,7 +66,7 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
             // Mensagem genérica de propósito (ADR-0023): nunca ecoar o dado rejeitado.
             return Result<CodigoBanca>.ValidationFailure([new("codigo", new DomainError(
                 TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico,
-                "Código do tipo de banca não pertence ao conjunto canônico das quatro bancas."))]);
+                "Código do tipo de banca não pertence ao conjunto canônico das seis bancas."))]);
         }
 
         return Result<CodigoBanca>.Success(codigoVo);

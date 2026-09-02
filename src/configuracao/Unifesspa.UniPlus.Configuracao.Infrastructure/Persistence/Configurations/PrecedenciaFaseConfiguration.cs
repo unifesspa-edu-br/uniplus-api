@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 /// <summary>
 /// Configuração EF Core de <see cref="PrecedenciaFase"/> — a tabela
-/// <c>precedencia_fase</c> (UNI-REQ-0064, story #851). CRUD-administrado (como
+/// <c>precedencia_fase</c> (UNI-REQ-0139, story #851). CRUD-administrado (como
 /// <c>FaseCanonica</c>) e <b>seed-governado</b> (como <c>RegraCatalogo</c>/
 /// <c>FatoCandidato</c>): as seis arestas estruturais de §3.3 são materializadas
 /// via <c>HasData</c> nesta migration, e o CRUD admin continua disponível para

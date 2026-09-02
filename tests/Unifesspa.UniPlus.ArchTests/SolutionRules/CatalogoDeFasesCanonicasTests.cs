@@ -115,13 +115,39 @@ public sealed class CatalogoDeFasesCanonicasTests
             .Should().BeEquivalentTo("LISTA_ESPERA", "CHAMADA");
     }
 
+    [Fact(DisplayName = "A avaliação biopsicossocial tem os atributos publicados em UNI-REQ-0139")]
+    public void Seed_AvaliacaoBiopsicossocial_TemOsAtributosDoRequisitoCanonico()
+    {
+        // Oráculo dos atributos normativos da fase (UNI-REQ-0139): espelha
+        // exatamente HETEROIDENTIFICACAO — banca cujo parecer verifica direito à
+        // reserva de vagas antes da homologação do resultado final. Alterar
+        // qualquer um destes campos é ato deliberado, não refatoração.
+        FaseCanonicaSeedItem item = FaseCanonicaSeed.Itens.Single(i => i.Codigo == "AVALIACAO_BIOPSICOSSOCIAL");
+
+        item.Id.Should().Be(Guid.Parse("f45e0000-0000-7000-8000-000000000016"));
+        item.Nome.Should().Be("Avaliação biopsicossocial");
+        item.DonoTipico.Should().Be(DonoTipico.Ceps);
+        item.OrigemData.Should().Be(OrigemDataFase.Propria);
+        item.ProduzResultado.Should().BeTrue();
+        item.ResultadoDefinitivo.Should().BeFalse();
+        item.ColetaInscricao.Should().BeFalse();
+        item.ColetaSolicitacaoIsencao.Should().BeFalse();
+        item.AgrupaEtapas.Should().BeFalse();
+        item.PermiteComplementacao.Should().BeFalse();
+        item.BaseLegal.Should().Be(
+            "Lei nº 13.146/2015, art. 2º §1º e art. 30; Lei nº 12.711/2012 c/c Lei nº 13.409/2016");
+    }
+
     [Fact(DisplayName = "As fases que produzem resultado são as que publicam ato")]
     public void Seed_ProduzResultadoBateComOQuePublicaAto()
     {
         // Oráculo independente da fonte única: esta lista é o que a decisão de negócio
         // aprovou, e alterá-la é ato deliberado. Cada uma corresponde a um tipo de ato
         // do catálogo de Publicações — homologação, resultados, habilitação,
-        // heteroidentificação, convocação e o deferimento da isenção.
+        // heteroidentificação, avaliação biopsicossocial, convocação e o deferimento
+        // da isenção. A avaliação biopsicossocial publica ato pelo mesmo motivo que a
+        // heteroidentificação: o parecer da banca (defere/indefere a condição de PcD
+        // para concorrer à reserva de vagas) é decisão publicável, não rascunho interno.
         string[] publicamAto =
         [
             FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
@@ -129,6 +155,7 @@ public sealed class CatalogoDeFasesCanonicasTests
             "RESULTADO_PRELIMINAR",
             "RESULTADO_FINAL",
             "HETEROIDENTIFICACAO",
+            "AVALIACAO_BIOPSICOSSOCIAL",
             "HABILITACAO",
             "HOMOLOGACAO_RESULTADO_FINAL",
             "CHAMADA",

@@ -846,7 +846,7 @@ public sealed class EnvelopeFechadoE2ETests
     /// <see cref="CascadingFixture"/>), os catálogos que os handlers de Seleção resolvem e que não
     /// têm <c>HasData</c>: Unidade administradora (Organização Institucional), Curso + LocalOferta
     /// + OfertaCurso + ReferenciaReservaDemografica (Configuração), TipoBanca (Configuração).
-    /// As quinze <see cref="FaseCanonica"/> passaram a vir semeadas por migration e são apenas
+    /// As dezesseis <see cref="FaseCanonica"/> passaram a vir semeadas por migration e são apenas
     /// resolvidas aqui pelo código. As 10 <see cref="Modalidade"/> federais já vêm semeadas por migration
     /// (<see cref="ModalidadeSeed"/>) — só referenciadas aqui pelo código.
     /// </summary>
