@@ -29,4 +29,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <!-- O gate do fuso (issue #1376) exercita o próprio helper: um offset fixo disfarçado dentro
+         dele passaria em todos os arquivos-alvo, porque todos usam datas de 2026. -->
+    <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
+  </ItemGroup>
+
 </Project>
