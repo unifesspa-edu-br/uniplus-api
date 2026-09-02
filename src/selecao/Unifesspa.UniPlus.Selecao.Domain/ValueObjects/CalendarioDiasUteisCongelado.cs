@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Snapshot-copy por valor (ADR-0061) do calendário de dias úteis vigente no momento em que a
@@ -73,24 +74,24 @@ public sealed record CalendarioDiasUteisCongelado
     {
         if (origemId == Guid.Empty)
         {
-            return Falha("OrigemObrigatoria", "O identificador do dataset de origem é obrigatório.");
+            return Falha(CalendarioDiasUteisCongeladoErrorCodes.OrigemObrigatoria, "O identificador do dataset de origem é obrigatório.");
         }
 
         if (string.IsNullOrWhiteSpace(versaoDataset))
         {
-            return Falha("VersaoDatasetObrigatoria", "A versão do dataset de origem é obrigatória.");
+            return Falha(CalendarioDiasUteisCongeladoErrorCodes.VersaoDatasetObrigatoria, "A versão do dataset de origem é obrigatória.");
         }
 
         if (versaoDataset.Trim().Length > VersaoDatasetMaxLength)
         {
             return Falha(
-                "VersaoDatasetTamanho",
+                CalendarioDiasUteisCongeladoErrorCodes.VersaoDatasetTamanho,
                 $"A versão do dataset excede {VersaoDatasetMaxLength} caracteres — o cadastro de origem não a gravaria.");
         }
 
         if (diasNaoUteis is null)
         {
-            return Falha("DiasObrigatorios", "A lista de dias não úteis é obrigatória.");
+            return Falha(CalendarioDiasUteisCongeladoErrorCodes.DiasObrigatorios, "A lista de dias não úteis é obrigatória.");
         }
 
         // Mesma cardinalidade do agregado de origem: um dataset sem nenhum dia não útil não
@@ -100,7 +101,7 @@ public sealed record CalendarioDiasUteisCongelado
         if (diasNaoUteis.Count == 0)
         {
             return Falha(
-                "SemDiaNaoUtil",
+                CalendarioDiasUteisCongeladoErrorCodes.SemDiaNaoUtil,
                 "O calendário congelado precisa de ao menos um dia não útil — um calendário vazio não conta nada.");
         }
 
@@ -111,7 +112,7 @@ public sealed record CalendarioDiasUteisCongelado
             if (MesmaChave(ordenados[i - 1], ordenados[i]))
             {
                 return Falha(
-                    "DiaDuplicado",
+                    CalendarioDiasUteisCongeladoErrorCodes.DiaDuplicado,
                     $"O dia {ordenados[i].Data:yyyy-MM-dd} aparece mais de uma vez com a mesma abrangência e o mesmo recorte territorial.");
             }
         }
@@ -134,7 +135,7 @@ public sealed record CalendarioDiasUteisCongelado
         && string.Equals(a.MunicipioIbge, b.MunicipioIbge, StringComparison.Ordinal)
         && string.Equals(a.Uf, b.Uf, StringComparison.Ordinal);
 
-    private static Result<CalendarioDiasUteisCongelado> Falha(string sufixo, string mensagem) =>
+    private static Result<CalendarioDiasUteisCongelado> Falha(string code, string mensagem) =>
         Result<CalendarioDiasUteisCongelado>.Failure(
-            new DomainError($"CalendarioDiasUteisCongelado.{sufixo}", mensagem));
+            new DomainError(code, mensagem));
 }
