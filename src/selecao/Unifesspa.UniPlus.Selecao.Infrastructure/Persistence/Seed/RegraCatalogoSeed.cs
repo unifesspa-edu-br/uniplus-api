@@ -49,6 +49,7 @@ public static class RegraCatalogoSeed
 {
     /// <summary>Versão corrente de toda regra semeada nesta rodada.</summary>
     public const string VersaoV1 = "v1";
+    public const string VersaoV2 = "v2";
 
     private static Guid SeedId(int n) =>
         Guid.Parse($"d0a00000-0000-7000-8000-{n:D12}");
@@ -217,6 +218,48 @@ public static class RegraCatalogoSeed
             ["âncora fora da meia-noite: mantém a hora da âncora — a contagem parte do instante exato, sem deslocamento para fronteira de dia (1 dia útil ancorado sexta 18h, com sábado e domingo não úteis e sem feriado, fecha segunda 18h)","âncora em dia não útil: em dias úteis, desloca para o próximo dia útil na mesma hora (âncora domingo 18h conta como segunda 18h, e 1 dia útil fecha terça 18h); em horas não há deslocamento, apenas a não contagem dos instantes de dia não útil","em dias úteis: fecha na mesma hora da âncora, N datas úteis adiante, pulando cada data não útil; se a hora da âncora não existir na data de fechamento por transição de fuso, fecha no primeiro instante válido seguinte","em horas: consome horas situadas em dia útil desde a âncora, sem deslocar o início — nesta unidade a convenção coincide com CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA, e a diferença entre as duas está só na unidade dias úteis"]
             """,
             AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital),
+
+        // As quatro entradas abaixo declaram MODALIDADES_ADMITIDAS: o conjunto que a regra
+        // reconhece. Sem ele, qualquer modalidade era aceita sob qualquer regra, e uma
+        // calculada fora do art. 10 falhava com "não aparece no quadro calculado" — sintoma
+        // interno, não a causa. O rol vive no esquema_args porque ele já entra no hash da
+        // definição: um campo novo na entidade mudaria a fórmula e, com ela, o hash das v1
+        // já congeladas em processos publicados.
+        new(SeedId(23), "DISTRIB-VAGAS-LEI-12711", VersaoV2, TipoRegra.RegraDistribuicaoVagas,
+            """
+            {"pr_minimo":"numeric (piso 0,5 — art. 10 II; teto 1,0)","modo_arredondamento":"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11","ordem_garantia_minima":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_PCD","LI_EP"],"sub_reservas":["PPI","Q","PCD","EP"],"entradas_por_edital":["VO_base","PR","ReferenciaReservaDemografica"],"modalidades_admitidas":["AC","LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP","AC_PCD"]}
+            """,
+            """
+            ["VR=ceil(VO×PR)","VRRI=ceil(VR×0,5)","VRSI=VR−VRRI","sub-reservas ceil EXCETO LI_Q=floor (art. 11)","garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora","INV-3a: LB_EP≥0 e LI_EP≥0","INV-3b: AC≥0","INV-3c: VR_final+RETIRADAS+AC=VO_base","modalidade fora de modalidades_admitidas é recusada"]
+            """,
+            "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)"),
+
+        new(SeedId(24), "DISTRIB-VAGAS-INSTITUCIONAL", VersaoV2, TipoRegra.RegraDistribuicaoVagas,
+            """
+            {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"quadro institucional não nomeado por regra própria","modalidades_admitidas":null}
+            """,
+            """
+            ["quadro fixo por edital (não recalculado pelo art. 10)","a soma das quantidades declaradas é o total publicado, e fecha no VO_base","modalidades_admitidas nulo: rol aberto, para o certame institucional que ainda não tem regra própria"]
+            """,
+            "Res. Unifesspa 532/2021 (vagas PcD/Indígena/Quilombola); Portaria MEC 18/2012 art. 12 (reservas suplementares e outras ações afirmativas)"),
+
+        new(SeedId(25), "DISTRIB-VAGAS-PSIQ", VersaoV1, TipoRegra.RegraDistribuicaoVagas,
+            """
+            {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"Processo Seletivo Indígena e Quilombola","modalidades_admitidas":["AC_I","AC_Q"]}
+            """,
+            """
+            ["quadro fixo por edital (não recalculado pelo art. 10)","certame exclusivo: não há ampla concorrência","rol composto só de vagas por acréscimo — sem outro conjunto ao qual se somem, a soma delas é o total publicado"]
+            """,
+            "Res. Unifesspa 22/2014-CONSEPE, atualizada pela Res. Unifesspa 532/2021-CONSEPE (vagas por acréscimo para candidatos indígenas e quilombolas)"),
+
+        new(SeedId(26), "DISTRIB-VAGAS-EDU-CAMPO", VersaoV1, TipoRegra.RegraDistribuicaoVagas,
+            """
+            {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"PSE Educação do Campo","modalidades_admitidas":["AC","PCD_PURO"]}
+            """,
+            """
+            ["quadro fixo por edital (não recalculado pelo art. 10)","certame sem as cotas da Lei 12.711","PCD_PURO retira de AC: o par fecha no VO_base"]
+            """,
+            "Res. Unifesspa 64/2015-CONSEPE (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12"),
     ];
 }
 
