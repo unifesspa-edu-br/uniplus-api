@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Story #853, CA-16 (fonte única): a consulta pública usa exatamente a mesma dupla de
@@ -163,7 +164,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         ConformidadeLegalProcessoSeletivoDto? dto = await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
             new ObterConformidadeLegalProcessoSeletivoQuery(
                 processo.Id,
-                PeriodoInscricaoInformado: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3))),
+                PeriodoInscricaoInformado: InstanteEmBelem.Em(2026, 1, 1)),
             processoSeletivoRepository,
             obrigatoriedadeLegalRepository,
             CadastrosVivos.Modalidades(),
@@ -197,7 +198,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         Func<Task> consulta = () => ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
             new ObterConformidadeLegalProcessoSeletivoQuery(
                 processo.Id,
-                PeriodoInscricaoInformado: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3))),
+                PeriodoInscricaoInformado: InstanteEmBelem.Em(2026, 1, 1)),
             processoSeletivoRepository,
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             CadastrosVivos.Modalidades(),
