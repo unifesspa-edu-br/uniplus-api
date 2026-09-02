@@ -376,6 +376,66 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             RegraRemanejamentoModalidade.Nenhuma,
             null, null, null, [], acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
 
+    [Fact(DisplayName = "Par cruzado recíproco é aceito")]
+    public void Criar_ParCruzadoReciproco_Sucesso()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            ModalidadeCruzada("AC_I", par: "AC_Q"),
+            ModalidadeCruzada("AC_Q", par: "AC_I"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsSuccess.Should().BeTrue("é o par do PSIQ, recíproco desde o seed");
+    }
+
+    [Fact(DisplayName = "Par cruzado unilateral é recusado — a vaga migraria num sentido e nunca no outro")]
+    public void Criar_ParCruzadoUnilateral_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            ModalidadeCruzada("AC_I", par: "AC_Q"),
+            ModalidadeCruzada("AC_Q", par: "OUTRA"),
+            ModalidadeCruzada("OUTRA", par: "AC_Q"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 6, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().Contain(e =>
+            e.Error.Code == "ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco"
+            && e.Error.Message.Contains("AC_I", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Par cruzado apontando para modalidade que não é cruzada é recusado")]
+    public void Criar_ParCruzadoComContraparteNaoCruzada_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            ModalidadeCruzada("AC_I", par: "AC"),
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 2),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsFailure.Should().BeTrue("o cruzamento exige que os dois lados o declarem");
+        resultado.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco");
+    }
+
+    private static ModalidadeSelecionada ModalidadeCruzada(string codigo, string par) =>
+        ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, null,
+            NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            composicaoOrigemCodigo: null,
+            RegraRemanejamentoModalidade.Cruzado,
+            remanejamentoDestino: null, remanejamentoPar: par, remanejamentoFallback: null,
+            criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "base legal",
+            quantidadeDeclarada: 2).Value!;
+
     [Theory(DisplayName = "Criar com VO_base não positivo falha")]
     [InlineData(0)]
     [InlineData(-1)]
