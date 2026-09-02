@@ -128,6 +128,10 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// coerência de composição/remanejamento) já foram validadas em
     /// <see cref="ModalidadeSelecionada.Criar"/>.
     /// </summary>
+    /// <param name="modalidadesAdmitidas">
+    /// Códigos que a regra de distribuição reconhece, declarados no catálogo e resolvidos
+    /// pela camada de aplicação. <see langword="null"/> quando a regra não restringe o rol.
+    /// </param>
     /// <param name="vagasAnuaisAutorizadas">
     /// Teto de vagas anuais autorizadas no e-MEC para a oferta, resolvido pela camada de
     /// aplicação. <see langword="null"/> quando a oferta não o declara — ausência não é
@@ -141,7 +145,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         ReferenciaRegra? regraAjuste,
         ReferenciaReservaDemograficaSnapshot? referenciaDemografica,
         IReadOnlyList<ModalidadeSelecionada> modalidades,
-        int? vagasAnuaisAutorizadas = null)
+        int? vagasAnuaisAutorizadas = null,
+        IReadOnlyCollection<string>? modalidadesAdmitidas = null)
     {
         ArgumentNullException.ThrowIfNull(regraDistribuicao);
         ArgumentNullException.ThrowIfNull(modalidades);
@@ -165,6 +170,25 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
             erros.Add(new("voBase", new DomainError(
                 "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas",
                 $"O VO_base ({voBase}) excede as {teto} vagas anuais autorizadas para a oferta.")));
+        }
+
+        // A regra declara o conjunto que reconhece: um certame exclusivo de vagas por
+        // acréscimo não oferta ampla concorrência, e a distribuição pelo art. 10 não sabe
+        // calcular modalidade que a Lei não prevê. Sem esta recusa, a segunda falhava
+        // adiante com "não aparece no quadro calculado" — sintoma interno, não a causa.
+        if (modalidadesAdmitidas is { Count: > 0 })
+        {
+            string[] naoAdmitidas = [.. modalidades
+                .Select(m => m.Codigo)
+                .Where(codigo => !modalidadesAdmitidas.Contains(codigo, StringComparer.Ordinal))
+                .Distinct(StringComparer.Ordinal)];
+
+            if (naoAdmitidas.Length > 0)
+            {
+                erros.Add(new("modalidades", new DomainError(
+                    "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra",
+                    $"A regra {regraDistribuicao.Codigo} não admite a(s) modalidade(s) {string.Join(", ", naoAdmitidas)}.")));
+            }
         }
 
         List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
@@ -192,7 +216,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         }
 
         bool ehLei12711 = regraDistribuicao.Codigo == RegraDistribuicaoVagasCodigo.Lei12711;
-        bool ehInstitucional = regraDistribuicao.Codigo == RegraDistribuicaoVagasCodigo.Institucional;
+        bool ehQuadroFixo = RegraDistribuicaoVagasCodigo.EhQuadroFixo(regraDistribuicao.Codigo);
 
         if (ehLei12711)
         {
@@ -245,7 +269,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         }
 
         Result<QuadroMontado> quadro;
-        if (ehLei12711 || ehInstitucional)
+        if (ehLei12711 || ehQuadroFixo)
         {
             DomainError? erroFronteira = ValidarFronteiraQuantidadeDeclarada(modalidades, ehLei12711);
             if (erroFronteira is not null)
