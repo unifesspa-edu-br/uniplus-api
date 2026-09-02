@@ -27,10 +27,16 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
             // a linha dele, com id próprio. Mirar no id determinístico não alcançaria essa linha, e
             // a fase viva ficaria sem a marca — com ela, todo cronograma novo passaria pelas
             // validações da janela sem que nenhuma se aplicasse.
+            //
+            // A coleta de inscrição é zerada na mesma sentença: as duas marcas passaram a ser
+            // mutuamente exclusivas, e uma linha criada antes disso podia ter as duas. Marcar a
+            // isenção sem zerar a outra produziria catálogo que a própria factory recusa — e, se
+            // essa fase virasse âncora da inscrição, o gate compararia o fim dela consigo mesmo.
             migrationBuilder.Sql(
                 """
                 UPDATE configuracao.fase_canonica
-                   SET coleta_solicitacao_isencao = true
+                   SET coleta_solicitacao_isencao = true,
+                       coleta_inscricao = false
                  WHERE codigo = 'SOLICITACAO_ISENCAO'
                    AND is_deleted = false;
                 """);

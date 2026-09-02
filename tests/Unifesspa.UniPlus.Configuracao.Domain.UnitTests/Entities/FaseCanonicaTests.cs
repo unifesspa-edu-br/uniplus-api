@@ -20,11 +20,15 @@ public sealed class FaseCanonicaTests
         bool produzResultado = false,
         bool resultadoDefinitivo = false,
         bool coletaInscricao = false,
-        bool coletaSolicitacaoIsencao = false,
+        bool? coletaSolicitacaoIsencao = null,
         string? origemData = "PROPRIA") =>
         FaseCanonica.Criar(
             codigo, nome, descricao, dono, agrupaEtapas, permiteComplementacao, baseLegal,
-            produzResultado, resultadoDefinitivo, coletaInscricao, coletaSolicitacaoIsencao, origemData);
+            produzResultado, resultadoDefinitivo, coletaInscricao,
+            // A marca acompanha o código por definição: os testes só a informam quando querem
+            // exercitar a divergência.
+            coletaSolicitacaoIsencao ?? codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
+            origemData);
 
     // ── Factory válida ─────────────────────────────────────────────────────────
 
@@ -113,6 +117,16 @@ public sealed class FaseCanonicaTests
         f.ProduzResultado.Should().BeTrue();
         f.ResultadoDefinitivo.Should().BeFalse();
         f.ColetaInscricao.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Fase de isenção sem a marca é recusada — sem ela a janela publica sem validação")]
+    public void Criar_SolicitacaoIsencaoSemAMarca_Falha()
+    {
+        Result<FaseCanonica> r = Criar(
+            codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, coletaSolicitacaoIsencao: false);
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.SolicitacaoIsencaoApenasNaFaseDeIsencao);
     }
 
     [Fact(DisplayName = "Solicitação de isenção não agrupa etapas — só a avaliação agrupa")]

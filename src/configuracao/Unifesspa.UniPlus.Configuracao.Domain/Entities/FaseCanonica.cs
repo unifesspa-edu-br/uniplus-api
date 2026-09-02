@@ -206,7 +206,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Valida as coerências que dependem do código da fase — <see cref="AgrupaEtapas"/> só para a
     /// fase de avaliação, <see cref="PermiteComplementacao"/> só nas fases legalmente permitidas,
-    /// <see cref="ColetaSolicitacaoIsencao"/> só na fase de isenção e nunca junto de
+    /// <see cref="ColetaSolicitacaoIsencao"/> exatamente na fase de isenção e nunca junto de
     /// <see cref="ColetaInscricao"/> — acumulando as violações independentes. Só faz
     /// sentido avaliar contra um <paramref name="codigoValor"/> já confiável (formato
     /// válido e pertencente ao conjunto canônico); por isso <see cref="Criar"/> só a
@@ -217,12 +217,15 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     {
         List<FieldError> erros = [];
 
-        if (coletaSolicitacaoIsencao
-            && !string.Equals(codigoValor, FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, StringComparison.Ordinal))
+        // Bidirecional: a marca só existe na fase de isenção, e nela é obrigatória. Aceitá-la
+        // falsa ali deixaria a fase indistinguível das demais no cronograma, e a janela publicaria
+        // sem passar por nenhuma das regras que existem para ela.
+        if (coletaSolicitacaoIsencao != string.Equals(
+                codigoValor, FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, StringComparison.Ordinal))
         {
             erros.Add(new("coletaSolicitacaoIsencao", new DomainError(
                 FaseCanonicaErrorCodes.SolicitacaoIsencaoApenasNaFaseDeIsencao,
-                "Apenas a fase de solicitação de isenção abre a janela de pedido de isenção.")));
+                "A marca de solicitação de isenção pertence à fase de isenção, e só a ela.")));
         }
 
         if (coletaInscricao && coletaSolicitacaoIsencao)
