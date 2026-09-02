@@ -89,7 +89,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         // Mesmo relatório do gate: a regra que aparece reprovada aqui é a mesma que
         // bloqueia a publicação, inclusive quando o motivo é identidade e não código.
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            processo, tipoProcessoCodigo, regrasVigentes, referencias.IdentidadeDoTipoDocumentoPorCodigo);
+            processo, tipoProcessoCodigo, regrasVigentes, referencias.Identidades);
 
         RegraAvaliadaDto[] regrasDto = [.. resultado.Regras.Select(r => new RegraAvaliadaDto(
             r.RegraId,

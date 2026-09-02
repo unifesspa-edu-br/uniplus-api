@@ -29,14 +29,14 @@ public sealed partial class SelecaoSemRamificacaoPorTipoEtapaTests
     private static partial Regex DeclaracaoDoEnum();
 
     [GeneratedRegex(
-        """(?s)AvaliarEtapaObrigatoria\(ProcessoSeletivo processo, EtapaObrigatoria predicado\)(?<corpo>.*?)(?=private static \(bool|\z)""")]
+        """(?s)\(bool, string\?, string\?\) AvaliarEtapaObrigatoria\([^)]*\)(?<corpo>.*?)(?=private static \(bool|\z)""")]
     private static partial Regex CorpoDeAvaliarEtapaObrigatoria();
 
     [GeneratedRegex("""\.Nome\b""")]
     private static partial Regex AcessoANome();
 
-    [GeneratedRegex("""TipoEtapa\.Codigo\b""")]
-    private static partial Regex AcessoAoCodigoCongelado();
+    [GeneratedRegex("""TipoEtapa\.OrigemId\b""")]
+    private static partial Regex AcessoAIdentidadeCongelada();
 
     [Theory(DisplayName = "O detector acusa o corpo do método acessando .Nome, mesmo refatorado — canários positivos")]
     [InlineData(
@@ -102,8 +102,8 @@ public sealed partial class SelecaoSemRamificacaoPorTipoEtapaTests
             "recriar o enum aqui reintroduziria vocabulário institucional preso em deploy (issue #1071)");
     }
 
-    [Fact(DisplayName = "AvaliadorConformidadeLegal real: AvaliarEtapaObrigatoria não acessa .Nome e usa TipoEtapa.Codigo")]
-    public void Selecao_AvaliarEtapaObrigatoria_ComparaPeloCodigoCongelado()
+    [Fact(DisplayName = "AvaliadorConformidadeLegal real: AvaliarEtapaObrigatoria não acessa .Nome e decide por TipoEtapa.OrigemId")]
+    public void Selecao_AvaliarEtapaObrigatoria_DecidePelaIdentidadeCongelada()
     {
         string raizDoRepo = RaizDoRepo();
         string arquivo = Path.Join(
@@ -118,8 +118,8 @@ public sealed partial class SelecaoSemRamificacaoPorTipoEtapaTests
 
         string corpo = CorpoDeAvaliarEtapaObrigatoria().Match(codigo).Groups["corpo"].Value;
         corpo.Should().NotBeNullOrEmpty("o método AvaliarEtapaObrigatoria precisa existir no arquivo real");
-        AcessoAoCodigoCongelado().IsMatch(corpo).Should().BeTrue(
-            "a correção exige comparar TipoEtapa.Codigo — ausência prova que o método mudou de forma " +
+        AcessoAIdentidadeCongelada().IsMatch(corpo).Should().BeTrue(
+            "a decisão é por identidade da origem (ADR-0129) — ausência prova que o método mudou de forma " +
             "que este detector não reconhece mais (falso-negativo silencioso é pior que falso-positivo)");
     }
 

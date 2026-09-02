@@ -66,7 +66,7 @@ internal static class ConferenciaDeConformidadeLegal
         // casar exigência com regra é a que a conferência acabou de ler, não uma segunda
         // leitura que poderia divergir dela.
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            processo, tipoProcessoCodigo, regrasVigentes, referencias.Value!.IdentidadeDoTipoDocumentoPorCodigo);
+            processo, tipoProcessoCodigo, regrasVigentes, referencias.Value!.Identidades);
 
         bool todasAprovadas = resultado.Regras.All(static r => r.Aprovada);
         if (!todasAprovadas)

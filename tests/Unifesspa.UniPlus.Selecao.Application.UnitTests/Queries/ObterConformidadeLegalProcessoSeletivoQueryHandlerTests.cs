@@ -41,7 +41,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1).Value!],
+            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regraAprovada = NovaRegra("CONSULTA-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
@@ -244,9 +244,30 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
     /// <summary>Identidades derivadas das próprias exigências — estado sem renomeação nem reciclagem.</summary>
-    private static Dictionary<string, Guid> IdentidadesDe(ProcessoSeletivo processo) =>
-        processo.DocumentosExigidos
-            .GroupBy(e => e.TipoDocumentoCodigo, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.First().TipoDocumentoOrigemId, StringComparer.Ordinal);
+    /// <summary>
+    /// Cadastro vivo deduzido do próprio processo: cada código resolve para a identidade
+    /// que o processo congelou — o caminho feliz, em que regra e processo apontam para o
+    /// mesmo item de catálogo.
+    /// </summary>
+    private static IdentidadesDeCadastro IdentidadesDe(ProcessoSeletivo processo) =>
+        new(
+            MapaDe(processo.DocumentosExigidos, e => e.TipoDocumentoCodigo, e => e.TipoDocumentoOrigemId),
+            MapaDe(
+                processo.DistribuicaoVagas.SelectMany(d => d.Modalidades),
+                m => m.Codigo,
+                m => m.ModalidadeOrigemId),
+            MapaDe(processo.Etapas, e => e.TipoEtapa.Codigo, e => e.TipoEtapa.OrigemId),
+            MapaDe(
+                processo.OfertaAtendimento?.TiposDeficiencia ?? [],
+                t => t.TipoDeficienciaCodigo,
+                t => t.TipoDeficienciaOrigemId));
+
+    private static Dictionary<string, Guid> MapaDe<T>(
+        IEnumerable<T> itens,
+        Func<T, string> codigoDe,
+        Func<T, Guid> origemDe) =>
+        itens
+            .GroupBy(codigoDe, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => origemDe(g.First()), StringComparer.Ordinal);
 
 }

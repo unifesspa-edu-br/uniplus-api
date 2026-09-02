@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -27,7 +28,7 @@ internal static class ProcessoSeletivoConformeBuilder
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
+                TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
                 peso: 1m, ordem: 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

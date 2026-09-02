@@ -38,7 +38,7 @@ public sealed class AvaliadorConformidadeLegalTests
     public void SemRegras_Aprova()
     {
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            NovoProcesso(), TipoProcessoAvaliado, [], new Dictionary<string, Guid>(StringComparer.Ordinal));
+            NovoProcesso(), TipoProcessoAvaliado, [], IdentidadesDeCadastro.Vazio);
 
         resultado.Regras.Should().BeEmpty();
         resultado.Avisos.Should().BeEmpty();
@@ -51,7 +51,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ObrigatoriedadeLegal regra2 = NovaRegra("R2", new ConcorrenciaDuplaObrigatoria());
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            NovoProcesso(), TipoProcessoAvaliado, [regra1, regra2], new Dictionary<string, Guid>(StringComparer.Ordinal));
+            NovoProcesso(), TipoProcessoAvaliado, [regra1, regra2], IdentidadesDeCadastro.Vazio);
 
         resultado.Regras.Should().HaveCount(2);
         resultado.Regras.Select(r => r.RegraCodigo).Should().BeEquivalentTo(["R1", "R2"]);
@@ -121,9 +121,16 @@ public sealed class AvaliadorConformidadeLegalTests
             "a reprovação precisa nomear o código do tipo ausente, não só um booleano");
     }
 
-    private static ModalidadeSelecionada NovaModalidade(string codigo, NaturezaLegalModalidade natureza) =>
+    /// <remarks>
+    /// A identidade é parâmetro porque duas ofertas que selecionam a mesma modalidade
+    /// referenciam a mesma linha do cadastro — e é a identidade que a avaliação compara.
+    /// </remarks>
+    private static ModalidadeSelecionada NovaModalidade(
+        string codigo,
+        NaturezaLegalModalidade natureza,
+        Guid? origemId = null) =>
         ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
+            modalidadeOrigemId: origemId ?? Guid.CreateVersion7(),
             codigo: codigo,
             descricao: null,
             naturezaLegal: natureza,
@@ -154,10 +161,12 @@ public sealed class AvaliadorConformidadeLegalTests
     public void ModalidadesMinimas_TodasAsOfertasTemAModalidade_Aprova()
     {
         ProcessoSeletivo processo = NovoProcesso();
+        Guid ampla = Guid.CreateVersion7();
+        Guid cota = Guid.CreateVersion7();
         processo.DefinirDistribuicaoVagas(
             [
-                NovaOferta(NovaModalidade("AC", NaturezaLegalModalidade.Ampla), NovaModalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada)),
-                NovaOferta(NovaModalidade("AC", NaturezaLegalModalidade.Ampla), NovaModalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada)),
+                NovaOferta(NovaModalidade("AC", NaturezaLegalModalidade.Ampla, ampla), NovaModalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada, cota)),
+                NovaOferta(NovaModalidade("AC", NaturezaLegalModalidade.Ampla, ampla), NovaModalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada, cota)),
             ],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -278,7 +287,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         Action act = () =>
         {
-            ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra], new Dictionary<string, Guid>(StringComparer.Ordinal));
+            ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra], IdentidadesDeCadastro.Vazio);
             RegraAvaliada avaliada = resultado.Regras.Single();
             avaliada.Aprovada.Should().BeFalse();
             avaliada.Motivo.Should().NotBeNullOrWhiteSpace();
@@ -330,7 +339,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         Action act = () =>
         {
-            ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra], new Dictionary<string, Guid>(StringComparer.Ordinal));
+            ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra], IdentidadesDeCadastro.Vazio);
             resultado.Regras.Single().Aprovada.Should().BeTrue();
             resultado.Avisos.Should().ContainSingle();
         };
@@ -357,7 +366,10 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
             processo, TipoProcessoAvaliado, [regra],
-            new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO_PCD"] = identidadeDoLaudo });
+            IdentidadesDe(processo) with
+            {
+                TiposDocumento = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO_PCD"] = identidadeDoLaudo },
+            });
 
         resultado.Regras.Single().Aprovada.Should().BeTrue(
             "a exigência designa o mesmo documento que a regra exige — só o rótulo mudou");
@@ -380,7 +392,10 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
             processo, TipoProcessoAvaliado, [regra],
-            new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO"] = Guid.CreateVersion7() });
+            IdentidadesDe(processo) with
+            {
+                TiposDocumento = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO"] = Guid.CreateVersion7() },
+            });
 
         RegraAvaliada avaliada = resultado.Regras.Single();
         avaliada.Aprovada.Should().BeFalse();
@@ -399,12 +414,160 @@ public sealed class AvaliadorConformidadeLegalTests
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
             processo, TipoProcessoAvaliado, [regra],
-            new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO"] = Guid.CreateVersion7() });
+            IdentidadesDe(processo) with
+            {
+                TiposDocumento = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO"] = Guid.CreateVersion7() },
+            });
 
         RegraAvaliada avaliada = resultado.Regras.Single();
         avaliada.Aprovada.Should().BeFalse();
         avaliada.Motivo.Should().Contain("cobre incondicionalmente");
         avaliada.Motivo.Should().NotContain("designa outro documento");
+    }
+
+    [Fact(DisplayName = "EtapaObrigatoria: renomear o código do tipo e atualizar a regra continua aprovando")]
+    public void EtapaObrigatoria_AposRenomearOCodigoEAtualizarARegra_Aprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid identidadeDoTipo = Guid.CreateVersion7();
+        processo.DefinirEtapas(
+            [EtapaProcesso.Criar(
+                "Prova", CaraterEtapa.Classificatoria,
+                TipoEtapaSnapshot.Criar(identidadeDoTipo, "PROVA_OBJETIVA", "Prova Objetiva").Value!,
+                peso: 1m, ordem: 1).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA_V2"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            IdentidadesDe(processo) with
+            {
+                TiposEtapa = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["PROVA_OBJETIVA_V2"] = identidadeDoTipo },
+            });
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue(
+            "a etapa é do mesmo tipo que a regra exige — só o código mudou");
+    }
+
+    [Fact(DisplayName = "EtapaObrigatoria: código reatribuído a outro tipo reprova, mesmo com a string batendo")]
+    public void EtapaObrigatoria_ComCodigoReatribuido_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirEtapas(
+            [EtapaProcesso.Criar(
+                "Prova", CaraterEtapa.Classificatoria, NovoTipoEtapa("PROVA_OBJETIVA", "Prova Objetiva"),
+                peso: 1m, ordem: 1).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            IdentidadesDe(processo) with
+            {
+                TiposEtapa = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["PROVA_OBJETIVA"] = Guid.CreateVersion7() },
+            });
+
+        RegraAvaliada avaliada = resultado.Regras.Single();
+        avaliada.Aprovada.Should().BeFalse();
+        avaliada.Motivo.Should().Contain("o código foi reatribuído",
+            "a mensagem precisa dizer o que houve — mandar procurar etapa ausente faria o editor caçar o que está na tela");
+    }
+
+    [Fact(DisplayName = "AtendimentoDisponivel: renomear o código do tipo e atualizar a regra continua aprovando")]
+    public void AtendimentoDisponivel_AposRenomearOCodigoEAtualizarARegra_Aprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid identidadeDoTipo = Guid.CreateVersion7();
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar(
+                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+                [],
+                [OfertaTipoDeficiencia.Criar(identidadeDoTipo, "AUDITIVA", "Deficiência auditiva")]).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["DEF_AUDITIVA"]));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            IdentidadesDe(processo) with
+            {
+                TiposDeficiencia = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["DEF_AUDITIVA"] = identidadeDoTipo },
+            });
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue(
+            "a oferta é do mesmo tipo de deficiência que a regra exige — só o código mudou");
+    }
+
+    [Fact(DisplayName = "AtendimentoDisponivel: código reatribuído a outro tipo reprova, mesmo com a string batendo")]
+    public void AtendimentoDisponivel_ComCodigoReatribuido_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar(
+                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+                [],
+                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "AUDITIVA", "Deficiência auditiva")]).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            IdentidadesDe(processo) with
+            {
+                TiposDeficiencia = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["AUDITIVA"] = Guid.CreateVersion7() },
+            });
+
+        RegraAvaliada avaliada = resultado.Regras.Single();
+        avaliada.Aprovada.Should().BeFalse(
+            "o atendimento que carrega o código pertence a outro tipo de deficiência");
+        avaliada.Motivo.Should().Contain("o código foi reatribuído");
+    }
+
+    [Fact(DisplayName = "ModalidadesMinimas: renomear o código da modalidade e atualizar a regra continua aprovando")]
+    public void ModalidadesMinimas_AposRenomearOCodigoEAtualizarARegra_Aprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        ModalidadeSelecionada modalidade = NovaModalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada);
+        processo.DefinirDistribuicaoVagas([NovaOferta(modalidade)], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("MINIMAS", new ModalidadesMinimas(["LB_PPI_V2"]));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            IdentidadesDe(processo) with
+            {
+                Modalidades = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LB_PPI_V2"] = modalidade.ModalidadeOrigemId },
+            });
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue(
+            "a oferta contém a mesma modalidade que a regra exige — só o código mudou");
+    }
+
+    [Fact(DisplayName = "ModalidadesMinimas: código reatribuído a outra modalidade reprova, mesmo com a string batendo")]
+    public void ModalidadesMinimas_ComCodigoReatribuido_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirDistribuicaoVagas(
+            [NovaOferta(NovaModalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada))],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("MINIMAS", new ModalidadesMinimas(["LB_PPI"]));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            IdentidadesDe(processo) with
+            {
+                Modalidades = new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LB_PPI"] = Guid.CreateVersion7() },
+            });
+
+        RegraAvaliada avaliada = resultado.Regras.Single();
+        avaliada.Aprovada.Should().BeFalse(
+            "a modalidade ofertada com esse código é outra — a exigência mínima não está cumprida");
+        avaliada.Motivo.Should().Contain("o código foi reatribuído");
     }
 
     /// <summary>Exigência geral com a identidade do tipo escolhida pelo cenário.</summary>
@@ -601,9 +764,30 @@ public sealed class AvaliadorConformidadeLegalTests
     /// em que nada foi renomeado nem reciclado: cada código designa o tipo que a exigência
     /// congelou. Os cenários de divergência montam o mapa à mão, que é o ponto deles.
     /// </summary>
-    private static Dictionary<string, Guid> IdentidadesDe(ProcessoSeletivo processo) =>
-        processo.DocumentosExigidos
-            .GroupBy(e => e.TipoDocumentoCodigo, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.First().TipoDocumentoOrigemId, StringComparer.Ordinal);
+    /// <summary>
+    /// Cadastro vivo deduzido do próprio processo: cada código resolve para a identidade
+    /// que o processo congelou. É o cenário do caminho feliz — regra e processo apontando
+    /// para o mesmo item. Os testes de reciclagem sobrescrevem a entrada que interessa.
+    /// </summary>
+    private static IdentidadesDeCadastro IdentidadesDe(ProcessoSeletivo processo) =>
+        new(
+            MapaDe(processo.DocumentosExigidos, e => e.TipoDocumentoCodigo, e => e.TipoDocumentoOrigemId),
+            MapaDe(
+                processo.DistribuicaoVagas.SelectMany(d => d.Modalidades),
+                m => m.Codigo,
+                m => m.ModalidadeOrigemId),
+            MapaDe(processo.Etapas, e => e.TipoEtapa.Codigo, e => e.TipoEtapa.OrigemId),
+            MapaDe(
+                processo.OfertaAtendimento?.TiposDeficiencia ?? [],
+                t => t.TipoDeficienciaCodigo,
+                t => t.TipoDeficienciaOrigemId));
+
+    private static Dictionary<string, Guid> MapaDe<T>(
+        IEnumerable<T> itens,
+        Func<T, string> codigoDe,
+        Func<T, Guid> origemDe) =>
+        itens
+            .GroupBy(codigoDe, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => origemDe(g.First()), StringComparer.Ordinal);
 
 }
