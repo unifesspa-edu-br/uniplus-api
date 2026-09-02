@@ -1,8 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
-using System.IO;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
@@ -17,43 +15,21 @@ using Unifesspa.UniPlus.Kernel.Results;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 using ReflectionAssembly = System.Reflection.Assembly;
-using ReflectionType = System.Type;
 
 /// <summary>
-/// Fitness tests do Contrato REST canônico V1 (issue #291). Três regras:
+/// Fitness tests do Contrato REST canônico V1 (issue #291). Duas regras:
 /// <list type="number">
-///   <item><description>Cobertura do registry — todo <c>code</c> usado em <c>new DomainError("...", ...)</c>
-///   nas camadas Domain e Application está registrado em algum <see cref="IDomainErrorRegistration"/>.</description></item>
 ///   <item><description>Direção de dependência — Selecao.Domain e Selecao.Application não dependem de
 ///   <c>Microsoft.AspNetCore.*</c> nem de <c>Selecao.API</c>.</description></item>
 ///   <item><description>Controllers — tipos em <c>Selecao.API.Controllers</c> não dependem de
 ///   <see cref="DomainError"/> diretamente; mapeamento é responsabilidade do <see cref="IDomainErrorMapper"/>.</description></item>
 /// </list>
+/// A cobertura do registry de erros deixou de morar aqui: passou a ser cobrada
+/// para todos os módulos por <c>MapeamentoDeDomainErrorTests</c> (issue #1390).
 /// </summary>
-public sealed partial class ContractV1FitnessTestsTests
+public sealed class ContractV1FitnessTestsTests
 {
     private static readonly Architecture ModuleArchitecture = LoadModuleArchitecture();
-
-    [Fact(DisplayName = "F1: codes de DomainError em Domain/Application estão registrados em IDomainErrorRegistration")]
-    public void Codes_DeDomainError_EstaoRegistradosNoMapper()
-    {
-        // Coleta source-side: regex sobre os .cs em Domain + Application.
-        // Análise estática (não-runtime) é proposital: muitos codes ficam dentro
-        // de branches conditionals que nunca executariam num teste sem fixture.
-        IReadOnlySet<string> sourceCodes = ScanSourceForDomainErrorCodes(
-            FindRepoSourceDir("src/selecao/Unifesspa.UniPlus.Selecao.Domain"),
-            FindRepoSourceDir("src/selecao/Unifesspa.UniPlus.Selecao.Application"));
-
-        // Coleta registry-side: instancia todas as IDomainErrorRegistration disponíveis
-        // (selecao + cross-cutting) e agrega as keys.
-        IReadOnlySet<string> registeredCodes = LoadRegisteredCodes();
-
-        IEnumerable<string> orphans = sourceCodes.Except(registeredCodes);
-        orphans.Should().BeEmpty(
-            "todo `new DomainError(\"<code>\", ...)` em Domain/Application precisa ter "
-                + "mapeamento em IDomainErrorRegistration; sem registry o mapper devolve "
-                + "500 genérico em vez do ProblemDetails canônico (ADR-0024).");
-    }
 
     [Fact(DisplayName = "F2: Selecao.Domain e Selecao.Application não dependem de Microsoft.AspNetCore.* nem de Selecao.API")]
     public void DomainAplication_NaoDependemDeAspNetCore()
@@ -120,128 +96,4 @@ public sealed partial class ContractV1FitnessTestsTests
 
         return new ArchLoader().LoadAssemblies(assemblies).Build();
     }
-
-    private static HashSet<string> ScanSourceForDomainErrorCodes(params string[] roots)
-    {
-        Regex pattern = DomainErrorCallRegex();
-        Regex blockComment = BlockCommentRegex();
-        Regex lineComment = LineCommentRegex();
-        HashSet<string> codes = new(StringComparer.Ordinal);
-
-        foreach (string root in roots)
-        {
-            foreach (string file in Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories))
-            {
-                if (file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-                    || file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-                    continue;
-
-                // Striping comments antes do match evita falsos positivos quando
-                // alguém menciona `new DomainError("X", ...)` em XML doc, comentário
-                // de exemplo ou linha `//`. AST-correto exigiria Roslyn — strip
-                // simples cobre os casos reais (block + line comments). String
-                // literais que contenham o padrão exato escapariam inner quotes
-                // como `\"`, fazendo o pattern de F1 capturar `\X\` em vez de `X`,
-                // o que não polui o set de orphans.
-                string content = File.ReadAllText(file);
-                content = blockComment.Replace(content, string.Empty);
-                content = lineComment.Replace(content, string.Empty);
-
-                foreach (Match match in pattern.Matches(content))
-                    codes.Add(match.Groups[1].Value);
-            }
-        }
-
-        return codes;
-    }
-
-    private static HashSet<string> LoadRegisteredCodes()
-    {
-        // Toca os assemblies de produção primeiro para garantir a carga. Sem
-        // estes "touches" a JIT pode não materializar os assemblies no AppDomain
-        // antes do scan.
-        _ = typeof(IDomainErrorRegistration).Assembly; // Infrastructure.Core: kernel + pagination + idempotency
-        _ = typeof(API.Controllers.ProcessoSeletivoController).Assembly; // Selecao.API: SelecaoDomainErrorRegistration
-
-        // Whitelist explícito de assemblies de produção. Filtrar por convenção
-        // de nome em vez de scan amplo evita que stubs de testes (tipo
-        // DomainErrorMappingRegistrationStub das unit tests) sejam contados
-        // como cobertura — garante que F1 valida APENAS registrations que o
-        // host Selecao realmente serve em produção.
-        Regex productionAssembly = ProductionAssemblyRegex();
-
-        HashSet<string> codes = new(StringComparer.Ordinal);
-        IEnumerable<ReflectionType> registrationTypes = AppDomain.CurrentDomain
-            .GetAssemblies()
-            .Where(a => a.GetName().Name is { } name && productionAssembly.IsMatch(name))
-            .SelectMany(a =>
-            {
-                try { return a.GetTypes(); }
-                catch (ReflectionTypeLoadException ex) { return ex.Types.OfType<ReflectionType>(); }
-            })
-            .Where(t => !t.IsAbstract && !t.IsInterface
-                && typeof(IDomainErrorRegistration).IsAssignableFrom(t));
-
-        foreach (ReflectionType type in registrationTypes)
-        {
-            // Suporta ctors internal/private (registrations são `internal sealed`).
-            // Se não há ctor default, falha alto: registrations com dependências
-            // requerem DI activation real — atualizar F1 antes de adicionar.
-            ConstructorInfo? ctor = type.GetConstructor(
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-                types: []);
-            ctor.Should().NotBeNull(
-                $"registration {type.FullName} precisa de constructor sem parâmetros para ser carregada por F1; "
-                    + "se a classe ganhou dependências de DI, atualizar este teste para usar IServiceProvider real.");
-
-            IDomainErrorRegistration instance = (IDomainErrorRegistration)ctor!.Invoke(null);
-            foreach (KeyValuePair<string, DomainErrorMapping> mapping in instance.GetMappings())
-                codes.Add(mapping.Key);
-        }
-
-        return codes;
-    }
-
-    private static string FindRepoSourceDir(string relativeFromRepoRoot)
-    {
-        // Sobe da pasta do binário até achar o slnx; combinar com o path relativo
-        // garante portabilidade entre máquinas e CI.
-        string? current = AppContext.BaseDirectory;
-        while (current is not null && !File.Exists(Path.Combine(current, "UniPlus.slnx")))
-            current = Path.GetDirectoryName(current);
-
-        if (current is null)
-            throw new DirectoryNotFoundException("UniPlus.slnx não encontrado a partir de AppContext.BaseDirectory.");
-
-        return Path.Combine(current, relativeFromRepoRoot);
-    }
-
-    /// <remarks>
-    /// Detecta APENAS literais inline na construção <c>new DomainError("CODE", ...)</c>.
-    /// Codes vindos de constantes (<c>const string CodNaoEncontrado = "..."</c>),
-    /// interpolação (<c>$"{prefixo}.NaoEncontrado"</c>) ou concatenação escapam
-    /// à detecção. Convenção obrigatória do projeto: o code é sempre literal
-    /// inline — caso contrário F1 deixa de capturar codes órfãos sem aviso.
-    /// </remarks>
-    [GeneratedRegex(@"new\s+DomainError\(\s*""([^""]+)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex DomainErrorCallRegex();
-
-    [GeneratedRegex(@"/\*[\s\S]*?\*/", RegexOptions.Compiled, matchTimeoutMilliseconds: 2000)]
-    private static partial Regex BlockCommentRegex();
-
-    [GeneratedRegex(@"//[^\n]*", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex LineCommentRegex();
-
-    // Whitelist alinhado com a DI graph que Selecao serve em produção.
-    // Inclui Selecao + cross-cutting (Kernel, Application.Abstractions,
-    // Infrastructure.Core), mas NÃO inclui Ingresso — Selecao.API não
-    // registra IngressoDomainErrorRegistration. Sem essa exclusão, em
-    // execução conjunta com Stage1 (que carrega Ingresso para R1), uma
-    // mesma key registrada apenas em Ingresso mascararia gap de Selecao.
-    // Stubs de testes terminam em ".Tests"/".UnitTests"/"ArchTests" e não
-    // casam com a regex.
-    [GeneratedRegex(
-        @"^Unifesspa\.UniPlus\.(Kernel|Application\.Abstractions|Infrastructure\.Core|Selecao\.(Domain|Application|Infrastructure|API))$",
-        RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex ProductionAssemblyRegex();
 }
