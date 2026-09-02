@@ -128,6 +128,11 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// coerência de composição/remanejamento) já foram validadas em
     /// <see cref="ModalidadeSelecionada.Criar"/>.
     /// </summary>
+    /// <param name="vagasAnuaisAutorizadas">
+    /// Teto de vagas anuais autorizadas no e-MEC para a oferta, resolvido pela camada de
+    /// aplicação. <see langword="null"/> quando a oferta não o declara — ausência não é
+    /// permissão nem proibição, e nenhum teto é imposto.
+    /// </param>
     public static Result<ConfiguracaoDistribuicaoVagas> Criar(
         Guid ofertaCursoOrigemId,
         int voBase,
@@ -135,7 +140,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         ReferenciaRegra regraDistribuicao,
         ReferenciaRegra? regraAjuste,
         ReferenciaReservaDemograficaSnapshot? referenciaDemografica,
-        IReadOnlyList<ModalidadeSelecionada> modalidades)
+        IReadOnlyList<ModalidadeSelecionada> modalidades,
+        int? vagasAnuaisAutorizadas = null)
     {
         ArgumentNullException.ThrowIfNull(regraDistribuicao);
         ArgumentNullException.ThrowIfNull(modalidades);
@@ -149,6 +155,17 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         // mesma decisão de escopo de CriterioDesempate (PR #1216) para checks
         // dependentes de dado já resolvido.
         List<FieldError> erros = ValidarFormaBasica(voBase, pr, modalidades.Count);
+
+        // O teto é anual e o VO é de um certame: uma oferta de 40 vagas comporta dois
+        // processos de 20. Comparar contra o VO de um certame é o limite superior seguro —
+        // nunca recusa caso legítimo — e não alcança dois certames que somados ultrapassem
+        // o ano, o que exigiria conhecer os demais certames da oferta.
+        if (vagasAnuaisAutorizadas is int teto && voBase > teto)
+        {
+            erros.Add(new("voBase", new DomainError(
+                "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas",
+                $"O VO_base ({voBase}) excede as {teto} vagas anuais autorizadas para a oferta.")));
+        }
 
         List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
         if (codigosInformados.Distinct(StringComparer.Ordinal).Count() != codigosInformados.Count)

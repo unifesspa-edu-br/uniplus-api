@@ -51,7 +51,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
     private static OfertaCursoView NovaOferta(Guid id) => new(
         id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
         "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
-        "REGULAR", ["MATUTINO"], null, null, 50, null, null);
+        "REGULAR", ["MATUTINO"], null, null, 100, null, null);
 
     private static ModalidadeView NovaModalidadeAmpla(Guid id) => new(
         id, "AC", "Ampla concorrência", "AMPLA", "RESIDUAL_DO_VO",

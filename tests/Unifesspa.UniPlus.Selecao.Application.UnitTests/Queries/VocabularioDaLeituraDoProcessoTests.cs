@@ -103,7 +103,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         ofertas.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(new OfertaCursoView(
             ofertaCursoId, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
             "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
-            "REGULAR", ["MATUTINO"], null, null, 50, null, null));
+            "REGULAR", ["MATUTINO"], null, null, 100, null, null));
         IModalidadeReader modalidades = Substitute.For<IModalidadeReader>();
 
         // Ampla concorrência: o catálogo publica `AMPLA`/`RESIDUAL_DO_VO` e NÃO publica regra
