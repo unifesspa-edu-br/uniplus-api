@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+
 /// <summary>
 /// Catálogo do domínio fechado das <b>fases canônicas</b> do ciclo de vida
 /// de um processo seletivo (UNI-REQ-0139) e das constantes de coerência associadas.
@@ -25,28 +27,38 @@ public static class FaseCanonicaCatalogo
     public const string CodigoSolicitacaoIsencao = "SOLICITACAO_ISENCAO";
 
     /// <summary>
-    /// Os códigos canônicos das fases do ciclo, em ordem cronológica
-    /// aproximada. Ordem de declaração não é semântica — a unicidade é por código.
+    /// As dezesseis fases, com o rótulo canônico do código, em ordem cronológica
+    /// aproximada — fonte do endpoint de vocabulário
+    /// (<c>GET /api/configuracao/vocabularios/fases-canonicas</c>). Ordem de declaração
+    /// não é semântica para unicidade (que é por código), mas é a ordem em que o
+    /// vocabulário é anunciado.
     /// </summary>
-    public static readonly IReadOnlyList<string> Codigos =
+    public static IReadOnlyList<FaseCanonicaDescrito> Descritos { get; } =
     [
-        "INSCRICAO",
-        CodigoSolicitacaoIsencao,
-        "HOMOLOGACAO",
-        "ENSALAMENTO",
-        CodigoAvaliacao,
-        "CLASSIFICACAO",
-        "RESULTADO_PRELIMINAR",
-        "RECURSOS",
-        "RESULTADO_FINAL",
-        "HABILITACAO",
-        "HETEROIDENTIFICACAO",
-        "AVALIACAO_BIOPSICOSSOCIAL",
-        "MATRICULA",
-        "HOMOLOGACAO_RESULTADO_FINAL",
-        "LISTA_ESPERA",
-        "CHAMADA",
+        new("INSCRICAO", "Inscrição"),
+        new(CodigoSolicitacaoIsencao, "Solicitação de isenção"),
+        new("HOMOLOGACAO", "Homologação das inscrições"),
+        new("ENSALAMENTO", "Ensalamento"),
+        new(CodigoAvaliacao, "Avaliação"),
+        new("CLASSIFICACAO", "Classificação"),
+        new("RESULTADO_PRELIMINAR", "Resultado preliminar"),
+        new("RECURSOS", "Recursos"),
+        new("RESULTADO_FINAL", "Resultado final"),
+        new("HABILITACAO", "Habilitação"),
+        new("HETEROIDENTIFICACAO", "Heteroidentificação"),
+        new("AVALIACAO_BIOPSICOSSOCIAL", "Avaliação biopsicossocial"),
+        new("MATRICULA", "Matrícula"),
+        new("HOMOLOGACAO_RESULTADO_FINAL", "Homologação do resultado final"),
+        new("LISTA_ESPERA", "Lista de espera"),
+        new("CHAMADA", "Chamada"),
     ];
+
+    /// <summary>
+    /// Os códigos canônicos das fases do ciclo, derivados de <see cref="Descritos"/> — uma
+    /// segunda lista escrita à mão envelheceria sem avisar quando um código novo entrasse
+    /// só num dos dois lugares.
+    /// </summary>
+    public static IReadOnlyList<string> Codigos { get; } = [.. Descritos.Select(static d => d.Codigo)];
 
     /// <summary>
     /// Fases em que a legislação permite complementação/reenvio documental —
