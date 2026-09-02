@@ -29,8 +29,8 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Seed materializa exatamente as 22 regras v1 do catálogo")]
-    public async Task Seed_MaterializaAsVinteDuasRegras()
+    [Fact(DisplayName = "Seed materializa exatamente as regras declaradas, únicas por código e versão")]
+    public async Task Seed_MaterializaAsRegrasDeclaradas()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
 
@@ -38,10 +38,15 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .AsNoTracking()
             .ToListAsync(CancellationToken.None);
 
-        regras.Should().HaveCount(RegraCatalogoSeed.Itens.Count).And.HaveCount(22);
-        regras.Select(r => r.Codigo).Should().OnlyHaveUniqueItems();
-        regras.Should().OnlyContain(r => r.Versao == RegraCatalogoSeed.VersaoV1);
+        regras.Should().HaveCount(RegraCatalogoSeed.Itens.Count);
+
+        // A unicidade é por código E versão, como o índice do catálogo: uma regra evolui
+        // publicando versão nova, e as duas convivem — a antiga porque processos publicados a
+        // referenciam, a nova porque é a que passa a valer.
+        regras.Select(r => (r.Codigo, r.Versao)).Should().OnlyHaveUniqueItems();
         regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-LEI-12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-PSIQ" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-EDU-CAMPO" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().Contain(r => r.Codigo == "FORMULA-MEDIA-PONDERADA" && r.Tipo == TipoRegra.RegraCalculo);
         regras.Should().Contain(r => r.Codigo == "REMANEJ-CASCATA-LEI-12711" && r.Tipo == TipoRegra.CriterioRemanejamento);
         regras.Should().Contain(r => r.Codigo == AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial && r.Tipo == TipoRegra.AlgoritmoContagemPrazo);
