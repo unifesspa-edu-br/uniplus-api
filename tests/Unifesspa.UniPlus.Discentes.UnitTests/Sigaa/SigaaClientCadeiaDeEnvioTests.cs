@@ -138,6 +138,33 @@ public sealed class SigaaClientCadeiaDeEnvioTests : IDisposable
     }
 
     [Fact]
+    public async Task Envia_cada_situacao_pedida_como_item_de_lista()
+    {
+        // A origem reconhece lista pelo nome do parâmetro terminando em colchetes. Sem
+        // eles, os valores chegam como ocorrências soltas do mesmo nome e a linguagem da
+        // origem guarda só a última: o filtro valeria por uma situação, e os vínculos das
+        // outras sumiriam da sincronização sem erro nenhum.
+        RedeSimulada rede = new((requisicao, _) => EhAutenticacao(requisicao)
+            ? RespostasDoSigaa.ComToken(
+                RespostasDoSigaa.TokenCom(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1)))
+            : RespostasDoSigaa.ColecaoVazia());
+
+        ISigaaVinculoDiscenteClient cliente = Montar(rede, out _);
+
+        await cliente.ObterPaginaAsync(new FiltroDeVinculos("G", Situacoes: [1, 8, 9]), 1);
+
+        string consulta = Uri.UnescapeDataString(
+            rede.CaminhosChamados.Single(c => c.Contains("vinculo_discentes", StringComparison.Ordinal)));
+
+        foreach (int situacao in new[] { 1, 8, 9 })
+        {
+            consulta.Should().Contain(
+                $"status.id[]={situacao}",
+                "cada situação pedida precisa chegar como item de lista");
+        }
+    }
+
+    [Fact]
     public async Task Repete_falha_transitoria_da_origem_ate_obter_resposta()
     {
         int consultas = 0;

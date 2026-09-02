@@ -62,6 +62,17 @@ public sealed class SigaaOptionsValidatorTests
     }
 
     [Fact]
+    public void Recusa_espera_negativa_entre_tentativas()
+    {
+        // A biblioteca de resiliência também recusaria, mas só ao montar a política, na
+        // primeira consulta — o processo já teria se declarado pronto.
+        ValidateOptionsResult resultado = Validar(Basicas(esperaEntreTentativas: -1));
+
+        resultado.Failed.Should().BeTrue();
+        resultado.FailureMessage.Should().Contain("EsperaBase");
+    }
+
+    [Fact]
     public void Recusa_pagina_maior_que_o_teto_da_origem()
     {
         ValidateOptionsResult resultado = Validar(
@@ -80,7 +91,8 @@ public sealed class SigaaOptionsValidatorTests
         int validadeAssumida = 3600,
         int margemDeRenovacao = 60,
         int timeoutPorTentativa = 30,
-        int janelaDoCorte = 120) => new()
+        int janelaDoCorte = 120,
+        int esperaEntreTentativas = 500) => new()
         {
             BaseUrl = baseUrl,
             Usuario = "servico",
@@ -90,6 +102,7 @@ public sealed class SigaaOptionsValidatorTests
             MargemDeRenovacaoDoTokenEmSegundos = margemDeRenovacao,
             TimeoutPorTentativaEmSegundos = timeoutPorTentativa,
             JanelaDeAmostragemDoCorteEmSegundos = janelaDoCorte,
+            EsperaBaseEntreTentativasEmMilissegundos = esperaEntreTentativas,
         };
 
     private static ValidateOptionsResult Validar(SigaaOptions opcoes) =>

@@ -32,6 +32,13 @@ internal interface ISigaaVinculoDiscenteApi
     /// </param>
     /// <param name="situacoes">
     /// Identificadores de situação acadêmica. Vazio ou nulo não filtra por situação.
+    /// <para>
+    /// O nome do parâmetro termina em colchetes porque é assim que a origem reconhece uma
+    /// lista. Sem eles, os valores repetidos chegam como ocorrências soltas do mesmo nome,
+    /// e a linguagem em que a origem é escrita guarda apenas a última — o filtro passaria
+    /// a valer por uma situação só, e a sincronização deixaria de fora, sem erro algum, os
+    /// vínculos das demais.
+    /// </para>
     /// </param>
     /// <param name="itensPorPagina">Tamanho da página, limitado pelo teto da origem.</param>
     /// <param name="pagina">Página desejada, começando em um.</param>
@@ -39,7 +46,7 @@ internal interface ISigaaVinculoDiscenteApi
     Task<ColecaoHydra<VinculoDiscentePayload>> ObterVinculosAsync(
         [AliasAs("nivel")] string nivel,
         [AliasAs("anoIngresso[gte]")] int? anoIngressoMinimo,
-        [AliasAs("status.id")] IEnumerable<int>? situacoes,
+        [Query(CollectionFormat.Multi)][AliasAs("status.id[]")] IEnumerable<int>? situacoes,
         [AliasAs("itensPorPagina")] int itensPorPagina,
         [AliasAs("page")] int pagina,
         CancellationToken cancellationToken = default);
