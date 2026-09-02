@@ -43,5 +43,10 @@ public static class ModalidadeErrorCodes
     /// <summary>Tentativa de cadastrar uma modalidade com código reservado ao catálogo legal fixo.</summary>
     public const string CriacaoBloqueadaCodigoProtegido = "Modalidade.CriacaoBloqueadaCodigoProtegido";
     public const string BaseLegalTamanho = "Modalidade.BaseLegalTamanho";
+    public const string ComposicaoOrigemCircular = "Modalidade.ComposicaoOrigemCircular";
+    public const string RemanejamentoDestinoCircular = "Modalidade.RemanejamentoDestinoCircular";
+    public const string RemanejamentoParCircular = "Modalidade.RemanejamentoParCircular";
+    public const string RemanejamentoFallbackCircular = "Modalidade.RemanejamentoFallbackCircular";
+
     public const string NaoEncontrada = "Modalidade.NaoEncontrada";
 }

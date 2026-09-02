@@ -734,6 +734,30 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.modalidade.origem_obrigatoria_para_retira_de",
                 "A modalidade com composição 'retira de' exige a modalidade de origem")),
 
+        new(ModalidadeErrorCodes.ComposicaoOrigemCircular,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.composicao_origem_circular",
+                "A modalidade não pode ser a origem da própria composição")),
+
+        new(ModalidadeErrorCodes.RemanejamentoDestinoCircular,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.remanejamento_destino_circular",
+                "A modalidade não pode ser o destino do próprio remanejamento")),
+
+        new(ModalidadeErrorCodes.RemanejamentoParCircular,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.remanejamento_par_circular",
+                "A modalidade não pode ser o par do próprio remanejamento")),
+
+        new(ModalidadeErrorCodes.RemanejamentoFallbackCircular,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.remanejamento_fallback_circular",
+                "A modalidade não pode ser o fallback do próprio remanejamento")),
+
         new(ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

@@ -115,15 +115,11 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         Result<CamposResolvidos> camposResult = ValidarCampos(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
-            criteriosCumulativos, acaoQuandoIndeferido, baseLegal);
+            criteriosCumulativos, acaoQuandoIndeferido, baseLegal,
+            codigoResult.IsSuccess ? codigoResult.Value : null);
         if (camposResult.IsFailure)
         {
             erros.AddRange(camposResult.Errors);
-        }
-
-        if (codigoResult.IsSuccess && camposResult.IsSuccess)
-        {
-            erros.AddRange(ValidarAutorreferencia(codigoResult.Value!, camposResult.Value!));
         }
 
         if (erros.Count > 0)
@@ -399,7 +395,8 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? remanejamentoFallback,
         IReadOnlyList<string>? criteriosCumulativos,
         string? acaoQuandoIndeferidoToken,
-        string? baseLegal)
+        string? baseLegal,
+        CodigoModalidade? codigo = null)
     {
         (List<FieldError> erros, bool naturezaOk, bool composicaoOk, bool regraOk, CamposResolvidos campos) =
             ValidarCamposIndependentes(
@@ -408,6 +405,11 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
                 criteriosCumulativos, acaoQuandoIndeferidoToken, baseLegal);
 
         erros.AddRange(ValidarCoerenciaCruzada(campos, composicaoOk, naturezaOk, regraOk));
+
+        if (codigo is not null)
+        {
+            erros.AddRange(ValidarAutorreferencia(codigo, campos));
+        }
 
         return erros.Count == 0
             ? Result<CamposResolvidos>.Success(campos)
@@ -429,9 +431,9 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     private static readonly (Func<CamposResolvidos, string?> Ler, string Field, string Code, string Rotulo)[] ReferenciasAOutraModalidade =
     [
         (static c => c.ComposicaoOrigem, "composicaoOrigem", ModalidadeErrorCodes.ComposicaoOrigemCircular, "origem da composição"),
-        (static c => c.RemanejamentoArgs.Destino, "regraRemanejamento", ModalidadeErrorCodes.RemanejamentoDestinoCircular, "destino de remanejamento"),
-        (static c => c.RemanejamentoArgs.Par, "regraRemanejamento", ModalidadeErrorCodes.RemanejamentoParCircular, "par de remanejamento"),
-        (static c => c.RemanejamentoArgs.Fallback, "regraRemanejamento", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "fallback de remanejamento"),
+        (static c => c.RemanejamentoArgs.Destino, "remanejamentoDestino", ModalidadeErrorCodes.RemanejamentoDestinoCircular, "destino de remanejamento"),
+        (static c => c.RemanejamentoArgs.Par, "remanejamentoPar", ModalidadeErrorCodes.RemanejamentoParCircular, "par de remanejamento"),
+        (static c => c.RemanejamentoArgs.Fallback, "remanejamentoFallback", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "fallback de remanejamento"),
     ];
 
     /// <remarks>
