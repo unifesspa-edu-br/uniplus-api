@@ -22,10 +22,14 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;
 
     private static ModalidadeSelecionada Modalidade(
-        string codigo, NaturezaLegalModalidade natureza, ComposicaoVagasModalidade composicao, int? quantidadeDeclarada = null) =>
+        string codigo,
+        NaturezaLegalModalidade natureza,
+        ComposicaoVagasModalidade composicao,
+        int? quantidadeDeclarada = null,
+        string? composicaoOrigemCodigo = null) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza, composicao,
-            composicaoOrigemCodigo: null,
+            composicaoOrigemCodigo,
             natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
             null, null, null, [], null, "base legal", quantidadeDeclarada).Value!;
 
@@ -67,6 +71,74 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.VagasOfertadas.Should().HaveCount(2);
         resultado.Value!.TotalPublicado.Should().Be(60);
+    }
+
+    [Fact(DisplayName = "Quadro institucional que soma acima do VO_base é recusado")]
+    public void Criar_Institucional_QuadroAcimaDoVoBase_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 40),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsFailure.Should().BeTrue(
+            "as quantidades dividem o total da oferta; publicar 42 numa oferta de 40 contradiz o VO_base declarado");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase");
+        resultado.Error.Message.Should().Contain("42").And.Contain("40");
+    }
+
+    [Fact(DisplayName = "Quadro institucional que soma abaixo do VO_base é recusado")]
+    public void Criar_Institucional_QuadroAbaixoDoVoBase_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 4),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsFailure.Should().BeTrue("a oferta tem 40 vagas e o quadro distribuiu 4");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase");
+    }
+
+    [Fact(DisplayName = "Suplementar institucional entra na soma do quadro — não é dispensada do total")]
+    public void Criar_Institucional_SuplementaresAcimaDoVoBase_Falha()
+    {
+        // Dispensar a suplementar da soma neste ramo aceitaria um certame inteiro de
+        // suplementares como se distribuísse zero: aqui não há conjunto calculado ao lado
+        // ao qual elas pudessem acrescer, e o total publicado é a soma do quadro.
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
+            Modalidade("AC_Q", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase");
+    }
+
+    [Fact(DisplayName = "Suplementar na Lei 12.711 continua acrescendo ao total, sem cair na regra do quadro institucional")]
+    public void Criar_Lei12711_ComSuplementar_AcresceAoTotal()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            .. AsOitoFederaisMaisAc(),
+            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 5),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades);
+
+        resultado.IsSuccess.Should().BeTrue("no ramo federal a suplementar acresce ao VO_base, e a igualdade do quadro já vem da calculadora");
+        resultado.Value!.TotalPublicado.Should().Be(55);
     }
 
     [Theory(DisplayName = "Criar com VO_base não positivo falha")]

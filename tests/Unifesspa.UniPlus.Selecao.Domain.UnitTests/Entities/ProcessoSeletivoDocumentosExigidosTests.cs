@@ -589,7 +589,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             RegraDistribuicaoVagasCodigo.Institucional, "v1", string.Concat(Enumerable.Repeat("ab01234567", 7))[..64]).Value!;
         return ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 10,
+            voBase: codigosModalidade.Length * 10,
             pr: 1m,
             regraDistribuicao: regra,
             regraAjuste: null,

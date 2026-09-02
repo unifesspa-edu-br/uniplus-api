@@ -733,7 +733,7 @@ public sealed class ProcessoSeletivoPublicarTests
         {
             distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
                 ofertaCursoOrigemId: Guid.CreateVersion7(),
-                voBase: 40,
+                voBase: modalidade.QuantidadeDeclarada ?? 40,
                 pr: 1m,
                 regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
                 regraAjuste: null,
