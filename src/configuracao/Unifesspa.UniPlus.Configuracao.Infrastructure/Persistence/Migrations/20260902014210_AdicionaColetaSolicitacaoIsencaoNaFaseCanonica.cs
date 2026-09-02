@@ -19,15 +19,21 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 nullable: false,
                 defaultValue: false);
 
-            // A fase de isenção é a única do catálogo semeado que abre a janela de pedido de
-            // isenção; as demais ficam com o default da coluna.
-            migrationBuilder.UpdateData(
-                schema: "configuracao",
-                table: "fase_canonica",
-                keyColumn: "id",
-                keyValue: new Guid("f45e0000-0000-7000-8000-000000000002"),
-                column: "coleta_solicitacao_isencao",
-                value: true);
+            // A fase de isenção é a única do catálogo que abre a janela de pedido de isenção; as
+            // demais ficam com o default da coluna.
+            //
+            // Por CÓDIGO, e não pelo id do seed: a migration que semeou o catálogo usa
+            // ON CONFLICT DO NOTHING, então uma base onde o operador já havia criado a fase manteve
+            // a linha dele, com id próprio. Mirar no id determinístico não alcançaria essa linha, e
+            // a fase viva ficaria sem a marca — com ela, todo cronograma novo passaria pelas
+            // validações da janela sem que nenhuma se aplicasse.
+            migrationBuilder.Sql(
+                """
+                UPDATE configuracao.fase_canonica
+                   SET coleta_solicitacao_isencao = true
+                 WHERE codigo = 'SOLICITACAO_ISENCAO'
+                   AND is_deleted = false;
+                """);
         }
 
         /// <inheritdoc />
