@@ -7,11 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
-using Unifesspa.UniPlus.Discentes.Domain.Errors;
 using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Traduz o que a API do SIGAA entrega para o domínio do módulo, sem deixar nenhum tipo
@@ -19,30 +17,26 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Separa duas situações que se parecem e exigem tratamento oposto. Um campo que o
-/// contrato declara obrigatório vindo ausente é <b>quebra do contrato</b>: a origem não
-/// está entregando o que prometeu, e insistir corromperia a réplica aos poucos — a
-/// execução falha. Já um campo que o contrato permite deixar em branco e que o modelo da
-/// réplica exige é <b>um registro que não serve</b>: a origem cumpriu sua parte, o vínculo
-/// é descartado, contado, e a leitura segue para o próximo.
+/// Nenhum vínculo estragado interrompe a leitura dos demais: um registro que não pode ser
+/// traduzido fica de fora, com o motivo anotado, e a página segue. Uma sincronização de
+/// dezenas de milhares de vínculos não pode parar porque um deles veio errado.
 /// </para>
 /// <para>
-/// Confundir as duas quebra a sincronização de um jeito ou de outro: tratar a segunda como
-/// a primeira faz a execução abortar todo dia por causa dos vínculos sem unidade
-/// acadêmica; tratar a primeira como a segunda deixa uma mudança silenciosa de contrato
-/// esvaziar a réplica sem que ninguém perceba.
+/// Os motivos, porém, não são todos iguais, e é por isso que ficam separados. Faltar a
+/// unidade acadêmica do curso, ou o período de ingresso, é rotina: o contrato permite, o
+/// modelo da réplica exige, e o volume é conhecido. Já faltar um campo que o contrato
+/// declara obrigatório é a origem entregando fora do combinado — não deveria acontecer, e
+/// quando acontece em massa significa que o contrato mudou sem aviso. Nesse caso a
+/// execução termina sem escrever quase nada, e é a contagem separada que impede isso de
+/// passar por uma sincronização bem-sucedida.
 /// </para>
 /// </remarks>
 public static class DecodificadorDeVinculos
 {
     /// <summary>
-    /// Traduz uma página inteira.
+    /// Traduz uma página inteira, deixando de fora o que não puder ser traduzido.
     /// </summary>
-    /// <returns>
-    /// Os vínculos aceitos e os descartados, ou falha quando a origem entrega algo fora do
-    /// contrato — caso em que a página inteira é recusada.
-    /// </returns>
-    public static Result<ResultadoDaDecodificacao> Decodificar(IReadOnlyList<VinculoDiscentePayload> pagina)
+    public static ResultadoDaDecodificacao Decodificar(IReadOnlyList<VinculoDiscentePayload> pagina)
     {
         ArgumentNullException.ThrowIfNull(pagina);
 
@@ -51,164 +45,182 @@ public static class DecodificadorDeVinculos
 
         foreach (VinculoDiscentePayload item in pagina)
         {
-            Result<VinculoDecodificado?> traduzido = Traduzir(item, descartados);
-
-            if (traduzido.IsFailure)
-            {
-                return traduzido.Match(
-                    _ => throw new InvalidOperationException("Resultado de falha sem erro."),
-                    Result<ResultadoDaDecodificacao>.Failure);
-            }
-
-            if (traduzido.Value is { } vinculo)
+            if (Traduzir(item, descartados) is { } vinculo)
             {
                 aceitos.Add(vinculo);
             }
         }
 
-        return Result<ResultadoDaDecodificacao>.Success(
-            new ResultadoDaDecodificacao(aceitos, descartados));
+        return new ResultadoDaDecodificacao(aceitos, descartados);
     }
 
     /// <summary>
-    /// Traduz um vínculo. Devolve nulo com sucesso quando o vínculo foi descartado — o
-    /// descarte já ficou registrado em <paramref name="descartados"/>.
+    /// Traduz um vínculo, ou devolve nulo depois de anotar por que ele fica de fora.
     /// </summary>
-    private static Result<VinculoDecodificado?> Traduzir(
+    private static VinculoDecodificado? Traduzir(
         VinculoDiscentePayload item,
         List<VinculoDescartado> descartados)
     {
         if (item is null)
         {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "vínculo");
+            descartados.Add(new VinculoDescartado(null, MotivoDeDescarte.ForaDoContrato, "vínculo"));
+            return null;
         }
 
-        // Campos que o contrato declara obrigatórios. Ausência aqui é quebra do contrato.
-        if (item.IdDiscente <= 0)
+        // O que o contrato declara obrigatório. Ausência aqui é entrega fora do combinado.
+        long? identificador = item.IdDiscente > 0 ? item.IdDiscente : null;
+
+        if (CampoObrigatorioAusente(item) is { } faltando)
         {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "idDiscente");
+            descartados.Add(new VinculoDescartado(
+                identificador, MotivoDeDescarte.ForaDoContrato, faltando));
+            return null;
         }
 
-        if (string.IsNullOrWhiteSpace(item.Matricula))
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "matricula");
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Nome))
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "nome");
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Nivel))
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "nivel");
-        }
-
-        if (item.Curso is null)
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "curso");
-        }
-
-        if (item.Situacao is null)
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "situacao");
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Cpf))
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "cpf");
-        }
-
-        if (item.Curso.Id <= 0)
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "curso.id");
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Curso.Nome))
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "curso.nome");
-        }
-
-        if (item.Situacao.Id <= 0)
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "situacao.id");
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Situacao.Descricao))
-        {
-            return Falha(DiscentesErrorCodes.Payload.CampoObrigatorioAusente, "situacao.descricao");
-        }
-
-        // O identificador da pessoa fora do formato acordado também é quebra de contrato, e
-        // por isso é conferido aqui, junto das demais — e não depois dos descartes. Adiante,
-        // o primeiro descarte encerraria a tradução deste vínculo e a conferência nunca
-        // aconteceria: um CPF corrompido passaria por "registro que não serve" toda vez que
-        // viesse acompanhado de um curso sem unidade, escondendo a quebra do contrato
+        // O formato do CPF é conferido junto das demais exigências do contrato, e não
+        // depois dos descartes por registro incompleto. Adiante, o primeiro descarte
+        // encerraria a tradução deste vínculo e a conferência nunca aconteceria: um CPF
+        // corrompido seria anotado como registro incompleto sempre que viesse acompanhado
+        // de um curso sem unidade — confundindo entrega fora do combinado com rotina,
         // justamente no caso mais frequente da origem.
-        Result<Cpf> cpf = Cpf.Criar(item.Cpf);
-        if (cpf.IsFailure)
+        Cpf? cpf = Cpf.Criar(item.Cpf).Match<Cpf?>(valido => valido, _ => null);
+        if (cpf is null)
         {
-            return Result<VinculoDecodificado?>.Failure(new DomainError(
-                DiscentesErrorCodes.Payload.CpfInvalido,
-                "A origem entregou um CPF fora do formato acordado."));
+            descartados.Add(new VinculoDescartado(
+                identificador, MotivoDeDescarte.ForaDoContrato, "cpf"));
+            return null;
         }
 
         // Daqui em diante, só o que o contrato permite em branco e a réplica exige.
-        // Ausência descarta o vínculo, sem interromper a leitura.
-        if (item.Curso.Unidade is not { } unidade)
+        if (item.Curso!.Unidade is not { } unidade)
         {
             descartados.Add(new VinculoDescartado(
-                item.IdDiscente, MotivoDeDescarte.CursoSemUnidadeAcademica));
-            return Result<VinculoDecodificado?>.Success(null);
+                identificador, MotivoDeDescarte.CursoSemUnidadeAcademica));
+            return null;
         }
 
         if (item.AnoIngresso is not { } ano || item.PeriodoIngresso is not { } periodo)
         {
             descartados.Add(new VinculoDescartado(
-                item.IdDiscente, MotivoDeDescarte.SemPeriodoDeIngresso));
-            return Result<VinculoDecodificado?>.Success(null);
+                identificador, MotivoDeDescarte.SemPeriodoDeIngresso));
+            return null;
         }
 
-        return cpf.Match(
-            valido => Montar(item, valido, unidade, ano, periodo),
-            Recusar);
+        return Montar(item, cpf, unidade, ano, periodo, descartados, identificador);
     }
 
-    private static Result<VinculoDecodificado?> Montar(
+    /// <summary>
+    /// Devolve o nome do primeiro campo obrigatório que a origem não entregou, ou nulo
+    /// quando todos vieram.
+    /// </summary>
+    private static string? CampoObrigatorioAusente(VinculoDiscentePayload item)
+    {
+        if (item.IdDiscente <= 0)
+        {
+            return "idDiscente";
+        }
+
+        if (string.IsNullOrWhiteSpace(item.Matricula))
+        {
+            return "matricula";
+        }
+
+        if (string.IsNullOrWhiteSpace(item.Nome))
+        {
+            return "nome";
+        }
+
+        if (string.IsNullOrWhiteSpace(item.Nivel))
+        {
+            return "nivel";
+        }
+
+        if (string.IsNullOrWhiteSpace(item.Cpf))
+        {
+            return "cpf";
+        }
+
+        if (item.Curso is null)
+        {
+            return "curso";
+        }
+
+        if (item.Curso.Id <= 0)
+        {
+            return "curso.id";
+        }
+
+        if (string.IsNullOrWhiteSpace(item.Curso.Nome))
+        {
+            return "curso.nome";
+        }
+
+        if (item.Situacao is null)
+        {
+            return "situacao";
+        }
+
+        if (item.Situacao.Id <= 0)
+        {
+            return "situacao.id";
+        }
+
+        return string.IsNullOrWhiteSpace(item.Situacao.Descricao) ? "situacao.descricao" : null;
+    }
+
+    private static VinculoDecodificado? Montar(
         VinculoDiscentePayload item,
         Cpf cpf,
         UnidadePayload unidade,
         int ano,
-        int periodo) =>
-        CursoSigaaSnapshot.Criar(
-                item.Curso!.Id, item.Curso.Nome, item.Curso.CodigoEmec, unidade.Id, unidade.Nome)
-            .Match(
-                curso => SituacaoAcademicaSnapshot.Criar(
-                        item.Situacao!.Id, item.Situacao.Descricao, item.Situacao.SituacaoVinculo)
-                    .Match(
-                        situacao => PeriodoIngresso.Criar(ano, periodo)
-                            .Match(
-                                ingresso => MontarSnapshot(item, cpf, curso, situacao, ingresso),
-                                Recusar),
-                        Recusar),
-                Recusar);
+        int periodo,
+        List<VinculoDescartado> descartados,
+        long? identificador)
+    {
+        CursoSigaaSnapshot? curso = CursoSigaaSnapshot
+            .Criar(item.Curso!.Id, item.Curso.Nome, item.Curso.CodigoEmec, unidade.Id, unidade.Nome)
+            .Match<CursoSigaaSnapshot?>(c => c, _ => null);
 
-    private static Result<VinculoDecodificado?> MontarSnapshot(
-        VinculoDiscentePayload item,
-        Cpf cpf,
-        CursoSigaaSnapshot curso,
-        SituacaoAcademicaSnapshot situacao,
-        PeriodoIngresso ingresso) =>
-        VinculoDiscenteSnapshot.Criar(
-                item.IdDiscente, item.Matricula, cpf, item.Nome, item.Nivel, curso, situacao, ingresso)
-            .Match(
-                snapshot => Result<VinculoDecodificado?>.Success(new VinculoDecodificado(
-                    VinculoDiscente.Criar(snapshot),
-                    ResumirConteudo(snapshot))),
-                Recusar);
+        SituacaoAcademicaSnapshot? situacao = SituacaoAcademicaSnapshot
+            .Criar(item.Situacao!.Id, item.Situacao.Descricao, item.Situacao.SituacaoVinculo)
+            .Match<SituacaoAcademicaSnapshot?>(s => s, _ => null);
 
-    private static Result<VinculoDecodificado?> Recusar(DomainError erro) =>
-        Result<VinculoDecodificado?>.Failure(erro);
+        PeriodoIngresso? ingresso = PeriodoIngresso
+            .Criar(ano, periodo)
+            .Match<PeriodoIngresso?>(p => p, _ => null);
+
+        if (curso is null || situacao is null || ingresso is null)
+        {
+            descartados.Add(new VinculoDescartado(
+                identificador, MotivoDeDescarte.ForaDoContrato, DescreverParteInvalida(curso, situacao)));
+            return null;
+        }
+
+        VinculoDiscenteSnapshot? snapshot = VinculoDiscenteSnapshot
+            .Criar(item.IdDiscente, item.Matricula, cpf, item.Nome, item.Nivel, curso, situacao, ingresso)
+            .Match<VinculoDiscenteSnapshot?>(s => s, _ => null);
+
+        if (snapshot is null)
+        {
+            descartados.Add(new VinculoDescartado(
+                identificador, MotivoDeDescarte.ForaDoContrato, "vínculo"));
+            return null;
+        }
+
+        return new VinculoDecodificado(VinculoDiscente.Criar(snapshot), ResumirConteudo(snapshot));
+    }
+
+    private static string DescreverParteInvalida(
+        CursoSigaaSnapshot? curso,
+        SituacaoAcademicaSnapshot? situacao)
+    {
+        if (curso is null)
+        {
+            return "curso";
+        }
+
+        return situacao is null ? "situacao" : "ingresso";
+    }
 
     /// <summary>
     /// Resume, num valor curto, o que veio da origem para este vínculo.
@@ -217,16 +229,14 @@ public static class DecodificadorDeVinculos
     /// <para>
     /// O resumo é calculado sobre os valores já traduzidos, em ordem fixa, e não sobre o
     /// texto recebido: assim ele não muda quando a origem reordena campos ou altera
-    /// espaçamento, e muda sempre que qualquer campo coberto muda. Campo ausente entra
-    /// como marca própria, para que ausência e vazio não se confundam.
+    /// espaçamento, e muda sempre que qualquer campo coberto muda.
     /// </para>
     /// <para>
     /// <b>O CPF fica de fora, deliberadamente.</b> O resumo é guardado ao lado dos demais
     /// campos, que ficam legíveis na mesma linha — quem tivesse a tabela conheceria tudo
     /// menos o CPF e poderia testar, um a um, os pouco mais de um bilhão de CPFs válidos
     /// até achar o que reproduz o resumo. Isso é rápido com equipamento comum e devolveria
-    /// em claro justamente o dado que a cifra em repouso protege. Incluir o CPF aqui
-    /// desfaria essa proteção.
+    /// em claro justamente o dado que a cifra em repouso protege.
     /// </para>
     /// <para>
     /// A consequência é conhecida e aceita: uma correção de CPF na origem que não venha
@@ -289,9 +299,4 @@ public static class DecodificadorDeVinculos
             .Append(':')
             .Append(valor);
     }
-
-    private static Result<VinculoDecodificado?> Falha(string codigo, string campo) =>
-        Result<VinculoDecodificado?>.Failure(new DomainError(
-            codigo,
-            $"A origem entregou um vínculo sem o campo obrigatório '{campo}'."));
 }
