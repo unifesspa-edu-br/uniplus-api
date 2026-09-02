@@ -426,6 +426,19 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco");
     }
 
+    [Fact(DisplayName = "Modalidade cruzada consigo mesma é recusada — um par de um nó não remaneja")]
+    public void Criar_ParCruzadoConsigoMesma_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades = [ModalidadeCruzada("AC_I", par: "AC_I")];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 2, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+
+        resultado.IsFailure.Should().BeTrue(
+            "o auto-laço satisfaz a comparação recíproca mas não tem para onde remanejar");
+        resultado.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco");
+    }
+
     private static ModalidadeSelecionada ModalidadeCruzada(string codigo, string par) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null,
