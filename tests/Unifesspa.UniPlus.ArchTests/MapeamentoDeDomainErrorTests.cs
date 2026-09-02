@@ -10,14 +10,23 @@ using ReflectionType = System.Type;
 namespace Unifesspa.UniPlus.ArchTests;
 
 /// <summary>
-/// Garante que todo <c>new DomainError("&lt;code&gt;", ...)</c> escrito em Domain ou
-/// Application tem mapeamento em alguma <see cref="IDomainErrorRegistration"/> servida
-/// pelo módulo. Sem registro o mapper devolve 500 genérico no lugar do ProblemDetails
-/// canônico da ADR-0024, e o contrato de erro do endpoint quebra em silêncio.
+/// Garante que todo código de <c>DomainError</c> emitido em Domain ou Application tem
+/// mapeamento em alguma <see cref="IDomainErrorRegistration"/> servida pelo módulo. Sem
+/// registro o mapper devolve 500 genérico no lugar do ProblemDetails canônico da
+/// ADR-0024, e o contrato de erro do endpoint quebra em silêncio.
 /// </summary>
 /// <remarks>
-/// Os módulos são descobertos pelo sistema de arquivos, não por um roster no código:
-/// um módulo novo passa a ser cobrado sem depender de alguém lembrar de listá-lo aqui.
+/// <para>
+/// O código é coletado de duas formas, porque duas convenções convivem no repositório:
+/// por reflexão, nas constantes declaradas nos assemblies do módulo, e por varredura
+/// dos literais com formato de código no fonte das camadas. A varredura não exige que o
+/// literal esteja na construção do <c>DomainError</c> — vários chegam lá por um helper
+/// intermediário.
+/// </para>
+/// <para>
+/// Os módulos são descobertos pelo sistema de arquivos, não por um roster no código: um
+/// módulo novo passa a ser cobrado sem depender de alguém lembrar de listá-lo aqui.
+/// </para>
 /// </remarks>
 public sealed partial class MapeamentoDeDomainErrorTests
 {
@@ -48,10 +57,9 @@ public sealed partial class MapeamentoDeDomainErrorTests
     [MemberData(nameof(Modulos))]
     public void Codes_NaoSaoMontadosPorInterpolacao(string modulo)
     {
-        // Um code interpolado não é estaticamente determinável, então a coleta acima
-        // não o enxerga e a Theory de cobertura passa verde sem cobri-lo. Recusar a
-        // construção é o que impede o gate de silenciar: sem isto, um helper
-        // `Falha(sufixo)` reintroduz o buraco sem nada acusar.
+        // A cobertura acima alcança literal e constante, mas um code montado em tempo de
+        // execução não existe no fonte nem nos metadados: a Theory passaria verde sem
+        // cobri-lo. Recusar a construção é o que impede o gate de silenciar.
         IEnumerable<string> interpolados = ArquivosDeOrigem(modulo)
             .Where(arquivo => ChamadaInterpoladaRegex().IsMatch(SemComentarios(File.ReadAllText(arquivo))))
             .Select(arquivo => Path.GetFileName(arquivo))
@@ -197,8 +205,6 @@ public sealed partial class MapeamentoDeDomainErrorTests
     /// como o sufixo que declara. Vale para os 373 codes do repositório e para
     /// nenhuma das constantes que apenas guardam nome de tipo.
     /// </remarks>
-    private static bool EhFormatoDeCode(string valor) => FormatoDeCodeRegex().IsMatch(valor);
-
     private static bool EhCode(string nomeDoCampo, string valor)
     {
         if (!FormatoDeCodeRegex().IsMatch(valor))
@@ -213,18 +219,14 @@ public sealed partial class MapeamentoDeDomainErrorTests
 
     private static HashSet<string> LerCodesEmLiteraisInline(IEnumerable<string> camadas)
     {
-        Regex chamada = ChamadaDeDomainErrorRegex();
+        Regex literal = LiteralDeCodeRegex();
         HashSet<string> codes = new(StringComparer.Ordinal);
 
         foreach (string arquivo in ArquivosDe(camadas))
         {
             string conteudo = SemDeclaracaoDeConstante(SemComentarios(File.ReadAllText(arquivo)));
 
-            foreach (Match encontro in chamada.Matches(conteudo))
-            {
-                if (EhFormatoDeCode(encontro.Groups[1].Value))
-                    codes.Add(encontro.Groups[1].Value);
-            }
+            codes.UnionWith(literal.Matches(conteudo).Select(m => m.Groups[1].Value));
         }
 
         return codes;
@@ -359,7 +361,7 @@ public sealed partial class MapeamentoDeDomainErrorTests
     /// gate capaz de enxergá-lo.
     /// </remarks>
     [GeneratedRegex(@"""([A-Z][A-Za-z0-9]*\.[A-Za-z][A-Za-z0-9]*)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 2000)]
-    private static partial Regex ChamadaDeDomainErrorRegex();
+    private static partial Regex LiteralDeCodeRegex();
 
     [GeneratedRegex(@"^[A-Z][A-Za-z0-9]*\.[A-Za-z][A-Za-z0-9]*$", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex FormatoDeCodeRegex();
