@@ -622,7 +622,7 @@ internal static class CorpusEnvelope
 
     /// <summary>Contexto do corpus: o calendário rico, com o fuso reconhecido.</summary>
     internal static ContextoDeContagemDePrazos ContextoRico() =>
-        new(CalendarioRico(), FusoInstitucionalReconhecido: true);
+        new(CalendarioRico(), FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
     internal static EntradaCanonicalizacao Entrada(
         ProcessoSeletivo processo,

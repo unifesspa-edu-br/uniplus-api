@@ -72,8 +72,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         var contexto = new ContextoDeContagemDePrazos(
             calendario.IsSuccess ? calendario.Value : null,
-            FusoInstitucionalReconhecido: fuso.IsSuccess,
-            FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
+                        FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
             FusoInstitucional: fuso.IsSuccess ? fuso.Value : null);
 
         ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto)

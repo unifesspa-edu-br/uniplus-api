@@ -42,13 +42,31 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed record ContextoDeContagemDePrazos(
     CalendarioDiasUteisCongelado? CalendarioVigente,
-    bool FusoInstitucionalReconhecido,
     DomainError? FalhaDoCalendarioVigente = null,
     TimeZoneInfo? FusoInstitucional = null)
 {
     /// <summary>
-    /// Contexto de um ambiente sem calendário vigente e com fuso reconhecido — o estado de um
-    /// sistema recém-instalado, e o default de teste que não exercita nenhuma das duas causas.
+    /// Zona reconhecida é a zona presente. Enquanto isto era um booleano à parte, um contexto podia
+    /// afirmar que o fuso fora reconhecido sem carregá-lo — e nesse estado o checklist projetava
+    /// tudo verde enquanto a publicação falhava por falta da zona.
     /// </summary>
-    public static ContextoDeContagemDePrazos SemCalendario { get; } = new(null, true);
+    public bool FusoInstitucionalReconhecido => FusoInstitucional is not null;
+
+    /// <summary>
+    /// Ambiente sem calendário vigente, com a zona institucional resolvida — o estado de um sistema
+    /// recém-instalado, e o default de quem não exercita nenhuma das duas causas.
+    /// </summary>
+    public static ContextoDeContagemDePrazos SemCalendario { get; } = new(null, null, ZonaInstitucional());
+
+    private static TimeZoneInfo? ZonaInstitucional()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(ValueObjects.FusoInstitucional.ZoneId);
+        }
+        catch (Exception excecao) when (excecao is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            return null;
+        }
+    }
 }

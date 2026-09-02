@@ -2137,13 +2137,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         OrigemCandidatos == OrigemCandidatos.InscricaoPropria && !_cronogramaFases.Any(static f => f.ColetaInscricao);
 
     /// <summary>
-    /// A projeção da janela para o checklist. Sem zona resolvida a duração não é verificável, e o
-    /// item fica verde: quem recusa a publicação nesse caso é <c>fuso_institucional_nao_reconhecido</c>,
-    /// que já está vermelho — a bicondicional continua de pé, com a causa nomeada uma vez só.
+    /// A projeção da janela para o checklist. Sem zona resolvida o item fica verde: quem recusa a
+    /// publicação nesse caso é <c>fuso_institucional_nao_reconhecido</c>, que já está vermelho pelo
+    /// mesmo motivo — a bicondicional continua de pé, com a causa nomeada uma vez só.
     /// </summary>
     private bool JanelaDeIsencaoConforme(ContextoDeContagemDePrazos contexto) =>
-        !contexto.FusoInstitucionalReconhecido
-        || contexto.FusoInstitucional is null
+        contexto.FusoInstitucional is null
         || PendenciaDaJanelaDeIsencao(contexto.FusoInstitucional) is null;
 
     /// <summary>

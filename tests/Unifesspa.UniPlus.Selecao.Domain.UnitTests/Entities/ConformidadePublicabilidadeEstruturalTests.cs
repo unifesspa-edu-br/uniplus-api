@@ -900,7 +900,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             Guid.CreateVersion7(),
             "2026",
             [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
-        FusoInstitucionalReconhecido: true);
+        FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
     private static ReferenciaRegra RegraDeRecursoAncorada() =>
         ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)).Value!;
