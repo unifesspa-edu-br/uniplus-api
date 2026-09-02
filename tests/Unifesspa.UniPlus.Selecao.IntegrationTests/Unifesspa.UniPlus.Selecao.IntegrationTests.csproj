@@ -44,4 +44,11 @@
     <Content Include="ProcessosSeletivos/Fixtures/schema-version.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <!-- Instantes construídos a partir da zona institucional resolvida (issue #1376). Compilado em
+         cada projeto que precisa, em vez de copiado: três cópias divergiriam na primeira correção. -->
+    <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
+  </ItemGroup>
+
 </Project>

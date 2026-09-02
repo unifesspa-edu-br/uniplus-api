@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Story #853 — CA-18 (paridade congelado × cadastro vivo) e CA-19 (o passado não muda,
@@ -34,7 +35,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     /// responderia pela vigência do dia anterior (issue #1350).
     /// </summary>
     private static readonly DateTimeOffset InicioDaInscricao =
-        new(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3));
+        InstanteEmBelem.Em(2026, 1, 1);
 
     private readonly ProcessoSeletivoDbFixture _fixture;
 
@@ -147,7 +148,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         Result<DadosEdital> dadosResult = DadosEdital.Criar(
             numero: "001/2026",
             periodoInscricaoInicio: InicioDaInscricao,
-            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+            periodoInscricaoFim: InstanteEmBelem.Em(2026, 1, 31, 23, 59, 59),
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -19,15 +20,13 @@ using Xunit;
 /// </remarks>
 public sealed class DadosEditalTests
 {
-    private static readonly TimeSpan HorarioDeBelem = TimeSpan.FromHours(-3);
-
     [Fact(DisplayName = "Fim do período anterior ao início é recusado")]
     public void PeriodoInvertido_Recusado()
     {
         Result<DadosEdital> resultado = DadosEdital.Criar(
             "001/2026",
-            new DateTimeOffset(2026, 2, 1, 0, 0, 0, HorarioDeBelem),
-            new DateTimeOffset(2026, 1, 2, 23, 59, 59, HorarioDeBelem),
+            InstanteEmBelem.Em(2026, 2, 1),
+            InstanteEmBelem.Em(2026, 1, 2, 23, 59, 59),
             Guid.CreateVersion7());
 
         resultado.IsFailure.Should().BeTrue();
@@ -42,8 +41,8 @@ public sealed class DadosEditalTests
     {
         Result<DadosEdital> resultado = DadosEdital.Criar(
             "001/2026",
-            inicioZerado ? default : new DateTimeOffset(2026, 1, 1, 0, 0, 0, HorarioDeBelem),
-            fimZerado ? default : new DateTimeOffset(2026, 1, 31, 23, 59, 59, HorarioDeBelem),
+            inicioZerado ? default : InstanteEmBelem.Em(2026, 1, 1),
+            fimZerado ? default : InstanteEmBelem.Em(2026, 1, 31, 23, 59, 59),
             Guid.CreateVersion7());
 
         resultado.IsFailure.Should().BeTrue();
@@ -55,8 +54,8 @@ public sealed class DadosEditalTests
     {
         Result<DadosEdital> resultado = DadosEdital.Criar(
             "001/2026",
-            new DateTimeOffset(2026, 1, 1, 0, 0, 0, HorarioDeBelem),
-            new DateTimeOffset(2026, 1, 31, 23, 59, 59, HorarioDeBelem),
+            InstanteEmBelem.Em(2026, 1, 1),
+            InstanteEmBelem.Em(2026, 1, 31, 23, 59, 59),
             Guid.CreateVersion7());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -71,8 +70,8 @@ public sealed class DadosEditalTests
         // de Belém já é o dia seguinte em UTC. É esse o caso que separa as duas leituras.
         DadosEdital dados = DadosEdital.Criar(
             "001/2026",
-            new DateTimeOffset(2026, 3, 10, 22, 0, 0, HorarioDeBelem),
-            new DateTimeOffset(2026, 3, 31, 23, 59, 59, HorarioDeBelem),
+            InstanteEmBelem.Em(2026, 3, 10, 22, 0, 0),
+            InstanteEmBelem.Em(2026, 3, 31, 23, 59, 59),
             Guid.CreateVersion7()).Value!;
 
         // O mesmo instante, em UTC, cai em 11/03.

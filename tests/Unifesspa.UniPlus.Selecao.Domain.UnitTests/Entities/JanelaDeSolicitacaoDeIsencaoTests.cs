@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -16,15 +17,15 @@ using Xunit;
 public sealed class JanelaDeSolicitacaoDeIsencaoTests
 {
     private static readonly TimeZoneInfo Belem = TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId);
-    private static readonly DateTimeOffset AberturaDasInscricoes = new(2026, 3, 2, 0, 0, 0, TimeSpan.FromHours(-3));
-    private static readonly DateTimeOffset FimDasInscricoes = new(2026, 3, 31, 23, 59, 59, TimeSpan.FromHours(-3));
+    private static readonly DateTimeOffset AberturaDasInscricoes = InstanteEmBelem.Em(2026, 3, 2);
+    private static readonly DateTimeOffset FimDasInscricoes = InstanteEmBelem.Em(2026, 3, 31, 23, 59, 59);
 
     [Fact(DisplayName = "Janela que abre depois das inscrições é recusada")]
     public void AberturaDivergente_Recusada()
     {
         DomainError? pendencia = Avaliar(
             aberturaIsencao: AberturaDasInscricoes.AddMinutes(1),
-            fimIsencao: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.FromHours(-3)));
+            fimIsencao: InstanteEmBelem.Em(2026, 3, 20, 23, 59, 59));
 
         pendencia!.Code.Should().Be("ProcessoSeletivo.JanelaDeIsencaoNaoAbreComAInscricao");
     }
@@ -54,8 +55,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     public void DuracaoMinima(int diasAteOFim, bool aceito)
     {
         // Abertura em 02/03; o dia 1 é 03/03, e o quinto se completa às 23:59:59 de 07/03.
-        DateTimeOffset fim = new DateTimeOffset(
-            2026, 3, 2 + diasAteOFim, 23, 59, 59, TimeSpan.FromHours(-3));
+        DateTimeOffset fim = InstanteEmBelem.Em(2026, 3, 2 + diasAteOFim, 23, 59, 59);
 
         DomainError? pendencia = Avaliar(AberturaDasInscricoes, fim);
 
@@ -75,7 +75,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         // segundo, e não o último tick, senão a janela declarada em 23:59:59 seria recusada.
         DomainError? pendencia = Avaliar(
             aberturaIsencao: AberturaDasInscricoes,
-            fimIsencao: new DateTimeOffset(2026, 3, 7, 23, 59, 59, TimeSpan.FromHours(-3)).AddTicks(5_000_000));
+            fimIsencao: InstanteEmBelem.Em(2026, 3, 7, 23, 59, 59).AddTicks(5_000_000));
 
         pendencia.Should().BeNull();
     }
@@ -85,13 +85,13 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     {
         // 21/04 é feriado nacional. Uma contagem em dias úteis exigiria janela maior; a janela é
         // período do cronograma, não interposição de recurso, e não consulta o calendário.
-        DateTimeOffset abertura = new(2026, 4, 18, 0, 0, 0, TimeSpan.FromHours(-3));
+        DateTimeOffset abertura = InstanteEmBelem.Em(2026, 4, 18);
 
         DomainError? pendencia = Avaliar(
             aberturaIsencao: abertura,
-            fimIsencao: new DateTimeOffset(2026, 4, 23, 23, 59, 59, TimeSpan.FromHours(-3)),
+            fimIsencao: InstanteEmBelem.Em(2026, 4, 23, 23, 59, 59),
             aberturaInscricao: abertura,
-            fimInscricao: new DateTimeOffset(2026, 5, 10, 23, 59, 59, TimeSpan.FromHours(-3)));
+            fimInscricao: InstanteEmBelem.Em(2026, 5, 10, 23, 59, 59));
 
         pendencia.Should().BeNull();
     }
@@ -111,7 +111,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         // pronto instantes antes de a publicação recusar o mesmo processo.
         ProcessoSeletivo processo = ProcessoComCronograma([
             FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes),
-            FaseDeIsencao(AberturaDasInscricoes.AddMinutes(1), new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.FromHours(-3))),
+            FaseDeIsencao(AberturaDasInscricoes.AddMinutes(1), InstanteEmBelem.Em(2026, 3, 20, 23, 59, 59)),
         ]);
 
         var contexto = new ContextoDeContagemDePrazos(
@@ -128,7 +128,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         // publicação de janela irregular.
         ProcessoSeletivo processo = ProcessoComCronograma([
             FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes),
-            FaseDeIsencao(AberturaDasInscricoes, new DateTimeOffset(2026, 3, 3, 23, 59, 59, TimeSpan.FromHours(-3))),
+            FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59)),
         ]);
 
         Action semZona = () => processo.PendenciaDoCronograma(null);
@@ -147,7 +147,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         processo.DefinirCronogramaFases(
-            [FaseDeIsencao(AberturaDasInscricoes, new DateTimeOffset(2026, 3, 3, 23, 59, 59, TimeSpan.FromHours(-3)))],
+            [FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59))],
             [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.PendenciaDoCronograma(Belem)!.Code
