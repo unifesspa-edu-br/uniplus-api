@@ -122,7 +122,7 @@ public sealed class ModalidadeTests
     public void Criar_SuplementarComDestinoUnico_Coerente()
     {
         Result<Modalidade> r = Criar(
-            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+            codigo: "AC_I", natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "DESTINO_UNICO", destino: "AC");
 
         r.IsSuccess.Should().BeTrue();
@@ -149,10 +149,72 @@ public sealed class ModalidadeTests
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.OrigemApenasParaRetiraDe);
     }
 
+    [Theory(DisplayName = "Modalidade que referencia a si mesma é rejeitada, apontando o campo da referência")]
+    [InlineData("origem", "Modalidade.ComposicaoOrigemCircular", "composicaoOrigem")]
+    [InlineData("destino", "Modalidade.RemanejamentoDestinoCircular", "remanejamentoDestino")]
+    [InlineData("par", "Modalidade.RemanejamentoParCircular", "remanejamentoPar")]
+    [InlineData("fallback", "Modalidade.RemanejamentoFallbackCircular", "remanejamentoFallback")]
+    public void Criar_ReferenciandoSiMesma_Falha(string referencia, string codeEsperado, string fieldEsperado)
+    {
+        Result<Modalidade> resultado = referencia switch
+        {
+            "origem" => Criar(codigo: "AC_PCD", composicao: "RETIRA_DE", origem: "AC_PCD"),
+            "destino" => Criar(
+                codigo: "AC_I", natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+                regra: "DESTINO_UNICO", destino: "AC_I"),
+            "par" => Criar(
+                codigo: "AC_I", natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+                regra: "CRUZADO", par: "AC_I"),
+            _ => Criar(
+                codigo: "AC_I", natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+                regra: "CRUZADO", par: "AC_Q", fallback: "AC_I"),
+        };
+
+        resultado.IsFailure.Should().BeTrue(
+            "uma modalidade que cita a si mesma descreve uma operação que não acontece");
+
+        // O field chega ao cliente sem tradução: apontar o seletor da regra faria a tela
+        // destacar um campo correto e deixar o inválido sem marca.
+        resultado.Errors.Should().Contain(e => e.Error.Code == codeEsperado && e.Field == fieldEsperado);
+    }
+
+    [Fact(DisplayName = "Autorreferência é reportada junto de violação sem relação, na mesma resposta")]
+    public void Criar_AutorreferenciaComOutraViolacao_AcumulaAsDuas()
+    {
+        Result<Modalidade> resultado = Criar(
+            codigo: "AC_I", descricao: new string('x', 500),
+            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+            regra: "DESTINO_UNICO", destino: "AC_I");
+
+        resultado.IsFailure.Should().BeTrue();
+
+        // Guardar a autorreferência atrás do sucesso das demais validações faria o cliente
+        // corrigir a descrição, reenviar e só então descobrir o segundo problema.
+        resultado.Errors.Should().Contain(e => e.Error.Code == ModalidadeErrorCodes.RemanejamentoDestinoCircular);
+        resultado.Errors.Should().Contain(e => e.Field == "descricao");
+    }
+
+    [Fact(DisplayName = "Atualizar para referenciar a si mesma é rejeitado")]
+    public void Atualizar_ReferenciandoSiMesma_Falha()
+    {
+        // Código fora do catálogo legal fixo: as modalidades protegidas recusam qualquer
+        // alteração estrutural antes de chegar às invariantes de coerência.
+        Modalidade m = Criar(
+            codigo: "PSIQ_REGIONAL", natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+            regra: "CRUZADO", par: "AC_Q").Value!;
+
+        Result resultado = m.Atualizar(
+            null, "OUTRA_MODALIDADE", "SUPLEMENTAR_AO_TOTAL", null, "CRUZADO",
+            null, "PSIQ_REGIONAL", null, null, null, null);
+
+        resultado.IsFailure.Should().BeTrue("a recusa vale nos dois caminhos de escrita");
+        resultado.Errors.Should().Contain(e => e.Error.Code == "Modalidade.RemanejamentoParCircular");
+    }
+
     [Fact(DisplayName = "Contraprova: RETIRA_DE com origem é aceito")]
     public void Criar_RetiraDeComOrigem_Aceita()
     {
-        Modalidade m = Criar(natureza: "AMPLA", composicao: "RETIRA_DE", origem: "AC").Value!;
+        Modalidade m = Criar(codigo: "AC_PCD", natureza: "AMPLA", composicao: "RETIRA_DE", origem: "AC").Value!;
 
         m.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiraDe);
         m.ComposicaoOrigem.Should().Be("AC");
@@ -199,7 +261,7 @@ public sealed class ModalidadeTests
     public void Criar_CruzadoComParFallback_Aceita()
     {
         Modalidade m = Criar(
-            natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+            codigo: "AC_I", natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "CRUZADO", par: "AC", fallback: "LB_PPI").Value!;
 
         m.RemanejamentoArgs.Par.Should().Be("AC");
@@ -510,7 +572,8 @@ public sealed class ModalidadeTests
     public void Criar_RegraInvalidaComArgumento_NaoDerivaIncoerenciaDeArgumento()
     {
         Result<Modalidade> r = Criar(
-            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL", regra: "CASCATA", destino: "AC");
+            codigo: "AC_I", natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+            regra: "CASCATA", destino: "AC");
 
         r.IsFailure.Should().BeTrue();
         r.Errors.Should().HaveCount(1,
