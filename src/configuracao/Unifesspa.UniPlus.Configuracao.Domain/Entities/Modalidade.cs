@@ -121,6 +121,11 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             erros.AddRange(camposResult.Errors);
         }
 
+        if (codigoResult.IsSuccess && camposResult.IsSuccess)
+        {
+            erros.AddRange(ValidarAutorreferencia(codigoResult.Value!, camposResult.Value!));
+        }
+
         if (erros.Count > 0)
         {
             return Result<Modalidade>.ValidationFailure(erros);
@@ -158,7 +163,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? acaoQuandoIndeferido,
         string? baseLegal)
     {
-        (List<FieldError> erros, _, _, _, CamposResolvidos campos) = ValidarCamposIndependentes(
+        (List<FieldError> erros, bool naturezaOk, bool composicaoOk, bool regraOk, CamposResolvidos campos) = ValidarCamposIndependentes(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
             criteriosCumulativos, acaoQuandoIndeferido, baseLegal);
@@ -176,10 +181,11 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
                 + "no indeferimento são fixados em lei."));
         }
 
-        Result coerencia = ValidarCoerenciaCruzada(campos);
-        if (coerencia.IsFailure)
+        List<FieldError> violacoes = ValidarCoerenciaCruzada(campos, composicaoOk, naturezaOk, regraOk);
+        violacoes.AddRange(ValidarAutorreferencia(Codigo, campos));
+        if (violacoes.Count > 0)
         {
-            return coerencia;
+            return Result.ValidationFailure(violacoes);
         }
 
         AplicarCampos(campos);
@@ -401,9 +407,68 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
                 remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
                 criteriosCumulativos, acaoQuandoIndeferidoToken, baseLegal);
 
-        // Invariante 4 — equivalência exata RetiraDe ⟺ origem preenchida. A
-        // presença de origem independe do tamanho já sinalizado acima; só depende
-        // de ComposicaoVagas ter sido reconhecida.
+        erros.AddRange(ValidarCoerenciaCruzada(campos, composicaoOk, naturezaOk, regraOk));
+
+        return erros.Count == 0
+            ? Result<CamposResolvidos>.Success(campos)
+            : Result<CamposResolvidos>.ValidationFailure(erros);
+    }
+
+    /// <summary>
+    /// As três invariantes que cruzam campos já resolvidos e confirmados válidos
+    /// individualmente (RetiraDe⟺origem, natureza↔regra, args por regra),
+    /// acumulando toda violação independente. Diferente de <see cref="ValidarCampos"/>,
+    /// não precisa de sinalizador de gate: só é chamada por <see cref="Atualizar"/>
+    /// depois que <see cref="ValidarCamposIndependentes"/> já devolveu zero erros —
+    /// os três tokens dos quais estas invariantes dependem já estão, por
+    /// construção, reconhecidos.
+    /// </summary>
+    /// <summary>
+    /// Referências que a modalidade faz a outra pelo código, com o campo e o erro de cada uma.
+    /// </summary>
+    private static readonly (Func<CamposResolvidos, string?> Ler, string Field, string Code, string Rotulo)[] ReferenciasAOutraModalidade =
+    [
+        (static c => c.ComposicaoOrigem, "composicaoOrigem", ModalidadeErrorCodes.ComposicaoOrigemCircular, "origem da composição"),
+        (static c => c.RemanejamentoArgs.Destino, "regraRemanejamento", ModalidadeErrorCodes.RemanejamentoDestinoCircular, "destino de remanejamento"),
+        (static c => c.RemanejamentoArgs.Par, "regraRemanejamento", ModalidadeErrorCodes.RemanejamentoParCircular, "par de remanejamento"),
+        (static c => c.RemanejamentoArgs.Fallback, "regraRemanejamento", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "fallback de remanejamento"),
+    ];
+
+    /// <remarks>
+    /// Uma modalidade que cita a si mesma descreve uma operação que não acontece: a vaga
+    /// retirada volta para quem a tinha, e o remanejamento não move nada. A integridade
+    /// referencial do handler não alcança o caso, porque a própria modalidade existe viva.
+    /// </remarks>
+    private static IEnumerable<FieldError> ValidarAutorreferencia(CodigoModalidade codigo, CamposResolvidos campos)
+    {
+        foreach ((Func<CamposResolvidos, string?> ler, string field, string code, string rotulo) in ReferenciasAOutraModalidade)
+        {
+            if (ler(campos) is { } referencia && string.Equals(referencia, codigo.Valor, StringComparison.Ordinal))
+            {
+                yield return new(field, new DomainError(
+                    code,
+                    $"A modalidade {codigo.Valor} não pode ser o {rotulo} de si mesma."));
+            }
+        }
+    }
+
+    /// <summary>
+    /// As invariantes que cruzam campos entre si — origem × composição (INV-4), natureza ×
+    /// remanejamento (INV-3) e argumentos por regra (INV-5).
+    /// </summary>
+    /// <remarks>
+    /// Cada checagem só roda quando o token de que depende foi reconhecido: sobre um token
+    /// inválido a comparação usaria o valor default do enum e reportaria uma incoerência que
+    /// o autor da requisição não cometeu.
+    /// </remarks>
+    private static List<FieldError> ValidarCoerenciaCruzada(
+        CamposResolvidos campos,
+        bool composicaoOk,
+        bool naturezaOk,
+        bool regraOk)
+    {
+        List<FieldError> erros = [];
+
         if (composicaoOk)
         {
             bool ehRetiraDe = campos.ComposicaoVagas == ComposicaoVagas.RetiraDe;
@@ -421,71 +486,19 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             }
         }
 
-        // Invariante 3 — coerência natureza ↔ regra de remanejamento.
-        if (naturezaOk && regraOk)
-        {
-            FieldError? incoerencia = ValidarCoerenciaNaturezaRemanejamento(campos.NaturezaLegal, campos.RegraRemanejamento);
-            if (incoerencia is not null)
-            {
-                erros.Add(incoerencia);
-            }
-        }
-
-        // Invariante 5 — argumentos exigidos/proibidos por regra.
-        if (regraOk)
-        {
-            FieldError? argumentoInvalido = ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs);
-            if (argumentoInvalido is not null)
-            {
-                erros.Add(argumentoInvalido);
-            }
-        }
-
-        return erros.Count == 0
-            ? Result<CamposResolvidos>.Success(campos)
-            : Result<CamposResolvidos>.ValidationFailure(erros);
-    }
-
-    /// <summary>
-    /// As três invariantes que cruzam campos já resolvidos e confirmados válidos
-    /// individualmente (RetiraDe⟺origem, natureza↔regra, args por regra),
-    /// acumulando toda violação independente. Diferente de <see cref="ValidarCampos"/>,
-    /// não precisa de sinalizador de gate: só é chamada por <see cref="Atualizar"/>
-    /// depois que <see cref="ValidarCamposIndependentes"/> já devolveu zero erros —
-    /// os três tokens dos quais estas invariantes dependem já estão, por
-    /// construção, reconhecidos.
-    /// </summary>
-    private static Result ValidarCoerenciaCruzada(CamposResolvidos campos)
-    {
-        List<FieldError> erros = [];
-
-        bool ehRetiraDe = campos.ComposicaoVagas == ComposicaoVagas.RetiraDe;
-        if (ehRetiraDe && campos.ComposicaoOrigem is null)
-        {
-            erros.Add(new("composicaoOrigem", new DomainError(
-                ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
-                "Composição RETIRA_DE exige o código de origem (composicao_origem).")));
-        }
-        else if (!ehRetiraDe && campos.ComposicaoOrigem is not null)
-        {
-            erros.Add(new("composicaoOrigem", new DomainError(
-                ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
-                "Código de origem (composicao_origem) só é permitido na composição RETIRA_DE.")));
-        }
-
-        FieldError? incoerencia = ValidarCoerenciaNaturezaRemanejamento(campos.NaturezaLegal, campos.RegraRemanejamento);
-        if (incoerencia is not null)
+        if (naturezaOk && regraOk
+            && ValidarCoerenciaNaturezaRemanejamento(campos.NaturezaLegal, campos.RegraRemanejamento) is { } incoerencia)
         {
             erros.Add(incoerencia);
         }
 
-        FieldError? argumentoInvalido = ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs);
-        if (argumentoInvalido is not null)
+        if (regraOk
+            && ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs) is { } argumentoInvalido)
         {
             erros.Add(argumentoInvalido);
         }
 
-        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
+        return erros;
     }
 
     private static FieldError? ValidarCoerenciaNaturezaRemanejamento(
