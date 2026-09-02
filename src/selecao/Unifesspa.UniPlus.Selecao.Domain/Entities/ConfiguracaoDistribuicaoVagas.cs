@@ -576,6 +576,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// <remarks>
     /// A reciprocidade é exigida aqui, e não no cadastro, porque a primeira modalidade de um
     /// par não teria a que apontar quando é criada.
+    /// <para>O auto-laço satisfaria a comparação recíproca — a modalidade aponta para si e
+    /// encontra a si —, e um par de um nó só não remaneja para lugar nenhum.</para>
     /// </remarks>
     private static DomainError? ParCruzadoNaoReciproco(
         ModalidadeSelecionada modalidade,
@@ -584,6 +586,13 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         if (modalidade is not { RegraRemanejamento: RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar: { } par })
         {
             return null;
+        }
+
+        if (string.Equals(par, modalidade.Codigo, StringComparison.Ordinal))
+        {
+            return new DomainError(
+                "ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco",
+                $"Modalidade {modalidade.Codigo} forma par cruzado consigo mesma.");
         }
 
         ModalidadeSelecionada? contraparte = modalidades
