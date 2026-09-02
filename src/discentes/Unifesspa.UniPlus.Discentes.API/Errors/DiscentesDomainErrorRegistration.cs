@@ -77,14 +77,6 @@ internal sealed class DiscentesDomainErrorRegistration : IDomainErrorRegistratio
         new(DiscentesErrorCodes.VinculoDiscente.NivelVazio,
             Interno("uniplus.discentes.vinculo.nivel_vazio",
                 "Vínculo veio da origem sem nível de ensino")),
-
-        new(DiscentesErrorCodes.Payload.CampoObrigatorioAusente,
-            Interno("uniplus.discentes.payload.campo_obrigatorio_ausente",
-                "A origem entregou um vínculo sem um campo que o contrato declara obrigatório")),
-
-        new(DiscentesErrorCodes.Payload.CpfInvalido,
-            Interno("uniplus.discentes.payload.cpf_invalido",
-                "A origem entregou um CPF fora do formato acordado")),
     ];
 
     private static DomainErrorMapping Interno(string codigo, string titulo) =>

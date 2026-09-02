@@ -2,11 +2,9 @@ namespace Unifesspa.UniPlus.Discentes.UnitTests.Sigaa;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Discentes.Domain.Errors;
 using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Acl;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Contracts;
-using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class DecodificadorDeVinculosTests
 {
@@ -101,7 +99,7 @@ public sealed class DecodificadorDeVinculosTests
     [InlineData("curso")]
     [InlineData("situacao")]
     [InlineData("idDiscente")]
-    public void Ausencia_de_campo_obrigatorio_do_contrato_recusa_a_pagina(string campo)
+    public void Ausencia_de_campo_obrigatorio_descarta_como_fora_do_contrato(string campo)
     {
         // O contraste com os descartes acima é o núcleo desta camada: aqui a origem
         // deixou de entregar o que prometeu, e seguir em frente corromperia a réplica.
@@ -116,25 +114,26 @@ public sealed class DecodificadorDeVinculosTests
             _ => Completo() with { IdDiscente = 0 },
         };
 
-        Result<ResultadoDaDecodificacao> resultado =
-            DecodificadorDeVinculos.Decodificar([quebrado]);
+        ResultadoDaDecodificacao resultado = DecodificarPagina(quebrado);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(DiscentesErrorCodes.Payload.CampoObrigatorioAusente);
+        resultado.Aceitos.Should().BeEmpty();
+        resultado.QuantidadeForaDoContrato.Should().Be(1);
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Detalhe.Should().Be(campo);
     }
 
     [Fact]
-    public void Cpf_fora_do_formato_acordado_recusa_a_pagina()
+    public void Cpf_fora_do_formato_acordado_descarta_como_fora_do_contrato()
     {
-        Result<ResultadoDaDecodificacao> resultado = DecodificadorDeVinculos.Decodificar(
-            [Completo() with { Cpf = "00000000000" }]);
+        ResultadoDaDecodificacao resultado = DecodificarPagina(Completo() with { Cpf = "00000000000" });
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(DiscentesErrorCodes.Payload.CpfInvalido);
+        resultado.Aceitos.Should().BeEmpty();
+        resultado.QuantidadeForaDoContrato.Should().Be(1);
+        resultado.Descartados.Should().ContainSingle().Which.Detalhe.Should().Be("cpf");
     }
 
     [Fact]
-    public void Cpf_malformado_recusa_a_pagina_mesmo_quando_o_vinculo_seria_descartado()
+    public void Cpf_malformado_conta_como_fora_do_contrato_e_nao_como_registro_incompleto()
     {
         // A conferência do formato do CPF precisa vir antes dos descartes. Se viesse
         // depois, este vínculo — que também não tem unidade acadêmica, o caso mais
@@ -146,11 +145,11 @@ public sealed class DecodificadorDeVinculosTests
             Curso = Completo().Curso! with { Unidade = null },
         };
 
-        Result<ResultadoDaDecodificacao> resultado =
-            DecodificadorDeVinculos.Decodificar([quebrado]);
+        ResultadoDaDecodificacao resultado = DecodificarPagina(quebrado);
 
-        resultado.IsFailure.Should().BeTrue("quebra de contrato prevalece sobre descarte");
-        resultado.Error!.Code.Should().Be(DiscentesErrorCodes.Payload.CpfInvalido);
+        resultado.QuantidadeForaDoContrato.Should().Be(
+            1, "entrega fora do combinado não pode ser confundida com registro incompleto");
+        resultado.Descartados.Should().ContainSingle().Which.Detalhe.Should().Be("cpf");
     }
 
     [Theory]
@@ -158,7 +157,7 @@ public sealed class DecodificadorDeVinculosTests
     [InlineData("curso.nome")]
     [InlineData("situacao.id")]
     [InlineData("situacao.descricao")]
-    public void Campo_obrigatorio_aninhado_ausente_recusa_a_pagina_mesmo_com_descarte(string campo)
+    public void Campo_obrigatorio_aninhado_conta_como_fora_do_contrato_mesmo_com_registro_incompleto(string campo)
     {
         CursoPayload cursoSemUnidade = Completo().Curso! with { Unidade = null };
 
@@ -178,11 +177,48 @@ public sealed class DecodificadorDeVinculosTests
             },
         };
 
-        Result<ResultadoDaDecodificacao> resultado =
-            DecodificadorDeVinculos.Decodificar([quebrado]);
+        ResultadoDaDecodificacao resultado = DecodificarPagina(quebrado);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(DiscentesErrorCodes.Payload.CampoObrigatorioAusente);
+        resultado.Aceitos.Should().BeEmpty();
+        resultado.QuantidadeForaDoContrato.Should().Be(1);
+        resultado.Descartados.Should().ContainSingle()
+            .Which.Detalhe.Should().Be(campo);
+    }
+
+    [Fact]
+    public void Contrato_rompido_para_a_pagina_inteira_fica_visivel_na_contagem()
+    {
+        // Este é o risco que descartar em vez de falhar introduz: se a origem parar de
+        // entregar um campo obrigatório, nenhum vínculo entra e a execução termina sem
+        // escrever nada. A réplica não é corrompida — mas congela. A contagem separada de
+        // entregas fora do combinado é o que impede isso de passar por uma sincronização
+        // bem-sucedida com nada a fazer.
+        VinculoDiscentePayload[] paginaInteiraSemCpf =
+        [
+            Completo() with { IdDiscente = 1, Cpf = null },
+            Completo() with { IdDiscente = 2, Cpf = null },
+            Completo() with { IdDiscente = 3, Cpf = null },
+        ];
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(paginaInteiraSemCpf);
+
+        resultado.Aceitos.Should().BeEmpty();
+        resultado.QuantidadeForaDoContrato.Should().Be(
+            3, "a contagem precisa distinguir isto de uma página só com registros incompletos");
+        resultado.Descartados.Should().OnlyContain(d => d.Detalhe == "cpf");
+    }
+
+    [Fact]
+    public void Registro_incompleto_nao_conta_como_entrega_fora_do_combinado()
+    {
+        // O contraste do teste acima: descarte por registro incompleto é rotina, tem
+        // volume conhecido, e não deve acionar suspeita de contrato rompido.
+        ResultadoDaDecodificacao resultado = DecodificarPagina(
+            Completo() with { Curso = Completo().Curso! with { Unidade = null } },
+            Completo() with { AnoIngresso = null });
+
+        resultado.Descartados.Should().HaveCount(2);
+        resultado.QuantidadeForaDoContrato.Should().Be(0);
     }
 
     [Fact]
@@ -308,13 +344,8 @@ public sealed class DecodificadorDeVinculosTests
     private static VinculoDecodificado DecodificarUm(VinculoDiscentePayload unico) =>
         DecodificarPagina(unico).Aceitos[0];
 
-    private static ResultadoDaDecodificacao DecodificarPagina(params VinculoDiscentePayload[] pagina)
-    {
-        Result<ResultadoDaDecodificacao> resultado = DecodificadorDeVinculos.Decodificar(pagina);
-        resultado.IsSuccess.Should().BeTrue(
-            "a página é válida neste cenário; erro aqui é defeito do teste");
-        return resultado.Value!;
-    }
+    private static ResultadoDaDecodificacao DecodificarPagina(params VinculoDiscentePayload[] pagina) =>
+        DecodificadorDeVinculos.Decodificar(pagina);
 
     /// <summary>
     /// Vínculo com todos os campos, nos moldes do exemplo que o contrato da origem publica.

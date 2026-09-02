@@ -41,14 +41,4 @@ public static class DiscentesErrorCodes
         public const string NomeVazio = "VinculoDiscente.NomeVazio";
         public const string NivelVazio = "VinculoDiscente.NivelVazio";
     }
-
-    /// <summary>
-    /// Erros de leitura do que a origem entrega — quebra do formato acordado, não do
-    /// conteúdo de um vínculo específico.
-    /// </summary>
-    public static class Payload
-    {
-        public const string CampoObrigatorioAusente = "PayloadSigaa.CampoObrigatorioAusente";
-        public const string CpfInvalido = "PayloadSigaa.CpfInvalido";
-    }
 }
