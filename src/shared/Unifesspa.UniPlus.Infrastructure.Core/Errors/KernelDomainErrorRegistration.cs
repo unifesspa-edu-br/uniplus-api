@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via IServiceProvider.AddSingleton<IDomainErrorRegistration, KernelDomainErrorRegistration>() em AddDomainErrorMapper().")]
@@ -18,6 +19,25 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
         new("Email.Invalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.email.invalido", "E-mail inválido")),
         new("NomeSocial.NomeCivilVazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.nome_social.nome_civil_vazio", "Nome civil obrigatório")),
         new("NotaFinal.Negativa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.nota_final.negativa", "Nota final inválida")),
+        new("Percentual.ForaDeFaixa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.percentual.fora_de_faixa", "Percentual fora do intervalo permitido")),
+
+        // Referência de endereço estruturado ao Geo (ADR-0096), compartilhada por
+        // Campus, LocalOferta e Instituicao.
+        new(EnderecoReferenciaErrorCodes.CepObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.cep_obrigatorio", "CEP é obrigatório")),
+        new(EnderecoReferenciaErrorCodes.CepFormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.cep_formato_invalido", "CEP em formato inválido")),
+        new(EnderecoReferenciaErrorCodes.LogradouroTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.logradouro_tamanho", "Logradouro excede o tamanho permitido")),
+        new(EnderecoReferenciaErrorCodes.NumeroTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.numero_tamanho", "Número do endereço excede o tamanho permitido")),
+        new(EnderecoReferenciaErrorCodes.ComplementoTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.complemento_tamanho", "Complemento do endereço excede o tamanho permitido")),
+        new(EnderecoReferenciaErrorCodes.BairroTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.bairro_tamanho", "Bairro excede o tamanho permitido")),
+        new(EnderecoReferenciaErrorCodes.DistritoTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.distrito_tamanho", "Distrito excede o tamanho permitido")),
+        new(EnderecoReferenciaErrorCodes.NivelResolucaoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.nivel_resolucao_obrigatorio", "Nível de resolução do endereço é obrigatório")),
+        new(EnderecoReferenciaErrorCodes.NivelResolucaoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.nivel_resolucao_invalido", "Nível de resolução do endereço fora do vocabulário")),
+        new(EnderecoReferenciaErrorCodes.OrigemObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.origem_obrigatoria", "Origem do endereço é obrigatória")),
+        new(EnderecoReferenciaErrorCodes.OrigemTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.origem_tamanho", "Origem do endereço excede o tamanho permitido")),
+        new(EnderecoReferenciaErrorCodes.LatitudeForaDeFaixa, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.latitude_fora_de_faixa", "Latitude fora do intervalo permitido")),
+        new(EnderecoReferenciaErrorCodes.LongitudeForaDeFaixa, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.longitude_fora_de_faixa", "Longitude fora do intervalo permitido")),
+        new(EnderecoReferenciaErrorCodes.CidadeIncoerente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.cidade_incoerente", "Cidade do endereço diverge da referência de cidade da entidade")),
+        new(EnderecoReferenciaErrorCodes.CidadeObrigatoriaComEndereco, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.endereco_referencia.cidade_obrigatoria_com_endereco", "Endereço informado exige a referência de cidade da entidade")),
 
         // Referência de cidade do Geo (ADR-0090) — CidadeReferenciaErrorCodes é compartilhado por
         // qualquer módulo que guarde cidade_codigo_ibge/cidade_nome/cidade_uf (Campus/LocalOferta

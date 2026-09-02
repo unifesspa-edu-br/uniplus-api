@@ -37,11 +37,11 @@ public sealed partial class MapeamentoDeDomainErrorTests
         IReadOnlySet<string> emitidos = LerCodesEmitidos(modulo);
         IReadOnlySet<string> registrados = LerCodesRegistrados(modulo);
 
-        IEnumerable<string> orfaos = emitidos.Except(registrados).Order();
+        IReadOnlyList<string> orfaos = [.. emitidos.Except(registrados).Order()];
         orfaos.Should().BeEmpty(
             $"todo code emitido em {modulo}.Domain/{modulo}.Application precisa de mapeamento em "
                 + "IDomainErrorRegistration; sem ele o mapper devolve 500 genérico em vez do "
-                + "ProblemDetails canônico (ADR-0024)");
+                + $"ProblemDetails canônico (ADR-0024). Sem mapeamento: {string.Join(", ", orfaos)}");
     }
 
     [Theory(DisplayName = "nenhum code de DomainError é montado por interpolação")]
@@ -60,6 +60,25 @@ public sealed partial class MapeamentoDeDomainErrorTests
         interpolados.Should().BeEmpty(
             "o code precisa ser literal ou constante para que a cobertura do registry "
                 + "consiga enxergá-lo; monte a mensagem dinamicamente, nunca o code");
+    }
+
+    [Fact(DisplayName = "codes de DomainError no kernel compartilhado estão registrados")]
+    public void Codes_DoKernelCompartilhado_EstaoRegistrados()
+    {
+        // O kernel fica fora da Theory por não ser módulo de negócio — não tem par
+        // Domain/Application nem camada API própria. Mas emite erros que os módulos
+        // propagam, e tem registration própria em Infrastructure.Core, então a mesma
+        // regra vale: sem mapeamento o mapper devolve 500 genérico.
+        string kernel = Path.Join(RaizDoRepositorio(), "src", "shared", "Unifesspa.UniPlus.Kernel");
+
+        HashSet<string> emitidos = LerCodesDeConstantes(Assembly.Load("Unifesspa.UniPlus.Kernel"));
+        emitidos.UnionWith(LerCodesEmLiteraisInline([kernel]));
+
+        IReadOnlyList<string> orfaos = [.. emitidos.Except(LerCodesRegistrados("Kernel")).Order()];
+        orfaos.Should().BeEmpty(
+            "todo code emitido no kernel compartilhado precisa de mapeamento em "
+                + "IDomainErrorRegistration; sem ele o mapper devolve 500 genérico em vez do "
+                + $"ProblemDetails canônico (ADR-0024). Sem mapeamento: {string.Join(", ", orfaos)}");
     }
 
     [Fact(DisplayName = "a descoberta de módulos alcança os módulos de negócio do monólito")]
@@ -139,33 +158,63 @@ public sealed partial class MapeamentoDeDomainErrorTests
 
         foreach (string camada in (string[])["Domain", "Application"])
         {
-            Assembly assembly;
             try
             {
-                assembly = Assembly.Load($"Unifesspa.UniPlus.{modulo}.{camada}");
+                codes.UnionWith(LerCodesDeConstantes(Assembly.Load($"Unifesspa.UniPlus.{modulo}.{camada}")));
             }
             catch (FileNotFoundException)
             {
-                continue;
+                // Nem todo módulo tem as duas camadas.
             }
-
-            IEnumerable<FieldInfo> constantes = TiposDe(assembly)
-                .Where(t => t.Name.EndsWith("ErrorCodes", StringComparison.Ordinal))
-                .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
-                .Where(f => f.IsLiteral && f.FieldType == typeof(string));
-
-            codes.UnionWith(constantes.Select(c => c.GetRawConstantValue()).OfType<string>());
         }
 
         return codes;
     }
 
-    private static HashSet<string> LerCodesEmLiteraisInline(string modulo)
+    private static HashSet<string> LerCodesDeConstantes(Assembly assembly)
+    {
+        {
+            // Filtrar por tipo terminado em "ErrorCodes" perderia os codes declarados
+            // em classes de constantes com outro nome — ColetabilidadeDeFato e
+            // ErrosCodecEnvelope, entre outras, declaram 43 deles. O que identifica
+            // um code é o formato do valor, não o nome de quem o declara.
+            IEnumerable<string> constantes = TiposDe(assembly)
+                .SelectMany(t => t.GetFields(
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy))
+                .Where(f => f.IsLiteral && f.FieldType == typeof(string))
+                .Select(f => (Nome: f.Name, Valor: f.GetRawConstantValue() as string))
+                .Where(c => c.Valor is not null && EhCode(c.Nome, c.Valor))
+                .Select(c => c.Valor!);
+
+            return [.. constantes];
+        }
+    }
+
+    /// <remarks>
+    /// Um nome de tipo totalmente qualificado tem o mesmo formato de um code
+    /// (<c>Npgsql.PostgresException</c>), então o formato sozinho não basta. O que
+    /// separa os dois é a convenção de nomeação: a constante de um code se chama
+    /// como o sufixo que declara. Vale para os 373 codes do repositório e para
+    /// nenhuma das constantes que apenas guardam nome de tipo.
+    /// </remarks>
+    private static bool EhCode(string nomeDoCampo, string valor)
+    {
+        if (!FormatoDeCodeRegex().IsMatch(valor))
+            return false;
+
+        int ponto = valor.IndexOf('.', StringComparison.Ordinal);
+        return string.Equals(valor[(ponto + 1)..], nomeDoCampo, StringComparison.Ordinal);
+    }
+
+    private static HashSet<string> LerCodesEmLiteraisInline(string modulo) =>
+        LerCodesEmLiteraisInline(CamadasDeOrigem(modulo));
+
+    private static HashSet<string> LerCodesEmLiteraisInline(IEnumerable<string> camadas)
     {
         Regex chamada = ChamadaDeDomainErrorRegex();
         HashSet<string> codes = new(StringComparer.Ordinal);
 
-        foreach (string arquivo in ArquivosDeOrigem(modulo))
+        foreach (string arquivo in ArquivosDe(camadas))
         {
             foreach (Match encontro in chamada.Matches(SemComentarios(File.ReadAllText(arquivo))))
                 codes.Add(encontro.Groups[1].Value);
@@ -174,8 +223,10 @@ public sealed partial class MapeamentoDeDomainErrorTests
         return codes;
     }
 
-    private static IEnumerable<string> ArquivosDeOrigem(string modulo) =>
-        CamadasDeOrigem(modulo)
+    private static IEnumerable<string> ArquivosDeOrigem(string modulo) => ArquivosDe(CamadasDeOrigem(modulo));
+
+    private static IEnumerable<string> ArquivosDe(IEnumerable<string> camadas) =>
+        camadas
             .SelectMany(camada => Directory.EnumerateFiles(camada, "*.cs", SearchOption.AllDirectories))
             .Where(arquivo => !EhArtefatoDeBuild(arquivo));
 
@@ -294,6 +345,9 @@ public sealed partial class MapeamentoDeDomainErrorTests
     /// </remarks>
     [GeneratedRegex(@"new\s+DomainError\(\s*""([^""]+)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ChamadaDeDomainErrorRegex();
+
+    [GeneratedRegex(@"^[A-Z][A-Za-z0-9]*\.[A-Za-z][A-Za-z0-9]*$", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex FormatoDeCodeRegex();
 
     [GeneratedRegex(@"new\s+DomainError\(\s*\$", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ChamadaInterpoladaRegex();
