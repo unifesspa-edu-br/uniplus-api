@@ -290,7 +290,7 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         var contexto = new ContextoDeContagemDePrazos(
             calendarioResult.IsSuccess ? calendarioResult.Value : null,
-            FusoInstitucionalReconhecido: true,
+
             FalhaDoCalendarioVigente: calendarioResult.IsFailure ? calendarioResult.Error : null,
             FusoInstitucional: fusoInstitucional);
 

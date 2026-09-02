@@ -115,7 +115,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         ]);
 
         var contexto = new ContextoDeContagemDePrazos(
-            CalendarioVigente: null, FusoInstitucionalReconhecido: true, FusoInstitucional: Belem);
+            CalendarioVigente: null, FusoInstitucional: Belem);
 
         processo.AvaliarConformidade(contexto)
             .Should().Contain(i => i.Codigo == "cronograma_janela_de_isencao" && !i.Ok);
