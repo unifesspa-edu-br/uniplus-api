@@ -253,6 +253,63 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             "rol aberto atende o certame institucional que ainda não tem regra própria");
     }
 
+    [Fact(DisplayName = "Com regra de ajuste, o quadro que excede é reconciliado em vez de recusado")]
+    public void Criar_QuadroExcedente_ComAjuste_Reconcilia()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 40),
+            Modalidade("PCD_PURO", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraEduCampo(), RegraAjuste(), referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null,
+            argsAjuste: new ArgsReduzirDe("AC"));
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.TotalPublicado.Should().Be(40);
+        resultado.Value.Estouro.Should().Be(4, "o excesso absorvido precisa aparecer, não desaparecer");
+        resultado.Value.CapadoEmVo.Should().BeTrue();
+        resultado.Value.VagasOfertadas.Single(v => v.ModalidadeCodigo == "AC").Quantidade.Should().Be(36);
+        resultado.Value.VagasOfertadas.Single(v => v.ModalidadeCodigo == "PCD_PURO").Quantidade.Should().Be(4);
+    }
+
+    [Fact(DisplayName = "Sem regra de ajuste, o quadro que excede continua sendo recusado")]
+    public void Criar_QuadroExcedente_SemAjuste_Recusa()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 40),
+            Modalidade("PCD_PURO", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraEduCampo(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null, argsAjuste: null);
+
+        resultado.IsFailure.Should().BeTrue("sem motor declarado não há de onde tirar");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase");
+    }
+
+    [Fact(DisplayName = "A sobra continua recusada mesmo com regra de ajuste — os motores só reduzem")]
+    public void Criar_QuadroComSobra_ComAjuste_ContinuaRecusado()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 4),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), RegraAjuste(), referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null,
+            argsAjuste: new ArgsReduzirDe("AC"));
+
+        resultado.IsFailure.Should().BeTrue(
+            "acrescer seria o sistema criar vaga que ninguém autorizou — quem configura fecha a conta");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase");
+    }
+
     [Theory(DisplayName = "Criar com VO_base não positivo falha")]
     [InlineData(0)]
     [InlineData(-1)]

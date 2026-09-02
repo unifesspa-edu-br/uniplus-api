@@ -176,7 +176,8 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
             demografica,
             modalidades,
             oferta.VagasAnuaisAutorizadas,
-            ModalidadesAdmitidasPor(regra));
+            ModalidadesAdmitidasPor(regra),
+            input.ArgsAjuste);
     }
 
     /// <summary>

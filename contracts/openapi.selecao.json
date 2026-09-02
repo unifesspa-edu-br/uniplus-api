@@ -6671,6 +6671,62 @@
           }
         }
       },
+      "ArgsRegraAjusteDistribuicao": {
+        "required": [
+          "$tipo"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ArgsRegraAjusteDistribuicaoArgsReduzirDe"
+          },
+          {
+            "$ref": "#/components/schemas/ArgsRegraAjusteDistribuicaoArgsReduzirProporcionalEm"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$tipo",
+          "mapping": {
+            "reduzirDe": "#/components/schemas/ArgsRegraAjusteDistribuicaoArgsReduzirDe",
+            "reduzirProporcionalEm": "#/components/schemas/ArgsRegraAjusteDistribuicaoArgsReduzirProporcionalEm"
+          }
+        }
+      },
+      "ArgsRegraAjusteDistribuicaoArgsReduzirDe": {
+        "required": [
+          "modalidadeCodigo"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "reduzirDe"
+            ],
+            "type": "string"
+          },
+          "modalidadeCodigo": {
+            "type": "string"
+          }
+        }
+      },
+      "ArgsRegraAjusteDistribuicaoArgsReduzirProporcionalEm": {
+        "required": [
+          "modalidadeCodigos"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "reduzirProporcionalEm"
+            ],
+            "type": "string"
+          },
+          "modalidadeCodigos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ArgsRegraPrazoRecursoDto": {
         "required": [
           "prazoValor",
@@ -7483,6 +7539,16 @@
             "items": {
               "$ref": "#/components/schemas/QuantidadeVagaInput"
             }
+          },
+          "argsAjuste": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ArgsRegraAjusteDistribuicao"
+              }
+            ]
           }
         }
       },
