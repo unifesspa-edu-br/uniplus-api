@@ -378,9 +378,9 @@ public sealed class ModalidadePersistenceTests
     }
 
     [Theory(DisplayName = "Seed: a base legal das reservas de pessoa com deficiência é institucional, não a Lei de Cotas")]
-    [InlineData("AC_PCD")]
-    [InlineData("PCD_PURO")]
-    public async Task Seed_ReservaDePcd_NaoSeFundamentaNaLeiDeCotas(string codigo)
+    [InlineData("AC_PCD", "532/2021")]
+    [InlineData("PCD_PURO", "64/2015")]
+    public async Task Seed_ReservaDePcd_NaoSeFundamentaNaLeiDeCotas(string codigo, string normaEsperada)
     {
         CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
 
@@ -394,9 +394,12 @@ public sealed class ModalidadePersistenceTests
         // base_legal congela no snapshot de publicação como fundamentação do edital, então
         // citar a lei errada não é imprecisão de texto: é fundamentar a reserva numa norma que
         // não a institui.
+        // As duas nascem de resoluções distintas porque atendem situações distintas: AC_PCD é a
+        // reserva dentro da ampla concorrência nos certames que aplicam a Lei 12.711, e
+        // PCD_PURO é a reserva do processo que não oferta as cotas federais.
         modalidade.BaseLegal.Should().NotBeNullOrWhiteSpace()
             .And.NotContain("12.711")
-            .And.Contain("532/2021");
+            .And.Contain(normaEsperada);
     }
 
     [Fact(DisplayName = "Seed: PCD_PURO é linha própria, com o mecanismo de vagas de AC_PCD e base legal fora da Lei 12.711")]
