@@ -56,6 +56,8 @@ Esta ADR estende a mesma disciplina ao binding cross-módulo de dados de referê
 5. Edições subsequentes na linha-fonte do catálogo **não** propagam para a entidade consumidora. Snapshot é imutável pela vida da entidade (sujeito a soft-delete ou re-bind explícito).
 6. **Nenhuma declaração `FOREIGN KEY`** existe no banco consumidor apontando para o banco produtor.
 
+> **Emenda (2026-09-01):** a [ADR-0129](0129-identidade-da-origem-decide-conformidade.md) promoveu `{Catalogo}OrigemId` de rastreabilidade **opcional** a **chave de decisão obrigatória** nas entidades cujo snapshot participe de decisão do sistema — a comparação que conclui "isto é aquilo" passa a ser por identidade, nunca pelo código congelado. O código continua persistido, exibido e publicado no envelope: ele é o que se mostra ao humano. O mecanismo não muda (segue sem FK cross-banco, regra 6); muda o papel do campo, e a regra 5 ganha a leitura de que a imutabilidade do snapshot é justamente o motivo de a identidade ser necessária — o código congelado envelhece por construção. A referência por `AreaCodigo` descrita em "Onde o pattern NÃO se aplica" segue legítima, porque ali o código é imutável por invariante do [ADR-0055](0055-organizacao-institucional-bounded-context.md). Motivo: comparar código editável fazia o gate de conformidade legal aprovar edital satisfeito pelo documento errado quando o código era reciclado, e recusar publicação legítima quando o tipo era renomeado com a regra atualizada (`unifesspa-edu-br/uniplus-api#1372`).
+
 ### Exemplo: `LocalProva` referenciando `Endereco`
 
 `Selecao.LocalProva`:
