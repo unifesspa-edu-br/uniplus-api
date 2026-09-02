@@ -111,16 +111,26 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
             // Mesma regra de SemeiaFasesCanonicas: a migração não remove o que tem dono
             // (updated_by/updated_at não nulos — o operador editou a linha do seed) nem
-            // o que algum cronograma de Seleção já referencia. Rollback de base assim
-            // deixa a linha para trás — preferível a quebrar processo configurado.
+            // o que algum cronograma de Seleção já referencia. Uma aresta viva de
+            // precedencia_fase apontando para o código também conta como referência: sem
+            // FK entre as duas tabelas, apagar a fase deixaria a aresta órfã — apontando
+            // para um código sem cadastro — mesmo com a CHECK constraint de
+            // precedencia_fase permanecendo larga (o bloco seguinte já a preserva por
+            // esse mesmo motivo). Rollback de base assim deixa a linha para trás —
+            // preferível a quebrar processo configurado ou órfão o grafo.
             migrationBuilder.Sql(
                 """
                 DO $$
                 DECLARE
                     referenciada boolean;
                 BEGIN
-                    referenciada := false;
-                    IF to_regclass('selecao.fases_cronograma') IS NOT NULL THEN
+                    referenciada := EXISTS (
+                        SELECT 1 FROM configuracao.precedencia_fase p
+                         WHERE p.antecessora_codigo = 'AVALIACAO_BIOPSICOSSOCIAL'
+                            OR p.sucessora_codigo = 'AVALIACAO_BIOPSICOSSOCIAL'
+                    );
+
+                    IF NOT referenciada AND to_regclass('selecao.fases_cronograma') IS NOT NULL THEN
                         SELECT EXISTS (
                             SELECT 1 FROM selecao.fases_cronograma c
                              WHERE c.fase_canonica_origem_id = 'f45e0000-0000-7000-8000-000000000016'
