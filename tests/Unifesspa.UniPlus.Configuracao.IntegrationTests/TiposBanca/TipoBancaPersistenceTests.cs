@@ -14,10 +14,10 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Integração ponta-a-ponta do TipoBanca contra Postgres real (UNI-REQ-0064):
+/// Integração ponta-a-ponta do TipoBanca contra Postgres real (UNI-REQ-0139):
 /// persistência, UNIQUE parcial do código vivo, liberação do slot por soft-delete,
 /// CHECKs de domínio (formato, conjunto canônico) e leitura cross-módulo. Cada teste
-/// usa um código canônico distinto (o conjunto é fechado — quatro bancas).
+/// usa um código canônico distinto (o conjunto é fechado — seis bancas).
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(

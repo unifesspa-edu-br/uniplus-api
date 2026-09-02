@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Código de um <see cref="Entities.TipoBanca"/> (UNI-REQ-0064, módulo
+/// Código de um <see cref="Entities.TipoBanca"/> (UNI-REQ-0139, módulo
 /// Configuração) — chave natural classificatória da banca (ex.:
 /// <c>BANCA_ANALISE_DOCUMENTAL</c>, <c>BANCA_ENTREVISTA</c>). Value object com
 /// formato fechado: <c>^[A-Z_]+$</c> — apenas letras maiúsculas e sublinhado (sem
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// O value object valida apenas o <b>formato</b>. A pertença ao conjunto canônico
-/// fechado das quatro bancas é guarda de domínio da entidade
+/// fechado das seis bancas é guarda de domínio da entidade
 /// (<c>TipoBanca.Criar</c>). O código é <b>imutável</b>: o comando de atualização
 /// não o aceita.
 /// </remarks>

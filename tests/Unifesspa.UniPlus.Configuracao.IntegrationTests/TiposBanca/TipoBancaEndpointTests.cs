@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
-/// Smoke + caminho de escrita dos endpoints de <c>TipoBanca</c> (UNI-REQ-0064):
+/// Smoke + caminho de escrita dos endpoints de <c>TipoBanca</c> (UNI-REQ-0139):
 /// routing, vendor media type, HATEOAS, autenticação/autorização, idempotência,
 /// domínio canônico (422) e unicidade do código (409) — com Wolverine contra
 /// Postgres efêmero. Cada teste que persiste usa um código canônico distinto.
@@ -126,6 +126,35 @@ public sealed class TipoBancaEndpointTests
         root.GetProperty("nome").GetString().Should().Be("Banca de correção de redações");
         root.GetProperty("faseTipica").GetString().Should().Be("Avaliação");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
+
+    [Theory(DisplayName = "POST com os dois códigos novos do conjunto canônico cria (201)")]
+    [InlineData(
+        "BANCA_HETEROIDENTIFICACAO", "Banca de heteroidentificação", "Heteroidentificação",
+        "Procedimento complementar à autodeclaração em que a comissão avalia os traços físicos da pessoa candidata para validar seu direito a vagas reservadas para pessoas negras (pretas e pardas) em concursos públicos ou vestibulares.")]
+    [InlineData(
+        "BANCA_BIOPSICOSSOCIAL", "Banca de avaliação biopsicossocial", "Avaliação biopsicossocial",
+        "Comissão multiprofissional responsável por realizar a avaliação que define se a pessoa candidata com deficiência cumpre os requisitos legais para concorrer às vagas reservadas em concursos públicos ou vestibulares.")]
+    public async Task Criar_ComCodigoNovoDoConjuntoCanonico_Retorna201(
+        string codigo, string nome, string faseTipica, string descricao)
+    {
+        var body = new { codigo, nome, faseTipica, descricao };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        id.Should().NotBe(Guid.Empty);
+
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/tipos-banca/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("codigo").GetString().Should().Be(codigo);
+        root.GetProperty("descricao").GetString().Should().Be(descricao);
     }
 
     [Fact(DisplayName = "POST com código fora do conjunto canônico retorna 422")]

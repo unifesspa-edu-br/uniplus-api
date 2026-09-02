@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Catálogo do domínio fechado das <b>fases canônicas</b> do ciclo de vida
-/// de um processo seletivo (UNI-REQ-0064) e das constantes de coerência associadas.
+/// de um processo seletivo (UNI-REQ-0139) e das constantes de coerência associadas.
 /// Fonte única dos códigos aceitos na guarda de domínio (<c>FaseCanonica.Criar</c>),
 /// no validator e no CHECK de banco <c>ck_fase_canonica_codigo_canonico</c>.
 /// </summary>
@@ -41,6 +41,7 @@ public static class FaseCanonicaCatalogo
         "RESULTADO_FINAL",
         "HABILITACAO",
         "HETEROIDENTIFICACAO",
+        "AVALIACAO_BIOPSICOSSOCIAL",
         "MATRICULA",
         "HOMOLOGACAO_RESULTADO_FINAL",
         "LISTA_ESPERA",

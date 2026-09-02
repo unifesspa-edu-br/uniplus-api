@@ -62,7 +62,7 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
             "ck_tipo_banca_codigo_formato",
             "codigo ~ '^[A-Z_]+$'");
 
-        // Domínio fechado das quatro bancas canônicas (defesa em profundidade).
+        // Domínio fechado das seis bancas canônicas (defesa em profundidade).
         table.HasCheckConstraint(
             "ck_tipo_banca_codigo_canonico",
             $"codigo IN ({TokensSql(TipoBancaCatalogo.Codigos)})");

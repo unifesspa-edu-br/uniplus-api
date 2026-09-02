@@ -78,6 +78,8 @@ public sealed class TipoBancaTests
     [InlineData("BANCA_ANALISE_DOCUMENTAL")]
     [InlineData("BANCA_CORRECAO_REDACOES")]
     [InlineData("BANCA_ANALISE_RECURSOS")]
+    [InlineData("BANCA_HETEROIDENTIFICACAO")]
+    [InlineData("BANCA_BIOPSICOSSOCIAL")]
     public void Criar_CodigoCanonico_Aceita(string codigo)
     {
         Result<TipoBanca> r = Criar(codigo: codigo);

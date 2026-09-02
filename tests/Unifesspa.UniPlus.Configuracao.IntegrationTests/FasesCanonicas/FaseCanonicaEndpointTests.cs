@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
-/// Smoke + caminho de escrita dos endpoints de <c>FaseCanonica</c> (UNI-REQ-0064):
+/// Smoke + caminho de escrita dos endpoints de <c>FaseCanonica</c> (UNI-REQ-0139):
 /// routing, vendor media type, HATEOAS, autenticação/autorização, idempotência,
 /// domínio canônico (422), coerência de domínio (422) e unicidade do código (409) —
 /// com Wolverine contra Postgres efêmero. Cada teste que persiste usa um código
@@ -136,6 +136,35 @@ public sealed class FaseCanonicaEndpointTests
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
+    [Fact(DisplayName = "POST com o código novo AVALIACAO_BIOPSICOSSOCIAL cria (201) e persiste")]
+    public async Task Criar_ComCodigoNovoAvaliacaoBiopsicossocial_Retorna201EPersiste()
+    {
+        await LiberarSlotDoSeedAsync("AVALIACAO_BIOPSICOSSOCIAL");
+
+        var body = new
+        {
+            codigo = "AVALIACAO_BIOPSICOSSOCIAL",
+            nome = "Avaliação biopsicossocial",
+            donoTipico = "CEPS",
+            descricao = "Avaliação multiprofissional e interdisciplinar da condição de deficiência",
+            origemData = "PROPRIA",
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        id.Should().NotBe(Guid.Empty);
+
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/fases-canonicas/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("codigo").GetString().Should().Be("AVALIACAO_BIOPSICOSSOCIAL");
+    }
+
     [Fact(DisplayName = "POST com código fora do conjunto canônico retorna 422")]
     public async Task Criar_ForaDoCanonico_Retorna422()
     {
@@ -234,7 +263,7 @@ public sealed class FaseCanonicaEndpointTests
         return await client.SendAsync(request);
     }
     /// <summary>
-    /// Libera o slot de um codigo ocupado pelo seed das quinze fases. Desde que
+    /// Libera o slot de um codigo ocupado pelo seed das dezesseis fases. Desde que
     /// <c>FaseCanonica</c> passou a nascer semeada, todo codigo do vocabulario ja tem
     /// linha viva ao subir o banco de teste, e um POST de criacao responderia 409.
     /// O filtro pelo prefixo do id restringe o apagamento as linhas do seed.

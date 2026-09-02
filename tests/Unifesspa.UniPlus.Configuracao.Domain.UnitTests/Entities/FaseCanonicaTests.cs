@@ -86,6 +86,7 @@ public sealed class FaseCanonicaTests
 
     [Theory(DisplayName = "Códigos dentro do conjunto canônico são aceitos")]
     [InlineData("HETEROIDENTIFICACAO")]
+    [InlineData("AVALIACAO_BIOPSICOSSOCIAL")]
     [InlineData("HOMOLOGACAO_RESULTADO_FINAL")]
     [InlineData("CHAMADA")]
     [InlineData("SOLICITACAO_ISENCAO")]

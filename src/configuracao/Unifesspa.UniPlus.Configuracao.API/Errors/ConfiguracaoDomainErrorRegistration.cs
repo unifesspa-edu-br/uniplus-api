@@ -818,7 +818,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.modalidade.nao_encontrada",
                 "Modalidade não encontrada")),
 
-        // ── Fase canônica (UNI-REQ-0064) ──────────────────────────────────
+        // ── Fase canônica (UNI-REQ-0139) ──────────────────────────────────
         new(FaseCanonicaErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -927,7 +927,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fase_canonica.nao_encontrada",
                 "Fase canônica não encontrada")),
 
-        // ── Precedência de fase (UNI-REQ-0064, story #851) ────────────────
+        // ── Precedência de fase (UNI-REQ-0139, story #851) ────────────────
         new(PrecedenciaFaseErrorCodes.AntecessoraCodigoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -988,7 +988,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.precedencia_fase.nao_encontrada",
                 "Aresta de precedência não encontrada")),
 
-        // ── Tipo de banca (UNI-REQ-0064) ──────────────────────────────────
+        // ── Tipo de banca (UNI-REQ-0139) ──────────────────────────────────
         new(TipoBancaErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -1005,7 +1005,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.tipo_banca.codigo_fora_do_conjunto_canonico",
-                "Código do tipo de banca fora do conjunto canônico das quatro bancas")),
+                "Código do tipo de banca fora do conjunto canônico das seis bancas")),
 
         new(TipoBancaErrorCodes.CodigoJaExiste,
             new DomainErrorMapping(
