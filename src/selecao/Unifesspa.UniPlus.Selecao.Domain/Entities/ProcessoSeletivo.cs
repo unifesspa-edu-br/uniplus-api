@@ -2169,6 +2169,27 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"A fase '{isencao.Codigo}' abre a solicitação de isenção e precisa de início e fim definidos.");
         }
 
+        // Sem zona resolvida a duração não é verificável, e deixar passar transformaria a ausência
+        // do fuso em permissão para publicar janela curta. A zona irresolvível já é recusada como
+        // defeito de instalação antes daqui; chegar sem ela é o handler não tê-la passado.
+        if (fusoInstitucional is not { } fuso)
+        {
+            throw new InvalidOperationException(
+                "A duração da janela de isenção depende do fuso institucional, e ele não foi informado ao gate do cronograma.");
+        }
+
+        // A duração é independente da inscrição, e por isso vem antes: um certame de importação
+        // externa não tem fase de coleta, e sem esta ordem publicaria janela de um dia sem que
+        // nada acusasse.
+        if (fimIsencao < UltimoInstanteDoQuintoDia(inicioIsencao, fuso))
+        {
+            return new DomainError(
+                "ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias",
+                "A janela de solicitação de isenção precisa de ao menos cinco dias corridos, contados a partir do dia seguinte à abertura.");
+        }
+
+        // As duas regras seguintes posicionam a janela em relação às inscrições, e só existem
+        // quando há inscrição a que se referir.
         if (FaseQueAncoraOPeriodoDeInscricao() is not { Inicio: { } inicioInscricao, Fim: { } fimInscricao })
         {
             return null;
@@ -2186,22 +2207,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return new DomainError(
                 "ProcessoSeletivo.JanelaDeIsencaoNaoTerminaAntesDaInscricao",
                 "A solicitação de isenção precisa terminar antes do fim das inscrições — quem tem o pedido indeferido ainda se inscreve pagando.");
-        }
-
-        // Sem zona resolvida a duração não é verificável, e deixar passar transformaria a ausência
-        // do fuso em permissão para publicar janela de um dia. A zona irresolvível já é recusada
-        // como defeito de instalação antes daqui; chegar sem ela é o handler não tê-la passado.
-        if (fusoInstitucional is not { } fuso)
-        {
-            throw new InvalidOperationException(
-                "A duração da janela de isenção depende do fuso institucional, e ele não foi informado ao gate do cronograma.");
-        }
-
-        if (fimIsencao < UltimoInstanteDoQuintoDia(inicioIsencao, fuso))
-        {
-            return new DomainError(
-                "ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias",
-                "A janela de solicitação de isenção precisa de ao menos cinco dias corridos, contados a partir do dia seguinte à abertura.");
         }
 
         return null;
