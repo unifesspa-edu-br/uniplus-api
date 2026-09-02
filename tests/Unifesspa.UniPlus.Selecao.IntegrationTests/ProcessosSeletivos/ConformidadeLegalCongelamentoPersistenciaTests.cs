@@ -271,9 +271,30 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     private static string UniqueRegraCodigo() => $"TEST_GATE_{Guid.CreateVersion7():N}";
 
     /// <summary>Identidades derivadas das próprias exigências — estado sem renomeação nem reciclagem.</summary>
-    private static Dictionary<string, Guid> IdentidadesDe(ProcessoSeletivo processo) =>
-        processo.DocumentosExigidos
-            .GroupBy(e => e.TipoDocumentoCodigo, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.First().TipoDocumentoOrigemId, StringComparer.Ordinal);
+    /// <summary>
+    /// Cadastro vivo deduzido do próprio processo: cada código resolve para a identidade
+    /// que o processo congelou — o caminho feliz, em que regra e processo apontam para o
+    /// mesmo item de catálogo.
+    /// </summary>
+    private static IdentidadesDeCadastro IdentidadesDe(ProcessoSeletivo processo) =>
+        new(
+            MapaDe(processo.DocumentosExigidos, e => e.TipoDocumentoCodigo, e => e.TipoDocumentoOrigemId),
+            MapaDe(
+                processo.DistribuicaoVagas.SelectMany(d => d.Modalidades),
+                m => m.Codigo,
+                m => m.ModalidadeOrigemId),
+            MapaDe(processo.Etapas, e => e.TipoEtapa.Codigo, e => e.TipoEtapa.OrigemId),
+            MapaDe(
+                processo.OfertaAtendimento?.TiposDeficiencia ?? [],
+                t => t.TipoDeficienciaCodigo,
+                t => t.TipoDeficienciaOrigemId));
+
+    private static Dictionary<string, Guid> MapaDe<T>(
+        IEnumerable<T> itens,
+        Func<T, string> codigoDe,
+        Func<T, Guid> origemDe) =>
+        itens
+            .GroupBy(codigoDe, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => origemDe(g.First()), StringComparer.Ordinal);
 
 }

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -59,9 +60,7 @@ internal static class ConferenciaDeReferenciasDasRegras
         // ainda não tem obrigatoriedade legal cadastrada.
         if (regras.Count == 0)
         {
-            return new RelatorioDeReferencias(
-                new Dictionary<Guid, string>(),
-                new Dictionary<string, Guid>(StringComparer.Ordinal));
+            return new RelatorioDeReferencias(new Dictionary<Guid, string>(), IdentidadesDeCadastro.Vazio);
         }
 
         CatalogosVivos catalogos = await CarregarCatalogosAsync(
@@ -92,7 +91,13 @@ internal static class ConferenciaDeReferenciasDasRegras
             }
         }
 
-        return new RelatorioDeReferencias(inavaliaveis, catalogos.TiposDocumento);
+        return new RelatorioDeReferencias(
+            inavaliaveis,
+            new IdentidadesDeCadastro(
+                catalogos.TiposDocumento,
+                catalogos.Modalidades,
+                catalogos.TiposEtapa,
+                catalogos.TiposDeficiencia));
     }
 
     /// <summary>Motivo com que a regra inavaliável aparece reprovada na leitura pública.</summary>
@@ -145,15 +150,15 @@ internal static class ConferenciaDeReferenciasDasRegras
     /// como <c>"LB_PPI "</c> acha a modalidade viva e mesmo assim nunca casaria.</para>
     /// </remarks>
     private sealed record CatalogosVivos(
-        FrozenSet<string> Modalidades,
+        FrozenDictionary<string, Guid> Modalidades,
         FrozenDictionary<string, Guid> TiposDocumento,
-        FrozenSet<string> TiposEtapa,
-        FrozenSet<string> TiposDeficiencia,
+        FrozenDictionary<string, Guid> TiposEtapa,
+        FrozenDictionary<string, Guid> TiposDeficiencia,
         FrozenSet<string> CriteriosDesempate);
 
     /// <summary>
     /// O que a conferência apurou numa passada: as regras que não podem ser avaliadas e
-    /// a identidade viva de cada código de tipo de documento.
+    /// a identidade viva de cada código de cadastro que os predicados referenciam.
     /// </summary>
     /// <remarks>
     /// Os dois consumidores — o gate de publicação e a consulta pública — precisam das
@@ -164,7 +169,7 @@ internal static class ConferenciaDeReferenciasDasRegras
     /// </remarks>
     internal sealed record RelatorioDeReferencias(
         IReadOnlyDictionary<Guid, string> RegrasInavaliaveis,
-        IReadOnlyDictionary<string, Guid> IdentidadeDoTipoDocumentoPorCodigo);
+        IdentidadesDeCadastro Identidades);
 
     private static async Task<CatalogosVivos> CarregarCatalogosAsync(
         IModalidadeReader modalidadeReader,
@@ -186,10 +191,10 @@ internal static class ConferenciaDeReferenciasDasRegras
             .ListarPorTipoAsync(TipoRegra.CriterioDesempate, cancellationToken).ConfigureAwait(false);
 
         return new CatalogosVivos(
-            modalidades.Select(static m => m.Codigo).ToFrozenSet(StringComparer.Ordinal),
+            modalidades.ToFrozenDictionary(static m => m.Codigo, static m => m.Id, StringComparer.Ordinal),
             tiposDocumento.ToFrozenDictionary(static t => t.Codigo, static t => t.Id, StringComparer.Ordinal),
-            tiposEtapa.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
-            tiposDeficiencia.Select(static t => t.Codigo).ToFrozenSet(StringComparer.Ordinal),
+            tiposEtapa.ToFrozenDictionary(static t => t.Codigo, static t => t.Id, StringComparer.Ordinal),
+            tiposDeficiencia.ToFrozenDictionary(static t => t.Codigo, static t => t.Id, StringComparer.Ordinal),
             regrasDesempate.Select(static r => r.Codigo).ToFrozenSet(StringComparer.Ordinal));
     }
 
@@ -198,12 +203,12 @@ internal static class ConferenciaDeReferenciasDasRegras
         switch (predicado)
         {
             case EtapaObrigatoria etapa:
-                return catalogos.TiposEtapa.Contains(etapa.TipoEtapaCodigo ?? string.Empty)
+                return catalogos.TiposEtapa.ContainsKey(etapa.TipoEtapaCodigo ?? string.Empty)
                     ? null
                     : $"tipo de etapa '{etapa.TipoEtapaCodigo}'";
 
             case DocumentoObrigatorioParaModalidade documento:
-                if (!catalogos.Modalidades.Contains(documento.Modalidade ?? string.Empty))
+                if (!catalogos.Modalidades.ContainsKey(documento.Modalidade ?? string.Empty))
                 {
                     return $"modalidade '{documento.Modalidade}'";
                 }
@@ -215,7 +220,7 @@ internal static class ConferenciaDeReferenciasDasRegras
             case AtendimentoDisponivel atendimento:
                 foreach (string necessidade in atendimento.Necessidades ?? [])
                 {
-                    if (!catalogos.TiposDeficiencia.Contains(necessidade ?? string.Empty))
+                    if (!catalogos.TiposDeficiencia.ContainsKey(necessidade ?? string.Empty))
                     {
                         return $"tipo de deficiência '{necessidade}'";
                     }
@@ -231,7 +236,7 @@ internal static class ConferenciaDeReferenciasDasRegras
             case ModalidadesMinimas modalidades:
                 foreach (string codigo in modalidades.Codigos ?? [])
                 {
-                    if (!catalogos.Modalidades.Contains(codigo ?? string.Empty))
+                    if (!catalogos.Modalidades.ContainsKey(codigo ?? string.Empty))
                     {
                         return $"modalidade '{codigo}'";
                     }

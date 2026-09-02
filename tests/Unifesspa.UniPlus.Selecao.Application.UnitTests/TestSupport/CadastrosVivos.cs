@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
+using System.Collections.Concurrent;
 using System.Text.Json;
 
 using NSubstitute;
@@ -25,6 +26,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </remarks>
 internal static class CadastrosVivos
 {
+    private static readonly ConcurrentDictionary<string, Guid> Identidades = new(StringComparer.Ordinal);
+
     private static readonly string[] ModalidadesDaSuite = ["AC", "LB_PPI", "LB_Q", "LB_EP"];
     private static readonly string[] TiposDocumentoDaSuite = ["LAUDO_MEDICO"];
     private static readonly string[] TiposEtapaDaSuite = ["PROVA_OBJETIVA", "ENTREVISTA", "ETAPA_NAO_OFERTADA"];
@@ -41,7 +44,7 @@ internal static class CadastrosVivos
     }
 
     public static TipoDeficienciaView TipoDeficiencia(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, codigo, $"Descrição de {codigo}", null);
+        new(IdentidadeDe(codigo), codigo, codigo, $"Descrição de {codigo}", null);
 
     /// <summary>
     /// Catálogo de regras de desempate contendo os códigos que os cenários citam. O
@@ -118,11 +121,23 @@ internal static class CadastrosVivos
     }
 
     public static ModalidadeView Modalidade(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, [], null, null);
+        new(IdentidadeDe(codigo), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, [], null, null);
 
     public static TipoDocumentoView TipoDocumento(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, "Documento", "OUTROS");
+        new(IdentidadeDe(codigo), codigo, "Documento", "OUTROS");
 
     public static TipoEtapaView TipoEtapa(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, "Etapa", null);
+        new(IdentidadeDe(codigo), codigo, "Etapa", null);
+
+    /// <summary>
+    /// Identidade que o cadastro atribui a um código, estável por código dentro da suíte.
+    /// </summary>
+    /// <remarks>
+    /// O código identifica uma linha, e a linha tem uma identidade só: dois pedidos do mesmo
+    /// código precisam devolver o mesmo identificador, ou o dublê representa um cadastro
+    /// impossível. A avaliação de conformidade decide por identidade, e um cenário montado
+    /// sobre identidades sorteadas reprovaria o que o cadastro aprova.
+    /// </remarks>
+    public static Guid IdentidadeDe(string codigo) =>
+        Identidades.GetOrAdd(codigo, static _ => Guid.CreateVersion7());
 }

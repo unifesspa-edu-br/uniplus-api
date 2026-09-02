@@ -41,28 +41,29 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public static class AvaliadorConformidadeLegal
 {
-    /// <param name="identidadeDoTipoDocumentoPorCodigo">
-    /// Identidade viva de cada código de tipo de documento, resolvida pela camada de
-    /// aplicação. Chega como dado, não como leitor: este serviço é domínio puro e não
-    /// consulta cadastro. Um código ausente do mapa não designa tipo vivo algum — a
-    /// conferência de referências já recusa a regra antes de chegar aqui.
+    /// <param name="identidades">
+    /// Identidade viva de cada código de cadastro, resolvida pela camada de aplicação.
+    /// Chega como dado, não como leitor: este serviço é domínio puro e não consulta
+    /// cadastro. Um código ausente do mapa não designa item vivo algum — a conferência de
+    /// referências já recusa a regra antes de chegar aqui.
     /// </param>
     public static ResultadoConformidade Avaliar(
         ProcessoSeletivo processo,
         string tipoProcessoCodigoAvaliado,
         IReadOnlyList<ObrigatoriedadeLegal> regras,
-        IReadOnlyDictionary<string, Guid> identidadeDoTipoDocumentoPorCodigo)
+        IdentidadesDeCadastro identidades)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoProcessoCodigoAvaliado);
         ArgumentNullException.ThrowIfNull(regras);
+        ArgumentNullException.ThrowIfNull(identidades);
 
         List<RegraAvaliada> avaliadas = new(regras.Count);
         List<string> avisos = [];
 
         foreach (ObrigatoriedadeLegal regra in regras)
         {
-            (bool aprovada, string? motivo, string? aviso) = AvaliarPredicado(processo, identidadeDoTipoDocumentoPorCodigo, regra.Predicado);
+            (bool aprovada, string? motivo, string? aviso) = AvaliarPredicado(processo, identidades, regra.Predicado);
 
             avaliadas.Add(new RegraAvaliada(
                 regra.Id,
@@ -97,25 +98,107 @@ public static class AvaliadorConformidadeLegal
     /// </summary>
     private static (bool Aprovada, string? Motivo, string? Aviso) AvaliarPredicado(
         ProcessoSeletivo processo,
-        IReadOnlyDictionary<string, Guid> identidadeDoTipoDocumentoPorCodigo,
+        IdentidadesDeCadastro identidades,
         PredicadoObrigatoriedade predicado) => predicado switch
         {
-            EtapaObrigatoria p => AvaliarEtapaObrigatoria(processo, p),
-            ModalidadesMinimas p => AvaliarModalidadesMinimas(processo, p),
+            EtapaObrigatoria p => AvaliarEtapaObrigatoria(processo, identidades, p),
+            ModalidadesMinimas p => AvaliarModalidadesMinimas(processo, identidades, p),
             DesempateDeveIncluir p => AvaliarDesempateDeveIncluir(processo, p),
-            DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, identidadeDoTipoDocumentoPorCodigo, p),
-            AtendimentoDisponivel p => AvaliarAtendimentoDisponivel(processo, p),
+            DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, identidades, p),
+            AtendimentoDisponivel p => AvaliarAtendimentoDisponivel(processo, identidades, p),
             ConcorrenciaDuplaObrigatoria => AvaliarConcorrenciaDuplaObrigatoria(processo),
             Customizado => (true, null, "predicado customizado — aprovado por padrão, sem verificação automática"),
             _ => throw new UnreachableException(
                 $"Predicado {predicado.GetType().Name} não é uma das 7 variantes reconhecidas por este avaliador."),
         };
 
-    private static (bool, string?, string?) AvaliarEtapaObrigatoria(ProcessoSeletivo processo, EtapaObrigatoria predicado)
+    /// <summary>
+    /// Desfecho do confronto entre a referência que a regra cita por código e as
+    /// contrapartes congeladas no processo, decidido por identidade (ADR-0129).
+    /// </summary>
+    private enum Casamento
     {
-        bool aprovada = processo.Etapas.Any(
-            e => string.Equals(e.TipoEtapa.Codigo, predicado.TipoEtapaCodigo, StringComparison.Ordinal));
-        return (aprovada, aprovada ? null : $"etapa do tipo '{predicado.TipoEtapaCodigo}' ausente", null);
+        /// <summary>Alguma contraparte designa o mesmo item de catálogo que a regra exige.</summary>
+        Casa,
+
+        /// <summary>
+        /// Nenhuma contraparte designa o item exigido, mas alguma carrega o mesmo código
+        /// apontando para outro item — o código foi reatribuído depois que a regra foi escrita.
+        /// </summary>
+        CodigoReatribuido,
+
+        /// <summary>Nenhuma contraparte corresponde, nem por identidade nem por código.</summary>
+        NaoCasa,
+    }
+
+    /// <summary>
+    /// Confronta o código citado pela regra com as contrapartes congeladas, decidindo por
+    /// identidade e reservando o código apenas para explicar o que houve.
+    /// </summary>
+    /// <param name="identidadeViva">Código para identificador, do cadastro vivo.</param>
+    /// <param name="codigoExigido">O que a regra cita.</param>
+    /// <param name="queSatisfazem">
+    /// Contrapartes que, casando, aprovam a regra. Nem sempre são todas: a exigência
+    /// documental só satisfaz quando cobre a modalidade incondicionalmente.
+    /// </param>
+    /// <param name="todasAsContrapartes">
+    /// Universo consultado apenas para o diagnóstico de reatribuição — uma exigência que
+    /// carrega o código mas não satisfaz ainda assim explica por que o editor a vê na tela.
+    /// </param>
+    /// <param name="origemDe">Identidade congelada da contraparte.</param>
+    /// <param name="codigoDe">Código congelado da contraparte.</param>
+    private static Casamento Casar<T>(
+        IReadOnlyDictionary<string, Guid> identidadeViva,
+        string? codigoExigido,
+        IEnumerable<T> queSatisfazem,
+        IEnumerable<T> todasAsContrapartes,
+        Func<T, Guid> origemDe,
+        Func<T, string> codigoDe)
+    {
+        // Código ausente do mapa não designa item vivo algum: não casa, e não há identidade
+        // sobre a qual diagnosticar reatribuição.
+        if (!identidadeViva.TryGetValue(codigoExigido ?? string.Empty, out Guid identidadeExigida))
+        {
+            return Casamento.NaoCasa;
+        }
+
+        if (queSatisfazem.Any(c => origemDe(c) == identidadeExigida))
+        {
+            return Casamento.Casa;
+        }
+
+        // Contraparte sem identidade não prova reatribuição: ela apenas não diz a que item
+        // pertence, e afirmar reatribuição ali seria um fato que o dado não sustenta.
+        return todasAsContrapartes.Any(c =>
+            origemDe(c) != Guid.Empty
+            && origemDe(c) != identidadeExigida
+            && string.Equals(codigoDe(c), codigoExigido, StringComparison.Ordinal))
+            ? Casamento.CodigoReatribuido
+            : Casamento.NaoCasa;
+    }
+
+    private static (bool, string?, string?) AvaliarEtapaObrigatoria(
+        ProcessoSeletivo processo,
+        IdentidadesDeCadastro identidades,
+        EtapaObrigatoria predicado)
+    {
+        Casamento casamento = Casar(
+            identidades.TiposEtapa,
+            predicado.TipoEtapaCodigo,
+            processo.Etapas,
+            processo.Etapas,
+            static e => e.TipoEtapa.OrigemId,
+            static e => e.TipoEtapa.Codigo);
+
+        return casamento switch
+        {
+            Casamento.Casa => (true, null, null),
+            Casamento.CodigoReatribuido => (
+                false,
+                $"a etapa do tipo '{predicado.TipoEtapaCodigo}' é de outro tipo — o código foi reatribuído depois que a regra foi escrita",
+                null),
+            _ => (false, $"etapa do tipo '{predicado.TipoEtapaCodigo}' ausente", null),
+        };
     }
 
     /// <summary>
@@ -124,15 +207,46 @@ public static class AvaliadorConformidadeLegal
     /// o que reprovar (contraprova de indistinguibilidade do processo de
     /// importação externa, Story #851 §3.4) — aprova vazio.
     /// </summary>
-    private static (bool, string?, string?) AvaliarModalidadesMinimas(ProcessoSeletivo processo, ModalidadesMinimas predicado)
+    private static (bool, string?, string?) AvaliarModalidadesMinimas(
+        ProcessoSeletivo processo,
+        IdentidadesDeCadastro identidades,
+        ModalidadesMinimas predicado)
     {
         foreach (ConfiguracaoDistribuicaoVagas oferta in processo.DistribuicaoVagas)
         {
-            HashSet<string> codigosDaOferta = new(
-                oferta.Modalidades.Select(static m => m.Codigo), StringComparer.Ordinal);
+            List<string> ausentes = [];
+            List<string> reatribuidos = [];
 
-            string[] ausentes = [.. predicado.Codigos.Where(c => !codigosDaOferta.Contains(c))];
-            if (ausentes.Length > 0)
+            foreach (string codigo in predicado.Codigos)
+            {
+                switch (Casar(
+                    identidades.Modalidades,
+                    codigo,
+                    oferta.Modalidades,
+                    oferta.Modalidades,
+                    static m => m.ModalidadeOrigemId,
+                    static m => m.Codigo))
+                {
+                    case Casamento.Casa:
+                        break;
+                    case Casamento.CodigoReatribuido:
+                        reatribuidos.Add(codigo);
+                        break;
+                    default:
+                        ausentes.Add(codigo);
+                        break;
+                }
+            }
+
+            if (reatribuidos.Count > 0)
+            {
+                return (
+                    false,
+                    $"na oferta {oferta.Id}, a(s) modalidade(s) {string.Join(", ", reatribuidos)} designa(m) outra modalidade — o código foi reatribuído depois que a regra foi escrita",
+                    null);
+            }
+
+            if (ausentes.Count > 0)
             {
                 return (false, $"oferta {oferta.Id} não contém a(s) modalidade(s) {string.Join(", ", ausentes)}", null);
             }
@@ -168,13 +282,20 @@ public static class AvaliadorConformidadeLegal
     /// </remarks>
     private static (bool, string?, string?) AvaliarDocumentoObrigatorioParaModalidade(
         ProcessoSeletivo processo,
-        IReadOnlyDictionary<string, Guid> identidadeDoTipoDocumentoPorCodigo,
+        IdentidadesDeCadastro identidades,
         DocumentoObrigatorioParaModalidade predicado)
     {
-        bool modalidadeOfertada = processo.DistribuicaoVagas
-            .SelectMany(static d => d.Modalidades)
-            .Any(m => string.Equals(m.Codigo, predicado.Modalidade, StringComparison.Ordinal));
-        if (!modalidadeOfertada)
+        // Qualquer desfecho que não seja "casa" leva à mesma conclusão: a modalidade exigida
+        // não está ofertada, e não há o que exigir. Inclusive o código reatribuído — cobrar
+        // o documento cobraria de uma modalidade que o processo não tem.
+        List<ModalidadeSelecionada> modalidadesOfertadas = [.. processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades)];
+        if (Casar(
+            identidades.Modalidades,
+            predicado.Modalidade,
+            modalidadesOfertadas,
+            modalidadesOfertadas,
+            static m => m.ModalidadeOrigemId,
+            static m => m.Codigo) != Casamento.Casa)
         {
             return (true, null, null);
         }
@@ -205,7 +326,7 @@ public static class AvaliadorConformidadeLegal
         // referências recusa a regra antes de chegar aqui, e na consulta pública ela já
         // vem marcada como inavaliável — aqui a ausência apenas não casa, sem inventar
         // diagnóstico sobre uma identidade que não existe.
-        if (!identidadeDoTipoDocumentoPorCodigo.TryGetValue(predicado.TipoDocumento ?? string.Empty, out Guid identidadeExigida))
+        if (!identidades.TiposDocumento.TryGetValue(predicado.TipoDocumento ?? string.Empty, out Guid identidadeExigida))
         {
             return (false, $"nenhuma exigência documental do tipo '{predicado.TipoDocumento}' cobre incondicionalmente a modalidade '{predicado.Modalidade}'", null);
         }
@@ -245,29 +366,50 @@ public static class AvaliadorConformidadeLegal
         return (aprovada, aprovada ? null : $"critério de desempate '{predicado.Criterio}' ausente", null);
     }
 
-    private static (bool, string?, string?) AvaliarAtendimentoDisponivel(ProcessoSeletivo processo, AtendimentoDisponivel predicado)
+    private static (bool, string?, string?) AvaliarAtendimentoDisponivel(
+        ProcessoSeletivo processo,
+        IdentidadesDeCadastro identidades,
+        AtendimentoDisponivel predicado)
     {
         if (processo.OfertaAtendimento is null)
         {
             return (false, "nenhuma oferta de atendimento especializado cadastrada", null);
         }
 
-        // Comparação pelo CÓDIGO do tipo, não pelo nome. O nome é rótulo editorial e
-        // muda sem aviso: renomear "Deficiência visual" para "Visual" faria toda regra
-        // escrita com o rótulo antigo deixar de casar, e a cláusula legal passaria a
-        // reprovar processos conformes. O código é a identidade estável, e é o que a
-        // escrita da regra agora confere contra o cadastro.
-        //
-        // Ordinal, sem NFC nem tolerância a caixa: o formato fechado do código não tem
-        // caractere componível nem minúscula, então normalizar aqui só mascararia
-        // divergência que a escrita já recusa.
-        HashSet<string> ofertados = new(
-            processo.OfertaAtendimento.TiposDeficiencia.Select(static t => t.TipoDeficienciaCodigo),
-            StringComparer.Ordinal);
+        IReadOnlyCollection<OfertaTipoDeficiencia> ofertados = processo.OfertaAtendimento.TiposDeficiencia;
+        List<string> ausentes = [];
+        List<string> reatribuidos = [];
 
-        string[] ausentes = [.. predicado.Necessidades.Where(necessidade => !ofertados.Contains(necessidade))];
+        foreach (string necessidade in predicado.Necessidades)
+        {
+            switch (Casar(
+                identidades.TiposDeficiencia,
+                necessidade,
+                ofertados,
+                ofertados,
+                static t => t.TipoDeficienciaOrigemId,
+                static t => t.TipoDeficienciaCodigo))
+            {
+                case Casamento.Casa:
+                    break;
+                case Casamento.CodigoReatribuido:
+                    reatribuidos.Add(necessidade);
+                    break;
+                default:
+                    ausentes.Add(necessidade);
+                    break;
+            }
+        }
 
-        return ausentes.Length == 0
+        if (reatribuidos.Count > 0)
+        {
+            return (
+                false,
+                $"o atendimento ofertado para {string.Join(", ", reatribuidos)} é de outro tipo de deficiência — o código foi reatribuído depois que a regra foi escrita",
+                null);
+        }
+
+        return ausentes.Count == 0
             ? (true, null, null)
             : (false, $"necessidade(s) de atendimento não ofertada(s): {string.Join(", ", ausentes)}", null);
     }
