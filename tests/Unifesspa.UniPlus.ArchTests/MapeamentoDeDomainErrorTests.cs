@@ -77,7 +77,7 @@ public sealed partial class MapeamentoDeDomainErrorTests
         string[] excluidos = ["shared", "host"];
 
         return [.. Directory
-            .EnumerateDirectories(Path.Combine(RaizDoRepositorio(), "src"))
+            .EnumerateDirectories(Path.Join(RaizDoRepositorio(), "src"))
             .Where(pasta => !excluidos.Contains(Path.GetFileName(pasta), StringComparer.Ordinal))
             .SelectMany(pasta => Directory.EnumerateDirectories(pasta, "Unifesspa.UniPlus.*.Domain"))
             .Select(camada => Path.GetFileName(camada)["Unifesspa.UniPlus.".Length..^".Domain".Length])
@@ -154,11 +154,7 @@ public sealed partial class MapeamentoDeDomainErrorTests
                 .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
                 .Where(f => f.IsLiteral && f.FieldType == typeof(string));
 
-            foreach (FieldInfo constante in constantes)
-            {
-                if (constante.GetRawConstantValue() is string code)
-                    codes.Add(code);
-            }
+            codes.UnionWith(constantes.Select(c => c.GetRawConstantValue()).OfType<string>());
         }
 
         return codes;
@@ -262,18 +258,14 @@ public sealed partial class MapeamentoDeDomainErrorTests
 
     private static IEnumerable<string> CamadasDeOrigem(string modulo)
     {
-        string raiz = Path.Combine(RaizDoRepositorio(), "src");
+        string raiz = Path.Join(RaizDoRepositorio(), "src");
 
-        foreach (string camada in (string[])["Domain", "Application"])
-        {
-            string? encontrada = Directory
+        // OfType descarta a camada ausente: nem todo módulo tem Application própria.
+        return ((string[])["Domain", "Application"])
+            .Select(camada => Directory
                 .EnumerateDirectories(raiz, $"Unifesspa.UniPlus.{modulo}.{camada}", SearchOption.AllDirectories)
-                .FirstOrDefault();
-
-            // Nem todo módulo tem camada Application própria.
-            if (encontrada is not null)
-                yield return encontrada;
-        }
+                .FirstOrDefault())
+            .OfType<string>();
     }
 
     private static bool EhArtefatoDeBuild(string arquivo)
@@ -286,7 +278,7 @@ public sealed partial class MapeamentoDeDomainErrorTests
     private static string RaizDoRepositorio()
     {
         string? atual = AppContext.BaseDirectory;
-        while (atual is not null && !File.Exists(Path.Combine(atual, "UniPlus.slnx")))
+        while (atual is not null && !File.Exists(Path.Join(atual, "UniPlus.slnx")))
             atual = Path.GetDirectoryName(atual);
 
         return atual
