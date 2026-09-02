@@ -1729,6 +1729,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_etapa_pontuada_sem_fase_agrupadora", DimensaoConformidade.Cronograma, "Cronograma: etapa pontuada tem fase que agrupa etapas", !HaEtapaSemFaseDeAvaliacao()),
         new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !HaInscricaoPropriaSemFaseDeColeta()),
         new ItemConformidade("cronograma_fase_que_coleta_inscricao_sem_janela", DimensaoConformidade.Cronograma, "Cronograma: a fase que coleta inscrição tem início e fim definidos", FaseQueColetaInscricaoSemJanela() is null),
+        new ItemConformidade("cronograma_janela_de_isencao", DimensaoConformidade.Cronograma, "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias", JanelaDeIsencaoConforme(contexto)),
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
@@ -2136,6 +2137,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         OrigemCandidatos == OrigemCandidatos.InscricaoPropria && !_cronogramaFases.Any(static f => f.ColetaInscricao);
 
     /// <summary>
+    /// A projeção da janela para o checklist. Sem zona resolvida a duração não é verificável, e o
+    /// item fica verde: quem recusa a publicação nesse caso é <c>fuso_institucional_nao_reconhecido</c>,
+    /// que já está vermelho — a bicondicional continua de pé, com a causa nomeada uma vez só.
+    /// </summary>
+    private bool JanelaDeIsencaoConforme(ContextoDeContagemDePrazos contexto) =>
+        !contexto.FusoInstitucionalReconhecido
+        || contexto.FusoInstitucional is null
+        || PendenciaDaJanelaDeIsencao(contexto.FusoInstitucional) is null;
+
+    /// <summary>
     /// As três regras de contorno da janela de isenção (UNI-REQ-0106): abre junto com a inscrição,
     /// fecha antes dela, e dura no mínimo cinco dias corridos.
     /// </summary>
@@ -2177,7 +2188,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A solicitação de isenção precisa terminar antes do fim das inscrições — quem tem o pedido indeferido ainda se inscreve pagando.");
         }
 
-        if (fusoInstitucional is { } fuso && fimIsencao < UltimoInstanteDoQuintoDia(inicioIsencao, fuso))
+        // Sem zona resolvida a duração não é verificável, e deixar passar transformaria a ausência
+        // do fuso em permissão para publicar janela de um dia. A zona irresolvível já é recusada
+        // como defeito de instalação antes daqui; chegar sem ela é o handler não tê-la passado.
+        if (fusoInstitucional is not { } fuso)
+        {
+            throw new InvalidOperationException(
+                "A duração da janela de isenção depende do fuso institucional, e ele não foi informado ao gate do cronograma.");
+        }
+
+        if (fimIsencao < UltimoInstanteDoQuintoDia(inicioIsencao, fuso))
         {
             return new DomainError(
                 "ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias",

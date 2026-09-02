@@ -104,6 +104,38 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         pendencia!.Code.Should().Be("ProcessoSeletivo.JanelaDeIsencaoSemPrazo");
     }
 
+    [Fact(DisplayName = "A janela irregular fica vermelha no checklist, e não só na publicação")]
+    public void JanelaIrregular_ItemVermelhoNoChecklist()
+    {
+        // O checklist é bicondicional com os gates: sem o item, o preflight diria que está tudo
+        // pronto instantes antes de a publicação recusar o mesmo processo.
+        ProcessoSeletivo processo = ProcessoComCronograma([
+            FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes),
+            FaseDeIsencao(AberturaDasInscricoes.AddMinutes(1), new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.FromHours(-3))),
+        ]);
+
+        var contexto = new ContextoDeContagemDePrazos(
+            CalendarioVigente: null, FusoInstitucionalReconhecido: true, FusoInstitucional: Belem);
+
+        processo.AvaliarConformidade(contexto)
+            .Should().Contain(i => i.Codigo == "cronograma_janela_de_isencao" && !i.Ok);
+    }
+
+    [Fact(DisplayName = "Sem zona resolvida o gate lança, em vez de aceitar janela de um dia")]
+    public void SemFusoResolvido_NaoAceitaJanelaCurta()
+    {
+        // Tratar a ausência do fuso como permissão transformaria um defeito de instalação em
+        // publicação de janela irregular.
+        ProcessoSeletivo processo = ProcessoComCronograma([
+            FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes),
+            FaseDeIsencao(AberturaDasInscricoes, new DateTimeOffset(2026, 3, 3, 23, 59, 59, TimeSpan.FromHours(-3))),
+        ]);
+
+        Action semZona = () => processo.PendenciaDoCronograma(null);
+
+        semZona.Should().Throw<InvalidOperationException>();
+    }
+
     [Fact(DisplayName = "Cronograma sem fase de isenção não é recusado — quem não cobra taxa não tem a fase")]
     public void SemFaseDeIsencao_NaoRecusa()
     {
