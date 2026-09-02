@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Um dia não útil copiado por valor do calendário vigente no momento da publicação
@@ -78,7 +79,7 @@ public sealed record DiaNaoUtilCongelado
         if (data == default)
         {
             return Falha(
-                "DataAusente",
+                DiaNaoUtilCongeladoErrorCodes.DataAusente,
                 "A data do dia não útil não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.");
         }
 
@@ -86,7 +87,7 @@ public sealed record DiaNaoUtilCongelado
         if (!AbrangenciaDiaNaoUtil.EhValida(token))
         {
             return Falha(
-                "AbrangenciaInvalida",
+                DiaNaoUtilCongeladoErrorCodes.AbrangenciaInvalida,
                 $"Abrangência '{abrangencia}' não pertence ao vocabulário do calendário de dias úteis.");
         }
 
@@ -124,19 +125,19 @@ public sealed record DiaNaoUtilCongelado
         if (ibge is not null || nome is not null)
         {
             return Falha(
-                "MunicipioEmDiaEstadual",
+                DiaNaoUtilCongeladoErrorCodes.MunicipioEmDiaEstadual,
                 "Dia de abrangência estadual não carrega município — a UF sozinha determina onde ele incide.");
         }
 
         if (uf is null)
         {
-            return Falha("UfAusenteEmDiaEstadual", "Dia de abrangência estadual exige a UF.");
+            return Falha(DiaNaoUtilCongeladoErrorCodes.UfAusenteEmDiaEstadual, "Dia de abrangência estadual exige a UF.");
         }
 
         string normalizada = uf.ToUpperInvariant();
         if (!ReferenciaCidadeGeo.EhUfValida(normalizada))
         {
-            return Falha("UfInvalida", $"UF '{uf}' não é uma unidade federativa reconhecida.");
+            return Falha(DiaNaoUtilCongeladoErrorCodes.UfInvalida, $"UF '{uf}' não é uma unidade federativa reconhecida.");
         }
 
         return Result<DiaNaoUtilCongelado>.Success(
@@ -149,7 +150,7 @@ public sealed record DiaNaoUtilCongelado
         if (ibge is not null || nome is not null || uf is not null)
         {
             return Falha(
-                "TerritorioEmDiaSemRecorte",
+                DiaNaoUtilCongeladoErrorCodes.TerritorioEmDiaSemRecorte,
                 $"Dia de abrangência {abrangencia} incide em todo lugar e não carrega município nem UF.");
         }
 
@@ -159,6 +160,6 @@ public sealed record DiaNaoUtilCongelado
 
     private static bool Vazio(string? valor) => string.IsNullOrWhiteSpace(valor);
 
-    private static Result<DiaNaoUtilCongelado> Falha(string sufixo, string mensagem) =>
-        Result<DiaNaoUtilCongelado>.Failure(new DomainError($"DiaNaoUtilCongelado.{sufixo}", mensagem));
+    private static Result<DiaNaoUtilCongelado> Falha(string code, string mensagem) =>
+        Result<DiaNaoUtilCongelado>.Failure(new DomainError(code, mensagem));
 }

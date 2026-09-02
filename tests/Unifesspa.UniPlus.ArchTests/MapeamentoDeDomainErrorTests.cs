@@ -44,12 +44,30 @@ public sealed partial class MapeamentoDeDomainErrorTests
                 + "ProblemDetails canônico (ADR-0024)");
     }
 
+    [Theory(DisplayName = "nenhum code de DomainError é montado por interpolação")]
+    [MemberData(nameof(Modulos))]
+    public void Codes_NaoSaoMontadosPorInterpolacao(string modulo)
+    {
+        // Um code interpolado não é estaticamente determinável, então a coleta acima
+        // não o enxerga e a Theory de cobertura passa verde sem cobri-lo. Recusar a
+        // construção é o que impede o gate de silenciar: sem isto, um helper
+        // `Falha(sufixo)` reintroduz o buraco sem nada acusar.
+        IEnumerable<string> interpolados = ArquivosDeOrigem(modulo)
+            .Where(arquivo => ChamadaInterpoladaRegex().IsMatch(SemComentarios(File.ReadAllText(arquivo))))
+            .Select(arquivo => Path.GetFileName(arquivo))
+            .Order();
+
+        interpolados.Should().BeEmpty(
+            "o code precisa ser literal ou constante para que a cobertura do registry "
+                + "consiga enxergá-lo; monte a mensagem dinamicamente, nunca o code");
+    }
+
     [Fact(DisplayName = "a descoberta de módulos alcança os módulos de negócio do monólito")]
     public void Descoberta_AlcancaOsModulosDeNegocio()
     {
         // Sem esta âncora, um erro de convenção de path faria a Theory rodar com
         // zero casos e o gate passaria vazio, sem cobrir nada.
-        DescobrirModulos().Should().Contain(["Selecao", "Configuracao"]);
+        DescobrirModulos().Should().Contain(["Selecao", "Configuracao", "Ingresso"]);
     }
 
     private static IReadOnlyList<string> DescobrirModulos()
@@ -63,25 +81,33 @@ public sealed partial class MapeamentoDeDomainErrorTests
             .Where(pasta => !excluidos.Contains(Path.GetFileName(pasta), StringComparer.Ordinal))
             .SelectMany(pasta => Directory.EnumerateDirectories(pasta, "Unifesspa.UniPlus.*.Domain"))
             .Select(camada => Path.GetFileName(camada)["Unifesspa.UniPlus.".Length..^".Domain".Length])
-            .Where(TemSuperficieHttp)
+            .Where(EhCobrado)
             .Order()];
     }
 
-    private static bool TemSuperficieHttp(string modulo)
+    private static bool EhCobrado(string modulo)
     {
-        // Sem controller nenhum code chega ao mapper, e exigir mapeamento obrigaria
-        // a inventar o wire code de um endpoint que ainda não existe. O critério se
-        // corrige sozinho: no primeiro controller do módulo o gate volta a cobrá-lo,
-        // que é justamente quando a registration passa a fazer falta.
+        // Fica de fora o módulo que ainda não expõe endpoint nem declara registration:
+        // nenhum code chega ao mapper, e exigir mapeamento obrigaria a inventar o wire
+        // code de um endpoint que não existe. Declarar registration própria já basta —
+        // quem assumiu o compromisso de mapear é cobrado pela completude dele.
+        // O critério se corrige sozinho: no primeiro controller, ou na primeira
+        // registration, o módulo volta a ser cobrado.
+        Assembly api;
         try
         {
-            return TiposDe(Assembly.Load($"Unifesspa.UniPlus.{modulo}.API")).Any(EhController);
+            api = Assembly.Load($"Unifesspa.UniPlus.{modulo}.API");
         }
         catch (FileNotFoundException)
         {
             return false;
         }
+
+        return TiposDe(api).Any(tipo => EhController(tipo) || EhRegistrationDeErros(tipo));
     }
+
+    private static bool EhRegistrationDeErros(ReflectionType tipo) =>
+        !tipo.IsAbstract && !tipo.IsInterface && typeof(IDomainErrorRegistration).IsAssignableFrom(tipo);
 
     private static bool EhController(ReflectionType tipo)
     {
@@ -141,31 +167,29 @@ public sealed partial class MapeamentoDeDomainErrorTests
     private static HashSet<string> LerCodesEmLiteraisInline(string modulo)
     {
         Regex chamada = ChamadaDeDomainErrorRegex();
-        Regex comentarioEmBloco = ComentarioEmBlocoRegex();
-        Regex comentarioDeLinha = ComentarioDeLinhaRegex();
         HashSet<string> codes = new(StringComparer.Ordinal);
 
-        foreach (string camada in CamadasDeOrigem(modulo))
+        foreach (string arquivo in ArquivosDeOrigem(modulo))
         {
-            foreach (string arquivo in Directory.EnumerateFiles(camada, "*.cs", SearchOption.AllDirectories))
-            {
-                if (EhArtefatoDeBuild(arquivo))
-                    continue;
-
-                // Remover comentários antes do match evita contar como órfão um code
-                // citado em XML doc ou em linha comentada. Precisão de AST exigiria
-                // Roslyn; o strip cobre os casos que ocorrem no repositório.
-                string conteudo = File.ReadAllText(arquivo);
-                conteudo = comentarioEmBloco.Replace(conteudo, string.Empty);
-                conteudo = comentarioDeLinha.Replace(conteudo, string.Empty);
-
-                foreach (Match encontro in chamada.Matches(conteudo))
-                    codes.Add(encontro.Groups[1].Value);
-            }
+            foreach (Match encontro in chamada.Matches(SemComentarios(File.ReadAllText(arquivo))))
+                codes.Add(encontro.Groups[1].Value);
         }
 
         return codes;
     }
+
+    private static IEnumerable<string> ArquivosDeOrigem(string modulo) =>
+        CamadasDeOrigem(modulo)
+            .SelectMany(camada => Directory.EnumerateFiles(camada, "*.cs", SearchOption.AllDirectories))
+            .Where(arquivo => !EhArtefatoDeBuild(arquivo));
+
+    /// <remarks>
+    /// Remover comentários evita tratar como emitido um code citado em XML doc ou em
+    /// linha comentada. Precisão de AST exigiria Roslyn; o strip cobre o que ocorre
+    /// no repositório.
+    /// </remarks>
+    private static string SemComentarios(string conteudo) =>
+        ComentarioDeLinhaRegex().Replace(ComentarioEmBlocoRegex().Replace(conteudo, string.Empty), string.Empty);
 
     private static HashSet<string> LerCodesRegistrados(string modulo)
     {
@@ -278,6 +302,9 @@ public sealed partial class MapeamentoDeDomainErrorTests
     /// </remarks>
     [GeneratedRegex(@"new\s+DomainError\(\s*""([^""]+)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ChamadaDeDomainErrorRegex();
+
+    [GeneratedRegex(@"new\s+DomainError\(\s*\$", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ChamadaInterpoladaRegex();
 
     [GeneratedRegex(@"/\*[\s\S]*?\*/", RegexOptions.Compiled, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ComentarioEmBlocoRegex();
