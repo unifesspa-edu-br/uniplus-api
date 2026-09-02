@@ -540,12 +540,17 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// Referências que uma modalidade faz a outra pelo código, e que só valem se a citada
     /// estiver no mesmo conjunto ofertado.
     /// </summary>
-    private static readonly (Func<ModalidadeSelecionada, string?> Ler, string Erro, string Rotulo, string Concordancia)[] ReferenciasAoConjunto =
+    private const string CodeComposicaoOrigemNaoSelecionada = "ConfiguracaoDistribuicaoVagas.ComposicaoOrigemNaoSelecionada";
+    private const string CodeRemanejamentoDestinoNaoSelecionado = "ConfiguracaoDistribuicaoVagas.RemanejamentoDestinoNaoSelecionado";
+    private const string CodeRemanejamentoParNaoSelecionado = "ConfiguracaoDistribuicaoVagas.RemanejamentoParNaoSelecionado";
+    private const string CodeRemanejamentoFallbackNaoSelecionado = "ConfiguracaoDistribuicaoVagas.RemanejamentoFallbackNaoSelecionado";
+
+    private static readonly (Func<ModalidadeSelecionada, string?> Ler, string Code, string Rotulo, string Concordancia)[] ReferenciasAoConjunto =
     [
-        (static m => m.ComposicaoOrigemCodigo, "ComposicaoOrigemNaoSelecionada", "a origem", "selecionada"),
-        (static m => m.RemanejamentoDestino, "RemanejamentoDestinoNaoSelecionado", "o destino de remanejamento", "selecionado"),
-        (static m => m.RemanejamentoPar, "RemanejamentoParNaoSelecionado", "o par de remanejamento", "selecionado"),
-        (static m => m.RemanejamentoFallback, "RemanejamentoFallbackNaoSelecionado", "o fallback de remanejamento", "selecionado"),
+        (static m => m.ComposicaoOrigemCodigo, CodeComposicaoOrigemNaoSelecionada, "a origem", "selecionada"),
+        (static m => m.RemanejamentoDestino, CodeRemanejamentoDestinoNaoSelecionado, "o destino de remanejamento", "selecionado"),
+        (static m => m.RemanejamentoPar, CodeRemanejamentoParNaoSelecionado, "o par de remanejamento", "selecionado"),
+        (static m => m.RemanejamentoFallback, CodeRemanejamentoFallbackNaoSelecionado, "o fallback de remanejamento", "selecionado"),
     ];
 
     private static DomainError? ValidarReferenciasCruzadas(
@@ -559,12 +564,12 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         IReadOnlyList<ModalidadeSelecionada> modalidades,
         IReadOnlyList<string> codigosInformados)
     {
-        foreach ((Func<ModalidadeSelecionada, string?> ler, string erro, string rotulo, string concordancia) in ReferenciasAoConjunto)
+        foreach ((Func<ModalidadeSelecionada, string?> ler, string code, string rotulo, string concordancia) in ReferenciasAoConjunto)
         {
             if (ler(modalidade) is { } referencia && !codigosInformados.Contains(referencia, StringComparer.Ordinal))
             {
                 return new DomainError(
-                    $"ConfiguracaoDistribuicaoVagas.{erro}",
+                    code,
                     $"Modalidade {modalidade.Codigo} referencia {rotulo} {referencia}, que não está {concordancia} nesta oferta.");
             }
         }
