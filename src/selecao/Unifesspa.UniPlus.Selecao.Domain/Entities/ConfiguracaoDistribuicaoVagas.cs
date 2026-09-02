@@ -530,6 +530,12 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// oferta, deixando o motor de vagas/remanejamento futuro sem a
     /// modalidade referenciada.
     /// </summary>
+    /// <summary>Token de contrato da ação que reclassifica na ampla concorrência.</summary>
+    private const string AcaoQuandoIndeferidoReclassificarAc = "RECLASSIFICAR_AC";
+
+    /// <summary>Código da ampla concorrência no cadastro de modalidades.</summary>
+    private const string AmplaConcorrenciaCodigo = "AC";
+
     private static DomainError? ValidarReferenciasCruzadas(
         IReadOnlyList<ModalidadeSelecionada> modalidades, IReadOnlyList<string> codigosInformados)
     {
@@ -561,6 +567,19 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
                 return new DomainError(
                     "ConfiguracaoDistribuicaoVagas.RemanejamentoFallbackNaoSelecionado",
                     $"Modalidade {modalidade.Codigo} referencia o fallback de remanejamento {fallback}, que não está selecionado nesta oferta.");
+            }
+
+            // As quatro acima comparam um código que o operador declarou; esta compara o
+            // conjunto contra um código implícito no token — RECLASSIFICAR_AC significa
+            // "reclassifica em AC", e num certame exclusivo, como o do PSIQ, a ampla
+            // concorrência não é ofertada. Sem a recusa o destino congela no envelope, que é
+            // imutável, e sobrevive à retificação.
+            if (string.Equals(modalidade.AcaoQuandoIndeferido, AcaoQuandoIndeferidoReclassificarAc, StringComparison.Ordinal)
+                && !codigosInformados.Contains(AmplaConcorrenciaCodigo, StringComparer.Ordinal))
+            {
+                return new DomainError(
+                    "ConfiguracaoDistribuicaoVagas.ReclassificacaoParaAmplaSemAmplaOfertada",
+                    $"Modalidade {modalidade.Codigo} reclassifica em {AmplaConcorrenciaCodigo}, que não está selecionada nesta oferta.");
             }
         }
 
