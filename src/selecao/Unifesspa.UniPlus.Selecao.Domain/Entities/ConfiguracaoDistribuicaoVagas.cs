@@ -238,7 +238,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
 
             quadro = ehLei12711
                 ? MontarQuadroFederal(voBase, pr, referenciaDemografica!, modalidades)
-                : MontarQuadroInstitucional(modalidades);
+                : MontarQuadroInstitucional(voBase, modalidades);
         }
         else
         {
@@ -389,7 +389,16 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
             vagas, calculado.VrNominal, calculado.VrFinal, calculado.Estouro, calculado.CapadoEmVo, calculado.TotalPublicado));
     }
 
-    private static Result<QuadroMontado> MontarQuadroInstitucional(IReadOnlyList<ModalidadeSelecionada> modalidades)
+    /// <remarks>
+    /// As quantidades <b>dividem</b> o total da oferta; não o ampliam nem o deixam
+    /// incompleto. Nenhuma composição fica de fora da soma: neste ramo não há conjunto
+    /// calculado ao lado ao qual uma suplementar pudesse acrescer — o total publicado é a
+    /// soma do quadro, e dispensar a suplementar dele aceitaria um certame inteiro de
+    /// suplementares como se distribuísse zero.
+    /// </remarks>
+    private static Result<QuadroMontado> MontarQuadroInstitucional(
+        int voBase,
+        IReadOnlyList<ModalidadeSelecionada> modalidades)
     {
         List<VagaOfertada> vagas = [];
         int totalPublicado = 0;
@@ -405,6 +414,23 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
 
             vagas.Add(vaga.Value!);
             totalPublicado += quantidade;
+        }
+
+        // Exceder e faltar são erros distintos para quem configura: um passou do total, o
+        // outro ainda não terminou de distribuir. Uma mensagem só faria o operador procurar
+        // o problema que não tem.
+        if (totalPublicado > voBase)
+        {
+            return Result<QuadroMontado>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase",
+                $"As quantidades do quadro somam {totalPublicado}, acima das {voBase} vagas da oferta."));
+        }
+
+        if (totalPublicado < voBase)
+        {
+            return Result<QuadroMontado>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase",
+                $"As quantidades do quadro somam {totalPublicado}, e a oferta tem {voBase} vagas a distribuir."));
         }
 
         return Result<QuadroMontado>.Success(new QuadroMontado(vagas, VrNominal: 0, VrFinal: 0, Estouro: 0, CapadoEmVo: false, totalPublicado));

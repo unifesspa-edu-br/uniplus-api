@@ -64,7 +64,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
 
         ConfiguracaoDistribuicaoVagas config = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
+            voBase: codigos.Length * 10,
             pr: 1m,
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
             regraAjuste: null,
