@@ -15,6 +15,12 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     private static ReferenciaRegra RegraInstitucional() =>
         ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64)).Value!;
 
+    private static ReferenciaRegra RegraPsiq() =>
+        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Psiq, "v1", new string('d', 64)).Value!;
+
+    private static ReferenciaRegra RegraEduCampo() =>
+        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.EduCampo, "v1", new string('e', 64)).Value!;
+
     private static ReferenciaRegra RegraAjuste() =>
         ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", new string('c', 64)).Value!;
 
@@ -173,6 +179,78 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: null);
 
         resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Modalidade fora do rol que a regra admite é recusada, nomeando regra e modalidade")]
+    public void Criar_ModalidadeForaDoRolDaRegra_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade("AC_Q", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 6),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"]);
+
+        resultado.IsFailure.Should().BeTrue("o PSIQ é certame exclusivo — não oferta ampla concorrência");
+        resultado.Errors.Should().Contain(e =>
+            e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra"
+            && e.Error.Message.Contains("AC", StringComparison.Ordinal)
+            && e.Error.Message.Contains(RegraDistribuicaoVagasCodigo.Psiq, StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "PSIQ com o rol que a regra admite é aceito, e a soma das suplementares é o total")]
+    public void Criar_Psiq_ComRolAdmitido_Sucesso()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade("AC_Q", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"]);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.TotalPublicado.Should().Be(4,
+            "sem outro conjunto ao qual se somem, as vagas por acréscimo são o total publicado");
+    }
+
+    [Fact(DisplayName = "Educação do Campo aceita AC e PCD_PURO, com a reserva retirando da ampla")]
+    public void Criar_EduCampo_ComRolAdmitido_Sucesso()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 38),
+            Modalidade("PCD_PURO", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraEduCampo(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "PCD_PURO"]);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.TotalPublicado.Should().Be(40, "PCD_PURO retira de AC — o par fecha no VO_base");
+    }
+
+    [Fact(DisplayName = "Regra sem rol declarado não restringe as modalidades")]
+    public void Criar_SemRolDeclarado_NaoRestringe()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("QUALQUER_CODIGO", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 10),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null);
+
+        resultado.IsSuccess.Should().BeTrue(
+            "rol aberto atende o certame institucional que ainda não tem regra própria");
     }
 
     [Theory(DisplayName = "Criar com VO_base não positivo falha")]

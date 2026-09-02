@@ -23,8 +23,8 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         return document.RootElement.Clone();
     }
 
-    private static RegraCatalogo RegraDistribuicao(string codigo) => RegraCatalogo.Criar(
-        codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json("{}"), Json("[]"), "base legal").Value!;
+    private static RegraCatalogo RegraDistribuicao(string codigo, string esquemaArgs = "{}") => RegraCatalogo.Criar(
+        codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json(esquemaArgs), Json("[]"), "base legal").Value!;
 
     private sealed record Mocks(
         IProcessoSeletivoRepository Repository,
@@ -80,6 +80,36 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         await mocks.Repository.Received(1).ExisteAsync(processoId, Arg.Any<CancellationToken>());
         await mocks.OfertaCursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
         await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+    }
+
+    [Fact(DisplayName = "Simulação recusa modalidade fora do rol declarado no esquema da regra")]
+    public async Task Handle_ModalidadeForaDoRolDaRegra_Recusa()
+    {
+        // Prova a ligação entre catálogo e agregado: o rol vive no esquema_args da regra, e
+        // é o resolvedor que o extrai. Sem esta cobertura, a recusa poderia estar correta no
+        // domínio e nunca ser alcançada, porque ninguém teria passado o rol adiante.
+        Guid processoId = Guid.CreateVersion7();
+        Guid ofertaCursoId = Guid.CreateVersion7();
+        Guid modalidadeId = Guid.CreateVersion7();
+
+        Mocks mocks = NovosMocks(processoExiste: true, processoId);
+        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Psiq, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Psiq, """{"modalidades_admitidas":["AC_I","AC_Q"]}"""));
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
+
+        SimularDistribuicaoVagasQuery query = new(
+            processoId,
+            [new ConfiguracaoDistribuicaoVagasInput(
+                ofertaCursoId, 10, 1m, RegraDistribuicaoVagasCodigo.Psiq, "v1", null, null, null,
+                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 10)])]);
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
+            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
+            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue("AC não está entre as modalidades que o PSIQ admite");
+        result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra");
     }
 
     [Fact(DisplayName = "Simulação recusa VO_base acima das vagas anuais autorizadas da oferta")]
