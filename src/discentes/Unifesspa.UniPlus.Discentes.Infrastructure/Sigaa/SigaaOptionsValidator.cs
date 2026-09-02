@@ -67,6 +67,14 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
             falhas.Add("Sigaa:MaximoDeRetentativas não pode ser negativo.");
         }
 
+        // A biblioteca de resiliência também recusa espera negativa, mas só ao montar a
+        // política — o que acontece na primeira consulta, não na subida. Recusar aqui põe
+        // a falha junto das outras de configuração, antes de o processo se declarar pronto.
+        if (options.EsperaBaseEntreTentativasEmMilissegundos < 0)
+        {
+            falhas.Add("Sigaa:EsperaBaseEntreTentativasEmMilissegundos não pode ser negativa.");
+        }
+
         if (options.TimeoutPorTentativaEmSegundos < 1)
         {
             falhas.Add("Sigaa:TimeoutPorTentativaEmSegundos precisa ser pelo menos 1.");
