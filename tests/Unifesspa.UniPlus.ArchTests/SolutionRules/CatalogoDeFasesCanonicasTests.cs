@@ -138,6 +138,38 @@ public sealed class CatalogoDeFasesCanonicasTests
             "Lei nº 13.146/2015, art. 2º §1º e art. 30; Lei nº 12.711/2012 c/c Lei nº 13.409/2016");
     }
 
+    [Fact(DisplayName = "Codigos é exatamente o conjunto de Descritos, na mesma ordem")]
+    public void Codigos_DerivaDeDescritos()
+    {
+        // Codigos é uma projeção de Descritos, não uma segunda lista escrita à mão — este
+        // teste prova a derivação, não apenas o conjunto (BeEquivalentTo aceitaria ordem
+        // trocada, o que aqui seria sintoma de alguém ter voltado a duas listas irmãs).
+        FaseCanonicaCatalogo.Codigos.Should().Equal(
+            [.. FaseCanonicaCatalogo.Descritos.Select(static d => d.Codigo)]);
+    }
+
+    [Fact(DisplayName = "Toda fase canônica do vocabulário tem rótulo não vazio")]
+    public void Descritos_TemRotuloNaoVazio()
+    {
+        FaseCanonicaCatalogo.Descritos.Should().AllSatisfy(
+            static d => d.Nome.Should().NotBeNullOrWhiteSpace());
+    }
+
+    [Fact(DisplayName = "O rótulo do vocabulário coincide com o Nome inicial do seed, código a código")]
+    public void Descritos_RotuloCoincideComNomeDoSeed()
+    {
+        // FaseCanonicaCatalogo.Descritos (o rótulo do vocabulário) e FaseCanonicaSeed.Itens
+        // (o Nome persistido) são fontes independentes de propósito — o seed é dado
+        // editável pelo CRUD depois do deploy, o vocabulário é rótulo fixo do código. Este
+        // teste é o oráculo que garante que elas nascem coerentes, sem acoplar as duas.
+        Dictionary<string, string> nomesDoSeed = FaseCanonicaSeed.Itens
+            .ToDictionary(static item => item.Codigo, static item => item.Nome, StringComparer.Ordinal);
+
+        FaseCanonicaCatalogo.Descritos.Should().AllSatisfy(descrito =>
+            nomesDoSeed[descrito.Codigo].Should().Be(descrito.Nome,
+                $"o rótulo do vocabulário para {descrito.Codigo} deveria coincidir com o Nome inicial do seed"));
+    }
+
     [Fact(DisplayName = "As fases que produzem resultado são as que publicam ato")]
     public void Seed_ProduzResultadoBateComOQuePublicaAto()
     {
