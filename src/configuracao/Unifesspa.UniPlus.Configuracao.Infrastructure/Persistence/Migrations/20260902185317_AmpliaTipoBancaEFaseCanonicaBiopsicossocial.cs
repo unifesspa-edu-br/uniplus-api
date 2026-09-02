@@ -137,29 +137,68 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 $$;
                 """);
 
-            migrationBuilder.AddCheckConstraint(
-                name: "ck_tipo_banca_codigo_canonico",
-                schema: "configuracao",
-                table: "tipo_banca",
-                sql: "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS')");
+            // CHECK enxerga a tabela inteira — soft-delete não a esconde dele, e a
+            // preservação acima pode ter deixado a fase editada/referenciada viva. Estreitar
+            // o domínio sobre uma linha (viva ou removida) que ainda usa um código novo
+            // faria o ADD CONSTRAINT falhar contra o próprio dado que acabamos de decidir
+            // preservar — e simplesmente pular o ADD deixaria a tabela sem CHECK nenhum,
+            // pior que o CHECK largo que havia antes desta migração. Por isso cada
+            // constraint SEMPRE volta a existir: estreita quando nenhuma linha, de nenhum
+            // estado, ainda usa o código novo; larga (idêntica à do Up) quando alguma usa —
+            // o rollback do vocabulário preserva o dado em vez de apertar o domínio sobre
+            // ele, mas nunca deixa a tabela sem proteção.
+            migrationBuilder.Sql(
+                """
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM configuracao.tipo_banca
+                         WHERE codigo IN ('BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL')
+                    ) THEN
+                        ALTER TABLE configuracao.tipo_banca
+                            ADD CONSTRAINT ck_tipo_banca_codigo_canonico
+                            CHECK (codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL'));
+                    ELSE
+                        ALTER TABLE configuracao.tipo_banca
+                            ADD CONSTRAINT ck_tipo_banca_codigo_canonico
+                            CHECK (codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS'));
+                    END IF;
 
-            migrationBuilder.AddCheckConstraint(
-                name: "ck_precedencia_fase_antecessora_canonica",
-                schema: "configuracao",
-                table: "precedencia_fase",
-                sql: "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    IF EXISTS (
+                        SELECT 1 FROM configuracao.fase_canonica WHERE codigo = 'AVALIACAO_BIOPSICOSSOCIAL'
+                    ) THEN
+                        ALTER TABLE configuracao.fase_canonica
+                            ADD CONSTRAINT ck_fase_canonica_codigo_canonico
+                            CHECK (codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA'));
+                    ELSE
+                        ALTER TABLE configuracao.fase_canonica
+                            ADD CONSTRAINT ck_fase_canonica_codigo_canonico
+                            CHECK (codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA'));
+                    END IF;
 
-            migrationBuilder.AddCheckConstraint(
-                name: "ck_precedencia_fase_sucessora_canonica",
-                schema: "configuracao",
-                table: "precedencia_fase",
-                sql: "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    IF EXISTS (
+                        SELECT 1 FROM configuracao.precedencia_fase
+                         WHERE antecessora_codigo = 'AVALIACAO_BIOPSICOSSOCIAL' OR sucessora_codigo = 'AVALIACAO_BIOPSICOSSOCIAL'
+                    ) THEN
+                        ALTER TABLE configuracao.precedencia_fase
+                            ADD CONSTRAINT ck_precedencia_fase_antecessora_canonica
+                            CHECK (antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA'));
 
-            migrationBuilder.AddCheckConstraint(
-                name: "ck_fase_canonica_codigo_canonico",
-                schema: "configuracao",
-                table: "fase_canonica",
-                sql: "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                        ALTER TABLE configuracao.precedencia_fase
+                            ADD CONSTRAINT ck_precedencia_fase_sucessora_canonica
+                            CHECK (sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA'));
+                    ELSE
+                        ALTER TABLE configuracao.precedencia_fase
+                            ADD CONSTRAINT ck_precedencia_fase_antecessora_canonica
+                            CHECK (antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA'));
+
+                        ALTER TABLE configuracao.precedencia_fase
+                            ADD CONSTRAINT ck_precedencia_fase_sucessora_canonica
+                            CHECK (sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA'));
+                    END IF;
+                END
+                $$;
+                """);
         }
     }
 }
