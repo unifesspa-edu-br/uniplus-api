@@ -570,6 +570,37 @@ public sealed class AvaliadorConformidadeLegalTests
         avaliada.Motivo.Should().Contain("o código foi reatribuído");
     }
 
+    [Fact(DisplayName = "Exigência condicional continua cobrindo depois de a modalidade ser renomeada")]
+    public void DocumentoObrigatorio_ExigenciaCondicionalComModalidadeRenomeada_Aprova()
+    {
+        // A condição congelada guarda o código que valia quando a exigência foi configurada.
+        // Alimentar a avaliação com o código novo da regra faria a cláusula não casar,
+        // reprovando o processo conforme cuja renomeação o casamento por identidade acomoda.
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        Guid identidadeDaModalidade = processo.DistribuicaoVagas.SelectMany(d => d.Modalidades).First().ModalidadeOrigemId;
+        Guid identidadeDoLaudo = Guid.CreateVersion7();
+
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(
+                ExigenciaCondicionalPorModalidade(faseId, "LAUDO_MEDICO", "LB_PPI", tipoDocumentoOrigemId: identidadeDoLaudo), 0).Value!],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI_V2", "LAUDO_MEDICO"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
+            processo, TipoProcessoAvaliado, [regra],
+            new IdentidadesDeCadastro(
+                new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LAUDO_MEDICO"] = identidadeDoLaudo },
+                new Dictionary<string, Guid>(StringComparer.Ordinal) { ["LB_PPI_V2"] = identidadeDaModalidade },
+                new Dictionary<string, Guid>(StringComparer.Ordinal),
+                new Dictionary<string, Guid>(StringComparer.Ordinal)));
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue(
+            "a exigência cobre a mesma modalidade que a regra exige — só o código do cadastro mudou");
+    }
+
     /// <summary>Exigência geral com a identidade do tipo escolhida pelo cenário.</summary>
     private static DocumentoExigido ExigenciaGeralDe(Guid exigidoNaFaseId, Guid tipoDocumentoOrigemId, string tipoDocumentoCodigo) =>
         DocumentoExigido.Criar(
@@ -589,7 +620,8 @@ public sealed class AvaliadorConformidadeLegalTests
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static DocumentoExigido ExigenciaCondicionalPorModalidade(
-        Guid exigidoNaFaseId, string tipoDocumentoCodigo, string modalidadeCodigo, string? fatoExtra = null)
+        Guid exigidoNaFaseId, string tipoDocumentoCodigo, string modalidadeCodigo, string? fatoExtra = null,
+        Guid? tipoDocumentoOrigemId = null)
     {
         List<CondicaoGatilho> condicoes =
         [
@@ -601,7 +633,7 @@ public sealed class AvaliadorConformidadeLegalTests
         }
 
         return DocumentoExigido.Criar(
-            exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            exigidoNaFaseId, tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: condicoes, basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }

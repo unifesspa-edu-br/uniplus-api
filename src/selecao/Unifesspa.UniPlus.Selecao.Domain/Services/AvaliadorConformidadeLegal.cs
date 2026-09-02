@@ -285,29 +285,30 @@ public static class AvaliadorConformidadeLegal
         IdentidadesDeCadastro identidades,
         DocumentoObrigatorioParaModalidade predicado)
     {
-        // Qualquer desfecho que não seja "casa" leva à mesma conclusão: a modalidade exigida
-        // não está ofertada, e não há o que exigir. Inclusive o código reatribuído — cobrar
-        // o documento cobraria de uma modalidade que o processo não tem.
-        List<ModalidadeSelecionada> modalidadesOfertadas = [.. processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades)];
-        if (Casar(
-            identidades.Modalidades,
-            predicado.Modalidade,
-            modalidadesOfertadas,
-            modalidadesOfertadas,
-            static m => m.ModalidadeOrigemId,
-            static m => m.Codigo) != Casamento.Casa)
+        // Sem oferta da modalidade exigida não há o que exigir. Vale também para o código
+        // reatribuído: a oferta que o carrega é outra modalidade, e cobrar o documento
+        // cobraria de uma modalidade que o processo não tem.
+        if (!identidades.Modalidades.TryGetValue(predicado.Modalidade ?? string.Empty, out Guid identidadeDaModalidade))
         {
             return (true, null, null);
         }
 
-        // Só MODALIDADE entra: na publicação não há candidato, e todo outro fato é
-        // legitimamente desconhecido. Ausência resolve INDETERMINADO, que aqui significa
-        // "cobertura não provada" — o que se quer. Materializá-los como NAO_APLICAVEL faria a
-        // cláusula colapsar em FALSO e afirmaria algo que não se sabe.
-        Dictionary<string, FatoResolvido> fatoDaModalidade = new(StringComparer.Ordinal)
+        // O código congelado na oferta, não o da regra: uma exigência CONDICIONAL guarda a
+        // condição com o código que valia quando foi configurada, e alimentar o fato com o
+        // código novo da regra faria a cláusula não casar — reprovando exatamente o processo
+        // conforme cuja renomeação esta avaliação passou a acomodar. Ofertas congeladas em
+        // momentos diferentes podem carregar códigos diferentes para a mesma identidade;
+        // basta uma cobrir.
+        string[] codigosCongelados = [.. processo.DistribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .Where(m => m.ModalidadeOrigemId == identidadeDaModalidade)
+            .Select(static m => m.Codigo)
+            .Distinct(StringComparer.Ordinal)];
+
+        if (codigosCongelados.Length == 0)
         {
-            ["MODALIDADE"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(predicado.Modalidade)),
-        };
+            return (true, null, null);
+        }
 
         // Achado de revisão (Story #554, PR #903): uma exigência que casa por tipo e cobre a
         // modalidade incondicionalmente, mas não DeterminaResultado() (não é obrigatória
@@ -331,10 +332,22 @@ public static class AvaliadorConformidadeLegal
             return (false, $"nenhuma exigência documental do tipo '{predicado.TipoDocumento}' cobre incondicionalmente a modalidade '{predicado.Modalidade}'", null);
         }
 
-        bool cobertaIncondicionalmente = processo.DocumentosExigidos.Any(e =>
-            e.TipoDocumentoOrigemId == identidadeExigida
-            && e.DeterminaResultado()
-            && e.AplicavelPara(fatoDaModalidade) == Ternario.Verdadeiro);
+        bool cobertaIncondicionalmente = codigosCongelados.Any(codigo =>
+        {
+            // Só MODALIDADE entra: na publicação não há candidato, e todo outro fato é
+            // legitimamente desconhecido. Ausência resolve INDETERMINADO, que aqui significa
+            // "cobertura não provada" — o que se quer. Materializá-los como NAO_APLICAVEL faria
+            // a cláusula colapsar em FALSO e afirmaria algo que não se sabe.
+            Dictionary<string, FatoResolvido> fatoDaModalidade = new(StringComparer.Ordinal)
+            {
+                ["MODALIDADE"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(codigo)),
+            };
+
+            return processo.DocumentosExigidos.Any(e =>
+                e.TipoDocumentoOrigemId == identidadeExigida
+                && e.DeterminaResultado()
+                && e.AplicavelPara(fatoDaModalidade) == Ternario.Verdadeiro);
+        });
 
         if (cobertaIncondicionalmente)
         {
