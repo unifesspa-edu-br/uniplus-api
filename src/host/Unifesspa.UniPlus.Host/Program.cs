@@ -122,6 +122,11 @@ builder.Host.UseWolverineOutboxCascading(
         opts.Discovery.IncludeAssembly(
             typeof(Unifesspa.UniPlus.Publicacoes.Infrastructure.Messaging.RegistrarAtoNormativoRequisicaoHandler).Assembly);
 
+        // O handler da sincronização de discentes também vive em Infrastructure, junto do
+        // orquestrador e dos repositórios que ele usa.
+        opts.Discovery.IncludeAssembly(
+            typeof(Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao.SincronizarVinculosDiscentesHandler).Assembly);
+
         // Opt-ins de codegen (ADR-0098): sob ServiceLocationPolicy.NotAllowed, cada
         // módulo declara as UoW que usam service location intencionalmente (forwarding
         // para a MESMA instância de DbContext — ADR-0004). Cada módulo é dono do seu
@@ -131,6 +136,7 @@ builder.Host.UseWolverineOutboxCascading(
         ConfiguracaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         OrganizacaoInstitucionalCodegenRegistration.ConfigurarCodegenWolverine(opts);
         PublicacoesCodegenRegistration.ConfigurarCodegenWolverine(opts);
+        DiscentesCodegenRegistration.ConfigurarCodegenWolverine(opts);
 
         // Routing do Selecao (PG queue domain-events + Kafka processo_seletivo_events) —
         // religa a mensageria externa antes deferida no monólito.

@@ -1,134 +1,120 @@
-using AwesomeAssertions.Common;
+namespace Unifesspa.UniPlus.Discentes.UnitTests.Domain;
+
+using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Enums;
+using Unifesspa.UniPlus.Discentes.UnitTests.Sigaa;
 
-namespace Unifesspa.UniPlus.Discentes.Domain;
-
-public class SyncRunTests
+public sealed class SyncRunTests
 {
-    private readonly DateTimeOffset _agoraFixado = new(2026, 7, 30, 14, 0, 0, TimeSpan.Zero);
-    private readonly TimeProvider _clock;
+    private static readonly DateTimeOffset Agora = new(2026, 9, 2, 3, 0, 0, TimeSpan.Zero);
+    private static readonly DateOnly Dia = new(2026, 9, 2);
 
-    public SyncRunTests()
+    private readonly RelogioControlado _relogio = new(Agora);
+
+    [Fact]
+    public void Iniciar_marca_a_execucao_em_andamento_no_dia_de_referencia()
     {
-        _clock = new FakeTimeProvider(_agoraFixado);
-    }
-    [Fact(DisplayName = "SyncRun.Criar Deve Lançar ArgumentOutOfRangeException - Quando TotalItems For Negativo")]
-    public void Criar_DeveLancarArgumentOutOfRangeException_QuandoTotalItemsForNegativo()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            SyncRun.Criar(-1, _clock));
-    }
-    [Fact(DisplayName = "SyncRun.Criar Deve Lancar ArgumentNullException - Quando Clock for Nulo")]
-    public void Criar_DeveLancarArgumentNullException_QuandoClockForNulo()
-    {
-        Assert.Throws<ArgumentNullException>(() => SyncRun.Criar(totalItems: 10, clock: null!));
+        SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
+
+        execucao.Id.Should().NotBe(Guid.Empty);
+        execucao.Status.Should().Be(SyncRunStatus.Running);
+        execucao.DataDeReferencia.Should().Be(Dia);
+        execucao.StartedAt.Should().Be(Agora.UtcDateTime);
+        execucao.FinishedAt.Should().BeNull();
     }
 
-    [Fact(DisplayName = "SyncRun.Criar Deve Gerar Id e Inicializar com Sucesso - Atribuir Data Inicio do Clock")]
-    public void Criar_DeveGerarId_EInicializarComSucesso_EAtribuirDataInicioDoClock()
+    [Fact]
+    public void Iniciar_exige_relogio_injetado()
     {
-        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
+        Action semRelogio = () => SyncRun.Iniciar(Dia, clock: null!);
 
-        Assert.NotEqual(Guid.Empty, syncRun.Id);
-        Assert.Equal(SyncRunStatus.Running, syncRun.Status);
-        Assert.Equal(100, syncRun.TotalItems);
-        Assert.Equal(_agoraFixado.UtcDateTime, syncRun.StartedAt);
-        Assert.Null(syncRun.FinishedAt);
+        semRelogio.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "SyncRun.AtualizarProgresso Deve Atualizar Contadores Corretamente")]
-    public void AtualizarProgresso_DeveAtualizarContadoresCorretamente()
+    [Fact]
+    public void Concluir_registra_as_contagens_e_o_instante_de_termino()
     {
-        SyncRun syncRun = SyncRun.Criar(totalItems: 10, _clock);
+        SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
+        _relogio.Avancar(TimeSpan.FromMinutes(4));
 
-        syncRun.AtualizarProgresso(processedItems: 10, successCount: 8, errorCount: 2);
+        execucao.Concluir(new ContagensDaExecucao(1000, 990, 985, 5), SyncRunStatus.Completed, _relogio);
 
-        Assert.Equal(10, syncRun.ProcessedItems);
-        Assert.Equal(8, syncRun.SuccessCount);
-        Assert.Equal(2, syncRun.ErrorCount);
-    }
-    [Fact(DisplayName = "SyncRun.AtualizarProgresso Deve Lançar Exceção - Quando Processados For Maior Que Total")]
-    public void AtualizarProgresso_DeveLancarException_QuandoProcessadosMaiorQueTotal()
-    {
-        SyncRun syncRun = SyncRun.Criar(100, _clock);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            syncRun.AtualizarProgresso(
-                processedItems: 101,
-                successCount: 90,
-                errorCount: 11));
-    }
-
-    [Fact(DisplayName = "SyncRun.AtualizarProgresso Deve Lançar Exceção - Quando Soma Dos Contadores For Inválida")]
-    public void AtualizarProgresso_DeveLancarException_QuandoSomaDosContadoresForInvalida()
-    {
-        SyncRun syncRun = SyncRun.Criar(100, _clock);
-
-        Assert.Throws<ArgumentException>(() =>
-            syncRun.AtualizarProgresso(
-                processedItems: 50,
-                successCount: 40,
-                errorCount: 20));
-    }
-
-    [Fact(DisplayName = "SyncRun.AtualizarProgresso Deve Lançar InvalidOperationException - Quando SyncRun Ja Concluido")]
-    public void AtualizarProgresso_DeveLancarInvalidOperationException_QuandoSyncRunJaConcluido()
-    {
-        SyncRun syncRun = SyncRun.Criar(100, _clock);
-        syncRun.Concluir(SyncRunStatus.Completed, _clock);
-
-        Assert.Throws<InvalidOperationException>(() =>
-            syncRun.AtualizarProgresso(processedItems: 10, successCount: 10, errorCount: 0));
+        execucao.Status.Should().Be(SyncRunStatus.Completed);
+        execucao.TotalItems.Should().Be(1000);
+        execucao.ProcessedItems.Should().Be(990);
+        execucao.SuccessCount.Should().Be(985);
+        execucao.ErrorCount.Should().Be(5);
+        execucao.FinishedAt.Should().Be(Agora.AddMinutes(4).UtcDateTime);
     }
 
     [Theory]
     [InlineData(SyncRunStatus.Completed)]
     [InlineData(SyncRunStatus.Partial)]
     [InlineData(SyncRunStatus.Failed)]
-    public void Concluir_DeveTransicionarComSucesso_QuandoStatusForTerminal(SyncRunStatus statusTerminal)
+    public void Concluir_aceita_os_tres_desfechos(SyncRunStatus desfecho)
     {
-        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
+        SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
 
-        syncRun.Concluir(statusTerminal, _clock);
+        execucao.Concluir(ContagensDaExecucao.Nenhuma, desfecho, _relogio);
 
-        Assert.Equal(statusTerminal, syncRun.Status);
-        Assert.Equal(_agoraFixado.UtcDateTime, syncRun.FinishedAt);
+        execucao.Status.Should().Be(desfecho);
     }
 
     [Theory]
-    [InlineData(SyncRunStatus.Running)]
-    public void Concluir_DeveLancarArgumentException_QuandoStatusNaoForTerminal(SyncRunStatus statusInvalido)
+    [InlineData(-1, 0, 0, 0)]
+    [InlineData(0, -1, 0, 0)]
+    [InlineData(0, 0, -1, 0)]
+    [InlineData(0, 0, 0, -1)]
+    public void Contagens_recusam_numero_negativo(int lidos, int processados, int aproveitados, int recusados)
     {
-        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
+        Func<ContagensDaExecucao> negativa = () =>
+            new ContagensDaExecucao(lidos, processados, aproveitados, recusados);
 
-        ArgumentException exception = Assert.Throws<ArgumentException>(() => syncRun.Concluir(statusInvalido, _clock));
-        Assert.Contains("não é um estado terminal válido", exception.Message);
+        negativa.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact(DisplayName = "SyncRun.Concluir Deve Lancar ArgumentNullException - Quando Clock for Nulo")]
-    public void Concluir_DeveLancarArgumentNullException_QuandoClockForNulo()
+    [Fact]
+    public void Contagens_recusam_tratar_mais_do_que_a_origem_entregou()
     {
-        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
+        Func<ContagensDaExecucao> maisDoQueVeio = () => new ContagensDaExecucao(
+            LidosNaOrigem: 1, Processados: 2, Aproveitados: 2, Recusados: 0);
 
-        Assert.Throws<ArgumentNullException>(() => syncRun.Concluir(SyncRunStatus.Completed, clock: null!));
+        maisDoQueVeio.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact(DisplayName = "SyncRun.Concluir Deve Lancar InvalidOperationException - Quando Tentar Reconcluir")]
-    public void Concluir_DeveLancarInvalidOperationException_QuandoTentarReconcluir()
+    [Fact]
+    public void Concluir_recusa_contagens_que_nao_fecham()
     {
-        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
-        syncRun.Concluir(SyncRunStatus.Completed, _clock);
+        // Aproveitado e recusado são subconjuntos do que foi tratado. Somados além dele, o
+        // registro da execução mostraria uma conta impossível a quem for lê-lo depois.
+        Func<ContagensDaExecucao> somaMaiorQueOTratado = () => new ContagensDaExecucao(
+            LidosNaOrigem: 10, Processados: 3, Aproveitados: 3, Recusados: 3);
 
-        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => syncRun.Concluir(SyncRunStatus.Failed, _clock));
-        Assert.Contains("Transição de estado inválida", exception.Message);
+        somaMaiorQueOTratado.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    private sealed class FakeTimeProvider : TimeProvider
+    [Fact]
+    public void Concluir_recusa_deixar_a_execucao_em_andamento()
     {
-        private readonly DateTimeOffset _utcNow;
-        public FakeTimeProvider(DateTimeOffset utcNow) => _utcNow = utcNow;
-        public override DateTimeOffset GetUtcNow() => _utcNow;
+        SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
+
+        Action comEstadoNaoTerminal = () =>
+            execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.Running, _relogio);
+
+        comEstadoNaoTerminal.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Concluir_uma_execucao_ja_encerrada_e_recusado()
+    {
+        SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
+        execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.Completed, _relogio);
+
+        Action deNovo = () =>
+            execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.Failed, _relogio);
+
+        deNovo.Should().Throw<InvalidOperationException>();
     }
 }

@@ -10,11 +10,17 @@ using System.Text.Json.Serialization;
 public sealed record ColecaoHydra<T>
 {
     /// <summary>
-    /// Itens da página corrente. Página vazia é resposta legítima — significa que o
-    /// filtro não casou com nada, não que houve erro.
+    /// Itens da página corrente, ou nulo quando a origem não entregou a propriedade.
     /// </summary>
+    /// <remarks>
+    /// Lista vazia e propriedade ausente precisam continuar distinguíveis, por isso não há
+    /// inicializador aqui. Vazia é resposta legítima: o filtro não casou com nada. Ausente é
+    /// envelope malformado — a origem renomeou ou deixou de enviar o campo —, e tratar os
+    /// dois como iguais faria a varredura terminar sem violação de contrato e registrar
+    /// sucesso, deixando a réplica desatualizada sem nada apontar a divergência.
+    /// </remarks>
     [JsonPropertyName("hydra:member")]
-    public IReadOnlyList<T> Itens { get; init; } = [];
+    public IReadOnlyList<T>? Itens { get; init; }
 
     /// <summary>
     /// Total de itens que o filtro alcança, somando todas as páginas. É a única forma de

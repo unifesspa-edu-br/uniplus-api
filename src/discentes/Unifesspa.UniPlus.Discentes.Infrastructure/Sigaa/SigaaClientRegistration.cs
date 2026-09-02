@@ -15,6 +15,7 @@ using Polly;
 using Refit;
 
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Authentication;
+using Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao;
 
 /// <summary>
 /// Registra o acesso à API do SIGAA: o cliente de consulta de vínculos, o guardião do
@@ -63,6 +64,7 @@ public static class SigaaClientRegistration
 
         RegistrarClienteDeAutenticacao(services);
         RegistrarClienteDeConsulta(services);
+        RegistrarSincronizacao(services, configuration);
 
         return services;
     }
@@ -131,6 +133,30 @@ public static class SigaaClientRegistration
         // reenviar N vezes um cabeçalho carimbado uma única vez com um token vencido.
         cliente.AddResilienceHandler(PoliticaDeConsulta, ConfigurarResilienciaDaConsulta);
         cliente.AddHttpMessageHandler<SigaaAuthenticationHandler>();
+    }
+
+    /// <summary>
+    /// Registra a reconciliação diária, que só faz sentido havendo origem de onde ler.
+    /// </summary>
+    /// <remarks>
+    /// Fica aqui dentro, e não no registro geral do módulo, porque depende do cliente:
+    /// registrada incondicionalmente, ela seria um serviço impossível de construir sempre
+    /// que a origem não estivesse configurada — e a validação do contêiner derrubaria a
+    /// subida do processo inteiro, inclusive das suítes que levantam a aplicação sem rede
+    /// institucional.
+    /// </remarks>
+    private static void RegistrarSincronizacao(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<SincronizacaoOptions>()
+            .Bind(configuration.GetSection(SincronizacaoOptions.SectionName))
+            .ValidateOnStart();
+
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<SincronizacaoOptions>, SincronizacaoOptionsValidator>());
+
+        services.AddScoped<IGravadorDeVinculos, GravadorDeVinculos>();
+        services.AddScoped<IRegistroDeExecucoes, RegistroDeExecucoes>();
+        services.AddScoped<OrquestradorDeSincronizacao>();
     }
 
     private static void ConfigurarEndereco(IServiceProvider provedor, HttpClient cliente)

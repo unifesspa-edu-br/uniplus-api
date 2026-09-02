@@ -44,4 +44,15 @@ public sealed class VinculoDiscenteRecord
     public int AnoIngresso { get; set; }
 
     public int PeriodoIngresso { get; set; }
+
+    /// <summary>
+    /// Resumo do conteúdo trazido da origem, usado para reconhecer que o vínculo não mudou
+    /// e poupar a reescrita. Não cobre o CPF — ver a camada que o calcula.
+    /// </summary>
+    /// <remarks>
+    /// Nasce vazio quando a linha é gravada fora da sincronização, que é o único caminho
+    /// que conhece o resumo. Vazio não coincide com resumo nenhum, então a primeira
+    /// sincronização a alcançar essa linha a reescreve — que é o desejado.
+    /// </remarks>
+    public string ResumoDoConteudo { get; set; } = string.Empty;
 }

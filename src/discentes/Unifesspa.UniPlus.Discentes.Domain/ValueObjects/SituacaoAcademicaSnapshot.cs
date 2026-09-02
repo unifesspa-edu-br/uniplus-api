@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Discentes.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -27,6 +28,14 @@ public sealed record SituacaoAcademicaSnapshot
 
         if (string.IsNullOrWhiteSpace(descricao))
             return Result<SituacaoAcademicaSnapshot>.Failure(new DomainError("SituacaoAcademica.DescricaoVazia", "Descrição da situação é obrigatória."));
+
+        if (descricao.Length > LimitesDaReplica.DescricaoDaSituacao)
+            return Result<SituacaoAcademicaSnapshot>.Failure(new DomainError(
+                DiscentesErrorCodes.SituacaoAcademica.DescricaoLonga, "Descrição da situação excede o que a réplica comporta."));
+
+        if (vinculo is { Length: > LimitesDaReplica.VinculoDaSituacao })
+            return Result<SituacaoAcademicaSnapshot>.Failure(new DomainError(
+                DiscentesErrorCodes.SituacaoAcademica.VinculoLongo, "Qualificador da situação excede o que a réplica comporta."));
 
         return Result<SituacaoAcademicaSnapshot>.Success(new SituacaoAcademicaSnapshot(id, descricao, vinculo));
     }
