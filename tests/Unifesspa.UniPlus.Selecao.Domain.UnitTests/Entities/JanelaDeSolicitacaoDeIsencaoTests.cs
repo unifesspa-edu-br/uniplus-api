@@ -136,6 +136,24 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         semZona.Should().Throw<InvalidOperationException>();
     }
 
+    [Fact(DisplayName = "Sem fase de inscrição, a duração mínima continua valendo")]
+    public void SemFaseDeInscricao_DuracaoAindaEValidada()
+    {
+        // Certame de importação externa não tem fase de coleta, então as regras de posição não têm
+        // a que se referir — mas os cinco dias independem da inscrição.
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Importado", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+
+        processo.DefinirCronogramaFases(
+            [FaseDeIsencao(AberturaDasInscricoes, new DateTimeOffset(2026, 3, 3, 23, 59, 59, TimeSpan.FromHours(-3)))],
+            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaDoCronograma(Belem)!.Code
+            .Should().Be("ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias");
+    }
+
     [Fact(DisplayName = "Cronograma sem fase de isenção não é recusado — quem não cobra taxa não tem a fase")]
     public void SemFaseDeIsencao_NaoRecusa()
     {
