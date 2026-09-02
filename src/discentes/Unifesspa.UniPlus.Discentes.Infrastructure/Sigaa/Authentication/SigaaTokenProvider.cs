@@ -204,11 +204,42 @@ internal sealed partial class SigaaTokenProvider : IDisposable
             return Min(assumida, teto);
         }
 
-        TimeSpan bruta = emitidoEm is { } emissao
-            ? TimeSpan.FromSeconds(expiraEm - emissao)
-            : DateTimeOffset.FromUnixTimeSeconds(expiraEm) - _relogio.GetUtcNow();
+        // Os instantes vêm de fora e podem estar em qualquer escala — uma expiração
+        // gravada em milissegundos, por exemplo, estoura a faixa de datas representáveis.
+        // Isso é mais um caso de validade ilegível, e não pode impedir o token de chegar
+        // à origem: quem o valida é ela.
+        long segundos;
+        if (emitidoEm is { } emissao)
+        {
+            if (!EstaNaFaixaDeDatas(expiraEm) || !EstaNaFaixaDeDatas(emissao))
+            {
+                LogValidadeIndisponivel(_logger);
+                return Min(assumida, teto);
+            }
 
-        return bruta <= TimeSpan.Zero ? Min(assumida, teto) : Min(bruta, teto);
+            segundos = expiraEm - emissao;
+        }
+        else
+        {
+            if (!EstaNaFaixaDeDatas(expiraEm))
+            {
+                LogValidadeIndisponivel(_logger);
+                return Min(assumida, teto);
+            }
+
+            segundos = (long)(DateTimeOffset.FromUnixTimeSeconds(expiraEm) - _relogio.GetUtcNow())
+                .TotalSeconds;
+        }
+
+        if (segundos <= 0)
+        {
+            return Min(assumida, teto);
+        }
+
+        // Comparar em segundos antes de converter evita estourar a conversão com um
+        // intervalo grande demais para ser representado.
+        long tetoEmSegundos = _opcoes.ValidadeMaximaDoTokenEmSegundos;
+        return TimeSpan.FromSeconds(Math.Min(segundos, tetoEmSegundos));
     }
 
     /// <summary>
@@ -276,6 +307,14 @@ internal sealed partial class SigaaTokenProvider : IDisposable
             return false;
         }
     }
+
+    /// <summary>
+    /// Diz se o instante, em segundos desde a época, cabe na faixa de datas que se
+    /// consegue representar.
+    /// </summary>
+    private static bool EstaNaFaixaDeDatas(long segundosDesdeAEpoca) =>
+        segundosDesdeAEpoca >= DateTimeOffset.MinValue.ToUnixTimeSeconds()
+        && segundosDesdeAEpoca <= DateTimeOffset.MaxValue.ToUnixTimeSeconds();
 
     private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 

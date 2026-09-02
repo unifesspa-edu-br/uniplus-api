@@ -100,6 +100,19 @@ internal static class RespostasDoSigaa
         return $"{cabecalho}.{corpo}.assinatura-{marca}";
     }
 
+    /// <summary>
+    /// Token com um valor de expiração arbitrário e sem emissão, para exercitar o que
+    /// acontece quando a origem declara um instante que não cabe numa data.
+    /// </summary>
+    public static string TokenComExpiracaoBruta(long expiracao)
+    {
+        string cabecalho = CodificarSemPreenchimento("""{"alg":"RS512","typ":"JWT"}"""u8);
+        string corpo = CodificarSemPreenchimento(
+            Encoding.UTF8.GetBytes($$"""{"exp":{{expiracao}},"username":"servico"}"""));
+
+        return $"{cabecalho}.{corpo}.assinatura";
+    }
+
     /// <summary>Token sem os instantes, para exercitar a validade assumida.</summary>
     public static string TokenSemValidade() =>
         $"{CodificarSemPreenchimento("""{"alg":"RS512"}"""u8)}"
