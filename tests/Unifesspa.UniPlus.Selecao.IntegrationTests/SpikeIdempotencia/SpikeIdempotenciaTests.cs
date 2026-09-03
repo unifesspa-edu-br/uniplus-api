@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.SpikeIdempotencia;
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
@@ -440,6 +441,69 @@ public sealed class SpikeIdempotenciaTests
                 throw new InvalidOperationException("falha sintetica do spike, apos a action retornar");
             }
         }
+    }
+
+    // ---------------------------------------------------------------
+    // P9 — quanto dura, de fato, uma requisicao idempotente de escrita?
+    // O lease so precisa cobrir isso.
+    // ---------------------------------------------------------------
+    [Fact(DisplayName = "P9: latencia de POST idempotente de escrita")]
+    public async Task P9_LatenciaDeEscrita()
+    {
+        const string Url = "/api/selecao/admin/obrigatoriedades-legais";
+        const int Amostras = 40;
+
+        List<double> ms = [];
+        List<string> criados = [];
+
+        using HttpClient client = ClienteComPapeis($"spike-{Guid.NewGuid():N}"[..16], AdminPlataforma);
+
+        for (int i = 0; i < Amostras; i++)
+        {
+            string regraCodigo = $"SPIKE_{Guid.NewGuid():N}"[..30];
+            criados.Add(regraCodigo);
+            object payload = new
+            {
+                tipoProcessoCodigo = "*",
+                categoria = "outros",
+                regraCodigo,
+                predicado = PredicadoValido,
+                descricaoHumana = $"Latencia {i}",
+                baseLegal = "Lei",
+                vigenciaInicio = "2026-01-01",
+            };
+
+            long t0 = Stopwatch.GetTimestamp();
+            using HttpResponseMessage r = await PostAsync(client, Url, payload, Guid.NewGuid().ToString());
+            ms.Add(Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+        }
+
+        await using (AsyncServiceScope limpeza = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            SelecaoDbContext db = limpeza.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            foreach (string c in criados)
+            {
+                await db.Database.ExecuteSqlAsync($"""
+                    DELETE FROM selecao.obrigatoriedade_legal_historico
+                    WHERE regra_id IN (SELECT id FROM selecao.obrigatoriedades_legais WHERE regra_codigo = {c})
+                    """);
+                await db.Database.ExecuteSqlAsync(
+                    $"DELETE FROM selecao.obrigatoriedades_legais WHERE regra_codigo = {c}");
+            }
+        }
+
+        double[] ordenado = [.. ms.Order()];
+        string Pct(double p) => ordenado[(int)Math.Min(ordenado.Length - 1, Math.Floor(p * ordenado.Length))]
+            .ToString("F1", CultureInfo.InvariantCulture);
+
+        throw new SpikeResultado($"""
+            P9 — latencia de POST idempotente ({Amostras} amostras, ms)
+              min ..... {ordenado[0].ToString("F1", CultureInfo.InvariantCulture)}
+              p50 ..... {Pct(0.50)}
+              p95 ..... {Pct(0.95)}
+              p99 ..... {Pct(0.99)}
+              max ..... {ordenado[^1].ToString("F1", CultureInfo.InvariantCulture)}
+            """);
     }
 
     // ---------------------------------------------------------------
