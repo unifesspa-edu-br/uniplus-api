@@ -47,8 +47,12 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         "94f2a02a12cccae0ebe98dabc9dc66b5aacac25053e91b768fdf0d47492e8240";
 
     /// <summary>
-    /// Hashes das 17 regras não tocadas, como gravados na migration original — a
+    /// Hashes das 15 regras não tocadas, como gravados na migration original — a
     /// referência que prova que a substituição alterou UMA linha e só uma (CA-04).
+    /// Não inclui DISTRIB-VAGAS-LEI-12711/INSTITUCIONAL v1: essas duas foram
+    /// legitimamente retiradas do catálogo em #1408 (fronteira ADR-0112, mesma
+    /// que valida esta substituição), não pela troca de RECURSO-MULTI-INSTANCIA
+    /// que este arquivo cobre.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> HashesOriginaisDasDemais =
         new Dictionary<string, string>(StringComparer.Ordinal)
@@ -67,8 +71,6 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
             ["DESEMPATE-PREDICADO-FATO"] = "d832d910826f25b6b50fd324f2f3cae472440c0e81e082be7c8d4fefe3de3f21",
             ["ALOCACAO-OPCOES-RN04"] = "2bb69f0e34483e635aa0903f8d3ba19a4255e8f542c5f7090ac75cecf200c988",
             ["RENDA-PER-CAPITA-LEI-12711"] = "5a1ad80627e354c03e4d6ef776a45db695a1203cea574a288dbcdf706ca58899",
-            ["DISTRIB-VAGAS-LEI-12711"] = "0eb12ca67af16ab666e0db0894d795ec725422326cf7dedba2e804f496e0d807",
-            ["DISTRIB-VAGAS-INSTITUCIONAL"] = "03b114eb3b559367b7d79f9edb1371f8164c5ede0c5f4b21809ee572c49c9451",
             ["RECONCILIACAO-VAGAS-ART11-PU"] = "ad2d8012ddc1f2ea4d763034899d07590c4a49901744b852dca2e70cede8b1e9",
         };
 
@@ -159,7 +161,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
             "inverter a política de unidade do prazo de interposição é mudança de conteúdo, e o hash acompanha");
     }
 
-    [Fact(DisplayName = "CA-04 — as outras 17 regras do seed original permanecem idênticas; a substituição tocou uma linha")]
+    [Fact(DisplayName = "CA-04 — as outras 15 regras do seed original permanecem idênticas; a substituição tocou uma linha")]
     public void DemaisRegras_Inalteradas()
     {
         IReadOnlyList<RegraCatalogoSeedItem> itens = RegraCatalogoSeed.Itens;
@@ -182,7 +184,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         }
 
         // A única linha alterada é a nova — e seu hash não coincide com nenhum dos
-        // 17 originais nem com o da regra removida.
+        // 15 originais nem com o da regra removida.
         HashesOriginaisDasDemais.Values.Should().NotContain(HashRegraNova);
     }
 }

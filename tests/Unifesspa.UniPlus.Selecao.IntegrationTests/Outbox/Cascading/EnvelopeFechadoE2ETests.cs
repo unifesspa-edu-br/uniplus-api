@@ -530,7 +530,9 @@ public sealed class EnvelopeFechadoE2ETests
                     voBase = 60,
                     pr = 0.7500m,
                     regraDistribuicaoCodigo = RegraDistribuicaoVagasCodigo.Lei12711,
-                    regraDistribuicaoVersao = "v1",
+                    // v2, não v1: a v1 foi retirada do catálogo em #1408 (duplicidade sem
+                    // processo congelado a preservar) — a v2 é superset, mesmas modalidades.
+                    regraDistribuicaoVersao = "v2",
                     regraAjusteCodigo = RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico,
                     regraAjusteVersao = "v1",
                     referenciaReservaDemograficaId = Catalogos.ReferenciaReservaDemograficaId,
