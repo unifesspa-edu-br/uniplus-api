@@ -8,8 +8,11 @@ using System.Net.Http.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -505,6 +508,64 @@ public sealed class SpikeIdempotenciaTests
               max ..... {ordenado[^1].ToString("F1", CultureInfo.InvariantCulture)}
             """);
     }
+
+    // ---------------------------------------------------------------
+    // P10 — viabilidade: um resource filter consegue resolver o timeout
+    // efetivo do endpoint (atributo com valor, atributo com politica
+    // nomeada, ou politica padrao) para derivar o lease?
+    // ---------------------------------------------------------------
+    [Fact(DisplayName = "P10: resolver o timeout efetivo do endpoint de dentro de um filtro")]
+    public void P10_ResolverTimeoutDoEndpoint()
+    {
+        RequestTimeoutOptions opcoes = new()
+        {
+            DefaultPolicy = new RequestTimeoutPolicy { Timeout = TimeSpan.FromSeconds(30) },
+        };
+        opcoes.AddPolicy("upload", TimeSpan.FromMinutes(2));
+
+        static TimeSpan? Resolver(Endpoint endpoint, RequestTimeoutOptions o)
+        {
+            RequestTimeoutAttribute? attr = endpoint.Metadata.GetMetadata<RequestTimeoutAttribute>();
+
+            if (attr?.Timeout is { } explicito)
+            {
+                return explicito;
+            }
+
+            if (attr?.PolicyName is { } nome && o.Policies.TryGetValue(nome, out RequestTimeoutPolicy? porNome))
+            {
+                return porNome.Timeout;
+            }
+
+            if (endpoint.Metadata.GetMetadata<DisableRequestTimeoutAttribute>() is not null)
+            {
+                return null;
+            }
+
+            return o.DefaultPolicy?.Timeout;
+        }
+
+        static Endpoint Com(params object[] metadados) =>
+            new(_ => Task.CompletedTask, new EndpointMetadataCollection(metadados), "spike");
+
+        TimeSpan? semAtributo = Resolver(Com(), opcoes);
+        TimeSpan? comValor = Resolver(Com(new RequestTimeoutAttribute(45_000)), opcoes);
+        TimeSpan? comPolitica = Resolver(Com(new RequestTimeoutAttribute("upload")), opcoes);
+        TimeSpan? desabilitado = Resolver(Com(new DisableRequestTimeoutAttribute()), opcoes);
+        TimeSpan? politicaInexistente = Resolver(Com(new RequestTimeoutAttribute("nao-registrada")), opcoes);
+
+        throw new SpikeResultado($"""
+            P10 — resolucao do timeout efetivo a partir dos metadados
+              sem atributo (politica padrao) ... {Fmt(semAtributo)}
+              atributo com valor explicito ..... {Fmt(comValor)}
+              atributo com politica nomeada .... {Fmt(comPolitica)}
+              timeout desabilitado ............. {Fmt(desabilitado)}
+              politica nomeada inexistente ..... {Fmt(politicaInexistente)}
+            """);
+    }
+
+    private static string Fmt(TimeSpan? t) =>
+        t is null ? "sem teto (lease precisa de fallback)" : $"{t.Value.TotalSeconds}s";
 
     // ---------------------------------------------------------------
     // helpers
