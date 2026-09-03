@@ -177,6 +177,26 @@ public sealed class TipoProcesso : EntityBase, IAuditableEntity
         return Result.Success();
     }
 
+    /// <summary>
+    /// Reativa o tipo, devolvendo-o à listagem pública e aos novos vínculos.
+    /// Reativar o que já está ativo é recusado em vez de aceito em silêncio: a
+    /// operação é auditada (registra ator e instante) e aceitar o nada gravaria
+    /// uma reativação que não mudou estado algum. O código continua sendo o
+    /// mesmo — reativar não é caminho lateral para reaproveitar identidade.
+    /// </summary>
+    public Result Ativar()
+    {
+        if (Ativo)
+        {
+            return Result.Failure(new DomainError(
+                TipoProcessoErrorCodes.JaAtivo,
+                "Tipo de processo seletivo já está ativo."));
+        }
+
+        Ativo = true;
+        return Result.Success();
+    }
+
     public Result Desativar()
     {
         if (!Ativo)

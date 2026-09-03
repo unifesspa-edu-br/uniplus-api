@@ -15,7 +15,7 @@ public static class ListarTiposProcessoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         (IReadOnlyList<TipoProcesso> itens, Guid? anterior, Guid? proximo) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken).ConfigureAwait(false);
+            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, query.ApenasAtivos, cancellationToken).ConfigureAwait(false);
         TipoProcessoDto[] items = [.. itens.Select(tipo => tipo.ToDto())];
         return new ListarTiposProcessoResult(items, anterior, proximo);
     }

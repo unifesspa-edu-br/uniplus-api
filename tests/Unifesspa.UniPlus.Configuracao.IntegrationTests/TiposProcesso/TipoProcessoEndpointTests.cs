@@ -257,6 +257,143 @@ public sealed class TipoProcessoEndpointTests
         recriar.StatusCode.Should().Be(HttpStatusCode.Conflict, "desativar não libera a identidade regulatória do código");
     }
 
+    [Fact(DisplayName = "POST .../ativacao sem autenticação retorna 401")]
+    public async Task Reativar_SemAutenticacao_Retorna401()
+    {
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"/api/configuracao/admin/tipos-processo/{Guid.NewGuid()}/ativacao", UriKind.Relative));
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "POST .../ativacao autenticado sem role plataforma-admin retorna 403")]
+    public async Task Reativar_SemRolePlataformaAdmin_Retorna403()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"/api/configuracao/admin/tipos-processo/{Guid.NewGuid()}/ativacao", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "POST .../ativacao devolve o tipo desativado à leitura pública com código e nome intactos")]
+    public async Task Reativar_TipoDesativado_VoltaAApareceNaLeituraPublica()
+    {
+        string codigo = CodigoUnico();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo, nome = "Seleção reativável", descricao = "Descrição preservada" });
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        (await EnviarDeleteAdmin(client, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await client.GetAsync(new Uri($"/api/configuracao/tipos-processo/{id}", UriKind.Relative)))
+            .StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        HttpResponseMessage reativar = await EnviarAtivacaoAdmin(client, id);
+
+        reativar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-processo/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument item = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        item.RootElement.GetProperty("codigo").GetString().Should().Be(codigo, "reativar não é caminho lateral para trocar a identidade");
+        item.RootElement.GetProperty("nome").GetString().Should().Be("Seleção reativável");
+        item.RootElement.GetProperty("descricao").GetString().Should().Be("Descrição preservada");
+        item.RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "POST .../ativacao sobre tipo já ativo retorna 422 com o código de erro específico")]
+    public async Task Reativar_TipoJaAtivo_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), nome = "Seleção ativa" });
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage response = await EnviarAtivacaoAdmin(client, id);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.tipo_processo.ja_ativo");
+    }
+
+    [Fact(DisplayName = "POST .../ativacao com Id inexistente retorna 404")]
+    public async Task Reativar_IdInexistente_Retorna404()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await EnviarAtivacaoAdmin(client, Guid.NewGuid());
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "GET admin/tipos-processo enxerga o desativado que a leitura pública oculta")]
+    public async Task ListarParaManutencao_IncluiDesativado_QueALeituraPublicaOculta()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), nome = "Seleção a desativar" });
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        await EnviarDeleteAdmin(client, id);
+
+        Guid[] idsAdmin = await LerIdsAsync(client, await EnviarGetAdmin(client, "/api/configuracao/admin/tipos-processo?limit=100"));
+        Guid[] idsPublicos = await LerIdsAsync(client, await client.GetAsync(new Uri("/api/configuracao/tipos-processo?limit=100", UriKind.Relative)));
+
+        idsAdmin.Should().Contain(id, "a visão de manutenção precisa enxergar o desativado para poder reativá-lo");
+        idsPublicos.Should().NotContain(id, "a leitura pública só expõe itens ativos");
+    }
+
+    [Fact(DisplayName = "GET admin/tipos-processo?apenasAtivos=true oculta o desativado")]
+    public async Task ListarParaManutencao_ApenasAtivos_OcultaDesativado()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), nome = "Seleção a desativar" });
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        await EnviarDeleteAdmin(client, id);
+
+        Guid[] ids = await LerIdsAsync(client, await EnviarGetAdmin(client, "/api/configuracao/admin/tipos-processo?limit=100&apenasAtivos=true"));
+
+        ids.Should().NotContain(id);
+    }
+
+    [Fact(DisplayName = "GET admin/tipos-processo autenticado sem role plataforma-admin retorna 403")]
+    public async Task ListarParaManutencao_SemRolePlataformaAdmin_Retorna403()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/api/configuracao/admin/tipos-processo", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    private static async Task<Guid[]> LerIdsAsync(HttpClient client, HttpResponseMessage response)
+    {
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument lista = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return [.. lista.RootElement.EnumerateArray().Select(item => item.GetProperty("id").GetGuid())];
+    }
+
+    private static async Task<HttpResponseMessage> EnviarGetAdmin(HttpClient client, string rota)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri(rota, UriKind.Relative));
+        AutenticarComoAdmin(request);
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> EnviarAtivacaoAdmin(HttpClient client, Guid id)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"/api/configuracao/admin/tipos-processo/{id}/ativacao", UriKind.Relative));
+        AutenticarComoAdmin(request);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        return await client.SendAsync(request);
+    }
+
     private static string CodigoUnico() => $"PS_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 
     private static bool EhUuidV7Rfc9562(Guid id)

@@ -1079,6 +1079,9 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         new(TipoProcessoErrorCodes.JaDesativado,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.tipo_processo.ja_desativado", "Tipo de processo seletivo já está desativado")),
+        new(TipoProcessoErrorCodes.JaAtivo,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_processo.ja_ativo", "Tipo de processo seletivo já está ativo")),
         // ── Tipo de etapa (UNI-REQ-0015, UNI-REQ-0087) ────────────────────
         new(TipoEtapaErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
