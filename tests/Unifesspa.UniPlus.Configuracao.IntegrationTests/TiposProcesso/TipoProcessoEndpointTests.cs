@@ -372,6 +372,44 @@ public sealed class TipoProcessoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    [Fact(DisplayName = "GET admin/tipos-processo/{id} abre o desativado que a leitura pública por id oculta")]
+    public async Task ObterParaManutencao_TipoDesativado_Retorna200EnquantoARotaPublicaDa404()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), nome = "Seleção desativada" });
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        await EnviarDeleteAdmin(client, id);
+
+        HttpResponseMessage manutencao = await EnviarGetAdmin(client, $"/api/configuracao/admin/tipos-processo/{id}");
+        HttpResponseMessage publica = await client.GetAsync(new Uri($"/api/configuracao/tipos-processo/{id}", UriKind.Relative));
+
+        manutencao.StatusCode.Should().Be(HttpStatusCode.OK);
+        publica.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        using JsonDocument item = JsonDocument.Parse(await manutencao.Content.ReadAsStringAsync());
+        item.RootElement.GetProperty("ativo").GetBoolean().Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Links da listagem de manutenção resolvem: o self do desativado não cai em 404")]
+    public async Task ListarParaManutencao_SelfDoDesativado_Resolve()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), nome = "Seleção desativada" });
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        await EnviarDeleteAdmin(client, id);
+
+        HttpResponseMessage listagem = await EnviarGetAdmin(client, "/api/configuracao/admin/tipos-processo?limit=100");
+        listagem.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument lista = JsonDocument.Parse(await listagem.Content.ReadAsStringAsync());
+        string self = lista.RootElement.EnumerateArray()
+            .Single(item => item.GetProperty("id").GetGuid() == id)
+            .GetProperty("_links").GetProperty("self").GetString()!;
+
+        HttpResponseMessage seguindoOSelf = await EnviarGetAdmin(client, self);
+
+        self.Should().Be($"/api/configuracao/admin/tipos-processo/{id}");
+        seguindoOSelf.StatusCode.Should().Be(HttpStatusCode.OK, "o self de um item desativado precisa levar a uma representação que existe");
+    }
+
     private static async Task<Guid[]> LerIdsAsync(HttpClient client, HttpResponseMessage response)
     {
         response.StatusCode.Should().Be(HttpStatusCode.OK);

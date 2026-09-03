@@ -16,4 +16,5 @@ public static class TipoProcessoErrorCodes
     public const string NaoEncontrado = "TipoProcesso.NaoEncontrado";
     public const string JaDesativado = "TipoProcesso.JaDesativado";
     public const string JaAtivo = "TipoProcesso.JaAtivo";
+    public const string ConflitoDeConcorrencia = "TipoProcesso.ConflitoDeConcorrencia";
 }

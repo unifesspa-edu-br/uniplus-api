@@ -1082,6 +1082,10 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         new(TipoProcessoErrorCodes.JaAtivo,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.tipo_processo.ja_ativo", "Tipo de processo seletivo já está ativo")),
+        new(TipoProcessoErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(StatusCodes.Status409Conflict,
+                "uniplus.configuracao.tipo_processo.conflito_de_concorrencia",
+                "Tipo de processo seletivo alterado concorrentemente")),
         // ── Tipo de etapa (UNI-REQ-0015, UNI-REQ-0087) ────────────────────
         new(TipoEtapaErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
