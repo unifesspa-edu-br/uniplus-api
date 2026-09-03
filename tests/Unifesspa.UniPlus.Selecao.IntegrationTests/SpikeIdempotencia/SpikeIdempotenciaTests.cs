@@ -7,6 +7,10 @@ using System.Net.Http.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +19,7 @@ using Outbox.Cascading;
 using Unifesspa.UniPlus.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -361,6 +366,80 @@ public sealed class SpikeIdempotenciaTests
               2a  WWW-Authenticate .... {(replay.Headers.WwwAuthenticate.Count > 0 ? string.Join(",", replay.Headers.WwwAuthenticate.Select(h => h.ToString())) : "(ausente)")}
               2a  Idempotency-Replayed  {(replay.Headers.TryGetValues("Idempotency-Replayed", out IEnumerable<string>? r) ? string.Join(",", r) : "(ausente)")}
             """);
+    }
+
+    // ---------------------------------------------------------------
+    // P8 — a transacao ambiente ja commitou quando a action retorna?
+    // Um filtro lanca em OnActionExecuted, isto e, DEPOIS que a action
+    // retornou (logo depois do ICommandBus.Send). Se o agregado ficou
+    // gravado, a transacao fechou antes da excecao — e "action lancou =>
+    // liberar a chave" seria inseguro.
+    // ---------------------------------------------------------------
+    [Fact(DisplayName = "P8: excecao depois da action — o agregado persiste?")]
+    public async Task P8_TransacaoFechadaAntesDaExcecao()
+    {
+        string codigo = $"TEST_MDI_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
+        object payload = new
+        {
+            codigo,
+            descricao = "Renda familiar per capita acima do limite legal.",
+            fundamento = "CADASTRO_UNICO",
+            resultadoPermitido = "INDEFERIDO",
+        };
+
+        using WebApplicationFactory<HostAssemblyMarker> comFiltro = _fixture.Factory
+            .WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+                s.Configure<MvcOptions>(o => o.Filters.Add(new LancaAposAction()))));
+
+        string userId = $"spike-{Guid.NewGuid():N}"[..16];
+        HttpClient client = comFiltro.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, PermissaoManterMotivos);
+
+        string key = Guid.NewGuid().ToString();
+        int status;
+        using (client)
+        {
+            using HttpResponseMessage r = await PostAsync(
+                client, "/api/selecao/admin/motivos-decisao-isencao", payload, key);
+            status = (int)r.StatusCode;
+        }
+
+        bool persistiu = await ExisteMotivoAsync(codigo);
+        IdempotencyEntry? entrada = await LerEntradaAsync(
+            userId, "POST /api/selecao/admin/motivos-decisao-isencao", key);
+
+        await using (AsyncServiceScope limpeza = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            SelecaoDbContext db = limpeza.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_decisao_isencao WHERE codigo = {codigo}");
+        }
+
+        throw new SpikeResultado($"""
+            P8 — excecao lancada DEPOIS que a action retornou
+              status devolvido ....... {status}
+              agregado no banco ...... {persistiu}
+              entrada no store ....... {Descrever(entrada)}
+              (persistiu=True => a transacao fechou antes da excecao,
+               e liberar a chave nesse caminho reexecutaria a mutacao)
+            """);
+    }
+
+    private sealed class LancaAposAction : IActionFilter
+    {
+        public void OnActionExecuting(ActionExecutingContext context)
+        {
+        }
+
+        public void OnActionExecuted(ActionExecutedContext context)
+        {
+            if (context.HttpContext.Request.Path.StartsWithSegments("/api/selecao/admin/motivos-decisao-isencao"))
+            {
+                throw new InvalidOperationException("falha sintetica do spike, apos a action retornar");
+            }
+        }
     }
 
     // ---------------------------------------------------------------
