@@ -41,9 +41,18 @@ por valor", porque separa a administração da configuração do processo sem
 acoplamento de banco e mantém a evidência histórica autocontida.
 
 `TipoProcesso` passa a ser cadastro de Configuração, com `Codigo`, `Nome`,
-descrição opcional e `Ativo`. Apenas `plataforma-admin` pode criar, atualizar ou
-desativar. O código é imutável, único inclusive entre itens desativados e `*` é
-reservado. A leitura pública lista e obtém somente itens ativos.
+descrição opcional e `Ativo`. Apenas `plataforma-admin` pode criar, atualizar,
+desativar ou reativar. O código é imutável, único inclusive entre itens desativados
+e `*` é reservado. A leitura pública lista e obtém somente itens ativos.
+
+A desativação é prospectiva, não terminal: `plataforma-admin` pode reativar um tipo
+desativado, que volta à leitura pública com o mesmo código. Sem essa operação a
+desativação seria irreversível pela API — o código é imutável e reservado para sempre,
+então nem recriar o tipo é caminho. Reativar não reabre a identidade: o código continua
+sendo o mesmo, e nada nos processos e publicações já produzidos muda, porque eles
+guardam cópia por valor. Como a leitura pública oculta o desativado, a manutenção tem
+listagem própria, restrita a `plataforma-admin`, que enxerga ativos e inativos — sem
+ela o tipo desativado não teria como ser encontrado para ser reativado.
 
 Na criação, Seleção recebe `tipoProcessoOrigemId`, resolve um item ativo por
 `ITipoProcessoReader` e persiste, sem FK cross-schema, o id e o snapshot
@@ -66,6 +75,7 @@ ruleset desta última.
 
 - Novos tipos não exigem alteração de enum nem deploy de frontend para existir na API.
 - Desativar bloqueia novos vínculos, preservando referências e provas anteriores.
+- Desativação por engano é corrigível pela própria API, sem intervenção no banco.
 - O ruleset e o snapshot publicados permanecem reproduzíveis após mudanças nos tipos ativos.
 
 ### Negativas
@@ -76,10 +86,15 @@ ruleset desta última.
 ### Neutras
 
 - Os oito códigos legados são seed inicial, sem proteção especial contra desativação.
+- Reativar o que já está ativo é recusado, e não aceito em silêncio: a operação é
+  auditada, e aceitar o nada gravaria uma reativação que não mudou estado algum.
 
 ## Confirmação
 
 - Testes de API provam GET público ativo e escritas restritas a `plataforma-admin`.
+- Testes de API provam que o tipo reativado volta à leitura pública com o mesmo código,
+  que a listagem de manutenção enxerga o desativado que a pública oculta, e que reativar
+  o que já está ativo é recusado.
 - Testes de handler recusam tipo inexistente ou inativo e congelam a cópia recebida.
 - Testes de ruleset aceitam `*`, exigem tipo ativo específico e usam o código do snapshot.
 - Round-trip do envelope exige e preserva o bloco `tipoProcesso`.
