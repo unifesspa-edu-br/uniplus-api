@@ -182,6 +182,22 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .Which.Codigo.Should().Be("RECURSO-PRAZO-ANCORADO-EM-ATO");
     }
 
+    [Fact(DisplayName = "#1408 — o reader resolve DISTRIB-VAGAS-{LEI-12711,INSTITUCIONAL} só na v2; a v1 foi retirada")]
+    public async Task Reader_ObterAsync_DistribuicaoVagas_SoResolveV2()
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        foreach (string codigo in new[] { "DISTRIB-VAGAS-LEI-12711", "DISTRIB-VAGAS-INSTITUCIONAL" })
+        {
+            RegraCatalogo? v1 = await reader.ObterAsync(codigo, "v1", CancellationToken.None);
+            v1.Should().BeNull($"{codigo} v1 era duplicidade sem processo congelado a preservar (issue #1408)");
+
+            RegraCatalogo? v2 = await reader.ObterAsync(codigo, "v2", CancellationToken.None);
+            v2.Should().NotBeNull($"{codigo} v2 é o superset que substitui a v1 retirada");
+        }
+    }
+
     [Fact(DisplayName = "CA-12 — nenhuma configuração congelada referencia a regra substituída (fronteira da ADR-0112)")]
     public async Task RegraCatalogoSeed_SubstituirRegraReferenciada_Falha()
     {
