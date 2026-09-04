@@ -106,3 +106,21 @@ do Sisu, é decisão de negócio nova, registrada como nova versão da regra —
 - Portaria Normativa MEC nº 18, de 11 de outubro de 2012 (redação dada pela Portaria MEC 704/2025).
 - Lei 12.711/2012, art. 3º, §1º (red. Lei 14.723/2023).
 - Story #575 (cascata de remanejamento) e Story #772 (rol_de_regras, `REMANEJ-CASCATA-LEI-12711`).
+
+## Emenda 1 (2026-09-03) — "regime federal" alcança toda regra de `EhRamoFederal`
+
+Esta ADR e o gate de conformidade que a implementa (`ProcessoSeletivo.OfertaForaDoRegimeFederal`)
+nomeavam o alcance da matriz por igualdade com o código `DISTRIB-VAGAS-LEI-12711`. O catálogo
+passou a ter uma segunda regra do mesmo ramo — `DISTRIB-VAGAS-LEI-12711-COM-AC-PCD`, a mesma
+fórmula do art. 10 com uma décima modalidade (`AC_PCD`) no rol admitido — e o alcance decidido
+nesta ADR não muda: a matriz do Anexo continua sendo a fonte para toda oferta que aplica a
+fórmula do art. 10, dentro ou fora do Sisu, porque a fórmula e a lógica de agrupamento (art. 3º,
+§1º) são as mesmas nas duas regras — a variação só amplia o rol de modalidades reconhecidas, não
+o cálculo nem o remanejamento das oito modalidades federais.
+
+O que muda é só a nomeação: onde este documento e `OfertaForaDoRegimeFederal` liam
+"`DISTRIB-VAGAS-LEI-12711`", leem agora "toda regra para a qual
+`RegraDistribuicaoVagasCodigo.EhRamoFederal` é verdadeiro" — a mesma partição que decide o ramo
+de cálculo em `ConfiguracaoDistribuicaoVagas.Criar` (ADR-0115, Emenda 1). Uma terceira regra
+federal, se vier a existir, entra automaticamente no alcance desta ADR sem exigir emenda nova,
+contanto que compartilhe a mesma fórmula e a mesma matriz de remanejamento.

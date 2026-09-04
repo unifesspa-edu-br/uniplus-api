@@ -1842,7 +1842,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             {
                 return new DomainError(
                     "ProcessoSeletivo.CascataForaDoRegimeFederal",
-                    $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidadesSegueCascata[0].Codigo}\" com SegueCascata, mas não usa a regra de distribuição {RegraDistribuicaoVagasCodigo.Lei12711}.");
+                    $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidadesSegueCascata[0].Codigo}\" com SegueCascata, mas não usa regra de distribuição do ramo federal (Lei 12.711).");
             }
 
             if (Cascata is null)
@@ -1923,9 +1923,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private static bool OfertaExigeCascata(ConfiguracaoDistribuicaoVagas oferta) =>
         oferta.Modalidades.Any(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata);
 
-    /// <summary>A oferta não usa o regime federal (Lei 12.711/2012) — condição de <c>CascataForaDoRegimeFederal</c>.</summary>
+    /// <summary>A oferta não usa o regime federal (Lei 12.711/2012, em qualquer variação) — condição de <c>CascataForaDoRegimeFederal</c>.</summary>
     private static bool OfertaForaDoRegimeFederal(ConfiguracaoDistribuicaoVagas oferta) =>
-        oferta.RegraDistribuicao.Codigo != RegraDistribuicaoVagasCodigo.Lei12711;
+        !RegraDistribuicaoVagasCodigo.EhRamoFederal(oferta.RegraDistribuicao.Codigo);
 
     /// <summary>O fallback da cascata não é modalidade selecionada na oferta — condição de <c>CascataFallbackNaoSelecionadoNaOferta</c> (nível oferta).</summary>
     private static bool FallbackNaoSelecionadoNaOferta(ConfiguracaoDistribuicaoVagas oferta, string fallbackCodigo) =>

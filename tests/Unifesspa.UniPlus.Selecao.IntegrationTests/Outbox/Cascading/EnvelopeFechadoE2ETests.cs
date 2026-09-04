@@ -84,7 +84,12 @@ public sealed class EnvelopeFechadoE2ETests
     {
         CascadingApiFactory api = _fixture.Factory;
         HttpClient client = api.CreateClient();
-        string sufixo = Guid.CreateVersion7().ToString("N")[..8];
+
+        // Os últimos 8 hex de um GUID v7 (rand_b) são aleatórios — os PRIMEIROS 8 são o
+        // timestamp em milissegundos, que só muda a cada ~65s e colidiria com
+        // LimpezaRegrasDistribuicaoMigrationTests (mesma coleção sequencial, mesmo semeador)
+        // se os dois rodassem dentro da mesma janela.
+        string sufixo = Guid.CreateVersion7().ToString("N")[^8..];
 
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         await SemearTipoDeAtoResultadoPreliminarAsync(api);
@@ -530,9 +535,7 @@ public sealed class EnvelopeFechadoE2ETests
                     voBase = 60,
                     pr = 0.7500m,
                     regraDistribuicaoCodigo = RegraDistribuicaoVagasCodigo.Lei12711,
-                    // v2, não v1: a v1 foi retirada do catálogo em #1408 (duplicidade sem
-                    // processo congelado a preservar) — a v2 é superset, mesmas modalidades.
-                    regraDistribuicaoVersao = "v2",
+                    regraDistribuicaoVersao = "v1",
                     regraAjusteCodigo = RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico,
                     regraAjusteVersao = "v1",
                     referenciaReservaDemograficaId = Catalogos.ReferenciaReservaDemograficaId,
@@ -841,6 +844,7 @@ public sealed class EnvelopeFechadoE2ETests
         Guid FaseAvaliacaoId,
         Guid TipoBancaId,
         Guid TipoProcessoId,
+        Guid TipoDocumentoId,
         IReadOnlyDictionary<string, Guid> ModalidadeIdPorCodigo);
 
     /// <summary>
@@ -886,6 +890,7 @@ public sealed class EnvelopeFechadoE2ETests
         Guid faseAvaliacaoId;
         Guid tipoBancaId;
         Guid tipoProcessoId;
+        Guid tipoDocumentoId;
         await using (AsyncServiceScope scopeConfig = api.Services.CreateAsyncScope())
         {
             ConfiguracaoDbContext config = scopeConfig.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
@@ -917,8 +922,13 @@ public sealed class EnvelopeFechadoE2ETests
             ofertaResult.IsSuccess.Should().BeTrue(ofertaResult.Error?.Message);
             OfertaCurso oferta = ofertaResult.Value!;
 
+            // Sufixado (não é mais "Censo IBGE 2022" fixo): ix_referencia_reserva_demografica_censo_vivo
+            // é único por censo — LimpezaRegrasDistribuicaoMigrationTests chama este mesmo
+            // semeador na mesma coleção sequencial (CascadingCollection), e um literal fixo
+            // colidiria na segunda chamada. "Censo " + sufixo (8 hex) cabe no limite de 20
+            // caracteres do value object — "Censo IBGE 2022 " + sufixo estourava.
             Result<ReferenciaReservaDemografica> referenciaResult = ReferenciaReservaDemografica.Criar(
-                "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º");
+                $"Censo {sufixo}", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º");
             referenciaResult.IsSuccess.Should().BeTrue(referenciaResult.Error?.Message);
             ReferenciaReservaDemografica referencia = referenciaResult.Value!;
 
@@ -941,14 +951,45 @@ public sealed class EnvelopeFechadoE2ETests
             FaseCanonica faseAvaliacao = fasesVivas.Single(f =>
                 string.Equals(f.Codigo.Valor, FaseCanonicaCatalogo.CodigoAvaliacao, StringComparison.Ordinal));
 
-            Result<TipoBanca> bancaResult = TipoBanca.Criar(
-                "BANCA_ANALISE_DOCUMENTAL", "Banca de análise documental", "RESULTADO_PRELIMINAR", null);
-            bancaResult.IsSuccess.Should().BeTrue(bancaResult.Error?.Message);
-            TipoBanca banca = bancaResult.Value!;
+            const string CodigoBancaAnaliseDocumental = "BANCA_ANALISE_DOCUMENTAL";
+
+            // TipoBanca.Codigo também é vocabulário fechado (ck_tipo_banca_codigo_canonico
+            // admite só 6 valores) com índice único sobre o vivo — mesmo motivo de
+            // FasesCanonicas acima: uma segunda chamada deste semeador na mesma coleção
+            // colidiria se criasse de novo. Idempotente: reaproveita a linha se já existir.
+            // CodigoBanca (value object) não traduz para SQL em predicado de LINQ — mesma
+            // solução de fasesVivas acima: materializa e filtra em memória.
+            List<TipoBanca> bancasVivas = await config.TiposBanca.ToListAsync().ConfigureAwait(false);
+            TipoBanca? bancaExistente = bancasVivas.SingleOrDefault(b =>
+                string.Equals(b.Codigo.Valor, CodigoBancaAnaliseDocumental, StringComparison.Ordinal));
+            TipoBanca banca;
+            if (bancaExistente is not null)
+            {
+                banca = bancaExistente;
+            }
+            else
+            {
+                Result<TipoBanca> bancaResult = TipoBanca.Criar(
+                    CodigoBancaAnaliseDocumental, "Banca de análise documental", "RESULTADO_PRELIMINAR", null);
+                bancaResult.IsSuccess.Should().BeTrue(bancaResult.Error?.Message);
+                banca = bancaResult.Value!;
+                config.TiposBanca.Add(banca);
+            }
+
+            // Sufixado (não é reaproveitado como TipoBanca acima): o Codigo de TipoDocumento
+            // não é vocabulário fechado — é chave natural editável, só exige formato
+            // (^[A-Z][A-Z0-9_]{1,49}$) e unicidade entre vivos. Um literal fixo colidiria se
+            // este semeador rodasse mais de uma vez na mesma coleção sequencial.
+            Result<TipoDocumento> tipoDocumentoResult = TipoDocumento.Criar(
+                $"DOC_LIMPEZA_{sufixo.ToUpperInvariant()}", "Documento — Limpeza 1421",
+                descricao: null, categoria: "IDENTIFICACAO", formatosAceitos: null,
+                tamanhoMaximoMb: null, tipoEquivalente: null);
+            tipoDocumentoResult.IsSuccess.Should().BeTrue(tipoDocumentoResult.Error?.Message);
+            TipoDocumento tipoDocumento = tipoDocumentoResult.Value!;
 
             config.OfertasCurso.Add(oferta);
             config.ReferenciasReservaDemografica.Add(referencia);
-            config.TiposBanca.Add(banca);
+            config.TiposDocumento.Add(tipoDocumento);
             await config.SaveChangesAsync().ConfigureAwait(false);
 
             ofertaCursoId = oferta.Id;
@@ -957,6 +998,7 @@ public sealed class EnvelopeFechadoE2ETests
             faseResultadoPreliminarId = faseResultadoPreliminar.Id;
             faseAvaliacaoId = faseAvaliacao.Id;
             tipoBancaId = banca.Id;
+            tipoDocumentoId = tipoDocumento.Id;
             tipoProcessoId = await config.TiposProcesso
                 .Where(tipo => tipo.Codigo == "SiSU" && tipo.Ativo)
                 .Select(tipo => tipo.Id)
@@ -969,7 +1011,7 @@ public sealed class EnvelopeFechadoE2ETests
 
         return new CatalogosSemeados(
             unidadeId, ofertaCursoId, referenciaDemograficaId, faseInscricaoId, faseResultadoPreliminarId, faseAvaliacaoId, tipoBancaId, tipoProcessoId,
-            modalidadeIdPorCodigo);
+            tipoDocumentoId, modalidadeIdPorCodigo);
     }
 
     /// <summary>

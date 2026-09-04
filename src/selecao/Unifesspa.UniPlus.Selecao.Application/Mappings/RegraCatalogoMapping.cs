@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -23,6 +24,7 @@ public static class RegraCatalogoMapping
             EsquemaArgs: regra.EsquemaArgs,
             Invariantes: regra.Invariantes,
             BaseLegal: regra.BaseLegal,
-            Hash: regra.Hash);
+            Hash: regra.Hash,
+            ModalidadesAdmitidas: ModalidadesAdmitidasDoEsquemaArgs.Extrair(regra));
     }
 }

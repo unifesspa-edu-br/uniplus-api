@@ -96,3 +96,21 @@ O cálculo do ramo federal é um **domain service puro** (`CalculadoraQuadroVaga
 - [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md) — a versão congelada é agregado próprio, append-only; é ela que prova a reprodutibilidade do quadro
 - [ADR-0109](0109-envelope-canonico-v2-do-congelamento.md) — D1 (bump de `schema_version` por mudança de forma) e "Fora de escopo" (os 7 blocos ainda não construídos, cada um sua story) — `vagas` é um desses 7; esta story não bumpa a versão corrente
 - Issue #848 (uniplus-api) — story que consome esta decisão
+
+## Emenda 1 (2026-09-03) — o ramo é um predicado sobre o código, não dois literais
+
+A decisão fala em "resolve o ramo pelo código da regra de distribuição (`Lei12711` ou
+`Institucional`)" — correto quando só duas regras de distribuição existiam. O catálogo passou
+a ter cinco: duas do ramo federal (`DISTRIB-VAGAS-LEI-12711` e a variação
+`DISTRIB-VAGAS-LEI-12711-COM-AC-PCD`, que soma uma décima modalidade ao rol sem mudar a
+fórmula) e três de quadro fixo (`DISTRIB-VAGAS-INSTITUCIONAL`, `DISTRIB-VAGAS-PSIQ` e
+`DISTRIB-VAGAS-COM-PCD-PURO`).
+
+O texto original já descrevia corretamente **o mecanismo** — "a única coisa que varia entre
+um PSIQ e um SiSU é qual regra o cadastro associa à oferta, nunca o código que a interpreta"
+— só a exemplificação de dois literais ficou estreita. `ConfiguracaoDistribuicaoVagas.Criar`
+decide o ramo por `RegraDistribuicaoVagasCodigo.EhRamoFederal(codigo)` (calcula pela
+calculadora) e `EhQuadroFixo(codigo)` (aceita as quantidades fixadas), partição fechada sobre
+todo código do catálogo — não por igualdade com um único código de cada lado. A opção B
+("dois caminhos dentro da mesma factory") continua a decisão vigente; o que muda é só quantos
+códigos cada caminho reconhece.

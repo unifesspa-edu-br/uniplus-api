@@ -69,6 +69,32 @@ public sealed class RegrasCatalogoEndpointTests
             .Should().Contain("/versoes/", "o self aponta para a versão, que é o que um rascunho referencia");
     }
 
+    /// <summary>
+    /// O rol chega ao cliente como campo tipado, não como leitura de dentro de
+    /// <c>esquemaArgs</c> — o esquema é aberto por contrato, e ler uma chave nomeada de dentro
+    /// dele criaria acoplamento que nenhum gate protege.
+    /// </summary>
+    [Fact(DisplayName = "modalidadesAdmitidas: rol fechado como array tipado, rol aberto como null")]
+    public async Task Listar_ExpoeModalidadesAdmitidasTipado()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using JsonDocument doc = await ListarAsync(
+            client, $"?tipo={TipoRegraCodigo.RegraDistribuicaoVagas}&limit=10");
+
+        JsonElement[] regras = [.. doc.RootElement.EnumerateArray()];
+
+        JsonElement psiq = regras.Single(r => r.GetProperty("codigo").GetString() == RegraDistribuicaoVagasCodigo.Psiq);
+        JsonElement modalidadesPsiq = psiq.GetProperty("modalidadesAdmitidas");
+        modalidadesPsiq.ValueKind.Should().Be(JsonValueKind.Array);
+        modalidadesPsiq.EnumerateArray().Select(m => m.GetString())
+            .Should().BeEquivalentTo(["AC_I", "AC_Q"]);
+
+        JsonElement institucional = regras.Single(r => r.GetProperty("codigo").GetString() == RegraDistribuicaoVagasCodigo.Institucional);
+        institucional.GetProperty("modalidadesAdmitidas").ValueKind.Should().Be(
+            JsonValueKind.Null, "rol aberto — a regra institucional não restringe o conjunto");
+    }
+
     [Fact(DisplayName = "O filtro aceita o mesmo código de tipo que a resposta devolve — quem relê um valor da API e o usa como filtro é atendido")]
     public async Task Listar_FiltroAceitaOCodigoQueARespostaDevolve()
     {
