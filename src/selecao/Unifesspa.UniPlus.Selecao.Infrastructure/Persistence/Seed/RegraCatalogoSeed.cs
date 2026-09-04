@@ -39,22 +39,28 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <b>Precondição obrigatória de migration (ADR-0112):</b> qualquer migration
 /// futura que substitua ou remova entrada deste seed deve verificar, antes de
 /// alterar qualquer linha, que nenhuma <c>VersaoConfiguracao</c> referencia o
-/// par código e versão afetado — encontrando referência, a migration aborta.
-/// O <c>Down</c> da migration <c>AddAlgoritmosContagemPrazo</c> é o exemplo
-/// executável do padrão (bloco <c>DO</c> com <c>RAISE EXCEPTION</c> antes do
-/// <c>DeleteData</c>).
+/// par código e versão afetado. Enquanto não há produção, a Emenda 1 da
+/// ADR-0112 autoriza uma segunda saída além de abortar: descartar o processo
+/// inteiro que carrega a referência, em vez de recusar a migration. O
+/// <c>Down</c> da migration <c>AddAlgoritmosContagemPrazo</c> é o exemplo
+/// executável de abortar (bloco <c>DO</c> com <c>RAISE EXCEPTION</c> antes do
+/// <c>DeleteData</c>); a migration que unifica as regras de distribuição em
+/// <c>v1</c> é o exemplo executável de descartar.
 /// </para>
 /// </remarks>
 public static class RegraCatalogoSeed
 {
-    /// <summary>Versão corrente de toda regra semeada nesta rodada.</summary>
+    /// <summary>
+    /// Versão única de toda regra semeada: sem produção, o catálogo não carrega uma segunda
+    /// versão só para preservar configuração que ninguém publicou — a Emenda 1 da ADR-0112
+    /// registra a fronteira.
+    /// </summary>
     public const string VersaoV1 = "v1";
-    public const string VersaoV2 = "v2";
 
     private static Guid SeedId(int n) =>
         Guid.Parse($"d0a00000-0000-7000-8000-{n:D12}");
 
-    /// <summary>As regras do catálogo, na ordem canônica — nem todas <c>v1</c>: algumas já evoluíram para versão nova.</summary>
+    /// <summary>As regras do catálogo, na ordem canônica, todas em <see cref="VersaoV1"/>.</summary>
     public static IReadOnlyList<RegraCatalogoSeedItem> Itens { get; } =
     [
         // regra_calculo — fórmula da nota final
@@ -136,13 +142,6 @@ public static class RegraCatalogoSeed
             """["média mensal da renda familiar bruta (últimos N meses, após exclusões) ÷ nº de membros do núcleo ≤ limite_sm × sm_referencia"]""",
             "Lei 12.711/2012 art. 1º parágrafo único (red. Lei 14.723/2023) — renda familiar bruta per capita ≤ 1 SM (ensino superior); PN MEC 18/2012 art. 6º-7º — apuração da renda mensal per capita + exclusões obrigatórias"),
 
-        // regra_distribuicao_vagas — cálculo do quadro de vagas reservadas.
-        // As v1 de DISTRIB-VAGAS-LEI-12711 (SeedId 15) e DISTRIB-VAGAS-INSTITUCIONAL
-        // (SeedId 16) foram retiradas em #1408: a v2 (SeedId 23/24) é superset —
-        // mesmo conteúdo mais modalidades_admitidas — e não havia configuração
-        // congelada referenciando a v1 (ADR-0112), então a duplicidade era só
-        // ruído no catálogo e no dropdown de configuração.
-
         // regra_ajuste_distribuicao_vagas — reconciliação do estouro
         new(SeedId(17), "RECONCILIACAO-VAGAS-ART11-PU", VersaoV1, TipoRegra.RegraAjusteDistribuicaoVagas,
             """
@@ -207,22 +206,34 @@ public static class RegraCatalogoSeed
             """,
             AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital),
 
-        // As quatro entradas abaixo declaram MODALIDADES_ADMITIDAS: o conjunto que a regra
-        // reconhece. Sem ele, qualquer modalidade era aceita sob qualquer regra, e uma
-        // calculada fora do art. 10 falhava com "não aparece no quadro calculado" — sintoma
-        // interno, não a causa. O rol vive no esquema_args porque ele já entra no hash da
-        // definição: um campo novo na entidade mudaria a fórmula e, com ela, o hash das v1
-        // já congeladas em processos publicados.
-        new(SeedId(23), "DISTRIB-VAGAS-LEI-12711", VersaoV2, TipoRegra.RegraDistribuicaoVagas,
+        // As cinco entradas abaixo declaram MODALIDADES_ADMITIDAS: o conjunto exato que a
+        // regra reconhece, sem folga — a folga de AC_PCD dentro de DISTRIB-VAGAS-LEI-12711 é
+        // o que a variação -COM-AC-PCD isola como regra própria. Sem o rol, qualquer
+        // modalidade era aceita sob qualquer regra, e uma calculada fora do art. 10 falhava
+        // com "não aparece no quadro calculado" — sintoma interno, não a causa.
+        new(SeedId(23), RegraDistribuicaoVagasCodigo.Lei12711, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
             """
-            {"pr_minimo":"numeric (piso 0,5 — art. 10 II; teto 1,0)","modo_arredondamento":"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11","ordem_garantia_minima":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_PCD","LI_EP"],"sub_reservas":["PPI","Q","PCD","EP"],"entradas_por_edital":["VO_base","PR","ReferenciaReservaDemografica"],"modalidades_admitidas":["AC","LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP","AC_PCD"]}
+            {"pr_minimo":"numeric (piso 0,5 — art. 10 II; teto 1,0)","modo_arredondamento":"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11","ordem_garantia_minima":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_PCD","LI_EP"],"sub_reservas":["PPI","Q","PCD","EP"],"entradas_por_edital":["VO_base","PR","ReferenciaReservaDemografica"],"modalidades_admitidas":["AC","LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP"]}
             """,
             """
             ["VR=ceil(VO×PR)","VRRI=ceil(VR×0,5)","VRSI=VR−VRRI","sub-reservas ceil EXCETO LI_Q=floor (art. 11)","garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora","INV-3a: LB_EP≥0 e LI_EP≥0","INV-3b: AC≥0","INV-3c: VR_final+RETIRADAS+AC=VO_base","modalidade fora de modalidades_admitidas é recusada"]
             """,
             "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)"),
 
-        new(SeedId(24), "DISTRIB-VAGAS-INSTITUCIONAL", VersaoV2, TipoRegra.RegraDistribuicaoVagas,
+        // A mesma fórmula de DISTRIB-VAGAS-LEI-12711, com AC_PCD (retirada da ampla
+        // concorrência) como décima modalidade do rol — não há "Lei 12.711 + PCD_PURO"
+        // (UNI-REQ-0090): PCD_PURO só convive com AC e as suplementares AC_I/AC_Q, e é por
+        // isso que a folga é AC_PCD, não PCD_PURO.
+        new(SeedId(27), RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
+            """
+            {"pr_minimo":"numeric (piso 0,5 — art. 10 II; teto 1,0)","modo_arredondamento":"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11","ordem_garantia_minima":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_PCD","LI_EP"],"sub_reservas":["PPI","Q","PCD","EP"],"entradas_por_edital":["VO_base","PR","ReferenciaReservaDemografica"],"modalidades_admitidas":["AC","LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP","AC_PCD"]}
+            """,
+            """
+            ["VR=ceil(VO×PR)","VRRI=ceil(VR×0,5)","VRSI=VR−VRRI","sub-reservas ceil EXCETO LI_Q=floor (art. 11)","garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora","INV-3a: LB_EP≥0 e LI_EP≥0","INV-3b: AC≥0","INV-3c: VR_final+RETIRADAS+AC=VO_base","AC_PCD retira de AC, como qualquer outra retirada federal","modalidade fora de modalidades_admitidas é recusada"]
+            """,
+            "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)"),
+
+        new(SeedId(24), RegraDistribuicaoVagasCodigo.Institucional, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
             """
             {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"quadro institucional não nomeado por regra própria","modalidades_admitidas":null}
             """,
@@ -231,7 +242,7 @@ public static class RegraCatalogoSeed
             """,
             "Res. Unifesspa 532/2021 (vagas PcD/Indígena/Quilombola); Portaria MEC 18/2012 art. 12 (reservas suplementares e outras ações afirmativas)"),
 
-        new(SeedId(25), "DISTRIB-VAGAS-PSIQ", VersaoV1, TipoRegra.RegraDistribuicaoVagas,
+        new(SeedId(25), RegraDistribuicaoVagasCodigo.Psiq, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
             """
             {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"Processo Seletivo Indígena e Quilombola","modalidades_admitidas":["AC_I","AC_Q"]}
             """,
@@ -240,9 +251,14 @@ public static class RegraCatalogoSeed
             """,
             "Res. Unifesspa 22/2014-CONSEPE, atualizada pela Res. Unifesspa 532/2021-CONSEPE (vagas por acréscimo para candidatos indígenas e quilombolas)"),
 
-        new(SeedId(26), "DISTRIB-VAGAS-EDU-CAMPO", VersaoV1, TipoRegra.RegraDistribuicaoVagas,
+        // Generaliza o antigo código exclusivo do PSE Educação do Campo: o rol já era
+        // genérico — só o nome e a "aplicacao" amarravam a um processo específico, quando
+        // UNI-REQ-0085 descreve PCD_PURO como a reserva de qualquer processo que não oferta
+        // as cotas federais. AC permanece obrigatória: PCD_PURO é RETIRA_DE origem AC, e
+        // ValidarReferenciasCruzadas recusa a ausência em qualquer ramo.
+        new(SeedId(26), RegraDistribuicaoVagasCodigo.ComPcdPuro, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
             """
-            {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"PSE Educação do Campo","modalidades_admitidas":["AC","PCD_PURO"]}
+            {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"quadro fixo sem as cotas federais — PCD_PURO como reserva de qualquer processo fora do regime federal","modalidades_admitidas":["AC","PCD_PURO"]}
             """,
             """
             ["quadro fixo por edital (não recalculado pelo art. 10)","certame sem as cotas da Lei 12.711","PCD_PURO retira de AC: o par fecha no VO_base"]

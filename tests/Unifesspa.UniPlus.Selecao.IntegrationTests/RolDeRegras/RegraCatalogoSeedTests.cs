@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da biblioteca
-/// <c>rol_de_regras</c> (Story #772): o seed das 22 regras <c>v1</c>, a
+/// <c>rol_de_regras</c> (Story #772): o seed das regras <c>v1</c>, a
 /// content-addressability do hash sobrevivendo à normalização jsonb do
 /// Postgres, a coexistência de versões (<c>UNIQUE (codigo, versao)</c>) e o
 /// <see cref="RegraCatalogoReader"/>.
@@ -45,8 +45,9 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         // referenciam, a nova porque é a que passa a valer.
         regras.Select(r => (r.Codigo, r.Versao)).Should().OnlyHaveUniqueItems();
         regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-LEI-12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-PSIQ" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
-        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-EDU-CAMPO" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-COM-PCD-PURO" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().Contain(r => r.Codigo == "FORMULA-MEDIA-PONDERADA" && r.Tipo == TipoRegra.RegraCalculo);
         regras.Should().Contain(r => r.Codigo == "REMANEJ-CASCATA-LEI-12711" && r.Tipo == TipoRegra.CriterioRemanejamento);
         regras.Should().Contain(r => r.Codigo == AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial && r.Tipo == TipoRegra.AlgoritmoContagemPrazo);
@@ -182,19 +183,26 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .Which.Codigo.Should().Be("RECURSO-PRAZO-ANCORADO-EM-ATO");
     }
 
-    [Fact(DisplayName = "#1408 — o reader resolve DISTRIB-VAGAS-{LEI-12711,INSTITUCIONAL} só na v2; a v1 foi retirada")]
-    public async Task Reader_ObterAsync_DistribuicaoVagas_SoResolveV2()
+    [Fact(DisplayName = "O reader resolve as cinco regras de distribuição em v1 única; v2 não existe")]
+    public async Task Reader_ObterAsync_DistribuicaoVagas_SoResolveV1()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        foreach (string codigo in new[] { "DISTRIB-VAGAS-LEI-12711", "DISTRIB-VAGAS-INSTITUCIONAL" })
+        foreach (string codigo in new[]
+        {
+            "DISTRIB-VAGAS-LEI-12711",
+            "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD",
+            "DISTRIB-VAGAS-INSTITUCIONAL",
+            "DISTRIB-VAGAS-PSIQ",
+            "DISTRIB-VAGAS-COM-PCD-PURO",
+        })
         {
             RegraCatalogo? v1 = await reader.ObterAsync(codigo, "v1", CancellationToken.None);
-            v1.Should().BeNull($"{codigo} v1 era duplicidade sem processo congelado a preservar (issue #1408)");
+            v1.Should().NotBeNull($"{codigo} vive em v1 única — sem produção, o catálogo não carrega v2");
 
             RegraCatalogo? v2 = await reader.ObterAsync(codigo, "v2", CancellationToken.None);
-            v2.Should().NotBeNull($"{codigo} v2 é o superset que substitui a v1 retirada");
+            v2.Should().BeNull($"{codigo} não tem v2 — a reescrita para v1 única não deixou versão duplicada");
         }
     }
 

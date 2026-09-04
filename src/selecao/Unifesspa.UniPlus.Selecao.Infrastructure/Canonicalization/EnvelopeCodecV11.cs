@@ -390,12 +390,15 @@ internal static class EnvelopeCodecV11
             Guid ofertaId = leitor.Identificador(item, "ofertaCursoOrigemId", path);
             int voBase = leitor.Inteiro(item, "voBase", path);
             decimal pr = leitor.Decimal(item, "pr", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPr);
+            // O rol deriva de RegraDistribuicaoVagasCodigo.Todos, não de literais fixos: um
+            // código federal (EhRamoFederal) ou de quadro fixo (EhQuadroFixo) publicado sob
+            // qualquer regra do catálogo tem de reidratar — dois literais aqui já deixaram
+            // PSIQ e a regra que hoje é COM-PCD-PURO irreidratáveis antes desta correção.
             ReferenciaRegra regra = leitor.Regra(
                 item,
                 "regraDistribuicao",
                 path,
-                RegraDistribuicaoVagasCodigo.Lei12711,
-                RegraDistribuicaoVagasCodigo.Institucional);
+                [.. RegraDistribuicaoVagasCodigo.Todos]);
             ReferenciaRegra? regraAjuste = leitor.RegraOpcional(
                 item,
                 "regraAjuste",
@@ -421,7 +424,8 @@ internal static class EnvelopeCodecV11
         foreach ((Guid oferta, int voBase, decimal pr, ReferenciaRegra regra, ReferenciaRegra? regraAjuste, ReferenciaReservaDemograficaSnapshot? demografica) in inputs)
         {
             Result<ConfiguracaoDistribuicaoVagas> configuracao = ConfiguracaoDistribuicaoVagas.Criar(
-                oferta, voBase, pr, regra, regraAjuste, demografica, modalidadesPorOferta[oferta]);
+                oferta, voBase, pr, regra, regraAjuste, demografica, modalidadesPorOferta[oferta],
+                modalidadesAdmitidas: RegraDistribuicaoVagasCodigo.RolFechado(regra.Codigo));
             if (configuracao.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>(configuracao.Error!) ?? [];

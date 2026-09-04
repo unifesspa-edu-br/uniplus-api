@@ -43,9 +43,9 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
 
     /// <summary>
     /// Snapshot da <c>ReferenciaReservaDemografica</c> (Censo + percentuais) —
-    /// obrigatório quando <see cref="RegraDistribuicao"/> é
-    /// <see cref="RegraDistribuicaoVagasCodigo.Lei12711"/> (INV-5); ausente na
-    /// distribuição institucional (quadro fixo, sem cálculo por percentual).
+    /// obrigatório quando <see cref="RegraDistribuicao"/> é do ramo federal
+    /// (<see cref="RegraDistribuicaoVagasCodigo.EhRamoFederal"/>, INV-5); ausente no
+    /// quadro fixo (sem cálculo por percentual).
     /// </summary>
     public ReferenciaReservaDemograficaSnapshot? ReferenciaDemografica { get; private set; }
 
@@ -123,8 +123,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// <summary>
     /// Cria a configuração de distribuição de vagas de uma oferta, validando
     /// INV-1 (limites do PR), INV-5 (referência demográfica completa quando
-    /// Lei 12.711) e INV-6 (8 modalidades federais + AC obrigatórias quando
-    /// Lei 12.711). As invariantes próprias de cada modalidade (INV-2, INV-12,
+    /// ramo federal) e INV-6 (8 modalidades federais + AC obrigatórias quando
+    /// ramo federal). As invariantes próprias de cada modalidade (INV-2, INV-12,
     /// coerência de composição/remanejamento) já foram validadas em
     /// <see cref="ModalidadeSelecionada.Criar"/>.
     /// </summary>
@@ -177,14 +177,18 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
                 $"O VO_base ({voBase}) excede as {teto} vagas anuais autorizadas para a oferta.")));
         }
 
-        // A regra declara o conjunto que reconhece: um certame exclusivo de vagas por
-        // acréscimo não oferta ampla concorrência, e a distribuição pelo art. 10 não sabe
-        // calcular modalidade que a Lei não prevê. Sem esta recusa, a segunda falhava
-        // adiante com "não aparece no quadro calculado" — sintoma interno, não a causa.
+        List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
+
+        // A regra declara o conjunto exato que reconhece — não um teto. Um certame
+        // exclusivo de vagas por acréscimo não oferta ampla concorrência (rejeita extra),
+        // e a distribuição pelo art. 10 não fecha o quadro com uma modalidade da Lei
+        // faltando (rejeita ausência) — ambos os lados do rol fechado são a mesma
+        // invariante, só o sentido da comparação muda. Sem a metade "faltantes", a Lei
+        // 12.711 com AC_PCD aceitaria o rol básico de 9 sem AC_PCD, e PSIQ aceitaria só
+        // AC_I sem AC_Q, produzindo um quadro que não corresponde ao rol declarado.
         if (modalidadesAdmitidas is { Count: > 0 })
         {
-            string[] naoAdmitidas = [.. modalidades
-                .Select(m => m.Codigo)
+            string[] naoAdmitidas = [.. codigosInformados
                 .Where(codigo => !modalidadesAdmitidas.Contains(codigo, StringComparer.Ordinal))
                 .Distinct(StringComparer.Ordinal)];
 
@@ -194,20 +198,29 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
                     "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra",
                     $"A regra {regraDistribuicao.Codigo} não admite a(s) modalidade(s) {string.Join(", ", naoAdmitidas)}.")));
             }
+
+            string[] faltantesDoRol = [.. modalidadesAdmitidas
+                .Where(codigo => !codigosInformados.Contains(codigo, StringComparer.Ordinal))];
+
+            if (faltantesDoRol.Length > 0)
+            {
+                erros.Add(new("modalidades", new DomainError(
+                    "ConfiguracaoDistribuicaoVagas.ModalidadeDoRolAusente",
+                    $"A regra {regraDistribuicao.Codigo} exige a(s) modalidade(s) {string.Join(", ", faltantesDoRol)}.")));
+            }
         }
 
-        // Os motores são de distribuição institucional. Sob a Lei 12.711 a reconciliação é a
+        // Os motores são de distribuição institucional. No ramo federal a reconciliação é a
         // da calculadora — cap no VO e prioridade da reserva de baixa renda, art. 11 §único —,
         // e aceitar args aqui os deixaria inertes: o operador declararia um ajuste que nunca
         // roda, e o quadro sairia diferente do que ele configurou sem nada dizer.
-        if (argsAjuste is not null && regraDistribuicao.Codigo == RegraDistribuicaoVagasCodigo.Lei12711)
+        if (argsAjuste is not null && RegraDistribuicaoVagasCodigo.EhRamoFederal(regraDistribuicao.Codigo))
         {
             erros.Add(new("regraAjuste", new DomainError(
                 "ConfiguracaoDistribuicaoVagas.MotorDeAjusteVedadoNaLei12711",
-                "Os motores de redução não se aplicam à distribuição pela Lei 12.711 — a reconciliação dela é a do art. 11, parágrafo único.")));
+                "Os motores de redução não se aplicam à distribuição pelo ramo federal (Lei 12.711) — a reconciliação dele é a do art. 11, parágrafo único.")));
         }
 
-        List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
         if (codigosInformados.Distinct(StringComparer.Ordinal).Count() != codigosInformados.Count)
         {
             erros.Add(new("modalidades", new DomainError(
@@ -231,17 +244,17 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
             return Result<ConfiguracaoDistribuicaoVagas>.ValidationFailure(erros);
         }
 
-        bool ehLei12711 = regraDistribuicao.Codigo == RegraDistribuicaoVagasCodigo.Lei12711;
+        bool ehRamoFederal = RegraDistribuicaoVagasCodigo.EhRamoFederal(regraDistribuicao.Codigo);
         bool ehQuadroFixo = RegraDistribuicaoVagasCodigo.EhQuadroFixo(regraDistribuicao.Codigo);
 
-        if (ehLei12711)
+        if (ehRamoFederal)
         {
-            // INV-5: referência demográfica completa quando a regra é a Lei 12.711.
+            // INV-5: referência demográfica completa quando a regra é do ramo federal.
             if (referenciaDemografica is null)
             {
                 return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
                     "ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaObrigatoria",
-                    "A distribuição pela Lei 12.711 exige a referência de reserva demográfica (INV-5)."));
+                    "A distribuição pelo ramo federal (Lei 12.711) exige a referência de reserva demográfica (INV-5)."));
             }
 
             // INV-6: as 8 modalidades federais + AC são obrigatórias.
@@ -274,39 +287,39 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         {
             return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
                 "ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaIndevida",
-                "A referência de reserva demográfica só se aplica à distribuição pela Lei 12.711."));
+                "A referência de reserva demográfica só se aplica à distribuição pelo ramo federal (Lei 12.711)."));
         }
 
-        if (ehLei12711 && regraAjuste is null)
+        if (ehRamoFederal && regraAjuste is null)
         {
             return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
                 "ConfiguracaoDistribuicaoVagas.RegraAjusteObrigatoria",
-                "A distribuição pela Lei 12.711 exige a regra de ajuste (RECONCILIACAO-VAGAS-ART11-PU)."));
+                "A distribuição pelo ramo federal (Lei 12.711) exige a regra de ajuste (RECONCILIACAO-VAGAS-ART11-PU)."));
         }
 
         Result<QuadroMontado> quadro;
-        if (ehLei12711 || ehQuadroFixo)
+        if (ehRamoFederal || ehQuadroFixo)
         {
-            DomainError? erroFronteira = ValidarFronteiraQuantidadeDeclarada(modalidades, ehLei12711);
+            DomainError? erroFronteira = ValidarFronteiraQuantidadeDeclarada(modalidades, ehRamoFederal);
             if (erroFronteira is not null)
             {
                 return Result<ConfiguracaoDistribuicaoVagas>.Failure(erroFronteira);
             }
 
-            quadro = ehLei12711
+            quadro = ehRamoFederal
                 ? MontarQuadroFederal(voBase, pr, referenciaDemografica!, modalidades)
                 : MontarQuadroInstitucional(voBase, modalidades, argsAjuste);
         }
         else
         {
-            // Nem Lei 12.711 nem Institucional: código de regra fora do vocabulário
+            // Nem ramo federal nem quadro fixo: código de regra fora do vocabulário
             // reconhecido por esta story (ADR-0115). Preserva o comportamento anterior
             // a esta story — nenhum quadro é materializado, sem exigir RegraAjuste
             // nem completude de QuantidadeDeclarada. Em produção, regraDistribuicao é
             // sempre resolvida contra o catálogo (TipoRegra.RegraDistribuicaoVagas),
-            // que só semeia estes dois códigos — este ramo só existe para não quebrar
-            // fixtures de outras stories que usam um código de distribuição como mero
-            // preenchimento, sem exercitar o quadro de vagas.
+            // que só semeia os códigos de RegraDistribuicaoVagasCodigo.Todos — este ramo
+            // só existe para não quebrar fixtures de outras stories que usam um código de
+            // distribuição como mero preenchimento, sem exercitar o quadro de vagas.
             quadro = Result<QuadroMontado>.Success(new QuadroMontado([], VrNominal: 0, VrFinal: 0, Estouro: 0, CapadoEmVo: false, TotalPublicado: 0));
         }
 
@@ -356,11 +369,11 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// a quantidade fixada — não há cálculo algum.
     /// </summary>
     private static DomainError? ValidarFronteiraQuantidadeDeclarada(
-        IReadOnlyList<ModalidadeSelecionada> modalidades, bool ehLei12711)
+        IReadOnlyList<ModalidadeSelecionada> modalidades, bool ehRamoFederal)
     {
         foreach (ModalidadeSelecionada modalidade in modalidades)
         {
-            if (!ehLei12711)
+            if (!ehRamoFederal)
             {
                 if (modalidade.QuantidadeDeclarada is null)
                 {
