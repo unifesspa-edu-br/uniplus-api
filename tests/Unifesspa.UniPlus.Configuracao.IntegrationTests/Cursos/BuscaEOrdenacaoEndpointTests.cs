@@ -215,6 +215,26 @@ public sealed class BuscaEOrdenacaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Theory(DisplayName = "Curinga digitado encontra o registro que o contém de verdade")]
+    [InlineData("%")]
+    [InlineData("_")]
+    public async Task Busca_ComCuringa_EncontraQuemOContem(string curinga)
+    {
+        string bloco = Bloco();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // Um nome tem o caractere; o outro não. Distinguir os dois é o que separa
+        // "escape funcionando" de "escape desligado": sem escape, o curinga casaria
+        // os dois; com o caractere virando texto por engano, não casaria nenhum.
+        await CriarCursoAsync(client, $"{bloco} Com {curinga} no meio", codigo: $"{bloco}A");
+        await CriarCursoAsync(client, $"{bloco} Sem nada", codigo: $"{bloco}B");
+
+        IReadOnlyList<string> achados = await NomesDoBlocoAsync(
+            client, bloco, $"q={Uri.EscapeDataString(curinga)}");
+
+        achados.Should().Equal($"{bloco} Com {curinga} no meio");
+    }
+
     [Theory(DisplayName = "Curingas do LIKE digitados na busca são texto, não coringa")]
     [InlineData("%")]
     [InlineData("_")]
@@ -223,7 +243,7 @@ public sealed class BuscaEOrdenacaoEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        await CriarCursoAsync(client, $"{bloco} Sem caractere especial");
+        await CriarCursoAsync(client, $"{bloco} Sem caractere especial", codigo: $"{bloco}A");
 
         IReadOnlyList<string> achados = await NomesDoBlocoAsync(
             client, bloco, $"q={Uri.EscapeDataString(curinga)}");

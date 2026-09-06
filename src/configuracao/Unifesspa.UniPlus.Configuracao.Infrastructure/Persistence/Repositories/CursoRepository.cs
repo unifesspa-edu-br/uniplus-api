@@ -15,6 +15,14 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class CursoRepository : ICursoRepository
 {
+    /// <summary>
+    /// Caractere de escape do <c>LIKE</c>, o mesmo que a normalização insere antes
+    /// dos curingas. Precisa ser declarado: a sobrecarga de dois argumentos do
+    /// <c>ILike</c> no Npgsql emite <c>ESCAPE ''</c>, que desliga o escape — as
+    /// barras viram texto e <c>%</c> e <c>_</c> voltam a ser curingas.
+    /// </summary>
+    private const string EscapeDoLike = @"\";
+
     private readonly ConfiguracaoDbContext _dbContext;
 
     public CursoRepository(ConfiguracaoDbContext dbContext)
@@ -72,8 +80,8 @@ public sealed class CursoRepository : ICursoRepository
         {
             string padrao = "%" + termo + "%";
             query = query.Where(c =>
-                EF.Functions.ILike(c.NomeOrdenacao, padrao)
-                || EF.Functions.ILike(PgFunctions.NormalizarParaComparacao(c.Codigo), padrao));
+                EF.Functions.ILike(c.NomeOrdenacao, padrao, EscapeDoLike)
+                || EF.Functions.ILike(PgFunctions.NormalizarParaComparacao(c.Codigo), padrao, EscapeDoLike));
         }
 
         OrderedKeysetPage<CursoOrdenado> page = await OrderedKeysetCursor
