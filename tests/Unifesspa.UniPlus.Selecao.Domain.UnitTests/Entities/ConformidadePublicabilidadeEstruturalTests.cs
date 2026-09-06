@@ -66,7 +66,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         1, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true,
         coletaInscricao, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
+        atoProduzidoCodigo: "RESULTADO_FINAL",
         bancasRequeridas: [], regraRecurso: null).Value!;
 
     /// <summary>
@@ -128,7 +128,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 1, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
                 agrupaEtapas: true, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true,
                 coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-                atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
+                atoProduzidoCodigo: "RESULTADO_FINAL",
                 bancasRequeridas: [], regraRecurso: null).Value!],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
@@ -218,7 +218,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 1, Guid.CreateVersion7(), "MATRICULA", "CEPS", OrigemDataFase.Delegada,
                 agrupaEtapas: false, permiteComplementacao: false, produzResultado: false, resultadoDefinitivo: false,
                 coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-                atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
+                atoProduzidoCodigo: null,
                 bancasRequeridas: [], regraRecurso: null).Value!],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
@@ -551,7 +551,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: false, resultadoDefinitivo: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            atoProduzidoCodigo: null, bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseComExigencia, faseAncora], [], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
@@ -588,7 +588,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             2, Guid.CreateVersion7(), "HOMOLOGACAO", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: false, resultadoDefinitivo: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            atoProduzidoCodigo: null, bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([FaseBase(), faseSemExtremo], [], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
@@ -921,14 +921,14 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         1, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        atoProduzidoCodigo: "RESULTADO_PRELIMINAR", atoProduzidoEfeitoIrreversivel: false,
+        atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
         bancasRequeridas: [], regraRecurso: RecursoEmHoras()).Value!;
 
     private static FaseCronograma FaseFinal(int ordem) => FaseCronograma.Criar(
         ordem, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true,
         coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
+        atoProduzidoCodigo: "RESULTADO_FINAL",
         bancasRequeridas: [], regraRecurso: null).Value!;
 
     [Fact(DisplayName = "Convenção de contagem não declarada com fase que aceita recurso — item vermelho e Publicar recusa com AlgoritmoContagemPrazoNaoDeclarado")]

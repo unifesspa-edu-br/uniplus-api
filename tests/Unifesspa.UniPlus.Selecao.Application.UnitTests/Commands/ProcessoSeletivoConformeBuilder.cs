@@ -87,7 +87,6 @@ internal static class ProcessoSeletivoConformeBuilder
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_FINAL",
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

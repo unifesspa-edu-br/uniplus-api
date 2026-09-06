@@ -61,7 +61,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
         resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
+        atoProduzidoCodigo: null,
         bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static FatoCandidatoView FatoSexo() => new(
@@ -76,7 +76,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
         resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
+        atoProduzidoCodigo: null,
         bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static FatoCandidatoView FatoModalidade() => new(

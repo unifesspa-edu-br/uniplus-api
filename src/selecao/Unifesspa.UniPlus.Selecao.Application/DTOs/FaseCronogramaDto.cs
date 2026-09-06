@@ -37,6 +37,5 @@ public sealed record FaseCronogramaDto(
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
     string? AtoProduzidoCodigo,
-    bool AtoProduzidoEfeitoIrreversivel,
     IReadOnlyList<BancaRequeridaDto> BancasRequeridas,
     RegraRecursoFaseDto? RegraRecurso);

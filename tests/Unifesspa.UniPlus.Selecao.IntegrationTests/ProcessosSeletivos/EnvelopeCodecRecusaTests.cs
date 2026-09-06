@@ -881,7 +881,7 @@ public sealed class EnvelopeCodecRecusaTests
             agrupaEtapas: true, permiteComplementacao: true, produzResultado: true, resultadoDefinitivo: true,
             coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), atoProduzidoCodigo: "INSCRICAO",
-            atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).

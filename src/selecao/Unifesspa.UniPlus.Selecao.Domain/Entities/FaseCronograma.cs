@@ -83,9 +83,6 @@ public sealed class FaseCronograma : EntityBase
     /// <summary>Código do tipo de ato que esta fase produz — a âncora de <see cref="RegraRecurso"/> é sempre este.</summary>
     public string? AtoProduzidoCodigo { get; private set; }
 
-    /// <summary>Snapshot-copy de <c>TipoAtoPublicado.EfeitoIrreversivel</c> do ato produzido.</summary>
-    public bool AtoProduzidoEfeitoIrreversivel { get; private set; }
-
     /// <summary>Presença = a fase admite recurso (0..1, §3.6).</summary>
     public RegraRecursoFase? RegraRecurso { get; private set; }
 
@@ -117,7 +114,6 @@ public sealed class FaseCronograma : EntityBase
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
         string? atoProduzidoCodigo,
-        bool atoProduzidoEfeitoIrreversivel,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
         RegraRecursoFase? regraRecurso)
     {
@@ -252,7 +248,6 @@ public sealed class FaseCronograma : EntityBase
             Inicio = inicio,
             Fim = fim,
             AtoProduzidoCodigo = atoProduzidoCodigo,
-            AtoProduzidoEfeitoIrreversivel = atoProduzidoEfeitoIrreversivel,
         };
 
         foreach (BancaRequerida banca in bancasRequeridas)
@@ -303,7 +298,6 @@ public sealed class FaseCronograma : EntityBase
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
         string? atoProduzidoCodigo,
-        bool atoProduzidoEfeitoIrreversivel,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
         RegraRecursoFase? regraRecurso)
     {
@@ -332,7 +326,6 @@ public sealed class FaseCronograma : EntityBase
             Inicio = EmUtc(inicio),
             Fim = EmUtc(fim),
             AtoProduzidoCodigo = atoProduzidoCodigo,
-            AtoProduzidoEfeitoIrreversivel = atoProduzidoEfeitoIrreversivel,
         };
 
         foreach (BancaRequerida banca in bancasRequeridas)
@@ -390,7 +383,6 @@ public sealed class FaseCronograma : EntityBase
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
         string? atoProduzidoCodigo,
-        bool atoProduzidoEfeitoIrreversivel,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
         RegraRecursoFase? regraRecurso)
     {
@@ -412,7 +404,6 @@ public sealed class FaseCronograma : EntityBase
         Inicio = EmUtc(inicio);
         Fim = EmUtc(fim);
         AtoProduzidoCodigo = atoProduzidoCodigo;
-        AtoProduzidoEfeitoIrreversivel = atoProduzidoEfeitoIrreversivel;
 
         _bancasRequeridas.Clear();
         foreach (BancaRequerida banca in bancasRequeridas)

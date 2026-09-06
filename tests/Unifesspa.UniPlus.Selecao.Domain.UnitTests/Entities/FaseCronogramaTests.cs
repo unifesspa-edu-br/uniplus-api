@@ -51,7 +51,6 @@ public sealed class FaseCronogramaTests
             inicio,
             fim,
             atoProduzidoCodigo,
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso);
 
@@ -162,7 +161,6 @@ public sealed class FaseCronogramaTests
             inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)),
             fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)),
             atoProduzidoCodigo: null,
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null);
 

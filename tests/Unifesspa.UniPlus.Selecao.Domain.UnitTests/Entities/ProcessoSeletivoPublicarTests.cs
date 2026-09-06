@@ -112,7 +112,6 @@ public sealed class ProcessoSeletivoPublicarTests
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "RESULTADO_FINAL",
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -434,7 +433,6 @@ public sealed class ProcessoSeletivoPublicarTests
             inicio: null,
             fim: null,
             atoProduzidoCodigo: null,
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([FaseConforme(), semExtremo], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
@@ -491,7 +489,6 @@ public sealed class ProcessoSeletivoPublicarTests
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_FINAL",
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([resultado], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
@@ -547,7 +544,6 @@ public sealed class ProcessoSeletivoPublicarTests
             inicio: new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: null,
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         FaseCronograma coletaOrdem2 = FaseCronograma.Criar(
@@ -564,7 +560,6 @@ public sealed class ProcessoSeletivoPublicarTests
             inicio: new DateTimeOffset(2026, 1, 20, 12, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 25, 12, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_FINAL",
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
 
@@ -609,7 +604,6 @@ public sealed class ProcessoSeletivoPublicarTests
             inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 3, 2, 1, 30, 0, TimeSpan.Zero),
             atoProduzidoCodigo: null,
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         // A segunda fase precisa entrar ANTES de configurar a exigência: uma vez que a

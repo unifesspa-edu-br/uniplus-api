@@ -718,7 +718,6 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_FINAL",
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseTrocada], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
@@ -735,7 +734,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: "RESULTADO_FINAL",
             bancasRequeridas: [], regraRecurso: null);
 
         DocumentoExigido documentoCongelado = DocumentoExigido.Reidratar(
@@ -891,7 +890,6 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "RESULTADO_FINAL",
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 

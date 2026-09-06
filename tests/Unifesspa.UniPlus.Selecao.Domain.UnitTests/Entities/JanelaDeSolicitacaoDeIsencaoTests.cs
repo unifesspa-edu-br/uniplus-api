@@ -184,7 +184,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             origemData: OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false,
             produzResultado: false, resultadoDefinitivo: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: inicio, fim: fim,
-            atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: null,
             bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static FaseCronograma FaseDeIsencao(
@@ -194,7 +194,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             origemData: OrigemDataFase.Delegada, agrupaEtapas: false, permiteComplementacao: false,
             produzResultado: true, resultadoDefinitivo: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
-            atoProduzidoCodigo: "SOLICITACAO_ISENCAO", atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: "SOLICITACAO_ISENCAO",
             bancasRequeridas: [], regraRecurso: recurso ?? RecursoEmDiasUteis(2m)).Value!;
 
     private static RegraRecursoFase RecursoEmDiasUteis(decimal prazo) => RegraRecursoFase.Criar(

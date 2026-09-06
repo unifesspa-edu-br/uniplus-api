@@ -56,7 +56,6 @@ public sealed partial class EnvelopeCodec
                 "ordem", "faseCanonicaOrigemId", "codigo", "donoInstitucional", "origemData",
                 "agrupaEtapas", "permiteComplementacao", "produzResultado", "resultadoDefinitivo",
                 "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "atoProduzidoCodigo",
-                "atoProduzidoEfeitoIrreversivel",
                 "bancasRequeridas", "regraRecurso",
             ];
             leitor.ExigirChaves(item, path, comId ? [.. chavesBase, "id"] : chavesBase);
@@ -76,7 +75,6 @@ public sealed partial class EnvelopeCodec
             DateTimeOffset? inicio = leitor.InstanteOpcional(item, "inicio", path);
             DateTimeOffset? fim = leitor.InstanteOpcional(item, "fim", path);
             string? atoProduzidoCodigo = leitor.TextoOpcional(item, "atoProduzidoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
-            bool atoProduzidoEfeitoIrreversivel = leitor.Booleano(item, "atoProduzidoEfeitoIrreversivel", path);
 
             if (leitor.Falhou)
             {
@@ -100,12 +98,12 @@ public sealed partial class EnvelopeCodec
                     id!.Value, ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
                     agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
                     coletaSolicitacaoIsencao,
-                    inicio, fim, atoProduzidoCodigo, atoProduzidoEfeitoIrreversivel, bancas, regraRecurso))
+                    inicio, fim, atoProduzidoCodigo, bancas, regraRecurso))
                 : FaseCronograma.Criar(
                     ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
                     agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
                     coletaSolicitacaoIsencao,
-                    inicio, fim, atoProduzidoCodigo, atoProduzidoEfeitoIrreversivel, bancas, regraRecurso);
+                    inicio, fim, atoProduzidoCodigo, bancas, regraRecurso);
             if (fase.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FaseCronograma>>(fase.Error!) ?? [];

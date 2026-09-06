@@ -179,7 +179,7 @@ public sealed class ManifestoDoEnvelopeTests
             [
                 "Ordem", "FaseCanonicaOrigemId", "Codigo", "DonoInstitucional", "OrigemData",
                 "AgrupaEtapas", "PermiteComplementacao", "ProduzResultado", "ResultadoDefinitivo",
-                "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim", "AtoProduzidoCodigo", "AtoProduzidoEfeitoIrreversivel",
+                "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim", "AtoProduzidoCodigo",
                 "BancasRequeridas", "RegraRecurso",
             ],
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),

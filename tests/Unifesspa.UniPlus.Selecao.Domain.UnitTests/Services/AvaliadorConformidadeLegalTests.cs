@@ -644,7 +644,7 @@ public sealed class AvaliadorConformidadeLegalTests
             1, Guid.CreateVersion7(), "ENVIO_DOCUMENTOS", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: false, resultadoDefinitivo: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null, atoProduzidoCodigo: null,
-            atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas(

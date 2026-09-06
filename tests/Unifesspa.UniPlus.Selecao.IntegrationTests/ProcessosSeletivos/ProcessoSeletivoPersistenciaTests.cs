@@ -403,7 +403,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_PRELIMINAR", atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
             bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL")],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

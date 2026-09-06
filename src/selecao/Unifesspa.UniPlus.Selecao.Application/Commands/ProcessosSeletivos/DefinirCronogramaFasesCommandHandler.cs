@@ -109,10 +109,6 @@ public static class DefinirCronogramaFasesCommandHandler
                 bancas.Add(BancaRequerida.Criar(tipoBanca.Id, tipoBanca.Codigo));
             }
 
-            // O ato produzido é congelado (código + irreversibilidade) para TODA fase que
-            // o declara — não só para as que admitem recurso (§3.7): a irreversibilidade
-            // entra na versão desde já, porque ela é imutável.
-            bool atoProduzidoEfeitoIrreversivel = false;
             TipoAtoPublicadoView? tipoAtoProduzidoResolvido = null;
             if (!string.IsNullOrWhiteSpace(input.AtoProduzidoCodigo))
             {
@@ -125,8 +121,6 @@ public static class DefinirCronogramaFasesCommandHandler
                         "FaseCronograma.AtoProduzidoNaoEncontradoNoCatalogo",
                         $"O tipo de ato '{input.AtoProduzidoCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje."));
                 }
-
-                atoProduzidoEfeitoIrreversivel = tipoAtoProduzidoResolvido.EfeitoIrreversivel;
             }
 
             RegraRecursoFase? regraRecurso = null;
@@ -216,7 +210,6 @@ public static class DefinirCronogramaFasesCommandHandler
                 input.Inicio,
                 input.Fim,
                 input.AtoProduzidoCodigo,
-                atoProduzidoEfeitoIrreversivel,
                 bancas,
                 regraRecurso);
             if (faseResult.IsFailure)
