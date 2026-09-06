@@ -185,6 +185,35 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
         await act.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
 
+    [Fact(DisplayName = "Tokens que contêm o separador não fazem duas ordenações parecerem a mesma")]
+    public async Task TokensComSeparador_NaoColidem()
+    {
+        await using TestDbContext context = await ComDadosAsync(("Alves", "a1"), ("Barros", "b1"));
+
+        // Os dois conjuntos de tokens são diferentes, mas concatená-los com ":" e "|"
+        // produziria a mesma string nos dois casos. Se a assinatura fosse montada
+        // assim, o cursor de uma ordenação seria aceito pela outra.
+        KeysetSort<Linha> primeira = ComTokens("sobrenome", "codigo:asc|extra");
+        KeysetSort<Linha> segunda = ComTokens("sobrenome:asc|codigo", "extra");
+
+        OrderedKeysetPage<Linha> pagina = await OrderedKeysetCursor.ApplyAsync(
+            context.Linhas.AsNoTracking(), primeira, null, null, 1, PaginationDirection.Next);
+
+        (string SortKey, Guid Id) anchor = pagina.Next!.Value;
+
+        Func<Task> act = async () => await OrderedKeysetCursor.ApplyAsync(
+            context.Linhas.AsNoTracking(), segunda, anchor.SortKey, anchor.Id, 1, PaginationDirection.Next);
+
+        await act.Should().ThrowAsync<CursorAnchorMismatchException>();
+    }
+
+    private static KeysetSort<Linha> ComTokens(string tokenA, string tokenB) => new(
+        [
+            KeysetSortColumn<Linha>.For(tokenA, l => l.Sobrenome, l => l.Sobrenome),
+            KeysetSortColumn<Linha>.For(tokenB, l => l.Codigo, l => l.Codigo),
+        ],
+        (parts, id) => new Linha { Sobrenome = parts[0], Codigo = parts[1], Id = id });
+
     private static KeysetSort<Linha> PorSobrenomeECodigo(SortDirection direction) => new(
         [
             KeysetSortColumn<Linha>.For("sobrenome", l => l.Sobrenome, l => l.Sobrenome, direction),
