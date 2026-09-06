@@ -26,10 +26,18 @@ internal sealed class CursoConfiguration
     /// Só usa funções imutáveis — requisito do Postgres para coluna gerada e para
     /// índice.
     /// </summary>
+    /// <remarks>
+    /// O <c>COLLATE "C"</c> aparece duas vezes de propósito: no argumento do
+    /// <c>lower()</c>, que segue a collation do texto que recebe, e na coluna, que
+    /// governa as comparações posteriores. Declarar a conversão em vez de herdá-la
+    /// do banco é o mesmo hábito de escrever <c>CultureInfo.InvariantCulture</c> ao
+    /// formatar — não custa nada e não deixa a expressão depender de um ajuste de
+    /// ambiente que ninguém revisa.
+    /// </remarks>
     private const string NomeOrdenacaoSql =
         "lower(translate(normalize(nome, NFC), " +
         "'ÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑÝáàâãäåéèêëíìîïóòôõöúùûüçñý', " +
-        "'AAAAAAEEEEIIIIOOOOOUUUUCNYaaaaaaeeeeiiiiooooouuuucny'))";
+        "'AAAAAAEEEEIIIIOOOOOUUUUCNYaaaaaaeeeeiiiiooooouuuucny') COLLATE \"C\")";
 
     private const int CodigoMaxLength = 60;
     private const int NomeMaxLength = 200;

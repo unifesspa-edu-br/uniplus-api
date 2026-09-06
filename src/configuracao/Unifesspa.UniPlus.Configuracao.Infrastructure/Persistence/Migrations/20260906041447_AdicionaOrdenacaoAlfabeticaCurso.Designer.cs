@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    [Migration("20260906033234_AdicionaOrdenacaoAlfabeticaCurso")]
+    [Migration("20260906041447_AdicionaOrdenacaoAlfabeticaCurso")]
     partial class AdicionaOrdenacaoAlfabeticaCurso
     {
         /// <inheritdoc />
@@ -492,7 +492,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome_ordenacao")
-                        .HasComputedColumnSql("lower(translate(normalize(nome, NFC), 'ÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑÝáàâãäåéèêëíìîïóòôõöúùûüçñý', 'AAAAAAEEEEIIIIOOOOOUUUUCNYaaaaaaeeeeiiiiooooouuuucny'))", true)
+                        .HasComputedColumnSql("lower(translate(normalize(nome, NFC), 'ÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑÝáàâãäåéèêëíìîïóòôõöúùûüçñý', 'AAAAAAEEEEIIIIOOOOOUUUUCNYaaaaaaeeeeiiiiooooouuuucny') COLLATE \"C\")", true)
                         .UseCollation("C");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
