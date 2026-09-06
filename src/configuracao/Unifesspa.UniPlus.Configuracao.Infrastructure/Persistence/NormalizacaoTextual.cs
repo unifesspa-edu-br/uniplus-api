@@ -62,7 +62,8 @@ internal static class NormalizacaoTextual
     /// Escapa os curingas do <c>LIKE</c> para que o que a pessoa digitou seja
     /// comparado como texto. Sem isso, um <c>%</c> digitado casaria com quase tudo.
     /// A barra invertida vai primeiro, para não escapar as que a própria função
-    /// insere em seguida.
+    /// insere em seguida — e é ela mesma o caractere de escape que o Postgres
+    /// assume no <c>LIKE</c> quando nenhum outro é declarado.
     /// </summary>
     internal static string EscaparCuringas(string termo)
     {
