@@ -3548,7 +3548,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // A checagem ENEM×eliminação NÃO se repete aqui: grafo.Classificacao chega
         // já construído por ConfiguracaoClassificacao.Criar (via
-        // EnvelopeCodecV11.LerClassificacao) — se o envelope violasse a invariante,
+        // EnvelopeCodec.LerClassificacao) — se o envelope violasse a invariante,
         // a decodificação já teria falhado antes de ValidarGrafo ser chamado.
         foreach (RegraEliminacao regra in grafo.Classificacao.RegrasEliminacao)
         {

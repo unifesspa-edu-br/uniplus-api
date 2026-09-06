@@ -150,7 +150,7 @@ public sealed class EnvelopeCodecTiposTests
     }
 
     /// <summary>
-    /// O rol que <c>EnvelopeCodecV11.LerDistribuicao</c> aceita para <c>regraDistribuicao.codigo</c>
+    /// O rol que o decodificador aceita para <c>regraDistribuicao.codigo</c>
     /// deriva de <see cref="RegraDistribuicaoVagasCodigo.Todos"/> — todo código do catálogo, não
     /// só os dois que <c>ProcessoRico</c> exercita. Antes desta cobertura, um envelope publicado
     /// sob PSIQ ou sob a regra que hoje é COM-PCD-PURO era irreidratável: o rol do decoder era
