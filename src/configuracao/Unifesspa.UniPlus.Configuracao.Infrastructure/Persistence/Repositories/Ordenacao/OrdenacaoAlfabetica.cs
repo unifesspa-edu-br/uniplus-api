@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
 /// Linha de leitura de Curso ordenada alfabeticamente: a entidade acompanhada
-/// das colunas que decidem a posição antes do <c>Id</c>.
+/// das columns que decidem a posição antes do <c>Id</c>.
 /// </summary>
 /// <remarks>
 /// O motor de keyset ordena por propriedades do tipo que ele pagina, e a chave
@@ -58,7 +58,7 @@ internal sealed class OfertaCursoOrdenada : IIdentificavel
 /// ordenação é declarada uma vez para os dois: a convenção de comparação é
 /// literalmente a mesma nas duas rotas, não duas cópias que podem divergir.</para>
 /// <para>Escolher colunas e sentido em tempo de execução é montar uma
-/// <see cref="OrdenacaoKeyset{T}"/> diferente com as mesmas peças; o padrão aqui
+/// <see cref="KeysetSort{T}"/> diferente com as mesmas peças; o padrão aqui
 /// é o que vale quando a consulta não pede ordenação alguma.</para>
 /// </remarks>
 internal static class OrdenacaoAlfabeticaDoCurso
@@ -69,11 +69,11 @@ internal static class OrdenacaoAlfabeticaDoCurso
     /// <summary>Nome público da coluna de código do curso.</summary>
     internal const string TokenCodigo = "codigo";
 
-    public static OrdenacaoKeyset<CursoOrdenado> Cursos { get; } = new(
+    public static KeysetSort<CursoOrdenado> Cursos { get; } = new(
         [
-            ColunaOrdenacaoKeyset<CursoOrdenado>.De(
+            KeysetSortColumn<CursoOrdenado>.For(
                 TokenNome, c => c.NomeOrdenacao, c => c.NomeOrdenacao),
-            ColunaOrdenacaoKeyset<CursoOrdenado>.De(
+            KeysetSortColumn<CursoOrdenado>.For(
                 TokenCodigo, c => c.Codigo, c => c.Codigo),
         ],
         (partes, id) => new CursoOrdenado
@@ -83,11 +83,11 @@ internal static class OrdenacaoAlfabeticaDoCurso
             Id = id,
         });
 
-    public static OrdenacaoKeyset<OfertaCursoOrdenada> OfertasCurso { get; } = new(
+    public static KeysetSort<OfertaCursoOrdenada> OfertasCurso { get; } = new(
         [
-            ColunaOrdenacaoKeyset<OfertaCursoOrdenada>.De(
+            KeysetSortColumn<OfertaCursoOrdenada>.For(
                 TokenNome, o => o.NomeOrdenacao, o => o.NomeOrdenacao),
-            ColunaOrdenacaoKeyset<OfertaCursoOrdenada>.De(
+            KeysetSortColumn<OfertaCursoOrdenada>.For(
                 TokenCodigo, o => o.Codigo, o => o.Codigo),
         ],
         (partes, id) => new OfertaCursoOrdenada

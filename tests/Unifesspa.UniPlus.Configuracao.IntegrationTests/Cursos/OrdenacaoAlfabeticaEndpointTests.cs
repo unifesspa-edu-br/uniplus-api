@@ -242,7 +242,7 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
             ResourceTag: "cursos",
             ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             Direction: PaginationDirection.Next,
-            SortKey: SortKeyComposta.Serializar("uma", "chave", "de tres colunas")));
+            SortKey: CompositeSortKey.Serialize("uma", "chave", "de tres colunas")));
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage resposta = await client.GetAsync(

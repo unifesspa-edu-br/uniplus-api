@@ -19,78 +19,78 @@ using System.Globalization;
 /// <see langword="false"/>, para o boundary tratar como cursor adulterado (400)
 /// em vez de silenciosamente paginar do lugar errado.</para>
 /// </remarks>
-public static class SortKeyComposta
+public static class CompositeSortKey
 {
     /// <summary>Serializa as partes na ordem em que compõem a chave de ordenação.</summary>
-    public static string Serializar(params string[] partes)
+    public static string Serialize(params string[] parts)
     {
-        ArgumentNullException.ThrowIfNull(partes);
+        ArgumentNullException.ThrowIfNull(parts);
 
-        return string.Concat(partes.Select(static parte =>
+        return string.Concat(parts.Select(static part =>
         {
-            ArgumentNullException.ThrowIfNull(parte);
+            ArgumentNullException.ThrowIfNull(part);
             return string.Create(
                 CultureInfo.InvariantCulture,
-                $"{parte.Length}:{parte}");
+                $"{part.Length}:{part}");
         }));
     }
 
     /// <summary>
-    /// Lê exatamente <paramref name="quantidade"/> partes de
+    /// Lê exatamente <paramref name="count"/> partes de
     /// <paramref name="sortKey"/>. Devolve <see langword="false"/> quando a
     /// string não é um serializado íntegro com essa quantidade — inclusive
     /// quando sobra conteúdo depois da última parte.
     /// </summary>
-    public static bool TentarDesserializar(
+    public static bool TryDeserialize(
         string? sortKey,
-        int quantidade,
-        out IReadOnlyList<string> partes)
+        int count,
+        out IReadOnlyList<string> parts)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(quantidade);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        partes = [];
+        parts = [];
 
         if (sortKey is null)
         {
             return false;
         }
 
-        List<string> lidas = new(quantidade);
-        ReadOnlySpan<char> restante = sortKey;
+        List<string> read = new(count);
+        ReadOnlySpan<char> remaining = sortKey;
 
-        for (int i = 0; i < quantidade; i++)
+        for (int i = 0; i < count; i++)
         {
-            int separador = restante.IndexOf(':');
-            if (separador <= 0)
+            int separator = remaining.IndexOf(':');
+            if (separator <= 0)
             {
                 return false;
             }
 
             if (!int.TryParse(
-                    restante[..separador],
+                    remaining[..separator],
                     NumberStyles.None,
                     CultureInfo.InvariantCulture,
-                    out int comprimento))
+                    out int length))
             {
                 return false;
             }
 
-            restante = restante[(separador + 1)..];
-            if (comprimento > restante.Length)
+            remaining = remaining[(separator + 1)..];
+            if (length > remaining.Length)
             {
                 return false;
             }
 
-            lidas.Add(restante[..comprimento].ToString());
-            restante = restante[comprimento..];
+            read.Add(remaining[..length].ToString());
+            remaining = remaining[length..];
         }
 
-        if (!restante.IsEmpty)
+        if (!remaining.IsEmpty)
         {
             return false;
         }
 
-        partes = lidas;
+        parts = read;
         return true;
     }
 }
