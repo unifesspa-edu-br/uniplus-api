@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ordenacao;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
@@ -34,18 +36,39 @@ public sealed class CursoRepository : ICursoRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<Curso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-        Guid? afterId,
-        int limit,
-        PaginationDirection direction,
-        CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
+        ListarPaginadoAsync(
+            string? afterSortKey,
+            Guid? afterId,
+            int limit,
+            PaginationDirection direction,
+            CancellationToken cancellationToken)
     {
-        // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
-        CursorKeysetPage<Curso> page = await CursorKeyset
-            .ApplyAsync(_dbContext.Cursos.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        // A chave de ordenação alfabética é coluna gerada mapeada como propriedade
+        // sombra — a entidade materializada não a carrega, então a listagem projeta
+        // uma linha que a traz junto e serve de âncora ao motor de paginação.
+        IQueryable<CursoOrdenado> query = _dbContext.Cursos
+            .AsNoTracking()
+            .Select(c => new CursoOrdenado
+            {
+                Id = c.Id,
+                NomeOrdenacao = EF.Property<string>(c, CursoConfiguration.NomeOrdenacaoPropriedade),
+                Codigo = c.Codigo,
+                Entidade = c,
+            });
+
+        KeysetOrdenadoPage<CursoOrdenado> page = await KeysetOrdenadoCursor
+            .ApplyAsync(
+                query,
+                OrdenacaoAlfabeticaDoCurso.Cursos,
+                afterSortKey,
+                afterId,
+                limit,
+                direction,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Anterior, page.Proximo);
     }
 
     public async Task AdicionarAsync(Curso curso, CancellationToken cancellationToken)

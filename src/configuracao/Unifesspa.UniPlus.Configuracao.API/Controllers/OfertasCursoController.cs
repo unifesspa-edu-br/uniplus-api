@@ -49,9 +49,11 @@ public sealed class OfertasCursoController : ControllerBase
     }
 
     /// <summary>
-    /// Lista as ofertas de curso ativas, paginadas por cursor opaco bidirecional
-    /// (ADR-0026 + ADR-0089). Navegação via header <c>Link</c>; cada item carrega
-    /// seu <c>_links.self</c> (ADR-0029). Aceita o filtro opcional (issue #755)
+    /// Lista as ofertas de curso ativas em ordem alfabética pelo nome do curso
+    /// ofertado, paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089 +
+    /// ADR-0094). A ordem vale para a coleção inteira, não para cada página
+    /// isoladamente. Navegação via header <c>Link</c>; cada item carrega seu
+    /// <c>_links.self</c> (ADR-0029). Aceita o filtro opcional (issue #755)
     /// <c>cursoId</c>, que restringe às ofertas vivas de um curso específico — a
     /// UI conta/pagina ofertas de um curso sob demanda sem varrer todo o acervo.
     /// O filtro viaja como query param e combina com o cursor: o cliente
@@ -66,21 +68,23 @@ public sealed class OfertasCursoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
-        [FromCursor(ResourceTag)] PageRequest page,
+        [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "cursoId")] Guid? cursoId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
         ListarOfertasCursoResult resultado = await _queryBus
-            .Send(new ListarOfertasCursoQuery(page.AfterId, page.Limit, page.Direction, cursoId), cancellationToken)
+            .Send(
+                new ListarOfertasCursoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, cursoId),
+                cancellationToken)
             .ConfigureAwait(false);
 
         OfertaCursoDto[] comLinks =
             [.. resultado.Items.Select(o => o with { Links = _linksBuilder.Build(o) })];
 
-        return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+        return await this.OkPaginatedOrdenadoAsync(
+            comLinks, resultado.Anterior, resultado.Proximo, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

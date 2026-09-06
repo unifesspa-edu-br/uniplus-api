@@ -5,9 +5,13 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
 /// Lista ofertas de curso vivas paginadas por cursor bidirecional
-/// (ADR-0026 + ADR-0089). O controller decifra o cursor opaco e valida
-/// limit/direction antes de despachar.
+/// (ADR-0026 + ADR-0089), em ordem alfabética pelo nome do curso ofertado. O
+/// controller decifra o cursor opaco e valida limit/direction antes de despachar.
 /// </summary>
+/// <param name="AfterSortKey">
+/// Chave de ordenação da âncora de continuação (ADR-0094), que acompanha o
+/// <paramref name="AfterId"/>; <c>null</c> na primeira página.
+/// </param>
 /// <param name="AfterId">Âncora da página anterior; <c>null</c> retorna a primeira janela.</param>
 /// <param name="Limit">Tamanho máximo da página a retornar.</param>
 /// <param name="Direction">Direção de navegação (<c>Next</c>/<c>Prev</c>, ADR-0089).</param>
@@ -17,6 +21,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// antes do keyset, então itens e âncoras <c>prev</c>/<c>next</c> respeitam o recorte.
 /// </param>
 public sealed record ListarOfertasCursoQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,

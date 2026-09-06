@@ -118,7 +118,10 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .HasForeignKey(o => o.LocalOfertaId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(o => o.CursoId)
+        // O Id entra como segunda coluna porque a listagem restrita a um curso
+        // ordena pelo nome do curso — constante dentro do recorte —, deixando o
+        // Id como única coluna que move o seek de página em página.
+        builder.HasIndex(o => new { o.CursoId, o.Id })
             .HasDatabaseName("ix_oferta_curso_curso_id");
 
         builder.HasIndex(o => o.LocalOfertaId)
