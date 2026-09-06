@@ -483,6 +483,15 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome");
 
+                    b.Property<string>("NomeOrdenacao")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome_ordenacao")
+                        .HasComputedColumnSql("configuracao.normalizar_para_comparacao(nome)", true)
+                        .UseCollation("C");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -498,6 +507,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     b.HasIndex("Codigo")
                         .IsUnique()
                         .HasDatabaseName("ix_curso_codigo_vivo")
+                        .HasFilter("is_deleted = false");
+
+                    b.HasIndex("NomeOrdenacao", "Codigo", "Id")
+                        .HasDatabaseName("ix_curso_ordenacao_alfabetica")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("curso", "configuracao", t =>
@@ -1946,11 +1959,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_oferta_curso");
 
-                    b.HasIndex("CursoId")
-                        .HasDatabaseName("ix_oferta_curso_curso_id");
-
                     b.HasIndex("LocalOfertaId")
                         .HasDatabaseName("ix_oferta_curso_local_oferta_id");
+
+                    b.HasIndex("CursoId", "Id")
+                        .HasDatabaseName("ix_oferta_curso_curso_id");
 
                     b.ToTable("oferta_curso", "configuracao", t =>
                         {
@@ -3491,6 +3504,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id")
                         .HasName("pk_tipos_processo");

@@ -119,7 +119,7 @@ public sealed class TipoProcessoTests
         tipo.Nome.Should().Be("Nome original", "falha de validação não pode mutar o agregado");
     }
 
-    [Fact(DisplayName = "Desativação é terminal e não remove a identidade")]
+    [Fact(DisplayName = "Desativação não remove a identidade do código")]
     public void Desativar_ItemAtivo_DesativaSemApagarCodigo()
     {
         TipoProcesso tipo = TipoProcesso.Criar("PS_TESTE", "Processo teste", null).Value!;
@@ -129,5 +129,44 @@ public sealed class TipoProcessoTests
         result.IsSuccess.Should().BeTrue();
         tipo.Ativo.Should().BeFalse();
         tipo.Codigo.Should().Be("PS_TESTE");
+    }
+
+    [Fact(DisplayName = "Reativação devolve o tipo desativado ao estado ativo preservando código e nome")]
+    public void Ativar_ItemDesativado_ReativaPreservandoIdentidade()
+    {
+        TipoProcesso tipo = TipoProcesso.Criar("PS_TESTE", "Processo teste", "Descrição").Value!;
+        tipo.Desativar();
+
+        Result result = tipo.Ativar();
+
+        result.IsSuccess.Should().BeTrue();
+        tipo.Ativo.Should().BeTrue();
+        tipo.Codigo.Should().Be("PS_TESTE");
+        tipo.Nome.Should().Be("Processo teste");
+        tipo.Descricao.Should().Be("Descrição");
+    }
+
+    [Fact(DisplayName = "Reativar o que já está ativo é recusado em vez de aceito em silêncio")]
+    public void Ativar_ItemJaAtivo_Recusa()
+    {
+        TipoProcesso tipo = TipoProcesso.Criar("PS_TESTE", "Processo teste", null).Value!;
+
+        Result result = tipo.Ativar();
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(TipoProcessoErrorCodes.JaAtivo);
+        tipo.Ativo.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Desativar duas vezes seguidas é recusado na segunda")]
+    public void Desativar_ItemJaDesativado_Recusa()
+    {
+        TipoProcesso tipo = TipoProcesso.Criar("PS_TESTE", "Processo teste", null).Value!;
+        tipo.Desativar();
+
+        Result result = tipo.Desativar();
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(TipoProcessoErrorCodes.JaDesativado);
     }
 }

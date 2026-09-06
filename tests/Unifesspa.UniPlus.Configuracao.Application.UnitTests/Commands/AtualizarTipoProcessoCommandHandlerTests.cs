@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
@@ -76,5 +79,21 @@ public sealed class AtualizarTipoProcessoCommandHandlerTests
         resultado.Errors.Should().HaveCount(2);
         resultado.Errors[0].Field.Should().Be("nome");
         resultado.Errors[1].Field.Should().Be("descricao");
+    }
+
+    [Fact(DisplayName = "DbUpdateConcurrencyException (xmin) no commit descarta o rastreamento antes de devolver 409")]
+    public async Task Handle_ConflitoDeConcorrencia_DescartaRastreamentoEDevolveConflito()
+    {
+        TipoProcesso existente = Existente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await AtualizarTipoProcessoCommandHandler.Handle(
+            new AtualizarTipoProcessoCommand(existente.Id, "Nome atualizado"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoProcessoErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 }

@@ -37,7 +37,7 @@ Cinco stories vão escrever sobre a retificação. O artefato que elas tocam —
 
 **Sobre a identidade na reidratação (D2):**
 
-- **Congelar os ids das entidades-filhas no envelope.** Resolveria a estabilidade. **Rejeitada:** mudaria a **forma** do envelope (bump para `1.2`), o inflaria, e faria a identidade técnica voltar para dentro do hash — exatamente o que a **D9 da ADR-0109** acabou de expulsar.
+- **Congelar os ids das entidades-filhas no envelope.** Resolveria a estabilidade. **Rejeitada:** mudaria a **forma** do envelope, exigindo avanço de versão, o inflaria, e faria a identidade técnica voltar para dentro do hash — exatamente o que a **D9 da ADR-0109** acabou de expulsar.
 - **Mapa externo de ids.** **Rejeitada:** estado paralelo ao congelado, sem dono e sem invariante que o mantenha coerente.
 
 **Sobre a concorrência (D5):**
@@ -59,25 +59,42 @@ Fecham-se nove decisões (D1–D9) que governam as cinco stories da Feature. A r
 
 ### D1 — Registro de **codecs**: capacidades por versão
 
-Um *decoder* por versão **não basta**. O round-trip de uma `1.1` exige **recanonicalizá-la com o encoder `1.1`** — e o canonicalizer só emite `SchemaVersionAtual` (`SnapshotPublicacaoCanonicalizer.cs:62`). No dia da `1.2`, provar o round-trip de uma `1.1` ficaria **impossível**, e o descarte de um certame retificado antes daquele bump deixaria de ser verificável. **O encoder de uma versão não é aposentado quando ela deixa de ser a corrente** — ele continua sendo necessário para provar o round-trip dela.
+> **Regime suspenso enquanto não houver certame publicado.** A **E2.1** substitui o registro
+> descrito abaixo por um **único codec vivo**, reescrito no lugar a cada mudança de forma. Esta
+> decisão volta a valer no marco que a **E2.2** define. Quem for implementar mudança de forma
+> deve ler as duas emendas antes desta seção.
+
+Um *decoder* por versão **não basta**. Provar o round-trip de uma configuração congelada exige
+**recanonicalizá-la com o encoder da versão em que foi congelada**, e o canonicalizer só emite a
+**corrente de emissão**. Sem o encoder da versão anterior, no dia em que a forma avança a prova
+de round-trip dela fica **impossível**, e o descarte de um certame retificado antes daquele
+avanço deixa de ser verificável. **O encoder de uma versão não é aposentado quando ela deixa de
+ser a corrente** — ele continua sendo necessário para provar o round-trip dela.
 
 Cada versão registrada declara **capacidades** — não um estado exclusivo:
 
-| Capacidade | Significa | `1.0` | `1.1` |
-|---|---|---|---|
-| **Encoder** | sabe **produzir** os bytes daquela forma | não | **sim** |
-| **Decoder** | sabe **ler** os bytes de volta em entidades | não | **sim** |
-| **Recusa nomeada** | o sistema **sabe que a versão existe** e a rejeita com motivo | **sim** | — |
+| Capacidade | Significa |
+|---|---|
+| **Encoder** | sabe **produzir** os bytes daquela forma |
+| **Decoder** | sabe **ler** os bytes de volta em entidades |
+| **Recusa nomeada** | o sistema **sabe que a versão existe** e a rejeita com motivo |
 
-E **uma** versão, separadamente, é a **corrente de emissão** (`SchemaVersionAtual`) — hoje a `1.1`. Quando a `1.2` chegar, a `1.1` **perde** a emissão corrente mas **mantém** encoder e decoder.
+E **uma** versão, separadamente, é a **corrente de emissão**. Quando a forma avança, a anterior
+**perde** a emissão corrente mas **mantém** encoder e decoder.
 
-- **Reidratável** ⟺ tem encoder **e** decoder. (Encoder sem decoder não reidrata; decoder sem encoder não prova round-trip.)
-- **`1.0`** é **conhecida e recusada**, com motivo nomeado: ela pode conter `atendimento`/`classificacao` como `nao_construido` — o fallback silencioso que a **D8 da ADR-0109** matou. Não há o que reidratar.
+- **Reidratável** ⟺ tem encoder **e** decoder. (Encoder sem decoder não reidrata; decoder sem
+  encoder não prova round-trip.)
+- Versão cuja forma admite estado que decisão posterior baniu — como um fallback silencioso
+  eliminado depois — é **conhecida e recusada**, com motivo nomeado: não há o que reidratar nela.
 - Versão **fora do registro** → recusa com erro nomeado.
 
-**O decoder devolve um envelope neutro completo** — grafo das 6 dimensões **+ `DadosEdital` + hash do documento + `RetificacaoInfo`** — porque o CA de round-trip precisa de todos eles, não só do grafo.
+**O decoder devolve um envelope neutro completo** — o grafo das dimensões **+ `DadosEdital` +
+hash do documento + `RetificacaoInfo`** — porque o CA de round-trip precisa de todos eles, não só
+do grafo.
 
-**Fitness tests:** (a) a versão **corrente de emissão** tem encoder **e** decoder; (b) toda versão do registro tem as suas capacidades declaradas — nenhuma cai no vazio. Uma `1.2` sem codec **quebra o build**.
+**Fitness tests:** (a) a versão **corrente de emissão** tem encoder **e** decoder; (b) toda versão
+do registro tem as suas capacidades declaradas — nenhuma cai no vazio. Versão registrada sem
+codec **quebra o build**.
 
 ### D2 — Identidade e auditoria na reidratação
 
@@ -87,7 +104,7 @@ E **uma** versão, separadamente, é a **corrente de emissão** (`SchemaVersionA
 | `Id` das demais filhas | **Não** | **Regenerados.** Precisão: *nenhuma referência de **negócio** exige estabilidade deles*; as **FKs internas** (ex.: `ModalidadeSelecionada.ConfiguracaoDistribuicaoVagasId`) são **reconstruídas junto com o grafo**. São expostos no DTO público, e o ADR declara que **o contrato não promete estabilidade** |
 | `CreatedAt` / `UpdatedAt` (todas herdam de `EntityBase`) | **Não** | **Parcialmente perdidos, com precisão:** as filhas **recriadas** recebem `CreatedAt` = instante do **descarte** e `UpdatedAt` = `null`; as **etapas reconciliadas** por `Id` **preservam** o `CreatedAt` original (são a mesma instância *tracked*). É perda de informação — **declarada**, não silenciosa. A auditoria com peso jurídico vive na `VersaoConfiguracao` (append-only, `IForensicEntity`), que **não** é tocada |
 
-Rejeitadas: congelar os ids no envelope (mudaria a forma para `1.2`, e faria a identidade técnica voltar para dentro do hash — o oposto da D9); mapa externo de ids (estado paralelo, sem dono).
+Rejeitadas: congelar os ids no envelope (mudaria a forma, exigindo avanço de versão, e faria a identidade técnica voltar para dentro do hash — o oposto da D9); mapa externo de ids (estado paralelo, sem dono).
 
 **Reconciliação EF (armadilha real):** o descarte **não** substitui entidades *tracked* por instâncias novas com o mesmo `Id` — isso colide com o identity map. `DefinirEtapasCommandHandler:38` **já** reconcilia etapas por `Id` na instância *tracked*, preservando o `etapa_ref`. O descarte **reusa esse padrão**.
 
@@ -236,7 +253,7 @@ Um **rascunho abandonado** deixa o certame servindo a versão vigente indefinida
 
 E o `IdempotencyFilter` — código **compartilhado** — precisa mudar (D6). Não é dano colateral: é a consequência de introduzir precondições num sistema que só conhecia idempotência.
 
-**Neutras.** Versões já congeladas não são recalculadas nem reinterpretadas. A `1.0` é **conhecida e recusada**, com motivo nomeado — não silenciada.
+**Neutras.** Versões já congeladas não são recalculadas nem reinterpretadas. Versão que o registro não sabe reidratar é **conhecida e recusada**, com motivo nomeado — não silenciada.
 
 ## Fora de escopo
 
@@ -255,9 +272,14 @@ preservar.
 ### E2.1 — Cai o registro de codecs por versão; permanece um único codec vivo
 
 Enquanto não houver produção nem certame publicado, há **um único codec vivo**, reescrito no
-lugar a cada mudança de forma. Não se criam codecs de versão ao lado. `EnvelopeCodecV11`,
-`EnvelopeCodecV12` e `EnvelopeCodecV13` são bibliotecas de leitores de bloco reutilizadas
-pelo codec único, não codecs registrados por `schema_version`.
+lugar a cada mudança de forma. Não se criam codecs por versão ao lado dele.
+
+**Nenhum artefato de código é nomeado por versão de schema.** A decomposição interna do codec,
+quando existir, organiza-se pelo **assunto** do bloco que cada parte lê e escreve — nunca pela
+versão em que aquele bloco entrou. Artefato nomeado por versão descreve um registro de codecs
+por `schema_version` que esta emenda derruba, e leva quem lê o código depois a concluir que
+alterar a forma exigiria avançar a versão e preservar o leitor anterior. Não exige: enquanto
+não houver envelope publicado, a forma corrente é reescrita no lugar.
 
 Por consequência, a versão anterior deixa de ser reconhecida quando a corrente avança: uma
 configuração congelada nessa versão não é reidratável, e a abertura de retificação sobre ela

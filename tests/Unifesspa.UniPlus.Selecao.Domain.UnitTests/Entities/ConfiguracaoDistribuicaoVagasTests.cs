@@ -18,8 +18,16 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     private static ReferenciaRegra RegraPsiq() =>
         ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Psiq, "v1", new string('d', 64)).Value!;
 
-    private static ReferenciaRegra RegraEduCampo() =>
-        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.EduCampo, "v1", new string('e', 64)).Value!;
+    private static ReferenciaRegra RegraComPcdPuro() =>
+        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.ComPcdPuro, "v1", new string('e', 64)).Value!;
+
+    private static ReferenciaRegra RegraLei12711ComAcPcd() =>
+        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v1", new string('f', 64)).Value!;
+
+    private static readonly string[] RolLei12711 =
+        ["AC", "LB_PPI", "LB_Q", "LB_PCD", "LB_EP", "LI_PPI", "LI_Q", "LI_PCD", "LI_EP"];
+
+    private static readonly string[] RolLei12711ComAcPcd = [.. RolLei12711, "AC_PCD"];
 
     private static ReferenciaRegra RegraAjuste() =>
         ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", new string('c', 64)).Value!;
@@ -147,6 +155,62 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Value!.TotalPublicado.Should().Be(55);
     }
 
+    [Fact(DisplayName = "Lei 12.711 pura recusa AC_PCD — a folga vive só na variação -COM-AC-PCD")]
+    public void Criar_Lei12711_ComAcPcd_ForaDoRolDaRegraPura_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            .. AsOitoFederaisMaisAc(),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades,
+            vagasAnuaisAutorizadas: null, modalidadesAdmitidas: RolLei12711);
+
+        resultado.IsFailure.Should().BeTrue("AC_PCD não está no rol de nove da regra pura — só a variação -COM-AC-PCD o admite");
+        resultado.Errors.Should().Contain(e =>
+            e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra"
+            && e.Error.Message.Contains("AC_PCD", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Lei 12.711 com AC_PCD materializa o quadro pelo art. 10 sob a variação -COM-AC-PCD")]
+    public void Criar_Lei12711ComAcPcd_ComRolCompleto_MaterializaQuadroPeloArt10()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            .. AsOitoFederaisMaisAc(),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711ComAcPcd(), RegraAjuste(), Demografica(), modalidades,
+            vagasAnuaisAutorizadas: null, modalidadesAdmitidas: RolLei12711ComAcPcd);
+
+        resultado.IsSuccess.Should().BeTrue(
+            "sem EhRamoFederal cobrindo a variação, ela cairia no ramo que materializa quadro vazio sem erro");
+        resultado.Value!.VagasOfertadas.Should().Contain(v => v.ModalidadeCodigo == "AC_PCD" && v.Quantidade == 2);
+    }
+
+    [Fact(DisplayName = "Com PCD puro recusa cota da Lei 12.711 fora do seu rol")]
+    public void Criar_ComPcdPuro_ComCotaDaLei_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 38),
+            Modalidade(ModalidadesFederaisLei12711.LbPpi, NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "PCD_PURO"]);
+
+        resultado.IsFailure.Should().BeTrue("o rol de COM-PCD-PURO só admite AC e PCD_PURO — nenhuma cota da Lei 12.711");
+        resultado.Errors.Should().Contain(e =>
+            e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra"
+            && e.Error.Message.Contains(ModalidadesFederaisLei12711.LbPpi, StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "VO_base acima das vagas anuais autorizadas da oferta é recusado")]
     public void Criar_VoBaseAcimaDoTetoDaOferta_Falha()
     {
@@ -202,6 +266,24 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             && e.Error.Message.Contains(RegraDistribuicaoVagasCodigo.Psiq, StringComparison.Ordinal));
     }
 
+    [Fact(DisplayName = "Rol fechado com modalidade faltando é recusado, não só o excedente")]
+    public void Criar_Psiq_ComRolIncompleto_Falha()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 2, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"]);
+
+        resultado.IsFailure.Should().BeTrue("o rol do PSIQ é fechado nos dois sentidos — AC_Q ausente não fecha o quadro que a regra declara");
+        resultado.Errors.Should().Contain(e =>
+            e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeDoRolAusente"
+            && e.Error.Message.Contains("AC_Q", StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "PSIQ com o rol que a regra admite é aceito, e a soma das suplementares é o total")]
     public void Criar_Psiq_ComRolAdmitido_Sucesso()
     {
@@ -220,8 +302,8 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             "sem outro conjunto ao qual se somem, as vagas por acréscimo são o total publicado");
     }
 
-    [Fact(DisplayName = "Educação do Campo aceita AC e PCD_PURO, com a reserva retirando da ampla")]
-    public void Criar_EduCampo_ComRolAdmitido_Sucesso()
+    [Fact(DisplayName = "Com PCD puro aceita AC e PCD_PURO, com a reserva retirando da ampla")]
+    public void Criar_ComPcdPuro_ComRolAdmitido_Sucesso()
     {
         List<ModalidadeSelecionada> modalidades =
         [
@@ -230,7 +312,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraEduCampo(), regraAjuste: null, referenciaDemografica: null,
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), regraAjuste: null, referenciaDemografica: null,
             modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "PCD_PURO"]);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -263,7 +345,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraEduCampo(), RegraAjuste(), referenciaDemografica: null,
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), RegraAjuste(), referenciaDemografica: null,
             modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null,
             argsAjuste: new ArgsReduzirDe("AC"));
 
@@ -285,7 +367,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraEduCampo(), regraAjuste: null, referenciaDemografica: null,
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), regraAjuste: null, referenciaDemografica: null,
             modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null, argsAjuste: null);
 
         resultado.IsFailure.Should().BeTrue("sem motor declarado não há de onde tirar");
@@ -342,7 +424,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraEduCampo(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), regraAjuste: null, referenciaDemografica: null, modalidades);
 
         resultado.IsSuccess.Should().BeTrue("a ampla está ofertada — o destino da reclassificação existe");
     }

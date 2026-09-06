@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -40,7 +41,23 @@ public static class AtualizarTipoProcessoCommandHandler
         // serve para aplicar a mutação.
         tipo.Atualizar(command.Nome, command.Descricao);
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // Corrida com outra escrita no mesmo tipo (edição concorrente,
+            // desativação, reativação), vista pelo xmin. Catch local em vez de
+            // propagação porque o endpoint tem [RequiresIdempotencyKey]
+            // (ADR-0119); o descarte impede que o SaveChangesAsync do outbox
+            // reencontre a entidade modificada depois do retorno.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(new DomainError(
+                TipoProcessoErrorCodes.ConflitoDeConcorrencia,
+                "Este tipo de processo seletivo foi alterado concorrentemente. Tente novamente."));
+        }
+
         return Result.Success();
     }
 }

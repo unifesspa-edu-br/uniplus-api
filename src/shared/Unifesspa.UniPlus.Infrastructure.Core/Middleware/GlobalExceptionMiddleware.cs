@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Pagination;
+
 public sealed partial class GlobalExceptionMiddleware
 {
     private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web);
@@ -49,6 +51,11 @@ public sealed partial class GlobalExceptionMiddleware
         {
             LogValidationError(_logger, context.Request.Path, ex);
             await EscreverRespostaValidacao(context, ex, _problemTypeUriFactory).ConfigureAwait(false);
+        }
+        catch (CursorAnchorMismatchException ex)
+        {
+            LogAncoraDeCursorInvalida(_logger, context.Request.Path, ex);
+            await EscreverRespostaCursorInvalido(context, _problemTypeUriFactory).ConfigureAwait(false);
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -111,6 +118,28 @@ public sealed partial class GlobalExceptionMiddleware
             .ConfigureAwait(false);
     }
 
+    private static async Task EscreverRespostaCursorInvalido(
+        HttpContext context,
+        IProblemTypeUriFactory problemTypeUriFactory)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+        Dictionary<string, object?> body = new()
+        {
+            ["type"] = problemTypeUriFactory.Build("uniplus.paginacao.cursor-invalido"),
+            ["title"] = "Cursor inválido",
+            ["status"] = StatusCodes.Status400BadRequest,
+            ["detail"] = "O cursor informado não continua esta consulta. Refaça a listagem sem cursor.",
+            ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
+            ["code"] = "uniplus.paginacao.cursor-invalido",
+            ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
+        };
+
+        await context.Response
+            .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
+            .ConfigureAwait(false);
+    }
+
     private static async Task EscreverRespostaErro(
         HttpContext context,
         IProblemTypeUriFactory problemTypeUriFactory)
@@ -138,6 +167,9 @@ public sealed partial class GlobalExceptionMiddleware
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Conflito de concorrência otimista no request {Path}")]
     private static partial void LogConflitoDeConcorrencia(ILogger logger, PathString path, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Âncora de cursor incompatível com a ordenação no request {Path}")]
+    private static partial void LogAncoraDeCursorInvalida(ILogger logger, PathString path, Exception ex);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Erro não tratado no request {Path}")]
     private static partial void LogUnhandledError(ILogger logger, PathString path, Exception ex);

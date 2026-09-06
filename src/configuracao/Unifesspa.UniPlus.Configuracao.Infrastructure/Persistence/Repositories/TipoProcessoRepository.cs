@@ -24,10 +24,16 @@ public sealed class TipoProcessoRepository : ITipoProcessoRepository
         _dbContext.TiposProcesso.AsNoTracking().FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
 
     public async Task<(IReadOnlyList<TipoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-        Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken)
+        Guid? afterId, int limit, PaginationDirection direction, bool apenasAtivos, CancellationToken cancellationToken)
     {
+        IQueryable<TipoProcesso> consulta = _dbContext.TiposProcesso.AsNoTracking();
+        if (apenasAtivos)
+        {
+            consulta = consulta.Where(tipo => tipo.Ativo);
+        }
+
         CursorKeysetPage<TipoProcesso> page = await CursorKeyset
-            .ApplyAsync(_dbContext.TiposProcesso.AsNoTracking().Where(tipo => tipo.Ativo), afterId, limit, direction, cancellationToken)
+            .ApplyAsync(consulta, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }

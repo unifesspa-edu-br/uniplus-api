@@ -25,7 +25,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             // configuração — sem este UPDATE, toda linha existente nasceria com
             // baseado_em_enem=false mesmo tendo essas regras persistidas, um estado que
             // ConfiguracaoClassificacao.Criar nunca mais aceitaria construir e que o decoder
-            // do envelope (EnvelopeCodecV11.LerClassificacao) recusaria ao restaurar.
+            // do envelope (EnvelopeCodec.LerClassificacao) recusaria ao restaurar.
             migrationBuilder.Sql(
                 """
                 UPDATE selecao.configuracoes_classificacao AS c

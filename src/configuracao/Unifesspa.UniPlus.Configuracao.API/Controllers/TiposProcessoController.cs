@@ -22,6 +22,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class TiposProcessoController : ControllerBase
 {
     private const string ResourceTag = "tipos-processo";
+    private const string ResourceTagAdmin = "admin-tipos-processo";
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -64,6 +65,52 @@ public sealed class TiposProcessoController : ControllerBase
         return tipo is null ? NotFound() : Ok(tipo with { Links = _linksBuilder.Build(tipo) });
     }
 
+    /// <summary>
+    /// Lista o cadastro para manutenção, incluindo os tipos desativados. A leitura
+    /// pública continua expondo somente ativos (UNI-REQ-0098); é aqui que
+    /// plataforma-admin encontra o tipo desativado que pretende reativar.
+    /// </summary>
+    [HttpGet("admin/tipos-processo")]
+    [Authorize(Roles = "plataforma-admin")]
+    [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<TipoProcessoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ListarParaManutencao(
+        [FromCursor(ResourceTagAdmin)] PageRequest page,
+        [FromQuery] bool apenasAtivos = false,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        ListarTiposProcessoResult resultado = await _queryBus.Send(
+            new ListarTiposProcessoQuery(page.AfterId, page.Limit, page.Direction, apenasAtivos), cancellationToken).ConfigureAwait(false);
+        TipoProcessoDto[] items = [.. resultado.Items.Select(tipo => tipo with { Links = LinksDeManutencao(tipo) })];
+        return await this.OkPaginatedAsync(items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTagAdmin, cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Obtém um tipo para manutenção, ativo ou desativado. A leitura pública por id
+    /// continua devolvendo 404 para o desativado (UNI-REQ-0098).
+    /// </summary>
+    [HttpGet("admin/tipos-processo/{id:guid}", Name = "ObterTipoProcessoParaManutencao")]
+    [Authorize(Roles = "plataforma-admin")]
+    [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
+    [ProducesResponseType(typeof(TipoProcessoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterPorIdParaManutencao(Guid id, CancellationToken cancellationToken)
+    {
+        TipoProcessoDto? tipo = await _queryBus.Send(
+            new ObterTipoProcessoPorIdQuery(id, ApenasAtivos: false), cancellationToken).ConfigureAwait(false);
+        return tipo is null ? NotFound() : Ok(tipo with { Links = LinksDeManutencao(tipo) });
+    }
+
     [HttpPost("admin/tipos-processo")]
     [Authorize(Roles = "plataforma-admin")]
     [RequiresIdempotencyKey]
@@ -100,16 +147,53 @@ public sealed class TiposProcessoController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
+    /// <summary>
+    /// Reativa um tipo desativado, devolvendo-o à listagem pública e aos novos
+    /// vínculos. Não altera Processo Seletivo nem Versão de Configuração já
+    /// produzidos — eles guardam cópia por valor do tipo (ADR-0061).
+    /// </summary>
+    [HttpPost("admin/tipos-processo/{id:guid}/ativacao")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Reativar(Guid id, CancellationToken cancellationToken)
+    {
+        Result resultado = await _commandBus.Send(new ReativarTipoProcessoCommand(id), cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
     [HttpDelete("admin/tipos-processo/{id:guid}")]
     [Authorize(Roles = "plataforma-admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Desativar(Guid id, CancellationToken cancellationToken)
     {
         Result resultado = await _commandBus.Send(new DesativarTipoProcessoCommand(id), cancellationToken).ConfigureAwait(false);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
+
+    /// <summary>
+    /// Links da representação de manutenção. Não reaproveita o builder da leitura
+    /// pública porque o <c>self</c> dele aponta para a rota pública por id, que devolve
+    /// 404 justamente para os itens desativados — os únicos que esta visão acrescenta.
+    /// </summary>
+    private Dictionary<string, string> LinksDeManutencao(TipoProcessoDto tipo) =>
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["self"] = Resolver(nameof(ObterPorIdParaManutencao), new { id = tipo.Id }),
+            ["collection"] = Resolver(nameof(ListarParaManutencao), values: null),
+        };
+
+    private string Resolver(string action, object? values) =>
+        Url.Action(action, "TiposProcesso", values)
+        ?? throw new InvalidOperationException($"LinkGenerator não resolveu a rota {action}.");
 }

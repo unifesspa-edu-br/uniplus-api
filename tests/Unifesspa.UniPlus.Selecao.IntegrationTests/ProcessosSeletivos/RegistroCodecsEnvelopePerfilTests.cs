@@ -198,9 +198,9 @@ public sealed class RegistroCodecsEnvelopePerfilTests
 
     /// <summary>
     /// O mesmo contrato no <b>outro</b> caminho: <c>Decodificar</c> é público e chamável sem
-    /// passar pelo registro, e o parse que os decoders compartilham reserializa por conta
-    /// própria. Um tratamento que existisse só no registro deixaria escapar uma falha não
-    /// tratada por esta porta.
+    /// passar pelo registro, e o parse que ele usa reserializa por conta própria. Um
+    /// tratamento que existisse só no registro deixaria escapar uma falha não tratada por
+    /// esta porta.
     /// </summary>
     [Fact(DisplayName = "Parse compartilhado — payload recusado pelo perfil vira envelope malformado, não exceção")]
     public void ParseCompartilhado_PayloadRecusadoPeloPerfil_ViraRecusaNomeada()
@@ -208,7 +208,7 @@ public sealed class RegistroCodecsEnvelopePerfilTests
         PerfilQueRecusaNulo perfil = new();
         byte[] comNulo = PerfilCanonicoV1.Instancia.Serializar(JsonNode.Parse("""{"a":{"b":null}}""")!.AsObject());
 
-        Result<JsonObject> resultado = EnvelopeCodecV11.Parsear(perfil, comNulo);
+        Result<JsonObject> resultado = EnvelopeCodec.Parsear(perfil, comNulo);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
@@ -221,10 +221,10 @@ public sealed class RegistroCodecsEnvelopePerfilTests
     {
         PerfilIndentado perfil = new();
 
-        EnvelopeCodecV11.Parsear(perfil, perfil.Serializar(PayloadQualquer()))
+        EnvelopeCodec.Parsear(perfil, perfil.Serializar(PayloadQualquer()))
             .IsSuccess.Should().BeTrue("os bytes são canônicos sob o perfil que julga");
 
-        Result<JsonObject> recusado = EnvelopeCodecV11.Parsear(
+        Result<JsonObject> recusado = EnvelopeCodec.Parsear(
             perfil, PerfilCanonicoV1.Instancia.Serializar(PayloadQualquer()));
 
         recusado.IsFailure.Should().BeTrue();

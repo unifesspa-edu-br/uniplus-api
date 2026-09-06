@@ -15,6 +15,11 @@ public static class ObterTipoProcessoPorIdQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         TipoProcesso? tipo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
-        return tipo is { Ativo: true } ? tipo.ToDto() : null;
+        if (tipo is null || (query.ApenasAtivos && !tipo.Ativo))
+        {
+            return null;
+        }
+
+        return tipo.ToDto();
     }
 }
