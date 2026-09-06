@@ -33,9 +33,9 @@ public sealed partial class SeedTiposAtoTests
     {
         LinhaSeed[] linhas = Carregar();
 
-        // uniplus-api#1436 acrescenta os quatro códigos que faltavam para isenção,
-        // heteroidentificação, habilitação e avaliação biopsicossocial publicarem
-        // resultado — os dezesseis originais mais esses quatro.
+        // Os quatro códigos que faltavam para isenção, heteroidentificação, habilitação
+        // e avaliação biopsicossocial publicarem resultado entram aqui (uniplus-api#1436)
+        // — os dezesseis originais mais esses quatro.
         linhas.Should().HaveCount(20);
         linhas.Select(l => l.Codigo).Should().OnlyHaveUniqueItems();
     }
@@ -112,10 +112,10 @@ public sealed partial class SeedTiposAtoTests
         // edital nenhum. CONVOCACAO e CHAMADA ficam de fora — concedem o direito de
         // ocupar a vaga, e o recurso é contra a habilitação que as antecede, não
         // contra elas. ERRATA fica de fora por decisão consciente: o recurso cabe
-        // contra o resultado corrigido, não contra a errata. Os quatro códigos de
-        // uniplus-api#1436 entram porque cada um determina a situação do candidato
-        // na respectiva matéria (isenção, heteroidentificação, habilitação e
-        // avaliação biopsicossocial).
+        // contra o resultado corrigido, não contra a errata. Os quatro códigos novos
+        // entram porque cada um determina a situação do candidato na respectiva
+        // matéria — isenção, heteroidentificação, habilitação e avaliação
+        // biopsicossocial (uniplus-api#1436).
         resultado.Should().BeEquivalentTo([
             "CONFIRMACAO_INTERESSE",
             "GABARITO_DEFINITIVO",
@@ -139,10 +139,10 @@ public sealed partial class SeedTiposAtoTests
         IReadOnlyList<string> unicos =
             [.. Carregar().Where(l => l.UnicoPorObjeto).Select(l => l.Codigo).Order(StringComparer.Ordinal)];
 
-        // Os quatro códigos de uniplus-api#1436 nascem únicos por objeto: cada matéria
-        // publica um único lote de decisão por processo (mesmo padrão de
-        // HOMOLOGACAO_INSCRICOES) — o recurso contra ele corre pela fase RECURSOS
-        // genérica, sem precisar de um segundo código "definitivo" por matéria.
+        // Os quatro códigos novos nascem únicos por objeto: cada matéria publica um
+        // único lote de decisão por processo (mesmo padrão de HOMOLOGACAO_INSCRICOES)
+        // — o recurso contra ele corre pela fase RECURSOS genérica, sem precisar de um
+        // segundo código "definitivo" por matéria (uniplus-api#1436).
         unicos.Should().BeEquivalentTo([
             "EDITAL_ABERTURA",
             "HOMOLOGACAO_INSCRICOES",
