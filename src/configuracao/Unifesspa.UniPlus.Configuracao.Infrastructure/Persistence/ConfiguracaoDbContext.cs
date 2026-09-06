@@ -123,6 +123,14 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
         // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
         modelBuilder.AplicarFiltroGlobalSoftDelete();
         base.OnModelCreating(modelBuilder);
+
+        // Mapeia PgFunctions.NormalizarParaComparacao para a função criada por
+        // migration. Sem esse registro, a consulta que a chama não traduz e o EF
+        // tentaria avaliá-la no cliente, onde o stub lança.
+        modelBuilder.HasDbFunction(
+            typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizarParaComparacao))!)
+            .HasName("normalizar_para_comparacao")
+            .HasSchema("configuracao");
     }
 
     public async Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
