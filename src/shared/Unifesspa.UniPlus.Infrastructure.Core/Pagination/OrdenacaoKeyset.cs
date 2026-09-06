@@ -149,10 +149,21 @@ public sealed class OrdenacaoKeyset<T>
 
         Colunas = colunas;
         MontarAncora = montarAncora;
+        Assinatura = string.Join(
+            '|',
+            colunas.Select(static c =>
+                $"{c.Token}:{(c.Direcao == DirecaoOrdenacao.Descendente ? "desc" : "asc")}"));
     }
 
     /// <summary>Colunas na ordem de prioridade.</summary>
     public IReadOnlyList<ColunaOrdenacaoKeyset<T>> Colunas { get; }
+
+    /// <summary>
+    /// Identifica esta ordenação pelas colunas e seus sentidos, na ordem de
+    /// prioridade. Viaja na chave da âncora para que um cursor só continue a
+    /// ordenação que o emitiu.
+    /// </summary>
+    internal string Assinatura { get; }
 
     internal Func<IReadOnlyList<string>, Guid, object> MontarAncora { get; }
 
@@ -168,23 +179,36 @@ public sealed class OrdenacaoKeyset<T>
     }
 
     internal string ChaveDaAncora(T item) =>
-        SortKeyComposta.Serializar([.. Colunas.Select(c => c.ExtrairChave(item))]);
+        SortKeyComposta.Serializar([Assinatura, .. Colunas.Select(c => c.ExtrairChave(item))]);
 
     /// <summary>
     /// Reconstrói a âncora a partir da chave que veio no cursor. Devolve
     /// <see langword="false"/> quando a chave não corresponde a esta ordenação —
     /// o chamador recusa a continuação em vez de paginar de um ponto arbitrário.
     /// </summary>
+    /// <remarks>
+    /// A conferência é pela assinatura, não pelo número de colunas: duas ordenações
+    /// de mesma largura — ordenar por nome ou por código, um sentido ou o outro —
+    /// produzem chaves indistinguíveis pela contagem. Aceitar a chave de uma como
+    /// âncora da outra faria o seek partir de valores que não são os daquelas
+    /// colunas, pulando ou repetindo registros em silêncio, que é justamente o que
+    /// esta recusa existe para impedir.
+    /// </remarks>
     internal bool TentarReconstruirAncora(string chave, Guid id, out object ancora)
     {
         ancora = null!;
 
-        if (!SortKeyComposta.TentarDesserializar(chave, Colunas.Count, out IReadOnlyList<string> partes))
+        if (!SortKeyComposta.TentarDesserializar(chave, Colunas.Count + 1, out IReadOnlyList<string> partes))
         {
             return false;
         }
 
-        ancora = MontarAncora(partes, id);
+        if (!string.Equals(partes[0], Assinatura, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        ancora = MontarAncora([.. partes.Skip(1)], id);
         return true;
     }
 }
