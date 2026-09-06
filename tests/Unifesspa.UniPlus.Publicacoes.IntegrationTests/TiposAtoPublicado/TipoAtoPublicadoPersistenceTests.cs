@@ -47,7 +47,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
     public async Task Insert_PersisteCamposEAutoria()
     {
         string codigo = CodigoUnico();
-        TipoAtoPublicado tipo = Novo(codigo, Inicio, vigenciaFim: null, congela: true, irreversivel: true);
+        TipoAtoPublicado tipo = Novo(codigo, Inicio, vigenciaFim: null, congela: true, irreversivel: true, ehResultado: true);
 
         await Gravar(tipo);
 
@@ -57,6 +57,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         persistido.Codigo.Should().Be(codigo);
         persistido.CongelaConfiguracao.Should().BeTrue();
         persistido.EfeitoIrreversivel.Should().BeTrue();
+        persistido.EhResultado.Should().BeTrue();
         persistido.VigenciaFim.Should().BeNull();
         persistido.CreatedBy.Should().Be(Admin);
         persistido.IsDeleted.Should().BeFalse();
@@ -309,14 +310,15 @@ public sealed class TipoAtoPublicadoPersistenceTests
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
         bool congela = true,
-        bool irreversivel = false) =>
+        bool irreversivel = false,
+        bool ehResultado = false) =>
         TipoAtoPublicado.Criar(
             codigo,
             nome: "Tipo de ato de teste",
             congelaConfiguracao: congela,
             unicoPorObjeto: false,
             efeitoIrreversivel: irreversivel,
-            ehResultado: false,
+            ehResultado: ehResultado,
             vigenciaInicio: vigenciaInicio,
             vigenciaFim: vigenciaFim,
             baseLegal: null).Value!;
