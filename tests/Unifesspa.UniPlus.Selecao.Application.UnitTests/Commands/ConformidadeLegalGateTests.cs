@@ -461,7 +461,8 @@ public sealed class ConformidadeLegalGateTests
                 Nome: "Edital de abertura",
                 CongelaConfiguracao: true,
                 UnicoPorObjeto: false,
-                EfeitoIrreversivel: false));
+                EfeitoIrreversivel: false,
+                EhResultado: false));
         return reader;
     }
 

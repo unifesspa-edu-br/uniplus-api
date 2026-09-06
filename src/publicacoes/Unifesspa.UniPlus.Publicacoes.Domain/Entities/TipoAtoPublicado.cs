@@ -14,12 +14,14 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// como literal em código: acrescentar um tipo é linha de cadastro (ADR-0103).
 /// </summary>
 /// <remarks>
-/// <para>Os três atributos de consequência são <b>dados lidos</b>, jamais ramos
-/// de comportamento. <c>CongelaConfiguracao</c> diz se o ato produz nova versão
+/// <para>Os quatro atributos são <b>dados lidos</b>, jamais ramos de
+/// comportamento. <c>CongelaConfiguracao</c> diz se o ato produz nova versão
 /// congelada da configuração (RN08); <c>UnicoPorObjeto</c>, se o objeto do ato
 /// admite um único ato vivo daquele tipo; <c>EfeitoIrreversivel</c>, se a
-/// publicação não pode ser desfeita. Um <c>if (tipo.Codigo == "CONVOCACAO")</c>
-/// seria a violação que a ADR-0103 proíbe.</para>
+/// publicação não pode ser desfeita; <c>EhResultado</c>, se o ato determina a
+/// situação do candidato — só um ato assim pode integrar o ciclo recursal de uma
+/// fase (UNI-REQ-0080). Um <c>if (tipo.Codigo == "CONVOCACAO")</c> seria a
+/// violação que a ADR-0103 proíbe.</para>
 /// <para>O cadastro é <b>editável</b> — append-only vale para o ato publicado, não
 /// para o catálogo. Editar o catálogo não reescreve o passado de ato nenhum: no
 /// instante da publicação o ato <b>copia por valor</b> os atributos do tipo. Dois
@@ -53,6 +55,13 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
     /// <summary>Se a publicação de um ato deste tipo não pode ser desfeita.</summary>
     public bool EfeitoIrreversivel { get; private set; }
 
+    /// <summary>
+    /// Se um ato deste tipo determina a situação do candidato — só um ato assim
+    /// pode integrar o ciclo recursal de uma fase (UNI-REQ-0080). <see langword="false"/>
+    /// é proibição permanente: não é decisão do edital, é natureza do tipo.
+    /// </summary>
+    public bool EhResultado { get; private set; }
+
     /// <summary>Primeiro dia em que esta versão do tipo vale. Inclusivo.</summary>
     public DateOnly VigenciaInicio { get; private set; }
 
@@ -81,6 +90,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         bool congelaConfiguracao,
         bool unicoPorObjeto,
         bool efeitoIrreversivel,
+        bool ehResultado,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
         string? baseLegal)
@@ -93,7 +103,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
 
         var tipo = new TipoAtoPublicado();
         tipo.AplicarCampos(
-            codigo!, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel,
+            codigo!, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel, ehResultado,
             vigenciaInicio, vigenciaFim, baseLegal);
 
         return Result<TipoAtoPublicado>.Success(tipo);
@@ -125,6 +135,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         bool congelaConfiguracao,
         bool unicoPorObjeto,
         bool efeitoIrreversivel,
+        bool ehResultado,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
         string? baseLegal)
@@ -145,7 +156,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         }
 
         AplicarCampos(
-            codigo, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel,
+            codigo, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel, ehResultado,
             vigenciaInicio, vigenciaFim, baseLegal);
 
         return Result.Success();
@@ -165,6 +176,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         bool congelaConfiguracao,
         bool unicoPorObjeto,
         bool efeitoIrreversivel,
+        bool ehResultado,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
         string? baseLegal)
@@ -174,6 +186,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         CongelaConfiguracao = congelaConfiguracao;
         UnicoPorObjeto = unicoPorObjeto;
         EfeitoIrreversivel = efeitoIrreversivel;
+        EhResultado = ehResultado;
         VigenciaInicio = vigenciaInicio;
         VigenciaFim = vigenciaFim;
         BaseLegal = string.IsNullOrWhiteSpace(baseLegal) ? null : baseLegal.Trim();

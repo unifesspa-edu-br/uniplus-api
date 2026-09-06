@@ -41,7 +41,7 @@ public sealed class RemoverTipoAtoPublicadoCommandHandlerTests
     public async Task Handle_Encontrado_Remove()
     {
         TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
-            "AVISO", "Aviso", false, false, false, new DateOnly(2026, 1, 1), null, null).Value!;
+            "AVISO", "Aviso", false, false, false, false, new DateOnly(2026, 1, 1), null, null).Value!;
         _repository.ObterPorIdAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
 
         Result resultado = await RemoverTipoAtoPublicadoCommandHandler.Handle(

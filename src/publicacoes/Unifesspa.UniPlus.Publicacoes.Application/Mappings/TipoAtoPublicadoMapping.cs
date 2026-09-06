@@ -15,6 +15,7 @@ public static class TipoAtoPublicadoMapping
             tipo.CongelaConfiguracao,
             tipo.UnicoPorObjeto,
             tipo.EfeitoIrreversivel,
+            tipo.EhResultado,
             tipo.VigenciaInicio,
             tipo.VigenciaFim,
             tipo.BaseLegal,

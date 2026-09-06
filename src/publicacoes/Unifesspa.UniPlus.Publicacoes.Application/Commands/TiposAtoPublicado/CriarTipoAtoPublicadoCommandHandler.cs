@@ -51,6 +51,7 @@ public static class CriarTipoAtoPublicadoCommandHandler
             command.CongelaConfiguracao,
             command.UnicoPorObjeto,
             command.EfeitoIrreversivel,
+            command.EhResultado,
             command.VigenciaInicio,
             command.VigenciaFim,
             command.BaseLegal).Value!;

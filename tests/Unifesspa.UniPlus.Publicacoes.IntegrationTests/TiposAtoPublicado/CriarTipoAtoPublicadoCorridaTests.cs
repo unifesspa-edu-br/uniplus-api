@@ -121,7 +121,7 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
     }
 
     private static CriarTipoAtoPublicadoCommand Comando(string codigo) =>
-        new(codigo, "Tipo de ato de teste", true, false, false, Inicio);
+        new(codigo, "Tipo de ato de teste", true, false, false, false, Inicio);
 
     private static string CodigoUnico()
     {

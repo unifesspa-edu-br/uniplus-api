@@ -242,7 +242,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     {
         TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
             "EDITAL_ABERTURA", "Edital de abertura", congela, unicoPorObjeto: unico,
-            efeito, new DateOnly(2026, 1, 1), null, null).Value!;
+            efeito, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
         _tipos.ObterVigenteAsync("EDITAL_ABERTURA", Publicacao, Arg.Any<CancellationToken>())
             .Returns(tipo);
     }

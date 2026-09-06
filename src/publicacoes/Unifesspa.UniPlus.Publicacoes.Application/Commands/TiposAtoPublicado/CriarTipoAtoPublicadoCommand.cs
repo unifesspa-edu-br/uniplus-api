@@ -21,6 +21,7 @@ public sealed record CriarTipoAtoPublicadoCommand(
     bool CongelaConfiguracao,
     bool UnicoPorObjeto,
     bool EfeitoIrreversivel,
+    bool EhResultado,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim = null,
     string? BaseLegal = null) : ICommand<Result<Guid>>;

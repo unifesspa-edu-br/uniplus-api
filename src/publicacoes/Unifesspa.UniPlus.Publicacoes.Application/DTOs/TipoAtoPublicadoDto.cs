@@ -21,6 +21,7 @@ public sealed record TipoAtoPublicadoDto(
     bool CongelaConfiguracao,
     bool UnicoPorObjeto,
     bool EfeitoIrreversivel,
+    bool EhResultado,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim,
     string? BaseLegal,

@@ -20,6 +20,7 @@ public sealed record AtualizarTipoAtoPublicadoCommand(
     bool CongelaConfiguracao,
     bool UnicoPorObjeto,
     bool EfeitoIrreversivel,
+    bool EhResultado,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim = null,
     string? BaseLegal = null) : ICommand<Result>;

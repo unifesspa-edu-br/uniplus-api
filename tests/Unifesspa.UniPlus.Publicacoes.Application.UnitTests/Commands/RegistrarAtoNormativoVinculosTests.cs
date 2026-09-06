@@ -216,7 +216,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
     {
         TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
             Tipo, "Edital de abertura", congelaConfiguracao: true, unicoPorObjeto: unico,
-            efeitoIrreversivel: false, new DateOnly(2026, 1, 1), null, null).Value!;
+            efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
         _tipos.ObterVigenteAsync(Tipo, Publicacao, Arg.Any<CancellationToken>()).Returns(tipo);
     }
 

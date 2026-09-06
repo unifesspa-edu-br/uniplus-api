@@ -59,6 +59,7 @@ public sealed class PublicacoesHandlersNoBusTests
             CongelaConfiguracao: true,
             UnicoPorObjeto: false,
             EfeitoIrreversivel: false,
+            EhResultado: false,
             VigenciaInicio: Inicio);
 
         Result<Guid> criado = await commandBus.Send(comando, CancellationToken.None);
@@ -84,7 +85,7 @@ public sealed class PublicacoesHandlersNoBusTests
 
         Result<Guid> criado = await commandBus.Send(
             new CriarTipoAtoPublicadoCommand(
-                "BUS_VIGENTE", "Tipo vigente", false, false, false, Inicio, Inicio.AddYears(1)),
+                "BUS_VIGENTE", "Tipo vigente", false, false, false, false, Inicio, Inicio.AddYears(1)),
             CancellationToken.None);
         criado.IsSuccess.Should().BeTrue();
 
@@ -111,7 +112,7 @@ public sealed class PublicacoesHandlersNoBusTests
             new CriarTipoAtoPublicadoCommand(
                 "BUS_ATO_TIPO", "Tipo para ato exercitado pelo bus",
                 CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false,
-                VigenciaInicio: Inicio),
+                EhResultado: false, VigenciaInicio: Inicio),
             CancellationToken.None);
         tipo.IsSuccess.Should().BeTrue();
 

@@ -637,7 +637,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
             codigo, codigo, congelaConfiguracao: congela, unicoPorObjeto, efeitoIrreversivel: false,
-            new DateOnly(2020, 1, 1), null, null).Value!;
+            ehResultado: false, new DateOnly(2020, 1, 1), null, null).Value!;
         await db.Set<TipoAtoPublicado>().AddAsync(tipo);
         await db.SaveChangesAsync();
     }

@@ -29,7 +29,7 @@ public sealed class TipoAtoPublicadoValidatorsTests
     public void Atualizar_IdVazio()
     {
         AtualizarTipoAtoPublicadoCommand comando = new(
-            Guid.Empty, "EDITAL_ABERTURA", "Edital de abertura", true, true, false, Inicio);
+            Guid.Empty, "EDITAL_ABERTURA", "Edital de abertura", true, true, false, false, Inicio);
 
         _atualizar.Validate(comando).IsValid.Should().BeFalse();
     }
@@ -38,7 +38,7 @@ public sealed class TipoAtoPublicadoValidatorsTests
     public void Atualizar_IdInformado()
     {
         AtualizarTipoAtoPublicadoCommand comando = new(
-            Guid.NewGuid(), "EDITAL_ABERTURA", "Edital de abertura", true, true, false, Inicio);
+            Guid.NewGuid(), "EDITAL_ABERTURA", "Edital de abertura", true, true, false, false, Inicio);
 
         _atualizar.Validate(comando).IsValid.Should().BeTrue();
     }
