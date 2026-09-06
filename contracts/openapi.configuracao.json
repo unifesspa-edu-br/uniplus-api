@@ -4003,7 +4003,7 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "Campos de ordena\u00E7\u00E3o separados por v\u00EDrgula, na ordem de prioridade; \u0027-\u0027 prefixa o campo decrescente. Exemplo: sort=nome,-grau. Campos aceitos: cursoNome, cursoCodigo, unidadeOfertanteSigla, programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno, criadoEm. Sem o par\u00E2metro, vale a ordem alfab\u00E9tica padr\u00E3o.",
+            "description": "Campos de ordena\u00E7\u00E3o separados por v\u00EDrgula, na ordem de prioridade; \u0027-\u0027 prefixa o campo decrescente. Exemplo: sort=cursoNome,-programaDeOferta. Campos aceitos: cursoNome, cursoCodigo, unidadeOfertanteSigla, programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno, criadoEm. Sem o par\u00E2metro, vale a ordem alfab\u00E9tica padr\u00E3o.",
             "schema": {
               "type": "string"
             }
