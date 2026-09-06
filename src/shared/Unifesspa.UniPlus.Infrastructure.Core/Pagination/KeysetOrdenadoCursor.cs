@@ -42,6 +42,41 @@ public sealed record KeysetOrdenadoPage<T>(
 /// </remarks>
 public static class KeysetOrdenadoCursor
 {
+    /// <summary>
+    /// Pagina segundo uma <see cref="OrdenacaoKeyset{T}"/> — uma ou mais colunas,
+    /// cada uma com o próprio sentido, e o <c>Id</c> como desempate final. A
+    /// chave de ordenação da âncora é composta pelas colunas e viaja inteira no
+    /// cursor.
+    /// </summary>
+    /// <exception cref="CursorAncoraInvalidaException">
+    /// A chave de ordenação não corresponde à ordenação pedida.
+    /// </exception>
+    public static Task<KeysetOrdenadoPage<T>> ApplyAsync<T>(
+        IQueryable<T> filtered,
+        OrdenacaoKeyset<T> ordenacao,
+        string? afterSortKey,
+        Guid? afterId,
+        int limit,
+        PaginationDirection direction,
+        CancellationToken cancellationToken = default)
+        where T : class, IIdentificavel
+    {
+        ArgumentNullException.ThrowIfNull(ordenacao);
+
+        return ApplyAsync(
+            filtered,
+            ordenacao.ConfigurarKeyset,
+            ordenacao.ChaveDaAncora,
+            (chave, id) => ordenacao.TentarReconstruirAncora(chave, id, out object ancora)
+                ? ancora
+                : throw new CursorAncoraInvalidaException(),
+            afterSortKey,
+            afterId,
+            limit,
+            direction,
+            cancellationToken);
+    }
+
     public static async Task<KeysetOrdenadoPage<T>> ApplyAsync<T>(
         IQueryable<T> filtered,
         Action<KeysetPaginationBuilder<T>> buildKeyset,
