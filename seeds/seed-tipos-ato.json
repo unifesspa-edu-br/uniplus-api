@@ -174,5 +174,49 @@
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
+  },
+  {
+    "codigo": "RESULTADO_PRELIMINAR_ISENCAO",
+    "nome": "Resultado preliminar da solicitação de isenção",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": true,
+    "efeitoIrreversivel": false,
+    "ehResultado": true,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": "Lei nº 12.799/2013"
+  },
+  {
+    "codigo": "RESULTADO_HETEROIDENTIFICACAO",
+    "nome": "Resultado da heteroidentificação",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": true,
+    "efeitoIrreversivel": false,
+    "ehResultado": true,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": "Lei nº 12.711/2012; Portaria Normativa MEC nº 4/2018"
+  },
+  {
+    "codigo": "RESULTADO_HOMOLOGACAO",
+    "nome": "Resultado da homologação da habilitação",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": true,
+    "efeitoIrreversivel": false,
+    "ehResultado": true,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "RESULTADO_AVALIACAO_BIOPSICOSSOCIAL",
+    "nome": "Resultado da avaliação biopsicossocial",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": true,
+    "efeitoIrreversivel": false,
+    "ehResultado": true,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": "Lei nº 13.146/2015, art. 2º §1º e art. 30; Lei nº 12.711/2012 c/c Lei nº 13.409/2016"
   }
 ]

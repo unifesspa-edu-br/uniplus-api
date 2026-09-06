@@ -28,12 +28,15 @@ public sealed partial class SeedTiposAtoTests
 
     private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
 
-    [Fact(DisplayName = "O arquivo de seed existe e traz os 16 tipos de ato")]
-    public void Seed_TrazOsDezesseisTipos()
+    [Fact(DisplayName = "O arquivo de seed existe e traz os vinte tipos de ato")]
+    public void Seed_TrazOsVinteTipos()
     {
         LinhaSeed[] linhas = Carregar();
 
-        linhas.Should().HaveCount(16);
+        // uniplus-api#1436 acrescenta os quatro códigos que faltavam para isenção,
+        // heteroidentificação, habilitação e avaliação biopsicossocial publicarem
+        // resultado — os dezesseis originais mais esses quatro.
+        linhas.Should().HaveCount(20);
         linhas.Select(l => l.Codigo).Should().OnlyHaveUniqueItems();
     }
 
@@ -109,7 +112,10 @@ public sealed partial class SeedTiposAtoTests
         // edital nenhum. CONVOCACAO e CHAMADA ficam de fora — concedem o direito de
         // ocupar a vaga, e o recurso é contra a habilitação que as antecede, não
         // contra elas. ERRATA fica de fora por decisão consciente: o recurso cabe
-        // contra o resultado corrigido, não contra a errata.
+        // contra o resultado corrigido, não contra a errata. Os quatro códigos de
+        // uniplus-api#1436 entram porque cada um determina a situação do candidato
+        // na respectiva matéria (isenção, heteroidentificação, habilitação e
+        // avaliação biopsicossocial).
         resultado.Should().BeEquivalentTo([
             "CONFIRMACAO_INTERESSE",
             "GABARITO_DEFINITIVO",
@@ -118,8 +124,12 @@ public sealed partial class SeedTiposAtoTests
             "HOMOLOGACAO_INSCRICOES",
             "HOMOLOGACAO_RECURSOS",
             "LISTA_ESPERA",
+            "RESULTADO_AVALIACAO_BIOPSICOSSOCIAL",
             "RESULTADO_FINAL",
+            "RESULTADO_HETEROIDENTIFICACAO",
+            "RESULTADO_HOMOLOGACAO",
             "RESULTADO_PRELIMINAR",
+            "RESULTADO_PRELIMINAR_ISENCAO",
         ]);
     }
 
@@ -129,7 +139,19 @@ public sealed partial class SeedTiposAtoTests
         IReadOnlyList<string> unicos =
             [.. Carregar().Where(l => l.UnicoPorObjeto).Select(l => l.Codigo).Order(StringComparer.Ordinal)];
 
-        unicos.Should().BeEquivalentTo(["EDITAL_ABERTURA", "HOMOLOGACAO_INSCRICOES", "RESULTADO_FINAL"]);
+        // Os quatro códigos de uniplus-api#1436 nascem únicos por objeto: cada matéria
+        // publica um único lote de decisão por processo (mesmo padrão de
+        // HOMOLOGACAO_INSCRICOES) — o recurso contra ele corre pela fase RECURSOS
+        // genérica, sem precisar de um segundo código "definitivo" por matéria.
+        unicos.Should().BeEquivalentTo([
+            "EDITAL_ABERTURA",
+            "HOMOLOGACAO_INSCRICOES",
+            "RESULTADO_AVALIACAO_BIOPSICOSSOCIAL",
+            "RESULTADO_FINAL",
+            "RESULTADO_HETEROIDENTIFICACAO",
+            "RESULTADO_HOMOLOGACAO",
+            "RESULTADO_PRELIMINAR_ISENCAO",
+        ]);
     }
 
     private static LinhaSeed[] Carregar()
