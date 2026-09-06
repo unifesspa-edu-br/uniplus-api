@@ -56,7 +56,7 @@ public static class RegraDistribuicaoVagasCodigo
     /// O rol exato que cada código de quadro fechado reconhece. A camada de aplicação resolve
     /// o mesmo rol a partir do <c>modalidades_admitidas</c> do catálogo (fonte de verdade); esta
     /// cópia estática serve só a reidratação de um envelope congelado
-    /// (<c>EnvelopeCodecV11.LerDistribuicao</c>), que reconstrói o agregado exclusivamente a
+    /// (<c>EnvelopeCodec.LerDistribuicao</c>), que reconstrói o agregado exclusivamente a
     /// partir dos bytes do próprio envelope, sem consultar o catálogo — condição da
     /// reprodutibilidade não-circular (CA-13). <see langword="null"/> para
     /// <see cref="Institucional"/> (rol aberto) e para qualquer código fora dos cinco

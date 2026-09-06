@@ -1,72 +1,93 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Codec da versão <c>1.2</c> do envelope (Story #554, PR #903, ADR-0109 D1): a forma nova
-/// que substitui o stub de <c>documentosExigidos.exigencias</c> por um bloco rico
-/// (CA-09), e acrescenta <c>referenciaTemporalFatos</c>/<c>dataReferenciaFatos</c>
-/// (B-03). <see cref="SnapshotPublicacaoCanonicalizer"/> foi o encoder — "o
-/// canonicalizador de hoje" — só enquanto a 1.2 foi também a corrente.
+/// Leitura do bloco <c>documentosExigidos</c>: exigências, obrigatoriedades (e o predicado
+/// que as condiciona) e a orquestração do bloco inteiro.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>Encoder congelado (Story #919, bump para 1.3 — ADR-0109 D1):</b> até aqui, este
-/// método delegava a <see cref="SnapshotPublicacaoCanonicalizer"/>, que era "o
-/// canonicalizador de hoje". Com o bump para 1.3 (acréscimo do bloco
-/// <c>documentosExigidos.metadadosFatos</c>), <see cref="SnapshotPublicacaoCanonicalizer"/>
-/// passou a emitir 1.3 — é ele quem os handlers de escrita injetam como o encoder vivo.
-/// Este método é agora a ÚNICA fonte de verdade de como um envelope 1.2 é produzido: uma
-/// cópia autossuficiente do que o canonicalizador emitia neste instante, para que o
-/// round-trip das versões 1.2 já publicadas continue verificável para sempre, imune a
-/// qualquer refactor futuro do canonicalizador vivo — exatamente o que aconteceu com
-/// <see cref="EnvelopeCodecV11"/> no bump anterior (1.1 → 1.2).
-/// </para>
-/// <para>
-/// O decoder reaproveita os métodos <c>internal</c> de <see cref="EnvelopeCodecV11"/>
-/// para os 11 blocos cuja FORMA não mudou entre 1.1 e 1.2 (etapas, distribuição,
-/// modalidades, atendimento, bônus, desempate, classificação, hashesEdital, período,
-/// ofertas, vagas, retificação) — ao contrário do encoder (ADR-0109 D1, nunca evolui no
-/// lugar), decodificar bytes de um bloco cuja forma NÃO mudou não corre o mesmo risco: é
-/// interpretar bytes fixos, não produzir novos, e um bug corrigido no leitor
-/// compartilhado corrige os dois codecs ao mesmo tempo, nunca diverge.
-/// <c>documentosExigidos</c> (o bloco cuja forma muda nesta versão) ganha um leitor
-/// próprio aqui; <c>cronogramaFases</c> também muda de forma (a chave <c>id</c> nova,
-/// achado de revisão — Story #554, PR #903), mas continua reaproveitando
-/// <see cref="EnvelopeCodecV11.LerCronogramaFases"/> via o parâmetro <c>comId</c>, sem
-/// duplicar o leitor inteiro. O decoder da 1.2 NÃO ganha <c>metadadosFatos</c> — a 1.2
-/// nunca teve essa chave, e um envelope histórico "1.2" não a tem nos bytes.
-/// </para>
-/// </remarks>
-internal static class EnvelopeCodecV12
+public sealed partial class EnvelopeCodec
 {
+    /// <summary>
+    /// Story #919: a orquestração do bloco inteiro — <c>exigencias</c>, <c>obrigatoriedades</c>
+    /// (e o predicado que as condiciona), <c>referenciaTemporalFatos</c> e a chave
+    /// <c>metadadosFatos</c> (RN08). O bloco de topo <c>arvoreSatisfacao</c> (Story #923) é
+    /// IRMÃO deste, não mudança dele — por isso não aparece aqui.
+    /// </summary>
+    private static (
+        ResultadoConformidade? Conformidade,
+        IReadOnlyList<DocumentoExigido> DocumentosExigidos,
+        ReferenciaTemporalFatos? ReferenciaTemporalFatos,
+        IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados)
+        LerDocumentosExigidos(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "documentosExigidos", "$");
+        if (leitor.Falhou)
+        {
+            return (null, [], null, null);
+        }
+
+        leitor.ExigirChaves(
+            bloco, "documentosExigidos",
+            "exigencias", "obrigatoriedades", "referenciaTemporalFatos", "dataReferenciaFatos", "metadadosFatos");
+
+        IReadOnlyList<DocumentoExigido> exigencias = LerExigencias(leitor, bloco);
+        if (leitor.Falhou)
+        {
+            return (null, [], null, null);
+        }
+
+        ResultadoConformidade? conformidade = LerObrigatoriedades(leitor, bloco);
+        if (leitor.Falhou)
+        {
+            return (null, [], null, null);
+        }
+
+        ReferenciaTemporalFatos? referenciaTemporalFatos = LerReferenciaTemporalFatosPolitica(leitor, bloco);
+        if (leitor.Falhou)
+        {
+            return (null, [], null, null);
+        }
+
+        // A data resolvida só é lida para participar do payload fechado (ExigirChaves
+        // acima já a exige); a prova de que ela bate com a política é o round-trip
+        // reidratar→recanonicalizar, não uma comparação aqui.
+        leitor.DataOpcional(bloco, "dataReferenciaFatos", "documentosExigidos");
+        if (leitor.Falhou)
+        {
+            return (null, [], null, null);
+        }
+
+        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadadosFatos = LerMetadadosFatos(leitor, bloco);
+
+        return leitor.Falhou
+            ? (null, [], null, null)
+            : (conformidade, exigencias, referenciaTemporalFatos, metadadosFatos);
+    }
+
     /// <summary>
     /// Não valida <c>exigidoNaFaseId</c> contra as fases decodificadas nesta mesma
     /// passagem. Desde o achado de revisão que acrescentou <c>id</c> ao bloco
-    /// <c>cronogramaFases</c> (<see cref="EnvelopeCodecV11.LerCronogramaFases"/>,
-    /// parâmetro <c>comId</c>), <c>FaseCronograma.Id</c> É congelado no envelope 1.2 e a
-    /// checagem SERIA possível — mas continua redundante: a mesma razão pela qual
+    /// <c>cronogramaFases</c> (<see cref="LerCronogramaFases"/>,
+    /// parâmetro <c>comId</c>), <c>FaseCronograma.Id</c> é congelado e a checagem SERIA
+    /// possível — mas continua redundante: a mesma razão pela qual
     /// <see cref="ReferenciaTemporalFatos.FaseId"/> (<see cref="LerReferenciaTemporalFatosPolitica"/>)
     /// também não é validado aqui. A resolução real acontece no domínio
     /// (<see cref="Entities.ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>/<c>ResolverDataReferenciaFatos</c>),
     /// que agora enxerga o MESMO Id que a exigência/política referenciam — não um Id
     /// regenerado a cada decodificação.
     /// </summary>
-    /// <summary>
-    /// <c>internal</c> (não <c>private</c>): a forma de <c>exigencias[]</c> não muda entre a
-    /// 1.2 e a 1.3 (Story #919) — <see cref="EnvelopeCodecV13"/> reaproveita este leitor tal
-    /// qual, mesma técnica de <see cref="EnvelopeCodecV11"/> para os blocos que sobrevivem
-    /// ao bump 1.1→1.2.
-    /// </summary>
-    internal static IReadOnlyList<DocumentoExigido> LerExigencias(LeitorEnvelope leitor, JsonObject bloco)
+    private static IReadOnlyList<DocumentoExigido> LerExigencias(LeitorEnvelope leitor, JsonObject bloco)
     {
         JsonArray array = leitor.Array(bloco, "exigencias", "documentosExigidos");
         if (leitor.Falhou)
@@ -366,12 +387,8 @@ internal static class EnvelopeCodecV12
         return idadeResult.IsFailure ? leitor.Propagar<IdadeMaximaEmissao>(idadeResult.Error!) : idadeResult.Value;
     }
 
-    /// <summary>
-    /// Mesma forma de <c>obrigatoriedades[]</c> da 1.1 — reaproveita o leitor de predicado.
-    /// <c>internal</c>: a forma não muda na 1.3 (Story #919) — <see cref="EnvelopeCodecV13"/>
-    /// reaproveita este leitor tal qual.
-    /// </summary>
-    internal static ResultadoConformidade? LerObrigatoriedades(LeitorEnvelope leitor, JsonObject bloco)
+    /// <summary>Reaproveita <see cref="LerPredicadoObrigatoriedade"/> para o predicado de cada regra.</summary>
+    private static ResultadoConformidade? LerObrigatoriedades(LeitorEnvelope leitor, JsonObject bloco)
     {
         JsonArray array = leitor.Array(bloco, "obrigatoriedades", "documentosExigidos");
         if (leitor.Falhou)
@@ -400,7 +417,7 @@ internal static class EnvelopeCodecV12
                 return null;
             }
 
-            PredicadoObrigatoriedade? predicado = EnvelopeCodecV11.LerPredicadoObrigatoriedade(leitor, predicadoJson, $"{path}.predicado");
+            PredicadoObrigatoriedade? predicado = LerPredicadoObrigatoriedade(leitor, predicadoJson, $"{path}.predicado");
             if (leitor.Falhou)
             {
                 return null;
@@ -428,34 +445,63 @@ internal static class EnvelopeCodecV12
     }
 
     /// <summary>
-    /// A POLÍTICA crua (B-03) — o insumo de <see cref="Entities.ProcessoSeletivo.ResolverDataReferenciaFatos"/>.
-    /// <c>internal</c>: a forma não muda na 1.3 (Story #919) — <see cref="EnvelopeCodecV13"/>
-    /// reaproveita este leitor tal qual.
+    /// A variante vem do campo <c>tipo</c> (o próprio envelope carrega o discriminador
+    /// aqui — ao contrário de <see cref="LerArgsDesempate"/>, não há um "código de regra"
+    /// externo ao args para decidir a forma; <c>PredicadoObrigatoriedade</c> já é a
+    /// discriminated union completa que o domínio serializa).
     /// </summary>
-    internal static ReferenciaTemporalFatos? LerReferenciaTemporalFatosPolitica(LeitorEnvelope leitor, JsonObject bloco)
+    private static PredicadoObrigatoriedade? LerPredicadoObrigatoriedade(LeitorEnvelope leitor, JsonObject predicado, string path)
     {
-        JsonObject? json = leitor.ObjetoOpcional(bloco, "referenciaTemporalFatos", "documentosExigidos");
-        if (leitor.Falhou || json is null)
-        {
-            return null;
-        }
-
-        const string path = "documentosExigidos.referenciaTemporalFatos";
-        leitor.ExigirChaves(json, path, "tipo", "data", "faseId");
-
-        string tipoCodigo = leitor.TextoNaoVazio(json, "tipo", path);
-        DateOnly? data = leitor.DataOpcional(json, "data", path);
-        Guid? faseId = leitor.IdentificadorOpcional(json, "faseId", path);
+        leitor.ExigirChaves(predicado, path, "tipo", "args");
+        string tipo = leitor.TextoNaoVazio(predicado, "tipo", path);
+        JsonObject args = leitor.Objeto(predicado, "args", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        // FromCodigo mapeia um token não reconhecido para o sentinela Nenhuma — e Criar já
-        // o rejeita com um DomainError nomeado (ReferenciaTemporalFatos.TipoObrigatorio),
-        // sem precisar de uma checagem de "código desconhecido" própria aqui.
-        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar(
-            ReferenciaTipoCodigo.FromCodigo(tipoCodigo), data, faseId);
-        return resultado.IsFailure ? leitor.Propagar<ReferenciaTemporalFatos>(resultado.Error!) : resultado.Value;
+        string argsPath = $"{path}.args";
+        switch (tipo)
+        {
+            case "etapaObrigatoria":
+                leitor.ExigirChaves(args, argsPath, "tipoEtapaCodigo");
+                string tipoEtapaCodigo = leitor.TextoNaoVazio(args, "tipoEtapaCodigo", argsPath);
+                return leitor.Falhou ? null : new EtapaObrigatoria(tipoEtapaCodigo);
+
+            case "modalidadesMinimas":
+                leitor.ExigirChaves(args, argsPath, "codigos");
+                IReadOnlyList<string> codigos = leitor.Textos(args, "codigos", argsPath);
+                return leitor.Falhou ? null : new ModalidadesMinimas(codigos);
+
+            case "desempateDeveIncluir":
+                leitor.ExigirChaves(args, argsPath, "criterio");
+                string criterio = leitor.TextoNaoVazio(args, "criterio", argsPath);
+                return leitor.Falhou ? null : new DesempateDeveIncluir(criterio);
+
+            case "documentoObrigatorioParaModalidade":
+                leitor.ExigirChaves(args, argsPath, "modalidade", "tipoDocumento");
+                string modalidade = leitor.TextoNaoVazio(args, "modalidade", argsPath);
+                string tipoDocumento = leitor.TextoNaoVazio(args, "tipoDocumento", argsPath);
+                return leitor.Falhou ? null : new DocumentoObrigatorioParaModalidade(modalidade, tipoDocumento);
+
+            case "atendimentoDisponivel":
+                leitor.ExigirChaves(args, argsPath, "necessidades");
+                IReadOnlyList<string> necessidades = leitor.Textos(args, "necessidades", argsPath);
+                return leitor.Falhou ? null : new AtendimentoDisponivel(necessidades);
+
+            case "concorrenciaDuplaObrigatoria":
+                leitor.ExigirChaves(args, argsPath);
+                return leitor.Falhou ? null : new ConcorrenciaDuplaObrigatoria();
+
+            case "customizado":
+                leitor.ExigirChaves(args, argsPath, "parametros");
+                System.Text.Json.JsonElement parametros = leitor.Valor(args, "parametros", argsPath);
+                return leitor.Falhou ? null : new Customizado(parametros);
+
+            default:
+                return leitor.Propagar<PredicadoObrigatoriedade>(new DomainError(
+                    ErrosCodecEnvelope.RegraDesconhecida,
+                    $"Não há variante de {nameof(PredicadoObrigatoriedade)} conhecida para o tipo '{tipo}' em '{path}'."));
+        }
     }
 }
