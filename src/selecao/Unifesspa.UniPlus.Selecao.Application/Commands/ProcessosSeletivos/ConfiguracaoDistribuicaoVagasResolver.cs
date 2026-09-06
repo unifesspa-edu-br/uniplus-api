@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using System.Text.Json;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using Kernel.Results;
+
+using Services;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
@@ -176,26 +176,9 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
             demografica,
             modalidades,
             oferta.VagasAnuaisAutorizadas,
-            ModalidadesAdmitidasPor(regra),
+            ModalidadesAdmitidasDoEsquemaArgs.Extrair(regra),
             input.ArgsAjuste);
     }
-
-    /// <summary>
-    /// Códigos que a regra reconhece, declarados em <c>esquema_args.modalidades_admitidas</c>.
-    /// </summary>
-    /// <remarks>
-    /// O rol vive no esquema porque ele já compõe o hash da definição: um campo próprio em
-    /// <c>RegraCatalogo</c> mudaria a fórmula do hash e, com ela, o valor congelado nas
-    /// referências das versões já publicadas.
-    /// <para>Ausente ou nulo significa rol aberto — a regra não restringe o conjunto.</para>
-    /// </remarks>
-    private static IReadOnlyCollection<string>? ModalidadesAdmitidasPor(RegraCatalogo regra) =>
-        regra.EsquemaArgs.TryGetProperty("modalidades_admitidas", out JsonElement rol)
-        && rol.ValueKind == JsonValueKind.Array
-            ? [.. rol.EnumerateArray()
-                .Where(static item => item.ValueKind == JsonValueKind.String)
-                .Select(static item => item.GetString()!)]
-            : null;
 
     /// <summary>
     /// Resolve a regra de ajuste (<c>TipoRegra.RegraAjusteDistribuicaoVagas</c>)

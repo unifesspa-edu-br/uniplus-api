@@ -24,6 +24,9 @@ public sealed class ProcessoSeletivoCascataTests
     private static ReferenciaRegra RegraInstitucional() =>
         ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!;
 
+    private static ReferenciaRegra RegraLei12711ComAcPcd() =>
+        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v1", HashFixo).Value!;
+
     private static ReferenciaRegra RegraAjuste() =>
         ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo).Value!;
 
@@ -133,6 +136,23 @@ public sealed class ProcessoSeletivoCascataTests
         processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.PendenciaDaCascata().Should().BeNull();
+    }
+
+    [Fact(DisplayName = "PendenciaDaCascata com oferta sob a variação -COM-AC-PCD e cascata legal completa é null (Ok)")]
+    public void PendenciaDaCascata_OfertaFederalComAcPcdComCascataCompleta_Ok()
+    {
+        ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe,
+            composicaoOrigemCodigo: ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma,
+            null, null, null, [], null, "base legal", quantidadeDeclarada: 2).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711ComAcPcd(), RegraAjuste(), Demografica(),
+            [.. AsOitoFederaisMaisAc(), acPcd]).Value!;
+        ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
+        processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaDaCascata().Should().BeNull(
+            "sem EhRamoFederal cobrindo a variação, OfertaForaDoRegimeFederal recusaria com CascataForaDoRegimeFederal");
     }
 
     [Fact(DisplayName = "PendenciaDaCascata com oferta federal e SEM cascata configurada recusa com CascataOrigemAusente, nomeando oferta e modalidade")]

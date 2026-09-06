@@ -126,3 +126,33 @@ por instância, e ancora o prazo no instante de publicação de um ato.
 - RN08 (congelamento de parâmetros por edital).
 - ADR-0104 (a vigência da configuração ordena as versões).
 - Story #772 (a biblioteca `rol_de_regras`).
+
+## Emenda 1 (2026-09-03) — reescrita de versão, não só de conteúdo, enquanto não há produção
+
+A fronteira original tratava a correção como **substituição de conteúdo sob a mesma
+identidade** `(codigo, versao)` — o exemplo concreto (`RECURSO-MULTI-INSTANCIA` →
+`RECURSO-PRAZO-ANCORADO-EM-ATO`) preserva `codigo` e `versao`, só troca o `Id` técnico e o
+conteúdo. A reescrita das cinco regras de `regra_distribuicao_vagas` para uma única versão
+`v1` é uma correção mais ampla: além de reescrever conteúdo (o rol de modalidades admitidas
+de cada regra), ela **muda a identidade `(codigo, versao)`** de duas delas —
+`DISTRIB-VAGAS-LEI-12711` e `DISTRIB-VAGAS-INSTITUCIONAL` saem de `v2` para `v1`.
+
+A fronteira já cobria isso em espírito — "enquanto nenhuma configuração congelada referenciar
+uma linha do catálogo por `(codigo, versao)`, essa linha pode ser corrigida por substituição"
+não distingue substituir o conteúdo de substituir a versão — mas o texto original só
+exemplificava o caso mais estreito. Esta emenda o torna explícito: **a fronteira do
+append-only é sobre referência congelada, não sobre qual campo da linha muda**. Sem
+produção, `(DISTRIB-VAGAS-INSTITUCIONAL, v1)` pode passar a designar conteúdo diferente do
+que `v1` designava antes de ter sido apagada por uma migration anterior — o par não estava
+congelado em nenhuma `VersaoConfiguracao`, então reusar a identidade não viola RN08. A
+verificação mecânica continua a mesma: cruzar `VersaoConfiguracao` (e o rascunho vivo em
+`configuracoes_distribuicao_vagas`, ADR-0061) contra `(codigo, versao)` antes de qualquer
+`DELETE`/`INSERT` que mude a linha.
+
+Esta emenda também autoriza o que a fronteira original não previa: a migration que aplica a
+reescrita pode descartar **processos inteiros** que referenciem a regra substituída — não só
+a linha do catálogo. Sem produção, o `versoes_configuracao → processos_seletivos` sendo
+`DeleteBehavior.Restrict` deixaria o processo publicado sem versão alguma se a migration
+apagasse só o catálogo; a emenda estende a fronteira para cobrir a cadeia inteira (versão
+congelada → filhos por cascade → processo → ato correspondente em `publicacoes`, referência
+por valor sem FK, ADR-0061) como uma única operação legítima enquanto não há produção.

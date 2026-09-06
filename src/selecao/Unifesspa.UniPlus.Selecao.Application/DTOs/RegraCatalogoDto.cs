@@ -20,6 +20,14 @@ using System.Text.Json.Serialization;
 /// atravessam verbatim. Reserializar como texto os entregaria escapados dentro de uma string,
 /// e o cliente teria de desserializar de novo o que já era JSON.
 /// </para>
+/// <para>
+/// <see cref="ModalidadesAdmitidas"/> é projeção pura de
+/// <c>esquema_args.modalidades_admitidas</c> (<see cref="Application.Services.ModalidadesAdmitidasDoEsquemaArgs"/>),
+/// não campo novo do agregado — o rol continua morando no esquema porque ele já compõe o hash da
+/// definição, e um campo próprio em <c>RegraCatalogo</c> mudaria a fórmula do hash das versões já
+/// publicadas. O campo tipado poupa o cliente de ler uma chave nomeada de dentro de um esquema
+/// aberto por contrato.
+/// </para>
 /// </remarks>
 public sealed record RegraCatalogoDto(
     string Codigo,
@@ -28,7 +36,8 @@ public sealed record RegraCatalogoDto(
     JsonElement EsquemaArgs,
     JsonElement Invariantes,
     string BaseLegal,
-    string Hash)
+    string Hash,
+    IReadOnlyList<string>? ModalidadesAdmitidas)
 {
     /// <summary>
     /// Hypermedia links (HATEOAS Level 1, ADR-0029) — opt-in, populado no boundary HTTP para

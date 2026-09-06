@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
+using Unifesspa.UniPlus.Configuracao.Application.Consultas;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
@@ -1079,6 +1080,13 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         new(TipoProcessoErrorCodes.JaDesativado,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.tipo_processo.ja_desativado", "Tipo de processo seletivo já está desativado")),
+        new(TipoProcessoErrorCodes.JaAtivo,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_processo.ja_ativo", "Tipo de processo seletivo já está ativo")),
+        new(TipoProcessoErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(StatusCodes.Status409Conflict,
+                "uniplus.configuracao.tipo_processo.conflito_de_concorrencia",
+                "Tipo de processo seletivo alterado concorrentemente")),
         // ── Tipo de etapa (UNI-REQ-0015, UNI-REQ-0087) ────────────────────
         new(TipoEtapaErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
@@ -1113,6 +1121,25 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         new(TipoEtapaErrorCodes.JaDesativado,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.tipo_etapa.ja_desativado", "Tipo de etapa já está desativado")),
+        // ── Parâmetros de consulta das listagens ──────────────────────────
+        new(ConsultaErrorCodes.CampoDeOrdenacaoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.consulta.campo_de_ordenacao_invalido",
+                "Campo de ordenação não aceito por esta listagem")),
+
+        new(ConsultaErrorCodes.OrdenacaoMalFormada,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.consulta.ordenacao_mal_formada",
+                "Expressão de ordenação inválida")),
+
+        new(ConsultaErrorCodes.BuscaMuitoLonga,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.consulta.busca_muito_longa",
+                "Texto pesquisado excede o comprimento aceito")),
+
         // ── Curso (UNI-REQ-0010) ──────────────────────────────────────────
         new(CursoErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(

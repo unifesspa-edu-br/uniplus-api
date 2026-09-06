@@ -508,35 +508,47 @@ public sealed class OfertaCursoPersistenceTests
             .ToListAsync();
         ordemA.Should().HaveCount(3);
 
-        // Página 1 (Next, limit 2): primeiras 2 de A; primeira página não tem anterior.
-        (IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) pagina1 =
-            await repository.ListarPaginadoAsync(afterId: null, limit: 2, PaginationDirection.Next, cursoA, CancellationToken.None);
+        // Dentro do recorte de um curso, nome e código são constantes e o Id é a
+        // única coluna que move o seek — por isso a ordem esperada é a de Id.
+        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina1 =
+            await repository.ListarPaginadoAsync(
+                OrdenacaoPadraoDeOferta, busca: null, afterSortKey: null, afterId: null, limit: 2, PaginationDirection.Next, cursoA, CancellationToken.None);
         pagina1.Itens.Select(o => o.Id).Should().Equal(ordemA[0], ordemA[1]);
         pagina1.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
-        pagina1.AnteriorAfterId.Should().BeNull();
-        pagina1.ProximoAfterId.Should().Be(ordemA[1]);
+        pagina1.Anterior.Should().BeNull();
+        pagina1.Proximo!.Value.Id.Should().Be(ordemA[1]);
 
         // Página 2 (Next a partir da 2ª): a 3ª de A; sem próximo; com anterior.
-        (IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) pagina2 =
-            await repository.ListarPaginadoAsync(ordemA[1], limit: 2, PaginationDirection.Next, cursoA, CancellationToken.None);
+        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina2 =
+            await repository.ListarPaginadoAsync(
+                OrdenacaoPadraoDeOferta, busca: null, pagina1.Proximo!.Value.SortKey, ordemA[1], limit: 2, PaginationDirection.Next, cursoA, CancellationToken.None);
         pagina2.Itens.Select(o => o.Id).Should().Equal(ordemA[2]);
         pagina2.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
-        pagina2.ProximoAfterId.Should().BeNull();
-        pagina2.AnteriorAfterId.Should().Be(ordemA[2]);
+        pagina2.Proximo.Should().BeNull();
+        pagina2.Anterior!.Value.Id.Should().Be(ordemA[2]);
 
         // Prev a partir da 3ª (limit 2): as 2 anteriores de A, já em ordem ascendente.
-        (IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) anterior =
-            await repository.ListarPaginadoAsync(ordemA[2], limit: 2, PaginationDirection.Prev, cursoA, CancellationToken.None);
+        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) anterior =
+            await repository.ListarPaginadoAsync(
+                OrdenacaoPadraoDeOferta, busca: null, pagina2.Anterior!.Value.SortKey, ordemA[2], limit: 2, PaginationDirection.Prev, cursoA, CancellationToken.None);
         anterior.Itens.Select(o => o.Id).Should().Equal(ordemA[0], ordemA[1]);
         anterior.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
 
         // Curso sem ofertas → recorte vazio.
-        (IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) vazio =
-            await repository.ListarPaginadoAsync(afterId: null, limit: 50, PaginationDirection.Next, Guid.CreateVersion7(), CancellationToken.None);
+        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) vazio =
+            await repository.ListarPaginadoAsync(
+                OrdenacaoPadraoDeOferta, busca: null, afterSortKey: null, afterId: null, limit: 50, PaginationDirection.Next, Guid.CreateVersion7(), CancellationToken.None);
         vazio.Itens.Should().BeEmpty();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    /// <summary>A ordem que a listagem usa quando a consulta não pede outra.</summary>
+    private static readonly IReadOnlyList<SortField> OrdenacaoPadraoDeOferta =
+    [
+        new(CamposOrdenacaoOfertaCurso.CursoNome, SortDirection.Ascending),
+        new(CamposOrdenacaoOfertaCurso.CursoCodigo, SortDirection.Ascending),
+    ];
 
     private async Task<Guid> SemearCursoAsync()
     {

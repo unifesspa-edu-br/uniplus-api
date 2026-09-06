@@ -22,6 +22,15 @@ internal sealed class TipoProcessoConfiguration : IEntityTypeConfiguration<TipoP
         builder.Property(tipo => tipo.Nome).HasMaxLength(200).IsRequired();
         builder.Property(tipo => tipo.Descricao).HasMaxLength(1000);
         builder.Property(tipo => tipo.Ativo).IsRequired();
+        // Token de concorrência otimista mapeado para a coluna de sistema `xmin` do
+        // Postgres (shadow property `uint` + IsRowVersion — convenção do provider
+        // Npgsql, sem coluna nem migration própria). Sem ele, duas reativações
+        // concorrentes do mesmo tipo leem `Ativo == false`, ambas atravessam a guarda
+        // do agregado e ambas gravam: as duas responderiam 204, e a recusa de reativar
+        // o que já está ativo — que é regra do cadastro — só valeria fora de corrida.
+        // Com xmin, quem confirma por último recebe DbUpdateConcurrencyException.
+        builder.Property<uint>("Version").IsRowVersion();
+
         builder.Property(tipo => tipo.CreatedBy).HasMaxLength(255);
         builder.Property(tipo => tipo.UpdatedBy).HasMaxLength(255);
 

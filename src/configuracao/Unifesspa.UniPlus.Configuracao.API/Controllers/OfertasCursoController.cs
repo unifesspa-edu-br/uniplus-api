@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -49,9 +51,11 @@ public sealed class OfertasCursoController : ControllerBase
     }
 
     /// <summary>
-    /// Lista as ofertas de curso ativas, paginadas por cursor opaco bidirecional
-    /// (ADR-0026 + ADR-0089). Navegação via header <c>Link</c>; cada item carrega
-    /// seu <c>_links.self</c> (ADR-0029). Aceita o filtro opcional (issue #755)
+    /// Lista as ofertas de curso ativas em ordem alfabética pelo nome do curso
+    /// ofertado, paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089 +
+    /// ADR-0094). A ordem vale para a coleção inteira, não para cada página
+    /// isoladamente. Navegação via header <c>Link</c>; cada item carrega seu
+    /// <c>_links.self</c> (ADR-0029). Aceita o filtro opcional (issue #755)
     /// <c>cursoId</c>, que restringe às ofertas vivas de um curso específico — a
     /// UI conta/pagina ofertas de um curso sob demanda sem varrer todo o acervo.
     /// O filtro viaja como query param e combina com o cursor: o cliente
@@ -66,21 +70,43 @@ public sealed class OfertasCursoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
-        [FromCursor(ResourceTag)] PageRequest page,
+        [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "cursoId")] Guid? cursoId,
+        [FromQuery(Name = "q")]
+        [Description("Texto pesquisado. Insensível a caixa e a acentuação. Até 200 caracteres.")]
+        string? q,
+        [FromQuery(Name = "sort")]
+        [Description(
+            "Campos de ordenação separados por vírgula, na ordem de prioridade; '-' prefixa o "
+            + "campo decrescente. Exemplo: sort=cursoNome,-programaDeOferta. Campos aceitos: cursoNome, cursoCodigo, unidadeOfertanteSigla, programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno, criadoEm. "
+            + "Sem o parâmetro, vale a ordem alfabética padrão.")]
+        string? sort,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        ListarOfertasCursoResult resultado = await _queryBus
-            .Send(new ListarOfertasCursoQuery(page.AfterId, page.Limit, page.Direction, cursoId), cancellationToken)
+        if (!SortExpressionParser.TentarLer(sort, out IReadOnlyList<SortField> ordenacao, out SortExpressionError erro))
+        {
+            return erro.ParaResposta();
+        }
+
+        Result<ListarOfertasCursoResult> resultado = await _queryBus
+            .Send(
+                new ListarOfertasCursoQuery(
+                    ordenacao, q, page.AfterSortKey, page.AfterId, page.Limit, page.Direction, cursoId),
+                cancellationToken)
             .ConfigureAwait(false);
 
-        OfertaCursoDto[] comLinks =
-            [.. resultado.Items.Select(o => o with { Links = _linksBuilder.Build(o) })];
+        if (!resultado.IsSuccess)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
 
-        return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+        OfertaCursoDto[] comLinks =
+            [.. resultado.Value!.Items.Select(o => o with { Links = _linksBuilder.Build(o) })];
+
+        return await this.OkPaginatedOrdenadoAsync(
+            comLinks, resultado.Value.Anterior, resultado.Value.Proximo, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

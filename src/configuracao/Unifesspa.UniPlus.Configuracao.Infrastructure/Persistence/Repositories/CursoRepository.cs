@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ordenacao;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
@@ -13,6 +15,14 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class CursoRepository : ICursoRepository
 {
+    /// <summary>
+    /// Caractere de escape do <c>LIKE</c>, o mesmo que a normalização insere antes
+    /// dos curingas. Precisa ser declarado: a sobrecarga de dois argumentos do
+    /// <c>ILike</c> no Npgsql emite <c>ESCAPE ''</c>, que desliga o escape — as
+    /// barras viram texto e <c>%</c> e <c>_</c> voltam a ser curingas.
+    /// </summary>
+    private const string EscapeDoLike = @"\";
+
     private readonly ConfiguracaoDbContext _dbContext;
 
     public CursoRepository(ConfiguracaoDbContext dbContext)
@@ -34,19 +44,67 @@ public sealed class CursoRepository : ICursoRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<Curso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-        Guid? afterId,
-        int limit,
-        PaginationDirection direction,
-        CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
+        ListarPaginadoAsync(
+            IReadOnlyList<SortField> ordenacao,
+            string? busca,
+            string? afterSortKey,
+            Guid? afterId,
+            int limit,
+            PaginationDirection direction,
+            CancellationToken cancellationToken)
     {
-        // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
-        CursorKeysetPage<Curso> page = await CursorKeyset
-            .ApplyAsync(_dbContext.Cursos.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        ArgumentNullException.ThrowIfNull(ordenacao);
+
+        // A chave de ordenação alfabética é coluna gerada mapeada como propriedade
+        // sombra — a entidade materializada não a carrega, então a listagem projeta
+        // uma linha que a traz junto e serve de âncora ao motor de paginação.
+        IQueryable<CursoOrdenado> query = _dbContext.Cursos
+            .AsNoTracking()
+            .Select(c => new CursoOrdenado
+            {
+                Id = c.Id,
+                NomeOrdenacao = EF.Property<string>(c, CursoConfiguration.NomeOrdenacaoPropriedade),
+                Codigo = c.Codigo,
+                Grau = c.Grau,
+                NivelEnsino = c.NivelEnsino,
+                CriadoEm = c.CreatedAt,
+                Entidade = c,
+            });
+
+        // A busca compara contra a mesma coluna normalizada que ordena, então acento
+        // e caixa já não participam do nome. O código é reduzido a minúsculas na
+        // consulta, pelo banco.
+        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(busca);
+        if (termo is not null)
+        {
+            string padrao = "%" + termo + "%";
+            query = query.Where(c =>
+                EF.Functions.ILike(c.NomeOrdenacao, padrao, EscapeDoLike)
+                || EF.Functions.ILike(PgFunctions.NormalizeForComparison(c.Codigo), padrao, EscapeDoLike));
+        }
+
+        OrderedKeysetPage<CursoOrdenado> page = await OrderedKeysetCursor
+            .ApplyAsync(
+                query,
+                OrdenacaoDeCursos.DeCursos(ordenacao, RecorteDeCurso(termo)),
+                afterSortKey,
+                afterId,
+                limit,
+                direction,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next);
     }
+
+    /// <summary>
+    /// O que reduziu a coleção antes da paginação. Entra na assinatura do cursor
+    /// para que a continuação de uma busca não retome dentro de outra: a âncora é
+    /// uma posição num conjunto, e trocar o conjunto a torna sem sentido.
+    /// </summary>
+    private static IReadOnlyList<string> RecorteDeCurso(string? termo) =>
+        [termo ?? string.Empty];
 
     public async Task AdicionarAsync(Curso curso, CancellationToken cancellationToken)
     {

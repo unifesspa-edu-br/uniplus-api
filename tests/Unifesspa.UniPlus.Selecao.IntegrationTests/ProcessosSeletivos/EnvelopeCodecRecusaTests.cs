@@ -841,7 +841,7 @@ public sealed class EnvelopeCodecRecusaTests
 
     /// <summary>
     /// Um encoder real nunca produz <c>exigenciaId</c> duplicado — mas um envelope
-    /// adulterado poderia. Sem <c>EnvelopeCodecV14.IndexarExigenciasPorId</c>, o
+    /// adulterado poderia. Sem <see cref="EnvelopeCodec.IndexarExigenciasPorId"/>, o
     /// <c>ToDictionary</c> ingênuo lançaria <see cref="ArgumentException"/> (500 não tratado
     /// no meio de uma restauração) em vez de recusar com um <see cref="DomainError"/> nomeado.
     /// </summary>

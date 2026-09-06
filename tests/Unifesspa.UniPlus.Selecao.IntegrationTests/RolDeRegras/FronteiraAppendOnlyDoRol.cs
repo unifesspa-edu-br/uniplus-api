@@ -281,4 +281,26 @@ internal static class FronteiraAppendOnlyDoRol
 
         return migration[inicio..];
     }
+
+    /// <summary>
+    /// Recorta o corpo do <c>Up</c> de uma migration (até o início do <c>Down</c>).
+    /// Simétrico a <see cref="BlocoDown"/> — usado quando a guarda ADR-0112 protege
+    /// uma remoção que acontece no <c>Up</c> (a linha é retirada avançando, não
+    /// revertendo), e não no <c>Down</c>.
+    /// </summary>
+    public static string BlocoUp(string migration)
+    {
+        const string AssinaturaUp = "protected override void Up(";
+        const string AssinaturaDown = "protected override void Down(";
+
+        int inicio = migration.IndexOf(AssinaturaUp, StringComparison.Ordinal);
+        if (inicio < 0)
+        {
+            throw new InvalidOperationException(
+                "A migration não declara Up — sem ele não há guarda de avanço a provar.");
+        }
+
+        int fim = migration.IndexOf(AssinaturaDown, StringComparison.Ordinal);
+        return fim < 0 ? migration[inicio..] : migration[inicio..fim];
+    }
 }

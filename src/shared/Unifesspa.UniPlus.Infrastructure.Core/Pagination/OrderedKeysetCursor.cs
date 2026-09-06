@@ -13,10 +13,10 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <c>(SortKey, Id)</c> para emitir <c>rel="prev"</c>/<c>rel="next"</c>. Âncora
 /// nula = não há aquele lado.
 /// </summary>
-public sealed record KeysetOrdenadoPage<T>(
+public sealed record OrderedKeysetPage<T>(
     IReadOnlyList<T> Items,
-    (string SortKey, Guid Id)? Anterior,
-    (string SortKey, Guid Id)? Proximo);
+    (string SortKey, Guid Id)? Previous,
+    (string SortKey, Guid Id)? Next);
 
 /// <summary>
 /// Aplica paginação keyset multi-coluna ordenada (ADR-0094) sobre uma query <b>já
@@ -40,13 +40,48 @@ public sealed record KeysetOrdenadoPage<T>(
 /// desempatar a chave de ordenação. Assim uma entidade append-only (ex.: o ato
 /// publicado) pagina pelo mesmo motor, sem herdar soft-delete nem auditoria.</para>
 /// </remarks>
-public static class KeysetOrdenadoCursor
+public static class OrderedKeysetCursor
 {
-    public static async Task<KeysetOrdenadoPage<T>> ApplyAsync<T>(
+    /// <summary>
+    /// Pagina segundo uma <see cref="KeysetSort{T}"/> — uma ou mais colunas,
+    /// cada uma com o próprio sentido, e o <c>Id</c> como desempate final. A
+    /// chave de ordenação da âncora é composta pelas colunas e viaja inteira no
+    /// cursor.
+    /// </summary>
+    /// <exception cref="CursorAnchorMismatchException">
+    /// A chave de ordenação não corresponde à ordenação pedida.
+    /// </exception>
+    public static Task<OrderedKeysetPage<T>> ApplyAsync<T>(
+        IQueryable<T> filtered,
+        KeysetSort<T> sort,
+        string? afterSortKey,
+        Guid? afterId,
+        int limit,
+        PaginationDirection direction,
+        CancellationToken cancellationToken = default)
+        where T : class, IIdentificavel
+    {
+        ArgumentNullException.ThrowIfNull(sort);
+
+        return ApplyAsync(
+            filtered,
+            sort.ConfigureKeyset,
+            sort.AnchorKey,
+            (key, id) => sort.TryBuildAnchor(key, id, out object anchor)
+                ? anchor
+                : throw new CursorAnchorMismatchException(),
+            afterSortKey,
+            afterId,
+            limit,
+            direction,
+            cancellationToken);
+    }
+
+    public static async Task<OrderedKeysetPage<T>> ApplyAsync<T>(
         IQueryable<T> filtered,
         Action<KeysetPaginationBuilder<T>> buildKeyset,
-        Func<T, string> sortKeyDoItem,
-        Func<string, Guid, object> referenceDaAncora,
+        Func<T, string> anchorKeyOf,
+        Func<string, Guid, object> buildAnchor,
         string? afterSortKey,
         Guid? afterId,
         int limit,
@@ -56,8 +91,8 @@ public static class KeysetOrdenadoCursor
     {
         ArgumentNullException.ThrowIfNull(filtered);
         ArgumentNullException.ThrowIfNull(buildKeyset);
-        ArgumentNullException.ThrowIfNull(sortKeyDoItem);
-        ArgumentNullException.ThrowIfNull(referenceDaAncora);
+        ArgumentNullException.ThrowIfNull(anchorKeyOf);
+        ArgumentNullException.ThrowIfNull(buildAnchor);
 
         KeysetPaginationDirection mrDirection = direction == PaginationDirection.Prev
             ? KeysetPaginationDirection.Backward
@@ -65,34 +100,34 @@ public static class KeysetOrdenadoCursor
 
         // Âncora completa (sort key + Id) ⇒ continuação; ausente ⇒ primeira página.
         object? reference = afterSortKey is not null && afterId is not null
-            ? referenceDaAncora(afterSortKey, afterId.Value)
+            ? buildAnchor(afterSortKey, afterId.Value)
             : null;
 
-        KeysetPaginationContext<T> contexto = filtered.KeysetPaginate(buildKeyset, mrDirection, reference);
+        KeysetPaginationContext<T> context = filtered.KeysetPaginate(buildKeyset, mrDirection, reference);
 
-        List<T> itens = await contexto.Query
+        List<T> items = await context.Query
             .Take(limit)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
         // Backward devolve em ordem inversa; restaura a ordem ascendente canônica.
-        contexto.EnsureCorrectOrder(itens);
+        context.EnsureCorrectOrder(items);
 
-        if (itens.Count == 0)
+        if (items.Count == 0)
         {
-            return new KeysetOrdenadoPage<T>(itens, Anterior: null, Proximo: null);
+            return new OrderedKeysetPage<T>(items, Previous: null, Next: null);
         }
 
         // Flags exatas por EXISTS indexado (sem COUNT) — ADR-0089.
-        bool temAnterior = await contexto.HasPreviousAsync(itens).ConfigureAwait(false);
-        bool temProximo = await contexto.HasNextAsync(itens).ConfigureAwait(false);
+        bool hasPrevious = await context.HasPreviousAsync(items).ConfigureAwait(false);
+        bool hasNext = await context.HasNextAsync(items).ConfigureAwait(false);
 
-        T primeiro = itens[0];
-        T ultimo = itens[^1];
+        T first = items[0];
+        T last = items[^1];
 
-        return new KeysetOrdenadoPage<T>(
-            itens,
-            Anterior: temAnterior ? (sortKeyDoItem(primeiro), primeiro.Id) : null,
-            Proximo: temProximo ? (sortKeyDoItem(ultimo), ultimo.Id) : null);
+        return new OrderedKeysetPage<T>(
+            items,
+            Previous: hasPrevious ? (anchorKeyOf(first), first.Id) : null,
+            Next: hasNext ? (anchorKeyOf(last), last.Id) : null);
     }
 }
