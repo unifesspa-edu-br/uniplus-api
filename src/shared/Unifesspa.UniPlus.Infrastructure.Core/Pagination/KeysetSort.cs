@@ -7,16 +7,6 @@ using MR.EntityFrameworkCore.KeysetPagination;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
-/// <summary>Sentido de uma coluna dentro da ordenação.</summary>
-public enum SortDirection
-{
-    /// <summary>Crescente.</summary>
-    Ascending = 0,
-
-    /// <summary>Decrescente.</summary>
-    Descending = 1,
-}
-
 /// <summary>
 /// Uma coluna da ordenação keyset: o que ordena, em que sentido, e como o valor
 /// daquela coluna vira texto para viajar na âncora do cursor.
@@ -133,12 +123,18 @@ public sealed class KeysetSort<T>
     /// <param name="columns">Colunas na ordem de prioridade; ao menos uma.</param>
     /// <param name="buildAnchor">
     /// Monta o objeto de âncora a partir dos valores das colunas (na mesma ordem
-    /// de <paramref name="colunas"/>) e do <c>Id</c>. O objeto precisa expor uma
+    /// de <paramref name="columns"/>) e do <c>Id</c>. O objeto precisa expor uma
     /// propriedade por coluna do keyset, com o mesmo nome que a consulta usa.
+    /// </param>
+    /// <param name="scope">
+    /// Identifica o <b>recorte</b> sobre o qual esta ordenação corre: os filtros e
+    /// a busca que reduziram a coleção antes do keyset. Partes na ordem em que o
+    /// chamador as declara; vazio quando a listagem não tem recorte.
     /// </param>
     public KeysetSort(
         IReadOnlyList<KeysetSortColumn<T>> columns,
-        Func<IReadOnlyList<string>, Guid, object> buildAnchor)
+        Func<IReadOnlyList<string>, Guid, object> buildAnchor,
+        IReadOnlyList<string>? scope = null)
     {
         ArgumentNullException.ThrowIfNull(columns);
         ArgumentNullException.ThrowIfNull(buildAnchor);
@@ -158,6 +154,7 @@ public sealed class KeysetSort<T>
             [
                 .. columns.SelectMany(static c =>
                     new[] { c.Token, c.Direction == SortDirection.Descending ? "desc" : "asc" }),
+                .. scope ?? [],
             ]);
     }
 
@@ -165,10 +162,16 @@ public sealed class KeysetSort<T>
     public IReadOnlyList<KeysetSortColumn<T>> Columns { get; }
 
     /// <summary>
-    /// Identifica esta ordenação pelas colunas e seus sentidos, na ordem de
-    /// prioridade. Viaja na chave da âncora para que um cursor só continue a
-    /// ordenação que o emitiu.
+    /// Identifica esta consulta pelas colunas e seus sentidos, na ordem de
+    /// prioridade, <b>e pelo recorte</b> sobre o qual ela corre. Viaja na chave da
+    /// âncora para que um cursor só continue a consulta que o emitiu.
     /// </summary>
+    /// <remarks>
+    /// O recorte entra junto porque a âncora é uma posição <i>dentro de um
+    /// conjunto</i>: continuar com outro filtro é retomar de uma posição que não
+    /// existe naquele conjunto, e o seek passaria adiante de linhas que deveria
+    /// devolver. Assinar só as colunas deixaria essa porta aberta.
+    /// </remarks>
     internal string Signature { get; }
 
     internal Func<IReadOnlyList<string>, Guid, object> BuildAnchor { get; }

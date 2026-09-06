@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
+using Unifesspa.UniPlus.Configuracao.Application.Consultas;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
@@ -1120,6 +1121,19 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         new(TipoEtapaErrorCodes.JaDesativado,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.tipo_etapa.ja_desativado", "Tipo de etapa já está desativado")),
+        // ── Parâmetros de consulta das listagens ──────────────────────────
+        new(ConsultaErrorCodes.CampoDeOrdenacaoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.consulta.campo_de_ordenacao_invalido",
+                "Campo de ordenação não aceito por esta listagem")),
+
+        new(ConsultaErrorCodes.OrdenacaoMalFormada,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.consulta.ordenacao_mal_formada",
+                "Expressão de ordenação inválida")),
+
         // ── Curso (UNI-REQ-0010) ──────────────────────────────────────────
         new(CursoErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(

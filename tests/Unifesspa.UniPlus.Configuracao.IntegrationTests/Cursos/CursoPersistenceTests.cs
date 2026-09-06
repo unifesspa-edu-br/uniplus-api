@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
@@ -263,8 +264,16 @@ public sealed class CursoPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new CursoRepository(ctx);
         return await repository.ListarPaginadoAsync(
-            ancora?.SortKey, ancora?.Id, limit: 2, direction, CancellationToken.None);
+            OrdenacaoPadraoDeCurso, busca: null, ancora?.SortKey, ancora?.Id, limit: 2, direction,
+            CancellationToken.None);
     }
+
+    /// <summary>A ordem que a listagem usa quando a consulta não pede outra.</summary>
+    private static readonly IReadOnlyList<SortField> OrdenacaoPadraoDeCurso =
+    [
+        new(CamposOrdenacaoCurso.Nome, SortDirection.Ascending),
+        new(CamposOrdenacaoCurso.Codigo, SortDirection.Ascending),
+    ];
 
     private static string MarcaDeBloco() =>
         $"ZZZ {Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";

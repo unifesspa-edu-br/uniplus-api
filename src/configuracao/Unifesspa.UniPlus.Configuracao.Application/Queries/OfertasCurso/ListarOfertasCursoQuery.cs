@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.OfertasCurso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Lista ofertas de curso vivas paginadas por cursor bidirecional
@@ -20,9 +21,15 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <c>null</c> = sem filtro. Combina com o cursor — o filtro é aplicado à query
 /// antes do keyset, então itens e âncoras <c>prev</c>/<c>next</c> respeitam o recorte.
 /// </param>
+/// <param name="Ordenacao">
+/// Campos de ordenação pedidos, na ordem de prioridade; vazio usa a ordem padrão.
+/// </param>
+/// <param name="Busca">Texto pesquisado; <c>null</c> ou em branco lista tudo.</param>
 public sealed record ListarOfertasCursoQuery(
+    IReadOnlyList<SortField> Ordenacao,
+    string? Busca,
     string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,
-    Guid? CursoId) : IQuery<ListarOfertasCursoResult>;
+    Guid? CursoId) : IQuery<Result<ListarOfertasCursoResult>>;

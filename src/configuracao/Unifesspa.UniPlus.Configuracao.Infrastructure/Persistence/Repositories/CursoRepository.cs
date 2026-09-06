@@ -15,6 +15,9 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class CursoRepository : ICursoRepository
 {
+    /// <summary>Caractere de escape dos curingas do LIKE, o mesmo que a normalização insere.</summary>
+    private const string EscapeLike = @"\";
+
     private readonly ConfiguracaoDbContext _dbContext;
 
     public CursoRepository(ConfiguracaoDbContext dbContext)
@@ -36,14 +39,27 @@ public sealed class CursoRepository : ICursoRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Globalization",
+        "CA1304:Specify CultureInfo",
+        Justification = "ToLower() dentro de expression tree é traduzido para lower() no Postgres — " +
+            "não roda no CLR, então a cultura do processo não participa.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Globalization",
+        "CA1311:Specify a culture or use an invariant version",
+        Justification = "Mesma razão de CA1304.")]
     public async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPaginadoAsync(
+            IReadOnlyList<SortField> ordenacao,
+            string? busca,
             string? afterSortKey,
             Guid? afterId,
             int limit,
             PaginationDirection direction,
             CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(ordenacao);
+
         // A chave de ordenação alfabética é coluna gerada mapeada como propriedade
         // sombra — a entidade materializada não a carrega, então a listagem projeta
         // uma linha que a traz junto e serve de âncora ao motor de paginação.
@@ -54,13 +70,28 @@ public sealed class CursoRepository : ICursoRepository
                 Id = c.Id,
                 NomeOrdenacao = EF.Property<string>(c, CursoConfiguration.NomeOrdenacaoPropriedade),
                 Codigo = c.Codigo,
+                Grau = c.Grau,
+                NivelEnsino = c.NivelEnsino,
+                CriadoEm = c.CreatedAt,
                 Entidade = c,
             });
+
+        // A busca compara contra a mesma coluna normalizada que ordena, então acento
+        // e caixa já não participam do nome. O código é reduzido a minúsculas na
+        // consulta, pelo banco.
+        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(busca);
+        if (termo is not null)
+        {
+            string padrao = "%" + termo + "%";
+            query = query.Where(c =>
+                EF.Functions.ILike(c.NomeOrdenacao, padrao, EscapeLike)
+                || EF.Functions.ILike(c.Codigo.ToLower(), padrao, EscapeLike));
+        }
 
         OrderedKeysetPage<CursoOrdenado> page = await OrderedKeysetCursor
             .ApplyAsync(
                 query,
-                OrdenacaoAlfabeticaDoCurso.Cursos,
+                OrdenacaoDeCursos.DeCursos(ordenacao, RecorteDeCurso(termo)),
                 afterSortKey,
                 afterId,
                 limit,
@@ -70,6 +101,14 @@ public sealed class CursoRepository : ICursoRepository
 
         return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next);
     }
+
+    /// <summary>
+    /// O que reduziu a coleção antes da paginação. Entra na assinatura do cursor
+    /// para que a continuação de uma busca não retome dentro de outra: a âncora é
+    /// uma posição num conjunto, e trocar o conjunto a torna sem sentido.
+    /// </summary>
+    private static IReadOnlyList<string> RecorteDeCurso(string? termo) =>
+        [termo ?? string.Empty];
 
     public async Task AdicionarAsync(Curso curso, CancellationToken cancellationToken)
     {
