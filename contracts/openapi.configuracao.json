@@ -1944,7 +1944,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Texto pesquisado. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o.",
+            "description": "Texto pesquisado. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres.",
             "schema": {
               "type": "string"
             }
@@ -3995,7 +3995,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Texto pesquisado. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o.",
+            "description": "Texto pesquisado. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres.",
             "schema": {
               "type": "string"
             }

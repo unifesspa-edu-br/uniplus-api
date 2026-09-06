@@ -18,7 +18,7 @@ public static class PgFunctions
     /// normalizada e o código pela forma crua, e procurar por um código acentuado
     /// não acharia nada.
     /// </remarks>
-    public static string NormalizarParaComparacao(string? texto) =>
+    public static string NormalizeForComparison(string? texto) =>
         throw new InvalidOperationException(
-            "PgFunctions.NormalizarParaComparacao é um stub de EF Core e não pode ser chamado diretamente.");
+            "PgFunctions.NormalizeForComparison é um stub de EF Core e não pode ser chamado diretamente.");
 }

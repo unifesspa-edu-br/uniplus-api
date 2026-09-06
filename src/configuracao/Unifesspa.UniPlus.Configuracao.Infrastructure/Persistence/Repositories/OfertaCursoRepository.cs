@@ -94,8 +94,8 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             string padrao = "%" + termo + "%";
             query = query.Where(o =>
                 EF.Functions.ILike(o.NomeOrdenacao, padrao, EscapeDoLike)
-                || EF.Functions.ILike(PgFunctions.NormalizarParaComparacao(o.Codigo), padrao, EscapeDoLike)
-                || EF.Functions.ILike(PgFunctions.NormalizarParaComparacao(o.UnidadeSigla), padrao, EscapeDoLike));
+                || EF.Functions.ILike(PgFunctions.NormalizeForComparison(o.Codigo), padrao, EscapeDoLike)
+                || EF.Functions.ILike(PgFunctions.NormalizeForComparison(o.UnidadeSigla), padrao, EscapeDoLike));
         }
 
         OrderedKeysetPage<OfertaCursoOrdenada> page = await OrderedKeysetCursor

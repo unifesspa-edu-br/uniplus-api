@@ -73,7 +73,7 @@ public sealed class OfertasCursoController : ControllerBase
         [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "cursoId")] Guid? cursoId,
         [FromQuery(Name = "q")]
-        [Description("Texto pesquisado. Insensível a caixa e a acentuação.")]
+        [Description("Texto pesquisado. Insensível a caixa e a acentuação. Até 200 caracteres.")]
         string? q,
         [FromQuery(Name = "sort")]
         [Description(

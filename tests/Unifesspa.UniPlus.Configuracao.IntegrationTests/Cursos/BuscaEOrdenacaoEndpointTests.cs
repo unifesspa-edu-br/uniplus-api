@@ -265,6 +265,33 @@ public sealed class BuscaEOrdenacaoEndpointTests
         comBranco.Should().Equal($"{bloco} Alfa", $"{bloco} Beta");
     }
 
+    [Fact(DisplayName = "Termo de busca longo demais é recusado, em vez de gerar um link impaginável")]
+    public async Task Busca_LongaDemais_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // O termo entra na assinatura que viaja no cursor e é reanexado ao link de
+        // continuação: sem teto, a primeira página responde e a seguinte não cabe
+        // na linha de requisição.
+        string termoEnorme = new('a', 5_000);
+
+        HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"{Cursos}?q={termoEnorme}", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "Termo no limite do aceito continua funcionando")]
+    public async Task Busca_NoLimite_Funciona()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"{Cursos}?q={new string('a', 200)}", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     // ── Busca e ordenação juntas, sob paginação ───────────────────────────
 
     [Fact(DisplayName = "A travessia preserva busca e ordenação, sem repetir nem omitir")]

@@ -26,6 +26,12 @@ public static class ListarOfertasCursoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
+        Result<string?> busca = BuscaPedida.Validar(query.Busca);
+        if (!busca.IsSuccess)
+        {
+            return Result<ListarOfertasCursoResult>.Failure(busca.Error!);
+        }
+
         Result<IReadOnlyList<SortField>> ordenacao = OrdenacaoPedida.Resolver(
             query.Ordenacao, CamposOrdenacaoOfertaCurso.Todos, Padrao);
 

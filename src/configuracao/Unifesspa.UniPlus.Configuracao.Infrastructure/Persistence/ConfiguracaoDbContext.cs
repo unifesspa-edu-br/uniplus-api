@@ -124,11 +124,11 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
         modelBuilder.AplicarFiltroGlobalSoftDelete();
         base.OnModelCreating(modelBuilder);
 
-        // Mapeia PgFunctions.NormalizarParaComparacao para a função criada por
+        // Mapeia PgFunctions.NormalizeForComparison para a função criada por
         // migration. Sem esse registro, a consulta que a chama não traduz e o EF
         // tentaria avaliá-la no cliente, onde o stub lança.
         modelBuilder.HasDbFunction(
-            typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizarParaComparacao))!)
+            typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizeForComparison))!)
             .HasName("normalizar_para_comparacao")
             .HasSchema("configuracao");
     }
