@@ -29,7 +29,7 @@ public sealed class TipoAtoPublicadoTests
             congelaConfiguracao: true,
             unicoPorObjeto: true,
             efeitoIrreversivel: false,
-            ehResultado: false,
+            ehResultado: true,
             vigenciaInicio: Inicio,
             vigenciaFim: null,
             baseLegal: "   ");
@@ -41,6 +41,7 @@ public sealed class TipoAtoPublicadoTests
         tipo.CongelaConfiguracao.Should().BeTrue();
         tipo.UnicoPorObjeto.Should().BeTrue();
         tipo.EfeitoIrreversivel.Should().BeFalse();
+        tipo.EhResultado.Should().BeTrue();
         tipo.VigenciaFim.Should().BeNull();
         tipo.BaseLegal.Should().BeNull();
     }
@@ -153,7 +154,7 @@ public sealed class TipoAtoPublicadoTests
             congelaConfiguracao: true,
             unicoPorObjeto: false,
             efeitoIrreversivel: false,
-            ehResultado: false,
+            ehResultado: true,
             vigenciaInicio: Inicio,
             vigenciaFim: null,
             baseLegal: null);
@@ -161,6 +162,7 @@ public sealed class TipoAtoPublicadoTests
         resultado.IsSuccess.Should().BeTrue();
         tipo.Nome.Should().Be("Edital de abertura de processo seletivo");
         tipo.UnicoPorObjeto.Should().BeFalse();
+        tipo.EhResultado.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Atualizar recusa novo código — o código é a identidade do tipo")]

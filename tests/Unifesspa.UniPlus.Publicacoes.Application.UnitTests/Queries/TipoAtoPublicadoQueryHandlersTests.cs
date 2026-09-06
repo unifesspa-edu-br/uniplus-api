@@ -22,10 +22,10 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
 
     private readonly ITipoAtoPublicadoRepository _repository = Substitute.For<ITipoAtoPublicadoRepository>();
 
-    [Fact(DisplayName = "ObterPorId projeta em DTO, com os três atributos de consequência")]
+    [Fact(DisplayName = "ObterPorId projeta em DTO, com os quatro atributos de consequência")]
     public async Task ObterPorId_Projeta()
     {
-        TipoAtoPublicado tipo = Novo("RESULTADO_FINAL", congela: false, irreversivel: true);
+        TipoAtoPublicado tipo = Novo("RESULTADO_FINAL", congela: false, irreversivel: true, ehResultado: true);
         _repository.ObterPorIdParaLeituraAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
 
         TipoAtoPublicadoDto? dto = await ObterTipoAtoPublicadoPorIdQueryHandler.Handle(
@@ -35,6 +35,7 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         dto!.Codigo.Should().Be("RESULTADO_FINAL");
         dto.CongelaConfiguracao.Should().BeFalse();
         dto.EfeitoIrreversivel.Should().BeTrue();
+        dto.EhResultado.Should().BeTrue();
         dto.VigenciaFim.Should().BeNull();
     }
 
@@ -140,9 +141,10 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         dto.Should().BeNull();
     }
 
-    private static TipoAtoPublicado Novo(string codigo, bool congela = true, bool irreversivel = false) =>
+    private static TipoAtoPublicado Novo(
+        string codigo, bool congela = true, bool irreversivel = false, bool ehResultado = false) =>
         TipoAtoPublicado.Criar(
             codigo, "Nome do tipo", congela, unicoPorObjeto: false, efeitoIrreversivel: irreversivel,
-            ehResultado: false,
+            ehResultado: ehResultado,
             vigenciaInicio: Inicio, vigenciaFim: null, baseLegal: null).Value!;
 }
