@@ -608,11 +608,11 @@ public sealed class EnvelopeCodecRoundTripTests
         "Fixtures",
         "envelope-rico.json");
 
-    // ── Round-trip 1.3 com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
+    // ── Round-trip com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
 
     /// <summary>
-    /// Prova de fidelidade do <c>EnvelopeCodecV13</c> (codec corrente) sobre a MESMA
-    /// exigência documental rica que a golden fixture do canonicalizador congela
+    /// Prova de fidelidade do codec sobre a MESMA exigência documental rica que a golden
+    /// fixture do canonicalizador congela
     /// (<see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>), incluindo o bloco
     /// <c>metadadosFatos</c> (Story #919).
     /// </summary>
@@ -638,10 +638,6 @@ public sealed class EnvelopeCodecRoundTripTests
             FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis);
-        // Story #923 (bump 1.4): o canonicalizador VIVO passou a emitir 1.4 — esta suíte prova
-        // especificamente o EnvelopeCodecV13 (o encoder 1.3 AGORA CONGELADO), não a versão
-        // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
-        // EnvelopeCodecV13 já documenta para si).
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
         congelado.SchemaVersion.Should().Be("0.0.14", "pré-condição: o codec corrente emite a forma única");
 
