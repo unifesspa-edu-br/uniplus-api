@@ -296,7 +296,6 @@ public static class ObterProcessoSeletivoQueryHandler
         fase.Inicio,
         fase.Fim,
         fase.AtoProduzidoCodigo,
-        fase.AtoProduzidoEfeitoIrreversivel,
         [.. fase.BancasRequeridas.Select(static b => new BancaRequeridaDto(b.Id, b.TipoBancaOrigemId, b.Codigo))],
         fase.RegraRecurso is { } regraRecurso ? ProjectRegraRecursoFase(regraRecurso) : null);
 

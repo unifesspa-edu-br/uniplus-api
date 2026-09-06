@@ -33,7 +33,6 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         inicio: null,
         fim: null,
         atoProduzidoCodigo: null,
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -65,7 +64,6 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         inicio: null,
         fim: null,
         atoProduzidoCodigo: null,
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -359,7 +357,6 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         inicio: inicio,
         fim: fim,
         atoProduzidoCodigo: null,
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -456,7 +453,6 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         inicio: null,
         fim: fim,
         atoProduzidoCodigo: null,
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 

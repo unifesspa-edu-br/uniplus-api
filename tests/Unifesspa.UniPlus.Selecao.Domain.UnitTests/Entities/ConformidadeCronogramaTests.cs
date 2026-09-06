@@ -49,7 +49,6 @@ public sealed class ConformidadeCronogramaTests
             resultadoDefinitivo: produzResultado, coletaInscricao, coletaSolicitacaoIsencao,
             inicio: null, fim: null,
             atoProduzidoCodigo: produzResultado ? codigo : null,
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [], regraRecurso: null);
 
     private static DadosEdital Dados() => DadosEdital.Criar(

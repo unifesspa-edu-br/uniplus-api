@@ -26,7 +26,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         1, faseCanonicaOrigemId, "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: permiteComplementacao, produzResultado: false,
         resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
+        atoProduzidoCodigo: null,
         bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static DocumentoExigido DocumentoQualquer(Guid faseId) => DocumentoExigido.Criar(

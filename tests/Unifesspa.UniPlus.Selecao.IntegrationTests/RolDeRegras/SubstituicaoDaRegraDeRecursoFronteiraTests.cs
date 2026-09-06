@@ -198,7 +198,6 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero),
             atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: regraRecurso).Value!;
 

@@ -130,7 +130,6 @@ public sealed class PoliticaDeOrdenacaoTests
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "INSCRICAO",
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -292,7 +291,7 @@ public sealed class PoliticaDeOrdenacaoTests
             origemData: OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: true, produzResultado: true,
             resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "INSCRICAO", atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            atoProduzidoCodigo: "INSCRICAO", bancasRequeridas: [], regraRecurso: null).Value!;
 
         ProcessoSeletivo processo = Montar(etapas: [], cronogramaFases: [faseSemAgruparEtapas]);
 
@@ -335,13 +334,13 @@ public sealed class PoliticaDeOrdenacaoTests
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
             permiteComplementacao: true, produzResultado: true, resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "ZETA_FASE", atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null);
+            atoProduzidoCodigo: "ZETA_FASE", bancasRequeridas: [], regraRecurso: null);
         FaseCronograma faseAlfa = FaseCronograma.Reidratar(
             id: IdFixo(1), ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ALFA_FASE",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
             permiteComplementacao: true, produzResultado: true, resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "ALFA_FASE", atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null);
+            atoProduzidoCodigo: "ALFA_FASE", bancasRequeridas: [], regraRecurso: null);
 
         new[] { faseZeta, faseAlfa }.OrderBy(static f => f.Codigo, StringComparer.Ordinal).Select(static f => f.Codigo)
             .Should().Equal(["ALFA_FASE", "ZETA_FASE"], "pré-condição: ordenar pelo código (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
@@ -371,7 +370,7 @@ public sealed class PoliticaDeOrdenacaoTests
             origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: true, produzResultado: true,
             resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "INSCRICAO", atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: "INSCRICAO",
             bancasRequeridas: [bancaComOrigemMaior, bancaComOrigemMenor], regraRecurso: null).Value!;
 
         ProcessoSeletivo processo = Montar(cronogramaFases: [fase]);

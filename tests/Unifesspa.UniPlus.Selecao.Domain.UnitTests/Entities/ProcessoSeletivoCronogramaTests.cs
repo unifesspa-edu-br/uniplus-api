@@ -44,7 +44,6 @@ public sealed class ProcessoSeletivoCronogramaTests
             inicio,
             fim,
             atoProduzidoCodigo: produzResultado ? codigo : null,
-            atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [],
             regraRecurso: null);
 

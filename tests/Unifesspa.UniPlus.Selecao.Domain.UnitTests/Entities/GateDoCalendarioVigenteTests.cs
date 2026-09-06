@@ -68,19 +68,19 @@ public sealed class GateDoCalendarioVigenteTests
             resultadoDefinitivo: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: null,
             bancasRequeridas: [], regraRecurso: null).Value!,
         FaseCronograma.Criar(
             2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: true, permiteComplementacao: false, produzResultado: true,
             resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            atoProduzidoCodigo: "RESULTADO_PRELIMINAR", atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
             bancasRequeridas: [], regraRecurso: Recurso(unidade)).Value!,
         FaseCronograma.Criar(
             3, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: true,
             resultadoDefinitivo: true, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: "RESULTADO_FINAL",
             bancasRequeridas: [], regraRecurso: null).Value!,
     ];
 

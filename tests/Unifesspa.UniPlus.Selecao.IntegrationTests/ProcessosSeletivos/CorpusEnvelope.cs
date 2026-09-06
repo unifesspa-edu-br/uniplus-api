@@ -397,7 +397,6 @@ internal static class CorpusEnvelope
         inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
         atoProduzidoCodigo: null,
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null);
 
@@ -424,7 +423,6 @@ internal static class CorpusEnvelope
         inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
-        atoProduzidoEfeitoIrreversivel: true,
         bancasRequeridas: Ordem<BancaRequerida>([
             BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000001"), "BANCA_ANALISE_DOCUMENTAL"),
             BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000002"), "BANCA_HETEROIDENTIFICACAO"),
@@ -763,7 +761,6 @@ internal static class CorpusEnvelope
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "RESULTADO_FINAL",
-        atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 }

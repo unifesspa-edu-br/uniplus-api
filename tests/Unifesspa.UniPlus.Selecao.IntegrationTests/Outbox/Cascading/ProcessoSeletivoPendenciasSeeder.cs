@@ -234,7 +234,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
+            atoProduzidoCodigo: "RESULTADO_FINAL",
             bancasRequeridas: [], regraRecurso: null).Value!;
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada

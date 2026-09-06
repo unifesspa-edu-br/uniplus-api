@@ -958,7 +958,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     nova.Inicio,
                     nova.Fim,
                     nova.AtoProduzidoCodigo,
-                    nova.AtoProduzidoEfeitoIrreversivel,
                     [.. nova.BancasRequeridas],
                     nova.RegraRecurso);
                 resultantes.Add(existente);
@@ -3954,7 +3953,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     congelada.Inicio,
                     congelada.Fim,
                     congelada.AtoProduzidoCodigo,
-                    congelada.AtoProduzidoEfeitoIrreversivel,
                     [.. congelada.BancasRequeridas],
                     congelada.RegraRecurso);
                 fases.Add(viva);
