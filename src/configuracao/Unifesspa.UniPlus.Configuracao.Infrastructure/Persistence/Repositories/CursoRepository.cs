@@ -57,7 +57,7 @@ public sealed class CursoRepository : ICursoRepository
                 Entidade = c,
             });
 
-        KeysetOrdenadoPage<CursoOrdenado> page = await KeysetOrdenadoCursor
+        OrderedKeysetPage<CursoOrdenado> page = await OrderedKeysetCursor
             .ApplyAsync(
                 query,
                 OrdenacaoAlfabeticaDoCurso.Cursos,
@@ -68,7 +68,7 @@ public sealed class CursoRepository : ICursoRepository
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Anterior, page.Proximo);
+        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(Curso curso, CancellationToken cancellationToken)

@@ -15,14 +15,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit exige tipo de teste público.")]
-public sealed class SortKeyCompostaTests
+public sealed class CompositeSortKeyTests
 {
     [Fact(DisplayName = "As partes voltam exatamente como entraram")]
     public void IdaEVolta_PreservaAsPartes()
     {
-        string chave = SortKeyComposta.Serializar("engenharia civil", "ENG-CIV");
+        string chave = CompositeSortKey.Serialize("engenharia civil", "ENG-CIV");
 
-        bool lido = SortKeyComposta.TentarDesserializar(chave, 2, out IReadOnlyList<string> partes);
+        bool lido = CompositeSortKey.TryDeserialize(chave, 2, out IReadOnlyList<string> partes);
 
         lido.Should().BeTrue();
         partes.Should().Equal("engenharia civil", "ENG-CIV");
@@ -33,9 +33,9 @@ public sealed class SortKeyCompostaTests
     {
         // Um nome de curso pode conter dois-pontos e dígitos; o formato lê por
         // contagem, então o conteúdo nunca é confundido com estrutura.
-        string chave = SortKeyComposta.Serializar("3:nao", "12:isto nao e prefixo");
+        string chave = CompositeSortKey.Serialize("3:nao", "12:isto nao e prefixo");
 
-        SortKeyComposta.TentarDesserializar(chave, 2, out IReadOnlyList<string> partes)
+        CompositeSortKey.TryDeserialize(chave, 2, out IReadOnlyList<string> partes)
             .Should().BeTrue();
         partes.Should().Equal("3:nao", "12:isto nao e prefixo");
     }
@@ -43,9 +43,9 @@ public sealed class SortKeyCompostaTests
     [Fact(DisplayName = "Parte vazia é preservada, e não some da chave")]
     public void ParteVazia_EhPreservada()
     {
-        string chave = SortKeyComposta.Serializar(string.Empty, "COD");
+        string chave = CompositeSortKey.Serialize(string.Empty, "COD");
 
-        SortKeyComposta.TentarDesserializar(chave, 2, out IReadOnlyList<string> partes)
+        CompositeSortKey.TryDeserialize(chave, 2, out IReadOnlyList<string> partes)
             .Should().BeTrue();
         partes.Should().Equal(string.Empty, "COD");
     }
@@ -60,7 +60,7 @@ public sealed class SortKeyCompostaTests
     [InlineData(":abc")]
     public void ChaveMalformada_EhRecusada(string chave)
     {
-        SortKeyComposta.TentarDesserializar(chave, 2, out IReadOnlyList<string> partes)
+        CompositeSortKey.TryDeserialize(chave, 2, out IReadOnlyList<string> partes)
             .Should().BeFalse();
         partes.Should().BeEmpty();
     }
@@ -68,14 +68,14 @@ public sealed class SortKeyCompostaTests
     [Fact(DisplayName = "Chave de outra ordenação, com mais colunas, é recusada")]
     public void ChaveComQuantidadeDiferente_EhRecusada()
     {
-        string chave = SortKeyComposta.Serializar("a", "b", "c");
+        string chave = CompositeSortKey.Serialize("a", "b", "c");
 
-        SortKeyComposta.TentarDesserializar(chave, 2, out _).Should().BeFalse();
+        CompositeSortKey.TryDeserialize(chave, 2, out _).Should().BeFalse();
     }
 
     [Fact(DisplayName = "Chave ausente é recusada")]
     public void ChaveNula_EhRecusada()
     {
-        SortKeyComposta.TentarDesserializar(null, 2, out _).Should().BeFalse();
+        CompositeSortKey.TryDeserialize(null, 2, out _).Should().BeFalse();
     }
 }

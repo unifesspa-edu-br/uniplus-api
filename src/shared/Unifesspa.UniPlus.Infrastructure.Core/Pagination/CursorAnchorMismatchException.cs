@@ -11,19 +11,19 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 /// ordenada por um critério não continua uma listagem ordenada por outro. Vira
 /// 400 na borda, e não 500: quem escolheu a combinação foi o cliente.
 /// </remarks>
-public sealed class CursorAncoraInvalidaException : Exception
+public sealed class CursorAnchorMismatchException : Exception
 {
-    public CursorAncoraInvalidaException()
+    public CursorAnchorMismatchException()
         : base("A âncora do cursor não corresponde à ordenação pedida.")
     {
     }
 
-    public CursorAncoraInvalidaException(string message)
+    public CursorAnchorMismatchException(string message)
         : base(message)
     {
     }
 
-    public CursorAncoraInvalidaException(string message, Exception innerException)
+    public CursorAnchorMismatchException(string message, Exception innerException)
         : base(message, innerException)
     {
     }

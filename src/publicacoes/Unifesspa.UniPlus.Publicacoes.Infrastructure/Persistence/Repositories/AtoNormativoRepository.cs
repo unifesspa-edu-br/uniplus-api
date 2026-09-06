@@ -248,7 +248,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
             .Where(a => _dbContext.VinculosAtoEntidade
                 .Any(v => v.AtoId == a.Id && v.EntidadeTipo == tipoNorm && v.EntidadeId == entidadeId));
 
-        KeysetOrdenadoPage<AtoNormativo> page = await KeysetOrdenadoCursor
+        OrderedKeysetPage<AtoNormativo> page = await OrderedKeysetCursor
             .ApplyAsync(
                 query,
                 b => b.Ascending(a => a.DataPublicacao).Ascending(a => a.Id),
@@ -261,7 +261,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.Anterior, page.Proximo);
+        return (page.Items, page.Previous, page.Next);
     }
 
     /// <summary>

@@ -8,13 +8,13 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Sentido de uma coluna dentro da ordenação.</summary>
-public enum DirecaoOrdenacao
+public enum SortDirection
 {
     /// <summary>Crescente.</summary>
-    Ascendente = 0,
+    Ascending = 0,
 
     /// <summary>Decrescente.</summary>
-    Descendente = 1,
+    Descending = 1,
 }
 
 /// <summary>
@@ -27,22 +27,22 @@ public enum DirecaoOrdenacao
 /// mesmo resultado. Para texto isso é imediato; para data e número, formatar em
 /// largura fixa ou ISO-8601, nunca com a cultura corrente.
 /// </remarks>
-public sealed class ColunaOrdenacaoKeyset<T>
+public sealed class KeysetSortColumn<T>
     where T : class
 {
-    private readonly Action<KeysetPaginationBuilder<T>, DirecaoOrdenacao> _aplicar;
-    private readonly Func<T, string> _extrair;
+    private readonly Action<KeysetPaginationBuilder<T>, SortDirection> _apply;
+    private readonly Func<T, string> _extract;
 
-    private ColunaOrdenacaoKeyset(
+    private KeysetSortColumn(
         string token,
-        DirecaoOrdenacao direcao,
-        Action<KeysetPaginationBuilder<T>, DirecaoOrdenacao> aplicar,
-        Func<T, string> extrair)
+        SortDirection direction,
+        Action<KeysetPaginationBuilder<T>, SortDirection> apply,
+        Func<T, string> extract)
     {
         Token = token;
-        Direcao = direcao;
-        _aplicar = aplicar;
-        _extrair = extrair;
+        Direction = direction;
+        _apply = apply;
+        _extract = extract;
     }
 
     /// <summary>
@@ -53,42 +53,42 @@ public sealed class ColunaOrdenacaoKeyset<T>
     public string Token { get; }
 
     /// <summary>Sentido desta coluna.</summary>
-    public DirecaoOrdenacao Direcao { get; }
+    public SortDirection Direction { get; }
 
     /// <summary>
     /// Declara uma coluna da ordenação.
     /// </summary>
     /// <param name="token">Nome público da coluna.</param>
-    /// <param name="seletor">A coluna, como o motor de seek a enxerga na consulta.</param>
-    /// <param name="chaveDaAncora">
+    /// <param name="selector">A coluna, como o motor de seek a enxerga na consulta.</param>
+    /// <param name="anchorKey">
     /// Valor da coluna, em texto, para o item que vira âncora da página.
     /// </param>
-    /// <param name="direcao">Sentido da coluna.</param>
-    public static ColunaOrdenacaoKeyset<T> De<TColuna>(
+    /// <param name="direction">Sentido da coluna.</param>
+    public static KeysetSortColumn<T> For<TColumn>(
         string token,
-        Expression<Func<T, TColuna>> seletor,
-        Func<T, string> chaveDaAncora,
-        DirecaoOrdenacao direcao = DirecaoOrdenacao.Ascendente)
+        Expression<Func<T, TColumn>> selector,
+        Func<T, string> anchorKey,
+        SortDirection direction = SortDirection.Ascending)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
-        ArgumentNullException.ThrowIfNull(seletor);
-        ArgumentNullException.ThrowIfNull(chaveDaAncora);
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(anchorKey);
 
-        return new ColunaOrdenacaoKeyset<T>(
+        return new KeysetSortColumn<T>(
             token,
-            direcao,
-            (builder, sentido) =>
+            direction,
+            (builder, direction) =>
             {
-                if (sentido == DirecaoOrdenacao.Descendente)
+                if (direction == SortDirection.Descending)
                 {
-                    builder.Descending(seletor);
+                    builder.Descending(selector);
                 }
                 else
                 {
-                    builder.Ascending(seletor);
+                    builder.Ascending(selector);
                 }
             },
-            chaveDaAncora);
+            anchorKey);
     }
 
     /// <summary>
@@ -96,14 +96,14 @@ public sealed class ColunaOrdenacaoKeyset<T>
     /// de montar a consulta, e não na declaração da coluna — inverter uma coluna
     /// declarada ascendente produz de fato uma consulta descendente.
     /// </summary>
-    public ColunaOrdenacaoKeyset<T> Com(DirecaoOrdenacao direcao) =>
-        direcao == Direcao
+    public KeysetSortColumn<T> With(SortDirection direction) =>
+        direction == Direction
             ? this
-            : new ColunaOrdenacaoKeyset<T>(Token, direcao, _aplicar, _extrair);
+            : new KeysetSortColumn<T>(Token, direction, _apply, _extract);
 
-    internal void Aplicar(KeysetPaginationBuilder<T> builder) => _aplicar(builder, Direcao);
+    internal void Apply(KeysetPaginationBuilder<T> builder) => _apply(builder, Direction);
 
-    internal string ExtrairChave(T item) => _extrair(item);
+    internal string ExtractKey(T item) => _extract(item);
 }
 
 /// <summary>
@@ -127,59 +127,59 @@ public sealed class ColunaOrdenacaoKeyset<T>
 /// listagem administrativa convive com isso, relatório que exige recorte estável
 /// pede snapshot, não cursor.</para>
 /// </remarks>
-public sealed class OrdenacaoKeyset<T>
+public sealed class KeysetSort<T>
     where T : class, IIdentificavel
 {
-    /// <param name="colunas">Colunas na ordem de prioridade; ao menos uma.</param>
-    /// <param name="montarAncora">
+    /// <param name="columns">Colunas na ordem de prioridade; ao menos uma.</param>
+    /// <param name="buildAnchor">
     /// Monta o objeto de âncora a partir dos valores das colunas (na mesma ordem
     /// de <paramref name="colunas"/>) e do <c>Id</c>. O objeto precisa expor uma
     /// propriedade por coluna do keyset, com o mesmo nome que a consulta usa.
     /// </param>
-    public OrdenacaoKeyset(
-        IReadOnlyList<ColunaOrdenacaoKeyset<T>> colunas,
-        Func<IReadOnlyList<string>, Guid, object> montarAncora)
+    public KeysetSort(
+        IReadOnlyList<KeysetSortColumn<T>> columns,
+        Func<IReadOnlyList<string>, Guid, object> buildAnchor)
     {
-        ArgumentNullException.ThrowIfNull(colunas);
-        ArgumentNullException.ThrowIfNull(montarAncora);
-        if (colunas.Count == 0)
+        ArgumentNullException.ThrowIfNull(columns);
+        ArgumentNullException.ThrowIfNull(buildAnchor);
+        if (columns.Count == 0)
         {
-            throw new ArgumentException("A ordenação precisa de ao menos uma coluna.", nameof(colunas));
+            throw new ArgumentException("A ordenação precisa de ao menos uma coluna.", nameof(columns));
         }
 
-        Colunas = colunas;
-        MontarAncora = montarAncora;
-        Assinatura = string.Join(
+        Columns = columns;
+        BuildAnchor = buildAnchor;
+        Signature = string.Join(
             '|',
-            colunas.Select(static c =>
-                $"{c.Token}:{(c.Direcao == DirecaoOrdenacao.Descendente ? "desc" : "asc")}"));
+            columns.Select(static c =>
+                $"{c.Token}:{(c.Direction == SortDirection.Descending ? "desc" : "asc")}"));
     }
 
     /// <summary>Colunas na ordem de prioridade.</summary>
-    public IReadOnlyList<ColunaOrdenacaoKeyset<T>> Colunas { get; }
+    public IReadOnlyList<KeysetSortColumn<T>> Columns { get; }
 
     /// <summary>
     /// Identifica esta ordenação pelas colunas e seus sentidos, na ordem de
     /// prioridade. Viaja na chave da âncora para que um cursor só continue a
     /// ordenação que o emitiu.
     /// </summary>
-    internal string Assinatura { get; }
+    internal string Signature { get; }
 
-    internal Func<IReadOnlyList<string>, Guid, object> MontarAncora { get; }
+    internal Func<IReadOnlyList<string>, Guid, object> BuildAnchor { get; }
 
-    internal void ConfigurarKeyset(KeysetPaginationBuilder<T> builder)
+    internal void ConfigureKeyset(KeysetPaginationBuilder<T> builder)
     {
-        foreach (ColunaOrdenacaoKeyset<T> coluna in Colunas)
+        foreach (KeysetSortColumn<T> column in Columns)
         {
-            coluna.Aplicar(builder);
+            column.Apply(builder);
         }
 
         // Desempate final: sem ordem total, a página não é reprodutível.
         builder.Ascending(e => e.Id);
     }
 
-    internal string ChaveDaAncora(T item) =>
-        SortKeyComposta.Serializar([Assinatura, .. Colunas.Select(c => c.ExtrairChave(item))]);
+    internal string AnchorKey(T item) =>
+        CompositeSortKey.Serialize([Signature, .. Columns.Select(c => c.ExtractKey(item))]);
 
     /// <summary>
     /// Reconstrói a âncora a partir da chave que veio no cursor. Devolve
@@ -194,21 +194,21 @@ public sealed class OrdenacaoKeyset<T>
     /// colunas, pulando ou repetindo registros em silêncio, que é justamente o que
     /// esta recusa existe para impedir.
     /// </remarks>
-    internal bool TentarReconstruirAncora(string chave, Guid id, out object ancora)
+    internal bool TryBuildAnchor(string key, Guid id, out object anchor)
     {
-        ancora = null!;
+        anchor = null!;
 
-        if (!SortKeyComposta.TentarDesserializar(chave, Colunas.Count + 1, out IReadOnlyList<string> partes))
+        if (!CompositeSortKey.TryDeserialize(key, Columns.Count + 1, out IReadOnlyList<string> parts))
         {
             return false;
         }
 
-        if (!string.Equals(partes[0], Assinatura, StringComparison.Ordinal))
+        if (!string.Equals(parts[0], Signature, StringComparison.Ordinal))
         {
             return false;
         }
 
-        ancora = MontarAncora([.. partes.Skip(1)], id);
+        anchor = BuildAnchor([.. parts.Skip(1)], id);
         return true;
     }
 }

@@ -52,7 +52,7 @@ public sealed partial class GlobalExceptionMiddleware
             LogValidationError(_logger, context.Request.Path, ex);
             await EscreverRespostaValidacao(context, ex, _problemTypeUriFactory).ConfigureAwait(false);
         }
-        catch (CursorAncoraInvalidaException ex)
+        catch (CursorAnchorMismatchException ex)
         {
             LogAncoraDeCursorInvalida(_logger, context.Request.Path, ex);
             await EscreverRespostaCursorInvalido(context, _problemTypeUriFactory).ConfigureAwait(false);
