@@ -1,0 +1,26 @@
+[
+  {
+    "versaoDataset": "2026-referencia-selecao",
+    "diasNaoUteis": [
+      { "abrangencia": "NACIONAL", "data": "2026-01-01", "descricao": "Confraternização Universal (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "INSTITUCIONAL", "data": "2026-02-16", "descricao": "Carnaval, ponto facultativo (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "INSTITUCIONAL", "data": "2026-02-17", "descricao": "Carnaval, ponto facultativo (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-04-03", "descricao": "Paixão de Cristo (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "MUNICIPAL", "municipioIbge": "1504208", "municipioNome": "Marabá", "municipioUf": "PA", "data": "2026-04-05", "descricao": "Aniversário de Marabá (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "INSTITUCIONAL", "data": "2026-04-20", "descricao": "Ponto facultativo — Portaria MGI nº 11.460/2025 (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-04-21", "descricao": "Tiradentes (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-05-01", "descricao": "Dia Mundial do Trabalho (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "INSTITUCIONAL", "data": "2026-06-04", "descricao": "Corpus Christi, ponto facultativo (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "INSTITUCIONAL", "data": "2026-06-05", "descricao": "Ponto facultativo — Portaria MGI nº 11.460/2025 (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "ESTADUAL", "uf": "PA", "data": "2026-08-15", "descricao": "Adesão do Grão-Pará à Independência do Brasil (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-09-07", "descricao": "Independência do Brasil (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-10-12", "descricao": "Nossa Senhora Aparecida, Padroeira do Brasil (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "MUNICIPAL", "municipioIbge": "1504208", "municipioNome": "Marabá", "municipioUf": "PA", "data": "2026-10-19", "descricao": "Pós-Círio de Marabá (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "INSTITUCIONAL", "data": "2026-10-28", "descricao": "Dia do Servidor Público, ponto facultativo (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-11-02", "descricao": "Finados (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-11-15", "descricao": "Proclamação da República (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-11-20", "descricao": "Dia Nacional de Zumbi e da Consciência Negra (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" },
+      { "abrangencia": "NACIONAL", "data": "2026-12-25", "descricao": "Natal (Calendário Administrativo 2026 — Portaria Unifesspa nº 058/2026)" }
+    ]
+  }
+]

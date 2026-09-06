@@ -80,6 +80,7 @@ fi
 # Um catálogo, um arquivo de dados, um folder na coleção.
 declare -A CATALOGOS=(
   ["Tipos de ato"]="seeds/seed-tipos-ato.json"
+  ["Calendário de dias úteis"]="seeds/seed-calendario-dias-uteis.json"
 )
 
 executar() {

@@ -189,6 +189,197 @@
           }
         }
       ]
+    },
+    {
+      "name": "Calendário de dias úteis",
+      "item": [
+        {
+          "name": "Preflight — o dataset já existe?",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Não há endpoint de leitura por versaoDataset — lista os datasets vivos e",
+                  "// procura pelo nome. A lista não traz diasNaoUteis (é o resumo); achado o",
+                  "// dataset, relê por id para comparar o conteúdo completo.",
+                  "pm.test('listagem devolve 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "const versaoDataset = pm.iterationData.get('versaoDataset');",
+                  "const lista = pm.response.json();",
+                  "const existente = lista.find((c) => c.versaoDataset === versaoDataset);",
+                  "",
+                  "if (!existente) {",
+                  "  pm.environment.set('deve_criar', 'true');",
+                  "  pm.environment.set('calendario_vigente', 'false');",
+                  "  return;",
+                  "}",
+                  "",
+                  "pm.environment.set('deve_criar', 'false');",
+                  "pm.environment.set('calendario_id', existente.id);",
+                  "pm.environment.set('calendario_vigente', String(existente.vigente));",
+                  "",
+                  "pm.sendRequest({",
+                  "  url: `${pm.environment.get('base_url')}/api/configuracao/calendarios-dias-uteis/${existente.id}`,",
+                  "  method: 'GET',",
+                  "  header: { Authorization: `Bearer ${pm.environment.get('access_token')}` },",
+                  "}, (err, res) => {",
+                  "  pm.test(`${versaoDataset} já cadastrado bate com o seed`, () => {",
+                  "    pm.expect(err, 'erro ao reler o dataset existente').to.be.null;",
+                  "    pm.expect(res.code, 'status da releitura').to.eql(200);",
+                  "    const gravado = res.json();",
+                  "    const esperados = pm.iterationData.get('diasNaoUteis');",
+                  "    pm.expect(gravado.diasNaoUteis.length, 'quantidade de dias não úteis').to.eql(esperados.length);",
+                  "    const campos = ['abrangencia', 'municipioIbge', 'municipioNome', 'municipioUf', 'uf', 'data', 'descricao'];",
+                  "    esperados.forEach((diaEsperado, indice) => {",
+                  "      const diaGravado = gravado.diasNaoUteis.find((d) => d.data === diaEsperado.data && d.descricao === diaEsperado.descricao);",
+                  "      pm.expect(diaGravado, `dia não útil ${diaEsperado.data} (${diaEsperado.descricao})`).to.not.be.undefined;",
+                  "      campos.forEach((campo) => {",
+                  "        const esperado = diaEsperado[campo] ?? null;",
+                  "        const encontrado = diaGravado[campo] === undefined ? null : diaGravado[campo];",
+                  "        pm.expect(encontrado, `${diaEsperado.data}.${campo}`).to.eql(esperado);",
+                  "      });",
+                  "    });",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/configuracao/calendarios-dias-uteis?limit=50"
+          }
+        },
+        {
+          "name": "Registrar calendário de dias úteis",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Pula a escrita quando o preflight encontrou o dataset íntegro.",
+                  "if (pm.environment.get('deve_criar') !== 'true') {",
+                  "  console.log(`${pm.iterationData.get('versaoDataset')}: já cadastrado, nada a fazer`);",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "",
+                  "// diasNaoUteis chega do arquivo de seed já como array de objetos (iteration",
+                  "// data em JSON, não CSV) — repassado como está, sem remontar campo a campo.",
+                  "const corpo = {",
+                  "  versaoDataset: pm.iterationData.get('versaoDataset'),",
+                  "  diasNaoUteis: pm.iterationData.get('diasNaoUteis'),",
+                  "};",
+                  "pm.variables.set('corpo_json', JSON.stringify(corpo));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const versaoDataset = pm.iterationData.get('versaoDataset');",
+                  "pm.test(`${versaoDataset} registrado (201)`, () => pm.response.to.have.status(201));",
+                  "",
+                  "const local = pm.response.headers.get('Location');",
+                  "pm.test('Location aponta para o recurso', () => pm.expect(local).to.include('/api/configuracao/calendarios-dias-uteis/'));",
+                  "",
+                  "pm.test('a resposta não veio do cache de idempotência', () => {",
+                  "  pm.expect(pm.response.headers.get('Idempotency-Replayed')).to.be.oneOf([null, undefined]);",
+                  "});",
+                  "",
+                  "// Lê de volta o que foi gravado, e guarda o id recém-criado para o próximo",
+                  "// request (marcar vigente) — o POST devolve só o id.",
+                  "if (pm.response.code === 201 && local) {",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('calendario_id', id);",
+                  "  pm.environment.set('calendario_vigente', 'false');",
+                  "",
+                  "  pm.sendRequest({ url: local, method: 'GET', header: { Authorization: `Bearer ${pm.environment.get('access_token')}` } }, (err, res) => {",
+                  "    pm.test(`${versaoDataset} foi gravado como o arquivo de seed declara`, () => {",
+                  "      pm.expect(err, 'erro ao reler o recurso criado').to.be.null;",
+                  "      pm.expect(res.code, 'status da releitura').to.eql(200);",
+                  "      const gravado = res.json();",
+                  "      const esperados = pm.iterationData.get('diasNaoUteis');",
+                  "      pm.expect(gravado.versaoDataset).to.eql(versaoDataset);",
+                  "      pm.expect(gravado.vigente, 'nasce não vigente').to.eql(false);",
+                  "      pm.expect(gravado.diasNaoUteis.length, 'quantidade de dias não úteis').to.eql(esperados.length);",
+                  "    });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.uniplus.calendario-dias-uteis.v1+json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{corpo_json}}"
+            },
+            "url": "{{base_url}}/api/configuracao/admin/calendarios-dias-uteis"
+          }
+        },
+        {
+          "name": "Marcar vigente",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Idempotente por leitura de estado, não por Idempotency-Key: se o dataset",
+                  "// (achado no preflight ou recém-criado) já é o vigente, repetir a chamada é",
+                  "// um no-op — o domínio recusa marcar vigente um dataset que já é (409), e",
+                  "// isso não é falha do seed, é o resultado que já queríamos.",
+                  "if (pm.environment.get('calendario_vigente') === 'true') {",
+                  "  console.log(`${pm.iterationData.get('versaoDataset')}: já é o vigente, nada a fazer`);",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const versaoDataset = pm.iterationData.get('versaoDataset');",
+                  "pm.test(`${versaoDataset} marcado vigente (204)`, () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": "{{base_url}}/api/configuracao/admin/calendarios-dias-uteis/{{calendario_id}}/vigente"
+          }
+        }
+      ]
     }
   ]
 }
