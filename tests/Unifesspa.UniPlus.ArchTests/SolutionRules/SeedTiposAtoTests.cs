@@ -93,7 +93,34 @@ public sealed partial class SeedTiposAtoTests
         IReadOnlyList<string> irreversiveis =
             [.. Carregar().Where(l => l.EfeitoIrreversivel).Select(l => l.Codigo).Order(StringComparer.Ordinal)];
 
-        irreversiveis.Should().BeEquivalentTo(["GABARITO_DEFINITIVO", "RESULTADO_FINAL"]);
+        // CONVOCACAO passa a integrar a lista (uniplus-api#1432): ela concede o
+        // direito de ocupar a vaga, ato que não se desfaz — o UNI-REQ-0080 usa a
+        // convocação como exemplo canônico de irreversibilidade.
+        irreversiveis.Should().BeEquivalentTo(["CONVOCACAO", "GABARITO_DEFINITIVO", "RESULTADO_FINAL"]);
+    }
+
+    [Fact(DisplayName = "Só os atos que determinam a situação do candidato são resultado")]
+    public void Seed_EhResultadoRestrito()
+    {
+        IReadOnlyList<string> resultado =
+            [.. Carregar().Where(l => l.EhResultado).Select(l => l.Codigo).Order(StringComparer.Ordinal)];
+
+        // false é proibição permanente: aquele ato nunca integra ciclo recursal, em
+        // edital nenhum. CONVOCACAO e CHAMADA ficam de fora — concedem o direito de
+        // ocupar a vaga, e o recurso é contra a habilitação que as antecede, não
+        // contra elas. ERRATA fica de fora por decisão consciente: o recurso cabe
+        // contra o resultado corrigido, não contra a errata.
+        resultado.Should().BeEquivalentTo([
+            "CONFIRMACAO_INTERESSE",
+            "GABARITO_DEFINITIVO",
+            "GABARITO_PRELIMINAR",
+            "HOMOLOGACAO_ANALISE_DOCUMENTAL",
+            "HOMOLOGACAO_INSCRICOES",
+            "HOMOLOGACAO_RECURSOS",
+            "LISTA_ESPERA",
+            "RESULTADO_FINAL",
+            "RESULTADO_PRELIMINAR",
+        ]);
     }
 
     [Fact(DisplayName = "Só os atos que o objeto admite uma vez são únicos por objeto")]
@@ -132,6 +159,7 @@ public sealed partial class SeedTiposAtoTests
         bool CongelaConfiguracao,
         bool UnicoPorObjeto,
         bool EfeitoIrreversivel,
+        bool EhResultado,
         string VigenciaInicio,
         string? VigenciaFim,
         string? BaseLegal);

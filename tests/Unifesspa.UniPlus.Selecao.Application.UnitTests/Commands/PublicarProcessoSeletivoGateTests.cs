@@ -81,7 +81,8 @@ public sealed class PublicarProcessoSeletivoGateTests
                 Nome: "Edital de abertura",
                 CongelaConfiguracao: true,
                 UnicoPorObjeto: true,
-                EfeitoIrreversivel: false));
+                EfeitoIrreversivel: false,
+                EhResultado: false));
 
         IVagaDeLinhagemReader vagaDeLinhagemReader = Substitute.For<IVagaDeLinhagemReader>();
 
@@ -207,7 +208,8 @@ public sealed class PublicarProcessoSeletivoGateTests
                 Nome: "Edital de abertura",
                 CongelaConfiguracao: true,
                 UnicoPorObjeto: true,
-                EfeitoIrreversivel: false));
+                EfeitoIrreversivel: false,
+                EhResultado: false));
 
         IVagaDeLinhagemReader vagaDeLinhagemReader = Substitute.For<IVagaDeLinhagemReader>();
 

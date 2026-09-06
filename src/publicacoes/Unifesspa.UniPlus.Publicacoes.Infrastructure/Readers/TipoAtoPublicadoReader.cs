@@ -48,7 +48,8 @@ internal sealed class TipoAtoPublicadoReader(PublicacoesDbContext db) : ITipoAto
                 t.Nome,
                 t.CongelaConfiguracao,
                 t.UnicoPorObjeto,
-                t.EfeitoIrreversivel))
+                t.EfeitoIrreversivel,
+                t.EhResultado))
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
     }

@@ -43,6 +43,7 @@ internal static class TiposDeAtoSeeder
             congelaConfiguracao: true,
             unicoPorObjeto,
             efeitoIrreversivel: false,
+            ehResultado: false,
             new DateOnly(2020, 1, 1),
             vigenciaFim: null,
             baseLegal: null).Value!;

@@ -68,6 +68,7 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
             command.CongelaConfiguracao,
             command.UnicoPorObjeto,
             command.EfeitoIrreversivel,
+            command.EhResultado,
             command.VigenciaInicio,
             command.VigenciaFim,
             command.BaseLegal);

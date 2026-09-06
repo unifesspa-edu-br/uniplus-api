@@ -1178,6 +1178,7 @@
           "congelaConfiguracao",
           "unicoPorObjeto",
           "efeitoIrreversivel",
+          "ehResultado",
           "vigenciaInicio"
         ],
         "type": "object",
@@ -1205,6 +1206,9 @@
             "type": "boolean"
           },
           "efeitoIrreversivel": {
+            "type": "boolean"
+          },
+          "ehResultado": {
             "type": "boolean"
           },
           "vigenciaInicio": {
@@ -1296,6 +1300,7 @@
           "congelaConfiguracao",
           "unicoPorObjeto",
           "efeitoIrreversivel",
+          "ehResultado",
           "vigenciaInicio"
         ],
         "type": "object",
@@ -1319,6 +1324,9 @@
             "type": "boolean"
           },
           "efeitoIrreversivel": {
+            "type": "boolean"
+          },
+          "ehResultado": {
             "type": "boolean"
           },
           "vigenciaInicio": {
@@ -1493,6 +1501,7 @@
           "congelaConfiguracao",
           "unicoPorObjeto",
           "efeitoIrreversivel",
+          "ehResultado",
           "vigenciaInicio",
           "vigenciaFim",
           "baseLegal",
@@ -1517,6 +1526,9 @@
             "type": "boolean"
           },
           "efeitoIrreversivel": {
+            "type": "boolean"
+          },
+          "ehResultado": {
             "type": "boolean"
           },
           "vigenciaInicio": {

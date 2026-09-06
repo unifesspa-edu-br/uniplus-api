@@ -159,6 +159,7 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
         TipoAtoPublicado.Criar(
             "EDITAL_ABERTURA", "Edital de abertura",
             congelaConfiguracao: true, unicoPorObjeto: true, efeitoIrreversivel: false,
+            ehResultado: false,
             vigenciaInicio: Inicio, vigenciaFim: null, baseLegal: null).Value!;
 
     private static AtualizarTipoAtoPublicadoCommand Comando(Guid id) =>
@@ -169,5 +170,6 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
             CongelaConfiguracao: true,
             UnicoPorObjeto: true,
             EfeitoIrreversivel: false,
+            EhResultado: false,
             VigenciaInicio: Inicio);
 }

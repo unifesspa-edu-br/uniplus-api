@@ -5,6 +5,7 @@
     "congelaConfiguracao": true,
     "unicoPorObjeto": true,
     "efeitoIrreversivel": false,
+    "ehResultado": false,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -15,6 +16,7 @@
     "congelaConfiguracao": true,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": false,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -25,6 +27,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": false,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -35,6 +38,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": false,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -44,7 +48,8 @@
     "nome": "Convocação",
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
-    "efeitoIrreversivel": false,
+    "efeitoIrreversivel": true,
+    "ehResultado": false,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -55,6 +60,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": true,
     "efeitoIrreversivel": false,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -65,6 +71,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -75,6 +82,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -85,6 +93,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -95,6 +104,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": true,
     "efeitoIrreversivel": true,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -105,6 +115,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -115,6 +126,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -125,6 +137,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -135,6 +148,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": true,
+    "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -145,6 +159,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": false,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null
@@ -155,6 +170,7 @@
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
+    "ehResultado": false,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
     "baseLegal": null

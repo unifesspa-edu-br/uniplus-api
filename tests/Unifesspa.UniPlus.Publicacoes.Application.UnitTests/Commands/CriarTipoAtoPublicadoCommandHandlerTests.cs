@@ -128,5 +128,6 @@ public sealed class CriarTipoAtoPublicadoCommandHandlerTests
             CongelaConfiguracao: true,
             UnicoPorObjeto: true,
             EfeitoIrreversivel: false,
+            EhResultado: false,
             VigenciaInicio: Inicio);
 }

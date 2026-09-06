@@ -316,6 +316,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
             congelaConfiguracao: congela,
             unicoPorObjeto: false,
             efeitoIrreversivel: irreversivel,
+            ehResultado: false,
             vigenciaInicio: vigenciaInicio,
             vigenciaFim: vigenciaFim,
             baseLegal: null).Value!;

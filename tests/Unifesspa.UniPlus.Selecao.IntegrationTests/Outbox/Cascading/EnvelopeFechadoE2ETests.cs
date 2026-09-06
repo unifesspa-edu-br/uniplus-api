@@ -1036,6 +1036,7 @@ public sealed class EnvelopeFechadoE2ETests
             congelaConfiguracao: false,
             unicoPorObjeto: false,
             efeitoIrreversivel: true,
+            ehResultado: true,
             new DateOnly(2020, 1, 1),
             vigenciaFim: null,
             baseLegal: null);

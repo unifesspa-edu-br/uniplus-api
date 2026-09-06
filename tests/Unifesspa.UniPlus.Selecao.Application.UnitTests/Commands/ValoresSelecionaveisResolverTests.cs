@@ -227,7 +227,7 @@ public sealed class ValoresSelecionaveisResolverTests
         tipoDeAtoReader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(new TipoAtoPublicadoView(
                 Codigo: "EDITAL_ABERTURA", Nome: "Edital de abertura",
-                CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false));
+                CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
 
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
         obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(

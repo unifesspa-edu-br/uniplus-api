@@ -29,6 +29,7 @@ public sealed class TipoAtoPublicadoTests
             congelaConfiguracao: true,
             unicoPorObjeto: true,
             efeitoIrreversivel: false,
+            ehResultado: false,
             vigenciaInicio: Inicio,
             vigenciaFim: null,
             baseLegal: "   ");
@@ -131,6 +132,7 @@ public sealed class TipoAtoPublicadoTests
             congelaConfiguracao: true,
             unicoPorObjeto: true,
             efeitoIrreversivel: true,
+            ehResultado: false,
             vigenciaInicio: Inicio,
             vigenciaFim: null,
             baseLegal: null);
@@ -151,6 +153,7 @@ public sealed class TipoAtoPublicadoTests
             congelaConfiguracao: true,
             unicoPorObjeto: false,
             efeitoIrreversivel: false,
+            ehResultado: false,
             vigenciaInicio: Inicio,
             vigenciaFim: null,
             baseLegal: null);
@@ -175,6 +178,7 @@ public sealed class TipoAtoPublicadoTests
             congelaConfiguracao: true,
             unicoPorObjeto: false,
             efeitoIrreversivel: false,
+            ehResultado: false,
             vigenciaInicio: Inicio,
             vigenciaFim: null,
             baseLegal: null);
@@ -215,6 +219,7 @@ public sealed class TipoAtoPublicadoTests
             congelaConfiguracao: true,
             unicoPorObjeto: true,
             efeitoIrreversivel: false,
+            ehResultado: false,
             vigenciaInicio: Inicio,
             vigenciaFim: Inicio.AddDays(-1),
             baseLegal: null);
@@ -248,6 +253,7 @@ public sealed class TipoAtoPublicadoTests
             congelaConfiguracao: true,
             unicoPorObjeto: true,
             efeitoIrreversivel: false,
+            ehResultado: false,
             vigenciaInicio: Inicio,
             vigenciaFim: vigenciaFim,
             baseLegal: baseLegal);
