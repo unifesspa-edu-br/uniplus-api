@@ -40,17 +40,14 @@ public static class OrdenacaoPedida
             return Result<IReadOnlyList<SortField>>.Success(padrao);
         }
 
-        foreach (SortField pedido in pedidos)
-        {
-            if (!aceitos.Contains(pedido.Campo, StringComparer.Ordinal))
-            {
-                return Result<IReadOnlyList<SortField>>.Failure(new DomainError(
-                    ConsultaErrorCodes.CampoDeOrdenacaoInvalido,
-                    $"Não é possível ordenar por '{pedido.Campo}'. "
-                    + $"Campos aceitos: {string.Join(", ", aceitos)}."));
-            }
-        }
+        SortField? recusado = pedidos
+            .FirstOrDefault(pedido => !aceitos.Contains(pedido.Campo, StringComparer.Ordinal));
 
-        return Result<IReadOnlyList<SortField>>.Success(pedidos);
+        return recusado is null
+            ? Result<IReadOnlyList<SortField>>.Success(pedidos)
+            : Result<IReadOnlyList<SortField>>.Failure(new DomainError(
+                ConsultaErrorCodes.CampoDeOrdenacaoInvalido,
+                $"Não é possível ordenar por '{recusado.Campo}'. "
+                + $"Campos aceitos: {string.Join(", ", aceitos)}."));
     }
 }
