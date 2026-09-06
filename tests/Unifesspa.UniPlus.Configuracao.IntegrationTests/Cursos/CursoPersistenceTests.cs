@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -173,53 +174,80 @@ public sealed class CursoPersistenceTests
     [Fact(DisplayName = "Navegação bidirecional do cursor: prev volta exatamente à página anterior, com flags coerentes")]
     public async Task Navegacao_Bidirecional_PrevVoltaPaginaAnterior()
     {
-        // 5 cursos criados agora: o prefixo temporal do Guid v7 garante que o BLOCO
-        // fica no fim da tabela em ASC por Id — âncora determinística mesmo com
-        // linhas pré-existentes de outros testes da collection (sequencial, tabela
-        // estática). Dentro do mesmo milissegundo os bits aleatórios permutam a
-        // ordem interna do bloco, então os ids são ordenados como o Postgres ordena
-        // uuid (byte a byte = ordem lexicográfica do hex canônico).
-        Curso[] cursos = [Novo(CodigoUnico()), Novo(CodigoUnico()), Novo(CodigoUnico()), Novo(CodigoUnico()), Novo(CodigoUnico())];
+        // Os cinco nomes compartilham um prefixo que os põe no fim da ordem
+        // alfabética, formando um bloco contíguo: a tabela é estática dentro da
+        // collection e acumula cursos de outros testes, cujos nomes começam por
+        // "Engenharia". Sem isso, as linhas alheias se intercalariam ao bloco e as
+        // âncoras deixariam de ser determinísticas.
+        string marca = MarcaDeBloco();
+        Curso[] cursos =
+        [
+            Novo(CodigoUnico(), nome: $"{marca} A"),
+            Novo(CodigoUnico(), nome: $"{marca} B"),
+            Novo(CodigoUnico(), nome: $"{marca} C"),
+            Novo(CodigoUnico(), nome: $"{marca} D"),
+            Novo(CodigoUnico(), nome: $"{marca} E"),
+        ];
+
+        // Inseridos fora de ordem, para a ordem de leitura não poder vir da ordem
+        // de gravação.
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
-            ctx.Cursos.AddRange(cursos);
+            ctx.Cursos.AddRange([cursos[3], cursos[0], cursos[4], cursos[1], cursos[2]]);
             await ctx.SaveChangesAsync();
         }
 
-        Guid[] ids = [.. cursos.Select(c => c.Id).OrderBy(id => id.ToString(), StringComparer.Ordinal)];
+        Guid[] ids = [.. cursos.Select(c => c.Id)];
 
-        // Página 1 (forward a partir de ids[0], limit 2): [1,2]; há anterior (ids[0]) e próximo.
-        (IReadOnlyList<Curso> p1, Guid? p1Ant, Guid? p1Prox) = await PaginarAsync(afterId: ids[0], PaginationDirection.Next);
+        // Página 1 (forward a partir do primeiro, limit 2): [B, C]; há anterior e próximo.
+        (IReadOnlyList<Curso> p1, (string, Guid)? p1Ant, (string, Guid)? p1Prox) =
+            await PaginarAsync(Ancora(cursos[0]), PaginationDirection.Next);
         p1.Select(c => c.Id).Should().Equal(ids[1], ids[2]);
-        p1Ant.Should().Be(ids[1]);
-        p1Prox.Should().Be(ids[2]);
+        p1Ant.Should().Be(Ancora(cursos[1]));
+        p1Prox.Should().Be(Ancora(cursos[2]));
 
-        // Página 2 (forward a partir do próximo da p1): [3,4]; última página → sem próximo.
-        (IReadOnlyList<Curso> p2, Guid? p2Ant, Guid? p2Prox) = await PaginarAsync(afterId: p1Prox, PaginationDirection.Next);
+        // Página 2 (forward a partir do próximo da p1): [D, E]; fim do bloco.
+        (IReadOnlyList<Curso> p2, (string, Guid)? p2Ant, (string, Guid)? p2Prox) =
+            await PaginarAsync(p1Prox, PaginationDirection.Next);
         p2.Select(c => c.Id).Should().Equal(ids[3], ids[4]);
-        p2Ant.Should().Be(ids[3]);
-        p2Prox.Should().BeNull("ids[4] é a linha mais recente da tabela (Guid v7)");
+        p2Ant.Should().Be(Ancora(cursos[3]));
+        p2Prox.Should().BeNull("o prefixo põe o bloco no fim da ordem alfabética");
 
         // Backward a partir do anterior da p2: volta exatamente à página 1 em ASC.
-        (IReadOnlyList<Curso> volta, Guid? voltaAnt, Guid? voltaProx) = await PaginarAsync(afterId: p2Ant, PaginationDirection.Prev);
+        (IReadOnlyList<Curso> volta, (string, Guid)? voltaAnt, (string, Guid)? voltaProx) =
+            await PaginarAsync(p2Ant, PaginationDirection.Prev);
         volta.Select(c => c.Id).Should().Equal(ids[1], ids[2]);
-        voltaAnt.Should().Be(ids[1], "ainda há linhas antes de ids[1] (ao menos ids[0])");
-        voltaProx.Should().Be(ids[2]);
+        voltaAnt.Should().Be(Ancora(cursos[1]), "ainda há linhas antes do curso B");
+        voltaProx.Should().Be(Ancora(cursos[2]));
     }
 
-    private async Task<(IReadOnlyList<Curso> Itens, Guid? Anterior, Guid? Proximo)> PaginarAsync(
-        Guid? afterId,
-        PaginationDirection direction)
+    private static (string SortKey, Guid Id) Ancora(Curso curso) =>
+        (SortKeyComposta.Serializar(SemAcentoMinusculo(curso.Nome), curso.Codigo), curso.Id);
+
+    /// <summary>
+    /// Reproduz no cliente a normalização que a coluna gerada faz no banco. Os
+    /// nomes usados aqui são ASCII, então basta reduzir a caixa — acentuação tem
+    /// teste próprio, contra o banco.
+    /// </summary>
+    private static string SemAcentoMinusculo(string nome) => nome.ToLowerInvariant();
+
+    private async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
+        PaginarAsync((string SortKey, Guid Id)? ancora, PaginationDirection direction)
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new CursoRepository(ctx);
-        return await repository.ListarPaginadoAsync(afterId, limit: 2, direction, CancellationToken.None);
+        return await repository.ListarPaginadoAsync(
+            ancora?.SortKey, ancora?.Id, limit: 2, direction, CancellationToken.None);
     }
+
+    private static string MarcaDeBloco() =>
+        $"ZZZ {Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
 
     private static Curso Novo(
         string codigo,
-        string? grupoAreaEnem = null) =>
-        Curso.Criar(codigo, "Engenharia Civil", "Bacharelado", "Graduação", grupoAreaEnem).Value!;
+        string? grupoAreaEnem = null,
+        string nome = "Engenharia Civil") =>
+        Curso.Criar(codigo, nome, "Bacharelado", "Graduação", grupoAreaEnem).Value!;
 
     private static string CodigoUnico() => $"CUR_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

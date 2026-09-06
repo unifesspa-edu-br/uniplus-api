@@ -15,11 +15,12 @@ public static class ListarCursosQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<Curso> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
-            .ConfigureAwait(false);
+        (IReadOnlyList<Curso> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
+            await repository
+                .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
+                .ConfigureAwait(false);
 
         CursoDto[] items = [.. itens.Select(c => c.ToDto())];
-        return new ListarCursosResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarCursosResult(items, anterior, proximo);
     }
 }

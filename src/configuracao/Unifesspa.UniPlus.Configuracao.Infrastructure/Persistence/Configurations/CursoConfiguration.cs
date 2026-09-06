@@ -13,6 +13,24 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 internal sealed class CursoConfiguration
     : IEntityTypeConfiguration<Curso>
 {
+    /// <summary>
+    /// Nome da propriedade sombra que carrega a chave de ordenação alfabética do
+    /// curso. Os repositórios que ordenam a listagem a projetam por
+    /// <c>EF.Property&lt;string&gt;</c>.
+    /// </summary>
+    internal const string NomeOrdenacaoPropriedade = "NomeOrdenacao";
+
+    /// <summary>
+    /// Expressão da coluna gerada: normaliza o nome para a forma Unicode composta,
+    /// troca cada letra acentuada pela equivalente sem acento e reduz a minúsculas.
+    /// Só usa funções imutáveis — requisito do Postgres para coluna gerada e para
+    /// índice.
+    /// </summary>
+    private const string NomeOrdenacaoSql =
+        "lower(translate(normalize(nome, NFC), " +
+        "'ÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑÝáàâãäåéèêëíìîïóòôõöúùûüçñý', " +
+        "'AAAAAAEEEEIIIIOOOOOUUUUCNYaaaaaaeeeeiiiiooooouuuucny'))";
+
     private const int CodigoMaxLength = 60;
     private const int NomeMaxLength = 200;
     private const int GrauMaxLength = 60;
@@ -60,5 +78,42 @@ internal sealed class CursoConfiguration
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ix_curso_codigo_vivo");
+
+        ConfigurarOrdenacaoAlfabetica(builder);
+    }
+
+    /// <summary>
+    /// Chave de ordenação alfabética do curso: coluna gerada pelo banco a partir
+    /// do nome, sem acento e em minúsculas, com collation <c>C</c>. É propriedade
+    /// sombra — pertence à ordenação da listagem, não ao domínio nem ao contrato
+    /// wire; os repositórios a leem por projeção.
+    /// </summary>
+    /// <remarks>
+    /// <para>Sem essa coluna a ordem sai errada em qualquer instalação cuja
+    /// collation ordene por ponto de código: "Zoologia" precederia "biologia" e
+    /// "Álgebra". Normalizar antes de comparar tira acento e caixa da decisão de
+    /// ordem, que é o que "ordem alfabética" significa para quem lê a listagem.</para>
+    /// <para>A collation fixa em <c>C</c> torna a comparação uma ordem de bytes
+    /// sobre texto já reduzido a ASCII — mesmo resultado em qualquer servidor,
+    /// independentemente do locale com que o banco foi criado. A normalização
+    /// Unicode para a forma composta faz o acento decomposto (letra + diacrítico
+    /// combinante) ser reconhecido pela substituição.</para>
+    /// <para>Coluna gerada não tem caminho de escrita próprio: não há como
+    /// dessincronizá-la do nome. A regra de chave de ordenação não nula
+    /// (ADR-0095) é satisfeita porque <c>nome</c> é obrigatório.</para>
+    /// </remarks>
+    private static void ConfigurarOrdenacaoAlfabetica(EntityTypeBuilder<Curso> builder)
+    {
+        builder.Property<string>(NomeOrdenacaoPropriedade)
+            .HasMaxLength(NomeMaxLength)
+            .UseCollation("C")
+            .HasComputedColumnSql(NomeOrdenacaoSql, stored: true)
+            .IsRequired();
+
+        // Casa exatamente o ORDER BY da listagem alfabética (nome normalizado,
+        // código, id) e o filtro global de soft-delete aplicado a toda leitura.
+        builder.HasIndex(NomeOrdenacaoPropriedade, nameof(Curso.Codigo), nameof(Curso.Id))
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName("ix_curso_ordenacao_alfabetica");
     }
 }

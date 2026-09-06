@@ -49,9 +49,10 @@ public sealed class CursosController : ControllerBase
     }
 
     /// <summary>
-    /// Lista os cursos ativos, paginados por cursor opaco bidirecional
-    /// (ADR-0026 + ADR-0089). Navegação via header <c>Link</c>; cada item carrega
-    /// seu <c>_links.self</c> (ADR-0029).
+    /// Lista os cursos ativos em ordem alfabética de nome, paginados por cursor
+    /// opaco bidirecional (ADR-0026 + ADR-0089 + ADR-0094). A ordem vale para a
+    /// coleção inteira, não para cada página isoladamente. Navegação via header
+    /// <c>Link</c>; cada item carrega seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("cursos")]
     [AllowAnonymous]
@@ -62,20 +63,22 @@ public sealed class CursosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
-        [FromCursor(ResourceTag)] PageRequest page,
+        [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
         ListarCursosResult resultado = await _queryBus
-            .Send(new ListarCursosQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(
+                new ListarCursosQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+                cancellationToken)
             .ConfigureAwait(false);
 
         CursoDto[] comLinks =
             [.. resultado.Items.Select(c => c with { Links = _linksBuilder.Build(c) })];
 
-        return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+        return await this.OkPaginatedOrdenadoAsync(
+            comLinks, resultado.Anterior, resultado.Proximo, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
