@@ -183,6 +183,38 @@ public sealed class BuscaEOrdenacaoEndpointTests
         achados.Select(i => i.GetProperty("codigo").GetString()).Should().Equal(codigo);
     }
 
+    [Fact(DisplayName = "q encontra código escrito com acento, procurando sem acento")]
+    public async Task Busca_CodigoAcentuado_EncontraSemAcento()
+    {
+        string bloco = Bloco();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // O cadastro aceita acento no código, e quem procura raramente o digita.
+        string codigo = $"{bloco}-CÓDIGO";
+        await CriarCursoAsync(client, $"{bloco} Um", codigo: codigo);
+
+        IReadOnlyList<JsonElement> achados = await ItensDoBlocoAsync(
+            client, bloco, $"q={Uri.EscapeDataString("codigo")}");
+
+        achados.Select(i => i.GetProperty("codigo").GetString()).Should().Equal(codigo);
+    }
+
+    [Fact(DisplayName = "Caractere nulo no termo não derruba a consulta")]
+    public async Task Busca_ComCaractereNulo_NaoQuebra()
+    {
+        string bloco = Bloco();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        await CriarCursoAsync(client, $"{bloco} Alfa");
+
+        // Texto no Postgres não admite byte zero: sem descartá-lo, o padrão do LIKE
+        // derruba a consulta no provider e a resposta vira 500.
+        HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"{Cursos}?q=%00", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     [Theory(DisplayName = "Curingas do LIKE digitados na busca são texto, não coringa")]
     [InlineData("%")]
     [InlineData("_")]

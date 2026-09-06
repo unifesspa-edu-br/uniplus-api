@@ -28,14 +28,20 @@ internal static class NormalizacaoTextual
     internal const string SemAcento =
         "AAAAAAEEEEIIIIOOOOOUUUUCNYaaaaaaeeeeiiiiooooouuuucny";
 
+    /// <summary>Nome da função do banco que aplica esta normalização.</summary>
+    internal const string FuncaoSql = "configuracao.normalizar_para_comparacao";
+
     /// <summary>
-    /// Expressão da coluna gerada, sobre a coluna informada. Só usa funções
-    /// imutáveis — requisito do Postgres para coluna gerada e para índice — e
-    /// declara a collation na conversão para minúsculas, em vez de herdá-la do
-    /// banco.
+    /// Corpo da função do banco. Só usa funções imutáveis — requisito do Postgres
+    /// para que a função possa ser declarada <c>IMMUTABLE</c> e, com isso, servir a
+    /// uma coluna gerada e a um índice. A collation é declarada na conversão para
+    /// minúsculas, em vez de herdada do banco.
     /// </summary>
-    internal static string ExpressaoSql(string coluna) =>
-        $"lower(translate(normalize({coluna}, NFC), '{Acentuadas}', '{SemAcento}') COLLATE \"C\")";
+    internal static string CorpoDaFuncaoSql =>
+        $"lower(translate(normalize($1, NFC), '{Acentuadas}', '{SemAcento}') COLLATE \"C\")";
+
+    /// <summary>Chamada da função sobre a coluna informada.</summary>
+    internal static string ExpressaoSql(string coluna) => $"{FuncaoSql}({coluna})";
 
     /// <summary>
     /// A mesma normalização, em memória, para o termo pesquisado. Espelha a
@@ -81,8 +87,23 @@ internal static class NormalizacaoTextual
     /// nenhum — é o que faz uma consulta com <c>q=</c> vazio ter a mesma
     /// representação canônica de uma sem <c>q</c>, inclusive na assinatura do cursor.
     /// </summary>
-    internal static string? PrepararTermoDeBusca(string? termo) =>
-        string.IsNullOrWhiteSpace(termo)
+    /// <remarks>
+    /// O caractere nulo é descartado antes de tudo: texto no Postgres não admite
+    /// byte zero, e mandá-lo num padrão de <c>LIKE</c> derruba a consulta no
+    /// provider — um <c>q=%00</c> vindo da borda viraria 500. Descartar é o
+    /// bastante porque ele não representa nada que alguém queira procurar.
+    /// </remarks>
+    internal static string? PrepararTermoDeBusca(string? termo)
+    {
+        if (termo is null)
+        {
+            return null;
+        }
+
+        string semNulo = termo.Replace("\0", string.Empty, StringComparison.Ordinal);
+
+        return string.IsNullOrWhiteSpace(semNulo)
             ? null
-            : EscaparCuringas(Normalizar(termo.Trim()));
+            : EscaparCuringas(Normalizar(semNulo.Trim()));
+    }
 }

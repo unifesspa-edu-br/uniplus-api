@@ -36,15 +36,6 @@ public sealed class CursoRepository : ICursoRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Globalization",
-        "CA1304:Specify CultureInfo",
-        Justification = "ToLower() dentro de expression tree é traduzido para lower() no Postgres — " +
-            "não roda no CLR, então a cultura do processo não participa.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Globalization",
-        "CA1311:Specify a culture or use an invariant version",
-        Justification = "Mesma razão de CA1304.")]
     public async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPaginadoAsync(
             IReadOnlyList<SortField> ordenacao,
@@ -82,7 +73,7 @@ public sealed class CursoRepository : ICursoRepository
             string padrao = "%" + termo + "%";
             query = query.Where(c =>
                 EF.Functions.ILike(c.NomeOrdenacao, padrao)
-                || EF.Functions.ILike(c.Codigo.ToLower(), padrao));
+                || EF.Functions.ILike(PgFunctions.NormalizarParaComparacao(c.Codigo), padrao));
         }
 
         OrderedKeysetPage<CursoOrdenado> page = await OrderedKeysetCursor
