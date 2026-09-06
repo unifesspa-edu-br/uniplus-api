@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -64,21 +66,41 @@ public sealed class CursosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
+        [FromQuery(Name = "q")]
+        [Description("Texto pesquisado. Insensível a caixa e a acentuação.")]
+        string? q,
+        [FromQuery(Name = "sort")]
+        [Description(
+            "Campos de ordenação separados por vírgula, na ordem de prioridade; '-' prefixa o "
+            + "campo decrescente. Exemplo: sort=nome,-grau. Campos aceitos: nome, codigo, grau, nivelEnsino, criadoEm. "
+            + "Sem o parâmetro, vale a ordem alfabética padrão.")]
+        string? sort,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        ListarCursosResult resultado = await _queryBus
+        if (!SortExpressionParser.TentarLer(sort, out IReadOnlyList<SortField> ordenacao, out SortExpressionError erro))
+        {
+            return erro.ParaResposta();
+        }
+
+        Result<ListarCursosResult> resultado = await _queryBus
             .Send(
-                new ListarCursosQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+                new ListarCursosQuery(
+                    ordenacao, q, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
                 cancellationToken)
             .ConfigureAwait(false);
 
+        if (!resultado.IsSuccess)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
         CursoDto[] comLinks =
-            [.. resultado.Items.Select(c => c with { Links = _linksBuilder.Build(c) })];
+            [.. resultado.Value!.Items.Select(c => c with { Links = _linksBuilder.Build(c) })];
 
         return await this.OkPaginatedOrdenadoAsync(
-            comLinks, resultado.Anterior, resultado.Proximo, page, ResourceTag,
+            comLinks, resultado.Value.Anterior, resultado.Value.Proximo, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
