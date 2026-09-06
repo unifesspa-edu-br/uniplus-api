@@ -105,8 +105,8 @@ public sealed class OrdenacaoKeysetIntegrationTests : IAsyncLifetime
         volta.Items.Select(l => l.Codigo).Should().Equal("a1", "a2");
     }
 
-    [Fact(DisplayName = "Chave de ordenação de outra ordenação é recusada, e não paginada de um ponto qualquer")]
-    public async Task ChaveIncompativel_EhRecusada()
+    [Fact(DisplayName = "Chave com número de colunas diferente é recusada, e não paginada de um ponto qualquer")]
+    public async Task ChaveComOutraLargura_EhRecusada()
     {
         await using TestDbContext contexto = await ComDadosAsync(("Alves", "a1"));
 
@@ -116,6 +116,70 @@ public sealed class OrdenacaoKeysetIntegrationTests : IAsyncLifetime
             SortKeyComposta.Serializar("uma", "chave", "de tres colunas"),
             Guid.CreateVersion7(),
             10,
+            PaginationDirection.Next);
+
+        await act.Should().ThrowAsync<CursorAncoraInvalidaException>();
+    }
+
+    [Fact(DisplayName = "Chave de outra ordenação da mesma largura é recusada — a contagem não as distingue")]
+    public async Task ChaveDeOutraOrdenacaoDaMesmaLargura_EhRecusada()
+    {
+        await using TestDbContext contexto = await ComDadosAsync(
+            ("Alves", "a1"), ("Barros", "b1"), ("Castro", "c1"));
+
+        // Cursor emitido para a ordenação ascendente, reapresentado à descendente:
+        // mesmas colunas, mesma quantidade, sentido oposto. O seek partiria dos
+        // valores certos na direção errada, pulando ou repetindo linhas.
+        KeysetOrdenadoPage<Linha> ascendente = await KeysetOrdenadoCursor.ApplyAsync(
+            contexto.Linhas.AsNoTracking(),
+            PorSobrenomeECodigo(DirecaoOrdenacao.Ascendente),
+            null,
+            null,
+            1,
+            PaginationDirection.Next);
+
+        (string SortKey, Guid Id) ancora = ascendente.Proximo!.Value;
+
+        Func<Task> act = async () => await KeysetOrdenadoCursor.ApplyAsync(
+            contexto.Linhas.AsNoTracking(),
+            PorSobrenomeECodigo(DirecaoOrdenacao.Descendente),
+            ancora.SortKey,
+            ancora.Id,
+            1,
+            PaginationDirection.Next);
+
+        await act.Should().ThrowAsync<CursorAncoraInvalidaException>();
+    }
+
+    [Fact(DisplayName = "Chave de ordenação por outras colunas, na mesma quantidade, também é recusada")]
+    public async Task ChaveDeOutrasColunas_EhRecusada()
+    {
+        await using TestDbContext contexto = await ComDadosAsync(("Alves", "a1"), ("Barros", "b1"));
+
+        KeysetOrdenadoPage<Linha> porSobrenome = await KeysetOrdenadoCursor.ApplyAsync(
+            contexto.Linhas.AsNoTracking(),
+            PorSobrenomeECodigo(DirecaoOrdenacao.Ascendente),
+            null,
+            null,
+            1,
+            PaginationDirection.Next);
+
+        (string SortKey, Guid Id) ancora = porSobrenome.Proximo!.Value;
+
+        // Duas colunas nos dois casos, mas ordenando por outra coisa.
+        OrdenacaoKeyset<Linha> porCodigoESobrenome = new(
+            [
+                ColunaOrdenacaoKeyset<Linha>.De("codigo", l => l.Codigo, l => l.Codigo),
+                ColunaOrdenacaoKeyset<Linha>.De("sobrenome", l => l.Sobrenome, l => l.Sobrenome),
+            ],
+            (partes, id) => new Linha { Codigo = partes[0], Sobrenome = partes[1], Id = id });
+
+        Func<Task> act = async () => await KeysetOrdenadoCursor.ApplyAsync(
+            contexto.Linhas.AsNoTracking(),
+            porCodigoESobrenome,
+            ancora.SortKey,
+            ancora.Id,
+            1,
             PaginationDirection.Next);
 
         await act.Should().ThrowAsync<CursorAncoraInvalidaException>();

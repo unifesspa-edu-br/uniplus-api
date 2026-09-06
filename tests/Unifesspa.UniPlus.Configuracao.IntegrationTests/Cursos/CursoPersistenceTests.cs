@@ -11,7 +11,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -199,37 +198,64 @@ public sealed class CursoPersistenceTests
 
         Guid[] ids = [.. cursos.Select(c => c.Id)];
 
-        // Página 1 (forward a partir do primeiro, limit 2): [B, C]; há anterior e próximo.
-        (IReadOnlyList<Curso> p1, (string, Guid)? p1Ant, (string, Guid)? p1Prox) =
-            await PaginarAsync(Ancora(cursos[0]), PaginationDirection.Next);
-        p1.Select(c => c.Id).Should().Equal(ids[1], ids[2]);
-        p1Ant.Should().Be(Ancora(cursos[1]));
-        p1Prox.Should().Be(Ancora(cursos[2]));
+        // A travessia parte das âncoras que a própria paginação emite, como faz um
+        // cliente ao seguir o header Link — o teste não remonta a chave de
+        // ordenação, cujo formato é interno ao cursor.
+        List<Pagina> percorridas = await PercorrerTudoAsync();
 
-        // Página 2 (forward a partir do próximo da p1): [D, E]; fim do bloco.
-        (IReadOnlyList<Curso> p2, (string, Guid)? p2Ant, (string, Guid)? p2Prox) =
-            await PaginarAsync(p1Prox, PaginationDirection.Next);
-        p2.Select(c => c.Id).Should().Equal(ids[3], ids[4]);
-        p2Ant.Should().Be(Ancora(cursos[3]));
-        p2Prox.Should().BeNull("o prefixo põe o bloco no fim da ordem alfabética");
+        // A sequência global preserva a ordem alfabética do bloco, sem repetir nem
+        // omitir, independentemente de onde ele caia entre as linhas das outras
+        // baterias de teste desta collection.
+        Guid[] doBloco =
+        [
+            .. percorridas
+                .SelectMany(p => p.Itens)
+                .Where(c => c.Nome.StartsWith(marca, StringComparison.Ordinal))
+                .Select(c => c.Id),
+        ];
+        doBloco.Should().Equal(ids);
 
-        // Backward a partir do anterior da p2: volta exatamente à página 1 em ASC.
-        (IReadOnlyList<Curso> volta, (string, Guid)? voltaAnt, (string, Guid)? voltaProx) =
-            await PaginarAsync(p2Ant, PaginationDirection.Prev);
-        volta.Select(c => c.Id).Should().Equal(ids[1], ids[2]);
-        voltaAnt.Should().Be(Ancora(cursos[1]), "ainda há linhas antes do curso B");
-        voltaProx.Should().Be(Ancora(cursos[2]));
+        // A volta por prev devolve exatamente a página anterior — mesma ordem
+        // ascendente, mesmos itens.
+        int indice = percorridas.FindIndex(p => p.Itens.Any(c => c.Id == ids[2]));
+        indice.Should().BeGreaterThan(0, "o bloco fica no fim da ordem, então há páginas antes dele");
+
+        Pagina comItemDoBloco = percorridas[indice];
+        comItemDoBloco.Anterior.Should().NotBeNull("não é a primeira página da coleção");
+
+        (IReadOnlyList<Curso> volta, _, (string SortKey, Guid Id)? voltaProx) =
+            await PaginarAsync(comItemDoBloco.Anterior, PaginationDirection.Prev);
+
+        volta.Select(c => c.Id).Should().Equal(percorridas[indice - 1].Itens.Select(c => c.Id));
+        voltaProx!.Value.Id.Should().Be(volta[^1].Id, "a âncora de próximo é o último item da página");
     }
 
-    private static (string SortKey, Guid Id) Ancora(Curso curso) =>
-        (SortKeyComposta.Serializar(SemAcentoMinusculo(curso.Nome), curso.Codigo), curso.Id);
+    private sealed record Pagina(
+        IReadOnlyList<Curso> Itens,
+        (string SortKey, Guid Id)? Anterior,
+        (string SortKey, Guid Id)? Proximo);
 
-    /// <summary>
-    /// Reproduz no cliente a normalização que a coluna gerada faz no banco. Os
-    /// nomes usados aqui são ASCII, então basta reduzir a caixa — acentuação tem
-    /// teste próprio, contra o banco.
-    /// </summary>
-    private static string SemAcentoMinusculo(string nome) => nome.ToLowerInvariant();
+    /// <summary>Percorre a listagem inteira seguindo as âncoras de próximo.</summary>
+    private async Task<List<Pagina>> PercorrerTudoAsync()
+    {
+        List<Pagina> paginas = [];
+        (string SortKey, Guid Id)? ancora = null;
+
+        while (true)
+        {
+            (IReadOnlyList<Curso> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
+                await PaginarAsync(ancora, PaginationDirection.Next);
+
+            paginas.Add(new Pagina(itens, anterior, proximo));
+
+            if (proximo is null)
+            {
+                return paginas;
+            }
+
+            ancora = proximo;
+        }
+    }
 
     private async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         PaginarAsync((string SortKey, Guid Id)? ancora, PaginationDirection direction)
