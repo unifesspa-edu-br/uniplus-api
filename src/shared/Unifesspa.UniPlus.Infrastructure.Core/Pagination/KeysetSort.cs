@@ -149,10 +149,16 @@ public sealed class KeysetSort<T>
 
         Columns = columns;
         BuildAnchor = buildAnchor;
-        Signature = string.Join(
-            '|',
-            columns.Select(static c =>
-                $"{c.Token}:{(c.Direction == SortDirection.Descending ? "desc" : "asc")}"));
+
+        // Pelo mesmo formato dos valores, e não por concatenação com separador: um
+        // token que contivesse o separador escolhido faria duas ordenações distintas
+        // produzirem a mesma assinatura, e o cursor de uma seria aceito pela outra —
+        // exatamente a confusão que a assinatura existe para impedir.
+        Signature = CompositeSortKey.Serialize(
+            [
+                .. columns.SelectMany(static c =>
+                    new[] { c.Token, c.Direction == SortDirection.Descending ? "desc" : "asc" }),
+            ]);
     }
 
     /// <summary>Colunas na ordem de prioridade.</summary>
