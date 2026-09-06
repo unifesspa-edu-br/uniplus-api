@@ -78,7 +78,7 @@ public sealed class OfertasCursoController : ControllerBase
         [FromQuery(Name = "sort")]
         [Description(
             "Campos de ordenação separados por vírgula, na ordem de prioridade; '-' prefixa o "
-            + "campo decrescente. Exemplo: sort=nome,-grau. Campos aceitos: cursoNome, cursoCodigo, unidadeOfertanteSigla, programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno, criadoEm. "
+            + "campo decrescente. Exemplo: sort=cursoNome,-programaDeOferta. Campos aceitos: cursoNome, cursoCodigo, unidadeOfertanteSigla, programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno, criadoEm. "
             + "Sem o parâmetro, vale a ordem alfabética padrão.")]
         string? sort,
         CancellationToken cancellationToken)
