@@ -15,9 +15,6 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class OfertaCursoRepository : IOfertaCursoRepository
 {
-    /// <summary>Caractere de escape dos curingas do LIKE, o mesmo que a normalização insere.</summary>
-    private const string EscapeLike = @"\";
-
     private readonly ConfiguracaoDbContext _dbContext;
 
     public OfertaCursoRepository(ConfiguracaoDbContext dbContext)
@@ -97,9 +94,9 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
         {
             string padrao = "%" + termo + "%";
             query = query.Where(o =>
-                EF.Functions.ILike(o.NomeOrdenacao, padrao, EscapeLike)
-                || EF.Functions.ILike(o.Codigo.ToLower(), padrao, EscapeLike)
-                || EF.Functions.ILike(o.UnidadeSigla.ToLower(), padrao, EscapeLike));
+                EF.Functions.ILike(o.NomeOrdenacao, padrao)
+                || EF.Functions.ILike(o.Codigo.ToLower(), padrao)
+                || EF.Functions.ILike(o.UnidadeSigla.ToLower(), padrao));
         }
 
         OrderedKeysetPage<OfertaCursoOrdenada> page = await OrderedKeysetCursor
