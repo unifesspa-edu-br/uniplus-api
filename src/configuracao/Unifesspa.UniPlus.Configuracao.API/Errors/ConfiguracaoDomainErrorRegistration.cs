@@ -1134,6 +1134,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.consulta.ordenacao_mal_formada",
                 "Expressão de ordenação inválida")),
 
+        new(ConsultaErrorCodes.BuscaMuitoLonga,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.consulta.busca_muito_longa",
+                "Texto pesquisado excede o comprimento aceito")),
+
         // ── Curso (UNI-REQ-0010) ──────────────────────────────────────────
         new(CursoErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(

@@ -67,7 +67,7 @@ public sealed class CursosController : ControllerBase
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "q")]
-        [Description("Texto pesquisado. Insensível a caixa e a acentuação.")]
+        [Description("Texto pesquisado. Insensível a caixa e a acentuação. Até 200 caracteres.")]
         string? q,
         [FromQuery(Name = "sort")]
         [Description(
