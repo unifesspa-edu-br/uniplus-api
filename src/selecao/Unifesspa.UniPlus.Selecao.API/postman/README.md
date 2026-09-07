@@ -223,9 +223,10 @@ risco desproporcional a um problema cosmético. Documentado como comentário em
 - `FaseCanonica.AgrupaEtapas=true` só é aceito para o código canônico
   `AVALIACAO` (`FaseCanonica.AgrupaEtapasApenasAvaliacao`) — a coleção cria a fase
   canônica com esse código, não um código arbitrário como `RESULTADO_FINAL`.
-- Uma fase de cronograma com `ProduzResultado=true` (herdado por snapshot-copy da
-  FaseCanonica) exige `AtoProduzidoCodigo` não-nulo — a coleção cadastra um
-  `TipoAtoPublicado` `RESULTADO_FINAL` em Setup para satisfazer o guard.
+- Cada produto declarado por uma fase do cronograma é resolvido contra o catálogo de
+  Publicações, e o papel só é aceito em tipo de ato que o catálogo classifica como
+  resultado — a coleção cadastra um `TipoAtoPublicado` `RESULTADO_FINAL` em Setup para
+  satisfazer o guard.
 
 Nenhum desses três é falha da coleção nem do módulo Seleção — são as regras de
 negócio corretas dos módulos Configuração/Publicações, apenas não documentadas

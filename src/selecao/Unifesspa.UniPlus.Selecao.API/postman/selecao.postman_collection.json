@@ -1638,7 +1638,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_inscricao_id}}\",\n    \"inicio\": \"2025-12-01T00:00:00Z\",\n    \"fim\": \"2025-12-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": null,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  },\n  {\n    \"ordem\": 2,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_inscricao_id}}\",\n    \"inicio\": \"2025-12-01T00:00:00Z\",\n    \"fim\": \"2025-12-31T00:00:00Z\",\n    \"produtos\": [],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  },\n  {\n    \"ordem\": 2,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4232,7 +4232,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4761,7 +4761,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5296,7 +5296,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5824,7 +5824,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6356,7 +6356,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"

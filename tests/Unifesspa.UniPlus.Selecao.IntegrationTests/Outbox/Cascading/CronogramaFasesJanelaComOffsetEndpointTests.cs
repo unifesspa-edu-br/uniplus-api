@@ -131,7 +131,9 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
                   "faseCanonicaId": "{{faseCanonicaId}}",
                   "inicio": "{{inicio}}",
                   "fim": "{{fim}}",
-                  "atoProduzidoCodigo": null,
+                  "produtos": [],
+                  "faseConcluinteCodigo": null,
+                  "emiteParecerIndividual": false,
                   "tiposBancaIds": [],
                   "regraRecurso": null
                 }]

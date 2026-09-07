@@ -8646,12 +8646,13 @@
           "agrupaEtapas",
           "permiteComplementacao",
           "produzResultado",
-          "resultadoDefinitivo",
           "coletaInscricao",
           "coletaSolicitacaoIsencao",
           "inicio",
           "fim",
-          "atoProduzidoCodigo",
+          "produtos",
+          "faseConcluinteCodigo",
+          "emiteParecerIndividual",
           "bancasRequeridas",
           "regraRecurso"
         ],
@@ -8691,9 +8692,6 @@
           "produzResultado": {
             "type": "boolean"
           },
-          "resultadoDefinitivo": {
-            "type": "boolean"
-          },
           "coletaInscricao": {
             "type": "boolean"
           },
@@ -8714,11 +8712,20 @@
             ],
             "format": "date-time"
           },
-          "atoProduzidoCodigo": {
+          "produtos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProdutoDaFaseDto"
+            }
+          },
+          "faseConcluinteCodigo": {
             "type": [
               "null",
               "string"
             ]
+          },
+          "emiteParecerIndividual": {
+            "type": "boolean"
           },
           "bancasRequeridas": {
             "type": "array",
@@ -8744,7 +8751,9 @@
           "faseCanonicaId",
           "inicio",
           "fim",
-          "atoProduzidoCodigo",
+          "produtos",
+          "faseConcluinteCodigo",
+          "emiteParecerIndividual",
           "tiposBancaIds",
           "regraRecurso"
         ],
@@ -8776,11 +8785,20 @@
             ],
             "format": "date-time"
           },
-          "atoProduzidoCodigo": {
+          "produtos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProdutoDaFaseInput"
+            }
+          },
+          "faseConcluinteCodigo": {
             "type": [
               "null",
               "string"
             ]
+          },
+          "emiteParecerIndividual": {
+            "type": "boolean"
           },
           "tiposBancaIds": {
             "type": "array",
@@ -10202,6 +10220,47 @@
           "criadoEm": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ProdutoDaFaseDto": {
+        "required": [
+          "id",
+          "atoCodigo",
+          "papel"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "atoCodigo": {
+            "type": "string"
+          },
+          "papel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ProdutoDaFaseInput": {
+        "required": [
+          "atoCodigo",
+          "papel"
+        ],
+        "type": "object",
+        "properties": {
+          "atoCodigo": {
+            "type": "string"
+          },
+          "papel": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
