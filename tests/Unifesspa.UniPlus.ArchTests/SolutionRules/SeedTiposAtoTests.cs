@@ -28,15 +28,16 @@ public sealed partial class SeedTiposAtoTests
 
     private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
 
-    [Fact(DisplayName = "O arquivo de seed existe e traz os vinte tipos de ato")]
-    public void Seed_TrazOsVinteTipos()
+    [Fact(DisplayName = "O arquivo de seed existe e traz os vinte e um tipos de ato")]
+    public void Seed_TrazOsVinteEUmTipos()
     {
         LinhaSeed[] linhas = Carregar();
 
-        // Os quatro códigos que faltavam para isenção, heteroidentificação, habilitação
-        // e avaliação biopsicossocial publicarem resultado entram aqui (uniplus-api#1436)
-        // — os dezesseis originais mais esses quatro.
-        linhas.Should().HaveCount(20);
+        // Toda fase do ciclo que produz resultado precisa de um tipo de ato
+        // correspondente para ser configurável num cronograma — sem ele a fase não
+        // tem o que declarar como produto, e a invariante da conclusão recusa a
+        // publicação (uniplus-api#1436).
+        linhas.Should().HaveCount(21);
         linhas.Select(l => l.Codigo).Should().OnlyHaveUniqueItems();
     }
 
@@ -112,15 +113,20 @@ public sealed partial class SeedTiposAtoTests
         // edital nenhum. CONVOCACAO e CHAMADA ficam de fora — concedem o direito de
         // ocupar a vaga, e o recurso é contra a habilitação que as antecede, não
         // contra elas. ERRATA fica de fora por decisão consciente: o recurso cabe
-        // contra o resultado corrigido, não contra a errata. Os quatro códigos novos
+        // contra o resultado corrigido, não contra a errata. Os cinco códigos abaixo
         // entram porque cada um determina a situação do candidato na respectiva
-        // matéria — isenção, heteroidentificação, habilitação e avaliação
-        // biopsicossocial (uniplus-api#1436).
+        // matéria — isenção, heteroidentificação, habilitação, avaliação
+        // biopsicossocial e homologação das inscrições (uniplus-api#1436).
+        // RESULTADO_PRELIMINAR_ISENCAO carrega "PRELIMINAR" no nome porque foi
+        // reconciliado com o nome já em uso num rascunho em homologação, não porque
+        // exista um código "definitivo" irmão — o recurso contra o lote publicado
+        // corre pela fase RECURSOS genérica, como os demais quatro.
         resultado.Should().BeEquivalentTo([
             "CONFIRMACAO_INTERESSE",
             "GABARITO_DEFINITIVO",
             "GABARITO_PRELIMINAR",
             "HOMOLOGACAO_ANALISE_DOCUMENTAL",
+            "HOMOLOGACAO_HABILITACAO",
             "HOMOLOGACAO_INSCRICOES",
             "HOMOLOGACAO_RECURSOS",
             "LISTA_ESPERA",
@@ -139,19 +145,12 @@ public sealed partial class SeedTiposAtoTests
         IReadOnlyList<string> unicos =
             [.. Carregar().Where(l => l.UnicoPorObjeto).Select(l => l.Codigo).Order(StringComparer.Ordinal)];
 
-        // Os quatro códigos novos nascem únicos por objeto: cada matéria publica um
-        // único lote de decisão por processo (mesmo padrão de HOMOLOGACAO_INSCRICOES)
-        // — o recurso contra ele corre pela fase RECURSOS genérica, sem precisar de um
-        // segundo código "definitivo" por matéria (uniplus-api#1436).
-        unicos.Should().BeEquivalentTo([
-            "EDITAL_ABERTURA",
-            "HOMOLOGACAO_INSCRICOES",
-            "RESULTADO_AVALIACAO_BIOPSICOSSOCIAL",
-            "RESULTADO_FINAL",
-            "RESULTADO_HETEROIDENTIFICACAO",
-            "RESULTADO_HOMOLOGACAO",
-            "RESULTADO_PRELIMINAR_ISENCAO",
-        ]);
+        // Isenção, heteroidentificação, habilitação, avaliação biopsicossocial e
+        // homologação das inscrições podem recorrer por chamada num certame de
+        // múltiplas convocações — únicos por objeto bloquearia uma segunda
+        // publicação legítima. Mesma classe de HOMOLOGACAO_ANALISE_DOCUMENTAL e
+        // HOMOLOGACAO_RECURSOS, não de HOMOLOGACAO_INSCRICOES.
+        unicos.Should().BeEquivalentTo(["EDITAL_ABERTURA", "HOMOLOGACAO_INSCRICOES", "RESULTADO_FINAL"]);
     }
 
     private static LinhaSeed[] Carregar()
