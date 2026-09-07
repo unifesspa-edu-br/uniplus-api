@@ -793,10 +793,12 @@ internal static class CorpusEnvelope
         origemData: OrigemDataFase.Propria,
         agrupaEtapas: true,
         permiteComplementacao: false,
-                        coletaInscricao: false, coletaSolicitacaoIsencao: false,
+        coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+        produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+        faseConcluinteCodigo: null,
+        emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 }

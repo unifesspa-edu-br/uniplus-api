@@ -233,7 +233,9 @@ internal static class ProcessoSeletivoPendenciasSeeder
             agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null,
+            emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null).Value!;
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada
