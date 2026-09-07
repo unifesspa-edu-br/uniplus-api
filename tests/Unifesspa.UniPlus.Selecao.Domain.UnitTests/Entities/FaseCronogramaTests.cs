@@ -434,7 +434,6 @@ public sealed class FaseCronogramaTests
         resultado.Value!.RegraRecurso!.ProdutoAncoraId.Should().NotBe(gabarito.Id);
     }
 
-
     [Fact(DisplayName = "Ordem menor ou igual a zero é recusada")]
     public void Ordem_MenorOuIgualAZero_Lanca()
     {
