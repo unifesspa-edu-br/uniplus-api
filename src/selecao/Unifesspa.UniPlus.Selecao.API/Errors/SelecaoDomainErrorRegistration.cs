@@ -458,6 +458,13 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FaseCronograma.FaseCanonicaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada", "Fase canônica não encontrada ou não está mais viva")),
         new("FaseCronograma.TipoBancaNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado", "Tipo de banca não encontrado ou não está mais vivo")),
         new("FaseCronograma.CategoriaDocumentoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada", "Categoria de documento do recorte de competência não encontrada ou não está mais viva")),
+        // O recorte de competência é o que separa duas bancas do MESMO tipo na mesma fase.
+        // Onde o tipo já identifica sozinho, o recorte é dispensável — e por isso a
+        // obrigatoriedade só existe no arranjo ambíguo. Recortes iguais entre duas dessas
+        // bancas caem na recusa irmã: cumprem a letra da exigência sem distinguir nada.
+        new("BancaRequerida.CategoriaDuplicadaNoRecorte", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.categoria_duplicada_no_recorte", "A banca declara a mesma categoria de documento mais de uma vez no recorte de competência")),
+        new("BancaRequerida.RecorteDeCompetenciaObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.recorte_de_competencia_obrigatorio", "A fase requer mais de uma banca do mesmo tipo e cada uma precisa declarar as categorias de documento que julga")),
+        new("BancaRequerida.RecorteDeCompetenciaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.recorte_de_competencia_duplicado", "Duas bancas do mesmo tipo na mesma fase declaram o mesmo recorte de competência")),
         // Cada produto declarado pela fase é resolvido contra o catálogo de Publicações: o
         // tipo existe e está vigente, e o papel só cabe onde o catálogo diz que o ato É
         // resultado — classificação intrínseca do tipo, que nunca varia por edital.

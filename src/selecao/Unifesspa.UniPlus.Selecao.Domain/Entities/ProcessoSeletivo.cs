@@ -1745,6 +1745,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
         new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase que publica resultado preliminar tem conclusão declarada e alcançável", PendenciaDaConclusaoDoCicloRecursal() is null),
         new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", PendenciaDaAncoraDoRecurso() is null),
+            new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", PendenciaDoRecorteDeCompetencia() is null),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
         new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
@@ -2156,7 +2157,54 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return pendenciaDaAncora;
         }
 
+        // O recorte de competência das bancas, pela mesma razão: FaseCronograma.Criar o
+        // recusa na escrita, e o EF hidrata bancas_requeridas e categorias_julgadas direto
+        // das linhas, sem passar pela fábrica. Sem esta metade, um certame carregado do
+        // banco com duas bancas do mesmo tipo indistinguíveis seria publicado sem dizer
+        // quem responde por qual matéria — e o defeito só apareceria no primeiro parecer ou
+        // no primeiro recurso, longe da causa.
+        if (PendenciaDoRecorteDeCompetencia() is { } pendenciaDoRecorte)
+        {
+            return pendenciaDoRecorte;
+        }
+
         return null;
+    }
+
+    /// <summary>
+    /// A primeira violação do recorte de competência no cronograma corrente, ou
+    /// <see langword="null"/> quando toda fase identifica cada banca que requer.
+    /// </summary>
+    /// <remarks>
+    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// item só. As duas metades vêm da MESMA travessia
+    /// (<see cref="ViolacoesDoRecorteDeCompetencia"/>), que por sua vez chama o predicado de
+    /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
+    /// também chamam.
+    /// </remarks>
+    private DomainError? PendenciaDoRecorteDeCompetencia()
+    {
+        List<FieldError> violacoes = ViolacoesDoRecorteDeCompetencia([.. _cronogramaFases]);
+
+        return violacoes.Count > 0 ? violacoes[0].Error : null;
+    }
+
+    /// <summary>
+    /// As violações do recorte de competência, uma por banca mal declarada, com o campo que
+    /// localiza cada uma.
+    /// </summary>
+    /// <remarks>Sem I/O e sem navegação — só o que já está em memória.</remarks>
+    private static List<FieldError> ViolacoesDoRecorteDeCompetencia(IReadOnlyList<FaseCronograma> fases)
+    {
+        List<FieldError> violacoes = [];
+
+        for (int indice = 0; indice < fases.Count; indice++)
+        {
+            violacoes.AddRange(fases[indice].ViolacoesDoRecorteDeCompetencia()
+                .Select(violacao => violacao with { Field = $"fases[{indice}].{violacao.Field}" }));
+        }
+
+        return violacoes;
     }
 
     /// <summary>

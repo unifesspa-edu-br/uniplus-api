@@ -19,7 +19,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// outra que analisa requisito étnico-racial para fins de cota —, e sem
 /// <see cref="RecorteDeCompetencia"/> as duas são a mesma linha repetida. Quando o recorte
 /// é obrigatório e quando dois recortes se confundem é invariante da FASE, que enxerga
-/// todas as bancas de uma vez.
+/// todas as bancas de uma vez:
+/// <see cref="FaseCronograma.ViolacoesDoRecorteDeCompetencia(string, System.Collections.Generic.IReadOnlyList{BancaRequerida})"/>.
 /// </para>
 /// </remarks>
 public sealed class BancaRequerida : EntityBase
