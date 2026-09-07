@@ -173,16 +173,18 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(
             $"Fronteira da substituição — {cenario}");
 
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);
+
         RegraRecursoFase regraRecurso = RegraRecursoFase.Criar(
             ReferenciaRegra.Criar(CodigoDaRegra, "v1", HashDaDefinicaoVigente).Value!,
             new ArgsRegraPrazoRecurso(
                 PrazoValor: valor,
                 PrazoUnidade: unidade,
-                AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
                 SuspensividadePrimeiraInstanciaValor: null,
                 SuspensividadePrimeiraInstanciaUnidade: null,
                 SuspensividadeSegundaInstanciaValor: null,
-                SuspensividadeSegundaInstanciaUnidade: null)).Value!;
+                SuspensividadeSegundaInstanciaUnidade: null),
+            preliminar.Id).Value!;
 
         FaseCronograma faseComRecurso = FaseCronograma.Criar(
             ordem: 2,
@@ -195,7 +197,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)],
+            produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],

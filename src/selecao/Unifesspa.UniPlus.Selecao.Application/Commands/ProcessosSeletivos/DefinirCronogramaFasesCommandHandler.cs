@@ -15,9 +15,9 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <summary>
 /// Handler do <see cref="DefinirCronogramaFasesCommand"/> (Story #851, CA-06):
 /// resolve os snapshots-copy de <c>FaseCanonica</c>/<c>TipoBanca</c> (módulo
-/// Configuração), o grafo de precedências vigente e o tipo de cada ato publicado e do ato
-/// âncora (módulo Publicações), usando a data do relógio injetado lida <b>uma vez</b> por
-/// operação (ADR-0068) — e delega a montagem/validação ao domínio.
+/// Configuração), o grafo de precedências vigente e o tipo de cada ato publicado (módulo
+/// Publicações), usando a data do relógio injetado lida <b>uma vez</b> por operação
+/// (ADR-0068) — e delega a montagem/validação ao domínio.
 /// </summary>
 /// <remarks>
 /// ADR-0125: propaga TODOS os erros de <see cref="FaseCronograma.Criar"/> (não só o
@@ -35,7 +35,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// violações da mesma fase.
 /// <para>
 /// As resoluções cross-módulo que não descrevem um item da coleção — fase canônica, tipo de
-/// banca, regra do catálogo, âncora — continuam recusando na primeira: cada uma nomeia um
+/// banca, regra do catálogo — continuam recusando na primeira: cada uma nomeia um
 /// insumo que falta inteiro, e prosseguir a partir dela produziria diagnóstico sobre um
 /// estado que não existe. Elas <b>levam junto</b> o que já foi acumulado, porém: parar é
 /// uma decisão sobre o que ainda dá para avaliar, não licença para apagar defeito já
@@ -162,9 +162,9 @@ public static class DefinirCronogramaFasesCommandHandler
 
             // Os produtos da fase: cada código resolvido contra o catálogo vigente, e o
             // papel aceito só onde o catálogo diz que o ato É resultado (ADR-0056 — a
-            // classificação é intrínseca ao tipo e nunca varia por edital). A
-            // irreversibilidade é LIDA para decidir a âncora do recurso, logo abaixo, e
-            // descartada: ela evolui com o cadastro e não é copiada para a fase.
+            // classificação é intrínseca ao tipo e nunca varia por edital). Os atributos que
+            // decidem a âncora do recurso são LIDOS logo abaixo e descartados: eles evoluem
+            // com o cadastro e não são copiados para a fase.
             List<ProdutoDaFase> produtos = [];
             bool produtosIntegros = true;
             for (int posicao = 0; posicao < input.Produtos.Count; posicao++)
@@ -237,13 +237,22 @@ public static class DefinirCronogramaFasesCommandHandler
                 ArgsRegraPrazoRecurso args = new(
                     regraInput.PrazoValor,
                     regraInput.PrazoUnidade,
-                    regraInput.AtoAncoraCodigo,
                     regraInput.SuspensividadePrimeiraInstanciaValor,
                     regraInput.SuspensividadePrimeiraInstanciaUnidade,
                     regraInput.SuspensividadeSegundaInstanciaValor,
                     regraInput.SuspensividadeSegundaInstanciaUnidade);
 
-                Result<RegraRecursoFase> regraRecursoResult = RegraRecursoFase.Criar(referenciaResult.Value!, args);
+                // A âncora é resolvida DENTRO dos produtos desta fase: o mesmo tipo de ato
+                // pode ser publicado por outra fase do cronograma, e é a identidade da linha,
+                // não o código, que diz de qual publicação o prazo conta (CA-01/CA-02).
+                // Quando o código declarado não corresponde a produto algum desta fase, a
+                // âncora fica vazia e o domínio recusa nomeando os preliminares disponíveis
+                // — ele é quem enxerga os dois lados.
+                ProdutoDaFase? produtoAncora = produtos
+                    .Find(p => string.Equals(p.AtoCodigo, regraInput.AtoAncoraCodigo, StringComparison.Ordinal));
+
+                Result<RegraRecursoFase> regraRecursoResult = RegraRecursoFase.Criar(
+                    referenciaResult.Value!, args, produtoAncora?.Id ?? Guid.Empty);
                 if (regraRecursoResult.IsFailure)
                 {
                     // A factory acusa prazo, unidade ou par de suspensividade sem devolver
@@ -251,35 +260,29 @@ public static class DefinirCronogramaFasesCommandHandler
                     return InterromperCom($"fases[{indice}].regraRecurso", regraRecursoResult.Error!);
                 }
 
-                // Item 3/4 do §3.6: o ato âncora existe, está vigente, NÃO é congelante e
-                // NÃO tem efeito irreversível. A memoização acima já devolve a resolução
-                // feita para o produto homônimo, que é o caso normal — o domínio exige que
-                // a âncora seja um dos produtos da própria fase.
-                TipoAtoPublicadoView? tipoAncora = await ResolverTipoDeAtoAsync(args.AtoAncoraCodigo).ConfigureAwait(false);
-
-                if (tipoAncora is null)
+                // Item 3/4 do §3.6, resolvidos sobre o ato do produto âncora: ele NÃO
+                // congela configuração e NÃO tem efeito irreversível. A resolução do tipo já
+                // foi memoizada na varredura dos produtos, porque a âncora é um deles.
+                if (produtoAncora is not null
+                    && await ResolverTipoDeAtoAsync(produtoAncora.AtoCodigo).ConfigureAwait(false) is { } tipoAncora)
                 {
-                    return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", new DomainError(
-                        "RegraRecursoFase.AncoraNaoEncontradaNoCatalogo",
-                        $"O tipo de ato âncora '{args.AtoAncoraCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje."));
-                }
+                    if (tipoAncora.CongelaConfiguracao)
+                    {
+                        return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", new DomainError(
+                            "RegraRecursoFase.AncoraEmAtoCongelante",
+                            $"O tipo de ato âncora '{tipoAncora.Codigo}' congela configuração — a âncora do recurso nunca é o ato que congela a configuração."));
+                    }
 
-                if (tipoAncora.CongelaConfiguracao)
-                {
-                    return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", new DomainError(
-                        "RegraRecursoFase.AncoraEmAtoCongelante",
-                        $"O tipo de ato âncora '{args.AtoAncoraCodigo}' congela configuração — a âncora do recurso nunca é o ato que congela a configuração."));
-                }
-
-                // A irreversibilidade é resolvida do catálogo, não de cópia congelada na
-                // fase (UNI-REQ-0080): um ato que consome vaga escassa concede um direito
-                // que não se desfaz, e recurso contra ele não teria o que reverter. O
-                // recurso cabível é contra o resultado que fundamentou o ato.
-                if (tipoAncora.EfeitoIrreversivel)
-                {
-                    return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", new DomainError(
-                        "RegraRecursoFase.AncoraEmAtoIrreversivel",
-                        $"O tipo de ato âncora '{args.AtoAncoraCodigo}' tem efeito irreversível — não cabe recurso contra ele, e sim contra o resultado que o fundamenta."));
+                    // A irreversibilidade é resolvida do catálogo, não de cópia congelada na
+                    // fase (UNI-REQ-0080): um ato que consome vaga escassa concede um direito
+                    // que não se desfaz, e recurso contra ele não teria o que reverter. O
+                    // recurso cabível é contra o resultado que fundamentou o ato.
+                    if (tipoAncora.EfeitoIrreversivel)
+                    {
+                        return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", new DomainError(
+                            "RegraRecursoFase.AncoraEmAtoIrreversivel",
+                            $"O tipo de ato âncora '{tipoAncora.Codigo}' tem efeito irreversível — não cabe recurso contra ele, e sim contra o resultado que o fundamenta."));
+                    }
                 }
 
                 regraRecurso = regraRecursoResult.Value!;

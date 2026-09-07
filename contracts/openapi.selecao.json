@@ -6731,7 +6731,6 @@
         "required": [
           "prazoValor",
           "prazoUnidade",
-          "atoAncoraCodigo",
           "suspensividadePrimeiraInstanciaValor",
           "suspensividadePrimeiraInstanciaUnidade",
           "suspensividadeSegundaInstanciaValor",
@@ -6749,9 +6748,6 @@
           },
           "prazoUnidade": {
             "$ref": "#/components/schemas/UnidadePrazo"
-          },
-          "atoAncoraCodigo": {
-            "type": "string"
           },
           "suspensividadePrimeiraInstanciaValor": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
@@ -10705,12 +10701,17 @@
       "RegraRecursoFaseDto": {
         "required": [
           "id",
+          "produtoAncoraId",
           "regra",
           "args"
         ],
         "type": "object",
         "properties": {
           "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "produtoAncoraId": {
             "type": "string",
             "format": "uuid"
           },

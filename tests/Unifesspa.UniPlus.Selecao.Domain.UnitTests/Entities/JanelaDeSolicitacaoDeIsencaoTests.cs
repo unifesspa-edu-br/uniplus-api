@@ -192,21 +192,28 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "SOLICITACAO_ISENCAO", donoInstitucional: "CEPS",
             origemData: OrigemDataFase.Delegada, agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
-            produtos: [ProdutoDaFase.Criar("SOLICITACAO_ISENCAO", PapelProdutoFase.Definitivo)],
+            produtos:
+            [
+                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_PRELIMINAR_ISENCAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("HOMOLOGACAO_RECURSOS", PapelProdutoFase.Definitivo),
+            ],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: recurso ?? RecursoEmDiasUteis(2m)).Value!;
+
+    /// <summary>Produto preliminar da fase de isenção — a âncora que a regra de recurso declara.</summary>
+    private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000003");
 
     private static RegraRecursoFase RecursoEmDiasUteis(decimal prazo) => RegraRecursoFase.Criar(
         ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)).Value!,
         new ArgsRegraPrazoRecurso(
             PrazoValor: prazo,
             PrazoUnidade: UnidadePrazo.DiasUteis,
-            AtoAncoraCodigo: "SOLICITACAO_ISENCAO",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
             SuspensividadeSegundaInstanciaValor: null,
-            SuspensividadeSegundaInstanciaUnidade: null)).Value!;
+            SuspensividadeSegundaInstanciaUnidade: null),
+        ProdutoPreliminarId).Value!;
 
     private static ProcessoSeletivo ProcessoComCronograma(FaseCronograma[] fases)
     {

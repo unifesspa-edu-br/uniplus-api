@@ -91,6 +91,12 @@ internal static class ProcessoConformeFactory
     /// Fase mínima e conforme: agrupa etapas (há uma), produz resultado e coleta inscrição (há
     /// vagas e a origem é inscrição própria).
     /// </summary>
+    /// <summary>
+    /// Produto preliminar da fase conforme — a âncora que as regras de recurso montadas por
+    /// esta suíte declaram.
+    /// </summary>
+    internal static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000001");
+
     internal static FaseCronograma FaseConforme(RegraRecursoFase? regraRecurso = null)
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(
@@ -104,7 +110,17 @@ internal static class ProcessoConformeFactory
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            // O preliminar entra só quando há regra de recurso: é nele que a fase ancora o
+            // prazo, e sem ele a factory devolveria uma fase recusada em vez da fase conforme
+            // que os testes desta suíte tomam como ponto de partida. O Id é fixo para que
+            // quem monta a regra possa declarar a âncora antes de a fase existir.
+            produtos: regraRecurso is null
+                ? [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)]
+                :
+                [
+                    ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo),
+                ],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],

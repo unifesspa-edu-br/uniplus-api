@@ -13,17 +13,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// Deriva de <see cref="EntityBase"/> puro (sem soft-delete), mesmo padrão de
-/// <see cref="EtapaProcesso"/>. As invariantes que dependem da fase-mãe (a fase produz
-/// resultado, e a âncora é um dos produtos que ela publica — itens 1 e 2 do §3.6) são
-/// validadas por <see cref="FaseCronograma.Criar"/>, que tem acesso aos dois lados; as que esta
-/// entidade consegue provar sozinha ficam aqui: a coerência da regra referenciada, as
-/// unidades declaráveis e a magnitude do prazo de interposição, e a completude dos pares
-/// de suspensividade.
+/// <see cref="EtapaProcesso"/>. A invariante que depende da fase-mãe — existir o produto
+/// preliminar em que o prazo ancora — é validada por <see cref="FaseCronograma.Criar"/>,
+/// que tem acesso aos dois lados; as que esta entidade consegue provar sozinha ficam aqui:
+/// a coerência da regra referenciada, as unidades declaráveis e a magnitude do prazo de
+/// interposição, e a completude dos pares de suspensividade.
 /// </remarks>
 /// <remarks>
 /// Essas invariantes vivem aqui, e não só no validator da porta HTTP, porque existe
 /// caminho de construção que não passa por ela: a reidratação do envelope chama
-/// <see cref="Criar"/> direto ao restaurar configuração congelada. O validator continua
+/// <see cref="Reidratar"/> ao restaurar configuração congelada. O validator continua
 /// existindo e recusa antes, campo a campo, com mensagem por campo — quem chega pelo HTTP
 /// recebe o 400 detalhado dele; quem chega por outro caminho encontra estas recusas, cada
 /// uma com erro nomeado próprio.
@@ -41,22 +40,53 @@ public sealed class RegraRecursoFase : EntityBase
 
     public ArgsRegraPrazoRecurso Args { get; private set; } = null!;
 
+    /// <summary>
+    /// O <c>ProdutoDaFase</c> em que o prazo de interposição ancora: sempre o resultado
+    /// preliminar publicado pela PRÓPRIA fase, referenciado pela identidade da linha e não
+    /// pelo código do tipo de ato.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Duas fases do mesmo cronograma podem publicar o mesmo tipo de ato, e o código
+    /// sozinho não distingue qual das duas publicações abre a janela do candidato. A
+    /// identidade do produto distingue, e o <c>UNI-REQ-0115</c> continua satisfeito: o
+    /// prazo segue contando do instante absoluto de publicação daquele ato.
+    /// </para>
+    /// <para>
+    /// Quem configura declara o tipo de ato; Application o resolve <b>dentro da coleção de
+    /// produtos daquela fase</b>, e é o identificador resolvido que chega aqui — por isso
+    /// ancorar na publicação de outra fase deixa de ser exprimível. Que o produto exista na
+    /// fase e tenha papel preliminar é conferido por <see cref="FaseCronograma.Criar"/>, o
+    /// único ponto que enxerga os dois lados.
+    /// </para>
+    /// </remarks>
+    public Guid ProdutoAncoraId { get; private set; }
+
     private RegraRecursoFase() { }
 
     /// <summary>
     /// Cria a regra de recurso da fase. Não resolve nem confere a existência da
     /// <paramref name="regra"/> no catálogo (isso é I/O — Application, via
-    /// <c>IRegraCatalogoReader</c>, ADR-0042) nem a vigência do ato âncora (Application,
-    /// via <c>ITipoAtoPublicadoReader</c>) — só as invariantes puras que este VO consegue
-    /// provar sozinho: a referência de catálogo por símbolo, as unidades declaráveis e a
-    /// magnitude estritamente positiva do prazo de interposição (UNI-REQ-0081/0113), e a
-    /// completude de cada par de suspensividade (UNI-REQ-0080).
+    /// <c>IRegraCatalogoReader</c>, ADR-0042) nem os atributos do tipo de ato âncora
+    /// (Application, via <c>ITipoAtoPublicadoReader</c>) — só as invariantes puras que este
+    /// VO consegue provar sozinho: a referência de catálogo por símbolo, as unidades
+    /// declaráveis e a magnitude estritamente positiva do prazo de interposição
+    /// (UNI-REQ-0081/0113), e a completude de cada par de suspensividade (UNI-REQ-0080).
     /// </summary>
-    public static Result<RegraRecursoFase> Criar(ReferenciaRegra regra, ArgsRegraPrazoRecurso args)
+    /// <remarks>
+    /// <paramref name="produtoAncoraId"/> vazio é o estado em que Application chega quando o
+    /// tipo de ato declarado não corresponde a produto nenhum da fase. Ele não é recusado
+    /// aqui: quem tem os dois lados para dizer o que falta é <see cref="FaseCronograma"/>,
+    /// e antecipar a recusa devolveria uma mensagem que não sabe nomear os produtos
+    /// disponíveis.
+    /// </remarks>
+    public static Result<RegraRecursoFase> Criar(
+        ReferenciaRegra regra,
+        ArgsRegraPrazoRecurso args,
+        Guid produtoAncoraId)
     {
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(args);
-        ArgumentException.ThrowIfNullOrWhiteSpace(args.AtoAncoraCodigo);
 
         // CA-01/CA-02: a regra referenciada só pode ser RECURSO-PRAZO-ANCORADO-EM-ATO —
         // qualquer outra (inclusive de outro TipoRegra) é recusada. A checagem completa
@@ -148,7 +178,8 @@ public sealed class RegraRecursoFase : EntityBase
         // relógio, com outra regra. O que a contagem em dia útil exige — a convenção de
         // contagem declarada (UNI-REQ-0116) — é invariante do PROCESSO, não desta entidade,
         // porque a declaração é uma por certame e esta regra não enxerga a raiz.
-        return Result<RegraRecursoFase>.Success(new RegraRecursoFase { Regra = regra, Args = args });
+        return Result<RegraRecursoFase>.Success(
+            new RegraRecursoFase { Regra = regra, Args = args, ProdutoAncoraId = produtoAncoraId });
     }
 
     /// <summary>
@@ -201,6 +232,33 @@ public sealed class RegraRecursoFase : EntityBase
         }
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Reidrata a regra a partir de uma <c>VersaoConfiguracao</c> congelada, preservando a
+    /// âncora que estava vigente quando o snapshot foi produzido — é contra ela que o ato
+    /// publicado resolverá, de volta, a configuração de recurso que lhe corresponde
+    /// (UNI-REQ-0093).
+    /// </summary>
+    /// <remarks>
+    /// As invariantes puras continuam valendo na reidratação, pelo mesmo motivo de
+    /// <see cref="Criar"/>: o envelope é o caminho de construção que não passa pela porta
+    /// HTTP, e uma regra restaurada com prazo não positivo seria tão inutilizável quanto
+    /// uma escrita assim pela primeira vez.
+    /// </remarks>
+    public static Result<RegraRecursoFase> Reidratar(
+        ReferenciaRegra regra,
+        ArgsRegraPrazoRecurso args,
+        Guid produtoAncoraId)
+    {
+        if (produtoAncoraId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A regra de recurso reidratada deve declarar o produto âncora congelado no envelope.",
+                nameof(produtoAncoraId));
+        }
+
+        return Criar(regra, args, produtoAncoraId);
     }
 
     internal void VincularFase(Guid faseCronogramaId) => FaseCronogramaId = faseCronogramaId;

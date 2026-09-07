@@ -203,12 +203,12 @@ public sealed class ManifestoDoEnvelopeTests
         // qualquer regra que não seja RECURSO-PRAZO-ANCORADO-EM-ATO), por isso não
         // entra em UnioesDiscriminadas: é alcançado diretamente como ArgsRegraPrazoRecurso.
         [typeof(RegraRecursoFase)] = (
-            ["Regra", "Args"],
+            ["Regra", "ProdutoAncoraId", "Args"],
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(ArgsRegraPrazoRecurso)] = (
             [
-                "PrazoValor", "PrazoUnidade", "AtoAncoraCodigo",
+                "PrazoValor", "PrazoUnidade",
                 "SuspensividadePrimeiraInstanciaValor", "SuspensividadePrimeiraInstanciaUnidade",
                 "SuspensividadeSegundaInstanciaValor", "SuspensividadeSegundaInstanciaUnidade",
             ],

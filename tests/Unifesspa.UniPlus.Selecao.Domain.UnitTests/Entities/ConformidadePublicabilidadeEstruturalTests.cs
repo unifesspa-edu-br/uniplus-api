@@ -904,23 +904,26 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     private static ReferenciaRegra RegraDeRecursoAncorada() =>
         ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)).Value!;
 
+    /// <summary>Produto preliminar de <see cref="FaseComRecurso"/> — a âncora do prazo.</summary>
+    private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000004");
+
     private static RegraRecursoFase RecursoEmHoras() => RegraRecursoFase.Criar(
         RegraDeRecursoAncorada(),
         new ArgsRegraPrazoRecurso(
             PrazoValor: 48m,
             PrazoUnidade: UnidadePrazo.Horas,
-            AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
             SuspensividadeSegundaInstanciaValor: null,
-            SuspensividadeSegundaInstanciaUnidade: null)).Value!;
+            SuspensividadeSegundaInstanciaUnidade: null),
+        ProdutoPreliminarId).Value!;
 
-    /// <summary>Fase preliminar que produz o ato âncora e aceita recurso sobre ele.</summary>
+    /// <summary>Fase preliminar que publica o ato âncora e aceita recurso sobre ele.</summary>
     private static FaseCronograma FaseComRecurso() => FaseCronograma.Criar(
         1, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
         agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
+        produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)],
+        faseConcluinteCodigo: "RESULTADO_FINAL",
         emiteParecerIndividual: false,
         bancasRequeridas: [], regraRecurso: RecursoEmHoras()).Value!;
 

@@ -467,11 +467,13 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // código que existe é o mesmo 404 de pedir um código inventado, e distinguir os dois
         // revelaria quais códigos há no catálogo a quem só tentou adivinhar.
         new("RegraCatalogo.NaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.regra_catalogo.nao_encontrada", "Regra não encontrada no catálogo na versão pedida")),
-        new("RegraRecursoFase.FaseNaoProduzResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.fase_nao_produz_resultado", "A fase não produz resultado e não pode admitir regra de recurso")),
-        new("RegraRecursoFase.AncoraDeOutraFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_de_outra_fase", "O ato recorrido tem de ser o ato produzido pela própria fase")),
+        // A âncora do prazo é um produto PRELIMINAR da própria fase, referenciado pela
+        // identidade da linha. Sem nenhum preliminar não há publicação a recorrer; havendo,
+        // a âncora tem de ser um deles.
+        new("RegraRecursoFase.FaseSemProdutoPreliminar", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.fase_sem_produto_preliminar", "A fase admite recurso e não publica nenhum produto com papel preliminar")),
+        new("RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_nao_eh_produto_preliminar_da_fase", "A âncora do recurso tem de ser um dos produtos preliminares publicados pela própria fase")),
         new("RegraRecursoFase.AncoraEmAtoCongelante", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_em_ato_congelante", "A âncora do recurso nunca é o ato que congela a configuração")),
         new("RegraRecursoFase.AncoraEmAtoIrreversivel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_em_ato_irreversivel", "Não cabe recurso contra ato de efeito irreversível")),
-        new("RegraRecursoFase.AncoraNaoEncontradaNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_nao_encontrada_no_catalogo", "O tipo de ato âncora não tem versão vigente no catálogo de Publicações")),
         // As duas unidades recusadas na interposição têm causas distintas e remediações
         // distintas (UNI-REQ-0113), então cada uma tem código próprio: quem declarou dia
         // corrido reescreve na unidade do edital; quem declarou fração de dia útil passa

@@ -448,11 +448,13 @@ internal static class CorpusEnvelope
             new ArgsRegraPrazoRecurso(
                 PrazoValor: 48.0000m,
                 PrazoUnidade: UnidadePrazo.Horas,
-                AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
                 SuspensividadePrimeiraInstanciaValor: 5.0000m,
                 SuspensividadePrimeiraInstanciaUnidade: UnidadePrazo.Dias,
                 SuspensividadeSegundaInstanciaValor: null,
-                SuspensividadeSegundaInstanciaUnidade: null)).Value!);
+                SuspensividadeSegundaInstanciaUnidade: null),
+            // Ancora no resultado preliminar, não no gabarito preliminar: os dois têm o
+            // mesmo papel, e é a identidade do produto que diz qual publicação abre a janela.
+            ProdutoId(2, 2, variante)).Value!);
 
     /// <summary>
     /// Fase 3: conclui o ciclo recursal aberto pela fase 2 — publica a definitiva da mesma

@@ -11,6 +11,12 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// Entrada de recurso de uma fase, usada por <see cref="FaseCronogramaInput"/>.
 /// Presença = a fase admite recurso (Story #851 §3.6) — sem enum, sem flag.
 /// </summary>
+/// <param name="AtoAncoraCodigo">
+/// Tipo de ato do qual o prazo conta o instante de publicação. É resolvido <b>dentro dos
+/// produtos desta mesma fase</b> (<see cref="FaseCronogramaInput.Produtos"/>) e congelado
+/// como a identidade daquele produto — ancorar na publicação de outra fase deixa de ser
+/// exprimível, ainda que as duas declarem o mesmo tipo de ato.
+/// </param>
 public sealed record RegraRecursoFaseInput(
     string RegraCodigo,
     string RegraVersao,
