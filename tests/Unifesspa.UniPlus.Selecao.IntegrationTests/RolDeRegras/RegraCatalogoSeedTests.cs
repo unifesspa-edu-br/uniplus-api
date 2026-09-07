@@ -220,9 +220,25 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             context, CodigoRegraSubstituida, RegraCatalogoSeed.VersaoV1);
     }
 
+    [Fact(DisplayName = "Nenhuma configuração congelada referencia a regra de recurso reescrita (fronteira da ADR-0112)")]
+    public async Task RegraDeRecurso_ReescritaSemReferenciaCongelada()
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+
+        // Retirar `ato_ancora_codigo` do esquema_args reescreve a definição no lugar e muda
+        // o hash content-addressable. A ADR-0112 autoriza isso enquanto nenhuma
+        // VersaoConfiguracao referenciar (codigo, versao) — e exige que a verificação seja
+        // executada, não presumida. Este fato é a forma executável dela.
+        await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
+            context, CodigoRegraDeRecurso, RegraCatalogoSeed.VersaoV1);
+    }
+
     /// <summary>
     /// A regra que geria uma segunda instância de recurso, removida do catálogo
     /// e trocada por <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>.
     /// </summary>
     private const string CodigoRegraSubstituida = "RECURSO-MULTI-INSTANCIA";
+
+    /// <summary>A regra de prazo de recurso vigente, cuja definição esta fatia reescreve.</summary>
+    private const string CodigoRegraDeRecurso = "RECURSO-PRAZO-ANCORADO-EM-ATO";
 }
