@@ -299,7 +299,7 @@ public sealed class ProcessoSeletivoCronogramaTests
             .Which.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoDeclaradaSemPreliminar");
     }
 
-    [Fact(DisplayName = "CA-09: fase que já conclui a si mesma e ainda declara concluinte é recusada")]
+    [Fact(DisplayName = "CA-09: fase que declara a SI MESMA como concluinte é recusada")]
     public void Conclusao_DeclaradaEmFaseQueSeConclui_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -311,13 +311,61 @@ public sealed class ProcessoSeletivoCronogramaTests
                 ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo),
             ],
-            faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
+            faseConcluinteCodigo: "HOMOLOGACAO").Value!;
 
         Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoDeclaradaEmFaseQueSeConclui");
+    }
+
+    [Fact(DisplayName = "A declaração vence a inferência: fase que publica alguma definitiva e ainda declara concluinte tem a DECLARAÇÃO conferida")]
+    public void Conclusao_DeclaracaoVenceAInferencia_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        // O caso que a auto-conclusão por fase não distingue: a definitiva publicada é do
+        // GABARITO, e quem conclui o ciclo do resultado preliminar é a fase seguinte.
+        FaseCronograma avaliacao = Fase(
+            1,
+            "AVALIACAO",
+            produtos:
+            [
+                ProdutoDaFase.Criar("GABARITO_DEFINITIVO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ],
+            faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
+        FaseCronograma resultadoFinal = Fase(2, "RESULTADO_FINAL", produtos: Definitiva()).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [avaliacao, resultadoFinal], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "A declaração vence a inferência: concluinte declarada que não publica definitiva é recusada mesmo quando a própria fase publica uma")]
+    public void Conclusao_DeclaracaoVenceAInferencia_ConcluinteInvalidaAindaRecusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma avaliacao = Fase(
+            1,
+            "AVALIACAO",
+            produtos:
+            [
+                ProdutoDaFase.Criar("GABARITO_DEFINITIVO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ],
+            faseConcluinteCodigo: "RECURSOS").Value!;
+        FaseCronograma recursos = Fase(2, "RECURSOS").Value!;
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [avaliacao, recursos], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue(
+            "dar precedência à declaração é conferi-la, não aceitá-la de olhos fechados");
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo");
     }
 
     [Fact(DisplayName = "CA-10: concluinte que não está no cronograma é recusada")]
