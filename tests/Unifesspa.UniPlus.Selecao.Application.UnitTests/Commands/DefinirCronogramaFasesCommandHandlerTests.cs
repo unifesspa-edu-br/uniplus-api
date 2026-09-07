@@ -523,4 +523,44 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         processo.CronogramaFases.Should().ContainSingle()
             .Which.Produtos.Should().HaveCount(2);
     }
+
+    [Fact(DisplayName = "A parada numa resolução cross-módulo LEVA JUNTO as recusas de produto já acumuladas")]
+    public async Task Handle_ParadaCrossModulo_PreservaRecusasAcumuladas()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId1 = Guid.CreateVersion7();
+        Guid faseCanonicaId2 = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId1, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId1));
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId2, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId2));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("COMUNICADO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("COMUNICADO", "Comunicado", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
+        mocks.TipoBancaReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns((TipoBancaView?)null);
+
+        // A 1ª fase erra o papel de um produto; a 2ª referencia um tipo de banca morto — a
+        // segunda interrompe a passada, e a primeira já tinha diagnóstico produzido.
+        FaseCronogramaInput fase1 = InputResultado(faseCanonicaId1) with
+        {
+            Ordem = 1,
+            Produtos = [new ProdutoDaFaseInput("COMUNICADO", PapelProdutoFaseCodigo.Definitivo)],
+        };
+        FaseCronogramaInput fase2 = InputResultado(faseCanonicaId2) with
+        {
+            Ordem = 2,
+            TiposBancaIds = [Guid.CreateVersion7()],
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [fase1, fase2], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+            ["ProdutoDaFase.PapelEmAtoQueNaoEhResultado", "FaseCronograma.TipoBancaNaoEncontrado"],
+            "parar na primeira resolução cross-módulo é decisão sobre o que ainda dá para avaliar, " +
+            "não licença para apagar defeito já diagnosticado");
+        resultado.Errors.Should().ContainSingle(e => e.Field == "fases[0].produtos[0].papel");
+    }
 }

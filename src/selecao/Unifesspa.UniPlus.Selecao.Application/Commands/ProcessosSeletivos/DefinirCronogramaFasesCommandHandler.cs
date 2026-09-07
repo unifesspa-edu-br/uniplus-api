@@ -15,8 +15,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <summary>
 /// Handler do <see cref="DefinirCronogramaFasesCommand"/> (Story #851, CA-06):
 /// resolve os snapshots-copy de <c>FaseCanonica</c>/<c>TipoBanca</c> (módulo
-/// Configuração), o grafo de precedências vigente e o tipo do ato produzido/âncora
-/// (módulo Publicações), usando a data do relógio injetado lida <b>uma vez</b> por
+/// Configuração), o grafo de precedências vigente e o tipo de cada ato publicado e do ato
+/// âncora (módulo Publicações), usando a data do relógio injetado lida <b>uma vez</b> por
 /// operação (ADR-0068) — e delega a montagem/validação ao domínio.
 /// </summary>
 /// <remarks>
@@ -37,7 +37,14 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// As resoluções cross-módulo que não descrevem um item da coleção — fase canônica, tipo de
 /// banca, regra do catálogo, âncora — continuam recusando na primeira: cada uma nomeia um
 /// insumo que falta inteiro, e prosseguir a partir dela produziria diagnóstico sobre um
-/// estado que não existe.
+/// estado que não existe. Elas <b>levam junto</b> o que já foi acumulado, porém: parar é
+/// uma decisão sobre o que ainda dá para avaliar, não licença para apagar defeito já
+/// diagnosticado.
+/// </para>
+/// <para>
+/// A recusa do domínio também sai como LOTE, não como primeiro erro: a conclusão do ciclo
+/// recursal acumula uma violação por fase mal declarada, e reduzi-la a um
+/// <c>DomainError</c> apagaria os campos que localizam cada uma.
 /// </para>
 /// </remarks>
 public static class DefinirCronogramaFasesCommandHandler
@@ -106,6 +113,14 @@ public static class DefinirCronogramaFasesCommandHandler
 
         List<FaseCronograma> fases = [];
         List<FieldError> recusasAcumuladas = [];
+
+        // Parar na primeira resolução cross-módulo é deliberado — cada uma nomeia um insumo
+        // que falta INTEIRO, e prosseguir a partir dela produziria diagnóstico sobre um
+        // estado que não existe. Descartar o que já foi diagnosticado, não: as recusas de
+        // produto acumuladas até aqui descrevem defeitos reais do payload, e o operador
+        // precisa delas na mesma resposta.
+        Result<MutacaoAceita> InterromperCom(DomainError erro) =>
+            Result<MutacaoAceita>.ValidationFailure([.. recusasAcumuladas, new FieldError(null, erro)]);
         for (int indice = 0; indice < command.Fases.Count; indice++)
         {
             FaseCronogramaInput input = command.Fases[indice];
@@ -114,7 +129,7 @@ public static class DefinirCronogramaFasesCommandHandler
                 .ConfigureAwait(false);
             if (faseCanonica is null)
             {
-                return Result<MutacaoAceita>.Failure(new DomainError(
+                return InterromperCom(new DomainError(
                     "FaseCronograma.FaseCanonicaNaoEncontrada",
                     $"Fase canônica {input.FaseCanonicaId} não encontrada ou não está mais viva."));
             }
@@ -129,7 +144,7 @@ public static class DefinirCronogramaFasesCommandHandler
                     .ConfigureAwait(false);
                 if (tipoBanca is null)
                 {
-                    return Result<MutacaoAceita>.Failure(new DomainError(
+                    return InterromperCom(new DomainError(
                         "FaseCronograma.TipoBancaNaoEncontrado",
                         $"Tipo de banca {tipoBancaId} não encontrado ou não está mais vivo."));
                 }
@@ -193,7 +208,7 @@ public static class DefinirCronogramaFasesCommandHandler
                     || regraCatalogo.Tipo != TipoRegra.RegraPrazoRecurso
                     || regraCatalogo.Codigo != RegraPrazoRecursoCodigo.AncoradoEmAto)
                 {
-                    return Result<MutacaoAceita>.Failure(new DomainError(
+                    return InterromperCom(new DomainError(
                         "RegraRecursoFase.RegraCatalogoInvalida",
                         $"A regra {regraInput.RegraCodigo}/{regraInput.RegraVersao} não é a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} do tipo regra_prazo_recurso."));
                 }
@@ -206,7 +221,7 @@ public static class DefinirCronogramaFasesCommandHandler
                     regraCatalogo.Codigo, regraCatalogo.Versao, regraCatalogo.Hash);
                 if (referenciaResult.IsFailure)
                 {
-                    return Result<MutacaoAceita>.Failure(referenciaResult.Error!);
+                    return InterromperCom(referenciaResult.Error!);
                 }
 
                 ArgsRegraPrazoRecurso args = new(
@@ -221,7 +236,7 @@ public static class DefinirCronogramaFasesCommandHandler
                 Result<RegraRecursoFase> regraRecursoResult = RegraRecursoFase.Criar(referenciaResult.Value!, args);
                 if (regraRecursoResult.IsFailure)
                 {
-                    return Result<MutacaoAceita>.Failure(regraRecursoResult.Error!);
+                    return InterromperCom(regraRecursoResult.Error!);
                 }
 
                 // Item 3/4 do §3.6: o ato âncora existe, está vigente, NÃO é congelante e
@@ -232,14 +247,14 @@ public static class DefinirCronogramaFasesCommandHandler
 
                 if (tipoAncora is null)
                 {
-                    return Result<MutacaoAceita>.Failure(new DomainError(
+                    return InterromperCom(new DomainError(
                         "RegraRecursoFase.AncoraNaoEncontradaNoCatalogo",
                         $"O tipo de ato âncora '{args.AtoAncoraCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje."));
                 }
 
                 if (tipoAncora.CongelaConfiguracao)
                 {
-                    return Result<MutacaoAceita>.Failure(new DomainError(
+                    return InterromperCom(new DomainError(
                         "RegraRecursoFase.AncoraEmAtoCongelante",
                         $"O tipo de ato âncora '{args.AtoAncoraCodigo}' congela configuração — a âncora do recurso nunca é o ato que congela a configuração."));
                 }
@@ -250,7 +265,7 @@ public static class DefinirCronogramaFasesCommandHandler
                 // recurso cabível é contra o resultado que fundamentou o ato.
                 if (tipoAncora.EfeitoIrreversivel)
                 {
-                    return Result<MutacaoAceita>.Failure(new DomainError(
+                    return InterromperCom(new DomainError(
                         "RegraRecursoFase.AncoraEmAtoIrreversivel",
                         $"O tipo de ato âncora '{args.AtoAncoraCodigo}' tem efeito irreversível — não cabe recurso contra ele, e sim contra o resultado que o fundamenta."));
                 }
@@ -312,7 +327,13 @@ public static class DefinirCronogramaFasesCommandHandler
         Result definirResult = processo.DefinirCronogramaFases(fases, precedencias, command.Precondicao);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            // Propaga o LOTE, não o primeiro. A conclusão do ciclo recursal acumula uma
+            // violação por fase mal declarada, cada uma com o campo que a localiza; reduzir
+            // tudo a um DomainError apagaria os campos, e a resposta sairia sem `errors[]` —
+            // o operador corrigiria a primeira fase, reenviaria, e só então descobriria a
+            // segunda. A forma serve igualmente às recusas de erro único do mesmo método,
+            // que continuam saindo com um item só.
+            return Result<MutacaoAceita>.ValidationFailure(definirResult.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
