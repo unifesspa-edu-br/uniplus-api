@@ -202,25 +202,6 @@ public sealed class FaseCanonicaEndpointTests
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    [Fact(DisplayName = "POST com resultado definitivo sem produzir resultado retorna 422")]
-    public async Task Criar_ResultadoDefinitivoSemProduzirResultado_Retorna422()
-    {
-        var body = new
-        {
-            codigo = "RESULTADO_FINAL",
-            nome = "Resultado final",
-            donoTipico = "CEPS",
-            origemData = "PROPRIA",
-            produzResultado = false,
-            resultadoDefinitivo = true,
-        };
-
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, body);
-
-        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-    }
-
     [Fact(DisplayName = "POST com código e nome ausentes ao mesmo tempo acumula as duas violações em errors[]")]
     public async Task Criar_CodigoENomeAusentes_AcumulaAsDuasViolacoesEmErrors()
     {

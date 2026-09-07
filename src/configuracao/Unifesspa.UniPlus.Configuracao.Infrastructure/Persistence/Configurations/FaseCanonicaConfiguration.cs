@@ -55,10 +55,6 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.Property(f => f.BaseLegal).HasMaxLength(BaseLegalMaxLength);
 
-        builder.Property(f => f.ProduzResultado).IsRequired().HasDefaultValue(false);
-
-        builder.Property(f => f.ResultadoDefinitivo).IsRequired().HasDefaultValue(false);
-
         builder.Property(f => f.ColetaInscricao).IsRequired().HasDefaultValue(false);
 
         builder.Property(f => f.ColetaSolicitacaoIsencao).IsRequired().HasDefaultValue(false);
@@ -110,8 +106,6 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             item.Descricao,
             item.DonoTipico,
             item.OrigemData,
-            item.ProduzResultado,
-            item.ResultadoDefinitivo,
             item.ColetaInscricao,
             item.ColetaSolicitacaoIsencao,
             item.AgrupaEtapas,
@@ -153,11 +147,6 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
         table.HasCheckConstraint(
             "ck_fase_canonica_complementacao",
             $"permite_complementacao = false OR codigo IN ({TokensSql(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
-
-        // Coerência (CA-04): resultado definitivo verdadeiro implica produzir resultado.
-        table.HasCheckConstraint(
-            "ck_fase_canonica_resultado_definitivo",
-            "resultado_definitivo = false OR produz_resultado = true");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

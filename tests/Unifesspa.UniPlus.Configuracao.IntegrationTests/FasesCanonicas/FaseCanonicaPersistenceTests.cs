@@ -199,18 +199,6 @@ public sealed class FaseCanonicaPersistenceTests
             "o CHECK de coerência permite_complementacao ⇒ fases permitidas impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita resultado definitivo sem produzir resultado via SQL cru (CA-04)")]
-    public async Task Check_RejeitaResultadoDefinitivoSemProduzirResultadoViaSqlCru()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, dono_tipico, agrupa_etapas, permite_complementacao, produz_resultado, resultado_definitivo, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_FINAL"}, {"Resultado final"}, {"CEPS"}, {false}, {false}, {false}, {true}, {"PROPRIA"}, {DateTimeOffset.UtcNow}, {false})");
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de coerência resultado_definitivo ⇒ produz_resultado (CA-04) impede o INSERT direto");
-    }
-
     [Fact(DisplayName = "CHECK de banco rejeita origem da data fora do domínio via SQL cru")]
     public async Task Check_RejeitaOrigemDataForaDoDominioViaSqlCru()
     {
@@ -256,7 +244,7 @@ public sealed class FaseCanonicaPersistenceTests
 
     private static FaseCanonica Fase(string codigo, string nome, string dono) =>
         FaseCanonica.Criar(
-            codigo, nome, null, dono, false, false, null, false, false, coletaInscricao: false,
+            codigo, nome, null, dono, false, false, null, coletaInscricao: false,
             // A marca acompanha o código: a factory recusa a fase de isenção sem ela.
             coletaSolicitacaoIsencao: codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
             "PROPRIA").Value!;

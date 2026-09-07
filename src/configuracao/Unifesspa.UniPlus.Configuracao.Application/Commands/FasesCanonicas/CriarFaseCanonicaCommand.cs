@@ -8,9 +8,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// nome, descrição opcional, dono típico como token canônico UPPER_SNAKE
 /// (<c>DonoTipico</c>), origem da data como token canônico UPPER_SNAKE
 /// (<c>OrigemData</c>), e os sinalizadores <c>AgrupaEtapas</c> /
-/// <c>PermiteComplementacao</c> / <c>ProduzResultado</c> / <c>ResultadoDefinitivo</c> /
-/// <c>ColetaInscricao</c> (falsos por omissão — <c>ResultadoDefinitivo</c> verdadeiro
-/// exige <c>ProduzResultado</c> verdadeiro). O ator de auditoria
+/// <c>PermiteComplementacao</c> / <c>ColetaInscricao</c> /
+/// <c>ColetaSolicitacaoIsencao</c> (falsos por omissão). O ator de auditoria
 /// (<c>created_by</c>) é carimbado server-side via <c>IUserContext</c>, não no payload.
 /// </summary>
 /// <remarks>
@@ -27,8 +26,6 @@ public sealed record CriarFaseCanonicaCommand(
     bool AgrupaEtapas = false,
     bool PermiteComplementacao = false,
     string? BaseLegal = null,
-    bool ProduzResultado = false,
-    bool ResultadoDefinitivo = false,
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
     string? OrigemData = null) : ICommand<Result<Guid>>;

@@ -9,9 +9,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="AtualizarFaseCanonicaCommand"/>. Valida antes de I/O só o
-/// que é determinável sem o código persistido (os sete campos comuns, incluindo a
-/// coerência que exige produzir resultado quando o resultado é definitivo) — as
-/// duas coerências que dependem do código (<c>AgrupaEtapas</c>,
+/// que é determinável sem o código persistido (os cinco campos comuns) — as
+/// coerências que dependem do código (<c>AgrupaEtapas</c>,
 /// <c>PermiteComplementacao</c>) só podem ser avaliadas depois do fetch, porque o
 /// comando não carrega o código (imutável). Carrega a fase (404), então chama
 /// <c>Atualizar</c>, que revalida o lote inteiro — inclusive as duas coerências
@@ -31,10 +30,9 @@ public static class AtualizarFaseCanonicaCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-            bool ProduzResultado, bool ResultadoDefinitivo, OrigemDataFase OrigemData)> comuns =
+            OrigemDataFase OrigemData)> comuns =
             FaseCanonica.ValidarCamposComuns(
-                command.Nome, command.Descricao, command.DonoTipico, command.BaseLegal,
-                command.ProduzResultado, command.ResultadoDefinitivo, command.OrigemData);
+                command.Nome, command.Descricao, command.DonoTipico, command.BaseLegal, command.OrigemData);
         if (comuns.IsFailure)
         {
             return Result.ValidationFailure(comuns.Errors);
@@ -55,8 +53,6 @@ public static class AtualizarFaseCanonicaCommandHandler
             command.AgrupaEtapas,
             command.PermiteComplementacao,
             command.BaseLegal,
-            command.ProduzResultado,
-            command.ResultadoDefinitivo,
             command.ColetaInscricao,
             command.ColetaSolicitacaoIsencao,
             command.OrigemData);

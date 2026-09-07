@@ -16,8 +16,6 @@ public sealed record FaseCanonicaDto(
     bool AgrupaEtapas,
     bool PermiteComplementacao,
     string? BaseLegal,
-    bool ProduzResultado,
-    bool ResultadoDefinitivo,
     bool ColetaInscricao,
     bool ColetaSolicitacaoIsencao,
     string OrigemData,

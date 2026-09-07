@@ -21,15 +21,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// vocabulário canônico é fixo. Além do formato, o código deve pertencer ao
 /// conjunto canônico de fases (<see cref="FaseCanonicaCatalogo"/>).</para>
 /// <para>As invariantes de coerência (<see cref="AgrupaEtapas"/> só para a fase de
-/// avaliação; <see cref="PermiteComplementacao"/> só nas fases legalmente permitidas;
-/// <see cref="ResultadoDefinitivo"/> só quando <see cref="ProduzResultado"/>) moram
-/// na factory <see cref="Criar"/>/<see cref="Atualizar"/>, revalidadas contra o
+/// avaliação; <see cref="PermiteComplementacao"/> só nas fases legalmente permitidas)
+/// moram na factory <see cref="Criar"/>/<see cref="Atualizar"/>, revalidadas contra o
 /// código imutável. A remoção é sempre soft-delete; nunca bloqueada — o único
 /// consumo é por snapshot-copy desacoplado no Módulo Seleção (ADR-0061), e não há
 /// FK intra-banco apontando para esta entidade.</para>
-/// <para><see cref="ProduzResultado"/>, <see cref="ResultadoDefinitivo"/> e
-/// <see cref="ColetaInscricao"/> decidem o piso mínimo e a admissibilidade de
-/// recurso do cronograma de um processo (Módulo Seleção); <see cref="OrigemData"/>
+/// <para>O que uma fase publica e o papel de cada publicação são declarados na fase
+/// do cronograma do processo, não aqui: quem monta o edital é quem sabe se aquela
+/// homologação sai preliminar, definitiva ou as duas. <see cref="ColetaInscricao"/>
+/// decide o piso mínimo do cronograma quando a origem dos candidatos é inscrição
+/// própria; <see cref="OrigemData"/>
 /// decide se a janela da fase é obrigatória (<c>PROPRIA</c>) ou opcional
 /// (<c>DELEGADA</c>). O cadastro <b>nasce semeado</b> com as fases do vocabulário
 /// (ADR-0113, Emenda 1): elas existem porque o ciclo do certame as tem, e não há
@@ -50,12 +51,6 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     public bool AgrupaEtapas { get; private set; }
     public bool PermiteComplementacao { get; private set; }
     public string? BaseLegal { get; private set; }
-
-    /// <summary>Havendo vagas ofertadas, o cronograma precisa de ao menos uma fase com este sinalizador verdadeiro.</summary>
-    public bool ProduzResultado { get; private set; }
-
-    /// <summary>Verdadeiro quando o resultado produzido pela fase não admite recurso. Implica <see cref="ProduzResultado"/>.</summary>
-    public bool ResultadoDefinitivo { get; private set; }
 
     /// <summary>Verdadeiro quando a fase coleta inscrições — decide o piso mínimo quando a origem dos candidatos é inscrição própria.</summary>
     public bool ColetaInscricao { get; private set; }
@@ -108,18 +103,16 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida e normaliza os sete campos editáveis que <b>não</b> dependem do
-    /// código da fase (nome, descrição, dono típico, base legal, origem da data e
-    /// a coerência que exige produzir resultado quando o resultado é definitivo),
+    /// Valida e normaliza os cinco campos editáveis que <b>não</b> dependem do
+    /// código da fase (nome, descrição, dono típico, base legal e origem da data),
     /// acumulando toda violação independente em vez de parar na primeira. Sem
     /// mutar nada e sem depender de I/O — existe para o handler de atualização
     /// falhar rápido antes de buscar a fase por Id, quando a causa da violação já
     /// é determinável só pelo payload.
     /// </summary>
     public static Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-        bool ProduzResultado, bool ResultadoDefinitivo, OrigemDataFase OrigemData)> ValidarCamposComuns(
-        string? nome, string? descricao, string? donoTipico, string? baseLegal,
-        bool produzResultado, bool resultadoDefinitivo, string? origemData)
+        OrigemDataFase OrigemData)> ValidarCamposComuns(
+        string? nome, string? descricao, string? donoTipico, string? baseLegal, string? origemData)
     {
         List<FieldError> erros = [];
 
@@ -185,22 +178,13 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
                 $"Origem da data deve ser uma de: {string.Join(", ", OrigensDataFase.TokensCanonicos)}.")));
         }
 
-        // Resultado definitivo verdadeiro implica produzir resultado — não depende
-        // do código, só dos dois booleanos, sempre presentes.
-        if (resultadoDefinitivo && !produzResultado)
-        {
-            erros.Add(new("resultadoDefinitivo", new DomainError(
-                FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado,
-                "Uma fase só pode ter resultado definitivo se também produzir resultado.")));
-        }
-
         if (erros.Count > 0)
         {
-            return Result<(string, string?, DonoTipico, string?, bool, bool, OrigemDataFase)>.ValidationFailure(erros);
+            return Result<(string, string?, DonoTipico, string?, OrigemDataFase)>.ValidationFailure(erros);
         }
 
-        return Result<(string, string?, DonoTipico, string?, bool, bool, OrigemDataFase)>.Success(
-            (nomeNormalizado!, descricaoNormalizada, dono, baseLegalNormalizada, produzResultado, resultadoDefinitivo, origem));
+        return Result<(string, string?, DonoTipico, string?, OrigemDataFase)>.Success(
+            (nomeNormalizado!, descricaoNormalizada, dono, baseLegalNormalizada, origem));
     }
 
     /// <summary>
@@ -254,7 +238,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Cria uma nova fase canônica. Valida o código (formato + pertença ao conjunto
-    /// canônico), os sete campos comuns e — só quando o código é válido — as duas
+    /// canônico), os cinco campos comuns e — só quando o código é válido — as
     /// coerências que dependem dele, acumulando toda violação no mesmo lote. A
     /// unicidade do código entre vivos é responsabilidade do handler.
     /// </summary>
@@ -266,8 +250,6 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         bool agrupaEtapas,
         bool permiteComplementacao,
         string? baseLegal,
-        bool produzResultado,
-        bool resultadoDefinitivo,
         bool coletaInscricao,
         bool coletaSolicitacaoIsencao,
         string? origemData)
@@ -281,8 +263,8 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         }
 
         Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-            bool ProduzResultado, bool ResultadoDefinitivo, OrigemDataFase OrigemData)> comunsResult =
-            ValidarCamposComuns(nome, descricao, donoTipico, baseLegal, produzResultado, resultadoDefinitivo, origemData);
+            OrigemDataFase OrigemData)> comunsResult =
+            ValidarCamposComuns(nome, descricao, donoTipico, baseLegal, origemData);
         if (comunsResult.IsFailure)
         {
             erros.AddRange(comunsResult.Errors);
@@ -310,16 +292,16 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         var fase = new FaseCanonica { Codigo = codigoResult.Value! };
         fase.AplicarCampos(
             comunsResult.Value.Nome, comunsResult.Value.Descricao, comunsResult.Value.DonoTipico,
-            agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal, comunsResult.Value.ProduzResultado,
-            comunsResult.Value.ResultadoDefinitivo, coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
+            agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal,
+            coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
 
         return Result<FaseCanonica>.Success(fase);
     }
 
     /// <summary>
     /// Atualiza os atributos editáveis da fase. O <c>Codigo</c> e o <c>Id</c> são
-    /// <b>imutáveis</b> — este método não os recebe. Revalida os sete campos comuns
-    /// e as duas coerências contra o código congelado da fase, acumulando toda
+    /// <b>imutáveis</b> — este método não os recebe. Revalida os cinco campos comuns
+    /// e as coerências contra o código congelado da fase, acumulando toda
     /// violação no mesmo lote — é a rede de segurança que cobre as duas regras que
     /// o pré-check do handler não consegue avaliar sem o código persistido.
     /// </summary>
@@ -330,8 +312,6 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         bool agrupaEtapas,
         bool permiteComplementacao,
         string? baseLegal,
-        bool produzResultado,
-        bool resultadoDefinitivo,
         bool coletaInscricao,
         bool coletaSolicitacaoIsencao,
         string? origemData)
@@ -339,8 +319,8 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         List<FieldError> erros = [];
 
         Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-            bool ProduzResultado, bool ResultadoDefinitivo, OrigemDataFase OrigemData)> comunsResult =
-            ValidarCamposComuns(nome, descricao, donoTipico, baseLegal, produzResultado, resultadoDefinitivo, origemData);
+            OrigemDataFase OrigemData)> comunsResult =
+            ValidarCamposComuns(nome, descricao, donoTipico, baseLegal, origemData);
         if (comunsResult.IsFailure)
         {
             erros.AddRange(comunsResult.Errors);
@@ -360,16 +340,15 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
         AplicarCampos(
             comunsResult.Value.Nome, comunsResult.Value.Descricao, comunsResult.Value.DonoTipico,
-            agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal, comunsResult.Value.ProduzResultado,
-            comunsResult.Value.ResultadoDefinitivo, coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
+            agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal,
+            coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
 
         return Result.Success();
     }
 
     private void AplicarCampos(
         string nome, string? descricao, DonoTipico donoTipico, bool agrupaEtapas, bool permiteComplementacao,
-        string? baseLegal, bool produzResultado, bool resultadoDefinitivo, bool coletaInscricao,
-        bool coletaSolicitacaoIsencao, OrigemDataFase origemData)
+        string? baseLegal, bool coletaInscricao, bool coletaSolicitacaoIsencao, OrigemDataFase origemData)
     {
         Nome = nome;
         Descricao = descricao;
@@ -377,8 +356,6 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         AgrupaEtapas = agrupaEtapas;
         PermiteComplementacao = permiteComplementacao;
         BaseLegal = baseLegal;
-        ProduzResultado = produzResultado;
-        ResultadoDefinitivo = resultadoDefinitivo;
         ColetaInscricao = coletaInscricao;
         ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao;
         OrigemData = origemData;

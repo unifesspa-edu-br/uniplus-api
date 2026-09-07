@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <summary>
 /// Snapshot de uma <c>FaseCanonica</c> que o Módulo Seleção congela por valor ao
 /// registrá-la no cronograma de um processo (snapshot-copy desacoplado, ADR-0061):
-/// guarda a identidade de origem e os nove atributos vigentes no momento do
+/// guarda a identidade de origem e os sete atributos vigentes no momento do
 /// congelamento — imune a edições posteriores no cadastro vivo de Configuração.
 /// </summary>
 /// <remarks>
@@ -21,8 +21,6 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="DonoTipico">Dono típico congelado (token; ex.: "CEPS").</param>
 /// <param name="AgrupaEtapas">Sinalizador de agrupamento de etapas pontuadas congelado.</param>
 /// <param name="PermiteComplementacao">Sinalizador de complementação documental congelado.</param>
-/// <param name="ProduzResultado">Sinalizador de produção de resultado congelado.</param>
-/// <param name="ResultadoDefinitivo">Sinalizador de resultado definitivo (sem recurso) congelado.</param>
 /// <param name="ColetaInscricao">Sinalizador de coleta de inscrição congelado.</param>
 /// <param name="OrigemData">Origem da data congelada (token; "PROPRIA" ou "DELEGADA").</param>
 public sealed record FaseCanonicaSnapshot(
@@ -31,8 +29,6 @@ public sealed record FaseCanonicaSnapshot(
     string DonoTipico,
     bool AgrupaEtapas,
     bool PermiteComplementacao,
-    bool ProduzResultado,
-    bool ResultadoDefinitivo,
     bool ColetaInscricao,
     bool ColetaSolicitacaoIsencao,
     string OrigemData);
