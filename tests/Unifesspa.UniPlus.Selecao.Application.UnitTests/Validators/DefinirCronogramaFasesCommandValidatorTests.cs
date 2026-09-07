@@ -42,7 +42,7 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
                 Produtos: [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar)],
                 FaseConcluinteCodigo: null,
                 EmiteParecerIndividual: false,
-                TiposBancaIds: [],
+                BancasRequeridas: [],
                 RegraRecurso: regraRecurso),
         ],
         PrecondicaoIfMatch.Ausente);
@@ -102,7 +102,7 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
             Produtos: [],
             FaseConcluinteCodigo: null,
             EmiteParecerIndividual: false,
-            TiposBancaIds: [],
+            BancasRequeridas: [],
             RegraRecurso: null);
         DefinirCronogramaFasesCommand command = new(Guid.CreateVersion7(), [fase], PrecondicaoIfMatch.Ausente);
 

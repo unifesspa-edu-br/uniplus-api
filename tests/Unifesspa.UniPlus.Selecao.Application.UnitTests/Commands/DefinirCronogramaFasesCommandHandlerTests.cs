@@ -28,6 +28,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         IProcessoSeletivoRepository Repository,
         IFaseCanonicaReader FaseCanonicaReader,
         ITipoBancaReader TipoBancaReader,
+        ICategoriaDocumentoReader CategoriaDocumentoReader,
         IPrecedenciaFaseReader PrecedenciaFaseReader,
         IRegraCatalogoReader RegraCatalogoReader,
         ITipoAtoPublicadoReader TipoAtoPublicadoReader,
@@ -47,6 +48,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             repository,
             Substitute.For<IFaseCanonicaReader>(),
             Substitute.For<ITipoBancaReader>(),
+            Substitute.For<ICategoriaDocumentoReader>(),
             precedenciaFaseReader,
             Substitute.For<IRegraCatalogoReader>(),
             Substitute.For<ITipoAtoPublicadoReader>(),
@@ -60,6 +62,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             mocks.Repository,
             mocks.FaseCanonicaReader,
             mocks.TipoBancaReader,
+            mocks.CategoriaDocumentoReader,
             mocks.PrecedenciaFaseReader,
             mocks.RegraCatalogoReader,
             mocks.TipoAtoPublicadoReader,
@@ -85,7 +88,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         Produtos: [new ProdutoDaFaseInput("RESULTADO_FINAL", PapelProdutoFaseCodigo.Definitivo)],
         FaseConcluinteCodigo: null,
         EmiteParecerIndividual: false,
-        TiposBancaIds: [],
+        BancasRequeridas: [],
         RegraRecurso: null);
 
     [Fact(DisplayName = "Handle com lista de fases vazia devolve a causa de domínio, não a recusa de forma")]
@@ -600,6 +603,43 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             .NotBe(recorriveis[1].RegraRecurso!.ProdutoAncoraId);
     }
 
+    [Fact(DisplayName = "Handle com categoria de documento fora do cadastro recusa nomeando o recorte da banca")]
+    public async Task Handle_CategoriaDoRecorteForaDoCadastro_RecusaComErroNomeado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        Guid tipoBancaId = Guid.CreateVersion7();
+        Guid categoriaViva = Guid.CreateVersion7();
+        Guid categoriaRemovida = Guid.CreateVersion7();
+
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoBancaReader.ObterPorIdAsync(tipoBancaId, Arg.Any<CancellationToken>())
+            .Returns(new TipoBancaView(tipoBancaId, "BANCA_ANALISE_DOCUMENTAL", "Banca de análise documental", null, null));
+        mocks.CategoriaDocumentoReader.ObterPorIdAsync(categoriaViva, Arg.Any<CancellationToken>())
+            .Returns(new CategoriaDocumentoView(categoriaViva, "RENDA", "Renda", null, 0));
+        mocks.CategoriaDocumentoReader.ObterPorIdAsync(categoriaRemovida, Arg.Any<CancellationToken>())
+            .Returns((CategoriaDocumentoView?)null);
+
+        FaseCronogramaInput fase = InputResultado(faseCanonicaId) with
+        {
+            BancasRequeridas = [new BancaRequeridaInput(tipoBancaId, [categoriaViva, categoriaRemovida])],
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [fase], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e =>
+                e.Error.Code == "FaseCronograma.CategoriaDocumentoNaoEncontrada"
+                && e.Field == "fases[0].bancasRequeridas[0].categoriasDocumentoIds");
+        processo.CronogramaFases.Should().BeEmpty("uma categoria fora do cadastro não pode entrar no edital congelado");
+    }
+
     [Fact(DisplayName = "A parada numa resolução cross-módulo LEVA JUNTO as recusas de produto já acumuladas")]
     public async Task Handle_ParadaCrossModulo_PreservaRecusasAcumuladas()
     {
@@ -626,7 +666,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         FaseCronogramaInput fase2 = InputResultado(faseCanonicaId2) with
         {
             Ordem = 2,
-            TiposBancaIds = [Guid.CreateVersion7()],
+            BancasRequeridas = [new BancaRequeridaInput(Guid.CreateVersion7(), [])],
         };
         DefinirCronogramaFasesCommand command = new(processo.Id, [fase1, fase2], PrecondicaoIfMatch.Ausente);
 
@@ -638,7 +678,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             "parar na primeira resolução cross-módulo é decisão sobre o que ainda dá para avaliar, " +
             "não licença para apagar defeito já diagnosticado");
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
-            ["fases[0].produtos[0].papel", "fases[1].tiposBancaIds"]);
+            ["fases[0].produtos[0].papel", "fases[1].bancasRequeridas[0].tipoBancaId"]);
         resultado.Errors.Should().NotContain(e => e.Field == null,
             "errors[] é montado sobre TODOS os itens do lote assim que um deles tem campo — " +
             "um FieldError sem campo sairia no wire como field: null, que a ADR-0023 não admite");

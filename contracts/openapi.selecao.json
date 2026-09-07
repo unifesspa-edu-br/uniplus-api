@@ -6915,7 +6915,8 @@
         "required": [
           "id",
           "tipoBancaOrigemId",
-          "codigo"
+          "codigo",
+          "recorteDeCompetencia"
         ],
         "type": "object",
         "properties": {
@@ -6929,6 +6930,32 @@
           },
           "codigo": {
             "type": "string"
+          },
+          "recorteDeCompetencia": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoriaJulgadaDto"
+            }
+          }
+        }
+      },
+      "BancaRequeridaInput": {
+        "required": [
+          "tipoBancaId",
+          "categoriasDocumentoIds"
+        ],
+        "type": "object",
+        "properties": {
+          "tipoBancaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "categoriasDocumentoIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -7020,6 +7047,27 @@
           "ambas"
         ],
         "type": "string"
+      },
+      "CategoriaJulgadaDto": {
+        "required": [
+          "id",
+          "categoriaDocumentoOrigemId",
+          "codigo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "categoriaDocumentoOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          }
+        }
       },
       "CategoriaObrigatoriedade": {
         "enum": [
@@ -8750,7 +8798,7 @@
           "produtos",
           "faseConcluinteCodigo",
           "emiteParecerIndividual",
-          "tiposBancaIds",
+          "bancasRequeridas",
           "regraRecurso"
         ],
         "type": "object",
@@ -8796,11 +8844,10 @@
           "emiteParecerIndividual": {
             "type": "boolean"
           },
-          "tiposBancaIds": {
+          "bancasRequeridas": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "$ref": "#/components/schemas/BancaRequeridaInput"
             }
           },
           "regraRecurso": {

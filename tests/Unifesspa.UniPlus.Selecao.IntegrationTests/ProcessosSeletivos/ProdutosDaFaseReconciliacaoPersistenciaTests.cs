@@ -152,7 +152,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
     private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == processoId);
 }

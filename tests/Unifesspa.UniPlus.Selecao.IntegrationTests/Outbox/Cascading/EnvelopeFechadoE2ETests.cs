@@ -626,7 +626,7 @@ public sealed class EnvelopeFechadoE2ETests
                     produtos = Array.Empty<object>(),
                     faseConcluinteCodigo = (string?)null,
                     emiteParecerIndividual = false,
-                    tiposBancaIds = Array.Empty<Guid>(),
+                    bancasRequeridas = Array.Empty<object>(),
                     regraRecurso = (object?)null,
                 },
                 new
@@ -646,7 +646,7 @@ public sealed class EnvelopeFechadoE2ETests
                     },
                     faseConcluinteCodigo = (string?)null,
                     emiteParecerIndividual = true,
-                    tiposBancaIds = new[] { Catalogos.TipoBancaId },
+                    bancasRequeridas = new object[] { new { tipoBancaId = Catalogos.TipoBancaId, categoriasDocumentoIds = Array.Empty<Guid>() } },
                     regraRecurso = (object?)null,
                 },
                 new
@@ -661,7 +661,7 @@ public sealed class EnvelopeFechadoE2ETests
                     produtos = Array.Empty<object>(),
                     faseConcluinteCodigo = (string?)null,
                     emiteParecerIndividual = false,
-                    tiposBancaIds = Array.Empty<Guid>(),
+                    bancasRequeridas = Array.Empty<object>(),
                     regraRecurso = (object?)null,
                 },
             ];

@@ -414,7 +414,8 @@ internal static class CorpusEnvelope
     /// <summary>
     /// Fase 2: agrupa as três etapas, publica DOIS produtos preliminares — gabarito e
     /// resultado, atos distintos com o mesmo papel —, promete parecer individual, declara a
-    /// fase que a conclui, exige duas bancas e admite recurso; os DOIS pares de
+    /// fase que a conclui, exige três bancas — duas do MESMO tipo, separadas pelo recorte de
+    /// competência — e admite recurso; os DOIS pares de
     /// suspensividade exercitados: a 1ª instância com valor (5 dias corridos), a 2ª
     /// <b>nula</b> (não bloqueia — o caso normal do Ingresso via judicial). É o ramo mais
     /// rico do bloco <c>cronogramaFases</c>.
@@ -439,9 +440,26 @@ internal static class CorpusEnvelope
         ], permutar),
         faseConcluinteCodigo: "RESULTADO_FINAL",
         emiteParecerIndividual: true,
+        // DUAS bancas do MESMO tipo, distinguidas só pelo recorte de competência — o
+        // arranjo que (tipoBancaOrigemId, codigo) não separa. É o que prova que a política
+        // de ordenação do array desempata pelo conteúdo do item, e que o recorte
+        // atravessa o round-trip byte a byte.
         bancasRequeridas: Ordem<BancaRequerida>([
-            BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000001"), "BANCA_ANALISE_DOCUMENTAL"),
-            BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000002"), "BANCA_HETEROIDENTIFICACAO"),
+            BancaRequerida.Criar(
+                new Guid("5555eeee-0000-4000-8000-000000000001"),
+                "BANCA_ANALISE_DOCUMENTAL",
+                [CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000001"), "RENDA")]),
+            BancaRequerida.Criar(
+                new Guid("5555eeee-0000-4000-8000-000000000001"),
+                "BANCA_ANALISE_DOCUMENTAL",
+                [
+                    CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000003"), "IDENTIFICACAO"),
+                    CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000002"), "ETNICO_RACIAL"),
+                ]),
+            BancaRequerida.Criar(
+                new Guid("5555eeee-0000-4000-8000-000000000002"),
+                "BANCA_HETEROIDENTIFICACAO",
+                []),
         ], permutar),
         regraRecurso: RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),

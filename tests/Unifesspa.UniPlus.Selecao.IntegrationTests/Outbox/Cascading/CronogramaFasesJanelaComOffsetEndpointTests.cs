@@ -134,7 +134,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
                   "produtos": [],
                   "faseConcluinteCodigo": null,
                   "emiteParecerIndividual": false,
-                  "tiposBancaIds": [],
+                  "bancasRequeridas": [],
                   "regraRecurso": null
                 }]
                 """;

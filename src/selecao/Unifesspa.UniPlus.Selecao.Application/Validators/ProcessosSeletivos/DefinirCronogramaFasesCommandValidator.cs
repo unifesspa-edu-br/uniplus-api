@@ -47,9 +47,19 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                 .NotEmpty()
                 .WithMessage("O id da fase canônica é obrigatório.");
 
-            fase.RuleForEach(f => f.TiposBancaIds)
-                .NotEmpty()
-                .WithMessage("O id do tipo de banca não pode ser vazio.");
+            // Forma do item, e só ela. Quando o recorte de competência é obrigatório e
+            // quando dois recortes se confundem são invariantes da fase (ADR-0125), e a
+            // existência da categoria no cadastro é resolução do handler.
+            fase.RuleForEach(f => f.BancasRequeridas).ChildRules(banca =>
+            {
+                banca.RuleFor(b => b.TipoBancaId)
+                    .NotEmpty()
+                    .WithMessage("O id do tipo de banca não pode ser vazio.");
+
+                banca.RuleForEach(b => b.CategoriasDocumentoIds)
+                    .NotEmpty()
+                    .WithMessage("O id da categoria de documento não pode ser vazio.");
+            });
 
             // Forma do item, e só ela. Que o papel seja declarável, que o tipo de ato
             // exista e que ele seja resultado no catálogo são resoluções do handler, e que

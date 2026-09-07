@@ -40,9 +40,23 @@ public sealed record RegraRecursoFaseInput(
 public sealed record ProdutoDaFaseInput(string AtoCodigo, string? Papel);
 
 /// <summary>
+/// Entrada de uma banca requerida pela fase, usada por <see cref="FaseCronogramaInput"/>.
+/// </summary>
+/// <param name="TipoBancaId">
+/// Id do <c>TipoBanca</c> vivo no cadastro de Configuração. O handler o resolve e congela
+/// o par identidade-e-código por valor (snapshot-copy, ADR-0061).
+/// </param>
+/// <param name="CategoriasDocumentoIds">
+/// O recorte de competência: as categorias de documento que esta banca julga, referenciadas
+/// pelo id do cadastro e congeladas por valor como o tipo de banca. Vazio é declarável
+/// quando o tipo já identifica a banca sozinho dentro da fase.
+/// </param>
+public sealed record BancaRequeridaInput(Guid TipoBancaId, IReadOnlyList<Guid> CategoriasDocumentoIds);
+
+/// <summary>
 /// Entrada de uma fase do cronograma, usada por
 /// <see cref="DefinirCronogramaFasesCommand"/>. O handler resolve
-/// <see cref="FaseCanonicaId"/> e <see cref="TiposBancaIds"/> contra o módulo
+/// <see cref="FaseCanonicaId"/> e <see cref="BancasRequeridas"/> contra o módulo
 /// Configuração e congela os atributos vigentes por valor (snapshot-copy,
 /// ADR-0061) — o cliente não os declara diretamente.
 /// </summary>
@@ -63,13 +77,14 @@ public sealed record FaseCronogramaInput(
     IReadOnlyList<ProdutoDaFaseInput> Produtos,
     string? FaseConcluinteCodigo,
     bool EmiteParecerIndividual,
-    IReadOnlyList<Guid> TiposBancaIds,
+    IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
     RegraRecursoFaseInput? RegraRecurso);
 
 /// <summary>
 /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):
 /// o handler resolve, via <c>IFaseCanonicaReader</c>/<c>ITipoBancaReader</c>/
-/// <c>IPrecedenciaFaseReader</c> (módulo Configuração, ADR-0056) e
+/// <c>ICategoriaDocumentoReader</c>/<c>IPrecedenciaFaseReader</c> (módulo Configuração,
+/// ADR-0056) e
 /// <c>ITipoAtoPublicadoReader</c> (módulo Publicações), os snapshots-copy e o grafo
 /// de precedências, e delega a montagem/validação ao domínio.
 /// </summary>

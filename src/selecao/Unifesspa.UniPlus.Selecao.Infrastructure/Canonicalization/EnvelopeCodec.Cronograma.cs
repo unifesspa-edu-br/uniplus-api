@@ -177,7 +177,7 @@ public sealed partial class EnvelopeCodec
         {
             string path = $"{pathPai}.bancasRequeridas[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, $"{pathPai}.bancasRequeridas");
-            leitor.ExigirChaves(item, path, "tipoBancaOrigemId", "codigo");
+            leitor.ExigirChaves(item, path, "tipoBancaOrigemId", "codigo", "recorteDeCompetencia");
 
             Guid tipoBancaOrigemId = leitor.Identificador(item, "tipoBancaOrigemId", path);
             string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.TipoBancaCodigo);
@@ -187,10 +187,50 @@ public sealed partial class EnvelopeCodec
                 return [];
             }
 
-            bancas.Add(BancaRequerida.Criar(tipoBancaOrigemId, codigo));
+            IReadOnlyList<CategoriaJulgada> recorte = LerRecorteDeCompetencia(leitor, item, path);
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            bancas.Add(BancaRequerida.Criar(tipoBancaOrigemId, codigo, recorte));
         }
 
         return bancas;
+    }
+
+    /// <summary>
+    /// O recorte de competência da banca — as categorias de documento que ela julga. Como
+    /// as próprias bancas, as categorias não congelam <c>id</c>: nada aponta para a linha
+    /// de fora dela, e a reposição as recria por inteiro.
+    /// </summary>
+    private static List<CategoriaJulgada> LerRecorteDeCompetencia(LeitorEnvelope leitor, JsonObject bancaItem, string pathPai)
+    {
+        JsonArray array = leitor.Array(bancaItem, "recorteDeCompetencia", pathPai);
+        if (leitor.Falhou)
+        {
+            return [];
+        }
+
+        List<CategoriaJulgada> recorte = [];
+        for (int i = 0; i < array.Count; i++)
+        {
+            string path = $"{pathPai}.recorteDeCompetencia[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, $"{pathPai}.recorteDeCompetencia");
+            leitor.ExigirChaves(item, path, "categoriaDocumentoOrigemId", "codigo");
+
+            Guid categoriaDocumentoOrigemId = leitor.Identificador(item, "categoriaDocumentoOrigemId", path);
+            string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CategoriaDocumentoCodigo);
+
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            recorte.Add(CategoriaJulgada.Criar(categoriaDocumentoOrigemId, codigo));
+        }
+
+        return recorte;
     }
 
     /// <summary>

@@ -299,8 +299,25 @@ public static class ObterProcessoSeletivoQueryHandler
             .Select(static p => new ProdutoDaFaseDto(p.Id, p.AtoCodigo, p.Papel.ToCodigo()))],
         fase.FaseConcluinteCodigo,
         fase.EmiteParecerIndividual,
-        [.. fase.BancasRequeridas.Select(static b => new BancaRequeridaDto(b.Id, b.TipoBancaOrigemId, b.Codigo))],
+        [.. fase.BancasRequeridas
+            .OrderBy(static b => b.Codigo, StringComparer.Ordinal)
+            .ThenBy(static b => b.Id)
+            .Select(ProjectBancaRequerida)],
         fase.RegraRecurso is { } regraRecurso ? ProjectRegraRecursoFase(regraRecurso) : null);
+
+    /// <summary>
+    /// A banca requerida e o seu recorte de competência. As bancas são ordenadas porque o
+    /// código do tipo deixou de identificá-las sozinho — duas do mesmo tipo convivem na
+    /// mesma fase, e sem ordem a resposta sairia na sequência arbitrária em que o EF
+    /// materializou as linhas.
+    /// </summary>
+    private static BancaRequeridaDto ProjectBancaRequerida(BancaRequerida banca) => new(
+        banca.Id,
+        banca.TipoBancaOrigemId,
+        banca.Codigo,
+        [.. banca.RecorteDeCompetencia
+            .OrderBy(static c => c.Codigo, StringComparer.Ordinal)
+            .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))]);
 
     private static DocumentoExigidoDto ProjectDocumentoExigido(DocumentoExigido documento) => new(
         documento.Id,

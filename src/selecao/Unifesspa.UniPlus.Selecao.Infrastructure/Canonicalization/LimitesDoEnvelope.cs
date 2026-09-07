@@ -71,6 +71,9 @@ public static class LimitesDoEnvelope
     /// <summary><c>BancaRequerida.Codigo</c> — snapshot-copy do código classificatório de <c>TipoBanca</c>.</summary>
     public const int TipoBancaCodigo = 60;
 
+    /// <summary><c>CategoriaJulgada.Codigo</c> — snapshot-copy do código classificatório de <c>CategoriaDocumento</c>.</summary>
+    public const int CategoriaDocumentoCodigo = 50;
+
     // Story #554 (PR #903) — exigencias[] real.
     /// <summary><c>DocumentoExigido.TipoDocumentoCodigo</c> — snapshot-copy do código classificatório de <c>TipoDocumento</c>.</summary>
     public const int TipoDocumentoCodigo = 60;
