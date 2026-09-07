@@ -6,8 +6,19 @@ using Domain.Enums;
 /// <param name="Papel">Token canônico UPPER_SNAKE (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>), ou nulo quando o ato não é resultado.</param>
 public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, string? Papel);
 
+/// <summary>Projeção de leitura de <c>CategoriaJulgada</c> — uma categoria de documento do recorte de competência da banca.</summary>
+public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemId, string Codigo);
+
 /// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
-public sealed record BancaRequeridaDto(Guid Id, Guid TipoBancaOrigemId, string Codigo);
+/// <param name="RecorteDeCompetencia">
+/// As categorias de documento que a banca julga — o que a distingue de outra banca do
+/// mesmo tipo na mesma fase. Vazio quando o tipo já identifica a banca sozinho.
+/// </param>
+public sealed record BancaRequeridaDto(
+    Guid Id,
+    Guid TipoBancaOrigemId,
+    string Codigo,
+    IReadOnlyList<CategoriaJulgadaDto> RecorteDeCompetencia);
 
 /// <summary>Projeção de leitura de <c>ArgsRegraPrazoRecurso</c> (Story #851).</summary>
 public sealed record ArgsRegraPrazoRecursoDto(

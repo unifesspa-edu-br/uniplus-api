@@ -14,7 +14,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirCronogramaFasesCommand"/> (Story #851, CA-06):
-/// resolve os snapshots-copy de <c>FaseCanonica</c>/<c>TipoBanca</c> (módulo
+/// resolve os snapshots-copy de <c>FaseCanonica</c>/<c>TipoBanca</c>/
+/// <c>CategoriaDocumento</c> (módulo
 /// Configuração), o grafo de precedências vigente e o tipo de cada ato publicado (módulo
 /// Publicações), usando a data do relógio injetado lida <b>uma vez</b> por operação
 /// (ADR-0068) — e delega a montagem/validação ao domínio.
@@ -26,8 +27,9 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// uma coleção mal declarada erra em vários itens ao mesmo tempo, e devolver só o primeiro
 /// faria o operador descobrir os demais numa sequência de tentativas. Diferente das demais
 /// fatias da rolagem, não há uma passada pura pré-I/O aqui — <c>OrigemData</c> é
-/// snapshot-copy do cadastro (<see cref="IFaseCanonicaReader"/>) e o papel de cada produto
-/// depende do catálogo de tipos de ato, não de campo cru do payload. Ordem permanece só
+/// snapshot-copy do cadastro (<see cref="IFaseCanonicaReader"/>), o papel de cada produto
+/// depende do catálogo de tipos de ato e o recorte de competência de cada banca depende do
+/// cadastro de categorias, não de campo cru do payload. Ordem permanece só
 /// <c>throw</c> no domínio (nunca acumulada) e continua coberta pelo FluentValidation; a
 /// janela (Fim ≥ Início) foi retirada do validator de propósito — ela JÁ acumula no domínio
 /// (<c>FaseCronograma.JanelaInvertida</c>), e deixá-la também no validator faria o
@@ -35,9 +37,9 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// violações da mesma fase.
 /// <para>
 /// As resoluções cross-módulo que não descrevem um item da coleção — fase canônica, tipo de
-/// banca, regra do catálogo — continuam recusando na primeira: cada uma nomeia um
-/// insumo que falta inteiro, e prosseguir a partir dela produziria diagnóstico sobre um
-/// estado que não existe. Elas <b>levam junto</b> o que já foi acumulado, porém: parar é
+/// banca, categoria de documento, regra do catálogo — continuam recusando na primeira: cada
+/// uma nomeia um insumo que falta inteiro, e prosseguir a partir dela produziria
+/// diagnóstico sobre um estado que não existe. Elas <b>levam junto</b> o que já foi acumulado, porém: parar é
 /// uma decisão sobre o que ainda dá para avaliar, não licença para apagar defeito já
 /// diagnosticado.
 /// </para>
@@ -54,6 +56,7 @@ public static class DefinirCronogramaFasesCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFaseCanonicaReader faseCanonicaReader,
         ITipoBancaReader tipoBancaReader,
+        ICategoriaDocumentoReader categoriaDocumentoReader,
         IPrecedenciaFaseReader precedenciaFaseReader,
         IRegraCatalogoReader regraCatalogoReader,
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
@@ -65,6 +68,7 @@ public static class DefinirCronogramaFasesCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(faseCanonicaReader);
         ArgumentNullException.ThrowIfNull(tipoBancaReader);
+        ArgumentNullException.ThrowIfNull(categoriaDocumentoReader);
         ArgumentNullException.ThrowIfNull(precedenciaFaseReader);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
@@ -97,6 +101,11 @@ public static class DefinirCronogramaFasesCommandHandler
         // preliminar e definitiva do mesmo certame releria o catálogo a cada item.
         Dictionary<string, TipoAtoPublicadoView?> tiposDeAtoResolvidos = new(StringComparer.Ordinal);
 
+        // Mesma memoização para a categoria de documento: um cronograma real repete a
+        // mesma categoria em bancas de fases diferentes, e o recorte é declarado por
+        // conjunto.
+        Dictionary<Guid, CategoriaDocumentoView?> categoriasResolvidas = [];
+
         async Task<TipoAtoPublicadoView?> ResolverTipoDeAtoAsync(string codigo)
         {
             if (tiposDeAtoResolvidos.TryGetValue(codigo, out TipoAtoPublicadoView? memoizado))
@@ -109,6 +118,20 @@ public static class DefinirCronogramaFasesCommandHandler
                 .ConfigureAwait(false);
             tiposDeAtoResolvidos[codigo] = resolvido;
             return resolvido;
+        }
+
+        async Task<CategoriaDocumentoView?> ResolverCategoriaAsync(Guid categoriaId)
+        {
+            if (categoriasResolvidas.TryGetValue(categoriaId, out CategoriaDocumentoView? memoizada))
+            {
+                return memoizada;
+            }
+
+            CategoriaDocumentoView? resolvida = await categoriaDocumentoReader
+                .ObterPorIdAsync(categoriaId, cancellationToken)
+                .ConfigureAwait(false);
+            categoriasResolvidas[categoriaId] = resolvida;
+            return resolvida;
         }
 
         List<FaseCronograma> fases = [];
@@ -145,19 +168,40 @@ public static class DefinirCronogramaFasesCommandHandler
             OrigemDataFase origemData = OrigemDataFaseCodigo.FromCodigo(faseCanonica.OrigemData);
 
             List<BancaRequerida> bancas = [];
-            foreach (Guid tipoBancaId in input.TiposBancaIds)
+            for (int posicao = 0; posicao < input.BancasRequeridas.Count; posicao++)
             {
+                BancaRequeridaInput bancaInput = input.BancasRequeridas[posicao];
+                string campoDaBanca = $"fases[{indice}].bancasRequeridas[{posicao}]";
+
                 TipoBancaView? tipoBanca = await tipoBancaReader
-                    .ObterPorIdAsync(tipoBancaId, cancellationToken)
+                    .ObterPorIdAsync(bancaInput.TipoBancaId, cancellationToken)
                     .ConfigureAwait(false);
                 if (tipoBanca is null)
                 {
-                    return InterromperCom($"fases[{indice}].tiposBancaIds", new DomainError(
+                    return InterromperCom($"{campoDaBanca}.tipoBancaId", new DomainError(
                         "FaseCronograma.TipoBancaNaoEncontrado",
-                        $"Tipo de banca {tipoBancaId} não encontrado ou não está mais vivo."));
+                        $"Tipo de banca {bancaInput.TipoBancaId} não encontrado ou não está mais vivo."));
                 }
 
-                bancas.Add(BancaRequerida.Criar(tipoBanca.Id, tipoBanca.Codigo));
+                // O recorte de competência é resolvido contra o cadastro vivo e congelado
+                // por valor, como o próprio tipo de banca: uma categoria que saiu do
+                // cadastro não pode entrar no edital, porque o recorte congelado é quem
+                // responde por parecer e recurso do certame inteiro.
+                List<CategoriaJulgada> recorte = [];
+                foreach (Guid categoriaId in bancaInput.CategoriasDocumentoIds)
+                {
+                    CategoriaDocumentoView? categoria = await ResolverCategoriaAsync(categoriaId).ConfigureAwait(false);
+                    if (categoria is null)
+                    {
+                        return InterromperCom($"{campoDaBanca}.categoriasDocumentoIds", new DomainError(
+                            "FaseCronograma.CategoriaDocumentoNaoEncontrada",
+                            $"Categoria de documento {categoriaId} não encontrada ou não está mais viva."));
+                    }
+
+                    recorte.Add(CategoriaJulgada.Criar(categoria.Id, categoria.Codigo));
+                }
+
+                bancas.Add(BancaRequerida.Criar(tipoBanca.Id, tipoBanca.Codigo, recorte));
             }
 
             // Os produtos da fase: cada código resolvido contra o catálogo vigente, e o

@@ -1253,16 +1253,51 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         })]);
     }
 
+    /// <summary>
+    /// As bancas requeridas pela fase, cada uma com o recorte de competência que a
+    /// distingue.
+    /// </summary>
+    /// <remarks>
+    /// O par (<c>tipoBancaOrigemId</c>, <c>codigo</c>) <b>empata</b> entre duas bancas do
+    /// mesmo tipo na mesma fase — que é justamente o arranjo que o recorte existe para
+    /// tornar declarável. Os bytes do próprio item desempatam, mesma política de
+    /// <see cref="SerializarEtapas"/>: sem ela, a mesma configuração produziria o array em
+    /// ordem arbitrária e dois hashes distintos.
+    /// </remarks>
     private static JsonArray SerializarBancasRequeridas(FaseCronograma fase)
     {
-        IOrderedEnumerable<BancaRequerida> ordenadas = fase.BancasRequeridas
-            .OrderBy(static b => b.TipoBancaOrigemId)
-            .ThenBy(static b => b.Codigo, StringComparer.Ordinal);
+        IOrderedEnumerable<(BancaRequerida Banca, JsonObject Item)> ordenadas = fase.BancasRequeridas
+            .Select(static b => (Banca: b, Item: SerializarBancaRequerida(b)))
+            .OrderBy(static par => par.Banca.TipoBancaOrigemId)
+            .ThenBy(static par => par.Banca.Codigo, StringComparer.Ordinal)
+            .ThenBy(
+                static par => PerfilAtual.Serializar(par.Item),
+                ComparadorLexicograficoDeBytes.Instancia);
 
-        return new JsonArray([.. ordenadas.Select(static b => (JsonNode)new JsonObject
+        return new JsonArray([.. ordenadas.Select(static par => (JsonNode)par.Item)]);
+    }
+
+    private static JsonObject SerializarBancaRequerida(BancaRequerida banca) => new()
+    {
+        ["tipoBancaOrigemId"] = banca.TipoBancaOrigemId,
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(banca.Codigo),
+        ["recorteDeCompetencia"] = SerializarRecorteDeCompetencia(banca),
+    };
+
+    /// <summary>
+    /// O recorte de competência da banca, ordenado pelo <c>codigo</c> da categoria — chave
+    /// natural única dentro do recorte, o que torna a ordenação determinística sem recorrer
+    /// ao id de origem.
+    /// </summary>
+    private static JsonArray SerializarRecorteDeCompetencia(BancaRequerida banca)
+    {
+        IOrderedEnumerable<CategoriaJulgada> ordenadas = banca.RecorteDeCompetencia
+            .OrderBy(static c => c.Codigo, StringComparer.Ordinal);
+
+        return new JsonArray([.. ordenadas.Select(static c => (JsonNode)new JsonObject
         {
-            ["tipoBancaOrigemId"] = b.TipoBancaOrigemId,
-            ["codigo"] = HashCanonicalComputer.NormalizeNfc(b.Codigo),
+            ["categoriaDocumentoOrigemId"] = c.CategoriaDocumentoOrigemId,
+            ["codigo"] = HashCanonicalComputer.NormalizeNfc(c.Codigo),
         })]);
     }
 

@@ -457,6 +457,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FaseCronograma.ParecerIndividualSemResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.parecer_individual_sem_resultado", "A fase promete parecer individual e não publica nenhum resultado")),
         new("FaseCronograma.FaseCanonicaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada", "Fase canônica não encontrada ou não está mais viva")),
         new("FaseCronograma.TipoBancaNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado", "Tipo de banca não encontrado ou não está mais vivo")),
+        new("FaseCronograma.CategoriaDocumentoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada", "Categoria de documento do recorte de competência não encontrada ou não está mais viva")),
         // Cada produto declarado pela fase é resolvido contra o catálogo de Publicações: o
         // tipo existe e está vigente, e o papel só cabe onde o catálogo diz que o ato É
         // resultado — classificação intrínseca do tipo, que nunca varia por edital.

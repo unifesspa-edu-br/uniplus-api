@@ -406,7 +406,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
-            bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL")],
+            bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", [])],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

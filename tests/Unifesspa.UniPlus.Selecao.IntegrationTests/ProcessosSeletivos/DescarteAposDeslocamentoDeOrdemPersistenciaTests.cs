@@ -478,7 +478,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             .Include(p => p.Classificacao)
             .Include(p => p.OfertaAtendimento)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.ConfiguracaoTaxaInscricao)
             .Include(p => p.Rascunho)

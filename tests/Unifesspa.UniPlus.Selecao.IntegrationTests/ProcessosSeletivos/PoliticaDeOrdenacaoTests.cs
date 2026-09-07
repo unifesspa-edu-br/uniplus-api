@@ -358,8 +358,8 @@ public sealed class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: identidade de origem governa sobre o conteúdo — oráculo de sequência exata")]
     public void CronogramaFases_BancasRequeridas_IdentidadeDeOrigemGovernaSobreConteudo()
     {
-        BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(IdFixo(1), "ZETA_BANCA");
-        BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(IdFixo(2), "ALFA_BANCA");
+        BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(IdFixo(1), "ZETA_BANCA", []);
+        BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(IdFixo(2), "ALFA_BANCA", []);
 
         new[] { bancaComOrigemMenor, bancaComOrigemMaior }.OrderBy(static b => b.Codigo, StringComparer.Ordinal).Select(static b => b.Codigo)
             .Should().Equal(["ALFA_BANCA", "ZETA_BANCA"], "pré-condição: ordenar pelo código (proxy de conteúdo) dá o oposto do oráculo de identidade abaixo");
@@ -381,6 +381,68 @@ public sealed class PoliticaDeOrdenacaoTests
         bancasJson.Select(static b => b!["codigo"]!.GetValue<string>()).Should().Equal(
             ["ZETA_BANCA", "ALFA_BANCA"],
             "a identidade de origem (TipoBancaOrigemId) governa a posição — o código, em ordem alfabética, apontaria para o oposto");
+    }
+
+    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: duas bancas do mesmo tipo são desempatadas pelo recorte — oráculo de sequência exata")]
+    public void CronogramaFases_BancasRequeridas_MesmoTipo_DesempatadasPeloRecorte()
+    {
+        // (TipoBancaOrigemId, Codigo) empata: as duas bancas são do MESMO tipo, que é o
+        // arranjo que o recorte de competência existe para tornar declarável. Sem uma
+        // terceira chave, a posição no array passaria a depender da ordem em que o EF
+        // materializou as linhas, e a mesma configuração produziria dois hashes.
+        Guid tipoUnico = IdFixo(1);
+        BancaRequerida bancaDaRenda = BancaRequerida.Criar(
+            tipoUnico, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(IdFixo(9), "RENDA")]);
+        BancaRequerida bancaEtnicoRacial = BancaRequerida.Criar(
+            tipoUnico, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
+
+        FaseCronograma fase = FaseCronograma.Criar(
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ANALISE", donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null,
+            emiteParecerIndividual: false,
+            bancasRequeridas: [bancaDaRenda, bancaEtnicoRacial], regraRecurso: null).Value!;
+
+        JsonArray bancasJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(Montar(cronogramaFases: [fase]))))
+            ["cronogramaFases"]!["fases"]![0]!["bancasRequeridas"]!.AsArray();
+
+        bancasJson
+            .Select(static b => b!["recorteDeCompetencia"]!.AsArray()[0]!["codigo"]!.GetValue<string>())
+            .Should().Equal(
+                ["ETNICO_RACIAL", "RENDA"],
+                "empatado o par (identidade de origem, código), os bytes do próprio item desempatam — e é a banca do recorte ETNICO_RACIAL que vem primeiro, embora tenha sido declarada por último");
+    }
+
+    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas[].recorteDeCompetencia: o conteúdo (código) governa — oráculo de sequência exata")]
+    public void CronogramaFases_RecorteDeCompetencia_CodigoGoverna()
+    {
+        // O id de origem é identidade técnica e não pode vazar para dentro do hash: dois
+        // recortes com as MESMAS categorias precisam produzir os mesmos bytes.
+        BancaRequerida banca = BancaRequerida.Criar(
+            IdFixo(1),
+            "BANCA_ANALISE_DOCUMENTAL",
+            [
+                CategoriaJulgada.Criar(IdFixo(1), "ZETA_CATEGORIA"),
+                CategoriaJulgada.Criar(IdFixo(2), "ALFA_CATEGORIA"),
+            ]);
+
+        FaseCronograma fase = FaseCronograma.Criar(
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ANALISE", donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null,
+            emiteParecerIndividual: false,
+            bancasRequeridas: [banca], regraRecurso: null).Value!;
+
+        JsonArray recorteJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(Montar(cronogramaFases: [fase]))))
+            ["cronogramaFases"]!["fases"]![0]!["bancasRequeridas"]![0]!["recorteDeCompetencia"]!.AsArray();
+
+        recorteJson.Select(static c => c!["codigo"]!.GetValue<string>()).Should().Equal(
+            ["ALFA_CATEGORIA", "ZETA_CATEGORIA"],
+            "o código da categoria é a chave natural do recorte e governa a posição, apesar da ordem de declaração");
     }
 
     [Fact(DisplayName = "fatosColetados: Ordem governa sobre o conteúdo (FatoCodigo) — oráculo de sequência exata")]

@@ -88,7 +88,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
                 produtos = new object[] { new { atoCodigo = CodigoAtoPreliminar, papel = PapelProdutoFaseCodigo.Preliminar } },
                 faseConcluinteCodigo = (string?)null,
                 emiteParecerIndividual = false,
-                tiposBancaIds = Array.Empty<Guid>(),
+                bancasRequeridas = Array.Empty<object>(),
                 regraRecurso = (object?)null,
             },
             new
@@ -100,7 +100,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
                 produtos = new object[] { new { atoCodigo = CodigoAtoDefinitivo, papel = PapelProdutoFaseCodigo.Definitivo } },
                 faseConcluinteCodigo = "FASE_QUE_NAO_EXISTE",
                 emiteParecerIndividual = false,
-                tiposBancaIds = Array.Empty<Guid>(),
+                bancasRequeridas = Array.Empty<object>(),
                 regraRecurso = (object?)null,
             },
         ];
@@ -166,7 +166,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
                 produtos = new object[] { new { atoCodigo = CodigoAtoQueNaoEhResultado, papel = PapelProdutoFaseCodigo.Preliminar } },
                 faseConcluinteCodigo = (string?)null,
                 emiteParecerIndividual = false,
-                tiposBancaIds = Array.Empty<Guid>(),
+                bancasRequeridas = Array.Empty<object>(),
                 regraRecurso = (object?)null,
             },
             new
@@ -178,7 +178,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
                 produtos = new object[] { new { atoCodigo = CodigoAtoDefinitivo, papel = PapelProdutoFaseCodigo.Definitivo } },
                 faseConcluinteCodigo = (string?)null,
                 emiteParecerIndividual = false,
-                tiposBancaIds = new[] { Guid.CreateVersion7() },
+                bancasRequeridas = new object[] { new { tipoBancaId = Guid.CreateVersion7(), categoriasDocumentoIds = Array.Empty<Guid>() } },
                 regraRecurso = (object?)null,
             },
         ];
@@ -206,7 +206,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
 
         reportados.Should().NotContain(e => e.Campo == null, CadaElementoDeclaraOCaminho);
         reportados.Select(e => e.Campo).Should().BeEquivalentTo(
-            ["fases[0].produtos[0].papel", "fases[1].tiposBancaIds"]);
+            ["fases[0].produtos[0].papel", "fases[1].bancasRequeridas[0].tipoBancaId"]);
         reportados.Select(e => e.Codigo).Should().BeEquivalentTo(
             [
                 "uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado",

@@ -101,6 +101,11 @@ public static class SelecaoCodegenRegistration
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoBancaReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IPrecedenciaFaseReader>();
 
+        // Recorte de competência da banca requerida: a categoria de documento que cada
+        // banca julga é snapshot-copy do cadastro de Configuração. Mesmo motivo dos demais
+        // readers cross-módulo acima — o concreto é internal a Configuracao.Infrastructure.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICategoriaDocumentoReader>();
+
         // Documentos exigidos (Story #554, PR #895): snapshot-copy de TipoDocumento
         // (Configuração) para cada exigência. Mesmo motivo dos demais readers
         // cross-módulo acima — o concreto TipoDocumentoReader é internal a

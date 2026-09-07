@@ -20,5 +20,13 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
 
         builder.Property(b => b.TipoBancaOrigemId).IsRequired();
         builder.Property(b => b.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+
+        builder.HasMany(b => b.RecorteDeCompetencia)
+            .WithOne()
+            .HasForeignKey(c => c.BancaRequeridaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(b => b.RecorteDeCompetencia)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

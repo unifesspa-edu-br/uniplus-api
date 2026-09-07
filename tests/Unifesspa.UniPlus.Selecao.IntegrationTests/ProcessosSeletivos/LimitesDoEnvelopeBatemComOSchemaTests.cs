@@ -62,6 +62,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.FaseConcluinteCodigo)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaFase), nameof(ProdutoDaFase.AtoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), nameof(BancaRequerida.Codigo)),
+        ("CategoriaDocumentoCodigo", LimitesDoEnvelope.CategoriaDocumentoCodigo, typeof(CategoriaJulgada), nameof(CategoriaJulgada.Codigo)),
 
         // Story #554 (PR #903) — exigencias[] real.
         ("TipoDocumentoCodigo", LimitesDoEnvelope.TipoDocumentoCodigo, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoCodigo)),

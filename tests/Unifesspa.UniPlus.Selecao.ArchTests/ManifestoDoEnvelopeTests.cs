@@ -196,8 +196,15 @@ public sealed class ManifestoDoEnvelopeTests
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(BancaRequerida)] = (
-            ["TipoBancaOrigemId", "Codigo"],
+            ["TipoBancaOrigemId", "Codigo", "RecorteDeCompetencia"],
             [("FaseCronogramaId", "FK interna.")]),
+
+        // O recorte de competência — o que distingue duas bancas do MESMO tipo na mesma
+        // fase. Sem Id no envelope, como a banca que a carrega: nada aponta para a linha de
+        // fora dela.
+        [typeof(CategoriaJulgada)] = (
+            ["CategoriaDocumentoOrigemId", "Codigo"],
+            [("BancaRequeridaId", "FK interna.")]),
 
         // RegraRecursoFase.Args NÃO é polimórfico (única variante — CA-02 recusa
         // qualquer regra que não seja RECURSO-PRAZO-ANCORADO-EM-ATO), por isso não
