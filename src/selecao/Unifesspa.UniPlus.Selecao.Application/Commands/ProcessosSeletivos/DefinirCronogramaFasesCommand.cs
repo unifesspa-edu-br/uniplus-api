@@ -23,18 +23,40 @@ public sealed record RegraRecursoFaseInput(
     UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
 
 /// <summary>
+/// Entrada de um produto publicado pela fase, usada por <see cref="FaseCronogramaInput"/>.
+/// </summary>
+/// <param name="AtoCodigo">Código do tipo de ato no catálogo de Publicações.</param>
+/// <param name="Papel">
+/// <c>PRELIMINAR</c>, <c>DEFINITIVO</c> ou ausente. Ausente é o caso do ato que não é
+/// resultado: a fase publica um aviso sem que isso a torne produtora de resultado. O papel
+/// só é aceito em tipo de ato que o catálogo declara resultado — o handler resolve.
+/// </param>
+public sealed record ProdutoDaFaseInput(string AtoCodigo, string? Papel);
+
+/// <summary>
 /// Entrada de uma fase do cronograma, usada por
 /// <see cref="DefinirCronogramaFasesCommand"/>. O handler resolve
 /// <see cref="FaseCanonicaId"/> e <see cref="TiposBancaIds"/> contra o módulo
 /// Configuração e congela os atributos vigentes por valor (snapshot-copy,
 /// ADR-0061) — o cliente não os declara diretamente.
 /// </summary>
+/// <param name="Produtos">Tudo o que a fase publica, com o papel de cada publicação.</param>
+/// <param name="FaseConcluinteCodigo">
+/// Código canônico da fase que conclui o ciclo recursal desta, quando a própria fase não
+/// publica a definitiva da matéria que abriu.
+/// </param>
+/// <param name="EmiteParecerIndividual">
+/// Se a fase promete parecer individual por candidato — a promessa de que existirá; o
+/// parecer é produzido na execução.
+/// </param>
 public sealed record FaseCronogramaInput(
     int Ordem,
     Guid FaseCanonicaId,
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
-    string? AtoProduzidoCodigo,
+    IReadOnlyList<ProdutoDaFaseInput> Produtos,
+    string? FaseConcluinteCodigo,
+    bool EmiteParecerIndividual,
     IReadOnlyList<Guid> TiposBancaIds,
     RegraRecursoFaseInput? RegraRecurso);
 

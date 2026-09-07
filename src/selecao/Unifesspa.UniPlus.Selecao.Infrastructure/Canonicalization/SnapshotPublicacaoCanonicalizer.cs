@@ -1210,19 +1210,47 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["origemData"] = fase.OrigemData.ToString(),
                 ["agrupaEtapas"] = fase.AgrupaEtapas,
                 ["permiteComplementacao"] = fase.PermiteComplementacao,
-                ["produzResultado"] = fase.ProduzResultado,
-                ["resultadoDefinitivo"] = fase.ResultadoDefinitivo,
                 ["coletaInscricao"] = fase.ColetaInscricao,
                 ["coletaSolicitacaoIsencao"] = fase.ColetaSolicitacaoIsencao,
                 ["inicio"] = fase.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null,
                 ["fim"] = fase.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null,
-                ["atoProduzidoCodigo"] = fase.AtoProduzidoCodigo is { } atoCodigo ? HashCanonicalComputer.NormalizeNfc(atoCodigo) : null,
+                // produzResultado NÃO entra: deriva de produtos, e congelar o derivado ao
+                // lado do insumo daria duas fontes de verdade que podem divergir na
+                // reidratação. Mesmo tratamento de EtapaProcesso.ComponeNota.
+                ["produtos"] = SerializarProdutosDaFase(fase),
+                ["faseConcluinteCodigo"] = fase.FaseConcluinteCodigo is { } concluinte
+                    ? HashCanonicalComputer.NormalizeNfc(concluinte)
+                    : null,
+                ["emiteParecerIndividual"] = fase.EmiteParecerIndividual,
                 ["bancasRequeridas"] = SerializarBancasRequeridas(fase),
                 ["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null,
             });
         }
 
         return array;
+    }
+
+    /// <summary>
+    /// Os produtos que a fase publica, ordenados pelo <c>atoCodigo</c> — a chave natural
+    /// única dentro da fase, o que torna a ordenação determinística sem recorrer ao Id.
+    /// </summary>
+    /// <remarks>
+    /// O <c>id</c> É congelado, ao contrário do das bancas: é por ele que o ato publicado
+    /// resolverá, de volta, a configuração de recurso que lhe corresponde. Ele não entra na
+    /// chave de ordenação porque o <c>atoCodigo</c> já desempata sozinho — ordenar por Id
+    /// faria a posição depender da ordem de inserção no banco.
+    /// </remarks>
+    private static JsonArray SerializarProdutosDaFase(FaseCronograma fase)
+    {
+        IOrderedEnumerable<ProdutoDaFase> ordenados = fase.Produtos
+            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal);
+
+        return new JsonArray([.. ordenados.Select(static p => (JsonNode)new JsonObject
+        {
+            ["id"] = p.Id,
+            ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
+            ["papel"] = p.Papel?.ToString(),
+        })]);
     }
 
     private static JsonArray SerializarBancasRequeridas(FaseCronograma fase)

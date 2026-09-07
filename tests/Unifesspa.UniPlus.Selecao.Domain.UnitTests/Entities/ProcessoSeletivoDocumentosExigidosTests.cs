@@ -27,12 +27,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         OrigemDataFase.Delegada,
         agrupaEtapas: false,
         permiteComplementacao: false,
-        produzResultado: false,
-        resultadoDefinitivo: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                        coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: null,
         fim: null,
-        atoProduzidoCodigo: null,
+        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -58,12 +56,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         OrigemDataFase.Delegada,
         agrupaEtapas: false,
         permiteComplementacao: permiteComplementacao,
-        produzResultado: false,
-        resultadoDefinitivo: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                        coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: null,
         fim: null,
-        atoProduzidoCodigo: null,
+        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -351,12 +347,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         OrigemDataFase.Delegada,
         agrupaEtapas: false,
         permiteComplementacao: false,
-        produzResultado: false,
-        resultadoDefinitivo: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                        coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: inicio,
         fim: fim,
-        atoProduzidoCodigo: null,
+        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -447,12 +441,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         OrigemDataFase.Delegada,
         agrupaEtapas: false,
         permiteComplementacao: false,
-        produzResultado: false,
-        resultadoDefinitivo: false,
-        coletaInscricao: true, coletaSolicitacaoIsencao: false,
+                        coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: null,
         fim: fim,
-        atoProduzidoCodigo: null,
+        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 

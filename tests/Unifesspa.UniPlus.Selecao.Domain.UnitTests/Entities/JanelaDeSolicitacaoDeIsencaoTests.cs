@@ -182,9 +182,8 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
             origemData: OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false,
-            produzResultado: false, resultadoDefinitivo: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: inicio, fim: fim,
-            atoProduzidoCodigo: null,
+                        coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: inicio, fim: fim,
+            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static FaseCronograma FaseDeIsencao(
@@ -192,9 +191,8 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         FaseCronograma.Criar(
             ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "SOLICITACAO_ISENCAO", donoInstitucional: "CEPS",
             origemData: OrigemDataFase.Delegada, agrupaEtapas: false, permiteComplementacao: false,
-            produzResultado: true, resultadoDefinitivo: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
-            atoProduzidoCodigo: "SOLICITACAO_ISENCAO",
+                        coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
+            produtos: [ProdutoDaFase.Criar("SOLICITACAO_ISENCAO", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: recurso ?? RecursoEmDiasUteis(2m)).Value!;
 
     private static RegraRecursoFase RecursoEmDiasUteis(decimal prazo) => RegraRecursoFase.Criar(

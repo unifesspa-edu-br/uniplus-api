@@ -11,7 +11,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Cobertura de <see cref="ProcessoSeletivo.DefinirCronogramaFases"/> (Story #851
 /// §3.3/§3.5): estrutura do cronograma (CA-06), precedência entre fases — inclusive a
 /// contraprova de ausência (CA-08), sobreposição de janelas (CA-09), a aresta da
-/// heteroidentificação (CA-10) e a direção eager da bicondicional fase×etapa (CA-14).
+/// heteroidentificação (CA-10), a direção eager da bicondicional fase×etapa (CA-14) e a
+/// conclusão do ciclo recursal por matéria.
 /// </summary>
 public sealed class ProcessoSeletivoCronogramaTests
 {
@@ -23,12 +24,14 @@ public sealed class ProcessoSeletivoCronogramaTests
         string codigo,
         bool agrupaEtapas = false,
         bool produzResultado = false,
-        bool resultadoDefinitivo = false,
         bool coletaInscricao = false,
         DateTimeOffset? inicio = null,
         DateTimeOffset? fim = null,
         Guid? faseCanonicaOrigemId = null,
-        bool coletaSolicitacaoIsencao = false) =>
+        bool coletaSolicitacaoIsencao = false,
+        IReadOnlyList<ProdutoDaFase>? produtos = null,
+        string? faseConcluinteCodigo = null,
+        bool emiteParecerIndividual = false) =>
         FaseCronograma.Criar(
             ordem,
             faseCanonicaOrigemId ?? Guid.CreateVersion7(),
@@ -37,13 +40,13 @@ public sealed class ProcessoSeletivoCronogramaTests
             OrigemDataFase.Delegada,
             agrupaEtapas,
             permiteComplementacao: false,
-            produzResultado,
-            resultadoDefinitivo,
             coletaInscricao,
             coletaSolicitacaoIsencao,
             inicio,
             fim,
-            atoProduzidoCodigo: produzResultado ? codigo : null,
+            produtos ?? (produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : []),
+            faseConcluinteCodigo,
+            emiteParecerIndividual,
             bancasRequeridas: [],
             regraRecurso: null);
 
@@ -212,6 +215,205 @@ public sealed class ProcessoSeletivoCronogramaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.PrecedenciaFaseViolada");
+    }
+
+    // ── Conclusão do ciclo recursal por matéria — os três estados legítimos e as violações ──
+
+    private static IReadOnlyList<ProdutoDaFase> Preliminar(string atoCodigo = "RESULTADO_PRELIMINAR") =>
+        [ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Preliminar)];
+
+    private static IReadOnlyList<ProdutoDaFase> Definitiva(string atoCodigo = "RESULTADO_FINAL") =>
+        [ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Definitivo)];
+
+    [Fact(DisplayName = "Estado 1: fase que NÃO publica preliminar e não declara conclusão é aceita")]
+    public void Conclusao_SemPreliminarESemDeclaracao_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "RESULTADO_FINAL", produtos: Definitiva()).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Estado 2: fase que publica preliminar E definitiva conclui a si mesma e é aceita sem declarar concluinte")]
+    public void Conclusao_ConcluiASiMesma_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(
+            1,
+            "HOMOLOGACAO",
+            produtos:
+            [
+                ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo),
+            ]).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Estado 3: fase que publica só preliminar e aponta uma fase posterior que publica definitiva é aceita")]
+    public void Conclusao_ApontaOutraFase_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma preliminar = Fase(
+            1, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "RESULTADO_FINAL",
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)).Value!;
+        FaseCronograma definitiva = Fase(
+            2, "RESULTADO_FINAL", produtos: Definitiva(),
+            inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero)).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([preliminar, definitiva], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "CA-09: fase que publica só preliminar SEM declarar concluinte é recusada")]
+    public void Conclusao_PreliminarSemDeclaracao_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "RESULTADO_PRELIMINAR", produtos: Preliminar()).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e =>
+                e.Field == "fases[0].faseConcluinteCodigo"
+                && e.Error.Code == "ProcessoSeletivo.ConclusaoNaoDeclarada");
+    }
+
+    [Fact(DisplayName = "CA-09: fase que declara concluinte SEM publicar preliminar é recusada")]
+    public void Conclusao_DeclaradaSemPreliminar_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(
+            1, "RESULTADO_FINAL", produtos: Definitiva(), faseConcluinteCodigo: "OUTRA_FASE").Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoDeclaradaSemPreliminar");
+    }
+
+    [Fact(DisplayName = "CA-09: fase que já conclui a si mesma e ainda declara concluinte é recusada")]
+    public void Conclusao_DeclaradaEmFaseQueSeConclui_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(
+            1,
+            "HOMOLOGACAO",
+            produtos:
+            [
+                ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo),
+            ],
+            faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoDeclaradaEmFaseQueSeConclui");
+    }
+
+    [Fact(DisplayName = "CA-10: concluinte que não está no cronograma é recusada")]
+    public void Conclusao_ConcluinteForaDoCronograma_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(
+            1, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "FASE_INEXISTENTE").Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("ProcessoSeletivo.FaseConcluinteForaDoCronograma");
+    }
+
+    [Fact(DisplayName = "CA-10: concluinte que está no cronograma mas NÃO publica definitiva é recusada")]
+    public void Conclusao_ConcluinteSemDefinitiva_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma preliminar = Fase(
+            1, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "RECURSOS").Value!;
+        FaseCronograma recursos = Fase(2, "RECURSOS").Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([preliminar, recursos], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo");
+    }
+
+    [Fact(DisplayName = "CA-10: concluinte de ORDEM anterior à fase que ela encerra é recusada")]
+    public void Conclusao_ConcluinteAntecedeNaOrdem_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma definitiva = Fase(1, "RESULTADO_FINAL", produtos: Definitiva()).Value!;
+        FaseCronograma preliminar = Fase(
+            2, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([definitiva, preliminar], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("ProcessoSeletivo.FaseConcluinteAntecedeAConcluida");
+    }
+
+    [Fact(DisplayName = "CA-10: concluinte posterior na ordem mas cuja JANELA começa antes é recusada")]
+    public void Conclusao_ConcluinteComecaAntes_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma preliminar = Fase(
+            1, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "RESULTADO_FINAL",
+            inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero)).Value!;
+        FaseCronograma definitiva = Fase(
+            2, "RESULTADO_FINAL", produtos: Definitiva(),
+            inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero)).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([preliminar, definitiva], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("ProcessoSeletivo.FaseConcluinteComecaAntesDaConcluida");
+    }
+
+    [Fact(DisplayName = "CA-10 (fronteira): sem janela declarada nas duas fases, só a ordem decide — a gravação é aceita")]
+    public void Conclusao_SemJanelaDeclarada_SoAOrdemDecide_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma preliminar = Fase(
+            1, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
+        FaseCronograma definitiva = Fase(2, "RESULTADO_FINAL", produtos: Definitiva()).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([preliminar, definitiva], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "ADR-0125: duas fases mal declaradas acumulam as duas violações, cada uma com o próprio índice")]
+    public void Conclusao_DuasFasesMalDeclaradas_AcumulaAsDuas()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma semDeclaracao = Fase(1, "RESULTADO_PRELIMINAR", produtos: Preliminar()).Value!;
+        FaseCronograma declaracaoIndevida = Fase(
+            2, "RESULTADO_FINAL", produtos: Definitiva(), faseConcluinteCodigo: "OUTRA_FASE").Value!;
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [semDeclaracao, declaracaoIndevida], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
+            ["fases[0].faseConcluinteCodigo", "fases[1].faseConcluinteCodigo"]);
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "ProcessoSeletivo.ConclusaoNaoDeclarada",
+            "ProcessoSeletivo.ConclusaoDeclaradaSemPreliminar",
+        ]);
     }
 
     [Fact(DisplayName = "Cronograma vencedor substitui integralmente a coleção — Definir novamente troca tudo")]

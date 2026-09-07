@@ -344,10 +344,9 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
 
         FaseCronograma faseConforme = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: false, produzResultado: true,
-            resultadoDefinitivo: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL", bancasRequeridas: [], regraRecurso: null).Value!;
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).

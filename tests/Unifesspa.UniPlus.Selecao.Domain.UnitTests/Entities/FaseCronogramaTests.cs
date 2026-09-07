@@ -9,9 +9,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="FaseCronograma.Criar"/> (Story #851): as invariantes que a
-/// factory prova sozinha — janela × <see cref="OrigemDataFase"/> (CA-07), e as duas
-/// primeiras invariantes de <see cref="RegraRecursoFase"/> que dependem da fase-mãe
-/// (item 1/2 do §3.6, CA-16/CA-17).
+/// factory prova sozinha — janela × <see cref="OrigemDataFase"/> (CA-07), a unicidade do
+/// tipo de ato dentro da fase, a promessa de parecer individual sustentada por publicação
+/// de resultado, e as invariantes de <see cref="RegraRecursoFase"/> que dependem da
+/// fase-mãe (item 1/2 do §3.6).
 /// </summary>
 public sealed class FaseCronogramaTests
 {
@@ -33,9 +34,9 @@ public sealed class FaseCronogramaTests
         DateTimeOffset? inicio = null,
         DateTimeOffset? fim = null,
         bool agrupaEtapas = false,
-        bool produzResultado = false,
-        bool resultadoDefinitivo = false,
-        string? atoProduzidoCodigo = null,
+        IReadOnlyList<ProdutoDaFase>? produtos = null,
+        string? faseConcluinteCodigo = null,
+        bool emiteParecerIndividual = false,
         RegraRecursoFase? regraRecurso = null) =>
         FaseCronograma.Criar(
             ordem,
@@ -45,12 +46,12 @@ public sealed class FaseCronogramaTests
             origemData,
             agrupaEtapas,
             permiteComplementacao: false,
-            produzResultado,
-            resultadoDefinitivo,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio,
             fim,
-            atoProduzidoCodigo,
+            produtos ?? [],
+            faseConcluinteCodigo,
+            emiteParecerIndividual,
             bancasRequeridas: [],
             regraRecurso);
 
@@ -155,12 +156,10 @@ public sealed class FaseCronogramaTests
             origemData: OrigemDataFase.Propria,
             agrupaEtapas: false,
             permiteComplementacao: false,
-            produzResultado: false,
-            resultadoDefinitivo: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                                    coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)),
             fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)),
-            atoProduzidoCodigo: null,
+            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
             regraRecurso: null);
 
@@ -169,76 +168,176 @@ public sealed class FaseCronogramaTests
         fase.Fim!.Value.Offset.Should().Be(TimeSpan.Zero);
     }
 
-    [Fact(DisplayName = "Fase que produz resultado sem declarar o ato produzido é recusada")]
-    public void ProduzResultado_SemAtoProduzido_Recusa()
+    // ── CA-01/CA-04 — a coleção de produtos e o ProduzResultado derivado ──
+
+    [Fact(DisplayName = "CA-04: fase sem produto nenhum não produz resultado, e é aceita")]
+    public void Produtos_Vazios_NaoProduzResultado()
+    {
+        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.Delegada, produtos: []);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.ProduzResultado.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "CA-01/CA-04: produto SEM papel não torna a fase produtora de resultado")]
+    public void Produtos_SemPapel_NaoProduzResultado()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada, produzResultado: true, atoProduzidoCodigo: null);
+            origemData: OrigemDataFase.Delegada,
+            produtos: [ProdutoDaFase.Criar("COMUNICADO", null)]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        FaseCronograma fase = resultado.Value!;
+        fase.ProduzResultado.Should().BeFalse(
+            "o ato que não é resultado é publicado sem papel, e publicar aviso não torna a fase produtora");
+        fase.Produtos.Should().ContainSingle().Which.Papel.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "CA-04: produto COM papel torna a fase produtora de resultado")]
+    [InlineData(PapelProdutoFase.Preliminar)]
+    [InlineData(PapelProdutoFase.Definitivo)]
+    public void Produtos_ComPapel_ProduzResultado(PapelProdutoFase papel)
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", papel)]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.ProduzResultado.Should().BeTrue();
+    }
+
+    // ── CA-03 — o mesmo ato uma única vez por fase ──
+
+    [Fact(DisplayName = "CA-03: declarar o MESMO tipo de ato duas vezes na fase é recusado")]
+    public void Produtos_AtoDuplicado_Recusa()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            produtos:
+            [
+                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+            ]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FaseCronograma.AtoProduzidoObrigatorio");
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("FaseCronograma.AtoDuplicadoNaFase");
+    }
+
+    [Fact(DisplayName = "CA-03 (contraprova): dois atos DISTINTOS com o mesmo papel na mesma fase são aceitos")]
+    public void Produtos_AtosDistintosComOMesmoPapel_Aceita()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            produtos:
+            [
+                ProdutoDaFase.Criar("GABARITO_PRELIMINAR", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ],
+            faseConcluinteCodigo: "RESULTADO_FINAL");
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Produtos.Should().HaveCount(2,
+            "gabarito preliminar e resultado preliminar são documentos diferentes, e a fase publica os dois");
+    }
+
+    // ── CA-13/CA-14 — parecer individual ──
+
+    [Fact(DisplayName = "CA-14: fase que promete parecer individual sem publicar resultado é recusada")]
+    public void ParecerIndividual_SemResultado_Recusa()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            produtos: [ProdutoDaFase.Criar("COMUNICADO", null)],
+            emiteParecerIndividual: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("FaseCronograma.ParecerIndividualSemResultado");
+    }
+
+    [Fact(DisplayName = "CA-14 (contraprova): fase que promete parecer individual e publica resultado é aceita")]
+    public void ParecerIndividual_ComResultado_Aceita()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            emiteParecerIndividual: true);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.EmiteParecerIndividual.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "CA-13 (fronteira): fase que NÃO promete parecer é aceita sem publicar resultado nenhum")]
+    public void ParecerIndividual_NaoPrometido_SemResultado_Aceita()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            produtos: [],
+            emiteParecerIndividual: false);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.EmiteParecerIndividual.Should().BeFalse();
     }
 
     // ── §3.6 itens 1/2 — invariantes de RegraRecursoFase que dependem da fase-mãe ──
 
-    [Fact(DisplayName = "CA-16: RegraRecursoFase numa fase que NÃO produz resultado é recusada")]
+    [Fact(DisplayName = "RegraRecursoFase numa fase que NÃO produz resultado é recusada")]
     public void RegraRecurso_FaseNaoProduzResultado_Recusa()
     {
         RegraRecursoFase regraRecurso = RegraRecursoFase.Criar(RegraAncorada(), ArgsValidos("RESULTADO_PRELIMINAR")).Value!;
 
         Result<FaseCronograma> resultado = Criar(
             origemData: OrigemDataFase.Delegada,
-            produzResultado: false,
-            atoProduzidoCodigo: null,
+            produtos: [],
             regraRecurso: regraRecurso);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["RegraRecursoFase.FaseNaoProduzResultado"],
-            "sem atoProduzidoCodigo (fase não produz resultado) a comparação de âncora não pode ser avaliada — não deve acumular AncoraDeOutraFase");
+            "sem produto com papel a comparação de âncora não pode ser avaliada — não deve acumular AncoraDeOutraFase");
     }
 
-    [Fact(DisplayName = "CA-16: RegraRecursoFase numa fase de resultado DEFINITIVO é recusada")]
-    public void RegraRecurso_ResultadoDefinitivo_NaoAdmiteRecurso()
+    [Fact(DisplayName = "CA-07: fase que publica preliminar E definitiva da própria matéria admite recurso")]
+    public void RegraRecurso_FaseQueConcluiASiMesma_Aceita()
     {
         RegraRecursoFase regraRecurso = RegraRecursoFase.Criar(RegraAncorada(), ArgsValidos("RESULTADO_PRELIMINAR")).Value!;
 
         Result<FaseCronograma> resultado = Criar(
             origemData: OrigemDataFase.Delegada,
-            produzResultado: true,
-            resultadoDefinitivo: true,
-            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+            produtos:
+            [
+                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_DEFINITIVO", PapelProdutoFase.Definitivo),
+            ],
             regraRecurso: regraRecurso);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraRecursoFase.RecursoContraResultadoDefinitivo");
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.RegraRecurso.Should().BeSameAs(regraRecurso,
+            "a fase que conclui a própria matéria publica os dois resultados E tem ciclo recursal entre eles");
     }
 
-    [Fact(DisplayName = "CA-17: a âncora do prazo tem de ser o ato PRODUZIDO PELA PRÓPRIA fase — ancorar em outro é recusado")]
+    [Fact(DisplayName = "A âncora do prazo tem de ser um ato PUBLICADO PELA PRÓPRIA fase — ancorar em outro é recusado")]
     public void RegraRecurso_Ancora_DeOutraFase_Recusa()
     {
         RegraRecursoFase regraRecurso = RegraRecursoFase.Criar(RegraAncorada(), ArgsValidos("GABARITO_PRELIMINAR")).Value!;
 
         Result<FaseCronograma> resultado = Criar(
             origemData: OrigemDataFase.Delegada,
-            produzResultado: true,
-            resultadoDefinitivo: false,
-            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+            produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)],
             regraRecurso: regraRecurso);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.AncoraDeOutraFase");
     }
 
-    [Fact(DisplayName = "Fase conforme com RegraRecursoFase ancorada no PRÓPRIO ato é aceita")]
+    [Fact(DisplayName = "Fase conforme com RegraRecursoFase ancorada num produto da própria fase é aceita")]
     public void RegraRecurso_AncoraNaPropriaFase_Aceita()
     {
         RegraRecursoFase regraRecurso = RegraRecursoFase.Criar(RegraAncorada(), ArgsValidos("RESULTADO_PRELIMINAR")).Value!;
 
         Result<FaseCronograma> resultado = Criar(
             origemData: OrigemDataFase.Delegada,
-            produzResultado: true,
-            resultadoDefinitivo: false,
-            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+            produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)],
             regraRecurso: regraRecurso);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -253,23 +352,23 @@ public sealed class FaseCronogramaTests
         act.Should().Throw<ArgumentException>().WithParameterName("ordem");
     }
 
-    [Fact(DisplayName = "ADR-0125: JanelaInvertida e AtoProduzidoObrigatorio acumulam no mesmo lote")]
-    public void Criar_JanelaInvertidaEAtoProduzidoObrigatorio_AcumulaAsDuasViolacoes()
+    [Fact(DisplayName = "ADR-0125: JanelaInvertida e ParecerIndividualSemResultado acumulam no mesmo lote")]
+    public void Criar_JanelaInvertidaEParecerSemResultado_AcumulaAsDuasViolacoes()
     {
         Result<FaseCronograma> resultado = Criar(
             origemData: OrigemDataFase.Delegada,
             inicio: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            produzResultado: true,
-            atoProduzidoCodigo: null);
+            produtos: [],
+            emiteParecerIndividual: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
             "FaseCronograma.JanelaInvertida",
-            "FaseCronograma.AtoProduzidoObrigatorio",
+            "FaseCronograma.ParecerIndividualSemResultado",
         ]);
         resultado.Errors.Should().Contain(e => e.Field == "fim" && e.Error.Code == "FaseCronograma.JanelaInvertida");
-        resultado.Errors.Should().Contain(e => e.Field == "atoProduzidoCodigo" && e.Error.Code == "FaseCronograma.AtoProduzidoObrigatorio");
+        resultado.Errors.Should().Contain(e => e.Field == "emiteParecerIndividual" && e.Error.Code == "FaseCronograma.ParecerIndividualSemResultado");
     }
 }

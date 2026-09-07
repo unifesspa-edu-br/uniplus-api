@@ -178,11 +178,22 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(FaseCronograma)] = (
             [
                 "Ordem", "FaseCanonicaOrigemId", "Codigo", "DonoInstitucional", "OrigemData",
-                "AgrupaEtapas", "PermiteComplementacao", "ProduzResultado", "ResultadoDefinitivo",
-                "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim", "AtoProduzidoCodigo",
+                "AgrupaEtapas", "PermiteComplementacao",
+                "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim",
+                "Produtos", "FaseConcluinteCodigo", "EmiteParecerIndividual",
                 "BancasRequeridas", "RegraRecurso",
             ],
-            [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
+            [
+                ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("ProduzResultado", "Derivada de Produtos — a fase produz resultado quando declara ao menos um produto com papel; congelá-la duplicaria a fonte de verdade."),
+            ]),
+
+        // O produto que a fase publica. O Id ENTRA no envelope, ao contrário do das demais
+        // filhas do cronograma: é por ele que o ato publicado resolverá, de volta, a
+        // configuração de recurso que lhe corresponde.
+        [typeof(ProdutoDaFase)] = (
+            ["AtoCodigo", "Papel"],
+            [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(BancaRequerida)] = (
             ["TipoBancaOrigemId", "Codigo"],

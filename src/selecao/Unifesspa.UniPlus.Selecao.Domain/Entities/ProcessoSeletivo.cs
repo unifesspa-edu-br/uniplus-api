@@ -930,6 +930,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // A conclusão do ciclo recursal por matéria: quem publica preliminar tem uma
+        // definitiva alcançável, própria ou de uma fase que não a anteceda. É invariante da
+        // RAIZ — só ela enxerga o cronograma inteiro — e roda sobre o conjunto CANDIDATO,
+        // não sobre o agregado corrente, porque é ele que vai substituir o cronograma.
+        // Acumula todas as violações (ADR-0125): duas fases podem estar mal declaradas ao
+        // mesmo tempo, e devolver só a primeira faria o operador descobrir a segunda numa
+        // segunda tentativa.
+        List<FieldError> violacoesDaConclusao = ViolacoesDaConclusaoDoCicloRecursal(fases);
+        if (violacoesDaConclusao.Count > 0)
+        {
+            return Result.ValidationFailure(violacoesDaConclusao);
+        }
+
         // Reconciliação por FaseCanonicaOrigemId — a
         // mesma chave de identidade do guard acima. Reusa a instância TRACKED existente
         // (retargetando-a via AtualizarSnapshot, preservando o Id) sempre que a fase
@@ -951,13 +964,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     nova.OrigemData,
                     nova.AgrupaEtapas,
                     nova.PermiteComplementacao,
-                    nova.ProduzResultado,
-                    nova.ResultadoDefinitivo,
                     nova.ColetaInscricao,
                     nova.ColetaSolicitacaoIsencao,
                     nova.Inicio,
                     nova.Fim,
-                    nova.AtoProduzidoCodigo,
+                    [.. nova.Produtos],
+                    nova.FaseConcluinteCodigo,
+                    nova.EmiteParecerIndividual,
                     [.. nova.BancasRequeridas],
                     nova.RegraRecurso);
                 resultantes.Add(existente);
@@ -1730,6 +1743,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_fase_que_coleta_inscricao_sem_janela", DimensaoConformidade.Cronograma, "Cronograma: a fase que coleta inscrição tem início e fim definidos", FaseQueColetaInscricaoSemJanela() is null),
         new ItemConformidade("cronograma_janela_de_isencao", DimensaoConformidade.Cronograma, "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias", JanelaDeIsencaoConforme(contexto)),
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
+        new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase que publica resultado preliminar tem conclusão declarada e alcançável", PendenciaDaConclusaoDoCicloRecursal() is null),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
         new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
@@ -2120,7 +2134,140 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado.");
         }
 
+        // A conclusão do ciclo recursal por matéria. DefinirCronogramaFases já a recusa na
+        // escrita, mas o estado violado é materializável pela hidratação do EF, que não
+        // passa pela fábrica — mesmo raciocínio que já sustenta o item da taxa de inscrição
+        // sem fundamento de isenção. Sem esta metade, um certame carregado do banco nesse
+        // estado seria publicado com o ciclo recursal em aberto.
+        if (PendenciaDaConclusaoDoCicloRecursal() is { } pendenciaDaConclusao)
+        {
+            return pendenciaDaConclusao;
+        }
+
         return null;
+    }
+
+    /// <summary>
+    /// A primeira violação da conclusão do ciclo recursal no cronograma corrente, ou
+    /// <see langword="null"/> quando todas as fases que abrem ciclo o fecham.
+    /// </summary>
+    /// <remarks>
+    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// item só. As duas metades vêm da MESMA travessia
+    /// (<see cref="ViolacoesDaConclusaoDoCicloRecursal"/>), que é o que mantém a
+    /// bicondicional de pé sem um segundo <c>if</c> para lembrar de sincronizar.
+    /// </remarks>
+    private DomainError? PendenciaDaConclusaoDoCicloRecursal()
+    {
+        List<FieldError> violacoes = ViolacoesDaConclusaoDoCicloRecursal([.. _cronogramaFases]);
+
+        return violacoes.Count > 0 ? violacoes[0].Error : null;
+    }
+
+    /// <summary>
+    /// As violações da conclusão do ciclo recursal por matéria, uma por fase mal declarada.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Três estados legítimos, e só eles: a fase que não publica preliminar não declara
+    /// conclusão; a que publica preliminar e também definitiva conclui a si mesma; a que
+    /// publica preliminar sem definitiva própria declara qual fase a conclui.
+    /// </para>
+    /// <para>
+    /// Dentro de uma fase as checagens são encadeadas — não faz sentido conferir a ordem de
+    /// uma concluinte que não está no cronograma —, então a primeira recusa é a que orienta
+    /// e as seguintes não são avaliadas. Entre fases não há encadeamento: todas são
+    /// percorridas.
+    /// </para>
+    /// <para>
+    /// Sem I/O e sem navegação — só o que já está em memória (CA-11).
+    /// </para>
+    /// </remarks>
+    private static List<FieldError> ViolacoesDaConclusaoDoCicloRecursal(IReadOnlyList<FaseCronograma> fases)
+    {
+        List<FieldError> violacoes = [];
+
+        for (int indice = 0; indice < fases.Count; indice++)
+        {
+            FaseCronograma fase = fases[indice];
+            string campo = $"fases[{indice}].faseConcluinteCodigo";
+
+            if (!fase.PublicaResultadoPreliminar)
+            {
+                if (fase.FaseConcluinteCodigo is not null)
+                {
+                    violacoes.Add(new(campo, new DomainError(
+                        "ProcessoSeletivo.ConclusaoDeclaradaSemPreliminar",
+                        $"A fase '{fase.Codigo}' declara a fase '{fase.FaseConcluinteCodigo}' como concluinte, mas não publica nenhum resultado preliminar — não há ciclo recursal a concluir.")));
+                }
+
+                continue;
+            }
+
+            if (fase.PublicaResultadoDefinitivo)
+            {
+                if (fase.FaseConcluinteCodigo is not null)
+                {
+                    violacoes.Add(new(campo, new DomainError(
+                        "ProcessoSeletivo.ConclusaoDeclaradaEmFaseQueSeConclui",
+                        $"A fase '{fase.Codigo}' publica preliminar e definitiva da própria matéria e já conclui a si mesma — não declara outra fase como concluinte.")));
+                }
+
+                continue;
+            }
+
+            if (fase.FaseConcluinteCodigo is not { } concluinteCodigo)
+            {
+                violacoes.Add(new(campo, new DomainError(
+                    "ProcessoSeletivo.ConclusaoNaoDeclarada",
+                    $"A fase '{fase.Codigo}' publica resultado preliminar e não publica a definitiva da matéria — declare qual fase do cronograma a conclui.")));
+                continue;
+            }
+
+            // A busca NÃO exclui a própria fase: quem se declara concluinte de si mesma sem
+            // publicar definitiva cai na recusa seguinte, que é a que descreve o defeito
+            // real — dizer que ela "não está no cronograma" mandaria corrigir o campo certo
+            // pela razão errada.
+            FaseCronograma? concluinte = fases
+                .FirstOrDefault(f => string.Equals(f.Codigo, concluinteCodigo, StringComparison.Ordinal));
+            if (concluinte is null)
+            {
+                violacoes.Add(new(campo, new DomainError(
+                    "ProcessoSeletivo.FaseConcluinteForaDoCronograma",
+                    $"A fase '{fase.Codigo}' declara '{concluinteCodigo}' como concluinte, e nenhuma fase do cronograma tem esse código.")));
+                continue;
+            }
+
+            if (!concluinte.PublicaResultadoDefinitivo)
+            {
+                violacoes.Add(new(campo, new DomainError(
+                    "ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo",
+                    $"A fase '{concluinteCodigo}', declarada como concluinte de '{fase.Codigo}', não publica nenhum resultado definitivo.")));
+                continue;
+            }
+
+            if (concluinte.Ordem <= fase.Ordem)
+            {
+                violacoes.Add(new(campo, new DomainError(
+                    "ProcessoSeletivo.FaseConcluinteAntecedeAConcluida",
+                    $"A fase '{concluinteCodigo}' (ordem {concluinte.Ordem}) conclui '{fase.Codigo}' (ordem {fase.Ordem}) — a concluinte não pode anteceder a fase que ela encerra.")));
+                continue;
+            }
+
+            // A ordem já garante a precedência declarada; a janela é a segunda evidência, e
+            // só existe quando as duas fases a declaram (uma fase DELEGADA sem data é
+            // estado válido, §3.2).
+            if (fase.Inicio is { } inicioConcluida
+                && concluinte.Inicio is { } inicioConcluinte
+                && inicioConcluinte < inicioConcluida)
+            {
+                violacoes.Add(new(campo, new DomainError(
+                    "ProcessoSeletivo.FaseConcluinteComecaAntesDaConcluida",
+                    $"A janela da fase '{concluinteCodigo}' começa em {inicioConcluinte:O}, antes de '{fase.Codigo}' ({inicioConcluida:O}) — a concluinte não pode começar antes da fase que ela encerra.")));
+            }
+        }
+
+        return violacoes;
     }
 
     /// <summary>Fase que agrupa etapas existe, mas o processo não tem etapa pontuada (§3.5).</summary>
@@ -3913,16 +4060,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // precisamente o que o descarte existe para desfazer.
         AlgoritmoContagemPrazo = grafo.AlgoritmoContagemPrazo;
 
-        // Cronograma de fases (Story #851): nenhuma referência externa aponta para
-        // FaseCronograma.Id (diferente das etapas) — o Id não é congelado no envelope
-        // (§3.7) e nunca sobrevive à reidratação. Por isso a reconciliação é por
-        // ORDEM, não por Id: reusa a instância TRACKED cuja Ordem bate com a da fase
-        // congelada, atualizando-a no lugar (mesmo cuidado do EF que as etapas já
-        // tomam — ver a nota em FaseCronograma.AtualizarSnapshot). Sem isso, o caso
-        // comum de restauração (mesmas ordens, dados diferentes) faria DELETE+INSERT
-        // do mesmo valor de Ordem na mesma transação, colidindo em
+        // Cronograma de fases (Story #851): a reconciliação é por ORDEM, não por Id —
+        // reusa a instância TRACKED cuja Ordem bate com a da fase congelada,
+        // atualizando-a no lugar (mesmo cuidado do EF que as etapas já tomam — ver a
+        // nota em FaseCronograma.AtualizarSnapshot). Sem isso, o caso comum de
+        // restauração (mesmas ordens, dados diferentes) faria DELETE+INSERT do mesmo
+        // valor de Ordem na mesma transação, colidindo em
         // ux_fases_cronograma_processo_ordem — o EF não infere essa ordem entre
-        // entidades sem relação de FK.
+        // entidades sem relação de FK. O Id da fase É congelado no envelope e
+        // preservado por FaseCronograma.Reidratar; é justamente por a reconciliação
+        // acima poder trocá-lo pelo da instância viva que o mapa abaixo existe.
         Dictionary<int, FaseCronograma> fasesTracked = _cronogramaFases.ToDictionary(f => f.Ordem);
         List<FaseCronograma> fases = [];
 
@@ -3946,13 +4093,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     congelada.OrigemData,
                     congelada.AgrupaEtapas,
                     congelada.PermiteComplementacao,
-                    congelada.ProduzResultado,
-                    congelada.ResultadoDefinitivo,
                     congelada.ColetaInscricao,
                     congelada.ColetaSolicitacaoIsencao,
                     congelada.Inicio,
                     congelada.Fim,
-                    congelada.AtoProduzidoCodigo,
+                    [.. congelada.Produtos],
+                    congelada.FaseConcluinteCodigo,
+                    congelada.EmiteParecerIndividual,
                     [.. congelada.BancasRequeridas],
                     congelada.RegraRecurso);
                 fases.Add(viva);

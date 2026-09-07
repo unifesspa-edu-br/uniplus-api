@@ -66,7 +66,7 @@ public static class LimitesDoEnvelope
     public const int DonoInstitucional = 60;
 
     /// <summary>
-    /// Código de tipo de ato de Publicações — <c>FaseCronograma.AtoProduzidoCodigo</c> e
+    /// Código de tipo de ato de Publicações — <c>ProdutoDaFase.AtoCodigo</c> e
     /// <c>ArgsRegraPrazoRecurso.AtoAncoraCodigo</c> compartilham o mesmo limite.
     /// </summary>
     public const int TipoAtoCodigo = 60;

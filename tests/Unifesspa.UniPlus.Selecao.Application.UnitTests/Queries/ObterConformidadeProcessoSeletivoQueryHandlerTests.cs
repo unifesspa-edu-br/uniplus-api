@@ -84,10 +84,9 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         FaseCronograma faseSemColeta = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria,
-            agrupaEtapas: false, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL", bancasRequeridas: [], regraRecurso: null).Value!;
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseSemColeta], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Issue #1112: declarada para isolar a pendência de cronograma como a ÚNICA vermelha.
@@ -151,12 +150,10 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             origemData: OrigemDataFase.Propria,
             agrupaEtapas: true,
             permiteComplementacao: false,
-            produzResultado: true,
-            resultadoDefinitivo: true,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
+                                    coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL",
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);

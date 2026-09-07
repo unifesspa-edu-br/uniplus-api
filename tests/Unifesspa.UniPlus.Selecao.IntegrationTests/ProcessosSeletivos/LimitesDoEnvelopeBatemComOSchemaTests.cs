@@ -59,7 +59,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // Story #851 — cronograma de fases.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.Codigo)),
         ("DonoInstitucional", LimitesDoEnvelope.DonoInstitucional, typeof(FaseCronograma), nameof(FaseCronograma.DonoInstitucional)),
-        ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(FaseCronograma), nameof(FaseCronograma.AtoProduzidoCodigo)),
+        ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.FaseConcluinteCodigo)),
+        ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaFase), nameof(ProdutoDaFase.AtoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), nameof(BancaRequerida.Codigo)),
 
         // Story #554 (PR #903) — exigencias[] real.
