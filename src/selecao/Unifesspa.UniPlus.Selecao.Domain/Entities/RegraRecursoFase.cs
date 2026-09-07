@@ -13,9 +13,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// Deriva de <see cref="EntityBase"/> puro (sem soft-delete), mesmo padrão de
-/// <see cref="EtapaProcesso"/>. As invariantes que dependem da fase-mãe (ProduzResultado,
-/// ResultadoDefinitivo, AtoProduzidoCodigo — itens 1 e 2 do §3.6) são validadas por
-/// <see cref="FaseCronograma.Criar"/>, que tem acesso aos dois lados; as que esta
+/// <see cref="EtapaProcesso"/>. As invariantes que dependem da fase-mãe (a fase produz
+/// resultado, e a âncora é um dos produtos que ela publica — itens 1 e 2 do §3.6) são
+/// validadas por <see cref="FaseCronograma.Criar"/>, que tem acesso aos dois lados; as que esta
 /// entidade consegue provar sozinha ficam aqui: a coerência da regra referenciada, as
 /// unidades declaráveis e a magnitude do prazo de interposição, e a completude dos pares
 /// de suspensividade.

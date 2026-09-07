@@ -2,6 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Domain.Enums;
 
+/// <summary>Projeção de leitura de <c>ProdutoDaFase</c> — o que a fase publica e o papel de cada publicação.</summary>
+/// <param name="Papel">Token canônico UPPER_SNAKE (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>), ou nulo quando o ato não é resultado.</param>
+public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, string? Papel);
+
 /// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
 public sealed record BancaRequeridaDto(Guid Id, Guid TipoBancaOrigemId, string Codigo);
 
@@ -30,12 +34,15 @@ public sealed record FaseCronogramaDto(
     string OrigemData,
     bool AgrupaEtapas,
     bool PermiteComplementacao,
+    // Derivado dos produtos declarados — a fase produz resultado quando publica ao menos um
+    // produto com papel. Projetado por conveniência de quem lê; não é campo de escrita.
     bool ProduzResultado,
-    bool ResultadoDefinitivo,
     bool ColetaInscricao,
     bool ColetaSolicitacaoIsencao,
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
-    string? AtoProduzidoCodigo,
+    IReadOnlyList<ProdutoDaFaseDto> Produtos,
+    string? FaseConcluinteCodigo,
+    bool EmiteParecerIndividual,
     IReadOnlyList<BancaRequeridaDto> BancasRequeridas,
     RegraRecursoFaseDto? RegraRecurso);

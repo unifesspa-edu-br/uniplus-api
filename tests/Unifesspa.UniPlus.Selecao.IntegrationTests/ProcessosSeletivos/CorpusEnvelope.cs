@@ -201,7 +201,7 @@ internal static class CorpusEnvelope
             baseadoEmEnem: true).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases(
-            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar)], permutar), [], PrecondicaoIfMatch.Ausente)
+            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4): COR_RACA é coletado sem
@@ -381,7 +381,18 @@ internal static class CorpusEnvelope
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!,
             tamanhoMaximoBytes: null);
 
-    /// <summary>Fase 1: coleta inscrição, sem ato produzido — a origem é InscricaoPropria.</summary>
+    /// <summary>
+    /// Id fixo de produto — como o das etapas e o das fases, ele entra no envelope, e sortear
+    /// um Guid novo a cada montagem faria os bytes nunca baterem entre duas construções do
+    /// mesmo corpus.
+    /// </summary>
+    private static Guid ProdutoId(int fase, int posicao, int variante) =>
+        new($"7777bbbb-000{variante:x}-4000-8000-0000000{fase:x}000{posicao:x}");
+
+    /// <summary>
+    /// Fase 1: coleta inscrição e publica um ato SEM papel — o comunicado de abertura não é
+    /// resultado, e publicá-lo não torna a fase produtora.
+    /// </summary>
     private static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000001"),
         ordem: 1,
@@ -391,23 +402,25 @@ internal static class CorpusEnvelope
         origemData: OrigemDataFase.Propria,
         agrupaEtapas: false,
         permiteComplementacao: true,
-        produzResultado: false,
-        resultadoDefinitivo: false,
         coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
-        atoProduzidoCodigo: null,
+        produtos: [ProdutoDaFase.Reidratar(ProdutoId(1, 1, variante), "COMUNICADO_INSCRICOES", null)],
+        faseConcluinteCodigo: null,
+        emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null);
 
     /// <summary>
-    /// Fase 2: agrupa as três etapas, produz o resultado preliminar (efeito irreversível),
-    /// exige duas bancas e admite recurso — os DOIS pares de suspensividade exercitados: a
-    /// 1ª instância com valor (5 dias corridos), a 2ª <b>nula</b> (não bloqueia — o caso
-    /// normal do Ingresso via judicial). É o ramo mais rico do bloco <c>cronogramaFases</c>.
+    /// Fase 2: agrupa as três etapas, publica DOIS produtos preliminares — gabarito e
+    /// resultado, atos distintos com o mesmo papel —, promete parecer individual, declara a
+    /// fase que a conclui, exige duas bancas e admite recurso; os DOIS pares de
+    /// suspensividade exercitados: a 1ª instância com valor (5 dias corridos), a 2ª
+    /// <b>nula</b> (não bloqueia — o caso normal do Ingresso via judicial). É o ramo mais
+    /// rico do bloco <c>cronogramaFases</c>.
     /// </summary>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
-    /// <param name="permutar">Inverte a ordem de ENTRADA das bancas requeridas desta fase — nunca o conteúdo.</param>
+    /// <param name="permutar">Inverte a ordem de ENTRADA dos produtos e das bancas requeridas desta fase — nunca o conteúdo.</param>
     private static FaseCronograma FaseResultadoPreliminarComRecurso(int variante = 0, bool permutar = false) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
         ordem: 2,
@@ -417,12 +430,15 @@ internal static class CorpusEnvelope
         origemData: OrigemDataFase.Propria,
         agrupaEtapas: true,
         permiteComplementacao: false,
-        produzResultado: true,
-        resultadoDefinitivo: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
-        atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+        produtos: Ordem<ProdutoDaFase>([
+            ProdutoDaFase.Reidratar(ProdutoId(2, 1, variante), "GABARITO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 2, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+        ], permutar),
+        faseConcluinteCodigo: "RESULTADO_FINAL",
+        emiteParecerIndividual: true,
         bancasRequeridas: Ordem<BancaRequerida>([
             BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000001"), "BANCA_ANALISE_DOCUMENTAL"),
             BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000002"), "BANCA_HETEROIDENTIFICACAO"),
@@ -437,6 +453,28 @@ internal static class CorpusEnvelope
                 SuspensividadePrimeiraInstanciaUnidade: UnidadePrazo.Dias,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null)).Value!);
+
+    /// <summary>
+    /// Fase 3: conclui o ciclo recursal aberto pela fase 2 — publica a definitiva da mesma
+    /// matéria, que é o que a declaração de concluinte da fase 2 exige que exista.
+    /// </summary>
+    private static FaseCronograma FaseResultadoFinal(int variante = 0) => FaseCronograma.Reidratar(
+        id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
+        ordem: 3,
+        faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"),
+        codigo: "RESULTADO_FINAL",
+        donoInstitucional: "CEPS",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: false,
+        permiteComplementacao: false,
+        coletaInscricao: false, coletaSolicitacaoIsencao: false,
+        inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero),
+        produtos: [ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+        faseConcluinteCodigo: null,
+        emiteParecerIndividual: false,
+        bancasRequeridas: [],
+        regraRecurso: null);
 
     /// <summary>
     /// Oferta sob a Lei 12.711: exige a referência demográfica (INV-5) e as 8 modalidades
@@ -755,12 +793,10 @@ internal static class CorpusEnvelope
         origemData: OrigemDataFase.Propria,
         agrupaEtapas: true,
         permiteComplementacao: false,
-        produzResultado: true,
-        resultadoDefinitivo: true,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                        coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        atoProduzidoCodigo: "RESULTADO_FINAL",
+        produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 }

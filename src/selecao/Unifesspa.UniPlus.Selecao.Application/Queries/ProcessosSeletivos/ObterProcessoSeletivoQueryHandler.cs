@@ -290,12 +290,15 @@ public static class ObterProcessoSeletivoQueryHandler
         fase.AgrupaEtapas,
         fase.PermiteComplementacao,
         fase.ProduzResultado,
-        fase.ResultadoDefinitivo,
         fase.ColetaInscricao,
         fase.ColetaSolicitacaoIsencao,
         fase.Inicio,
         fase.Fim,
-        fase.AtoProduzidoCodigo,
+        [.. fase.Produtos
+            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
+            .Select(static p => new ProdutoDaFaseDto(p.Id, p.AtoCodigo, p.Papel.ToCodigo()))],
+        fase.FaseConcluinteCodigo,
+        fase.EmiteParecerIndividual,
         [.. fase.BancasRequeridas.Select(static b => new BancaRequeridaDto(b.Id, b.TipoBancaOrigemId, b.Codigo))],
         fase.RegraRecurso is { } regraRecurso ? ProjectRegraRecursoFase(regraRecurso) : null);
 

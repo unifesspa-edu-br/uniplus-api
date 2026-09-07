@@ -62,25 +62,22 @@ public sealed class GateDoCalendarioVigenteTests
     [
         FaseCronograma.Criar(
             1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
-            agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
-            // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
+            agrupaEtapas: false, permiteComplementacao: false,             // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
             // DELEGADA (issue #1350) — as demais fases deste cronograma seguem sem data.
-            resultadoDefinitivo: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            atoProduzidoCodigo: null,
+            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null).Value!,
         FaseCronograma.Criar(
             2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
-            agrupaEtapas: true, permiteComplementacao: false, produzResultado: true,
-            resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+            agrupaEtapas: true, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
+            produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: Recurso(unidade)).Value!,
         FaseCronograma.Criar(
             3, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
-            agrupaEtapas: false, permiteComplementacao: false, produzResultado: true,
-            resultadoDefinitivo: true, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            atoProduzidoCodigo: "RESULTADO_FINAL",
+            agrupaEtapas: false, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null).Value!,
     ];
 

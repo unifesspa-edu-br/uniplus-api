@@ -45,10 +45,11 @@ public sealed class ConformidadeCronogramaTests
         bool coletaSolicitacaoIsencao = false) =>
         FaseCronograma.Criar(
             ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
-            agrupaEtapas, permiteComplementacao: false, produzResultado,
-            resultadoDefinitivo: produzResultado, coletaInscricao, coletaSolicitacaoIsencao,
+            agrupaEtapas, permiteComplementacao: false,
+            coletaInscricao, coletaSolicitacaoIsencao,
             inicio: null, fim: null,
-            atoProduzidoCodigo: produzResultado ? codigo : null,
+            produtos: produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : [],
+            faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null);
 
     private static DadosEdital Dados() => DadosEdital.Criar(

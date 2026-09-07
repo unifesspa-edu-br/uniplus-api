@@ -230,11 +230,10 @@ internal static class ProcessoSeletivoPendenciasSeeder
         faseBuilder = coletaInscricao => FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria,
-            agrupaEtapas: true, permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: true,
-            coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
+            agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL",
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null).Value!;
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada

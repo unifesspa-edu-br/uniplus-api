@@ -15,7 +15,6 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
 {
     private const int CodigoMaxLength = 60;
     private const int DonoInstitucionalMaxLength = 60;
-    private const int TipoAtoCodigoMaxLength = 60;
 
     public void Configure(EntityTypeBuilder<FaseCronograma> builder)
     {
@@ -33,7 +32,13 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(f => f.DonoInstitucional).HasMaxLength(DonoInstitucionalMaxLength).IsRequired();
         builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired();
-        builder.Property(f => f.AtoProduzidoCodigo).HasMaxLength(TipoAtoCodigoMaxLength);
+
+        // Referência por CÓDIGO canônico, não por FK: a fase concluinte é outra linha do
+        // MESMO cronograma, e uma FK autorreferente exigiria ordenar os INSERTs de uma
+        // reposição integral — que é como toda escrita do cronograma acontece. A
+        // resolução (existe, publica definitiva, não antecede) é invariante da raiz.
+        builder.Property(f => f.FaseConcluinteCodigo).HasMaxLength(CodigoMaxLength);
+        builder.Property(f => f.EmiteParecerIndividual).IsRequired();
 
         // Ordem e fase canônica únicas por processo — a rejeição em
         // ProcessoSeletivo.DefinirCronogramaFases é check-then-act não-atômico; a
@@ -46,6 +51,11 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
             .IsUnique()
             .HasDatabaseName("ux_fases_cronograma_processo_fase_canonica");
 
+        builder.HasMany(f => f.Produtos)
+            .WithOne()
+            .HasForeignKey(p => p.FaseCronogramaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasMany(f => f.BancasRequeridas)
             .WithOne()
             .HasForeignKey(b => b.FaseCronogramaId)
@@ -55,6 +65,9 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
             .WithOne()
             .HasForeignKey<RegraRecursoFase>(r => r.FaseCronogramaId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(f => f.Produtos)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Navigation(f => f.BancasRequeridas)
             .UsePropertyAccessMode(PropertyAccessMode.Field);

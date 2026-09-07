@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Uma fase do cronograma de um <see cref="ProcessoSeletivo"/> (1..*, Story #851) — o
-/// eixo <b>temporal</b> do certame (janela, ordem, dono institucional, origem da data,
-/// ato produzido), distinto do eixo de <b>pontuação</b> (<see cref="EtapaProcesso"/>).
+/// eixo <b>temporal</b> do certame (janela, ordem, dono institucional, o que a fase
+/// publica), distinto do eixo de <b>pontuação</b> (<see cref="EtapaProcesso"/>).
 /// Snapshot-copy (ADR-0061) de uma <c>FaseCanonica</c> do módulo Configuração no
 /// momento em que entrou no cronograma — sem FK para o cadastro vivo.
 /// </summary>
@@ -26,13 +26,20 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// domínio — e a coluna <c>timestamp with time zone</c> só aceita a representação em UTC.
 /// </para>
 /// <para>
+/// <b>O que a fase publica é declarado, não copiado do cadastro.</b> A coleção
+/// <see cref="Produtos"/> traz o código de cada ato e o papel de cada publicação no ciclo
+/// recursal; <see cref="ProduzResultado"/> deriva dela. Que o papel só caiba em ato que é
+/// resultado no catálogo é I/O — Application (ADR-0042).
+/// </para>
+/// <para>
 /// <b>Invariantes que esta factory prova sozinha</b> (não dependem de leitura externa):
 /// janela obrigatória/opcional conforme <see cref="OrigemData"/> (CA-07), janela não
-/// invertida, e as duas primeiras invariantes de <see cref="RegraRecursoFase"/> que
-/// dependem da fase-mãe (produz resultado, não é resultado definitivo, a âncora é o
-/// próprio ato produzido — itens 1/2 do §3.6). A resolução do ato âncora contra o
-/// catálogo de Publicações (existe, vigente, não congelante) e da regra contra o
-/// <c>rol_de_regras</c> são I/O — Application, ADR-0042.
+/// invertida, o mesmo ato declarado uma única vez, o parecer individual sustentado por
+/// alguma publicação de resultado, e as invariantes de <see cref="RegraRecursoFase"/> que
+/// dependem da fase-mãe (produz resultado, e a âncora é um ato da própria fase). A
+/// alcançabilidade da conclusão do ciclo recursal é da <b>raiz</b>
+/// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>): só ela enxerga o cronograma
+/// inteiro.
 /// </para>
 /// </remarks>
 public sealed class FaseCronograma : EntityBase
@@ -59,12 +66,6 @@ public sealed class FaseCronograma : EntityBase
 
     public bool PermiteComplementacao { get; private set; }
 
-    /// <summary>Se a fase produz resultado — decide o piso mínimo havendo vagas (§3.4) e é pré-condição de recurso.</summary>
-    public bool ProduzResultado { get; private set; }
-
-    /// <summary>Se o resultado produzido é definitivo — não cabe recurso contra ele (CA-16).</summary>
-    public bool ResultadoDefinitivo { get; private set; }
-
     /// <summary>Se a fase coleta inscrição — decide o piso mínimo quando <see cref="OrigemCandidatos.InscricaoPropria"/>.</summary>
     public bool ColetaInscricao { get; private set; }
 
@@ -80,11 +81,41 @@ public sealed class FaseCronograma : EntityBase
     /// <summary>Fim da janela, sempre em UTC (<c>Offset</c> zero).</summary>
     public DateTimeOffset? Fim { get; private set; }
 
-    /// <summary>Código do tipo de ato que esta fase produz — a âncora de <see cref="RegraRecurso"/> é sempre este.</summary>
-    public string? AtoProduzidoCodigo { get; private set; }
+    /// <summary>
+    /// Código canônico da fase que conclui o ciclo recursal desta, quando a própria fase
+    /// não publica a definitiva da matéria que abriu.
+    /// </summary>
+    public string? FaseConcluinteCodigo { get; private set; }
+
+    /// <summary>
+    /// Se a fase promete parecer individual por candidato. É a promessa de que existirá; o
+    /// parecer é produzido na execução, e é ele que dá ao candidato fundamento claro para
+    /// recorrer.
+    /// </summary>
+    public bool EmiteParecerIndividual { get; private set; }
+
+    /// <summary>
+    /// Se a fase produz resultado — decide o piso mínimo havendo vagas (§3.4) e é
+    /// pré-condição de recurso. Deriva de <see cref="Produtos"/>: a fase produz resultado
+    /// quando declara ao menos um produto com papel.
+    /// </summary>
+    public bool ProduzResultado => _produtos.Exists(static p => p.Papel is not null);
+
+    /// <summary>Abre ciclo recursal: publica ao menos um resultado preliminar.</summary>
+    internal bool PublicaResultadoPreliminar =>
+        _produtos.Exists(static p => p.Papel == PapelProdutoFase.Preliminar);
+
+    /// <summary>Encerra ciclo recursal: publica ao menos um resultado definitivo.</summary>
+    internal bool PublicaResultadoDefinitivo =>
+        _produtos.Exists(static p => p.Papel == PapelProdutoFase.Definitivo);
 
     /// <summary>Presença = a fase admite recurso (0..1, §3.6).</summary>
     public RegraRecursoFase? RegraRecurso { get; private set; }
+
+    private readonly List<ProdutoDaFase> _produtos = [];
+
+    /// <summary>Tudo o que a fase publica, com o papel de cada publicação (0..*).</summary>
+    public IReadOnlyCollection<ProdutoDaFase> Produtos => _produtos.AsReadOnly();
 
     private readonly List<BancaRequerida> _bancasRequeridas = [];
     public IReadOnlyCollection<BancaRequerida> BancasRequeridas => _bancasRequeridas.AsReadOnly();
@@ -93,9 +124,10 @@ public sealed class FaseCronograma : EntityBase
 
     /// <summary>
     /// Cria uma fase do cronograma, validando as invariantes locais (janela ×
-    /// <see cref="OrigemData"/>, ato produzido × regra de recurso). A unicidade de
+    /// <see cref="OrigemData"/>, produtos × parecer × regra de recurso). A unicidade de
     /// <see cref="Ordem"/> e de <see cref="FaseCanonicaOrigemId"/> dentro do cronograma, a
-    /// precedência entre fases e a bicondicional fase×etapa são validadas pela raiz
+    /// precedência entre fases, a bicondicional fase×etapa e a alcançabilidade da conclusão
+    /// do ciclo recursal são validadas pela raiz
     /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>), que tem acesso ao
     /// cronograma inteiro e às etapas.
     /// </summary>
@@ -107,18 +139,19 @@ public sealed class FaseCronograma : EntityBase
         OrigemDataFase origemData,
         bool agrupaEtapas,
         bool permiteComplementacao,
-        bool produzResultado,
-        bool resultadoDefinitivo,
         bool coletaInscricao,
         bool coletaSolicitacaoIsencao,
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
-        string? atoProduzidoCodigo,
+        IReadOnlyList<ProdutoDaFase> produtos,
+        string? faseConcluinteCodigo,
+        bool emiteParecerIndividual,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
         RegraRecursoFase? regraRecurso)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
+        ArgumentNullException.ThrowIfNull(produtos);
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
 
         // A janela é fixada em UTC ANTES das validações, para que a mensagem de
@@ -141,22 +174,13 @@ public sealed class FaseCronograma : EntityBase
             throw new ArgumentException("A origem da data da fase é obrigatória.", nameof(origemData));
         }
 
-        // Resultado definitivo pressupõe que a fase produza resultado — mesma invariante
-        // já vigente no cadastro (FaseCanonica.Criar); repetida aqui porque o snapshot é
-        // copiado por valor e pode, em tese, ser reidratado de um envelope adulterado.
-        if (resultadoDefinitivo && !produzResultado)
-        {
-            throw new ArgumentException(
-                "Resultado definitivo pressupõe que a fase produza resultado.", nameof(resultadoDefinitivo));
-        }
-
         // Acumula (ADR-0125) as checagens abaixo — todas independentes entre si, nenhuma
         // decide o que checar a partir do resultado de outra. Diferente das demais fatias
         // desta rolagem, NÃO há uma "ValidarFormaBasica" pré-I/O extraída para o handler
-        // chamar numa primeira passada: origemData/produzResultado/resultadoDefinitivo são
-        // snapshot-copy do CADASTRO (FaseCanonica), resolvido via IFaseCanonicaReader —
-        // não primitivos do payload do cliente — então não há como confirmá-las sem o
-        // reader já ter rodado. Ordem permanece só throw (defesa de programação, nunca
+        // chamar numa primeira passada: origemData é snapshot-copy do CADASTRO
+        // (FaseCanonica), resolvido via IFaseCanonicaReader — não primitivo do payload do
+        // cliente —, e os produtos só existem depois de o catálogo de tipos de ato ter
+        // sido consultado. Ordem permanece só throw (defesa de programação, nunca
         // acumulada) e continua coberta pelo FluentValidation; a janela (Fim >= Início) NÃO
         // tem mais regra equivalente no validator — ela é a acumulada abaixo
         // (JanelaInvertida), e deixá-la também no validator faria o middleware bloquear
@@ -182,20 +206,36 @@ public sealed class FaseCronograma : EntityBase
                 $"A fase '{codigo}' tem origem de data própria e exige início e fim da janela.")));
         }
 
-        // Uma fase que produz resultado precisa declarar QUAL ato ela produz — é o que
-        // RegraRecursoFase ancora (item 2 do §3.6), e é dado congelado independentemente
-        // de haver recurso ou não (§3.7).
-        if (produzResultado && string.IsNullOrWhiteSpace(atoProduzidoCodigo))
+        // O código do ato é a chave natural do produto dentro da fase, e o índice único da
+        // tabela a espelha. Declarar o mesmo ato duas vezes daria à fase duas intenções
+        // sobre a mesma publicação — possivelmente com papéis divergentes —, e o motor não
+        // teria como eleger uma. Publicar preliminar e definitiva da mesma matéria não cai
+        // aqui: são atos com códigos distintos no catálogo.
+        string? atoDuplicado = produtos
+            .GroupBy(static p => p.AtoCodigo, StringComparer.Ordinal)
+            .FirstOrDefault(static g => g.Count() > 1)?.Key;
+        if (atoDuplicado is not null)
         {
-            erros.Add(new("atoProduzidoCodigo", new DomainError(
-                "FaseCronograma.AtoProduzidoObrigatorio",
-                $"A fase '{codigo}' produz resultado e precisa declarar o código do ato que produz.")));
+            erros.Add(new("produtos", new DomainError(
+                "FaseCronograma.AtoDuplicadoNaFase",
+                $"A fase '{codigo}' declara o ato '{atoDuplicado}' mais de uma vez — cada tipo de ato é declarado uma única vez por fase.")));
+        }
+
+        bool produzResultado = produtos.Any(static p => p.Papel is not null);
+
+        // O parecer individual é o que dá ao candidato fundamento claro para recorrer. Sem
+        // publicação de resultado não há decisão a contestar nem prazo a correr, e a
+        // promessa ficaria sem objeto.
+        if (emiteParecerIndividual && !produzResultado)
+        {
+            erros.Add(new("emiteParecerIndividual", new DomainError(
+                "FaseCronograma.ParecerIndividualSemResultado",
+                $"A fase '{codigo}' promete parecer individual e não publica nenhum resultado — não haveria decisão a fundamentar.")));
         }
 
         if (regraRecurso is not null)
         {
-            // Item 1 do §3.6: recurso só cabe onde há resultado, e nunca contra resultado
-            // definitivo.
+            // Item 1 do §3.6: recurso só cabe onde há resultado.
             if (!produzResultado)
             {
                 erros.Add(new(null, new DomainError(
@@ -203,27 +243,17 @@ public sealed class FaseCronograma : EntityBase
                     $"A fase '{codigo}' não produz resultado e não pode admitir regra de recurso.")));
             }
 
-            if (resultadoDefinitivo)
-            {
-                erros.Add(new(null, new DomainError(
-                    "RegraRecursoFase.RecursoContraResultadoDefinitivo",
-                    $"A fase '{codigo}' produz resultado definitivo — não cabe recurso contra ele.")));
-            }
-
-            // Item 2 do §3.6: o ato recorrido é SEMPRE o ato da própria fase — ancorar no
-            // ato de outra fase é recusado. Comparação condicionada a produzResultado e a
-            // atoProduzidoCodigo não vazio: quando qualquer um falta, já há um erro mais
-            // fundamental acumulado acima (FaseNaoProduzResultado ou, em Criar,
-            // AtoProduzidoObrigatorio) — sem esta guarda, a comparação sempre falharia
-            // contra um ato inexistente e reportaria uma âncora espúria, orientando o
-            // cliente a corrigir uma condição que ainda não pode ser avaliada.
+            // Item 2 do §3.6: o ato recorrido é SEMPRE um ato da própria fase — ancorar no
+            // ato de outra fase é recusado. Condicionada a produzResultado: quando a fase
+            // não produz resultado nenhum, já há um erro mais fundamental acumulado acima,
+            // e a comparação reportaria uma âncora espúria, orientando o cliente a
+            // corrigir uma condição que ainda não pode ser avaliada.
             if (produzResultado
-                && !string.IsNullOrWhiteSpace(atoProduzidoCodigo)
-                && !string.Equals(regraRecurso.Args.AtoAncoraCodigo, atoProduzidoCodigo, StringComparison.Ordinal))
+                && !produtos.Any(p => string.Equals(p.AtoCodigo, regraRecurso.Args.AtoAncoraCodigo, StringComparison.Ordinal)))
             {
                 erros.Add(new("regraRecurso.atoAncoraCodigo", new DomainError(
                     "RegraRecursoFase.AncoraDeOutraFase",
-                    $"A fase '{codigo}' produz o ato '{atoProduzidoCodigo}', mas a regra de recurso ancora em '{regraRecurso.Args.AtoAncoraCodigo}' — o ato recorrido tem de ser o da própria fase.")));
+                    $"A fase '{codigo}' não publica o ato '{regraRecurso.Args.AtoAncoraCodigo}' em que a regra de recurso ancora — o ato recorrido tem de ser um dos produtos da própria fase.")));
             }
         }
 
@@ -241,26 +271,15 @@ public sealed class FaseCronograma : EntityBase
             OrigemData = origemData,
             AgrupaEtapas = agrupaEtapas,
             PermiteComplementacao = permiteComplementacao,
-            ProduzResultado = produzResultado,
-            ResultadoDefinitivo = resultadoDefinitivo,
             ColetaInscricao = coletaInscricao,
             ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao,
             Inicio = inicio,
             Fim = fim,
-            AtoProduzidoCodigo = atoProduzidoCodigo,
+            FaseConcluinteCodigo = NormalizarCodigo(faseConcluinteCodigo),
+            EmiteParecerIndividual = emiteParecerIndividual,
         };
 
-        foreach (BancaRequerida banca in bancasRequeridas)
-        {
-            banca.VincularFase(fase.Id);
-            fase._bancasRequeridas.Add(banca);
-        }
-
-        if (regraRecurso is not null)
-        {
-            regraRecurso.VincularFase(fase.Id);
-            fase.RegraRecurso = regraRecurso;
-        }
+        fase.AdotarFilhas(produtos, bancasRequeridas, regraRecurso);
 
         return Result<FaseCronograma>.Success(fase);
     }
@@ -268,7 +287,7 @@ public sealed class FaseCronograma : EntityBase
     /// <summary>
     /// Reidrata uma fase a partir de uma <see cref="VersaoConfiguracao"/> congelada,
     /// <b>preservando o <see cref="EntityBase.Id"/></b> — Story #554 (PR #903, bump 1.2),
-    /// achado de revisão: duas referências cruzadas do envelope 1.2 apontam para
+    /// achado de revisão: duas referências cruzadas do envelope apontam para
     /// <c>FaseCronograma.Id</c> (<c>documentosExigidos.exigencias[].exigidoNaFaseId</c> e
     /// <c>documentosExigidos.referenciaTemporalFatos.faseId</c>). A reconciliação por
     /// <see cref="Ordem"/> em <c>ProcessoSeletivo.AplicarGrafo</c> só preserva o Id quando
@@ -291,18 +310,19 @@ public sealed class FaseCronograma : EntityBase
         OrigemDataFase origemData,
         bool agrupaEtapas,
         bool permiteComplementacao,
-        bool produzResultado,
-        bool resultadoDefinitivo,
         bool coletaInscricao,
         bool coletaSolicitacaoIsencao,
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
-        string? atoProduzidoCodigo,
+        IReadOnlyList<ProdutoDaFase> produtos,
+        string? faseConcluinteCodigo,
+        bool emiteParecerIndividual,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
         RegraRecursoFase? regraRecurso)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
+        ArgumentNullException.ThrowIfNull(produtos);
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
         if (id == Guid.Empty)
         {
@@ -319,26 +339,15 @@ public sealed class FaseCronograma : EntityBase
             OrigemData = origemData,
             AgrupaEtapas = agrupaEtapas,
             PermiteComplementacao = permiteComplementacao,
-            ProduzResultado = produzResultado,
-            ResultadoDefinitivo = resultadoDefinitivo,
             ColetaInscricao = coletaInscricao,
             ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao,
             Inicio = EmUtc(inicio),
             Fim = EmUtc(fim),
-            AtoProduzidoCodigo = atoProduzidoCodigo,
+            FaseConcluinteCodigo = NormalizarCodigo(faseConcluinteCodigo),
+            EmiteParecerIndividual = emiteParecerIndividual,
         };
 
-        foreach (BancaRequerida banca in bancasRequeridas)
-        {
-            banca.VincularFase(fase.Id);
-            fase._bancasRequeridas.Add(banca);
-        }
-
-        if (regraRecurso is not null)
-        {
-            regraRecurso.VincularFase(fase.Id);
-            fase.RegraRecurso = regraRecurso;
-        }
+        fase.AdotarFilhas(produtos, bancasRequeridas, regraRecurso);
 
         return fase;
     }
@@ -350,15 +359,14 @@ public sealed class FaseCronograma : EntityBase
     /// Atualiza os dados da MESMA fase (mesmo <see cref="EntityBase.Id"/>) em vez de
     /// recriá-la — usado tanto pela reposição da configuração congelada
     /// (<see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>, reconciliação por
-    /// <see cref="Ordem"/> — a versão 1.1 do envelope nunca congelou o <c>Id</c> (§3.7), e
-    /// mesmo na 1.2, que passou a congelá-lo (<see cref="Reidratar"/>, Story #554, PR #903),
-    /// a reconciliação aqui continua por Ordem: é a instância VIVA rastreada que precisa
-    /// sobreviver — a do EF, não a decodificada) quanto pela redefinição ao vivo do
-    /// cronograma (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, reconciliação por
+    /// <see cref="Ordem"/> — é a instância VIVA rastreada que precisa sobreviver, a do EF,
+    /// não a decodificada) quanto pela redefinição ao vivo do cronograma
+    /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, reconciliação por
     /// <see cref="FaseCanonicaOrigemId"/> — a identidade estável de uma fase; aqui
     /// <paramref name="ordem"/> PODE mudar, ao contrário do caminho de restauração).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Sem esta reconciliação, repor o cronograma faria <c>Clear()</c> + <c>Add</c> de
     /// instâncias novas — DELETE das fases antigas e INSERT das novas na MESMA
     /// transação. Quando a nova fase reocupa a MESMA <see cref="Ordem"/> da antiga (o
@@ -367,6 +375,16 @@ public sealed class FaseCronograma : EntityBase
     /// "libera" o valor antes do INSERT — o EF Core não infere essa ordem entre
     /// entidades sem relação de FK, e o SaveChanges pode colidir na constraint.
     /// Reconciliar em vez de recriar evita o DELETE+INSERT do mesmo slot.
+    /// </para>
+    /// <para>
+    /// <b>Os produtos exigem o mesmo cuidado, e as bancas não.</b>
+    /// <c>ux_produtos_da_fase_ato</c> torna <c>(fase, ato_codigo)</c> único, então repor a
+    /// coleção por <c>Clear()</c> + <c>Add</c> produziria DELETE+INSERT do mesmo slot na
+    /// mesma transação — exatamente a colisão descrita acima. Os produtos são reconciliados
+    /// por <see cref="ProdutoDaFase.AtoCodigo"/>, reusando a instância rastreada;
+    /// <c>bancas_requeridas</c> não tem índice único e por isso segue com a reposição
+    /// simples.
+    /// </para>
     /// </remarks>
     internal void AtualizarSnapshot(
         Guid faseCanonicaOrigemId,
@@ -376,18 +394,19 @@ public sealed class FaseCronograma : EntityBase
         OrigemDataFase origemData,
         bool agrupaEtapas,
         bool permiteComplementacao,
-        bool produzResultado,
-        bool resultadoDefinitivo,
         bool coletaInscricao,
         bool coletaSolicitacaoIsencao,
         DateTimeOffset? inicio,
         DateTimeOffset? fim,
-        string? atoProduzidoCodigo,
+        IReadOnlyList<ProdutoDaFase> produtos,
+        string? faseConcluinteCodigo,
+        bool emiteParecerIndividual,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
         RegraRecursoFase? regraRecurso)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
+        ArgumentNullException.ThrowIfNull(produtos);
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
 
         FaseCanonicaOrigemId = faseCanonicaOrigemId;
@@ -397,13 +416,37 @@ public sealed class FaseCronograma : EntityBase
         OrigemData = origemData;
         AgrupaEtapas = agrupaEtapas;
         PermiteComplementacao = permiteComplementacao;
-        ProduzResultado = produzResultado;
-        ResultadoDefinitivo = resultadoDefinitivo;
         ColetaInscricao = coletaInscricao;
         ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao;
         Inicio = EmUtc(inicio);
         Fim = EmUtc(fim);
-        AtoProduzidoCodigo = atoProduzidoCodigo;
+        FaseConcluinteCodigo = NormalizarCodigo(faseConcluinteCodigo);
+        EmiteParecerIndividual = emiteParecerIndividual;
+
+        List<ProdutoDaFase> reconciliados = [];
+        foreach (ProdutoDaFase novo in produtos)
+        {
+            ProdutoDaFase? rastreado = _produtos
+                .Find(p => string.Equals(p.AtoCodigo, novo.AtoCodigo, StringComparison.Ordinal));
+            if (rastreado is not null)
+            {
+                rastreado.AtualizarPapel(novo.Papel);
+                reconciliados.Add(rastreado);
+            }
+            else
+            {
+                reconciliados.Add(novo);
+            }
+        }
+
+        // Os que sobraram fora de `reconciliados` saem da coleção e o EF os remove como
+        // órfãos; os rastreados voltam para ela e sobrevivem com o Id que já tinham.
+        _produtos.Clear();
+        foreach (ProdutoDaFase produto in reconciliados)
+        {
+            produto.VincularFase(Id);
+            _produtos.Add(produto);
+        }
 
         _bancasRequeridas.Clear();
         foreach (BancaRequerida banca in bancasRequeridas)
@@ -419,6 +462,30 @@ public sealed class FaseCronograma : EntityBase
         }
     }
 
+    private void AdotarFilhas(
+        IReadOnlyList<ProdutoDaFase> produtos,
+        IReadOnlyList<BancaRequerida> bancasRequeridas,
+        RegraRecursoFase? regraRecurso)
+    {
+        foreach (ProdutoDaFase produto in produtos)
+        {
+            produto.VincularFase(Id);
+            _produtos.Add(produto);
+        }
+
+        foreach (BancaRequerida banca in bancasRequeridas)
+        {
+            banca.VincularFase(Id);
+            _bancasRequeridas.Add(banca);
+        }
+
+        if (regraRecurso is not null)
+        {
+            regraRecurso.VincularFase(Id);
+            RegraRecurso = regraRecurso;
+        }
+    }
+
     /// <summary>
     /// Fixa a representação da janela em UTC preservando o instante — o cliente informa
     /// um instante inequívoco (RFC 3339), e qual offset ele escolheu para escrevê-lo é
@@ -426,4 +493,12 @@ public sealed class FaseCronograma : EntityBase
     /// <c>AuthorizationRequestContext</c> aplica à data de acesso.
     /// </summary>
     private static DateTimeOffset? EmUtc(DateTimeOffset? instante) => instante?.ToUniversalTime();
+
+    /// <summary>
+    /// Texto em branco e ausência são o mesmo estado — "esta fase não aponta concluinte" —,
+    /// e deixar os dois entrarem faria a mesma configuração produzir bytes canônicos
+    /// distintos conforme o cliente enviasse <c>null</c> ou <c>""</c>.
+    /// </summary>
+    private static string? NormalizarCodigo(string? codigo) =>
+        string.IsNullOrWhiteSpace(codigo) ? null : codigo.Trim();
 }

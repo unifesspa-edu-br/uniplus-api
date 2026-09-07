@@ -50,6 +50,16 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                 .NotEmpty()
                 .WithMessage("O id do tipo de banca não pode ser vazio.");
 
+            // Forma do item, e só ela. Que o papel seja declarável, que o tipo de ato
+            // exista e que ele seja resultado no catálogo são resoluções do handler, e que
+            // o mesmo ato não se repita na fase é invariante do agregado (ADR-0125).
+            fase.RuleForEach(f => f.Produtos).ChildRules(produto =>
+            {
+                produto.RuleFor(p => p.AtoCodigo)
+                    .NotEmpty()
+                    .WithMessage("O código do ato do produto é obrigatório.");
+            });
+
             fase.When(f => f.RegraRecurso is not null, () =>
             {
                 fase.RuleFor(f => f.RegraRecurso!.RegraCodigo)

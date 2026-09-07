@@ -81,12 +81,10 @@ internal static class ProcessoSeletivoConformeBuilder
             origemData: OrigemDataFase.Propria,
             agrupaEtapas: true,
             permiteComplementacao: false,
-            produzResultado: true,
-            resultadoDefinitivo: true,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
+                                    coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL",
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

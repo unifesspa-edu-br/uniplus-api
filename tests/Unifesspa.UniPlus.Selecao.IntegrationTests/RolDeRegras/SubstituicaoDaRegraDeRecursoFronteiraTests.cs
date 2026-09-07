@@ -192,12 +192,10 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
             origemData: OrigemDataFase.Propria,
             agrupaEtapas: false,
             permiteComplementacao: false,
-            produzResultado: true,
-            resultadoDefinitivo: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                                    coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+            produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
             regraRecurso: regraRecurso).Value!;
 

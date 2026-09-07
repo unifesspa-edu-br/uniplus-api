@@ -82,7 +82,9 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         FaseCanonicaId: faseCanonicaId,
         Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        AtoProduzidoCodigo: "RESULTADO_FINAL",
+        Produtos: [new ProdutoDaFaseInput("RESULTADO_FINAL", PapelProdutoFaseCodigo.Definitivo)],
+        FaseConcluinteCodigo: null,
+        EmiteParecerIndividual: false,
         TiposBancaIds: [],
         RegraRecurso: null);
 
@@ -129,8 +131,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         resultado.Error!.Code.Should().Be("FaseCronograma.FaseCanonicaNaoEncontrada");
     }
 
-    [Fact(DisplayName = "Handle com o ato produzido sem versão vigente no catálogo de Publicações retorna FaseCronograma.AtoProduzidoNaoEncontradoNoCatalogo")]
-    public async Task Handle_AtoProduzidoSemVersaoVigente_Recusa()
+    [Fact(DisplayName = "CA-02: produto cujo tipo de ato não tem versão vigente no catálogo é recusado com ProdutoDaFase.AtoNaoEncontradoNoCatalogo")]
+    public async Task Handle_ProdutoSemVersaoVigenteNoCatalogo_Recusa()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         Mocks mocks = NovosMocks(processo, processo.Id);
@@ -146,7 +148,10 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FaseCronograma.AtoProduzidoNaoEncontradoNoCatalogo");
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e =>
+                e.Field == "fases[0].produtos[0].atoCodigo"
+                && e.Error.Code == "ProdutoDaFase.AtoNaoEncontradoNoCatalogo");
     }
 
     [Fact(DisplayName = "CA-02/D9: referenciar uma regra de OUTRO TipoRegra em RegraRecurso é recusado com RegraRecursoFase.RegraCatalogoInvalida")]
@@ -217,7 +222,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         FaseCronogramaInput input = InputResultado(faseCanonicaId) with
         {
-            AtoProduzidoCodigo = "RESULTADO_PRELIMINAR",
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar)],
             RegraRecurso = regraRecursoInput,
         };
         DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
@@ -251,8 +256,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "ADR-0125: erro de FaseCronograma.Criar na SEGUNDA fase do payload carrega o índice do item no field")]
-    public async Task Handle_SegundaFaseComAtoProduzidoAusente_PrefixaIndiceNoField()
+    [Fact(DisplayName = "ADR-0125: recusa de produto na SEGUNDA fase do payload carrega o índice da fase e o do item no field")]
+    public async Task Handle_SegundaFaseComPapelEmAtoQueNaoEhResultado_PrefixaIndiceNoField()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         Mocks mocks = NovosMocks(processo, processo.Id);
@@ -262,19 +267,31 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             .Returns(FaseCanonicaRecorrivel(faseCanonicaId1));
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId2, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaResultado(faseCanonicaId2));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(new TipoAtoPublicadoView("RESULTADO_PRELIMINAR", "Resultado preliminar", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("COMUNICADO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("COMUNICADO", "Comunicado", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
 
-        // 1ª fase: ProduzResultado=true (via FaseCanonicaRecorrivel), com AtoProduzidoCodigo
-        // ausente no payload — dispara FaseCronograma.AtoProduzidoObrigatorio na 2ª (índice 1).
-        FaseCronogramaInput fase1 = InputResultado(faseCanonicaId1) with { Ordem = 1, AtoProduzidoCodigo = "RESULTADO_PRELIMINAR" };
-        FaseCronogramaInput fase2 = InputResultado(faseCanonicaId2) with { Ordem = 2, AtoProduzidoCodigo = null };
+        // A 2ª fase declara papel num ato que o catálogo não classifica como resultado — o
+        // field precisa levar o índice da fase E o do produto dentro dela.
+        FaseCronogramaInput fase1 = InputResultado(faseCanonicaId1) with
+        {
+            Ordem = 1,
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Definitivo)],
+        };
+        FaseCronogramaInput fase2 = InputResultado(faseCanonicaId2) with
+        {
+            Ordem = 2,
+            Produtos = [new ProdutoDaFaseInput("COMUNICADO", PapelProdutoFaseCodigo.Definitivo)],
+        };
         DefinirCronogramaFasesCommand command = new(processo.Id, [fase1, fase2], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[1].atoProduzidoCodigo"]);
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[1].produtos[0].papel"]);
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("ProdutoDaFase.PapelEmAtoQueNaoEhResultado");
     }
 
     [Fact(DisplayName = "ADR-0125: erro sem field próprio (JanelaObrigatoriaEmDataPropria) é prefixado só com fases[i], nunca fica com field null")]
@@ -288,16 +305,222 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         // OrigemData=PROPRIA (via FaseCanonicaResultado) sem Inicio/Fim dispara
         // JanelaObrigatoriaEmDataPropria (sem field próprio — afeta os dois lados da
-        // janela); AtoProduzidoCodigo ausente dispara AtoProduzidoObrigatorio (field
-        // "atoProduzidoCodigo") na MESMA fase — os dois precisam ficar rastreáveis à
-        // fase de índice 0, mesmo o que não tem field de campo específico.
-        FaseCronogramaInput fase = InputResultado(faseCanonicaId) with { Inicio = null, Fim = null, AtoProduzidoCodigo = null };
+        // janela); a promessa de parecer individual sem produto nenhum dispara
+        // ParecerIndividualSemResultado (field "emiteParecerIndividual") na MESMA fase —
+        // os dois precisam ficar rastreáveis à fase de índice 0, mesmo o que não tem field
+        // de campo específico.
+        FaseCronogramaInput fase = InputResultado(faseCanonicaId) with
+        {
+            Inicio = null,
+            Fim = null,
+            Produtos = [],
+            EmiteParecerIndividual = true,
+        };
         DefinirCronogramaFasesCommand command = new(processo.Id, [fase], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[0]", "fases[0].atoProduzidoCodigo"]);
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[0]", "fases[0].emiteParecerIndividual"]);
         resultado.Errors.Should().NotContain(e => e.Field == null);
+    }
+
+    // ── CA-02 — o papel só cabe em ato que o catálogo classifica como resultado ──
+
+    [Fact(DisplayName = "CA-02 (contraprova): produto SEM papel num ato que não é resultado é aceito")]
+    public async Task Handle_ProdutoSemPapelEmAtoQueNaoEhResultado_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("COMUNICADO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("COMUNICADO", "Comunicado", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos = [new ProdutoDaFaseInput("COMUNICADO", null)],
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.CronogramaFases.Should().ContainSingle()
+            .Which.ProduzResultado.Should().BeFalse("publicar aviso não torna a fase produtora de resultado");
+    }
+
+    [Fact(DisplayName = "CA-02: papel fora do vocabulário é recusado com ProdutoDaFase.PapelDesconhecido, sem virar produto sem papel")]
+    public async Task Handle_PapelForaDoVocabulario_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_FINAL", "PRELIMINARY")],
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue(
+            "aceitar o token desconhecido como ausência de papel transformaria erro de digitação em fase que deixa de produzir resultado, em silêncio");
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e =>
+                e.Field == "fases[0].produtos[0].papel"
+                && e.Error.Code == "ProdutoDaFase.PapelDesconhecido");
+    }
+
+    [Fact(DisplayName = "ADR-0125: dois produtos com problemas distintos acumulam as duas recusas, cada uma com o índice do item")]
+    public async Task Handle_DoisProdutosComProblemasDistintos_AcumulaAsDuasRecusas()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("COMUNICADO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("COMUNICADO", "Comunicado", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("ATO_INEXISTENTE", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos =
+            [
+                new ProdutoDaFaseInput("COMUNICADO", PapelProdutoFaseCodigo.Preliminar),
+                new ProdutoDaFaseInput("ATO_INEXISTENTE", null),
+            ],
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
+            ["fases[0].produtos[0].papel", "fases[0].produtos[1].atoCodigo"],
+            "uma coleção mal declarada erra em vários itens ao mesmo tempo, e devolver só o primeiro faria o operador descobrir os demais numa sequência de tentativas");
+    }
+
+    [Fact(DisplayName = "O catálogo é lido UMA vez por código, mesmo quando duas fases publicam o mesmo ato")]
+    public async Task Handle_MesmoAtoEmDuasFases_ResolveOCatalogoUmaVez()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId1 = Guid.CreateVersion7();
+        Guid faseCanonicaId2 = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId1, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId1));
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId2, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId2));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado Final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+
+        DefinirCronogramaFasesCommand command = new(
+            processo.Id,
+            [
+                InputResultado(faseCanonicaId1) with { Ordem = 1 },
+                InputResultado(faseCanonicaId2) with { Ordem = 2 },
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        await mocks.TipoAtoPublicadoReader.Received(1)
+            .ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+    }
+
+    // ── CA-08 — recurso ancorado em ato de efeito irreversível ──
+
+    [Fact(DisplayName = "CA-08: âncora cujo tipo de ato tem efeito IRREVERSÍVEL é recusada com RegraRecursoFase.AncoraEmAtoIrreversivel")]
+    public async Task Handle_AncoraEmAtoIrreversivel_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaRecorrivel(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("CONVOCACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("CONVOCACAO", "Convocação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: true, EhResultado: true));
+
+        RegraCatalogo regra = RegraCatalogo.Criar(
+            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
+            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999 art. 56").Value!;
+        mocks.RegraCatalogoReader.ObterAsync(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", Arg.Any<CancellationToken>())
+            .Returns(regra);
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos = [new ProdutoDaFaseInput("CONVOCACAO", PapelProdutoFaseCodigo.Preliminar)],
+            RegraRecurso = new RegraRecursoFaseInput(
+                RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
+                RegraVersao: "v1",
+                PrazoValor: 48m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                AtoAncoraCodigo: "CONVOCACAO",
+                SuspensividadePrimeiraInstanciaValor: null,
+                SuspensividadePrimeiraInstanciaUnidade: null,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null),
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.AncoraEmAtoIrreversivel",
+            "o ato que concede a vaga não se desfaz, e o recurso cabível é contra o resultado que o fundamenta");
+    }
+
+    [Fact(DisplayName = "CA-08 (contraprova): âncora em ato reversível e não congelante é aceita")]
+    public async Task Handle_AncoraEmAtoReversivel_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaRecorrivel(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_PRELIMINAR", "Resultado preliminar", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_DEFINITIVO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_DEFINITIVO", "Resultado definitivo", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+
+        RegraCatalogo regra = RegraCatalogo.Criar(
+            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
+            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999 art. 56").Value!;
+        mocks.RegraCatalogoReader.ObterAsync(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", Arg.Any<CancellationToken>())
+            .Returns(regra);
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos =
+            [
+                new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar),
+                new ProdutoDaFaseInput("RESULTADO_DEFINITIVO", PapelProdutoFaseCodigo.Definitivo),
+            ],
+            RegraRecurso = new RegraRecursoFaseInput(
+                RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
+                RegraVersao: "v1",
+                PrazoValor: 48m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
+                SuspensividadePrimeiraInstanciaValor: null,
+                SuspensividadePrimeiraInstanciaUnidade: null,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null),
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.CronogramaFases.Should().ContainSingle()
+            .Which.Produtos.Should().HaveCount(2);
     }
 }

@@ -39,7 +39,9 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
                 FaseCanonicaId: Guid.CreateVersion7(),
                 Inicio: null,
                 Fim: null,
-                AtoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+                Produtos: [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar)],
+                FaseConcluinteCodigo: null,
+                EmiteParecerIndividual: false,
                 TiposBancaIds: [],
                 RegraRecurso: regraRecurso),
         ],
@@ -97,7 +99,9 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
             FaseCanonicaId: Guid.CreateVersion7(),
             Inicio: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             Fim: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            AtoProduzidoCodigo: null,
+            Produtos: [],
+            FaseConcluinteCodigo: null,
+            EmiteParecerIndividual: false,
             TiposBancaIds: [],
             RegraRecurso: null);
         DefinirCronogramaFasesCommand command = new(Guid.CreateVersion7(), [fase], PrecondicaoIfMatch.Ausente);

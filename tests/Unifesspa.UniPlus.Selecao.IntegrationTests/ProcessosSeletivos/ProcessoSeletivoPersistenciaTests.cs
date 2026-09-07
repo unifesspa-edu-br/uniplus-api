@@ -400,10 +400,10 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_PRELIMINAR",
             donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
-            permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+            produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL")],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

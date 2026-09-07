@@ -13,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Leitura do bloco <c>cronogramaFases</c>: fases, bancas requeridas e a regra de recurso
-/// de cada fase.
+/// Leitura do bloco <c>cronogramaFases</c>: fases, produtos publicados, bancas requeridas e
+/// a regra de recurso de cada fase.
 /// </summary>
 public sealed partial class EnvelopeCodec
 {
@@ -54,8 +54,9 @@ public sealed partial class EnvelopeCodec
             string[] chavesBase =
             [
                 "ordem", "faseCanonicaOrigemId", "codigo", "donoInstitucional", "origemData",
-                "agrupaEtapas", "permiteComplementacao", "produzResultado", "resultadoDefinitivo",
-                "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "atoProduzidoCodigo",
+                "agrupaEtapas", "permiteComplementacao",
+                "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim",
+                "produtos", "faseConcluinteCodigo", "emiteParecerIndividual",
                 "bancasRequeridas", "regraRecurso",
             ];
             leitor.ExigirChaves(item, path, comId ? [.. chavesBase, "id"] : chavesBase);
@@ -68,14 +69,19 @@ public sealed partial class EnvelopeCodec
             OrigemDataFase origemData = leitor.Enumeracao<OrigemDataFase>(item, "origemData", path);
             bool agrupaEtapas = leitor.Booleano(item, "agrupaEtapas", path);
             bool permiteComplementacao = leitor.Booleano(item, "permiteComplementacao", path);
-            bool produzResultado = leitor.Booleano(item, "produzResultado", path);
-            bool resultadoDefinitivo = leitor.Booleano(item, "resultadoDefinitivo", path);
             bool coletaInscricao = leitor.Booleano(item, "coletaInscricao", path);
             bool coletaSolicitacaoIsencao = leitor.Booleano(item, "coletaSolicitacaoIsencao", path);
             DateTimeOffset? inicio = leitor.InstanteOpcional(item, "inicio", path);
             DateTimeOffset? fim = leitor.InstanteOpcional(item, "fim", path);
-            string? atoProduzidoCodigo = leitor.TextoOpcional(item, "atoProduzidoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
+            string? faseConcluinteCodigo = leitor.TextoOpcional(item, "faseConcluinteCodigo", path, LimitesDoEnvelope.FaseCodigo);
+            bool emiteParecerIndividual = leitor.Booleano(item, "emiteParecerIndividual", path);
 
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            IReadOnlyList<ProdutoDaFase> produtos = LerProdutosDaFase(leitor, item, path);
             if (leitor.Falhou)
             {
                 return [];
@@ -96,14 +102,12 @@ public sealed partial class EnvelopeCodec
             Result<FaseCronograma> fase = comId
                 ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(
                     id!.Value, ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
-                    agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
-                    coletaSolicitacaoIsencao,
-                    inicio, fim, atoProduzidoCodigo, bancas, regraRecurso))
+                    agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao,
+                    inicio, fim, produtos, faseConcluinteCodigo, emiteParecerIndividual, bancas, regraRecurso))
                 : FaseCronograma.Criar(
                     ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
-                    agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
-                    coletaSolicitacaoIsencao,
-                    inicio, fim, atoProduzidoCodigo, bancas, regraRecurso);
+                    agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao,
+                    inicio, fim, produtos, faseConcluinteCodigo, emiteParecerIndividual, bancas, regraRecurso);
             if (fase.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FaseCronograma>>(fase.Error!) ?? [];
@@ -113,6 +117,41 @@ public sealed partial class EnvelopeCodec
         }
 
         return fases;
+    }
+
+    /// <summary>
+    /// Os produtos que a fase publica. O <c>id</c> é congelado e reidratado — é contra ele
+    /// que o ato publicado resolverá, de volta, a configuração de recurso que lhe
+    /// corresponde.
+    /// </summary>
+    private static List<ProdutoDaFase> LerProdutosDaFase(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
+    {
+        JsonArray array = leitor.Array(faseItem, "produtos", pathPai);
+        if (leitor.Falhou)
+        {
+            return [];
+        }
+
+        List<ProdutoDaFase> produtos = [];
+        for (int i = 0; i < array.Count; i++)
+        {
+            string path = $"{pathPai}.produtos[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, $"{pathPai}.produtos");
+            leitor.ExigirChaves(item, path, "id", "atoCodigo", "papel");
+
+            Guid? id = leitor.Identificador(item, "id", path);
+            string atoCodigo = leitor.TextoNaoVazio(item, "atoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
+            PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(item, "papel", path);
+
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            produtos.Add(ProdutoDaFase.Reidratar(id!.Value, atoCodigo, papel));
+        }
+
+        return produtos;
     }
 
     private static List<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
