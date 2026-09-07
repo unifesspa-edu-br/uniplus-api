@@ -28,15 +28,17 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>
 /// <b>O que a fase publica é declarado, não copiado do cadastro.</b> A coleção
 /// <see cref="Produtos"/> traz o código de cada ato e o papel de cada publicação no ciclo
-/// recursal; <see cref="ProduzResultado"/> deriva dela. Que o papel só caiba em ato que é
-/// resultado no catálogo é I/O — Application (ADR-0042).
+/// recursal; <see cref="ProduzResultado"/> deriva dela, e a âncora do prazo de recurso
+/// referencia um deles — <see cref="RegraRecursoFase.ProdutoAncoraId"/> é sempre um produto
+/// preliminar desta fase. Que o papel só caiba em ato que é resultado no catálogo é I/O —
+/// Application (ADR-0042).
 /// </para>
 /// <para>
 /// <b>Invariantes que esta factory prova sozinha</b> (não dependem de leitura externa):
 /// janela obrigatória/opcional conforme <see cref="OrigemData"/> (CA-07), janela não
 /// invertida, o mesmo ato declarado uma única vez, o parecer individual sustentado por
-/// alguma publicação de resultado, e as invariantes de <see cref="RegraRecursoFase"/> que
-/// dependem da fase-mãe (produz resultado, e a âncora é um ato da própria fase). A
+/// alguma publicação de resultado, e a invariante de <see cref="RegraRecursoFase"/> que
+/// depende da fase-mãe — a âncora do prazo é um produto preliminar desta fase. A
 /// alcançabilidade da conclusão do ciclo recursal é da <b>raiz</b>
 /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>): só ela enxerga o cronograma
 /// inteiro.
@@ -235,25 +237,30 @@ public sealed class FaseCronograma : EntityBase
 
         if (regraRecurso is not null)
         {
-            // Item 1 do §3.6: recurso só cabe onde há resultado.
-            if (!produzResultado)
+            List<ProdutoDaFase> preliminares =
+                [.. produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar)];
+
+            // Recurso é contra o resultado preliminar: é ele que abre a janela de
+            // interposição, e é do instante em que é publicado que o prazo corre
+            // (UNI-REQ-0115). Fase que não publica nenhum não tem decisão a contestar — nem
+            // a que só publica o definitivo, que encerra a matéria em vez de abri-la.
+            if (preliminares.Count == 0)
             {
-                erros.Add(new(null, new DomainError(
-                    "RegraRecursoFase.FaseNaoProduzResultado",
-                    $"A fase '{codigo}' não produz resultado e não pode admitir regra de recurso.")));
+                erros.Add(new("produtos", new DomainError(
+                    "RegraRecursoFase.FaseSemProdutoPreliminar",
+                    $"A fase '{codigo}' admite recurso e não publica nenhum produto com papel preliminar — declare o resultado preliminar em que o prazo ancora.")));
             }
 
-            // Item 2 do §3.6: o ato recorrido é SEMPRE um ato da própria fase — ancorar no
-            // ato de outra fase é recusado. Condicionada a produzResultado: quando a fase
-            // não produz resultado nenhum, já há um erro mais fundamental acumulado acima,
-            // e a comparação reportaria uma âncora espúria, orientando o cliente a
-            // corrigir uma condição que ainda não pode ser avaliada.
-            if (produzResultado
-                && !produtos.Any(p => string.Equals(p.AtoCodigo, regraRecurso.Args.AtoAncoraCodigo, StringComparison.Ordinal)))
+            // A âncora é a identidade de um produto DESTA fase, e não um código de tipo de
+            // ato: duas fases podem publicar o mesmo tipo, e só a identidade da linha diz de
+            // qual das duas publicações o prazo conta. Condicionada à existência de algum
+            // preliminar — sem nenhum, já há o erro mais fundamental acima, e esta recusa
+            // mandaria escolher entre um conjunto vazio.
+            else if (!preliminares.Exists(p => p.Id == regraRecurso.ProdutoAncoraId))
             {
                 erros.Add(new("regraRecurso.atoAncoraCodigo", new DomainError(
-                    "RegraRecursoFase.AncoraDeOutraFase",
-                    $"A fase '{codigo}' não publica o ato '{regraRecurso.Args.AtoAncoraCodigo}' em que a regra de recurso ancora — o ato recorrido tem de ser um dos produtos da própria fase.")));
+                    "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase",
+                    $"A regra de recurso da fase '{codigo}' não ancora em nenhum dos produtos preliminares que ela publica ({string.Join(", ", preliminares.Select(static p => p.AtoCodigo).Order(StringComparer.Ordinal))}).")));
             }
         }
 
@@ -327,6 +334,18 @@ public sealed class FaseCronograma : EntityBase
         if (id == Guid.Empty)
         {
             throw new ArgumentException("A fase reidratada deve declarar o Id congelado no envelope.", nameof(id));
+        }
+
+        // A âncora congelada é reposta como estava — é ela que o ato já publicado resolve de
+        // volta (UNI-REQ-0093). Conferir que aponta para um produto desta fase é a última
+        // linha contra envelope incoerente, e é o que torna a leitura do campo
+        // não-tautológica no round-trip.
+        if (regraRecurso is not null
+            && !produtos.Any(p => p.Id == regraRecurso.ProdutoAncoraId))
+        {
+            throw new ArgumentException(
+                $"A fase '{codigo}' reidratada tem regra de recurso ancorada no produto {regraRecurso.ProdutoAncoraId}, que não está entre os produtos congelados da fase.",
+                nameof(regraRecurso));
         }
 
         FaseCronograma fase = new()

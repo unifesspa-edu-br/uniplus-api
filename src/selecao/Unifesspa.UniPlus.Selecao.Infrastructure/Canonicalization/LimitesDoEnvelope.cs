@@ -65,10 +65,7 @@ public static class LimitesDoEnvelope
     /// <summary><c>FaseCronograma.DonoInstitucional</c> — snapshot-copy do dono típico.</summary>
     public const int DonoInstitucional = 60;
 
-    /// <summary>
-    /// Código de tipo de ato de Publicações — <c>ProdutoDaFase.AtoCodigo</c> e
-    /// <c>ArgsRegraPrazoRecurso.AtoAncoraCodigo</c> compartilham o mesmo limite.
-    /// </summary>
+    /// <summary>Código de tipo de ato de Publicações — <c>ProdutoDaFase.AtoCodigo</c>.</summary>
     public const int TipoAtoCodigo = 60;
 
     /// <summary><c>BancaRequerida.Codigo</c> — snapshot-copy do código classificatório de <c>TipoBanca</c>.</summary>

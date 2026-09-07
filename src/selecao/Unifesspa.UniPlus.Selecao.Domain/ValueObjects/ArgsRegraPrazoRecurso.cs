@@ -24,7 +24,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </remarks>
 /// <param name="PrazoValor">Magnitude do prazo de interposição (1ª instância — o Uni+ gere só esta). Em dias úteis, exige valor inteiro.</param>
 /// <param name="PrazoUnidade">Unidade do prazo de interposição — só <see cref="UnidadePrazo.DiasUteis"/> e <see cref="UnidadePrazo.Horas"/> são declaráveis; <see cref="Entities.RegraRecursoFase.Criar"/> recusa dia corrido em runtime.</param>
-/// <param name="AtoAncoraCodigo">Código do tipo de ato do qual o prazo conta o instante de publicação — sempre o ato produzido pela PRÓPRIA fase.</param>
 /// <param name="SuspensividadePrimeiraInstanciaValor">Magnitude da janela de suspensividade da 1ª instância, ou <see langword="null"/> — não bloqueia.</param>
 /// <param name="SuspensividadePrimeiraInstanciaUnidade">Unidade da suspensividade da 1ª instância.</param>
 /// <param name="SuspensividadeSegundaInstanciaValor">Magnitude da janela de suspensividade da instância superior, ou <see langword="null"/> — não bloqueia (caso normal do Ingresso via judicial).</param>
@@ -32,7 +31,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed record ArgsRegraPrazoRecurso(
     decimal PrazoValor,
     UnidadePrazo PrazoUnidade,
-    string AtoAncoraCodigo,
     decimal? SuspensividadePrimeiraInstanciaValor,
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     decimal? SuspensividadeSegundaInstanciaValor,

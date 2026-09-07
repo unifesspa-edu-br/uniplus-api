@@ -42,16 +42,19 @@ public sealed class GateDoCalendarioVigenteTests
             Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste",
             TimeProvider.System, contexto);
 
+    /// <summary>Produto preliminar da fase 2 — a âncora que a regra de recurso declara.</summary>
+    private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000002");
+
     private static RegraRecursoFase Recurso(UnidadePrazo unidade) => RegraRecursoFase.Criar(
         Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'd'),
         new ArgsRegraPrazoRecurso(
             PrazoValor: unidade == UnidadePrazo.Horas ? 48m : 2m,
             PrazoUnidade: unidade,
-            AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
             SuspensividadeSegundaInstanciaValor: null,
-            SuspensividadeSegundaInstanciaUnidade: null)).Value!;
+            SuspensividadeSegundaInstanciaUnidade: null),
+        ProdutoPreliminarId).Value!;
 
     /// <summary>
     /// Cronograma mínimo que satisfaz os demais gates: coleta inscrição (a origem do corpus é
@@ -72,8 +75,8 @@ public sealed class GateDoCalendarioVigenteTests
         FaseCronograma.Criar(
             2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: true, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
+            produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)],
+            faseConcluinteCodigo: "RESULTADO_FINAL",
             emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: Recurso(unidade)).Value!,
         FaseCronograma.Criar(

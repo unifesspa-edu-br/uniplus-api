@@ -48,11 +48,11 @@ public sealed class GateDoAlgoritmoDeContagemTests
             new ArgsRegraPrazoRecurso(
                 PrazoValor: prazoValor,
                 PrazoUnidade: prazoUnidade,
-                AtoAncoraCodigo: "RESULTADO_FINAL",
                 SuspensividadePrimeiraInstanciaValor: suspensividadeUnidade is null ? null : 5m,
                 SuspensividadePrimeiraInstanciaUnidade: suspensividadeUnidade,
                 SuspensividadeSegundaInstanciaValor: null,
-                SuspensividadeSegundaInstanciaUnidade: null)).Value!;
+                SuspensividadeSegundaInstanciaUnidade: null),
+            ProcessoConformeFactory.ProdutoPreliminarId).Value!;
 
     /// <summary>
     /// Calendário vigente mínimo. Este arquivo prova o gate da <b>convenção de contagem</b>; sem

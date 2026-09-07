@@ -1269,6 +1269,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonObject SerializarRegraRecursoFase(RegraRecursoFase regraRecurso) => new()
     {
         ["regra"] = SerializarReferenciaRegra(regraRecurso.Regra),
+        ["produtoAncoraId"] = regraRecurso.ProdutoAncoraId,
         ["args"] = SerializarArgsRegraPrazoRecurso(regraRecurso.Args),
     };
 
@@ -1276,7 +1277,6 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         ["prazoValor"] = HashCanonicalComputer.SerializeDecimalCanonical(args.PrazoValor, EscalaPadrao),
         ["prazoUnidade"] = args.PrazoUnidade.ToString(),
-        ["atoAncoraCodigo"] = HashCanonicalComputer.NormalizeNfc(args.AtoAncoraCodigo),
         ["suspensividadePrimeiraInstanciaValor"] = args.SuspensividadePrimeiraInstanciaValor is { } v1
             ? HashCanonicalComputer.SerializeDecimalCanonical(v1, EscalaPadrao)
             : null,

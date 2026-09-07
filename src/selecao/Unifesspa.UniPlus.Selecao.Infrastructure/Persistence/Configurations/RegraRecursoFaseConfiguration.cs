@@ -16,7 +16,6 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
     private const int RegraCodigoMaxLength = 128;
     private const int RegraVersaoMaxLength = 16;
     private const int HashLength = 64;
-    private const int TipoAtoCodigoMaxLength = 60;
 
     public void Configure(EntityTypeBuilder<RegraRecursoFase> builder)
     {
@@ -38,13 +37,21 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
         {
             args.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
             args.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>().IsRequired();
-            args.Property(x => x.AtoAncoraCodigo).HasColumnName("ato_ancora_codigo").HasMaxLength(TipoAtoCodigoMaxLength).IsRequired();
             args.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("suspensividade_1a_instancia_valor").HasPrecision(18, 4);
             args.Property(x => x.SuspensividadePrimeiraInstanciaUnidade).HasColumnName("suspensividade_1a_instancia_unidade").HasConversion<int>();
             args.Property(x => x.SuspensividadeSegundaInstanciaValor).HasColumnName("suspensividade_2a_instancia_valor").HasPrecision(18, 4);
             args.Property(x => x.SuspensividadeSegundaInstanciaUnidade).HasColumnName("suspensividade_2a_instancia_unidade").HasConversion<int>();
         });
         builder.Navigation(r => r.Args).IsRequired();
+
+        // Coluna crua, sem FK para produtos_da_fase, ao contrário do que DocumentoExigido faz
+        // com fases_cronograma. A reconciliação de FaseCronograma.AtualizarSnapshot esvazia e
+        // repõe a coleção de produtos, e uma FK obrigatória faz o EF ler a saída do produto
+        // âncora da coleção como rompimento de relação obrigatória — o SaveChanges estoura
+        // antes de a âncora ser remapeada, ainda que o estado final seja coerente. A
+        // referência é interna ao agregado e nunca atravessa fase: quem a mantém coerente é
+        // FaseCronograma, que valida a âncora ao criar e a remapeia ao reconciliar.
+        builder.Property(r => r.ProdutoAncoraId).HasColumnName("produto_ancora_id").IsRequired();
 
         // 0..1 por fase — a FK É a chave alternativa que garante a cardinalidade.
         builder.HasIndex(r => r.FaseCronogramaId)

@@ -383,11 +383,11 @@ public static class ObterProcessoSeletivoQueryHandler
 
     private static RegraRecursoFaseDto ProjectRegraRecursoFase(RegraRecursoFase regraRecurso) => new(
         regraRecurso.Id,
+        regraRecurso.ProdutoAncoraId,
         new ReferenciaRegraDto(regraRecurso.Regra.Codigo, regraRecurso.Regra.Versao, regraRecurso.Regra.Hash),
         new ArgsRegraPrazoRecursoDto(
             regraRecurso.Args.PrazoValor,
             regraRecurso.Args.PrazoUnidade,
-            regraRecurso.Args.AtoAncoraCodigo,
             regraRecurso.Args.SuspensividadePrimeiraInstanciaValor,
             regraRecurso.Args.SuspensividadePrimeiraInstanciaUnidade,
             regraRecurso.Args.SuspensividadeSegundaInstanciaValor,

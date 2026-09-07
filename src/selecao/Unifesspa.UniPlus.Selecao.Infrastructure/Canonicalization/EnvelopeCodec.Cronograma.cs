@@ -99,6 +99,20 @@ public sealed partial class EnvelopeCodec
                 return [];
             }
 
+            // A âncora do recurso é a única referência cruzada dentro da fase, e a
+            // reidratação a repõe como estava em vez de rederivá-la. Conferi-la aqui, com o
+            // MESMO código de erro do agregado, é o que faz um envelope incoerente virar
+            // recusa nomeada em vez de exceção da factory — a fábrica só tem `throw` para
+            // esse estado, porque nenhum caminho de escrita o produz.
+            if (regraRecurso is { } regra
+                && !produtos.Any(produto =>
+                    produto.Id == regra.ProdutoAncoraId && produto.Papel == PapelProdutoFase.Preliminar))
+            {
+                return leitor.Propagar<IReadOnlyList<FaseCronograma>>(new DomainError(
+                    "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase",
+                    $"A regra de recurso da fase '{codigo}' ancora no produto {regra.ProdutoAncoraId}, que não é um produto preliminar publicado por ela.")) ?? [];
+            }
+
             Result<FaseCronograma> fase = comId
                 ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(
                     id!.Value, ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
@@ -189,6 +203,13 @@ public sealed partial class EnvelopeCodec
     /// <see cref="RegraPrazoRecursoCodigo.AncoradoEmAto"/> — a única variante que
     /// <see cref="RegraRecursoFase"/> admite (CA-02).
     /// </summary>
+    /// <remarks>
+    /// O <c>produtoAncoraId</c> é irmão de <c>regra</c> e <c>args</c>, e não campo de
+    /// <c>args</c>: ele não é parâmetro que alguém preencha, e sim a referência que a fase
+    /// deriva do próprio produto preliminar. A restauração o repõe como estava congelado —
+    /// é ele que o ato já publicado resolve de volta para achar o prazo que lhe corresponde
+    /// (UNI-REQ-0093).
+    /// </remarks>
     private static RegraRecursoFase? LerRegraRecursoFase(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
     {
         JsonObject? bloco = leitor.ObjetoOpcional(faseItem, "regraRecurso", pathPai);
@@ -198,9 +219,10 @@ public sealed partial class EnvelopeCodec
         }
 
         string path = $"{pathPai}.regraRecurso";
-        leitor.ExigirChaves(bloco, path, "regra", "args");
+        leitor.ExigirChaves(bloco, path, "regra", "produtoAncoraId", "args");
 
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", path, RegraPrazoRecursoCodigo.AncoradoEmAto);
+        Guid produtoAncoraId = leitor.Identificador(bloco, "produtoAncoraId", path);
         JsonObject argsObjeto = leitor.Objeto(bloco, "args", path);
         if (leitor.Falhou)
         {
@@ -210,13 +232,12 @@ public sealed partial class EnvelopeCodec
         string argsPath = $"{path}.args";
         leitor.ExigirChaves(
             argsObjeto, argsPath,
-            "prazoValor", "prazoUnidade", "atoAncoraCodigo",
+            "prazoValor", "prazoUnidade",
             "suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade",
             "suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade");
 
         decimal prazoValor = leitor.Decimal(argsObjeto, "prazoValor", EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
         UnidadePrazo prazoUnidade = leitor.Enumeracao<UnidadePrazo>(argsObjeto, "prazoUnidade", argsPath);
-        string atoAncoraCodigo = leitor.TextoNaoVazio(argsObjeto, "atoAncoraCodigo", argsPath, LimitesDoEnvelope.TipoAtoCodigo);
         decimal? suspensividade1Valor = leitor.DecimalOpcional(
             argsObjeto, "suspensividadePrimeiraInstanciaValor", EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
         UnidadePrazo? suspensividade1Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
@@ -232,11 +253,11 @@ public sealed partial class EnvelopeCodec
         }
 
         ArgsRegraPrazoRecurso args = new(
-            prazoValor, prazoUnidade, atoAncoraCodigo,
+            prazoValor, prazoUnidade,
             suspensividade1Valor, suspensividade1Unidade,
             suspensividade2Valor, suspensividade2Unidade);
 
-        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Criar(regra, args);
+        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Reidratar(regra, args, produtoAncoraId);
         return regraRecurso.IsFailure ? leitor.Propagar<RegraRecursoFase>(regraRecurso.Error!) : regraRecurso.Value;
     }
 }

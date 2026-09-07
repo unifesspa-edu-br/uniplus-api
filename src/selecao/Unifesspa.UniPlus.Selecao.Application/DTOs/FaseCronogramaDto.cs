@@ -13,14 +13,21 @@ public sealed record BancaRequeridaDto(Guid Id, Guid TipoBancaOrigemId, string C
 public sealed record ArgsRegraPrazoRecursoDto(
     decimal PrazoValor,
     UnidadePrazo PrazoUnidade,
-    string AtoAncoraCodigo,
     decimal? SuspensividadePrimeiraInstanciaValor,
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     decimal? SuspensividadeSegundaInstanciaValor,
     UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
 
 /// <summary>Projeção de leitura de <c>RegraRecursoFase</c> (0..1, Story #851) — presença = a fase admite recurso.</summary>
-public sealed record RegraRecursoFaseDto(Guid Id, ReferenciaRegraDto Regra, ArgsRegraPrazoRecursoDto Args);
+/// <param name="ProdutoAncoraId">
+/// O <c>ProdutoDaFase</c> desta mesma fase de cujo instante de publicação o prazo de
+/// interposição conta. Derivado do produto preliminar, não escrito por quem configura.
+/// </param>
+public sealed record RegraRecursoFaseDto(
+    Guid Id,
+    Guid ProdutoAncoraId,
+    ReferenciaRegraDto Regra,
+    ArgsRegraPrazoRecursoDto Args);
 
 /// <summary>Projeção de leitura de <c>FaseCronograma</c> (Story #851) — o eixo temporal do certame.</summary>
 public sealed record FaseCronogramaDto(

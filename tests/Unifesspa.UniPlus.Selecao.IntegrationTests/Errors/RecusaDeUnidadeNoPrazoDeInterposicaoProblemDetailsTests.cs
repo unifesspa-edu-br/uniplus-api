@@ -106,13 +106,15 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
         ArgsRegraPrazoRecurso args = new(
             PrazoValor: prazoValor,
             PrazoUnidade: prazoUnidade,
-            AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
             SuspensividadePrimeiraInstanciaValor: susp1Unidade is null ? null : 5m,
             SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
             SuspensividadeSegundaInstanciaValor: susp2Unidade is null ? null : 5m,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 
-        return RegraRecursoFase.Criar(regra, args);
+        // Âncora qualquer: as recusas exercitadas aqui são as invariantes puras da regra, e
+        // nenhuma delas consulta o produto — que ele seja preliminar da fase é conferido por
+        // FaseCronograma.Criar.
+        return RegraRecursoFase.Criar(regra, args, Guid.CreateVersion7());
     }
 
     private static ProblemDetails ProblemDetailsDe(Result<RegraRecursoFase> resultado)

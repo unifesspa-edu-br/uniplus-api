@@ -176,16 +176,12 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
                 .Should().Be(LimitesDoEnvelope.PrecisaoPercentual, $"LimitesDoEnvelope.PrecisaoPercentual espelha a coluna de {percentual}");
         }
 
-        // Story #851 — ArgsRegraPrazoRecurso.AtoAncoraCodigo e as precisões do prazo/das
-        // duas suspensividades.
+        // Story #851 — as precisões do prazo de interposição e das duas suspensividades.
         IEntityType argsPrazoRecurso = contexto.Model
             .FindEntityType(typeof(RegraRecursoFase))!
             .GetNavigations()
             .Single(n => n.Name == nameof(RegraRecursoFase.Args))
             .TargetEntityType;
-
-        argsPrazoRecurso.FindProperty(nameof(ArgsRegraPrazoRecurso.AtoAncoraCodigo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.TipoAtoCodigo, "LimitesDoEnvelope.TipoAtoCodigo espelha a coluna do código do ato âncora");
 
         foreach (string campoPrazo in new[]
         {

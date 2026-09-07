@@ -1457,6 +1457,44 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
     }
 
+    [Fact(DisplayName = "Âncora do recurso apontando para produto de OUTRA fase: recusa nomeada, não exceção da fábrica")]
+    public void RegraRecursoAncoradaEmProdutoDeOutraFase_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray fases = envelope["cronogramaFases"]!["fases"]!.AsArray();
+            JsonObject comRecurso = fases.Select(f => f!.AsObject()).Single(f => f["regraRecurso"] is JsonObject);
+            JsonObject outra = fases.Select(f => f!.AsObject())
+                .First(f => f["regraRecurso"] is not JsonObject && f["produtos"]!.AsArray().Count > 0);
+
+            comRecurso["regraRecurso"]!["produtoAncoraId"] =
+                outra["produtos"]!.AsArray()[0]!["id"]!.GetValue<string>();
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "a âncora passou a apontar para uma publicação que a fase não faz — o prazo do candidato correria " +
+            "de um ato que não é o que o prejudicou");
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase");
+    }
+
+    [Fact(DisplayName = "Âncora do recurso apontando para produto NÃO preliminar da própria fase: recusa nomeada")]
+    public void RegraRecursoAncoradaEmProdutoNaoPreliminar_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject comRecurso = envelope["cronogramaFases"]!["fases"]!.AsArray()
+                .Select(f => f!.AsObject())
+                .Single(f => f["regraRecurso"] is JsonObject);
+
+            comRecurso["produtos"]!.AsArray()[0]!["papel"] = null;
+            comRecurso["regraRecurso"]!["produtoAncoraId"] =
+                comRecurso["produtos"]!.AsArray()[0]!["id"]!.GetValue<string>();
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase");
+    }
+
     /// <summary>
     /// Os <c>args</c> da regra de recurso da única fase do corpus que a declara. Localizada
     /// pela presença do bloco, não por índice fixo: uma fase nova no corpus deslocaria o
