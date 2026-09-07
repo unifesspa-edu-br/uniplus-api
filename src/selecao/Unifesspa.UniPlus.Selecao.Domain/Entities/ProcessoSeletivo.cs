@@ -3962,6 +3962,38 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// devolver <see langword="null"/> — a partir daqui não há caminho de falha, e é o
     /// que garante que uma restauração recusada não altere nada (ADR-0110 D2).
     /// </summary>
+    /// <summary>
+    /// Os produtos que a fase VIVA recebe da fase congelada de mesma <see cref="FaseCronograma.Ordem"/>:
+    /// as próprias instâncias congeladas quando as duas fases são a MESMA, e cópias com
+    /// identidade nova quando não são.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// O <c>Id</c> de <see cref="ProdutoDaFase"/> é congelado no envelope, e a reconciliação
+    /// dentro de <see cref="FaseCronograma.AtualizarSnapshot"/> é por <c>AtoCodigo</c>, feita
+    /// já dentro de uma fase: ela não enxerga o cronograma inteiro e não tem como saber que a
+    /// fase congelada caiu sobre outra fase viva. Quando isso acontece — a sessão editorial
+    /// deslocou as ordens, e a reconciliação por Ordem passa a casar fases diferentes —,
+    /// deixar o Id congelado atravessar produz dois estragos ao mesmo tempo: a linha do
+    /// produto migra para uma fase que não é a que a congelou, e o MESMO Id pode entrar como
+    /// instância nova enquanto a linha rastreada homônima sai de outra fase como órfã, o que
+    /// o identity map do EF recusa — o descarte do rascunho estouraria, e o operador ficaria
+    /// sem como desfazer o deslocamento.
+    /// </para>
+    /// <para>
+    /// A identidade congelada só vale enquanto ancorada na fase que a congelou, e é por isso
+    /// que ela é descartada aqui, com o produto recriado — a mesma disciplina que as bancas
+    /// requeridas já têm por nunca terem Id no envelope. Nenhuma referência do envelope
+    /// aponta para o Id de um produto, então descartá-lo não deixa ponta solta; o caminho que
+    /// PRECISA preservá-lo — a sombra de verificação, que nasce sem fase viva alguma — nunca
+    /// passa por aqui, porque cai no ramo que adota a instância congelada inteira.
+    /// </para>
+    /// </remarks>
+    private static IReadOnlyList<ProdutoDaFase> ProdutosParaAFaseViva(FaseCronograma congelada, FaseCronograma viva) =>
+        viva.Id == congelada.Id
+            ? [.. congelada.Produtos]
+            : [.. congelada.Produtos.Select(static p => ProdutoDaFase.Criar(p.AtoCodigo, p.Papel))];
+
     private void AplicarGrafo(GrafoConfiguracao grafo)
     {
         // Reconciliação por Id (a armadilha do EF): a instância tracked é REUSADA e
@@ -4097,7 +4129,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     congelada.ColetaSolicitacaoIsencao,
                     congelada.Inicio,
                     congelada.Fim,
-                    [.. congelada.Produtos],
+                    ProdutosParaAFaseViva(congelada, viva),
                     congelada.FaseConcluinteCodigo,
                     congelada.EmiteParecerIndividual,
                     [.. congelada.BancasRequeridas],
