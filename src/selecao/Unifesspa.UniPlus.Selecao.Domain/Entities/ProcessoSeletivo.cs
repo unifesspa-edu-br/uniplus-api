@@ -2165,13 +2165,29 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// As violações da conclusão do ciclo recursal por matéria, uma por fase mal declarada.
+    /// As violações da conclusão do ciclo recursal, uma por fase mal declarada.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Três estados legítimos, e só eles: a fase que não publica preliminar não declara
     /// conclusão; a que publica preliminar e também definitiva conclui a si mesma; a que
     /// publica preliminar sem definitiva própria declara qual fase a conclui.
+    /// </para>
+    /// <para>
+    /// <b>A declaração vence a inferência.</b> Havendo <see cref="FaseCronograma.FaseConcluinteCodigo"/>,
+    /// é ela que é conferida — está no cronograma, publica definitiva, não antecede —, e a
+    /// única declaração recusada por si só é a fase apontando para si mesma, que não descreve
+    /// travessia nenhuma. A auto-conclusão só decide onde o operador não declarou nada.
+    /// </para>
+    /// <para>
+    /// <b>Limite conhecido da auto-conclusão.</b> Ela é inferida <b>por fase</b>: "publica
+    /// alguma preliminar e alguma definitiva". O modelo não pareia produtos por matéria — o
+    /// produto declara o código do ato e o papel, e nada diz que dois deles tratam do mesmo
+    /// assunto. Uma fase que publica o gabarito definitivo ao lado do resultado preliminar,
+    /// deixando o resultado definitivo para uma fase posterior, satisfaz a inferência sem
+    /// que o ciclo do resultado esteja concluído; declarar a fase concluinte é o que fecha
+    /// esse caso, e é por isso que a declaração tem precedência. Fechá-lo também quando o
+    /// operador omite a declaração exige um eixo de matéria que a configuração não carrega.
     /// </para>
     /// <para>
     /// Dentro de uma fase as checagens são encadeadas — não faz sentido conferir a ordem de
@@ -2204,30 +2220,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 continue;
             }
 
-            if (fase.PublicaResultadoDefinitivo)
+            if (fase.FaseConcluinteCodigo is not { } concluinteCodigo)
             {
-                if (fase.FaseConcluinteCodigo is not null)
+                // Sem declaração, a auto-conclusão decide — com o limite descrito no
+                // <remarks>: ela pergunta se a fase publica ALGUMA definitiva, não se a
+                // definitiva trata da matéria que a preliminar abriu.
+                if (!fase.PublicaResultadoDefinitivo)
                 {
                     violacoes.Add(new(campo, new DomainError(
-                        "ProcessoSeletivo.ConclusaoDeclaradaEmFaseQueSeConclui",
-                        $"A fase '{fase.Codigo}' publica preliminar e definitiva da própria matéria e já conclui a si mesma — não declara outra fase como concluinte.")));
+                        "ProcessoSeletivo.ConclusaoNaoDeclarada",
+                        $"A fase '{fase.Codigo}' publica resultado preliminar e não publica nenhum resultado definitivo — declare qual fase do cronograma a conclui.")));
                 }
 
                 continue;
             }
 
-            if (fase.FaseConcluinteCodigo is not { } concluinteCodigo)
+            // Apontar para si mesma não descreve travessia nenhuma: ou a fase conclui a
+            // própria matéria publicando a definitiva, e então não há o que declarar, ou não
+            // conclui, e a concluinte é outra fase.
+            if (string.Equals(concluinteCodigo, fase.Codigo, StringComparison.Ordinal))
             {
                 violacoes.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.ConclusaoNaoDeclarada",
-                    $"A fase '{fase.Codigo}' publica resultado preliminar e não publica a definitiva da matéria — declare qual fase do cronograma a conclui.")));
+                    "ProcessoSeletivo.ConclusaoDeclaradaEmFaseQueSeConclui",
+                    $"A fase '{fase.Codigo}' declara a si mesma como concluinte — a fase que encerra o ciclo recursal de outra é sempre distinta dela; para concluir o próprio ciclo, a fase publica o resultado definitivo e não declara concluinte.")));
                 continue;
             }
 
-            // A busca NÃO exclui a própria fase: quem se declara concluinte de si mesma sem
-            // publicar definitiva cai na recusa seguinte, que é a que descreve o defeito
-            // real — dizer que ela "não está no cronograma" mandaria corrigir o campo certo
-            // pela razão errada.
             FaseCronograma? concluinte = fases
                 .FirstOrDefault(f => string.Equals(f.Codigo, concluinteCodigo, StringComparison.Ordinal));
             if (concluinte is null)
