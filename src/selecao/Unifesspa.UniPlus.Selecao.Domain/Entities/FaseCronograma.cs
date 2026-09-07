@@ -235,33 +235,9 @@ public sealed class FaseCronograma : EntityBase
                 $"A fase '{codigo}' promete parecer individual e não publica nenhum resultado — não haveria decisão a fundamentar.")));
         }
 
-        if (regraRecurso is not null)
+        if (ViolacaoDaAncoraDoRecurso(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
         {
-            List<ProdutoDaFase> preliminares =
-                [.. produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar)];
-
-            // Recurso é contra o resultado preliminar: é ele que abre a janela de
-            // interposição, e é do instante em que é publicado que o prazo corre
-            // (UNI-REQ-0115). Fase que não publica nenhum não tem decisão a contestar — nem
-            // a que só publica o definitivo, que encerra a matéria em vez de abri-la.
-            if (preliminares.Count == 0)
-            {
-                erros.Add(new("produtos", new DomainError(
-                    "RegraRecursoFase.FaseSemProdutoPreliminar",
-                    $"A fase '{codigo}' admite recurso e não publica nenhum produto com papel preliminar — declare o resultado preliminar em que o prazo ancora.")));
-            }
-
-            // A âncora é a identidade de um produto DESTA fase, e não um código de tipo de
-            // ato: duas fases podem publicar o mesmo tipo, e só a identidade da linha diz de
-            // qual das duas publicações o prazo conta. Condicionada à existência de algum
-            // preliminar — sem nenhum, já há o erro mais fundamental acima, e esta recusa
-            // mandaria escolher entre um conjunto vazio.
-            else if (!preliminares.Exists(p => p.Id == regraRecurso.ProdutoAncoraId))
-            {
-                erros.Add(new("regraRecurso.atoAncoraCodigo", new DomainError(
-                    "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase",
-                    $"A regra de recurso da fase '{codigo}' não ancora em nenhum dos produtos preliminares que ela publica ({string.Join(", ", preliminares.Select(static p => p.AtoCodigo).Order(StringComparer.Ordinal))}).")));
-            }
+            erros.Add(violacaoDaAncora);
         }
 
         if (erros.Count > 0)
@@ -337,15 +313,13 @@ public sealed class FaseCronograma : EntityBase
         }
 
         // A âncora congelada é reposta como estava — é ela que o ato já publicado resolve de
-        // volta (UNI-REQ-0093). Conferir que aponta para um produto desta fase é a última
-        // linha contra envelope incoerente, e é o que torna a leitura do campo
-        // não-tautológica no round-trip.
-        if (regraRecurso is not null
-            && !produtos.Any(p => p.Id == regraRecurso.ProdutoAncoraId))
+        // volta (UNI-REQ-0093). Conferi-la é a última linha contra envelope incoerente, e é o
+        // que torna a leitura do campo não-tautológica no round-trip. Pelo MESMO predicado de
+        // Criar: uma âncora reposta sobre produto definitivo é tão incoerente quanto uma
+        // escrita assim pela primeira vez, e checar só a pertinência deixaria passar metade.
+        if (ViolacaoDaAncoraDoRecurso(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
         {
-            throw new ArgumentException(
-                $"A fase '{codigo}' reidratada tem regra de recurso ancorada no produto {regraRecurso.ProdutoAncoraId}, que não está entre os produtos congelados da fase.",
-                nameof(regraRecurso));
+            throw new ArgumentException(violacaoDaAncora.Error.Message, nameof(regraRecurso));
         }
 
         FaseCronograma fase = new()
@@ -370,6 +344,68 @@ public sealed class FaseCronograma : EntityBase
 
         return fase;
     }
+
+    /// <summary>
+    /// A violação da âncora do prazo de recurso, ou <see langword="null"/> quando a fase não
+    /// admite recurso ou o ancora corretamente.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Recurso é contra o resultado preliminar: é ele que abre a janela de interposição, e é
+    /// do instante em que é publicado que o prazo corre (UNI-REQ-0115). Fase que não publica
+    /// nenhum não tem decisão a contestar — nem a que só publica o definitivo, que encerra a
+    /// matéria em vez de abri-la. E a âncora é a identidade de um produto DESTA fase, não um
+    /// código de tipo de ato: duas fases podem publicar o mesmo tipo, e só a identidade da
+    /// linha diz de qual das duas publicações o prazo conta.
+    /// </para>
+    /// <para>
+    /// <b>Predicado único, quatro chamadores.</b> <see cref="Criar"/> o acumula como recusa,
+    /// <see cref="Reidratar"/> o lança como erro de programação, o decodificador do envelope o
+    /// propaga como recusa nomeada e <c>ProcessoSeletivo</c> o projeta no gate de publicação e
+    /// no item de conformidade. Escrito uma vez, nenhum deles pode divergir dos outros — foi
+    /// exatamente assim que a conferência da reidratação passou a valer meia invariante.
+    /// </para>
+    /// </remarks>
+    public static FieldError? ViolacaoDaAncoraDoRecurso(
+        string codigo,
+        IReadOnlyList<ProdutoDaFase> produtos,
+        RegraRecursoFase? regraRecurso)
+    {
+        if (regraRecurso is null)
+        {
+            return null;
+        }
+
+        List<ProdutoDaFase> preliminares =
+            [.. produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar)];
+
+        if (preliminares.Count == 0)
+        {
+            return new("produtos", new DomainError(
+                "RegraRecursoFase.FaseSemProdutoPreliminar",
+                $"A fase '{codigo}' admite recurso e não publica nenhum produto com papel preliminar — declare o resultado preliminar em que o prazo ancora."));
+        }
+
+        // Condicionada à existência de algum preliminar — sem nenhum, a recusa acima é a mais
+        // fundamental, e esta mandaria escolher entre um conjunto vazio.
+        if (!preliminares.Exists(p => p.Id == regraRecurso.ProdutoAncoraId))
+        {
+            return new("regraRecurso.atoAncoraCodigo", new DomainError(
+                "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase",
+                $"A regra de recurso da fase '{codigo}' não ancora em nenhum dos produtos preliminares que ela publica ({string.Join(", ", preliminares.Select(static p => p.AtoCodigo).Order(StringComparer.Ordinal))})."));
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// <see cref="ViolacaoDaAncoraDoRecurso(string, IReadOnlyList{ProdutoDaFase}, RegraRecursoFase?)"/>
+    /// sobre o estado ATUAL da fase — a forma que <c>ProcessoSeletivo</c> usa, porque o
+    /// estado violado é materializável pela hidratação do EF, que não passa por fábrica
+    /// nenhuma.
+    /// </summary>
+    internal FieldError? ViolacaoDaAncoraDoRecurso() =>
+        ViolacaoDaAncoraDoRecurso(Codigo, _produtos, RegraRecurso);
 
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;

@@ -100,17 +100,13 @@ public sealed partial class EnvelopeCodec
             }
 
             // A âncora do recurso é a única referência cruzada dentro da fase, e a
-            // reidratação a repõe como estava em vez de rederivá-la. Conferi-la aqui, com o
-            // MESMO código de erro do agregado, é o que faz um envelope incoerente virar
-            // recusa nomeada em vez de exceção da factory — a fábrica só tem `throw` para
-            // esse estado, porque nenhum caminho de escrita o produz.
-            if (regraRecurso is { } regra
-                && !produtos.Any(produto =>
-                    produto.Id == regra.ProdutoAncoraId && produto.Papel == PapelProdutoFase.Preliminar))
+            // reidratação a repõe como estava em vez de rederivá-la. Conferi-la aqui, pelo
+            // MESMO predicado do agregado, é o que faz um envelope incoerente virar recusa
+            // nomeada em vez de exceção da fábrica — ela só tem `throw` para esse estado,
+            // porque nenhum caminho de escrita o produz.
+            if (FaseCronograma.ViolacaoDaAncoraDoRecurso(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
             {
-                return leitor.Propagar<IReadOnlyList<FaseCronograma>>(new DomainError(
-                    "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase",
-                    $"A regra de recurso da fase '{codigo}' ancora no produto {regra.ProdutoAncoraId}, que não é um produto preliminar publicado por ela.")) ?? [];
+                return leitor.Propagar<IReadOnlyList<FaseCronograma>>(violacaoDaAncora.Error) ?? [];
             }
 
             Result<FaseCronograma> fase = comId
