@@ -46,8 +46,6 @@ public sealed class CatalogoDeFasesCanonicasTests
                 item.AgrupaEtapas,
                 item.PermiteComplementacao,
                 item.BaseLegal,
-                item.ProduzResultado,
-                item.ResultadoDefinitivo,
                 item.ColetaInscricao,
                 item.ColetaSolicitacaoIsencao,
                 OrigensDataFase.ParaTokenCanonico(item.OrigemData));
@@ -90,15 +88,6 @@ public sealed class CatalogoDeFasesCanonicasTests
             .Should().BeEquivalentTo(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida);
     }
 
-    [Fact(DisplayName = "Resultado definitivo implica produzir resultado")]
-    public void Seed_ResultadoDefinitivoImplicaProduzir()
-    {
-        // Mesma invariante que ValidarCamposComuns aplica no cadastro. Aqui ela pega
-        // a incoerência antes de virar linha no banco.
-        FaseCanonicaSeed.Itens.Where(item => item.ResultadoDefinitivo)
-            .Should().OnlyContain(item => item.ProduzResultado);
-    }
-
     [Fact(DisplayName = "As fases delegadas ao MEC são as do fluxo SiSU")]
     public void Seed_OrigemDelegadaApenasNoFluxoSisu()
     {
@@ -120,16 +109,16 @@ public sealed class CatalogoDeFasesCanonicasTests
     {
         // Oráculo dos atributos normativos da fase (UNI-REQ-0139): espelha
         // exatamente HETEROIDENTIFICACAO — banca cujo parecer verifica direito à
-        // reserva de vagas antes da homologação do resultado final. Alterar
-        // qualquer um destes campos é ato deliberado, não refatoração.
+        // reserva de vagas antes da homologação do resultado final. O que a fase
+        // publica não entra aqui: é declarado no cronograma do processo, não no
+        // cadastro. Alterar qualquer um destes campos é ato deliberado, não
+        // refatoração.
         FaseCanonicaSeedItem item = FaseCanonicaSeed.Itens.Single(i => i.Codigo == "AVALIACAO_BIOPSICOSSOCIAL");
 
         item.Id.Should().Be(Guid.Parse("f45e0000-0000-7000-8000-000000000016"));
         item.Nome.Should().Be("Avaliação biopsicossocial");
         item.DonoTipico.Should().Be(DonoTipico.Ceps);
         item.OrigemData.Should().Be(OrigemDataFase.Propria);
-        item.ProduzResultado.Should().BeTrue();
-        item.ResultadoDefinitivo.Should().BeFalse();
         item.ColetaInscricao.Should().BeFalse();
         item.ColetaSolicitacaoIsencao.Should().BeFalse();
         item.AgrupaEtapas.Should().BeFalse();
@@ -168,33 +157,5 @@ public sealed class CatalogoDeFasesCanonicasTests
         FaseCanonicaCatalogo.Descritos.Should().AllSatisfy(descrito =>
             nomesDoSeed[descrito.Codigo].Should().Be(descrito.Nome,
                 $"o rótulo do vocabulário para {descrito.Codigo} deveria coincidir com o Nome inicial do seed"));
-    }
-
-    [Fact(DisplayName = "As fases que produzem resultado são as que publicam ato")]
-    public void Seed_ProduzResultadoBateComOQuePublicaAto()
-    {
-        // Oráculo independente da fonte única: esta lista é o que a decisão de negócio
-        // aprovou, e alterá-la é ato deliberado. Cada uma corresponde a um tipo de ato
-        // do catálogo de Publicações — homologação, resultados, habilitação,
-        // heteroidentificação, avaliação biopsicossocial, convocação e o deferimento
-        // da isenção. A avaliação biopsicossocial publica ato pelo mesmo motivo que a
-        // heteroidentificação: o parecer da banca (defere/indefere a condição de PcD
-        // para concorrer à reserva de vagas) é decisão publicável, não rascunho interno.
-        string[] publicamAto =
-        [
-            FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
-            "HOMOLOGACAO",
-            "RESULTADO_PRELIMINAR",
-            "RESULTADO_FINAL",
-            "HETEROIDENTIFICACAO",
-            "AVALIACAO_BIOPSICOSSOCIAL",
-            "HABILITACAO",
-            "HOMOLOGACAO_RESULTADO_FINAL",
-            "CHAMADA",
-        ];
-
-        FaseCanonicaSeed.Itens.Where(item => item.ProduzResultado)
-            .Select(item => item.Codigo)
-            .Should().BeEquivalentTo(publicamAto);
     }
 }

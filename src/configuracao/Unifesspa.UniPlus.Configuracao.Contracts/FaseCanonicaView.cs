@@ -15,8 +15,6 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="AgrupaEtapas">Verdadeiro apenas para a fase de avaliação (agrupa Etapas pontuadas).</param>
 /// <param name="PermiteComplementacao">Se a fase admite reenvio/complementação documental.</param>
 /// <param name="BaseLegal">Base legal opcional.</param>
-/// <param name="ProduzResultado">Se a fase produz resultado (decide o piso mínimo do cronograma havendo vagas).</param>
-/// <param name="ResultadoDefinitivo">Se o resultado produzido é definitivo (não cabe recurso).</param>
 /// <param name="ColetaInscricao">Se a fase coleta inscrição (decide o piso mínimo quando a origem é inscrição própria).</param>
 /// <param name="OrigemData">Quem controla a data da fase (token; "PROPRIA" ou "DELEGADA").</param>
 public sealed record FaseCanonicaView(
@@ -28,8 +26,6 @@ public sealed record FaseCanonicaView(
     bool AgrupaEtapas,
     bool PermiteComplementacao,
     string? BaseLegal,
-    bool ProduzResultado,
-    bool ResultadoDefinitivo,
     bool ColetaInscricao,
     bool ColetaSolicitacaoIsencao,
     string OrigemData);

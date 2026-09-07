@@ -17,14 +17,12 @@ public sealed class FaseCanonicaTests
         bool agrupaEtapas = false,
         bool permiteComplementacao = false,
         string? baseLegal = null,
-        bool produzResultado = false,
-        bool resultadoDefinitivo = false,
         bool coletaInscricao = false,
         bool? coletaSolicitacaoIsencao = null,
         string? origemData = "PROPRIA") =>
         FaseCanonica.Criar(
             codigo, nome, descricao, dono, agrupaEtapas, permiteComplementacao, baseLegal,
-            produzResultado, resultadoDefinitivo, coletaInscricao,
+            coletaInscricao,
             // A marca acompanha o código por definição: os testes só a informam quando querem
             // exercitar a divergência.
             coletaSolicitacaoIsencao ?? codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
@@ -106,17 +104,14 @@ public sealed class FaseCanonicaTests
         FaseCanonicaCatalogo.EhCanonico(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao).Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Solicitação de isenção produz resultado não definitivo — o indeferimento admite recurso")]
-    public void Criar_SolicitacaoIsencao_ProduzResultadoNaoDefinitivo_Aceita()
+    [Fact(DisplayName = "Solicitação de isenção não coleta inscrição — são janelas distintas")]
+    public void Criar_SolicitacaoIsencao_NaoColetaInscricao_Aceita()
     {
         FaseCanonica f = Criar(
             codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
-            nome: "Solicitação de isenção",
-            produzResultado: true,
-            resultadoDefinitivo: false).Value!;
+            nome: "Solicitação de isenção").Value!;
 
-        f.ProduzResultado.Should().BeTrue();
-        f.ResultadoDefinitivo.Should().BeFalse();
+        f.ColetaSolicitacaoIsencao.Should().BeTrue();
         f.ColetaInscricao.Should().BeFalse();
     }
 
@@ -300,48 +295,11 @@ public sealed class FaseCanonicaTests
         f.PermiteComplementacao.Should().BeFalse();
     }
 
-    // ── Coerência resultado_definitivo ⇒ produz_resultado ──────────────────────
-
-    [Fact(DisplayName = "Resultado definitivo sem produzir resultado é rejeitado")]
-    public void Criar_ResultadoDefinitivoSemProduzirResultado_Falha()
-    {
-        Result<FaseCanonica> r = Criar(
-            codigo: "RESULTADO_FINAL", nome: "Resultado final",
-            produzResultado: false, resultadoDefinitivo: true);
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado);
-    }
-
-    [Fact(DisplayName = "Resultado definitivo com produzir resultado é aceito")]
-    public void Criar_ResultadoDefinitivoComProduzirResultado_Aceita()
-    {
-        Result<FaseCanonica> r = Criar(
-            codigo: "RESULTADO_FINAL", nome: "Resultado final",
-            produzResultado: true, resultadoDefinitivo: true);
-
-        r.IsSuccess.Should().BeTrue();
-        r.Value!.ProduzResultado.Should().BeTrue();
-        r.Value!.ResultadoDefinitivo.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Produzir resultado sem resultado definitivo é aceito (cabe recurso)")]
-    public void Criar_ProduzResultadoSemResultadoDefinitivo_Aceita()
-    {
-        Result<FaseCanonica> r = Criar(
-            codigo: "RESULTADO_PRELIMINAR", nome: "Resultado preliminar",
-            produzResultado: true, resultadoDefinitivo: false);
-
-        r.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Produzir resultado e coletar inscrição são falsos por omissão")]
-    public void Criar_SemProduzResultadoNemColetaInscricao_DefaultFalso()
+    [Fact(DisplayName = "Coletar inscrição é falso por omissão")]
+    public void Criar_SemColetaInscricao_DefaultFalso()
     {
         FaseCanonica f = Criar(codigo: "HABILITACAO", nome: "Habilitação").Value!;
 
-        f.ProduzResultado.Should().BeFalse();
-        f.ResultadoDefinitivo.Should().BeFalse();
         f.ColetaInscricao.Should().BeFalse();
     }
 
@@ -367,7 +325,7 @@ public sealed class FaseCanonicaTests
         Result r = f.Atualizar(
             nome: "Ensalamento (novo)", descricao: "Nova descrição", donoTipico: "CRCA",
             agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
-            produzResultado: false, resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
             origemData: "DELEGADA");
 
         r.IsSuccess.Should().BeTrue();
@@ -386,26 +344,11 @@ public sealed class FaseCanonicaTests
         Result r = f.Atualizar(
             nome: "Homologação", descricao: null, donoTipico: "CEPS",
             agrupaEtapas: true, permiteComplementacao: false, baseLegal: null,
-            produzResultado: false, resultadoDefinitivo: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
             origemData: "PROPRIA");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
-    }
-
-    [Fact(DisplayName = "Atualizar revalida a coerência resultado definitivo sem produzir resultado")]
-    public void Atualizar_ResultadoDefinitivoSemProduzirResultado_Falha()
-    {
-        FaseCanonica f = Criar(codigo: "RESULTADO_FINAL", nome: "Resultado final").Value!;
-
-        Result r = f.Atualizar(
-            nome: "Resultado final", descricao: null, donoTipico: "CEPS",
-            agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
-            produzResultado: false, resultadoDefinitivo: true, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            origemData: "PROPRIA");
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado);
     }
 
     // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────
@@ -414,7 +357,7 @@ public sealed class FaseCanonicaTests
     public void Criar_CodigoNuloENomeAusente_NaoLancaEAcumulaAsDuasViolacoes()
     {
         Result<FaseCanonica> resultado = FaseCanonica.Criar(
-            null, "", null, "CEPS", false, false, null, false, false, false, false, "PROPRIA");
+            null, "", null, "CEPS", false, false, null, false, false, "PROPRIA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -436,25 +379,12 @@ public sealed class FaseCanonicaTests
         resultado.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico);
     }
 
-    [Fact(DisplayName = "Nome ausente e resultado definitivo sem produzir resultado (independente do código) acumulam as duas violações")]
-    public void Criar_NomeAusenteECA04_AcumulaAsDuasViolacoes()
-    {
-        Result<FaseCanonica> resultado = Criar(
-            nome: "", produzResultado: false, resultadoDefinitivo: true);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().HaveCount(2);
-        resultado.Errors[0].Field.Should().Be("nome");
-        resultado.Errors[1].Field.Should().Be("resultadoDefinitivo");
-        resultado.Errors[1].Error.Code.Should().Be(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado);
-    }
-
     [Fact(DisplayName = "ValidarCamposComuns isolado acumula violações independentes do código, sem I/O")]
     public void ValidarCamposComuns_TresCamposInvalidos_AcumulaAsTresViolacoes()
     {
         Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-            bool ProduzResultado, bool ResultadoDefinitivo, OrigemDataFase OrigemData)> resultado =
-            FaseCanonica.ValidarCamposComuns(null, null, null, null, false, false, null);
+            OrigemDataFase OrigemData)> resultado =
+            FaseCanonica.ValidarCamposComuns(null, null, null, null, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);

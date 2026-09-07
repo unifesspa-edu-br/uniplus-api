@@ -18,8 +18,6 @@ public sealed record AtualizarFaseCanonicaCommand(
     bool AgrupaEtapas = false,
     bool PermiteComplementacao = false,
     string? BaseLegal = null,
-    bool ProduzResultado = false,
-    bool ResultadoDefinitivo = false,
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
     string? OrigemData = null) : ICommand<Result>;

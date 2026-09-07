@@ -916,12 +916,6 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fase_canonica.origem_data_invalida",
                 "Origem da data da fase canônica fora do domínio fechado")),
 
-        new(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fase_canonica.resultado_definitivo_sem_produzir_resultado",
-                "Uma fase só pode ter resultado definitivo se também produzir resultado")),
-
         new(FaseCanonicaErrorCodes.NaoEncontrada,
             new DomainErrorMapping(
                 StatusCodes.Status404NotFound,

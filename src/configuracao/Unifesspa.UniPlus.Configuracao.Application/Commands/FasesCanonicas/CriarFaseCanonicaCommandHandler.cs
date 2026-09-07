@@ -34,8 +34,6 @@ public static class CriarFaseCanonicaCommandHandler
             command.AgrupaEtapas,
             command.PermiteComplementacao,
             command.BaseLegal,
-            command.ProduzResultado,
-            command.ResultadoDefinitivo,
             command.ColetaInscricao,
             command.ColetaSolicitacaoIsencao,
             command.OrigemData);
