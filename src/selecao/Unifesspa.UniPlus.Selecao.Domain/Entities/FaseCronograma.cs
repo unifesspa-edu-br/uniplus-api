@@ -478,6 +478,45 @@ public sealed class FaseCronograma : EntityBase
         if (regraRecurso is not null)
         {
             regraRecurso.VincularFase(Id);
+            RemapearAncoraDoRecurso(regraRecurso, produtos);
+        }
+    }
+
+    /// <summary>
+    /// Reaponta a âncora do recurso para o produto que sobreviveu à reconciliação.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A reconciliação acima troca a instância de cada produto pela <b>rastreada</b> de
+    /// mesmo <see cref="ProdutoDaFase.AtoCodigo"/>, que tem o Id que já estava no banco — e
+    /// não o Id da coleção que chegou, para onde a âncora aponta. Sem este remapeamento a
+    /// regra de recurso ficaria referenciando uma linha que a mesma transação remove como
+    /// órfã, e o sintoma só apareceria muito depois, ao tentar resolver a configuração de
+    /// recurso de um ato publicado. Vale para os dois caminhos que chamam este método: a
+    /// redefinição do cronograma ao vivo e a restauração da configuração congelada sobre uma
+    /// sessão de rascunho.
+    /// </para>
+    /// <para>
+    /// O <see cref="ProdutoDaFase.AtoCodigo"/> é a ponte porque é a chave da própria
+    /// reconciliação, e é único dentro da fase. Quando a coleção que chegou não contém o
+    /// produto âncora, não há para onde remapear e a âncora fica como está: é estado que
+    /// <see cref="Criar"/> não deixa existir.
+    /// </para>
+    /// </remarks>
+    private void RemapearAncoraDoRecurso(RegraRecursoFase regraRecurso, IReadOnlyList<ProdutoDaFase> produtos)
+    {
+        ProdutoDaFase? ancoraQueChegou = produtos
+            .FirstOrDefault(p => p.Id == regraRecurso.ProdutoAncoraId);
+        if (ancoraQueChegou is null)
+        {
+            return;
+        }
+
+        ProdutoDaFase? ancoraReconciliada = _produtos
+            .Find(p => string.Equals(p.AtoCodigo, ancoraQueChegou.AtoCodigo, StringComparison.Ordinal));
+        if (ancoraReconciliada is not null && ancoraReconciliada.Id != regraRecurso.ProdutoAncoraId)
+        {
+            regraRecurso.RemapearAncora(ancoraReconciliada.Id);
         }
     }
 
