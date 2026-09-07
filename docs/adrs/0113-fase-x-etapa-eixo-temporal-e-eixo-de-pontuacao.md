@@ -20,9 +20,11 @@ O envelope canônico da publicação (ADR-0109) tem 17 blocos; o bloco
 
 O cadastro de referência já existe e está pronto, sem consumidor:
 `Unifesspa.UniPlus.Configuracao.Domain.Entities.FaseCanonica` nomeia, em domínio
-fechado (`FaseCanonicaCatalogo.Codigos`), as quatorze fases do ciclo de vida de um
+fechado (`FaseCanonicaCatalogo.Codigos`), as fases do ciclo de vida de um
 processo seletivo — inscrição, homologação, avaliação, recursos, resultado,
-matrícula… — com `DonoTipico` e `AgrupaEtapas`/`PermiteComplementacao`. O que
+matrícula… — com `DonoTipico` e `AgrupaEtapas`/`PermiteComplementacao`. Quantas
+e quais é o catálogo que diz; esta ADR decide que o vocabulário é fechado, não
+o seu conteúdo. O que
 falta é o consumidor: `FaseCronograma`, filho do agregado `ProcessoSeletivo`, que
 declara o cronograma real de um certame a partir desse vocabulário.
 
@@ -107,10 +109,14 @@ congela por valor (ADR-0061) documentava, até esta ADR, que `AgrupaEtapas` "nã
 de avaliação × etapa é bicondicional e o bloco `cronogramaFases` da versão
 publicada precisa ser autossuficiente (RN08), ler o cadastro vivo em runtime para
 decidir esse gate violaria o congelamento. `AgrupaEtapas` passa a ser congelado
-como qualquer outro atributo do snapshot, que amplia de três para nove campos
-(reduzidos a oito pela Emenda 2):
-`(OrigemId, Codigo, DonoTipico, AgrupaEtapas, PermiteComplementacao,
-ProduzResultado, ResultadoDefinitivo, ColetaInscricao, OrigemData)`.
+como qualquer outro atributo do snapshot.
+
+O **critério** que decide o que entra no snapshot é este, e é o que esta ADR
+fixa: congela-se todo atributo do cadastro que algum gate da publicação
+consulta, porque o bloco congelado tem de decidir sozinho. Atributo que nenhum
+gate consulta fica no cadastro vivo. **A lista concreta é do record**
+`FaseCanonicaSnapshot`, que é a fonte autoritativa e muda com o conjunto de
+gates — enumerá-la aqui só criaria uma segunda versão para envelhecer.
 
 A substituição da regra `RECURSO-MULTI-INSTANCIA` por
 `RECURSO-PRAZO-ANCORADO-EM-ATO` no catálogo `rol_de_regras` é decisão e escopo da
@@ -269,6 +275,31 @@ Uma fase que publica gabarito definitivo ao lado de resultado preliminar era **i
 A decisão principal desta ADR — dois eixos distintos, fase no eixo temporal e etapa no eixo de pontuação — não muda. A revisão do `AgrupaEtapas` da Emenda 1 tampouco: ela segue congelado, pela mesma razão.
 
 **O `FaseCanonicaSnapshot` permanece**, e não é código morto a remover. Ele é o contrato tipado de um bloco que **já é congelado**: a fase do cronograma no envelope carrega exatamente os mesmos oito atributos. A ausência de consumidor no código é o estado esperado — esta ADR já registrava que a revisão do contrato foi feita "antes de qualquer consumidor real existir", e os consumidores chegam com as frentes de classificação e ingresso.
+
+## Emenda 2 (2026-09-07) — a ADR para de enumerar o que o código já declara
+
+Esta ADR carregava duas listas concretas que envelheceram sem que ninguém percebesse: a contagem das fases canônicas, escrita como "quatorze" quando o catálogo tem outro número; e os campos do `FaseCanonicaSnapshot`, enumerados um a um e já defasados em dois pontos independentes — um campo entrou com a frente da janela de solicitação de isenção, e outros dois saíram quando produção e definitividade de resultado deixaram o cadastro de fases canônicas.
+
+**A correção não é atualizar os números.** Se fosse, eles voltariam a divergir na próxima mudança, e cada alteração de código passaria a exigir emenda de ADR — sinal de que o documento está registrando implementação, não decisão.
+
+O que esta emenda faz é retirar as duas enumerações e deixar no lugar o **critério**, que é o que não muda:
+
+- **Fases canônicas** — esta ADR decide que o vocabulário é **fechado**. Quantas fases existem e quais são é conteúdo do catálogo, e o catálogo é a fonte.
+- **Snapshot** — esta ADR decide **o que justifica congelar**: todo atributo do cadastro que algum gate da publicação consulta, porque o bloco congelado tem de decidir sozinho (RN08). A lista concreta é do record `FaseCanonicaSnapshot`, e muda junto com o conjunto de gates.
+
+### O que motivou a revisão
+
+A remoção de `ProduzResultado` e `ResultadoDefinitivo` do cadastro de fases canônicas. O par tinha virado segunda fonte de verdade: o cadastro afirmava que uma fase produz resultado não definitivo, enquanto o operador podia declarar, no edital dele, que a mesma fase publica preliminar **e** definitiva. Entre um cadastro genérico e a declaração de quem monta o certame, a segunda vence.
+
+O que os dois booleanos diziam passou a ser declarado na **fase do cronograma do processo**, como a coleção de atos que ela publica, com um papel por ato — preliminar, definitivo, ou nenhum quando o ato não é resultado. A informação segue congelada, e o bloco `cronogramaFases` segue autossuficiente, que é o invariante protegido pela revisão do `AgrupaEtapas`.
+
+O consumidor futuro enxerga **mais**, não menos: uma fase que publica gabarito definitivo ao lado de resultado preliminar era inexprimível com dois booleanos por fase.
+
+### O que permanece
+
+A decisão principal — dois eixos distintos, fase no eixo temporal e etapa no eixo de pontuação — e a revisão do `AgrupaEtapas` da Emenda 1.
+
+O `FaseCanonicaSnapshot` **permanece e não é código morto a remover**. Ele é o contrato tipado de um bloco que já é congelado, e a ausência de consumidor é o estado que esta ADR previa ao revisar o contrato "antes de qualquer consumidor real existir" — os consumidores chegam com as frentes de classificação e ingresso.
 
 ## Mais informações
 
