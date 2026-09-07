@@ -30,12 +30,19 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
 
     /// <summary>
     /// Hash da regra vigente, congelado na migration
-    /// <c>SubstituiInvariantesPrazoInterposicaoEmDiaUtil</c>, que substituiu a definição no
-    /// lugar ao inverter a política de unidade do prazo de interposição. Amarra a definição
-    /// do seed ao literal da migration: editar o texto da regra sem regenerar a migration
-    /// quebra este teste.
+    /// <c>EsquemaArgsDaRegraDeRecursoSemAtoAncoraCodigo</c>, a última a substituir a
+    /// definição no lugar. Amarra a definição do seed ao literal da migration: editar o
+    /// texto da regra sem regenerar a migration quebra este teste.
     /// </summary>
     private const string HashRegraNova =
+        "42cbba27f7e36789437ecb469c74476c99a37baaf66404769774eeff619b9e2d";
+
+    /// <summary>
+    /// Hash da definição anterior à retirada de <c>ato_ancora_codigo</c> do
+    /// <c>esquema_args</c>, quando a âncora ainda era argumento declarado por código de
+    /// tipo de ato. Contraprova de que a substituição mudou o conteúdo, não só o texto.
+    /// </summary>
+    private const string HashAntesDaAncoraEstrutural =
         "92e78394a057b6eadbdcb69c7b08793ff8801790856874d99355074483b2709c";
 
     /// <summary>
@@ -97,11 +104,18 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         JsonElement raiz = esquema.RootElement;
 
         raiz.ValueKind.Should().Be(JsonValueKind.Object);
-        raiz.TryGetProperty("ato_ancora_codigo", out _).Should().BeTrue("o prazo ancora num ato publicado");
+        raiz.TryGetProperty("ato_ancora_codigo", out _).Should().BeFalse(
+            "a âncora deixou de ser argumento declarado por código: ela é a identidade do produto " +
+            "preliminar da própria fase, irmã de regra e args no envelope");
         raiz.TryGetProperty("suspensividade_primeira_instancia", out _).Should().BeTrue();
         raiz.TryGetProperty("suspensividade_segunda_instancia", out _).Should().BeTrue();
         raiz.TryGetProperty("instancias", out _).Should().BeFalse(
             "a lista de instâncias geridas pelo sistema foi descartada");
+
+        // A âncora sai do esquema de argumentos, não do enunciado da regra: o que ela é e de
+        // onde o prazo conta continua declarado nas invariantes.
+        nova.InvariantesJson.Should().Contain("ancorado no instante de publicação do ato âncora");
+        nova.InvariantesJson.Should().Contain("produto PRELIMINAR publicado pela própria fase");
     }
 
     [Fact(DisplayName = "CA-03 — nenhum campo da regra nova reintroduz a gestão da segunda instância")]
@@ -159,6 +173,9 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         nova.ComputarHash().Should().NotBe(
             HashAntesDaInversaoDeUnidade,
             "inverter a política de unidade do prazo de interposição é mudança de conteúdo, e o hash acompanha");
+        nova.ComputarHash().Should().NotBe(
+            HashAntesDaAncoraEstrutural,
+            "retirar a âncora do esquema_args é mudança de conteúdo, e o hash acompanha");
     }
 
     [Fact(DisplayName = "CA-04 — as outras 15 regras do seed original permanecem idênticas; a substituição tocou uma linha")]

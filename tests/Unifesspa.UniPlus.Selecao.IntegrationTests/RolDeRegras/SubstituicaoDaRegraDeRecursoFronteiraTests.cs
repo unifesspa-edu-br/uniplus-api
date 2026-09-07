@@ -40,8 +40,13 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
 {
     private const string CodigoDaRegra = "RECURSO-PRAZO-ANCORADO-EM-ATO";
 
-    private const string HashDaDefinicaoVigente =
-        "92e78394a057b6eadbdcb69c7b08793ff8801790856874d99355074483b2709c";
+    /// <summary>
+    /// O hash com que o rascunho fabricado referencia a regra. Vem do seed, e não de um
+    /// literal: a definição é reescrita no lugar sempre que o catálogo evolui sem produção,
+    /// e um literal aqui passaria a descrever definição nenhuma sem que nada acusasse.
+    /// </summary>
+    private static string HashDaDefinicaoVigente =>
+        RegraCatalogoSeed.Itens.Single(i => i.Codigo == CodigoDaRegra).ComputarHash();
 
     // Os três SQLs vêm da própria migration, não de cópia: é ela que decide qual unidade
     // cada sentido recusa, e um teste que reescrevesse o predicado passaria a provar a si
