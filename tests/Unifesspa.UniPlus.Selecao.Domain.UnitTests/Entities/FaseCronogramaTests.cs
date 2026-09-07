@@ -22,6 +22,24 @@ public sealed class FaseCronogramaTests
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) =>
         RegraRecursoFase.Criar(RegraAncorada(), ArgsValidos(), produtoAncoraId).Value!;
 
+    private static FaseCronograma Reidratar(
+        IReadOnlyList<ProdutoDaFase> produtos,
+        RegraRecursoFase? regraRecurso) =>
+        FaseCronograma.Reidratar(
+            Guid.CreateVersion7(),
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "RESULTADO_PRELIMINAR",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Delegada,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: null, fim: null,
+            produtos, faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            bancasRequeridas: [],
+            regraRecurso);
+
     private static ArgsRegraPrazoRecurso ArgsValidos() => new(
         PrazoValor: 48m,
         PrazoUnidade: UnidadePrazo.Horas,
@@ -280,6 +298,42 @@ public sealed class FaseCronogramaTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.EmiteParecerIndividual.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Reidratar recusa âncora em produto que não é preliminar, como Criar e o decodificador recusam")]
+    public void Reidratar_AncoraEmProdutoNaoPreliminar_Lanca()
+    {
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);
+
+        Action reidratar = () => Reidratar([preliminar, definitivo], Recurso(definitivo.Id));
+
+        // A âncora PERTENCE à fase e mesmo assim é incoerente: conferir só a pertinência
+        // deixaria a fase nascer com o prazo contando de um ato que encerra a matéria em vez
+        // de abri-la — metade da invariante que Criar prova.
+        reidratar.Should().Throw<ArgumentException>()
+            .WithMessage("*não ancora em nenhum dos produtos preliminares*");
+    }
+
+    [Fact(DisplayName = "Reidratar recusa âncora em produto de outra fase")]
+    public void Reidratar_AncoraForaDaFase_Lanca()
+    {
+        ProdutoDaFase preliminarDaOutraFase = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminarDesta = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);
+
+        Action reidratar = () => Reidratar([preliminarDesta], Recurso(preliminarDaOutraFase.Id));
+
+        reidratar.Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "Contraprova: Reidratar aceita a âncora no produto preliminar da própria fase")]
+    public void Reidratar_AncoraNoPreliminarDaPropriaFase_Aceita()
+    {
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);
+
+        FaseCronograma fase = Reidratar([preliminar], Recurso(preliminar.Id));
+
+        fase.RegraRecurso!.ProdutoAncoraId.Should().Be(preliminar.Id);
     }
 
     // ── CA-01/CA-02/CA-03 — a âncora do prazo é um produto preliminar da própria fase ──
