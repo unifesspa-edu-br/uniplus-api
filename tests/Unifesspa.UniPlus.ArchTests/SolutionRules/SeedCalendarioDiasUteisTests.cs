@@ -27,10 +27,10 @@ public sealed class SeedCalendarioDiasUteisTests
     private static readonly string[] AbrangenciasValidas = ["NACIONAL", "ESTADUAL", "MUNICIPAL", "INSTITUCIONAL"];
     private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
 
-    [Fact(DisplayName = "O arquivo de seed existe e traz os dezenove dias não úteis do dataset de referência")]
-    public void Seed_TrazOsDezenoveDias()
+    [Fact(DisplayName = "O arquivo de seed existe e traz os vinte dias não úteis do dataset de referência")]
+    public void Seed_TrazOsVinteDias()
     {
-        Carregar().DiasNaoUteis.Should().HaveCount(19);
+        Carregar().DiasNaoUteis.Should().HaveCount(20);
     }
 
     [Fact(DisplayName = "Toda abrangência do seed está no vocabulário fechado, em UPPER_SNAKE")]
@@ -79,19 +79,22 @@ public sealed class SeedCalendarioDiasUteisTests
         }
     }
 
-    [Fact(DisplayName = "Só o aniversário de Marabá é feriado municipal — o restante do Anexo Único é ponto facultativo")]
-    public void Seed_ApenasAniversarioDeMarabaEMunicipal()
+    [Fact(DisplayName = "Só o aniversário de Marabá e o padroeiro São Félix de Valois são feriado municipal")]
+    public void Seed_ApenasAsDatasDecididasSaoMunicipais()
     {
         // Trava o conjunto exato, não só a forma: 19/out (Pós-Círio) é a mesma cor de
         // ponto facultativo que 28/out e o Carnaval no Anexo Único da Portaria
-        // Unifesspa nº 058/2026 — feriado municipal de verdade é verde, como 05/abr.
-        // Uma reclassificação futura de qualquer um dos dois só passa aqui se for
-        // deliberada o bastante para editar também esta lista.
+        // Unifesspa nº 058/2026 — feriado municipal de verdade é verde, como 05/abr e
+        // 20/nov. Esta última data acumula duas linhas por fundamentos legais
+        // independentes: NACIONAL (Consciência Negra) e MUNICIPAL (padroeiro de
+        // Marabá) — decisão do PO, não colidem porque a chave de duplicata inclui a
+        // abrangência. Uma reclassificação futura só passa aqui se for deliberada o
+        // bastante para editar também esta lista.
         DatasetSeed dataset = Carregar();
 
         IReadOnlyList<string> municipais =
             [.. dataset.DiasNaoUteis.Where(d => d.Abrangencia == "MUNICIPAL").Select(d => d.Data).Order(StringComparer.Ordinal)];
-        municipais.Should().BeEquivalentTo(["2026-04-05"]);
+        municipais.Should().BeEquivalentTo(["2026-04-05", "2026-11-20"]);
 
         IReadOnlyList<string> estaduais =
             [.. dataset.DiasNaoUteis.Where(d => d.Abrangencia == "ESTADUAL").Select(d => d.Data).Order(StringComparer.Ordinal)];
