@@ -57,6 +57,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
         services.AddScoped<IPesoAreaEnemReader, PesoAreaEnemReader>();
         services.AddScoped<ITipoDocumentoReader, TipoDocumentoReader>();
+        services.AddScoped<ICategoriaDocumentoReader, CategoriaDocumentoReader>();
         services.AddScoped<ICondicaoAtendimentoReader, CondicaoAtendimentoReader>();
         services.AddScoped<IRecursoAcessibilidadeReader, RecursoAcessibilidadeReader>();
         services.AddScoped<ITipoDeficienciaReader, TipoDeficienciaReader>();
