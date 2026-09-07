@@ -106,9 +106,14 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.ConfiguracaoTaxaInscricao)
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            // Cronograma de fases (Story #851) — 2 coleções novas (bancas requeridas,
-            // regra de recurso 1:1) somadas às já existentes.
+            // Cronograma de fases (Story #851) — 3 coleções novas (produtos publicados,
+            // bancas requeridas, regra de recurso 1:1) somadas às já existentes. Sem o
+            // Include dos produtos, ProduzResultado — que deriva deles — nasce falso em todo
+            // carregamento novo do agregado: o gate de publicação recusaria "nenhuma fase
+            // produz resultado" num cronograma que declara vários, e a redefinição faria
+            // Clear() num backing list já vazio, deixando as linhas antigas no banco.
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
             // Documentos exigidos (Story #554, issue #547, PR #895) — sem o Include, a
             // coleção tracked nasce vazia em todo carregamento novo do agregado:

@@ -242,6 +242,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
             // Fatos coletados e regras de derivação (Story #928, §7.4): sem os Include, a coleção
             // tracked nasce vazia e a restauração (AplicarGrafo) inseriria linhas novas para os
