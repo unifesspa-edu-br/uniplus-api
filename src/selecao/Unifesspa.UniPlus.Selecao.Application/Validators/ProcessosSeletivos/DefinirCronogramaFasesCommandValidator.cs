@@ -18,7 +18,8 @@ using FluentValidation;
 /// cliente HTTP.
 /// <para>A checagem de janela (Fim ≥ Início) NÃO está aqui, de propósito — desde a ADR-0125,
 /// <c>FaseCronograma.JanelaInvertida</c> acumula no domínio junto das demais violações da
-/// mesma fase (ex.: ato produzido ausente). Mantê-la também aqui faria o FluentValidation
+/// mesma fase (ex.: parecer individual prometido sem publicação de resultado). Mantê-la
+/// também aqui faria o FluentValidation
 /// (middleware, sempre roda primeiro) bloquear sozinho um payload com janela invertida +
 /// outra violação, entregando ao cliente só o erro de janela — a acumulação do domínio
 /// nunca chegaria a rodar. Ordem (só <c>throw</c> no domínio, nunca acumulada) não tem

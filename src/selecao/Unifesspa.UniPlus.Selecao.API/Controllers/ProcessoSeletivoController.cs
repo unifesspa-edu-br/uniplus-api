@@ -491,8 +491,9 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):
-    /// janela, dono institucional, origem da data, permissão de complementação, ato
-    /// produzido e regra de recurso, por fase. O <c>GET</c> vem do endpoint agregado
+    /// janela, produtos publicados com o papel de cada um, fase que conclui o ciclo
+    /// recursal, parecer individual, bancas requeridas e regra de recurso, por fase. O
+    /// <c>GET</c> vem do endpoint agregado
     /// (<see cref="ObterPorId"/>), que passa a devolver <c>CronogramaFases</c> como parte
     /// do recurso — não há rota aninhada própria de leitura.
     /// </summary>
