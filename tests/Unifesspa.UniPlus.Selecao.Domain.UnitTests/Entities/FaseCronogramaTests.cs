@@ -156,7 +156,7 @@ public sealed class FaseCronogramaTests
             origemData: OrigemDataFase.Propria,
             agrupaEtapas: false,
             permiteComplementacao: false,
-                                    coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)),
             fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)),
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,

@@ -124,10 +124,12 @@ public sealed class PoliticaDeOrdenacaoTests
         origemData: OrigemDataFase.Propria,
         agrupaEtapas: true,
         permiteComplementacao: true,
-                        coletaInscricao: true, coletaSolicitacaoIsencao: false,
+        coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+        produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
+        faseConcluinteCodigo: null,
+        emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
@@ -366,7 +368,9 @@ public sealed class PoliticaDeOrdenacaoTests
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
             origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null,
+            emiteParecerIndividual: false,
             bancasRequeridas: [bancaComOrigemMaior, bancaComOrigemMenor], regraRecurso: null).Value!;
 
         ProcessoSeletivo processo = Montar(cronogramaFases: [fase]);
