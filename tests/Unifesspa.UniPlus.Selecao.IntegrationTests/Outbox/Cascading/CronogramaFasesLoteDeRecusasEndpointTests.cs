@@ -55,6 +55,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
     /// </summary>
     private const string CodigoAtoPreliminar = "LOTE_RECUSAS_ATO_PRELIMINAR";
     private const string CodigoAtoDefinitivo = "LOTE_RECUSAS_ATO_DEFINITIVO";
+    private const string CodigoAtoQueNaoEhResultado = "LOTE_RECUSAS_ATO_AVISO";
 
     private readonly CascadingFixture _fixture;
 
@@ -135,7 +136,87 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
                 "uniplus.selecao.processo_seletivo.conclusao_nao_declarada",
                 "uniplus.selecao.processo_seletivo.conclusao_declarada_sem_preliminar",
             ]);
+        reportados.Should().NotContain(e => e.Campo == null, CadaElementoDeclaraOCaminho);
     }
+
+    [Fact(DisplayName = "Recusa acumulada mais interrupção cross-módulo: os dois elementos de errors[] saem com field preenchido")]
+    public async Task RecusaAcumuladaMaisInterrupcao_TodosOsElementosTemField()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        HttpClient client = api.CreateClient();
+
+        await GarantirTiposDeAtoAsync(api);
+        Guid fasePreliminarId = await ObterFaseCanonicaAsync(api, CodigoFasePreliminar);
+        Guid faseDefinitivaId = await ObterFaseCanonicaAsync(api, CodigoFaseDefinitiva);
+        Guid processoId = await SemearProcessoAsync(api);
+
+        // A 1ª fase dá papel a um ato que o catálogo não classifica como resultado — recusa
+        // que ACUMULA. A 2ª referencia um tipo de banca que não existe — resolução
+        // cross-módulo, que INTERROMPE a passada levando o acumulado junto. É a combinação
+        // que faz `errors[]` ser emitido: basta um item com campo para o array sair, e ele
+        // é montado sobre todos.
+        object[] fases =
+        [
+            new
+            {
+                ordem = 1,
+                faseCanonicaId = fasePreliminarId,
+                inicio = new DateTimeOffset(2027, 1, 10, 0, 0, 0, TimeSpan.Zero),
+                fim = new DateTimeOffset(2027, 1, 20, 0, 0, 0, TimeSpan.Zero),
+                produtos = new object[] { new { atoCodigo = CodigoAtoQueNaoEhResultado, papel = PapelProdutoFaseCodigo.Preliminar } },
+                faseConcluinteCodigo = (string?)null,
+                emiteParecerIndividual = false,
+                tiposBancaIds = Array.Empty<Guid>(),
+                regraRecurso = (object?)null,
+            },
+            new
+            {
+                ordem = 2,
+                faseCanonicaId = faseDefinitivaId,
+                inicio = new DateTimeOffset(2027, 2, 1, 0, 0, 0, TimeSpan.Zero),
+                fim = new DateTimeOffset(2027, 2, 10, 0, 0, 0, TimeSpan.Zero),
+                produtos = new object[] { new { atoCodigo = CodigoAtoDefinitivo, papel = PapelProdutoFaseCodigo.Definitivo } },
+                faseConcluinteCodigo = (string?)null,
+                emiteParecerIndividual = false,
+                tiposBancaIds = new[] { Guid.CreateVersion7() },
+                regraRecurso = (object?)null,
+            },
+        ];
+
+        using HttpRequestMessage request = new(
+            HttpMethod.Put,
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/cronograma-fases", UriKind.Relative))
+        {
+            Content = JsonContent.Create(fases),
+        };
+        Autenticar(request);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+
+        using HttpResponseMessage resposta = await client.SendAsync(request);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.TryGetProperty("errors", out JsonElement erros).Should().BeTrue();
+
+        (string? Campo, string? Codigo)[] reportados = [.. erros.EnumerateArray()
+            .Select(e => (
+                Campo: e.GetProperty("field").GetString(),
+                Codigo: e.GetProperty("code").GetString()))];
+
+        reportados.Should().NotContain(e => e.Campo == null, CadaElementoDeclaraOCaminho);
+        reportados.Select(e => e.Campo).Should().BeEquivalentTo(
+            ["fases[0].produtos[0].papel", "fases[1].tiposBancaIds"]);
+        reportados.Select(e => e.Codigo).Should().BeEquivalentTo(
+            [
+                "uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado",
+                "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado",
+            ]);
+    }
+
+    private const string CadaElementoDeclaraOCaminho =
+        "cada elemento de errors[] declara o caminho dot-notation do que falhou (ADR-0023) — " +
+        "field: null manda o cliente procurar um campo que a resposta não nomeia";
 
     private static async Task GarantirTiposDeAtoAsync(CascadingApiFactory api)
     {
@@ -144,10 +225,11 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
             scope.ServiceProvider.GetRequiredService<Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext>();
 
         bool inseriu = false;
-        foreach ((string codigo, string nome) in new[]
+        foreach ((string codigo, string nome, bool ehResultado) in new[]
                  {
-                     (CodigoAtoPreliminar, "Resultado preliminar do lote de recusas"),
-                     (CodigoAtoDefinitivo, "Resultado definitivo do lote de recusas"),
+                     (CodigoAtoPreliminar, "Resultado preliminar do lote de recusas", true),
+                     (CodigoAtoDefinitivo, "Resultado definitivo do lote de recusas", true),
+                     (CodigoAtoQueNaoEhResultado, "Aviso do lote de recusas", false),
                  })
         {
             if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == codigo))
@@ -157,7 +239,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
 
             Result<TipoAtoPublicado> tipo = TipoAtoPublicado.Criar(
                 codigo, nome,
-                congelaConfiguracao: false, unicoPorObjeto: false, efeitoIrreversivel: false, ehResultado: true,
+                congelaConfiguracao: false, unicoPorObjeto: false, efeitoIrreversivel: false, ehResultado: ehResultado,
                 new DateOnly(2020, 1, 1), vigenciaFim: null, baseLegal: null);
             tipo.IsSuccess.Should().BeTrue(tipo.Error?.Message);
             await db.Set<TipoAtoPublicado>().AddAsync(tipo.Value!).ConfigureAwait(false);

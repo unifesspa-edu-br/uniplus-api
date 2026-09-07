@@ -561,6 +561,53 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             ["ProdutoDaFase.PapelEmAtoQueNaoEhResultado", "FaseCronograma.TipoBancaNaoEncontrado"],
             "parar na primeira resolução cross-módulo é decisão sobre o que ainda dá para avaliar, " +
             "não licença para apagar defeito já diagnosticado");
-        resultado.Errors.Should().ContainSingle(e => e.Field == "fases[0].produtos[0].papel");
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
+            ["fases[0].produtos[0].papel", "fases[1].tiposBancaIds"]);
+        resultado.Errors.Should().NotContain(e => e.Field == null,
+            "errors[] é montado sobre TODOS os itens do lote assim que um deles tem campo — " +
+            "um FieldError sem campo sairia no wire como field: null, que a ADR-0023 não admite");
+    }
+
+    [Theory(DisplayName = "Toda interrupção cross-módulo carrega o campo que a localiza, mesmo sem recusa acumulada junto")]
+    [InlineData("REGRA_INEXISTENTE", "v1", "RESULTADO_FINAL", "fases[0].regraRecurso.regraCodigo")]
+    [InlineData(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", "ATO_SEM_VIGENCIA", "fases[0].regraRecurso.atoAncoraCodigo")]
+    public async Task Handle_InterrupcaoCrossModulo_CarregaOCampoQueALocaliza(
+        string regraCodigo, string regraVersao, string atoAncoraCodigo, string campoEsperado)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado Final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("ATO_SEM_VIGENCIA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+        mocks.RegraCatalogoReader.ObterAsync("REGRA_INEXISTENTE", "v1", Arg.Any<CancellationToken>())
+            .Returns((RegraCatalogo?)null);
+        mocks.RegraCatalogoReader.ObterAsync(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraCatalogo.Criar(
+                RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
+                JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999 art. 56").Value!);
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            RegraRecurso = new RegraRecursoFaseInput(
+                RegraCodigo: regraCodigo,
+                RegraVersao: regraVersao,
+                PrazoValor: 48m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                AtoAncoraCodigo: atoAncoraCodigo,
+                SuspensividadePrimeiraInstanciaValor: null,
+                SuspensividadePrimeiraInstanciaUnidade: null,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null),
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be(campoEsperado);
     }
 }
