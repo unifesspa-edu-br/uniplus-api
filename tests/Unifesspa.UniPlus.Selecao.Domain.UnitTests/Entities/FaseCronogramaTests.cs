@@ -24,7 +24,8 @@ public sealed class FaseCronogramaTests
 
     private static FaseCronograma Reidratar(
         IReadOnlyList<ProdutoDaFase> produtos,
-        RegraRecursoFase? regraRecurso) =>
+        RegraRecursoFase? regraRecurso,
+        IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
         FaseCronograma.Reidratar(
             Guid.CreateVersion7(),
             ordem: 1,
@@ -37,7 +38,7 @@ public sealed class FaseCronogramaTests
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
             produtos, faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [],
+            bancasRequeridas ?? [],
             regraRecurso);
 
     private static ArgsRegraPrazoRecurso ArgsValidos() => new(
@@ -57,6 +58,7 @@ public sealed class FaseCronogramaTests
         IReadOnlyList<ProdutoDaFase>? produtos = null,
         string? faseConcluinteCodigo = null,
         bool emiteParecerIndividual = false,
+        IReadOnlyList<BancaRequerida>? bancasRequeridas = null,
         RegraRecursoFase? regraRecurso = null) =>
         FaseCronograma.Criar(
             ordem,
@@ -72,7 +74,7 @@ public sealed class FaseCronogramaTests
             produtos ?? [],
             faseConcluinteCodigo,
             emiteParecerIndividual,
-            bancasRequeridas: [],
+            bancasRequeridas ?? [],
             regraRecurso);
 
     // ── CA-07 — janela × OrigemData ──
@@ -460,5 +462,169 @@ public sealed class FaseCronogramaTests
         ]);
         resultado.Errors.Should().Contain(e => e.Field == "fim" && e.Error.Code == "FaseCronograma.JanelaInvertida");
         resultado.Errors.Should().Contain(e => e.Field == "emiteParecerIndividual" && e.Error.Code == "FaseCronograma.ParecerIndividualSemResultado");
+    }
+
+    // ── CA-02 / CA-03 — recorte de competência das bancas requeridas ──
+
+    private static BancaRequerida Banca(string codigo, params string[] categorias) =>
+        BancaRequerida.Criar(
+            Guid.CreateVersion7(),
+            codigo,
+            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
+
+    [Fact(DisplayName = "CA-02: duas bancas do mesmo tipo, uma sem recorte, é recusada com erro nomeado")]
+    public void RecorteDeCompetencia_DuasDoMesmoTipoUmaSemRecorte_Recusa()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
+                Banca("BANCA_ANALISE_DOCUMENTAL"),
+            ]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e =>
+                e.Error.Code == "BancaRequerida.RecorteDeCompetenciaObrigatorio"
+                && e.Field == "bancasRequeridas[1].categoriasDocumentoIds");
+    }
+
+    [Fact(DisplayName = "CA-02: uma banca por tipo aceita recorte vazio — o tipo já a identifica")]
+    public void RecorteDeCompetencia_UmaBancaPorTipoSemRecorte_Aceita()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL"),
+                Banca("BANCA_HETEROIDENTIFICACAO"),
+            ]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "CA-02: as duas bancas do mesmo tipo sem recorte acumulam uma recusa cada")]
+    public void RecorteDeCompetencia_AmbasSemRecorte_AcumulaUmaPorBanca()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL"),
+                Banca("BANCA_ANALISE_DOCUMENTAL"),
+            ]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().AllBe("BancaRequerida.RecorteDeCompetenciaObrigatorio");
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
+            ["bancasRequeridas[0].categoriasDocumentoIds", "bancasRequeridas[1].categoriasDocumentoIds"],
+            "a recusa que sai é a de recorte ausente, e não a de recorte duplicado — dois recortes vazios não são dois recortes iguais, são dois recortes que faltam");
+    }
+
+    [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com recortes distintos são declaráveis")]
+    public void RecorteDeCompetencia_MesmoTipoRecortesDistintos_Aceita()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
+                Banca("BANCA_ANALISE_DOCUMENTAL", "ETNICO_RACIAL"),
+            ]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.BancasRequeridas.Should().HaveCount(2);
+    }
+
+    [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com o mesmo recorte declarado em outra ordem são recusadas")]
+    public void RecorteDeCompetencia_MesmoTipoRecortesIguaisEmOutraOrdem_Recusa()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "ESCOLARIDADE"),
+                Banca("BANCA_ANALISE_DOCUMENTAL", "ESCOLARIDADE", "RENDA"),
+            ]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e =>
+                e.Error.Code == "BancaRequerida.RecorteDeCompetenciaDuplicado"
+                && e.Field == "bancasRequeridas[1].categoriasDocumentoIds");
+    }
+
+    [Fact(DisplayName = "CA-03: recortes que se cruzam sem coincidir distinguem as bancas e são aceitos")]
+    public void RecorteDeCompetencia_MesmoTipoRecortesQueSeCruzam_Aceita()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "ESCOLARIDADE"),
+                Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
+            ]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Bancas de TIPOS distintos com o mesmo recorte são aceitas — o tipo já as distingue")]
+    public void RecorteDeCompetencia_TiposDistintosMesmoRecorte_Aceita()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
+                Banca("BANCA_HETEROIDENTIFICACAO", "RENDA"),
+            ]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "A mesma categoria declarada duas vezes no recorte de uma banca é recusada")]
+    public void RecorteDeCompetencia_CategoriaRepetidaNaMesmaBanca_Recusa()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            bancasRequeridas: [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "RENDA")]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e =>
+                e.Error.Code == "BancaRequerida.CategoriaDuplicadaNoRecorte"
+                && e.Field == "bancasRequeridas[0].categoriasDocumentoIds");
+    }
+
+    [Fact(DisplayName = "Reidratar um envelope com duas bancas do mesmo tipo sem recorte lança — o estado não é escrevível")]
+    public void Reidratar_MesmoTipoSemRecorte_Lanca()
+    {
+        Action act = () => Reidratar(
+            produtos: [],
+            regraRecurso: null,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL"),
+                Banca("BANCA_ANALISE_DOCUMENTAL"),
+            ]);
+
+        act.Should().Throw<ArgumentException>().WithParameterName("bancasRequeridas");
+    }
+
+    [Fact(DisplayName = "Reidratar com bancas do mesmo tipo e recortes distintos repõe as duas")]
+    public void Reidratar_MesmoTipoRecortesDistintos_Repoe()
+    {
+        FaseCronograma fase = Reidratar(
+            produtos: [],
+            regraRecurso: null,
+            bancasRequeridas:
+            [
+                Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
+                Banca("BANCA_ANALISE_DOCUMENTAL", "ETNICO_RACIAL"),
+            ]);
+
+        fase.BancasRequeridas.SelectMany(b => b.RecorteDeCompetencia).Select(c => c.Codigo)
+            .Should().BeEquivalentTo(["RENDA", "ETNICO_RACIAL"]);
     }
 }

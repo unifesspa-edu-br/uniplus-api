@@ -240,6 +240,8 @@ public sealed class FaseCronograma : EntityBase
             erros.Add(violacaoDaAncora);
         }
 
+        erros.AddRange(ViolacoesDoRecorteDeCompetencia(codigo, bancasRequeridas));
+
         if (erros.Count > 0)
         {
             return Result<FaseCronograma>.ValidationFailure(erros);
@@ -320,6 +322,14 @@ public sealed class FaseCronograma : EntityBase
         if (ViolacaoDaAncoraDoRecurso(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
         {
             throw new ArgumentException(violacaoDaAncora.Error.Message, nameof(regraRecurso));
+        }
+
+        // Pelo MESMO predicado de Criar, e pelo mesmo motivo: um recorte reposto que não
+        // distingue duas bancas do mesmo tipo é tão incoerente quanto um escrito assim pela
+        // primeira vez.
+        if (ViolacoesDoRecorteDeCompetencia(codigo, bancasRequeridas) is [{ } violacaoDoRecorte, ..])
+        {
+            throw new ArgumentException(violacaoDoRecorte.Error.Message, nameof(bancasRequeridas));
         }
 
         FaseCronograma fase = new()
@@ -407,6 +417,107 @@ public sealed class FaseCronograma : EntityBase
     internal FieldError? ViolacaoDaAncoraDoRecurso() =>
         ViolacaoDaAncoraDoRecurso(Codigo, _produtos, RegraRecurso);
 
+    /// <summary>
+    /// As violações do recorte de competência das bancas requeridas pela fase — vazio
+    /// quando cada banca é identificável dentro dela.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>O recorte só é obrigatório onde o tipo não basta.</b> Com uma banca por tipo, o
+    /// próprio tipo já diz de quem é o parecer, e exigir o recorte pediria informação que
+    /// não acrescenta nada. Com mais de uma, o tipo empata: é o recorte que diz qual delas
+    /// julga renda e qual julga o requisito étnico-racial, e sem ele o certame publica duas
+    /// linhas iguais onde há dois responsáveis distintos. Recortes IDÊNTICOS entre duas
+    /// bancas do mesmo tipo caem na mesma recusa por não distinguirem nada — é o defeito
+    /// que declarar o recorte existe para fechar, e aceitá-los seria cumprir a letra da
+    /// exigência sem cumprir o efeito.
+    /// </para>
+    /// <para>
+    /// <b>O agrupamento é pelo código congelado, não pelo id de origem.</b> É o código que
+    /// aparece no edital publicado, e é por ele que quem lê distingue uma banca da outra;
+    /// dois ids de origem distintos que congelaram o mesmo código produzem, no documento,
+    /// exatamente a ambiguidade que esta invariante recusa. O critério é estritamente mais
+    /// forte que o do id: bancas de mesmo id de origem congelam sempre o mesmo código.
+    /// </para>
+    /// <para>
+    /// <b>Predicado único, quatro chamadores</b> — <see cref="Criar"/>, <see cref="Reidratar"/>,
+    /// o decodificador do envelope e <c>ProcessoSeletivo</c>, no gate de publicação e no item
+    /// de conformidade —, mesma disciplina de
+    /// <see cref="ViolacaoDaAncoraDoRecurso(string, IReadOnlyList{ProdutoDaFase}, RegraRecursoFase?)"/>:
+    /// escrito uma vez, nenhum deles pode divergir dos outros.
+    /// </para>
+    /// <para>Sem I/O e sem navegação — só o que já está em memória.</para>
+    /// </remarks>
+    public static IReadOnlyList<FieldError> ViolacoesDoRecorteDeCompetencia(
+        string codigo,
+        IReadOnlyList<BancaRequerida> bancasRequeridas)
+    {
+        ArgumentNullException.ThrowIfNull(bancasRequeridas);
+
+        List<FieldError> violacoes = [];
+
+        for (int indice = 0; indice < bancasRequeridas.Count; indice++)
+        {
+            BancaRequerida banca = bancasRequeridas[indice];
+            if (banca.RecorteDeCompetencia.Count != banca.ChaveDoRecorte().Count)
+            {
+                violacoes.Add(new($"bancasRequeridas[{indice}].categoriasDocumentoIds", new DomainError(
+                    "BancaRequerida.CategoriaDuplicadaNoRecorte",
+                    $"A banca '{banca.Codigo}' da fase '{codigo}' declara a mesma categoria de documento mais de uma vez no recorte de competência.")));
+            }
+        }
+
+        // Índices agrupados pelo código congelado — a chave da ambiguidade. Um grupo de um
+        // item só não pede recorte algum.
+        foreach (IGrouping<string, int> grupo in Enumerable.Range(0, bancasRequeridas.Count)
+            .GroupBy(i => bancasRequeridas[i].Codigo, StringComparer.Ordinal)
+            .Where(static g => g.Count() > 1))
+        {
+            // Os recortes já vistos no grupo, comparados como CONJUNTO. Concatená-los num
+            // texto de assinatura seria mais barato e dependeria de nenhum código de
+            // categoria conter o separador escolhido — premissa que vale para o cadastro,
+            // cujo código é UPPER_SNAKE, mas não para um envelope decodificado, que traz
+            // texto livre dentro do limite da coluna.
+            List<HashSet<string>> recortesJaDeclarados = [];
+
+            foreach (int indice in grupo)
+            {
+                BancaRequerida banca = bancasRequeridas[indice];
+                string campo = $"bancasRequeridas[{indice}].categoriasDocumentoIds";
+                IReadOnlyList<string> chave = banca.ChaveDoRecorte();
+
+                if (chave.Count == 0)
+                {
+                    violacoes.Add(new(campo, new DomainError(
+                        "BancaRequerida.RecorteDeCompetenciaObrigatorio",
+                        $"A fase '{codigo}' requer mais de uma banca '{banca.Codigo}' e cada uma precisa declarar as categorias de documento que julga.")));
+                    continue;
+                }
+
+                HashSet<string> recorte = new(chave, StringComparer.Ordinal);
+                if (recortesJaDeclarados.Exists(anterior => anterior.SetEquals(recorte)))
+                {
+                    violacoes.Add(new(campo, new DomainError(
+                        "BancaRequerida.RecorteDeCompetenciaDuplicado",
+                        $"A fase '{codigo}' declara duas bancas '{banca.Codigo}' com o mesmo recorte de competência ({string.Join(", ", chave)}) — recortes iguais não distinguem uma banca da outra.")));
+                    continue;
+                }
+
+                recortesJaDeclarados.Add(recorte);
+            }
+        }
+
+        return violacoes;
+    }
+
+    /// <summary>
+    /// <see cref="ViolacoesDoRecorteDeCompetencia(string, IReadOnlyList{BancaRequerida})"/> sobre
+    /// o estado ATUAL da fase — a forma que <c>ProcessoSeletivo</c> usa, porque o estado
+    /// violado é materializável pela hidratação do EF, que não passa por fábrica nenhuma.
+    /// </summary>
+    internal IReadOnlyList<FieldError> ViolacoesDoRecorteDeCompetencia() =>
+        ViolacoesDoRecorteDeCompetencia(Codigo, _bancasRequeridas);
+
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
@@ -439,6 +550,14 @@ public sealed class FaseCronograma : EntityBase
     /// por <see cref="ProdutoDaFase.AtoCodigo"/>, reusando a instância rastreada;
     /// <c>bancas_requeridas</c> não tem índice único e por isso segue com a reposição
     /// simples.
+    /// </para>
+    /// <para>
+    /// <b>O recorte de competência viaja junto da sua banca, e não precisa de reconciliação
+    /// própria</b>, apesar de <c>ux_categorias_julgadas_codigo</c> existir. A chave daquele
+    /// índice inclui o id da banca, e toda banca que chega é instância nova — nem o
+    /// decodificador do envelope nem a escrita ao vivo reusam a linha rastreada —, então o
+    /// DELETE das categorias antigas e o INSERT das novas nunca disputam o mesmo par. Se um
+    /// dia a banca passar a ser reconciliada, esta afirmação deixa de valer junto.
     /// </para>
     /// </remarks>
     internal void AtualizarSnapshot(

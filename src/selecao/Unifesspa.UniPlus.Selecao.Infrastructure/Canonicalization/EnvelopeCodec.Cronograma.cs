@@ -109,6 +109,14 @@ public sealed partial class EnvelopeCodec
                 return leitor.Propagar<IReadOnlyList<FaseCronograma>>(violacaoDaAncora.Error) ?? [];
             }
 
+            // O recorte de competência, pelo MESMO predicado do agregado e pelo mesmo
+            // motivo: a fábrica só tem `throw` para este estado, porque nenhum caminho de
+            // escrita o produz, e um envelope incoerente tem de virar recusa nomeada.
+            if (FaseCronograma.ViolacoesDoRecorteDeCompetencia(codigo, bancas) is [{ } violacaoDoRecorte, ..])
+            {
+                return leitor.Propagar<IReadOnlyList<FaseCronograma>>(violacaoDoRecorte.Error) ?? [];
+            }
+
             Result<FaseCronograma> fase = comId
                 ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(
                     id!.Value, ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
