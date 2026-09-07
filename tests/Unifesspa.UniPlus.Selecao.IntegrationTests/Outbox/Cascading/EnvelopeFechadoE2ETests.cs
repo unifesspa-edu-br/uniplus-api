@@ -65,12 +65,14 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 public sealed class EnvelopeFechadoE2ETests
 {
     /// <summary>
-    /// O código do ato que a fase de avaliação produz (FaseCronograma exige um quando
-    /// <c>ProduzResultado</c> é <see langword="true"/>) — não congela configuração (é
-    /// resultado, não edital/retificação) e não é único por objeto (um certame pode ter
-    /// mais de um resultado ao longo do ciclo).
+    /// Os códigos dos atos que a fase de resultado publica — o preliminar, que abre o ciclo
+    /// recursal, e o definitivo, que o conclui. Nenhum congela configuração (são resultado,
+    /// não edital/retificação) e nenhum é único por objeto (um certame tem mais de um
+    /// resultado ao longo do ciclo).
     /// </summary>
     private const string CodigoAtoResultadoPreliminar = "RESULTADO_PRELIMINAR";
+
+    private const string CodigoAtoResultadoDefinitivo = "RESULTADO_DEFINITIVO";
 
     private readonly CascadingFixture _fixture;
 
@@ -287,6 +289,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "cronograma_fase_que_coleta_inscricao_sem_janela",
                 "cronograma_janela_de_isencao",
                 "cronograma_vagas_sem_fase_que_produz_resultado",
+                "cronograma_conclusao_do_ciclo_recursal",
                 // ── PendenciaDaCascata, detalhamento por razão ──
                 "cascata_modalidade_fora_do_regime_federal",
                 "cascata_origem_ausente",
@@ -619,7 +622,9 @@ public sealed class EnvelopeFechadoE2ETests
                     faseCanonicaId = Catalogos.FaseInscricaoId,
                     inicio = new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
                     fim = new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
-                    atoProduzidoCodigo = (string?)null,
+                    produtos = Array.Empty<object>(),
+                    faseConcluinteCodigo = (string?)null,
+                    emiteParecerIndividual = false,
                     tiposBancaIds = Array.Empty<Guid>(),
                     regraRecurso = (object?)null,
                 },
@@ -629,10 +634,17 @@ public sealed class EnvelopeFechadoE2ETests
                     faseCanonicaId = Catalogos.FaseResultadoPreliminarId,
                     inicio = new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
                     fim = new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
-                    // A fase que produz resultado tem de declarar o ato que produz
-                    // (FaseCronograma.AtoProduzidoObrigatorio) — o tipo é semeado à parte de
-                    // TiposDeAtoSeeder, que só cobre os dois atos da sessão editorial.
-                    atoProduzidoCodigo = CodigoAtoResultadoPreliminar,
+                    // A fase publica preliminar e definitiva da mesma matéria e por isso
+                    // conclui a si mesma — não declara fase concluinte. Os dois tipos são
+                    // semeados à parte de TiposDeAtoSeeder, que só cobre os dois atos da
+                    // sessão editorial.
+                    produtos = new object[]
+                    {
+                        new { atoCodigo = CodigoAtoResultadoPreliminar, papel = PapelProdutoFaseCodigo.Preliminar },
+                        new { atoCodigo = CodigoAtoResultadoDefinitivo, papel = PapelProdutoFaseCodigo.Definitivo },
+                    },
+                    faseConcluinteCodigo = (string?)null,
+                    emiteParecerIndividual = true,
                     tiposBancaIds = new[] { Catalogos.TipoBancaId },
                     regraRecurso = (object?)null,
                 },
@@ -645,7 +657,9 @@ public sealed class EnvelopeFechadoE2ETests
                     faseCanonicaId = Catalogos.FaseAvaliacaoId,
                     inicio = new DateTimeOffset(2026, 3, 22, 8, 0, 0, TimeSpan.Zero),
                     fim = new DateTimeOffset(2026, 3, 22, 18, 0, 0, TimeSpan.Zero),
-                    atoProduzidoCodigo = (string?)null,
+                    produtos = Array.Empty<object>(),
+                    faseConcluinteCodigo = (string?)null,
+                    emiteParecerIndividual = false,
                     tiposBancaIds = Array.Empty<Guid>(),
                     regraRecurso = (object?)null,
                 },
@@ -1016,23 +1030,34 @@ public sealed class EnvelopeFechadoE2ETests
 
     /// <summary>
     /// <see cref="TiposDeAtoSeeder"/> só cobre os dois atos da sessão editorial (abertura e
-    /// retificação). A fase que produz resultado (<see cref="CodigoAtoResultadoPreliminar"/>)
-    /// exige seu próprio tipo vigente no catálogo de Publicações — semeado aqui, à parte, sem
-    /// duplicar o seeder existente para um único código extra.
+    /// retificação). Os dois resultados que a fase publica exigem seus próprios tipos
+    /// vigentes no catálogo de Publicações — semeados aqui, à parte, sem duplicar o seeder
+    /// existente para dois códigos extras.
     /// </summary>
     private static async Task SemearTipoDeAtoResultadoPreliminarAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext db =
             scope.ServiceProvider.GetRequiredService<Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext>();
-        if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == CodigoAtoResultadoPreliminar))
+
+        await GarantirTipoDeAtoDeResultadoAsync(db, CodigoAtoResultadoPreliminar, "Resultado preliminar");
+        await GarantirTipoDeAtoDeResultadoAsync(db, CodigoAtoResultadoDefinitivo, "Resultado definitivo");
+        await db.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    private static async Task GarantirTipoDeAtoDeResultadoAsync(
+        Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext db,
+        string codigo,
+        string nome)
+    {
+        if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == codigo))
         {
             return;
         }
 
         Result<TipoAtoPublicado> tipoResult = TipoAtoPublicado.Criar(
-            CodigoAtoResultadoPreliminar,
-            "Resultado preliminar",
+            codigo,
+            nome,
             congelaConfiguracao: false,
             unicoPorObjeto: false,
             efeitoIrreversivel: true,
@@ -1043,7 +1068,6 @@ public sealed class EnvelopeFechadoE2ETests
         tipoResult.IsSuccess.Should().BeTrue(tipoResult.Error?.Message);
 
         await db.Set<TipoAtoPublicado>().AddAsync(tipoResult.Value!).ConfigureAwait(false);
-        await db.SaveChangesAsync().ConfigureAwait(false);
     }
 
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
