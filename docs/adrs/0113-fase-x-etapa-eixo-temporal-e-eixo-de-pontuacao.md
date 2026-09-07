@@ -107,7 +107,8 @@ congela por valor (ADR-0061) documentava, até esta ADR, que `AgrupaEtapas` "nã
 de avaliação × etapa é bicondicional e o bloco `cronogramaFases` da versão
 publicada precisa ser autossuficiente (RN08), ler o cadastro vivo em runtime para
 decidir esse gate violaria o congelamento. `AgrupaEtapas` passa a ser congelado
-como qualquer outro atributo do snapshot, que amplia de três para nove campos:
+como qualquer outro atributo do snapshot, que amplia de três para nove campos
+(reduzidos a oito pela Emenda 2):
 `(OrigemId, Codigo, DonoTipico, AgrupaEtapas, PermiteComplementacao,
 ProduzResultado, ResultadoDefinitivo, ColetaInscricao, OrigemData)`.
 
@@ -235,6 +236,39 @@ de fato se administra numa fase.
 
 A contagem também mudou: são **quinze** fases desde que a solicitação de isenção entrou no
 vocabulário, não quatorze.
+
+## Emenda 2 (2026-09-07) — o que a fase publica sai do cadastro, e o snapshot encolhe para oito campos
+
+A Emenda 1 e o corpo desta ADR descrevem o `FaseCanonicaSnapshot` como tendo **nove campos**, resultado da revisão que passou a congelar `AgrupaEtapas`. **São oito hoje**, e a lista enumerada naquela seção está defasada em dois pontos: dois campos saíram e um entrou.
+
+A forma vigente é:
+
+```text
+(OrigemId, Codigo, DonoTipico, AgrupaEtapas, PermiteComplementacao,
+ ColetaInscricao, ColetaSolicitacaoIsencao, OrigemData)
+```
+
+`ColetaSolicitacaoIsencao` entrou com a frente da janela de solicitação de isenção. `ProduzResultado` e `ResultadoDefinitivo` saíram, e é disso que esta emenda trata.
+
+### O que mudou
+
+`ProduzResultado` e `ResultadoDefinitivo` deixaram de ser atributos do cadastro de fases canônicas, e por consequência saíram do snapshot que o espelha. O par tinha virado **segunda fonte de verdade**: o cadastro afirmava que uma fase produz resultado não definitivo, enquanto o operador podia declarar, no edital dele, que aquela mesma fase publica preliminar **e** definitiva. Entre um cadastro genérico e a declaração de quem monta o certame, a segunda vence.
+
+### Para onde a informação foi
+
+O que os dois booleanos diziam passou a ser declarado na **fase do cronograma do processo**, como uma coleção de produtos publicados — cada um com o código de um tipo de ato e um papel: `PRELIMINAR`, `DEFINITIVO`, ou ausente quando o ato não é resultado. `ProduzResultado` sobrevive na fase do cronograma como propriedade **derivada** dessa coleção, não como cópia do cadastro.
+
+A informação, portanto, continua congelada — e o bloco `cronogramaFases` da versão publicada segue autossuficiente, que é o invariante que a revisão do `AgrupaEtapas` protegia.
+
+### O consumidor futuro enxerga mais, não menos
+
+Uma fase que publica gabarito definitivo ao lado de resultado preliminar era **inexprimível** com um par de booleanos por fase. Com a coleção de produtos, é. Classificação e ingresso lerão o papel **por ato publicado**, não um sinalizador por fase.
+
+### O que permanece válido
+
+A decisão principal desta ADR — dois eixos distintos, fase no eixo temporal e etapa no eixo de pontuação — não muda. A revisão do `AgrupaEtapas` da Emenda 1 tampouco: ela segue congelado, pela mesma razão.
+
+**O `FaseCanonicaSnapshot` permanece**, e não é código morto a remover. Ele é o contrato tipado de um bloco que **já é congelado**: a fase do cronograma no envelope carrega exatamente os mesmos oito atributos. A ausência de consumidor no código é o estado esperado — esta ADR já registrava que a revisão do contrato foi feita "antes de qualquer consumidor real existir", e os consumidores chegam com as frentes de classificação e ingresso.
 
 ## Mais informações
 
