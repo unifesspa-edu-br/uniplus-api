@@ -1744,6 +1744,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_janela_de_isencao", DimensaoConformidade.Cronograma, "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias", JanelaDeIsencaoConforme(contexto)),
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
         new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase que publica resultado preliminar tem conclusão declarada e alcançável", PendenciaDaConclusaoDoCicloRecursal() is null),
+        new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", PendenciaDaAncoraDoRecurso() is null),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
         new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
@@ -2144,7 +2145,57 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return pendenciaDaConclusao;
         }
 
+        // A âncora do prazo de recurso, pela mesma razão: FaseCronograma.Criar a recusa na
+        // escrita, e o EF hidrata regras_recurso_fase e produtos_da_fase direto das linhas,
+        // sem passar pela fábrica. Sem esta metade, um certame carregado do banco com a
+        // âncora apontando para produto que não é preliminar seu congelaria uma versão cujo
+        // prazo de interposição não resolve — e a incoerência só apareceria na restauração,
+        // longe da causa.
+        if (PendenciaDaAncoraDoRecurso() is { } pendenciaDaAncora)
+        {
+            return pendenciaDaAncora;
+        }
+
         return null;
+    }
+
+    /// <summary>
+    /// A primeira violação da âncora do prazo de recurso no cronograma corrente, ou
+    /// <see langword="null"/> quando toda fase que admite recurso ancora num produto
+    /// preliminar seu.
+    /// </summary>
+    /// <remarks>
+    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// item só. As duas metades vêm da MESMA travessia
+    /// (<see cref="ViolacoesDaAncoraDoRecurso"/>), que por sua vez chama o predicado de
+    /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
+    /// também chamam — não há um segundo <c>if</c> para lembrar de sincronizar.
+    /// </remarks>
+    private DomainError? PendenciaDaAncoraDoRecurso()
+    {
+        List<FieldError> violacoes = ViolacoesDaAncoraDoRecurso([.. _cronogramaFases]);
+
+        return violacoes.Count > 0 ? violacoes[0].Error : null;
+    }
+
+    /// <summary>
+    /// As violações da âncora do prazo de recurso, uma por fase mal declarada, com o campo
+    /// que localiza cada uma.
+    /// </summary>
+    /// <remarks>Sem I/O e sem navegação — só o que já está em memória.</remarks>
+    private static List<FieldError> ViolacoesDaAncoraDoRecurso(IReadOnlyList<FaseCronograma> fases)
+    {
+        List<FieldError> violacoes = [];
+
+        for (int indice = 0; indice < fases.Count; indice++)
+        {
+            if (fases[indice].ViolacaoDaAncoraDoRecurso() is { } violacao)
+            {
+                violacoes.Add(violacao with { Field = $"fases[{indice}].{violacao.Field}" });
+            }
+        }
+
+        return violacoes;
     }
 
     /// <summary>
