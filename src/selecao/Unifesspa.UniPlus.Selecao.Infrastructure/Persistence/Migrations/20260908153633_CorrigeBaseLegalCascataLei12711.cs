@@ -12,7 +12,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         private const string HashDaDefinicaoVigente =
             "70f96f9fa5b2c5282adba8028070fdf0a82bef99408693d17d913c51d0c5078a";
 
-        /// <summary>Hash da definição anterior, para o qual a reversão devolve as referências vivas.</summary>
+        /// <summary>Hash da definição anterior, restaurado na reversão.</summary>
         private const string HashDaDefinicaoAnterior =
             "8e5cfbbf06b2a661b024ae1efc7db8f5013b434b316f6b69c3be9a3c90999626";
 
@@ -20,7 +20,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             ExigirQueNenhumaConfiguracaoCongeladaReferencie(migrationBuilder);
-            ReapontarHashDasCascatasVivas(migrationBuilder, HashDaDefinicaoVigente);
 
             migrationBuilder.UpdateData(
                 schema: "selecao",
@@ -61,24 +60,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 """);
         }
 
-        /// <summary>
-        /// As configurações de cascata <b>vivas</b> — as de rascunho, que ainda não foram
-        /// congeladas em versão nenhuma e por isso escapam da guarda acima — guardam o hash da
-        /// definição referenciada em coluna própria (<c>ConfiguracaoCascataRemanejamento.Regra</c>).
-        /// Como a correção é no lugar e não há versão sucessora, o hash antigo passaria a não
-        /// descrever definição nenhuma do catálogo: a referência acompanha a correção.
-        /// </summary>
-        private static void ReapontarHashDasCascatasVivas(
-            MigrationBuilder migrationBuilder,
-            string hashDestino) =>
-            migrationBuilder.Sql($"""
-                UPDATE selecao.configuracoes_cascata_remanejamento
-                SET regra_hash = '{hashDestino}'
-                WHERE regra_codigo = 'REMANEJ-CASCATA-LEI-12711'
-                  AND regra_versao = 'v1'
-                  AND regra_hash <> '{hashDestino}';
-                """);
-
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
@@ -86,7 +67,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             // versão passou a referenciar a entrada depois do Up, voltar a definição antiga
             // quebraria a reprodutibilidade daquela versão tanto quanto avançá-la.
             ExigirQueNenhumaConfiguracaoCongeladaReferencie(migrationBuilder);
-            ReapontarHashDasCascatasVivas(migrationBuilder, HashDaDefinicaoAnterior);
 
             migrationBuilder.UpdateData(
                 schema: "selecao",
