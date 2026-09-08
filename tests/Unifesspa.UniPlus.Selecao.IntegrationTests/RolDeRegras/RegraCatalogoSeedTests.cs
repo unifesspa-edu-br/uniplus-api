@@ -233,6 +233,19 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             context, CodigoRegraDeRecurso, RegraCatalogoSeed.VersaoV1);
     }
 
+    [Fact(DisplayName = "Nenhuma configuração congelada referencia a regra de cascata com a base legal corrigida (fronteira da ADR-0112)")]
+    public async Task RegraDeCascata_BaseLegalCorrigidaSemReferenciaCongelada()
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+
+        // Corrigir a BaseLegal (issue #1454) reescreve a definição no lugar e muda o hash
+        // content-addressable — mesmo padrão de RegraDeRecurso_ReescritaSemReferenciaCongelada.
+        // A ADR-0112 autoriza isso enquanto nenhuma VersaoConfiguracao referenciar
+        // (codigo, versao), e exige que a verificação seja executada, não presumida.
+        await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
+            context, CodigoRegraDeCascata, RegraCatalogoSeed.VersaoV1);
+    }
+
     /// <summary>
     /// A regra que geria uma segunda instância de recurso, removida do catálogo
     /// e trocada por <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>.
@@ -241,4 +254,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
 
     /// <summary>A regra de prazo de recurso vigente, cuja definição esta fatia reescreve.</summary>
     private const string CodigoRegraDeRecurso = "RECURSO-PRAZO-ANCORADO-EM-ATO";
+
+    /// <summary>A regra de cascata vigente, cuja BaseLegal a migration CorrigeBaseLegalCascataLei12711 reescreve.</summary>
+    private const string CodigoRegraDeCascata = "REMANEJ-CASCATA-LEI-12711";
 }
