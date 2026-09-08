@@ -28,11 +28,10 @@ A DoR da #575 exigia essa conferência antes de codar o seed. Esta ADR registra 
 ## Fonte normativa confirmada
 
 **Portaria MEC nº 704, de 17 de outubro de 2025** (Diário Oficial da União, publicada em 20/10/2025,
-Edição 200, Seção 1, p. 36-37). O **Art. 1º** desta portaria insere o **art. 20-A** na **Portaria
-Normativa MEC nº 18, de 11 de outubro de 2012** (a mesma norma já citada como base legal de
-`DISTRIB-VAGAS-LEI-12711` no seed do rol de regras) — não na Portaria Normativa MEC nº 21/2012 (Sisu),
-que a mesma Portaria 704/2025 também altera, mas em dispositivos distintos (cadastro socioeconômico,
-pesos/notas mínimas, oferta pós-lista de espera).
+Edição 200, Seção 1, p. 36-37). O **Art. 2º** desta portaria insere o **art. 20-A** na **Portaria
+Normativa MEC nº 21/2012 (Sisu)** — não na Portaria Normativa MEC nº 18, de 11 de outubro de 2012 (a
+mesma norma já citada como base legal de `DISTRIB-VAGAS-LEI-12711` no seed do rol de regras), que a
+mesma Portaria 704/2025 também altera, pelo **Art. 1º**, em dispositivos distintos.
 
 O art. 20-A determina, para vaga reservada da Lei 12.711/2012 sem candidato inscrito: primeiro aos
 autodeclarados pretos/pardos/indígenas/quilombolas ou pessoas com deficiência, depois aos egressos de
@@ -93,7 +92,8 @@ do Sisu, é decisão de negócio nova, registrada como nova versão da regra —
 ## Consequências
 
 - `REMANEJ-CASCATA-LEI-12711 v1` (rol_de_regras) semeia esta matriz no `esquema_args`, com
-  `BaseLegal` citando esta ADR e a Portaria MEC 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37).
+  `BaseLegal` citando a Portaria MEC 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37) e a Lei
+  12.711/2012 — base legal cita a norma, não a decisão de arquitetura que a documenta.
 - `RN-CASCATA-5` (Story #575) compara o payload aplicado — fallback + todos os destinos — célula a
   célula contra este `esquema_args`; divergência é recusada, mesmo com a forma da sequência válida.
 - Uma eventual mudança na lei ou no Anexo da Portaria gera **nova versão** da regra (`v2`), nunca
@@ -101,9 +101,11 @@ do Sisu, é decisão de negócio nova, registrada como nova versão da regra —
 
 ## Referências
 
-- Portaria MEC nº 704, de 17 de outubro de 2025 (DOU 20/10/2025, Seção 1, p. 36-37) — art. 1º, art.
+- Portaria MEC nº 704, de 17 de outubro de 2025 (DOU 20/10/2025, Seção 1, p. 36-37) — art. 2º, art.
   20-A e Anexo.
-- Portaria Normativa MEC nº 18, de 11 de outubro de 2012 (redação dada pela Portaria MEC 704/2025).
+- Portaria Normativa MEC nº 21/2012 (Sisu — redação dada pela Portaria MEC 704/2025, art. 2º).
+- Portaria Normativa MEC nº 18, de 11 de outubro de 2012 (redação dada pela Portaria MEC 704/2025,
+  art. 1º, em dispositivos distintos do art. 20-A).
 - Lei 12.711/2012, art. 3º, §1º (red. Lei 14.723/2023).
 - Story #575 (cascata de remanejamento) e Story #772 (rol_de_regras, `REMANEJ-CASCATA-LEI-12711`).
 
@@ -124,3 +126,20 @@ O que muda é só a nomeação: onde este documento e `OfertaForaDoRegimeFederal
 de cálculo em `ConfiguracaoDistribuicaoVagas.Criar` (ADR-0115, Emenda 1). Uma terceira regra
 federal, se vier a existir, entra automaticamente no alcance desta ADR sem exigir emenda nova,
 contanto que compartilhe a mesma fórmula e a mesma matriz de remanejamento.
+
+## Errata de citação (2026-09-08) — art. 20-A é do art. 2º, na Portaria Normativa MEC nº 21/2012
+
+A seção "Fonte normativa confirmada" atribuía o art. 20-A ao art. 1º da Portaria MEC nº 704/2025 e à
+Portaria Normativa MEC nº 18/2012. Conferência contra o texto oficial do DOU (apurada na issue #1130)
+mostrou a atribuição trocada: o art. 1º altera a Portaria Normativa MEC nº 18/2012, o art. 2º altera
+a Portaria Normativa MEC nº 21/2012 (Sisu), e é no bloco do art. 2º que o art. 20-A é inserido — logo
+na Portaria Normativa MEC nº 21/2012, não na nº 18/2012.
+
+Esta é uma correção de citação, não uma revisão da decisão: a matriz do Anexo, a opção B (§ "Resultado
+da decisão") e o `esquema_args` de `REMANEJ-CASCATA-LEI-12711 v1` continuam os mesmos — só a norma que
+insere o art. 20-A estava mal atribuída. O texto de "Fonte normativa confirmada", "Consequências" e
+"Referências" foi corrigido no lugar para refletir a atribuição certa.
+
+Esta errata também retira `ADR-0120` da `BaseLegal` do seed: ADR é decisão de arquitetura interna, não
+base legal — a regra era a única das 25 do catálogo a citar uma ADR nesse campo. A migration
+correspondente atualiza `base_legal` e `hash` de `REMANEJ-CASCATA-LEI-12711 v1` (issue #1454).
