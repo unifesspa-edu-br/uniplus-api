@@ -41,24 +41,21 @@ public sealed class CorrigeBaseLegalCascataLei12711GuardaTests
         migration.Should().Contain("ADR-0112");
     }
 
-    [Fact(DisplayName = "A migration reaponta o hash das cascatas vivas que ainda referenciam a definição")]
-    public void Up_ReapontaOHashDasCascatasVivas()
+    [Fact(DisplayName = "A migration não reescreve dado de negócio para acompanhar a correção")]
+    public void Up_NaoReescreveConfiguracaoDeProcesso()
     {
         string migration = Migration();
 
-        migration.Should().Contain("UPDATE selecao.configuracoes_cascata_remanejamento",
-            "sem versão sucessora, o hash antigo deixaria de descrever definição alguma do catálogo");
-        migration.Should().Contain("SET regra_hash");
-        migration.Should().Contain("""regra_codigo = 'REMANEJ-CASCATA-LEI-12711'""");
+        migration.Should().NotContain("UPDATE selecao.configuracoes_cascata_remanejamento",
+            "rascunho com hash defasado é dado de teste descartável — sem produção, backfill é respondido com a premissa, não implementado; e UPDATE à mão sobre dado de negócio em migration é proibido no projeto");
+        migration.Should().NotContain("SET regra_hash");
     }
 
-    [Fact(DisplayName = "A reversão devolve o hash anterior e responde à mesma fronteira do avanço")]
-    public void Down_DevolveOHashAnteriorEGuardaDeNovo()
+    [Fact(DisplayName = "A reversão devolve a definição anterior e responde à mesma fronteira do avanço")]
+    public void Down_DevolveADefinicaoAnteriorEGuardaDeNovo()
     {
         string down = FronteiraAppendOnlyDoRol.BlocoDown(Migration());
 
-        down.Should().Contain("ReapontarHashDasCascatasVivas",
-            "voltar a definição sem voltar a referência viva deixaria o rascunho apontando para um hash que não existe mais");
         down.Should().Contain("ExigirQueNenhumaConfiguracaoCongeladaReferencie",
             "a reversão responde à mesma fronteira do avanço");
         down.Should().Contain("HashDaDefinicaoAnterior");
