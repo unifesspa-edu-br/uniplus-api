@@ -69,9 +69,11 @@ public sealed class CalendarioDiasUteisRepository : ICalendarioDiasUteisReposito
         _dbContext.CalendariosDiasUteis.Remove(calendario);
     }
 
-    public void AdicionarDiaNaoUtil(DiaNaoUtil dia)
+    public void RegistrarInclusaoDeDiaNaoUtil(CalendarioDiasUteis calendario, DiaNaoUtil dia)
     {
+        ArgumentNullException.ThrowIfNull(calendario);
         ArgumentNullException.ThrowIfNull(dia);
         _dbContext.Set<DiaNaoUtil>().Add(dia);
+        _dbContext.Entry(calendario).State = EntityState.Modified;
     }
 }
