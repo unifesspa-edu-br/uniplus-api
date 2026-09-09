@@ -68,4 +68,10 @@ public sealed class CalendarioDiasUteisRepository : ICalendarioDiasUteisReposito
         ArgumentNullException.ThrowIfNull(calendario);
         _dbContext.CalendariosDiasUteis.Remove(calendario);
     }
+
+    public void AdicionarDiaNaoUtil(DiaNaoUtil dia)
+    {
+        ArgumentNullException.ThrowIfNull(dia);
+        _dbContext.Set<DiaNaoUtil>().Add(dia);
+    }
 }
