@@ -37,4 +37,23 @@ public interface ICalendarioDiasUteisRepository
     /// soft-delete preenchendo <c>DeletedBy</c>/<c>DeletedAt</c>.
     /// </summary>
     void Remover(CalendarioDiasUteis calendario);
+
+    /// <summary>
+    /// Registra explicitamente no <c>ChangeTracker</c> um <see cref="DiaNaoUtil"/>
+    /// recém-incluído num <see cref="CalendarioDiasUteis"/> já rastreado
+    /// (<see cref="CalendarioDiasUteis.IncluirDiaNaoUtil"/>, api#1458).
+    /// </summary>
+    /// <remarks>
+    /// Necessário porque o <c>ChangeTracker</c> não descobre sozinho um item
+    /// adicionado à coleção-campo <c>_diasNaoUteis</c> de um agregado que já
+    /// estava <c>Unchanged</c> antes da inclusão — comprovado empiricamente: o
+    /// <c>DetectChanges</c> automático (disparado por <c>SaveChangesAsync</c>)
+    /// não cria uma <c>EntityEntry</c> para o novo filho nesse cenário, e a
+    /// inclusão silenciosamente não persiste nada. Diferente de
+    /// <see cref="AdicionarAsync"/> (que atacha o agregado INTEIRO, ainda não
+    /// rastreado, e o EF Core caminha o grafo completo ao processar o <c>Add</c>),
+    /// aqui o pai já está rastreado — só o filho novo precisa do <c>Add</c>
+    /// explícito.
+    /// </remarks>
+    void AdicionarDiaNaoUtil(DiaNaoUtil dia);
 }

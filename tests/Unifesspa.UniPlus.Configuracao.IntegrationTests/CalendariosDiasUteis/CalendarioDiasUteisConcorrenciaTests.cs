@@ -9,7 +9,9 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
@@ -109,5 +111,76 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         CalendarioDiasUteis persistido = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == id);
         persistido.IsDeleted.Should().BeFalse(
             "o handler perdeu a corrida e não deve ter removido nada — nenhuma segunda tentativa do outbox deve ter reaplicado a remoção");
+    }
+
+    /// <summary>
+    /// Prova de ponta a ponta da Decisão D2 (api#1458): a checagem de duplicidade
+    /// em memória de <c>CalendarioDiasUteis.IncluirDiaNaoUtil</c> só compara contra
+    /// o que já está carregado no agregado — ela NÃO alcança uma linha inserida por
+    /// outra transação ainda não commitada. A defesa real contra a corrida é o
+    /// índice único <c>ix_dia_nao_util_unicidade</c> (sem token de concorrência no
+    /// pai: inserir um filho não muta o pai, então nada aqui depende de <c>xmin</c>
+    /// — ver <see cref="IncluirDiaNaoUtilCommandHandler"/>).
+    /// </summary>
+    [Fact(DisplayName =
+        "Duas inclusões concorrentes da mesma combinação: uma persiste, a outra recebe DataDuplicadaNoDataset sem duplicar")]
+    public async Task IncluirDiaNaoUtil_DuasInclusoesConcorrentesDaMesmaCombinacao_UmaFalhaSemDuplicar()
+    {
+        MonolitoApiFactory api = _fixture.Factory;
+        var novaData = new DateOnly(2099, 5, 8);
+
+        Guid id;
+        await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
+        {
+            ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
+                $"conc-{Guid.NewGuid():N}"[..20],
+                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
+            db.CalendariosDiasUteis.Add(criado);
+            await db.SaveChangesAsync();
+            id = criado.Id;
+        }
+
+        await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
+        ConfiguracaoDbContext dbB = scopeB.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
+
+        // Insere a MESMA combinação diretamente por SQL cru, sem commitar — o
+        // handler real (busA) não pode ver esta linha (ainda não commitada) e por
+        // isso a checagem em memória do agregado não vai detectar a duplicata;
+        // só o índice único, checado no momento do INSERT de busA, protege aqui.
+        await dbB.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO configuracao.dia_nao_util
+                (id, calendario_dias_uteis_id, abrangencia, municipio_ibge, uf, data, descricao, created_at)
+            VALUES
+                (gen_random_uuid(), {id}, 'ESTADUAL', NULL, 'PA', {novaData}, 'Feriado estadual (txB)', now())
+            """);
+        int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
+
+        await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
+        IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
+        var itemA = new DiaNaoUtilCommandItem("ESTADUAL", null, null, null, novaData, "Feriado estadual (busA)", "PA");
+        Task<Result<CalendarioDiasUteisDto>> taskA = busA.InvokeAsync<Result<CalendarioDiasUteisDto>>(
+            new IncluirDiaNaoUtilCommand(id, itemA));
+
+        await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, taskA, [pidDbB]);
+
+        await txB.CommitAsync();
+
+        Result<CalendarioDiasUteisDto> resultadoA = await taskA;
+
+        resultadoA.IsFailure.Should().BeTrue(
+            "busA só descobre o conflito no INSERT, depois que txB já commitou a mesma combinação");
+        resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+
+        await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
+        ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        int totalNaCombinacao = await readDb.Database.SqlQuery<int>(
+            $"""
+            SELECT count(*)::int AS "Value" FROM configuracao.dia_nao_util
+            WHERE calendario_dias_uteis_id = {id} AND data = {novaData} AND abrangencia = 'ESTADUAL' AND uf = 'PA'
+            """).SingleAsync();
+        totalNaCombinacao.Should().Be(1, "só a linha de txB persiste — busA perdeu a corrida e nada seu foi gravado");
     }
 }
