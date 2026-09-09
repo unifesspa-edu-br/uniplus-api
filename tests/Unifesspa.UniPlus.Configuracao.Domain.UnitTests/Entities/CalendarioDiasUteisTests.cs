@@ -274,6 +274,16 @@ public sealed class CalendarioDiasUteisTests
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido);
     }
 
+    [Fact(DisplayName = "Criar com data no valor default (0001-01-01) falha — é assim que uma data omitida se materializa")]
+    public void Criar_DataDefault_Falha()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [new DiaNaoUtilCriacao("NACIONAL", null, null, null, default, "Dia sem data")]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataAusente);
+    }
+
     [Fact(DisplayName = "Criar com item de dia não útil nulo na lista falha")]
     public void Criar_DiaNaoUtilNulo_Falha()
     {
@@ -414,6 +424,19 @@ public sealed class CalendarioDiasUteisTests
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("item");
         resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.DiaNaoUtilNulo);
+        calendario.DiasNaoUteis.Should().HaveCount(1);
+    }
+
+    [Fact(DisplayName = "IncluirDiaNaoUtil com data no valor default (0001-01-01) falha")]
+    public void IncluirDiaNaoUtil_DataDefault_Falha()
+    {
+        CalendarioDiasUteis calendario = CalendarioDiasUteis.Criar("2027.1", [Nacional()]).Value!;
+
+        Result<DiaNaoUtil> resultado = calendario.IncluirDiaNaoUtil(
+            new DiaNaoUtilCriacao("ESTADUAL", null, null, null, default, "Dia sem data", "PA"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataAusente);
         calendario.DiasNaoUteis.Should().HaveCount(1);
     }
 
