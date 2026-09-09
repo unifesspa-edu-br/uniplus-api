@@ -813,12 +813,14 @@ public sealed class ProcessoSeletivoController : ControllerBase
             return actionResult;
         }
 
-        ConformidadeLegalProcessoSeletivoDto? conformidade = await _queryBus
+        // A recusa que está sendo enriquecida é a que vale: se a reconsulta não chega a uma data de
+        // referência, o 422 sai sem a lista, nunca trocado pela falha da consulta auxiliar.
+        Result<ConformidadeLegalProcessoSeletivoDto> conformidade = await _queryBus
             .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id, PeriodoInscricaoInformado: periodoInscricaoInformado), cancellationToken)
             .ConfigureAwait(false);
-        if (conformidade is not null)
+        if (conformidade.IsSuccess)
         {
-            problem.Extensions["obrigatoriedadesReprovadas"] = conformidade.Regras
+            problem.Extensions["obrigatoriedadesReprovadas"] = conformidade.Value!.Regras
                 .Where(regra => !regra.Aprovada)
                 .Select(regra => new { regra.RegraCodigo, regra.DescricaoHumana, regra.BaseLegal, regra.Motivo })
                 .ToArray();
@@ -1099,6 +1101,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// recurso distinto de <see cref="ObterConformidade"/> (checklist estrutural), com a
     /// MESMA fonte que o gate de <c>Publicar</c>/<c>Retificar</c>/<c>FecharRetificacao</c>
     /// usa: a regra que aparece reprovada aqui é a mesma que bloqueia a transição.
+    /// <para>
+    /// 404 só quando o processo não existe. Quando ele existe mas o rascunho ainda não tem de onde
+    /// derivar a data de referência, a resposta é 422 com o código que o gate usaria — sem fase de
+    /// coleta, <c>PeriodoInscricaoObrigatorioSemFaseDeColeta</c>; com fase de coleta sem janela,
+    /// <c>FaseQueColetaInscricaoSemJanela</c>. Devolver 404 aqui dizia que o processo não existe, e
+    /// o preflight da tela não tinha como distinguir a pendência de uma falha de rede (issue #1456).
+    /// </para>
     /// </summary>
     [HttpGet("{id:guid}/conformidade-legal")]
     [VendorMediaType(Resource = "conformidade-legal-processo-seletivo", Versions = [1])]
@@ -1106,8 +1115,9 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ObterConformidadeLegal(
         Guid id,
         // Anulável (e não BindRequired): omitir significa "use a data que o gate usaria", que o
@@ -1116,15 +1126,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
         [FromQuery] DateOnly? dataReferencia,
         CancellationToken cancellationToken)
     {
-        ConformidadeLegalProcessoSeletivoDto? conformidade = await _queryBus
+        Result<ConformidadeLegalProcessoSeletivoDto> conformidade = await _queryBus
             .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id, dataReferencia), cancellationToken)
             .ConfigureAwait(false);
-        if (conformidade is null)
-        {
-            return NotFound();
-        }
 
-        return Ok(conformidade);
+        return conformidade.IsFailure
+            ? conformidade.ToActionResult(_mapper)
+            : Ok(conformidade.Value!);
     }
 
     /// <summary>

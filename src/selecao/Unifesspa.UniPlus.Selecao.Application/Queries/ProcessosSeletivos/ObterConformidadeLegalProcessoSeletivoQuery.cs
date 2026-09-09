@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Consulta a conformidade legal do Processo Seletivo (Story #853, CA-16)
@@ -20,6 +21,11 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// Continua aceito explicitamente porque um processo em rascunho pode ainda não ter cronograma
 /// que resolva a data, e o avaliador nunca lê o relógio (ADR-0068).
 /// </para>
+/// <para>
+/// Quando a derivação não chega a uma data — o rascunho ainda não tem de onde tirá-la — a
+/// consulta <b>recusa</b> com o mesmo código que o gate usaria, em vez de responder por uma
+/// data arbitrária ou com um rol vazio que se leria como conformidade aprovada.
+/// </para>
 /// </param>
 /// <param name="PeriodoInscricaoInformado">
 /// O início do período que o ato declarou, quando o certame não coleta inscrição pelo sistema e
@@ -29,4 +35,5 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 public sealed record ObterConformidadeLegalProcessoSeletivoQuery(
     Guid ProcessoSeletivoId,
     DateOnly? DataReferencia = null,
-    DateTimeOffset? PeriodoInscricaoInformado = null) : IQuery<ConformidadeLegalProcessoSeletivoDto?>;
+    DateTimeOffset? PeriodoInscricaoInformado = null)
+    : IQuery<Result<ConformidadeLegalProcessoSeletivoDto>>;
