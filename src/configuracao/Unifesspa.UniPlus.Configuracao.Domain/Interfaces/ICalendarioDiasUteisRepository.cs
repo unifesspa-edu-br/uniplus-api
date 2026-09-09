@@ -39,21 +39,31 @@ public interface ICalendarioDiasUteisRepository
     void Remover(CalendarioDiasUteis calendario);
 
     /// <summary>
-    /// Registra explicitamente no <c>ChangeTracker</c> um <see cref="DiaNaoUtil"/>
-    /// recém-incluído num <see cref="CalendarioDiasUteis"/> já rastreado
-    /// (<see cref="CalendarioDiasUteis.IncluirDiaNaoUtil"/>, api#1458).
+    /// Registra explicitamente no <c>ChangeTracker</c> a inclusão de um
+    /// <see cref="DiaNaoUtil"/> num <see cref="CalendarioDiasUteis"/> já
+    /// rastreado (<see cref="CalendarioDiasUteis.IncluirDiaNaoUtil"/>, api#1458),
+    /// e marca o próprio dataset como alterado.
     /// </summary>
     /// <remarks>
-    /// Necessário porque o <c>ChangeTracker</c> não descobre sozinho um item
-    /// adicionado à coleção-campo <c>_diasNaoUteis</c> de um agregado que já
-    /// estava <c>Unchanged</c> antes da inclusão — comprovado empiricamente: o
-    /// <c>DetectChanges</c> automático (disparado por <c>SaveChangesAsync</c>)
-    /// não cria uma <c>EntityEntry</c> para o novo filho nesse cenário, e a
-    /// inclusão silenciosamente não persiste nada. Diferente de
-    /// <see cref="AdicionarAsync"/> (que atacha o agregado INTEIRO, ainda não
-    /// rastreado, e o EF Core caminha o grafo completo ao processar o <c>Add</c>),
-    /// aqui o pai já está rastreado — só o filho novo precisa do <c>Add</c>
-    /// explícito.
+    /// <para>O <c>Add</c> do filho é necessário porque o <c>ChangeTracker</c> não
+    /// descobre sozinho um item adicionado à coleção-campo <c>_diasNaoUteis</c>
+    /// de um agregado que já estava <c>Unchanged</c> antes da inclusão —
+    /// comprovado empiricamente: o <c>DetectChanges</c> automático (disparado por
+    /// <c>SaveChangesAsync</c>) não cria uma <c>EntityEntry</c> para o novo
+    /// filho nesse cenário, e a inclusão silenciosamente não persiste nada.
+    /// Diferente de <see cref="AdicionarAsync"/> (que atacha o agregado INTEIRO,
+    /// ainda não rastreado, e o EF Core caminha o grafo completo ao processar o
+    /// <c>Add</c>), aqui o pai já está rastreado — só o filho novo precisa do
+    /// <c>Add</c> explícito.</para>
+    /// <para>Marcar o pai como <see cref="Microsoft.EntityFrameworkCore.EntityState.Modified"/>
+    /// (mesmo sem nenhum campo próprio ter mudado de valor) é o que faz o
+    /// <c>UPDATE</c> do pai entrar no mesmo <c>SaveChangesAsync</c> do <c>INSERT</c>
+    /// do filho, com a cláusula <c>WHERE xmin = ...</c> — sem isso, inserir só o
+    /// filho nunca compara o <c>xmin</c> do pai, e uma remoção (soft-delete)
+    /// concorrente do MESMO dataset não vira conflito: o <c>INSERT</c> do filho
+    /// sucede porque a FK só exige que a linha física do pai exista, não que
+    /// ela esteja viva (<c>is_deleted = false</c>) — deixando uma linha
+    /// <c>dia_nao_util</c> inalcançável sob um calendário já escondido.</para>
     /// </remarks>
-    void AdicionarDiaNaoUtil(DiaNaoUtil dia);
+    void RegistrarInclusaoDeDiaNaoUtil(CalendarioDiasUteis calendario, DiaNaoUtil dia);
 }

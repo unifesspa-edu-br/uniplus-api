@@ -11,12 +11,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Handler do <see cref="IncluirDiaNaoUtilCommand"/>: carrega o dataset (vigente ou
 /// rascunho), inclui a data via <see cref="CalendarioDiasUteis.IncluirDiaNaoUtil"/> e
-/// persiste. Diferente de <c>MarcarVigenteCalendarioDiasUteisCommandHandler</c> e
-/// <c>RemoverCalendarioDiasUteisCommandHandler</c>, este handler não captura
-/// <c>DbUpdateConcurrencyException</c>: inserir um <c>DiaNaoUtil</c> filho não muta o
-/// pai, então o <c>INSERT</c> não compara o <c>xmin</c> do <c>CalendarioDiasUteis</c>
-/// — a única defesa de concorrência aqui é o índice único
-/// <c>ix_dia_nao_util_unicidade</c> (api#1458).
+/// persiste. Marca o pai como alterado (<see cref="ICalendarioDiasUteisRepository.RegistrarInclusaoDeDiaNaoUtil"/>)
+/// para que o <c>UPDATE</c> dele participe do mesmo <c>SaveChangesAsync</c> do
+/// <c>INSERT</c> do filho — sem isso, uma remoção (soft-delete) concorrente do
+/// mesmo dataset não vira conflito, porque inserir só o filho nunca compara o
+/// <c>xmin</c> do pai (achado de revisão, api#1458 PR #1460).
 /// </summary>
 public static class IncluirDiaNaoUtilCommandHandler
 {
@@ -57,11 +56,7 @@ public static class IncluirDiaNaoUtilCommandHandler
             return Result<CalendarioDiasUteisDto>.ValidationFailure(inclusaoResult.Errors);
         }
 
-        // O ChangeTracker não descobre sozinho o filho novo numa coleção-campo de
-        // um agregado que já estava rastreado antes da inclusão (comprovado
-        // empiricamente — ver AdicionarDiaNaoUtil) — sem este Add explícito, o
-        // SaveChangesAsync abaixo silenciosamente não persiste a data incluída.
-        repository.AdicionarDiaNaoUtil(inclusaoResult.Value!);
+        repository.RegistrarInclusaoDeDiaNaoUtil(calendario, inclusaoResult.Value!);
 
         try
         {
@@ -82,6 +77,22 @@ public static class IncluirDiaNaoUtilCommandHandler
             return Result<CalendarioDiasUteisDto>.Failure(new DomainError(
                 CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset,
                 "Data duplicada no dataset (mesma abrangência, município e UF)."));
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // Corrida entre esta inclusão e uma remoção (soft-delete) ou
+            // ativação de vigência concorrente do MESMO dataset (xmin): o
+            // UPDATE do pai, forçado por RegistrarInclusaoDeDiaNaoUtil, compara
+            // o xmin lido na leitura contra o valor atual — se outra operação já
+            // mudou a linha, este UPDATE afeta 0 linhas e o EF Core lança aqui.
+            // Sem o Modified explícito no pai, esta corrida nunca apareceria:
+            // o INSERT do filho sozinho não checa nada do pai, e uma remoção
+            // concorrente deixaria uma linha dia_nao_util inalcançável sob um
+            // calendário já escondido (is_deleted = true).
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<CalendarioDiasUteisDto>.Failure(new DomainError(
+                CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
+                "Este dataset foi modificado concorrentemente (possivelmente removido). Tente novamente."));
         }
 
         return Result<CalendarioDiasUteisDto>.Success(calendario.ToDto());

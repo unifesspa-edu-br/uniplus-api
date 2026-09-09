@@ -114,6 +114,72 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
     }
 
     /// <summary>
+    /// Prova de ponta a ponta do achado de revisão do PR #1460 (api#1458): sem
+    /// <c>RegistrarInclusaoDeDiaNaoUtil</c> marcar o pai como alterado, inserir só
+    /// o filho nunca compararia o <c>xmin</c> do <see cref="CalendarioDiasUteis"/>
+    /// — uma remoção (soft-delete) concorrente do MESMO dataset não viraria
+    /// conflito, porque a FK só exige que a linha física do pai exista, não que
+    /// ela esteja viva. O resultado seria uma linha <c>dia_nao_util</c>
+    /// inalcançável sob um calendário já escondido.
+    /// </summary>
+    [Fact(DisplayName =
+        "Inclusão colidindo com remoção concorrente do mesmo dataset propaga ConflitoDeConcorrencia sem inserir a data")]
+    public async Task IncluirDiaNaoUtil_ColideComRemocaoConcorrente_RetornaConflitoSemInserir()
+    {
+        MonolitoApiFactory api = _fixture.Factory;
+        var novaData = new DateOnly(2099, 6, 15);
+
+        Guid id;
+        await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
+        {
+            ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
+                $"conc-{Guid.NewGuid():N}"[..20],
+                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
+            db.CalendariosDiasUteis.Add(criado);
+            await db.SaveChangesAsync();
+            id = criado.Id;
+        }
+
+        await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
+        ConfiguracaoDbContext dbB = scopeB.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
+
+        // Simula o UPDATE que RemoverCalendarioDiasUteisCommandHandler (via
+        // SoftDeleteInterceptor) emitiria, sem commitar ainda — trava a linha
+        // do pai para qualquer outro escritor concorrente.
+        await dbB.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE configuracao.calendario_dias_uteis SET is_deleted = true, updated_at = now() WHERE id = {id}");
+        int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
+
+        await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
+        IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
+        var itemA = new DiaNaoUtilCommandItem("NACIONAL", null, null, null, novaData, "Feriado incluído durante a corrida");
+        Task<Result<CalendarioDiasUteisDto>> taskA = busA.InvokeAsync<Result<CalendarioDiasUteisDto>>(
+            new IncluirDiaNaoUtilCommand(id, itemA));
+
+        await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, taskA, [pidDbB]);
+
+        await txB.CommitAsync();
+
+        Result<CalendarioDiasUteisDto> resultadoA = await taskA;
+
+        resultadoA.IsFailure.Should().BeTrue(
+            "o xmin lido por busA ficou obsoleto assim que txB commitou o soft-delete na mesma linha");
+        resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+
+        await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
+        ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        int diasComANovaData = await readDb.Database.SqlQuery<int>(
+            $"""
+            SELECT count(*)::int AS "Value" FROM configuracao.dia_nao_util
+            WHERE calendario_dias_uteis_id = {id} AND data = {novaData}
+            """).SingleAsync();
+        diasComANovaData.Should().Be(0,
+            "busA perdeu a corrida e o INSERT do filho deve ter sido revertido junto com o UPDATE do pai que falhou");
+    }
+
+    /// <summary>
     /// Prova de ponta a ponta da Decisão D2 (api#1458): a checagem de duplicidade
     /// em memória de <c>CalendarioDiasUteis.IncluirDiaNaoUtil</c> só compara contra
     /// o que já está carregado no agregado — ela NÃO alcança uma linha inserida por
