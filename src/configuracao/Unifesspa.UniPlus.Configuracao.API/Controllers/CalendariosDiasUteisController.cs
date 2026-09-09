@@ -152,6 +152,39 @@ public sealed class CalendariosDiasUteisController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
+    /// <summary>
+    /// Inclui uma data não útil num dataset já existente (vigente ou rascunho),
+    /// preservando id, versão e as datas já cadastradas — sem criar um novo dataset
+    /// (api#1458). Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório
+    /// (ADR-0027).
+    /// </summary>
+    [HttpPost("admin/calendarios-dias-uteis/{id:guid}/dias-nao-uteis")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(typeof(CalendarioDiasUteisDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> IncluirDiaNaoUtil(
+        Guid id,
+        [FromBody] DiaNaoUtilCommandItem? item,
+        CancellationToken cancellationToken)
+    {
+        Result<CalendarioDiasUteisDto> resultado = await _commandBus
+            .Send(new IncluirDiaNaoUtilCommand(id, item), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (resultado.IsSuccess)
+        {
+            CalendarioDiasUteisDto comLinks = resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) };
+            return Ok(comLinks);
+        }
+
+        return resultado.ToActionResult(_mapper);
+    }
+
     /// <summary>Remove (soft-delete) um dataset não vigente. Restrito a <c>plataforma-admin</c>.</summary>
     [HttpDelete("admin/calendarios-dias-uteis/{id:guid}")]
     [Authorize(Roles = "plataforma-admin")]
