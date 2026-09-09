@@ -8,9 +8,11 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// </summary>
 /// <remarks>
 /// Entidade interna ao agregado <see cref="CalendarioDiasUteis"/>; criada apenas por
-/// métodos do agregado, nunca por repositório próprio. Não implementa soft-delete:
-/// deriva de <see cref="EntityBase"/> — corrigir o dataset é publicar uma nova versão
-/// (novo <see cref="CalendarioDiasUteis"/>), não editar linhas de uma versão existente.
+/// métodos do agregado (<see cref="CalendarioDiasUteis.Criar"/> ou
+/// <see cref="CalendarioDiasUteis.IncluirDiaNaoUtil"/>), nunca por repositório
+/// próprio. Não implementa soft-delete: deriva de <see cref="EntityBase"/> — uma vez
+/// cadastrada, uma data não útil nunca é editada nem removida; a única mutação do
+/// agregado é aditiva (api#1458).
 /// </remarks>
 public sealed class DiaNaoUtil : EntityBase
 {
