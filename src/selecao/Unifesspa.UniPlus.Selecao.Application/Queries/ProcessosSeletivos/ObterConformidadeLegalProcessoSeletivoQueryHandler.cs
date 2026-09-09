@@ -21,15 +21,21 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// transição nunca divirjam (Story #853, CA-16).
 /// </summary>
 /// <remarks>
+/// Distingue 404 (processo inexistente) de 422 (não há data de referência de onde partir) —
+/// mesmo contrato de erro de <see cref="ObterFormularioRenderizavelQueryHandler"/>. Traduzir a
+/// segunda condição em 404 diria que o processo não existe e esconderia a pendência que a
+/// consulta deveria justamente antecipar (issue #1456).
+/// <para>
 /// A conferência do que a regra tem de ter para ser avaliada — forma do predicado e
 /// existência das referências — entra aqui pelo mesmo motivo: a publicação recusa a
 /// regra inavaliável, e sem repetir a conferência a consulta diria que o processo está
 /// conforme instantes antes de o comando recusá-lo. A regra aparece reprovada, com o
 /// motivo — reprovar é o que o avaliador faria se enxergasse o cadastro.
+/// </para>
 /// </remarks>
 public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
 {
-    public static async Task<ConformidadeLegalProcessoSeletivoDto?> Handle(
+    public static async Task<Result<ConformidadeLegalProcessoSeletivoDto>> Handle(
         ObterConformidadeLegalProcessoSeletivoQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
@@ -54,7 +60,9 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return null;
+            return Result<ConformidadeLegalProcessoSeletivoDto>.Failure(new DomainError(
+                "ProcessoSeletivo.NaoEncontrado",
+                $"Processo seletivo {query.ProcessoSeletivoId} não encontrado."));
         }
 
         string tipoProcessoCodigo = processo.TipoProcesso.Codigo;
@@ -62,12 +70,15 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         // Sem data explícita, a consulta responde pelo mesmo dia que o gate de publicação usaria
         // (issue #1350). Derivar aqui, e não deixar o chamador informar, é o que impede o
         // preflight de dizer "conforme" numa data que o comando contradiz.
-        DateOnly? dataReferencia = query.DataReferencia
-            ?? DiaDeReferenciaLegal(processo, query.PeriodoInscricaoInformado, resolvedorFuso);
-        if (dataReferencia is not { } diaDeReferencia)
+        Result<DateOnly> referencia = query.DataReferencia is { } informada
+            ? Result<DateOnly>.Success(informada)
+            : DiaDeReferenciaLegal(processo, query.PeriodoInscricaoInformado, resolvedorFuso);
+        if (referencia.IsFailure)
         {
-            return null;
+            return Result<ConformidadeLegalProcessoSeletivoDto>.Failure(referencia.Error!);
         }
+
+        DateOnly diaDeReferencia = referencia.Value!;
 
         IReadOnlyList<ObrigatoriedadeLegal> regrasVigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(tipoProcessoCodigo, diaDeReferencia, cancellationToken)
@@ -109,8 +120,8 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
             r.VigenciaFim,
             r.Hash))];
 
-        return new ConformidadeLegalProcessoSeletivoDto(
-            processo.Id, diaDeReferencia, regrasDto, resultado.Avisos);
+        return Result<ConformidadeLegalProcessoSeletivoDto>.Success(new ConformidadeLegalProcessoSeletivoDto(
+            processo.Id, diaDeReferencia, regrasDto, resultado.Avisos));
     }
 
     /// <summary>
@@ -121,27 +132,48 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
     /// Espelhar o gate é o que sustenta a garantia do CA-16/CA-17. Olhar só o cronograma deixaria
     /// o certame de importação externa — que não tem fase de coleta e informa o período — sem data,
     /// e o 422 dele sairia sem a lista de regras reprovadas.
+    /// <para>
+    /// Não havendo de onde tirar o dia, a recusa nomeia QUAL das duas pendências o rascunho tem, e
+    /// não uma ausência genérica — com os MESMOS dois códigos que o gate usaria, e não com códigos
+    /// próprios desta consulta: sem fase de coleta,
+    /// <c>PeriodoInscricaoObrigatorioSemFaseDeColeta</c>, o que
+    /// <see cref="Commands.ProcessosSeletivos.ResolucaoDoPeriodoDeInscricao"/> devolve; com fase de
+    /// coleta sem janela, <c>FaseQueColetaInscricaoSemJanela</c>, o que
+    /// <see cref="ProcessoSeletivo.AvaliarConformidade"/> aponta e a publicação recusa. Quem
+    /// consome isto é o preflight da tela de Revisão, que precisa dizer ao operador o que informar
+    /// (issue #1456).
+    /// </para>
     /// </remarks>
-    private static DateOnly? DiaDeReferenciaLegal(
+    private static Result<DateOnly> DiaDeReferenciaLegal(
         ProcessoSeletivo processo,
         DateTimeOffset? periodoInscricaoInformado,
         IResolvedorFusoInstitucional resolvedorFuso)
     {
-        if ((processo.FaseQueAncoraOPeriodoDeInscricao()?.Inicio ?? periodoInscricaoInformado) is not { } inicio)
+        FaseCronograma? ancora = processo.FaseQueAncoraOPeriodoDeInscricao();
+
+        if ((ancora?.Inicio ?? periodoInscricaoInformado) is not { } inicio)
         {
-            return null;
+            return Result<DateOnly>.Failure(ancora is null
+                ? new DomainError(
+                    "ProcessoSeletivo.PeriodoInscricaoObrigatorioSemFaseDeColeta",
+                    "O processo não tem fase do cronograma que colete inscrição, então o período de inscrição precisa ser informado na publicação.")
+                : new DomainError(
+                    "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
+                    $"A fase '{ancora.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período."));
         }
 
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
         {
             // Zona irresolvível é defeito de instalação, e os gates de publicação a mapeiam para
-            // 500. Devolver null aqui viraria 404 — a consulta diria que o processo não existe e
-            // esconderia a falha de configuração que ela deveria justamente antecipar.
+            // 500. Recusar aqui como pendência do rascunho viraria 422 — a consulta pediria ao
+            // operador que informasse algo que não resolve nada, e esconderia a falha de
+            // configuração que ela deveria justamente antecipar.
             throw new InvalidOperationException(fuso.Error!.Message);
         }
 
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(inicio, fuso.Value!).DateTime);
+        return Result<DateOnly>.Success(
+            DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(inicio, fuso.Value!).DateTime));
     }
 
 }
