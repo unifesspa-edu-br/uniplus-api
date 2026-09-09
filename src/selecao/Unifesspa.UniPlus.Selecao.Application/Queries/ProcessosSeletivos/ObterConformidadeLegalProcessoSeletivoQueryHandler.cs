@@ -151,15 +151,32 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
     {
         FaseCronograma? ancora = processo.FaseQueAncoraOPeriodoDeInscricao();
 
-        if ((ancora?.Inicio ?? periodoInscricaoInformado) is not { } inicio)
+        DateTimeOffset inicio;
+        if (ancora is null)
         {
-            return Result<DateOnly>.Failure(ancora is null
-                ? new DomainError(
+            if (periodoInscricaoInformado is not { } informado)
+            {
+                return Result<DateOnly>.Failure(new DomainError(
                     "ProcessoSeletivo.PeriodoInscricaoObrigatorioSemFaseDeColeta",
-                    "O processo não tem fase do cronograma que colete inscrição, então o período de inscrição precisa ser informado na publicação.")
-                : new DomainError(
+                    "O processo não tem fase do cronograma que colete inscrição, então o período de inscrição precisa ser informado na publicação."));
+            }
+
+            inicio = informado;
+        }
+        else
+        {
+            // Janela MEIO-ABERTA também recusa: o predicado do gate é
+            // `Inicio is null || Fim is null` (`ProcessoSeletivo.FaseQueColetaInscricaoSemJanela`).
+            // Olhar só o `Inicio` deixaria a consulta responder 200 para um rascunho que a
+            // publicação recusa — a divergência exata que este handler existe para não ter.
+            if (ancora.Inicio is not { } inicioDaFase || ancora.Fim is null)
+            {
+                return Result<DateOnly>.Failure(new DomainError(
                     "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
                     $"A fase '{ancora.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período."));
+            }
+
+            inicio = inicioDaFase;
         }
 
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
