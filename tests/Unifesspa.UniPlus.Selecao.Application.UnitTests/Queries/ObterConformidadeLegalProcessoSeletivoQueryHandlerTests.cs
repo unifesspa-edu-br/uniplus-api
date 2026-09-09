@@ -281,6 +281,49 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
 
+    [Theory(DisplayName = "#1456 — janela MEIO-ABERTA da fase âncora recusa como o gate, e não responde 200")]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task FaseDeColetaComJanelaMeioAberta_RecusaComOCodigoDoGate(bool temInicio, bool temFim)
+    {
+        // `FaseQueColetaInscricaoSemJanela` é `Inicio is null || Fim is null`. Derivar a data só
+        // do `Inicio` deixava a consulta aprovar um rascunho que a publicação recusa — meia
+        // janela é estado válido de cadastro, e a divergência apareceria exatamente aí.
+        ProcessoSeletivo processo = ProcessoBase();
+        FaseCronograma meiaJanela = FaseCronograma.Criar(
+            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
+            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
+            coletaSolicitacaoIsencao: false,
+            inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null,
+            fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null,
+            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            bancasRequeridas: [], regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([meiaJanela], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
+            .Returns(processo);
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
+
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta =
+            await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
+                new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
+                processoSeletivoRepository,
+                obrigatoriedadeLegalRepository,
+                CadastrosVivos.Modalidades(),
+                CadastrosVivos.TiposDocumento(),
+                CadastrosVivos.TiposEtapa(),
+                CadastrosVivos.TiposDeficiencia(),
+                CadastrosVivos.RegrasDesempate(),
+                new ResolvedorFusoDeTeste(),
+                CancellationToken.None);
+
+        resultadoDaConsulta.IsFailure.Should().BeTrue(
+            "o gate recusa a janela meio-aberta, e a consulta responde pelo mesmo veredicto");
+        resultadoDaConsulta.Error!.Code.Should().Be("ProcessoSeletivo.FaseQueColetaInscricaoSemJanela");
+    }
+
     [Fact(DisplayName = "#1456 — fase que coleta inscrição sem janela recusa com FaseQueColetaInscricaoSemJanela (422), nunca com 404")]
     public async Task FaseDeColetaSemJanela_RecusaComOCodigoDoGate()
     {
