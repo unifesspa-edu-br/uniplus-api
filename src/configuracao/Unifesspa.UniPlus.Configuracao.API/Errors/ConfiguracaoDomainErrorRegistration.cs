@@ -1431,6 +1431,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.calendario_dias_uteis.dia_nao_util_nulo",
                 "Item de dia não útil não pode ser nulo")),
 
+        new(CalendarioDiasUteisErrorCodes.DataAusente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.data_ausente",
+                "A data do dia não útil não pode ser o valor default")),
+
         new(CalendarioDiasUteisErrorCodes.DescricaoObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

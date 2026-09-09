@@ -254,6 +254,20 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
             return Result<DiaNaoUtilResolvido>.ValidationFailure(erros);
         }
 
+        if (dia.Data == default)
+        {
+            // O model binding do ASP.NET Core não recusa "data" ausente no JSON
+            // (RespectRequiredConstructorParameters desabilitado): um payload sem
+            // o campo materializa DateOnly.MinValue (0001-01-01) em vez de falhar
+            // no bind. Sem esta checagem, essa data passaria para o agregado, e um
+            // dataset vigente com ela seria irreconstruível na publicação —
+            // DiaNaoUtilCongelado.Criar (Selecao) recusa o mesmo default (mesma
+            // razão), então o defeito só apareceria ali, longe de onde nasceu.
+            erros.Add(new($"{prefixo}.data", new DomainError(
+                CalendarioDiasUteisErrorCodes.DataAusente,
+                "A data do dia não útil não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.")));
+        }
+
         bool abrangenciaValida = Abrangencias.TryAnalisar(dia.Abrangencia, out Abrangencia abrangencia);
         if (!abrangenciaValida)
         {

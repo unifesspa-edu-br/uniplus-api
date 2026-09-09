@@ -11,6 +11,7 @@ public static class CalendarioDiasUteisErrorCodes
     public const string UfApenasParaEstadual = "CalendarioDiasUteis.UfApenasParaEstadual";
     public const string UfFormatoInvalido = "CalendarioDiasUteis.UfFormatoInvalido";
     public const string DiaNaoUtilNulo = "CalendarioDiasUteis.DiaNaoUtilNulo";
+    public const string DataAusente = "CalendarioDiasUteis.DataAusente";
     public const string DescricaoObrigatoria = "CalendarioDiasUteis.DescricaoObrigatoria";
     public const string DescricaoTamanho = "CalendarioDiasUteis.DescricaoTamanho";
     public const string DataDuplicadaNoDataset = "CalendarioDiasUteis.DataDuplicadaNoDataset";
