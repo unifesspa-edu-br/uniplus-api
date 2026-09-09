@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Domain.Services;
 using Domain.ValueObjects;
@@ -133,15 +134,16 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
     /// o certame de importação externa — que não tem fase de coleta e informa o período — sem data,
     /// e o 422 dele sairia sem a lista de regras reprovadas.
     /// <para>
-    /// Não havendo de onde tirar o dia, a recusa nomeia QUAL das duas pendências o rascunho tem, e
+    /// Não havendo de onde tirar o dia, a recusa nomeia QUAL das pendências o rascunho tem, e
     /// não uma ausência genérica — com os MESMOS dois códigos que o gate usaria, e não com códigos
-    /// próprios desta consulta: sem fase de coleta,
-    /// <c>PeriodoInscricaoObrigatorioSemFaseDeColeta</c>, o que
-    /// <see cref="Commands.ProcessosSeletivos.ResolucaoDoPeriodoDeInscricao"/> devolve; com fase de
-    /// coleta sem janela, <c>FaseQueColetaInscricaoSemJanela</c>, o que
-    /// <see cref="ProcessoSeletivo.AvaliarConformidade"/> aponta e a publicação recusa. Quem
-    /// consome isto é o preflight da tela de Revisão, que precisa dizer ao operador o que informar
-    /// (issue #1456).
+    /// próprios desta consulta, e na MESMA ordem em que o gate as emitiria: inscrição própria sem
+    /// fase que colete, <c>InscricaoPropriaSemFaseDeColeta</c>; fase de coleta sem janela,
+    /// <c>FaseQueColetaInscricaoSemJanela</c> — as duas de
+    /// <see cref="ProcessoSeletivo.AvaliarConformidade"/>, que a publicação consulta primeiro; e só
+    /// então, para o certame de origem importada, <c>PeriodoInscricaoObrigatorioSemFaseDeColeta</c>,
+    /// o que <see cref="Commands.ProcessosSeletivos.ResolucaoDoPeriodoDeInscricao"/> devolve. Quem
+    /// consome isto é o preflight da tela de Revisão, que precisa dizer ao operador o que informar —
+    /// e a recusa que sai primeiro é a que o orienta (issue #1456).
     /// </para>
     /// </remarks>
     private static Result<DateOnly> DiaDeReferenciaLegal(
@@ -154,6 +156,18 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         DateTimeOffset inicio;
         if (ancora is null)
         {
+            // A ORDEM é a do gate, e não é detalhe de apresentação: quem coleta inscrição pelo
+            // sistema e não tem fase que a colete precisa CRIAR A FASE, não informar período no
+            // ato. `PendenciaDoCronograma` recusa isso antes de a resolução do período ser
+            // sequer consultada (`ProcessoSeletivo.cs:2106-2110`), e mandar esse operador para o
+            // campo de período o levaria ao lugar errado.
+            if (processo.OrigemCandidatos == OrigemCandidatos.InscricaoPropria)
+            {
+                return Result<DateOnly>.Failure(new DomainError(
+                    "ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta",
+                    "A origem dos candidatos é inscrição própria, e nenhuma fase do cronograma coleta inscrição."));
+            }
+
             if (periodoInscricaoInformado is not { } informado)
             {
                 return Result<DateOnly>.Failure(new DomainError(

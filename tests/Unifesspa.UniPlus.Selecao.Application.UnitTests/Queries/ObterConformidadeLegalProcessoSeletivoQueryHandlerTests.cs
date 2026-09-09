@@ -148,7 +148,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // consulta olhasse só o cronograma, ficaria sem data, devolveria null, e o 422 de
         // conformidade legal desses processos sairia sem `obrigatoriedadesReprovadas` — em
         // silêncio, que é o modo de falha que o BindRequired do endpoint documenta.
-        ProcessoSeletivo processo = ProcessoBase();
+        ProcessoSeletivo processo = ProcessoDeImportacaoExterna();
         processo.CronogramaFases.Should().NotContain(
             f => f.ColetaInscricao, "o cenário exige um processo sem fase de coleta");
 
@@ -192,7 +192,9 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // O fuso irresolvível é defeito de instalação, mapeado para 500 pelos gates de publicação.
         // Se a consulta o convertesse em recusa de domínio, o endpoint devolveria 422 — pediria ao
         // operador que informasse algo, e esconderia a configuração quebrada que ela deveria antecipar.
-        ProcessoSeletivo processo = ProcessoBase();
+        // Origem importada: é o ramo que chega a consultar o fuso, porque a inscrição própria sem
+        // fase de coleta é recusada antes, pelo código que o gate emite primeiro.
+        ProcessoSeletivo processo = ProcessoDeImportacaoExterna();
 
         IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
@@ -250,7 +252,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // ainda em branco: não há de onde derivar o dia. Traduzir isso em `null` dizia ao endpoint
         // "o processo não existe" (404), e a tela não tinha como distinguir a pendência de uma
         // falha de rede — o campo de período fica atrás do erro, e o processo vira impublicável.
-        ProcessoSeletivo processo = ProcessoBase();
+        ProcessoSeletivo processo = ProcessoDeImportacaoExterna();
         processo.CronogramaFases.Should().NotContain(
             f => f.ColetaInscricao, "o cenário exige um processo sem fase de coleta");
 
@@ -279,6 +281,44 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
 
         _ = await obrigatoriedadeLegalRepository.DidNotReceive().ObterVigentesParaTipoProcessoAsync(
             Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "#1456 — inscrição própria sem fase que colete recusa com InscricaoPropriaSemFaseDeColeta, e não com o do período")]
+    public async Task InscricaoPropriaSemFaseDeColeta_RecusaComOCodigoQueOGateEmitePrimeiro()
+    {
+        // A ordem das recusas é a do gate, e não é detalhe de apresentação: `PendenciaDoCronograma`
+        // recusa este estado (`ProcessoSeletivo.cs:2106-2110`) ANTES de a resolução do período ser
+        // consultada. Devolver o código do período mandaria o operador preencher um campo no ato,
+        // quando o que falta é CRIAR a fase que coleta inscrição no cronograma.
+        ProcessoSeletivo processo = ProcessoBase();
+        processo.OrigemCandidatos.Should().Be(OrigemCandidatos.InscricaoPropria);
+        processo.CronogramaFases.Should().NotContain(f => f.ColetaInscricao);
+
+        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
+            .Returns(processo);
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
+
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta =
+            await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
+                // Mesmo com um período informado — que neste ramo o gate nem chega a olhar.
+                new ObterConformidadeLegalProcessoSeletivoQuery(
+                    processo.Id,
+                    PeriodoInscricaoInformado: InstanteEmBelem.Em(2026, 1, 1)),
+                processoSeletivoRepository,
+                obrigatoriedadeLegalRepository,
+                CadastrosVivos.Modalidades(),
+                CadastrosVivos.TiposDocumento(),
+                CadastrosVivos.TiposEtapa(),
+                CadastrosVivos.TiposDeficiencia(),
+                CadastrosVivos.RegrasDesempate(),
+                new ResolvedorFusoDeTeste(),
+                CancellationToken.None);
+
+        resultadoDaConsulta.IsFailure.Should().BeTrue();
+        resultadoDaConsulta.Error!.Code.Should().Be(
+            "ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta",
+            "é o que a publicação recusa primeiro — a recusa que sai é a que orienta o operador");
     }
 
     [Theory(DisplayName = "#1456 — janela MEIO-ABERTA da fase âncora recusa como o gate, e não responde 200")]
@@ -367,6 +407,17 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     private static ProcessoSeletivo ProcessoBase() =>
         ProcessoSeletivo.Criar(
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+
+    /// <summary>
+    /// O certame cujos candidatos vêm de fora: é o ÚNICO que legitimamente não tem fase de coleta e
+    /// informa o período no ato. Com <see cref="OrigemCandidatos.InscricaoPropria"/>, a ausência de
+    /// fase de coleta é recusada antes disso, por <c>InscricaoPropriaSemFaseDeColeta</c>.
+    /// </summary>
+    private static ProcessoSeletivo ProcessoDeImportacaoExterna() =>
+        ProcessoSeletivo.Criar(
+            "PS 2026 — Transferência", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
