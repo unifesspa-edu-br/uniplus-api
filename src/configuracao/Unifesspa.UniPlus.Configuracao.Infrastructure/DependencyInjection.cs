@@ -52,6 +52,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IPrecedenciaFaseRepository, PrecedenciaFaseRepository>();
         services.AddScoped<ICalendarioDiasUteisRepository, CalendarioDiasUteisRepository>();
         services.AddScoped<ITermoConsentimentoRepository, TermoConsentimentoRepository>();
+        services.AddScoped<IBaseLegalBonusRegionalRepository, BaseLegalBonusRegionalRepository>();
 
         // Readers cross-módulo (ADR-0056).
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
@@ -72,6 +73,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IFatoCandidatoReader, FatoCandidatoReader>();
         services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
         services.AddScoped<ICalendarioVigenteReader, CalendarioVigenteReader>();
+        services.AddScoped<IBaseLegalBonusRegionalReader, BaseLegalBonusRegionalReader>();
 
         return services;
     }

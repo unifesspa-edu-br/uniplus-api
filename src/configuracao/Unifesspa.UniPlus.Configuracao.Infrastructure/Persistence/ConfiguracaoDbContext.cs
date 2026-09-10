@@ -38,6 +38,7 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public DbSet<PesoAreaEnem> PesosAreaEnem => Set<PesoAreaEnem>();
 
     public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
+    public DbSet<BaseLegalBonusRegional> BaseLegaisBonus => Set<BaseLegalBonusRegional>();
 
     /// <summary>
     /// Categorias do catálogo de tipos de documento — cadastro administrado, e não
