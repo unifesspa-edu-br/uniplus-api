@@ -36,10 +36,31 @@ public sealed class SoftDeleteInterceptorTests
         public string Nome { get; set; } = string.Empty;
     }
 
+    private sealed class ItemFilho
+    {
+        public string Valor { get; set; } = string.Empty;
+    }
+
+    // Entidade com coleção OwnsMany (ex.: BaseLegalBonusRegional.Municipios) —
+    // cada item vive na própria tabela filha, ao contrário de OwnsOne (table splitting).
+    private sealed class EntidadeComColecaoOwned : SoftDeletableEntity
+    {
+        private readonly List<ItemFilho> _itens = [];
+        public IReadOnlyList<ItemFilho> Itens => _itens.AsReadOnly();
+
+        public void AdicionarItem(string valor) => _itens.Add(new ItemFilho { Valor = valor });
+    }
+
     private sealed class ContextoTeste(DbContextOptions<ContextoTeste> options) : DbContext(options)
     {
         public DbSet<EntidadeTeste> Entidades { get; set; } = null!;
         public DbSet<EntidadeNaoSoft> EntidadesNaoSoft { get; set; } = null!;
+        public DbSet<EntidadeComColecaoOwned> EntidadesComColecaoOwned { get; set; } = null!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<EntidadeComColecaoOwned>().OwnsMany(e => e.Itens);
+        }
     }
 
     private static ContextoTeste CriarContexto(IUserContext? userContext = null) =>
@@ -216,5 +237,52 @@ public sealed class SoftDeleteInterceptorTests
 
         (await contexto.EntidadesNaoSoft.FindAsync(entidade.Id)).Should().BeNull(
             "entidade sem ISoftDeletable sofre hard-delete físico (CA-06)");
+    }
+
+    // Sem RestoreOwnedReferences cobrir entry.Collections, o cascade delete do
+    // OwnsMany apagaria fisicamente cada item filho mesmo com o principal soft-deleted
+    // — perdendo o dado que o soft-delete existe para preservar.
+    [Fact]
+    public void SavingChanges_DadoEntidadeComColecaoOwnedRemovida_EntaoPreservaOsItensDaColecao()
+    {
+        using ContextoTeste contexto = CriarContexto();
+        EntidadeComColecaoOwned entidade = new();
+        entidade.AdicionarItem("item-1");
+        entidade.AdicionarItem("item-2");
+        contexto.EntidadesComColecaoOwned.Add(entidade);
+        contexto.SaveChanges();
+
+        contexto.EntidadesComColecaoOwned.Remove(entidade);
+        contexto.SaveChanges();
+
+        entidade.IsDeleted.Should().BeTrue();
+        EntidadeComColecaoOwned? recarregada = contexto.EntidadesComColecaoOwned
+            .Include(e => e.Itens)
+            .FirstOrDefault(e => e.Id == entidade.Id);
+        recarregada.Should().NotBeNull();
+        recarregada!.Itens.Select(i => i.Valor).Should().BeEquivalentTo(["item-1", "item-2"],
+            "o soft-delete do principal não pode apagar fisicamente os itens da coleção owned");
+    }
+
+    [Fact]
+    public async Task SavingChangesAsync_DadoEntidadeComColecaoOwnedRemovida_EntaoPreservaOsItensDaColecao()
+    {
+        await using ContextoTeste contexto = CriarContexto();
+        EntidadeComColecaoOwned entidade = new();
+        entidade.AdicionarItem("item-1");
+        entidade.AdicionarItem("item-2");
+        contexto.EntidadesComColecaoOwned.Add(entidade);
+        await contexto.SaveChangesAsync();
+
+        contexto.EntidadesComColecaoOwned.Remove(entidade);
+        await contexto.SaveChangesAsync();
+
+        entidade.IsDeleted.Should().BeTrue();
+        EntidadeComColecaoOwned? recarregada = await contexto.EntidadesComColecaoOwned
+            .Include(e => e.Itens)
+            .FirstOrDefaultAsync(e => e.Id == entidade.Id);
+        recarregada.Should().NotBeNull();
+        recarregada!.Itens.Select(i => i.Valor).Should().BeEquivalentTo(["item-1", "item-2"],
+            "o soft-delete do principal não pode apagar fisicamente os itens da coleção owned");
     }
 }
