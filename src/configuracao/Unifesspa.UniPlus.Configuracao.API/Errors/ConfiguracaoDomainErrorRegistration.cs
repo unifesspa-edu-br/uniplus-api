@@ -1565,6 +1565,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.base_legal_bonus_regional.identificacao_tamanho",
                 "Tamanho da identificação da base legal de bônus regional inválido")),
 
+        new(BaseLegalBonusRegionalErrorCodes.IdentificacaoCaractereNulo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.base_legal_bonus_regional.identificacao_caractere_nulo",
+                "Identificação da base legal de bônus regional não pode conter o caractere nulo")),
+
         new(BaseLegalBonusRegionalErrorCodes.DescricaoObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -1576,6 +1582,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.base_legal_bonus_regional.descricao_tamanho",
                 "Tamanho da descrição da base legal de bônus regional inválido")),
+
+        new(BaseLegalBonusRegionalErrorCodes.DescricaoCaractereNulo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.base_legal_bonus_regional.descricao_caractere_nulo",
+                "Descrição da base legal de bônus regional não pode conter o caractere nulo")),
 
         new(BaseLegalBonusRegionalErrorCodes.SemMunicipios,
             new DomainErrorMapping(
