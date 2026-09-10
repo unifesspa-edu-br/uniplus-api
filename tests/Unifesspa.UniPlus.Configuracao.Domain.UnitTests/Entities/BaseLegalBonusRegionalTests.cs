@@ -61,6 +61,17 @@ public sealed class BaseLegalBonusRegionalTests
         result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido);
     }
 
+    [Fact(DisplayName = "Criar com tipo de instrumento inválido reporta o erro no campo tipoInstrumento (nome da propriedade do contrato)")]
+    public void Criar_ComTipoInstrumentoInvalido_ReportaErroNoCampoDoContrato()
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar(
+            "INVALIDO", "Lei 123", "Descricao", [MunicipioValido]);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().Contain(e =>
+            e.Error.Code == BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido && e.Field == "tipoInstrumento");
+    }
+
     [Fact(DisplayName = "Criar com identificação vazia retorna IdentificacaoObrigatoria")]
     public void Criar_ComIdentificacaoVazia_RetornaValidationFailure()
     {
