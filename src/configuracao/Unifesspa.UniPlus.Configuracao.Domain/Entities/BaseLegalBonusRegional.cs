@@ -39,7 +39,7 @@ public sealed class BaseLegalBonusRegional : SoftDeletableEntity, IAuditableEnti
         TipoInstrumentoNormativo tipoInstrumento = TipoInstrumentoNormativoCodigo.FromCodigo(tipoInstrumentoCodigo);
         if (tipoInstrumento == TipoInstrumentoNormativo.Nenhum)
         {
-            erros.Add(new("tipoInstrumentoCodigo", new DomainError(
+            erros.Add(new("tipoInstrumento", new DomainError(
                 BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido,
                 "Tipo de instrumento normativo inválido ou não informado.")));
         }
