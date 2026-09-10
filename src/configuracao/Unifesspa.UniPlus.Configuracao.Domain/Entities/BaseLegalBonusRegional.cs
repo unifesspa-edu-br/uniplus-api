@@ -54,7 +54,14 @@ public sealed class BaseLegalBonusRegional : SoftDeletableEntity, IAuditableEnti
         else
         {
             identNorm = identificacao.Trim();
-            if (identNorm.Length is < IdentificacaoMinLength or > IdentificacaoMaxLength)
+            if (identNorm.Contains('\0'))
+            {
+                erros.Add(new("identificacao", new DomainError(
+                    BaseLegalBonusRegionalErrorCodes.IdentificacaoCaractereNulo,
+                    "Identificação não pode conter o caractere nulo (U+0000).")));
+                identNorm = null;
+            }
+            else if (identNorm.Length is < IdentificacaoMinLength or > IdentificacaoMaxLength)
             {
                 erros.Add(new("identificacao", new DomainError(
                     BaseLegalBonusRegionalErrorCodes.IdentificacaoTamanho,
@@ -73,7 +80,14 @@ public sealed class BaseLegalBonusRegional : SoftDeletableEntity, IAuditableEnti
         else
         {
             descNorm = descricao.Trim();
-            if (descNorm.Length is < DescricaoMinLength or > DescricaoMaxLength)
+            if (descNorm.Contains('\0'))
+            {
+                erros.Add(new("descricao", new DomainError(
+                    BaseLegalBonusRegionalErrorCodes.DescricaoCaractereNulo,
+                    "Descrição não pode conter o caractere nulo (U+0000).")));
+                descNorm = null;
+            }
+            else if (descNorm.Length is < DescricaoMinLength or > DescricaoMaxLength)
             {
                 erros.Add(new("descricao", new DomainError(
                     BaseLegalBonusRegionalErrorCodes.DescricaoTamanho,

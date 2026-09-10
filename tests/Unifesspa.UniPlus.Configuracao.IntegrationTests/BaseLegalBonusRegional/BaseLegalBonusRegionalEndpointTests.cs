@@ -166,6 +166,20 @@ public sealed class BaseLegalBonusRegionalEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "POST com caractere nulo na identificação retorna 422, não 500 (rejeição do Postgres)")]
+    public async Task Criar_ComCaractereNuloNaIdentificacao_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(identificacao: "Portaria\0Inválida");
+
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.base_legal_bonus_regional.identificacao_caractere_nulo");
+    }
+
     [Fact(DisplayName = "PUT com Id na URL divergente do corpo retorna 400")]
     public async Task Atualizar_IdDivergente_Retorna400()
     {
