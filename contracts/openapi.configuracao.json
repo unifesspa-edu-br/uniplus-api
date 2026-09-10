@@ -10079,6 +10079,38 @@
           }
         }
       }
+    },
+    "/api/configuracao/vocabularios/tipos-instrumento-normativo": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-tipo-instrumento-normativo.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoInstrumentoNormativoVocabularioDto"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13523,6 +13555,25 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "TipoInstrumentoNormativoVocabularioDto": {
+        "required": [
+          "codigo",
+          "nome",
+          "descricao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
           }
         }
       },

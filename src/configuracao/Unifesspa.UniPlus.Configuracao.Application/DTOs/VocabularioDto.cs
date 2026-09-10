@@ -17,3 +17,11 @@ public sealed record TipoBancaVocabularioDto(
 public sealed record FaseCanonicaVocabularioDto(
     string Codigo,
     string Nome);
+
+/// <summary>
+/// Um tipo de instrumento normativo do vocabulário fechado da Base Legal de Bônus Regional.
+/// </summary>
+public sealed record TipoInstrumentoNormativoVocabularioDto(
+    string Codigo,
+    string Nome,
+    string Descricao);
