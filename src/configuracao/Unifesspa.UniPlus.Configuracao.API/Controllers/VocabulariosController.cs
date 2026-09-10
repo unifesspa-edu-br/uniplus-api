@@ -12,7 +12,8 @@ using Unifesspa.UniPlus.Configuracao.Application.Queries.Vocabularios;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 
 /// <summary>
-/// Vocabulários fechados de <c>TipoBanca</c> e <c>FaseCanonica</c> (UNI-REQ-0139).
+/// Vocabulários fechados de <c>TipoBanca</c> e <c>FaseCanonica</c> (UNI-REQ-0139), e de
+/// <c>TipoInstrumentoNormativo</c>, usado pela Base Legal de Bônus Regional.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -85,6 +86,21 @@ public sealed class VocabulariosController : ControllerBase
     {
         IReadOnlyList<FaseCanonicaVocabularioDto> codigos = await _queryBus
             .Send(new ListarCodigosFaseCanonicaQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(codigos);
+    }
+
+    /// <summary>Lista os seis tipos de instrumento normativo da Base Legal de Bônus Regional, com código, nome e descrição.</summary>
+    [HttpGet("vocabularios/tipos-instrumento-normativo")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-tipo-instrumento-normativo", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<TipoInstrumentoNormativoVocabularioDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarCodigosTipoInstrumentoNormativo(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<TipoInstrumentoNormativoVocabularioDto> codigos = await _queryBus
+            .Send(new ListarCodigosTipoInstrumentoNormativoQuery(), cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(codigos);

@@ -11,7 +11,9 @@ using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Contrato HTTP dos dois vocabulários fechados de Configuração (UNI-REQ-0139). O que se
+/// Contrato HTTP dos vocabulários fechados de Configuração — <c>TipoBanca</c> e
+/// <c>FaseCanonica</c> (UNI-REQ-0139), e <c>TipoInstrumentoNormativo</c>, usado pela Base
+/// Legal de Bônus Regional. O que se
 /// prova aqui é o que o fitness test não alcança: que as rotas existem, respondem sem
 /// autenticação, negociam a vendor MIME e não têm par de escrita.
 /// </summary>
@@ -92,9 +94,42 @@ public sealed class VocabulariosEndpointTests
         codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
     }
 
+    [Fact(DisplayName = "GET /vocabularios/tipos-instrumento-normativo devolve os seis tipos com código, nome e descrição, na ordem publicada, sem exigir autenticação")]
+    public async Task ListarCodigosTipoInstrumentoNormativo_DevolveVocabularioCompleto()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri("/api/configuracao/vocabularios/tipos-instrumento-normativo", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should()
+            .Be("application/vnd.uniplus.codigo-tipo-instrumento-normativo.v1+json");
+
+        TipoInstrumentoNormativoVocabularioDto[] codigos =
+            (await response.Content.ReadFromJsonAsync<TipoInstrumentoNormativoVocabularioDto[]>())!;
+
+        // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está
+        // sob teste — derivá-lo da mesma fonte que o produz faria o teste concordar com
+        // qualquer mudança, inclusive uma remoção acidental de código.
+        codigos.Select(c => c.Codigo).Should().Equal(
+            "LEI",
+            "DECRETO",
+            "PORTARIA",
+            "RESOLUCAO",
+            "INSTRUCAO_NORMATIVA",
+            "PARECER");
+        codigos.Should().AllSatisfy(c =>
+        {
+            c.Nome.Should().NotBeNullOrWhiteSpace();
+            c.Descricao.Should().NotBeNullOrWhiteSpace();
+        });
+    }
+
     [Theory(DisplayName = "Vocabulário governado por código não tem rota de escrita — evolução é mudança versionada da API, não cadastro")]
     [InlineData("/api/configuracao/vocabularios/tipos-banca")]
     [InlineData("/api/configuracao/vocabularios/fases-canonicas")]
+    [InlineData("/api/configuracao/vocabularios/tipos-instrumento-normativo")]
     public async Task Vocabularios_NaoTemRotaDeEscrita(string rota)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -114,6 +149,7 @@ public sealed class VocabulariosEndpointTests
     [Theory(DisplayName = "Versão inexistente da vendor MIME recusa com 406 em vez de servir a v1 em silêncio")]
     [InlineData("/api/configuracao/vocabularios/tipos-banca", "codigo-tipo-banca")]
     [InlineData("/api/configuracao/vocabularios/fases-canonicas", "codigo-fase-canonica")]
+    [InlineData("/api/configuracao/vocabularios/tipos-instrumento-normativo", "codigo-tipo-instrumento-normativo")]
     public async Task Vocabularios_VersaoDesconhecidaDaVendorMime_Recusa(string rota, string resource)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
