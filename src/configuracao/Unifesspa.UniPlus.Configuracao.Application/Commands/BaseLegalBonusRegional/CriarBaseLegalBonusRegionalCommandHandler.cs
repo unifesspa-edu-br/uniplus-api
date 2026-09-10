@@ -17,7 +17,12 @@ public static class CriarBaseLegalBonusRegionalCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        IEnumerable<(string? CodigoIbge, string? Nome, string? Uf)>? municipiosTuples = command.Municipios?.Select(m => (m.CodigoIbge, m.Nome, m.Uf));
+        // m pode ser null (JSON "municipios": [null]) — os options padrão não rejeitam
+        // elemento nulo em coleção genérica; sem o ?., o projetado estouraria
+        // NullReferenceException em vez de virar 422 (ReferenciaCidadeGeo.Validar já
+        // recusa código/nome/UF nulos como campo obrigatório ausente).
+        IEnumerable<(string? CodigoIbge, string? Nome, string? Uf)>? municipiosTuples =
+            command.Municipios?.Select(m => (m?.CodigoIbge, m?.Nome, m?.Uf));
 
         Result<BaseLegalBonusRegional> entityResult = BaseLegalBonusRegional.Criar(
             command.TipoInstrumento,
