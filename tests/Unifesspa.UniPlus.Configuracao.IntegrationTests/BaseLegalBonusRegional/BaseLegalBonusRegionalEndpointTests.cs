@@ -155,6 +155,17 @@ public sealed class BaseLegalBonusRegionalEndpointTests
             .Should().Be("uniplus.configuracao.base_legal_bonus_regional.municipio_invalido");
     }
 
+    [Fact(DisplayName = "POST com item nulo na lista de municípios retorna 422, não 500")]
+    public async Task Criar_ComMunicipioNulo_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(municipios: [null!]);
+
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
     [Fact(DisplayName = "PUT com Id na URL divergente do corpo retorna 400")]
     public async Task Atualizar_IdDivergente_Retorna400()
     {

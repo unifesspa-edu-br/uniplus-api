@@ -24,7 +24,10 @@ public static class AtualizarBaseLegalBonusRegionalCommandHandler
             return Result.Failure(new DomainError(BaseLegalBonusRegionalErrorCodes.NaoEncontrado, "Base legal de bônus regional não encontrada."));
         }
 
-        IEnumerable<(string? CodigoIbge, string? Nome, string? Uf)>? municipiosTuples = command.Municipios?.Select(m => (m.CodigoIbge, m.Nome, m.Uf));
+        // m pode ser null (JSON "municipios": [null]) — ver o mesmo comentário em
+        // CriarBaseLegalBonusRegionalCommandHandler.
+        IEnumerable<(string? CodigoIbge, string? Nome, string? Uf)>? municipiosTuples =
+            command.Municipios?.Select(m => (m?.CodigoIbge, m?.Nome, m?.Uf));
 
         Result atualizacaoResult = entity.Atualizar(
             command.TipoInstrumento,

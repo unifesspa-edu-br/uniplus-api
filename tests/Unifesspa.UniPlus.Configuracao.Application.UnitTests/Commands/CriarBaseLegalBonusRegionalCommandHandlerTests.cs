@@ -65,6 +65,21 @@ public sealed class CriarBaseLegalBonusRegionalCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Município nulo na lista é recusado com violação de campo, sem lançar exceção")]
+    public async Task Handle_MunicipioNulo_RecusaSemLancar()
+    {
+        CriarBaseLegalBonusRegionalCommand comando = ComandoValido() with
+        {
+            Municipios = [null!],
+        };
+
+        Result<Guid> resultado = await CriarBaseLegalBonusRegionalCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Tipo de instrumento fora do vocabulário fechado é recusado sem persistir")]
     public async Task Handle_TipoInstrumentoInvalido_RecusaSemPersistir()
     {
