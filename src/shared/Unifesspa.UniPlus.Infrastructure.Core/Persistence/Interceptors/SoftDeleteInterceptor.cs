@@ -101,6 +101,29 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
                 RestoreOwnedReferences(target);
             }
         }
+
+        // Owned COLLECTIONS (OwnsMany — ex.: BaseLegalBonusRegional.Municipios) cascateiam
+        // para EntityState.Deleted do mesmo jeito que owned references, mas cada item vive
+        // na própria tabela filha (FK, não table splitting): sem este passo, o soft-delete do
+        // principal preservaria a linha pai e apagaria fisicamente cada linha filha — perdendo
+        // para sempre o dado que o soft-delete existe para preservar.
+        foreach (Microsoft.EntityFrameworkCore.ChangeTracking.CollectionEntry collection in entry.Collections)
+        {
+            if (!collection.Metadata.TargetEntityType.IsOwned() || collection.CurrentValue is not System.Collections.IEnumerable itens)
+            {
+                continue;
+            }
+
+            foreach (object item in itens)
+            {
+                Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry itemEntry = entry.Context.Entry(item);
+                if (itemEntry.State == EntityState.Deleted)
+                {
+                    itemEntry.State = EntityState.Unchanged;
+                    RestoreOwnedReferences(itemEntry);
+                }
+            }
+        }
     }
 
     private string ResolveDeletedBy()
