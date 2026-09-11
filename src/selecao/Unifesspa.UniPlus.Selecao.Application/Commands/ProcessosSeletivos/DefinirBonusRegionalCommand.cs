@@ -18,6 +18,5 @@ public sealed record DefinirBonusRegionalCommand(
     string? RegraVersao,
     decimal? Fator,
     decimal? Teto,
-    string? MunicipioConvenio,
-    string? BaseLegal,
+    Guid? BaseLegalBonusRegionalId,
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

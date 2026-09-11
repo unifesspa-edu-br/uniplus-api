@@ -519,8 +519,30 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["regra"] = SerializarReferenciaRegra(bonus.Regra),
             ["fator"] = HashCanonicalComputer.SerializeDecimalCanonical(bonus.Fator, EscalaPadrao),
             ["teto"] = bonus.Teto is { } teto ? HashCanonicalComputer.SerializeDecimalCanonical(teto, EscalaPadrao) : null,
-            ["municipioConvenio"] = bonus.MunicipioConvenio is { } municipio ? HashCanonicalComputer.NormalizeNfc(municipio) : null,
-            ["baseLegal"] = bonus.BaseLegal is { } baseLegal ? HashCanonicalComputer.NormalizeNfc(baseLegal) : null,
+            ["baseLegalBonusRegionalId"] = bonus.BaseLegalBonusRegionalId,
+            ["tipoInstrumento"] = HashCanonicalComputer.NormalizeNfc(bonus.TipoInstrumento),
+            ["identificacao"] = HashCanonicalComputer.NormalizeNfc(bonus.Identificacao),
+            ["descricao"] = HashCanonicalComputer.NormalizeNfc(bonus.Descricao),
+            // Desempate por Nome/Uf além do CodigoIbge (Story #1466): nada nesta camada impede
+            // que o cadastro de origem (Configuração) tenha dois municípios com o mesmo código
+            // IBGE, e OrderBy sozinho por uma chave repetida não é determinístico entre
+            // releituras — o EF não traz Include(Municipios) com ORDER BY, e a ordem física de
+            // retorno do Postgres para linhas empatadas não é garantida entre execuções, o que
+            // faria a MESMA configuração produzir hashes diferentes, quebrando a promessa de que
+            // o hash prova que a definição aplicada não mudou depois de publicada. A chave de
+            // ordenação usa a forma NFC — a mesma que o valor emitido abaixo
+            // — para que duas grafias canonicamente equivalentes em formas Unicode diferentes
+            // (NFC/NFD) desempatem na mesma ordem que produzem no JSON final.
+            ["municipios"] = new JsonArray([.. bonus.Municipios
+                .OrderBy(static m => m.CodigoIbge, StringComparer.Ordinal)
+                .ThenBy(static m => HashCanonicalComputer.NormalizeNfc(m.Nome), StringComparer.Ordinal)
+                .ThenBy(static m => HashCanonicalComputer.NormalizeNfc(m.Uf), StringComparer.Ordinal)
+                .Select(static m => (JsonNode)new JsonObject
+                {
+                    ["codigoIbge"] = HashCanonicalComputer.NormalizeNfc(m.CodigoIbge),
+                    ["nome"] = HashCanonicalComputer.NormalizeNfc(m.Nome),
+                    ["uf"] = HashCanonicalComputer.NormalizeNfc(m.Uf),
+                })]),
         };
     }
 

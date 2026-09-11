@@ -9,24 +9,44 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
+
 /// <summary>
 /// Handler do <see cref="DefinirBonusRegionalCommand"/> (RN05, Story #774):
 /// <c>RegraCodigo</c> nulo remove o bônus (toggle por ausência, INV-B5); caso
 /// contrário resolve a regra <c>BONUS-MULTIPLICATIVO</c> no
-/// <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772).
+/// <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772) e a Base Legal
+/// referenciada (<see cref="IBaseLegalBonusRegionalReader"/>, Configuração, Story #1465),
+/// cujo snapshot é congelado em <see cref="ConfiguracaoBonusRegional"/> (Story #1466).
 /// </summary>
+/// <remarks>
+/// O reader cross-módulo (backed por <c>ConfiguracaoDbContext</c>) não exige
+/// <c>[NonTransactional]</c> nem desliga o enrolamento automático do Wolverine em
+/// <c>SelecaoDbContext</c> (ADR-0004): o opt-in de codegen
+/// <c>AlwaysUseServiceLocationFor&lt;IBaseLegalBonusRegionalReader&gt;()</c>
+/// (<c>SelecaoCodegenRegistration</c>, ADR-0098) resolve o reader por service location, e
+/// isso já basta para o <c>ConfiguracaoDbContext</c> deixar de ser alcançável na análise de
+/// <c>AutoApplyTransactions</c> — mesmo padrão de <see cref="ICalendarioVigenteReader"/> em
+/// <c>PublicarProcessoSeletivoCommandHandler</c>/<c>RetificarProcessoSeletivoCommandHandler</c>/
+/// <c>FecharRetificacaoCommandHandler</c>, que também combinam um reader cross-módulo com
+/// <c>ObterParaMutacaoAsync</c> sem abrir mão da transação ambiente. Desligá-la aqui
+/// destravaria o <c>SELECT ... FOR UPDATE</c> do lock pessimista (ArchTest
+/// <c>CarregamentoDeMutacao_NaoConviveComTransacaoDesligada</c>).
+/// </remarks>
 public static class DefinirBonusRegionalCommandHandler
 {
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirBonusRegionalCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
+        IBaseLegalBonusRegionalReader baseLegalBonusRegionalReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
+        ArgumentNullException.ThrowIfNull(baseLegalBonusRegionalReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -69,11 +89,11 @@ public static class DefinirBonusRegionalCommandHandler
             return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
         }
 
-        if (command.RegraVersao is null || command.Fator is null)
+        if (command.RegraVersao is null || command.Fator is null || command.BaseLegalBonusRegionalId is null)
         {
             return Result<MutacaoAceita>.Failure(new DomainError(
                 "ConfiguracaoBonusRegional.CamposObrigatorios",
-                "RegraVersao e Fator são obrigatórios quando RegraCodigo é informado."));
+                "RegraVersao, Fator e BaseLegalBonusRegionalId são obrigatórios quando RegraCodigo é informado."));
         }
 
         RegraCatalogo? regra = await regraCatalogoReader
@@ -99,8 +119,28 @@ public static class DefinirBonusRegionalCommandHandler
             return Result<MutacaoAceita>.Failure(referenciaRegraResult.Error!);
         }
 
+        // Reader cross-módulo (ADR-0056): o filtro global de soft-delete de Configuração já
+        // faz um Id inexistente e um desativado colapsarem no mesmo null — CA-02 não precisa
+        // distinguir os dois casos.
+        BaseLegalBonusRegionalView? baseLegal = await baseLegalBonusRegionalReader
+            .ObterPorIdAsync(command.BaseLegalBonusRegionalId.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (baseLegal is null)
+        {
+            return Result<MutacaoAceita>.Failure(new DomainError(
+                "ConfiguracaoBonusRegional.BaseLegalNaoEncontrada",
+                $"Base legal de bônus regional {command.BaseLegalBonusRegionalId} não encontrada ou desativada."));
+        }
+
         Result<ConfiguracaoBonusRegional> bonusResult = ConfiguracaoBonusRegional.Criar(
-            referenciaRegraResult.Value!, command.Fator.Value, command.Teto, command.MunicipioConvenio, command.BaseLegal);
+            referenciaRegraResult.Value!,
+            command.Fator.Value,
+            command.Teto,
+            baseLegal.Id,
+            baseLegal.TipoInstrumento,
+            baseLegal.Identificacao,
+            baseLegal.Descricao,
+            baseLegal.Municipios.Select(static m => (m.CodigoIbge, m.Nome, m.Uf)));
         if (bonusResult.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(bonusResult.Errors);

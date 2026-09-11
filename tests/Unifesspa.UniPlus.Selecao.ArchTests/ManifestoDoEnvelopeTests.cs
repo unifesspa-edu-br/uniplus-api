@@ -86,9 +86,16 @@ public sealed class ManifestoDoEnvelopeTests
             ["ModalidadeOrigemId", "ModalidadeCodigo", "Quantidade"],
             [("ConfiguracaoDistribuicaoVagasId", "FK interna.")]),
 
+        // Story #1466: o bônus regional passa a referenciar um cadastro tipado de Base Legal
+        // de Bônus Regional (Configuração, Story #1465) — o snapshot congelado no momento da
+        // gravação substitui os dois campos de texto livre.
         [typeof(ConfiguracaoBonusRegional)] = (
-            ["Regra", "Fator", "Teto", "MunicipioConvenio", "BaseLegal"],
+            ["Regra", "Fator", "Teto", "BaseLegalBonusRegionalId", "TipoInstrumento", "Identificacao", "Descricao", "Municipios"],
             [("ProcessoSeletivoId", "FK interna.")]),
+
+        [typeof(ConfiguracaoBonusRegionalMunicipio)] = (
+            ["CodigoIbge", "Nome", "Uf"],
+            [("ConfiguracaoBonusRegionalId", "FK interna.")]),
 
         // Divulgação pública (UNI-REQ-0050, issue #563) — a última dimensão provisória do
         // envelope. A regra de abreviação (regraNomeAbreviado) NÃO é propriedade desta

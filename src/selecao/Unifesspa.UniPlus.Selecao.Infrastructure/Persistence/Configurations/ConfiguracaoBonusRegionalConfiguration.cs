@@ -20,6 +20,9 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
     private const int RegraCodigoMaxLength = 128;
     private const int RegraVersaoMaxLength = 16;
     private const int HashLength = 64;
+    private const int TipoInstrumentoMaxLength = 30;
+    private const int IdentificacaoMaxLength = 500;
+    private const int DescricaoMaxLength = 2000;
 
     public void Configure(EntityTypeBuilder<ConfiguracaoBonusRegional> builder)
     {
@@ -39,7 +42,18 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
 
         builder.Property(b => b.Fator).HasPrecision(6, 4).IsRequired();
         builder.Property(b => b.Teto).HasPrecision(6, 4);
-        builder.Property(b => b.MunicipioConvenio).HasMaxLength(ConfiguracaoBonusRegional.MunicipioConvenioMaxLength);
-        builder.Property(b => b.BaseLegal).HasMaxLength(ConfiguracaoBonusRegional.BaseLegalMaxLength);
+
+        builder.Property(b => b.BaseLegalBonusRegionalId).IsRequired();
+        builder.Property(b => b.TipoInstrumento).HasMaxLength(TipoInstrumentoMaxLength).IsRequired();
+        builder.Property(b => b.Identificacao).HasMaxLength(IdentificacaoMaxLength).IsRequired();
+        builder.Property(b => b.Descricao).HasMaxLength(DescricaoMaxLength).IsRequired();
+
+        builder.HasMany(b => b.Municipios)
+            .WithOne()
+            .HasForeignKey(m => m.ConfiguracaoBonusRegionalId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(b => b.Municipios)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

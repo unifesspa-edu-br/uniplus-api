@@ -20,34 +20,53 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class ConfiguracaoBonusRegional : EntityBase
 {
-    /// <summary>Alinhado a <c>ConfiguracaoBonusRegionalConfiguration</c> (varchar(200)).</summary>
-    public const int MunicipioConvenioMaxLength = 200;
-
-    /// <summary>Alinhado a <c>ConfiguracaoBonusRegionalConfiguration</c> (varchar(500)).</summary>
-    public const int BaseLegalMaxLength = 500;
+    private readonly List<ConfiguracaoBonusRegionalMunicipio> _municipios = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
     public ReferenciaRegra Regra { get; private set; } = null!;
     public decimal Fator { get; private set; }
     public decimal? Teto { get; private set; }
-    public string? MunicipioConvenio { get; private set; }
-    public string? BaseLegal { get; private set; }
+
+    /// <summary>Id do cadastro de Base Legal de Bônus Regional (Configuração, Story #1465) referenciado.</summary>
+    public Guid BaseLegalBonusRegionalId { get; private set; }
+
+    /// <summary>Snapshot congelado no momento da gravação — código canônico UPPER_SNAKE (Story #1464).</summary>
+    public string TipoInstrumento { get; private set; } = string.Empty;
+
+    /// <summary>Snapshot congelado da identificação da Base Legal (ex.: "Portaria Unifesspa nº 2514/2023").</summary>
+    public string Identificacao { get; private set; } = string.Empty;
+
+    /// <summary>Snapshot congelado da descrição da Base Legal.</summary>
+    public string Descricao { get; private set; } = string.Empty;
+
+    /// <summary>Snapshot congelado dos municípios abrangidos pela Base Legal no momento da gravação.</summary>
+    public IReadOnlyList<ConfiguracaoBonusRegionalMunicipio> Municipios => _municipios.AsReadOnly();
 
     private ConfiguracaoBonusRegional() { }
 
     /// <summary>
     /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — o array
     /// <c>errors[]</c> do contrato público (ADR-0023) precisa de todas as regras violadas no
-    /// mesmo lote. Os limites de tamanho de <see cref="MunicipioConvenio"/>/<see cref="BaseLegal"/>
-    /// não existiam aqui antes — só no validator — deixando o domínio aceitar um valor que só
-    /// falhava em <c>SaveChanges</c> com erro de banco em vez de 422.
+    /// mesmo lote. Os campos de snapshot (<see cref="TipoInstrumento"/>, <see cref="Identificacao"/>,
+    /// <see cref="Descricao"/>, <see cref="Municipios"/>) não são revalidados aqui: chegam já
+    /// congelados de um <c>BaseLegalBonusRegionalView</c> resolvido e validado pelo handler
+    /// (Story #1465) — revalidar duplicaria a fonte de verdade do cadastro de origem.
     /// </summary>
     public static Result<ConfiguracaoBonusRegional> Criar(
-        ReferenciaRegra regra, decimal fator, decimal? teto, string? municipioConvenio, string? baseLegal)
+        ReferenciaRegra regra,
+        decimal fator,
+        decimal? teto,
+        Guid baseLegalBonusRegionalId,
+        string tipoInstrumento,
+        string identificacao,
+        string descricao,
+        IEnumerable<(string CodigoIbge, string Nome, string Uf)> municipios)
     {
         ArgumentNullException.ThrowIfNull(regra);
+        ArgumentNullException.ThrowIfNull(municipios);
 
         List<FieldError> erros = [];
+        List<(string CodigoIbge, string Nome, string Uf)> municipiosLista = [.. municipios];
 
         if (regra.Codigo != RegraBonusCodigo.Multiplicativo)
         {
@@ -68,18 +87,16 @@ public sealed class ConfiguracaoBonusRegional : EntityBase
                 "ConfiguracaoBonusRegional.TetoInvalido", "O teto do bônus, quando informado, deve ser maior que zero.")));
         }
 
-        if (municipioConvenio is { Length: > MunicipioConvenioMaxLength })
+        // Defesa em profundidade: o handler já resolve municipiosLista a partir de um
+        // BaseLegalBonusRegionalView que a Story #1465 garante não-vazio, mas o decoder do
+        // envelope (Story #1466) reconstrói ConfiguracaoBonusRegional a partir de bytes —
+        // e precisa da MESMA invariante para recusar um envelope adulterado com
+        // municipios:[] em vez de aceitá-lo como bônus válido.
+        if (municipiosLista.Count == 0)
         {
-            erros.Add(new("municipioConvenio", new DomainError(
-                "ConfiguracaoBonusRegional.MunicipioConvenioTamanho",
-                $"Município do convênio deve ter no máximo {MunicipioConvenioMaxLength} caracteres.")));
-        }
-
-        if (baseLegal is { Length: > BaseLegalMaxLength })
-        {
-            erros.Add(new("baseLegal", new DomainError(
-                "ConfiguracaoBonusRegional.BaseLegalTamanho",
-                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
+            erros.Add(new(null, new DomainError(
+                "ConfiguracaoBonusRegional.SemMunicipios",
+                "A base legal do bônus regional deve abranger pelo menos um município.")));
         }
 
         if (erros.Count > 0)
@@ -87,14 +104,25 @@ public sealed class ConfiguracaoBonusRegional : EntityBase
             return Result<ConfiguracaoBonusRegional>.ValidationFailure(erros);
         }
 
-        return Result<ConfiguracaoBonusRegional>.Success(new ConfiguracaoBonusRegional
+        ConfiguracaoBonusRegional bonus = new()
         {
             Regra = regra,
             Fator = fator,
             Teto = teto,
-            MunicipioConvenio = municipioConvenio,
-            BaseLegal = baseLegal,
-        });
+            BaseLegalBonusRegionalId = baseLegalBonusRegionalId,
+            TipoInstrumento = tipoInstrumento,
+            Identificacao = identificacao,
+            Descricao = descricao,
+        };
+
+        foreach ((string codigoIbge, string nome, string uf) in municipiosLista)
+        {
+            ConfiguracaoBonusRegionalMunicipio municipio = ConfiguracaoBonusRegionalMunicipio.Criar(codigoIbge, nome, uf);
+            municipio.VincularConfiguracao(bonus.Id);
+            bonus._municipios.Add(municipio);
+        }
+
+        return Result<ConfiguracaoBonusRegional>.Success(bonus);
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>

@@ -171,8 +171,15 @@ internal static class CorpusEnvelope
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
             fator: 1.2000m,
             teto: 95.5000m,
-            municipioConvenio: "Marabá",
-            baseLegal: "Res. Unifesspa 414/2020").Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            baseLegalBonusRegionalId: new Guid("baba0000-0000-4000-8000-000000000001"),
+            tipoInstrumento: "PORTARIA",
+            identificacao: "Portaria Unifesspa nº 2514/2023",
+            descricao: "Institui inclusão regional para candidatos de municípios do interior",
+            municipios:
+            [
+                ("1504208", "Marabá", "PA"),
+                ("1501402", "Belém", "PA"),
+            ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // As QUATRO variantes de args — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
         // ordens distintas), que um decoder indexado por código colapsaria em uma.

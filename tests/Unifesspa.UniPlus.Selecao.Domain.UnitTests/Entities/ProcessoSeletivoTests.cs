@@ -337,7 +337,8 @@ public sealed class ProcessoSeletivoTests
         ProcessoSeletivo processo = NovoProcesso();
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
-            1.20m, null, "Marabá", "RN05").Value!;
+            1.20m, null, Guid.CreateVersion7(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+            [("1504208", "Marabá", "PA")]).Value!;
 
         processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().NotBeNull();

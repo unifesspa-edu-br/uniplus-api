@@ -6,7 +6,16 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
-public sealed class BaseLegalBonusRegionalReader : IBaseLegalBonusRegionalReader
+/// <summary>
+/// Implementação de <see cref="IBaseLegalBonusRegionalReader"/> (ADR-0056): leitura
+/// direta do banco de Configuração (<c>AsNoTracking</c>, query filter de soft-delete
+/// por convenção).
+/// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage(
+    "Performance",
+    "CA1812:Avoid uninstantiated internal classes",
+    Justification = "Instanciada via DI em DependencyInjection.")]
+internal sealed class BaseLegalBonusRegionalReader : IBaseLegalBonusRegionalReader
 {
     private readonly ConfiguracaoDbContext _dbContext;
 

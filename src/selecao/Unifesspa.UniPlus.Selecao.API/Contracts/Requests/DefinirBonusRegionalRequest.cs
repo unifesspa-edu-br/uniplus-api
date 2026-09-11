@@ -11,5 +11,4 @@ public sealed record DefinirBonusRegionalRequest(
     string? RegraVersao,
     decimal? Fator,
     decimal? Teto,
-    string? MunicipioConvenio,
-    string? BaseLegal);
+    Guid? BaseLegalBonusRegionalId);

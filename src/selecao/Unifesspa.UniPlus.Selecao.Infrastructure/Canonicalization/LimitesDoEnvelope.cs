@@ -46,7 +46,6 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int TipoDeficienciaCodigo = 50;
     public const int NomeDeCadastro = 300;
-    public const int MunicipioConvenio = 200;
     public const int CensoReferencia = 20;
     public const int RegraCodigo = 128;
     public const int RegraVersao = 16;
@@ -136,4 +135,23 @@ public static class LimitesDoEnvelope
     // Issue #563 — divulgação pública.
     /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — mesma grandeza de <c>RascunhoRetificacao.MotivoMaxLength</c>: texto de negócio livre, não um rótulo curto.</summary>
     public const int Justificativa = 1000;
+
+    // Story #1466 — bônus regional referencia Base Legal tipada (Configuração, Story #1465).
+    /// <summary><c>ConfiguracaoBonusRegional.TipoInstrumento</c> — snapshot-copy do código canônico de <c>TipoInstrumentoNormativo</c> (Story #1464).</summary>
+    public const int TipoInstrumentoNormativo = 30;
+
+    /// <summary><c>ConfiguracaoBonusRegional.Identificacao</c> — snapshot-copy da identificação da Base Legal.</summary>
+    public const int IdentificacaoBaseLegalBonusRegional = 500;
+
+    /// <summary><c>ConfiguracaoBonusRegional.Descricao</c> — snapshot-copy da descrição da Base Legal.</summary>
+    public const int DescricaoBaseLegalBonusRegional = 2000;
+
+    /// <summary><c>ConfiguracaoBonusRegionalMunicipio.CodigoIbge</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.CodigoIbgeLength"/>: snapshot-copy do município do cadastro de Base Legal de Bônus Regional.</summary>
+    public const int MunicipioBonusRegionalCodigoIbge = ReferenciaCidadeGeo.CodigoIbgeLength;
+
+    /// <summary><c>ConfiguracaoBonusRegionalMunicipio.Nome</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.NomeMaxLength"/>.</summary>
+    public const int MunicipioBonusRegionalNome = ReferenciaCidadeGeo.NomeMaxLength;
+
+    /// <summary><c>ConfiguracaoBonusRegionalMunicipio.Uf</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.UfLength"/>.</summary>
+    public const int MunicipioBonusRegionalUf = ReferenciaCidadeGeo.UfLength;
 }

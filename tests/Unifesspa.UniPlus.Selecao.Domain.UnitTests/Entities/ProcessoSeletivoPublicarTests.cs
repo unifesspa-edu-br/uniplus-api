@@ -857,7 +857,9 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirBonusRegional(
             ConfiguracaoBonusRegional.Criar(
                 ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", HashFixo).Value!,
-                fator: 1.2m, teto: null, municipioConvenio: "Marabá", baseLegal: "Res. Unifesspa 532/2021").Value!,
+                fator: 1.2m, teto: null, baseLegalBonusRegionalId: Guid.CreateVersion7(),
+                tipoInstrumento: "PORTARIA", identificacao: "Portaria Unifesspa nº 2514/2023",
+                descricao: "Institui inclusão regional", municipios: [("1504208", "Marabá", "PA")]).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(

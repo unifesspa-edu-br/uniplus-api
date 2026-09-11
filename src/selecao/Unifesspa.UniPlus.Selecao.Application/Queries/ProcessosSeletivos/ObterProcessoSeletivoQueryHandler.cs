@@ -187,8 +187,11 @@ public static class ObterProcessoSeletivoQueryHandler
             new ReferenciaRegraDto(bonus.Regra.Codigo, bonus.Regra.Versao, bonus.Regra.Hash),
             bonus.Fator,
             bonus.Teto,
-            bonus.MunicipioConvenio,
-            bonus.BaseLegal);
+            bonus.BaseLegalBonusRegionalId,
+            bonus.TipoInstrumento,
+            bonus.Identificacao,
+            bonus.Descricao,
+            [.. bonus.Municipios.Select(static m => new ConfiguracaoBonusRegionalMunicipioDto(m.CodigoIbge, m.Nome, m.Uf))]);
     }
 
     private static ConfiguracaoDivulgacaoDto? ProjectConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao) =>

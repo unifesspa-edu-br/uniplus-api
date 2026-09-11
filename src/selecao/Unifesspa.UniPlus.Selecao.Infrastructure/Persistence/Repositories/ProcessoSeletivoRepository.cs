@@ -95,7 +95,11 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.VagasOfertadas)
-            .Include(p => p.BonusRegional)
+            // Bônus regional referencia Base Legal tipada (Story #1466) — MESMO raciocínio das
+            // demais coleções filhas acima: sem o ThenInclude, o snapshot de municípios nasce
+            // sempre vazio em todo carregamento novo do agregado — o GET do processo (CA-04)
+            // sempre mentiria "nenhum município", mesmo com linhas persistidas.
+            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
             // Divulgação pública (UNI-REQ-0050, issue #563) — MESMO raciocínio de BonusRegional
             // acima: sem o Include, a navegação 0..1 nasce null em todo carregamento novo do
             // agregado, e o read-back administrativo (ProcessoSeletivoDto) sempre veria ausência.

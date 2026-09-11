@@ -155,8 +155,10 @@ public sealed class EnvelopeFechadoE2ETests
         // Passo 5 — bônus regional
         // ══════════════════════════════════════════════════════════════════════════════
 
+        Guid baseLegalBonusRegionalId = await SemearBaseLegalBonusRegionalAsync(api);
+
         await ExecutarPassoAsync(
-            () => ctx.PutBonusRegionalAsync(),
+            () => ctx.PutBonusRegionalAsync(baseLegalBonusRegionalId),
             HttpStatusCode.NoContent, "PUT bonus-regional", "/bonus-regional");
 
         // ══════════════════════════════════════════════════════════════════════════════
@@ -552,7 +554,7 @@ public sealed class EnvelopeFechadoE2ETests
             return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/distribuicao-vagas", distribuicao, ifMatch: null);
         }
 
-        public Task<HttpResponseMessage> PutBonusRegionalAsync() => EnviarAsync(
+        public Task<HttpResponseMessage> PutBonusRegionalAsync(Guid baseLegalBonusRegionalId) => EnviarAsync(
             HttpMethod.Put, $"{Rota}/{ProcessoId}/bonus-regional",
             new
             {
@@ -560,8 +562,7 @@ public sealed class EnvelopeFechadoE2ETests
                 regraVersao = "v1",
                 fator = 1.2000m,
                 teto = 95.5000m,
-                municipioConvenio = "Marabá",
-                baseLegal = "Res. Unifesspa 414/2020",
+                baseLegalBonusRegionalId,
             },
             ifMatch: null);
 
@@ -1070,6 +1071,24 @@ public sealed class EnvelopeFechadoE2ETests
         tipoResult.IsSuccess.Should().BeTrue(tipoResult.Error?.Message);
 
         await db.Set<TipoAtoPublicado>().AddAsync(tipoResult.Value!).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Semeia uma Base Legal de Bônus Regional (Configuração, Story #1465) direto no
+    /// DbContext do módulo — o E2E cascateado testa a drenagem de eventos de Seleção, não o
+    /// cadastro de Configuração, então seguir o mesmo atalho de <see cref="SemearDocumentoConfirmadoAsync"/>
+    /// evita um HTTP round-trip extra sem cobertura adicional.
+    /// </summary>
+    private static async Task<Guid> SemearBaseLegalBonusRegionalAsync(CascadingApiFactory api)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        ConfiguracaoDbContext db = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        BaseLegalBonusRegional baseLegal = BaseLegalBonusRegional.Criar(
+            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+            [("1504208", "Marabá", "PA")]).Value!;
+        await db.BaseLegaisBonus.AddAsync(baseLegal).ConfigureAwait(false);
+        await db.SaveChangesAsync().ConfigureAwait(false);
+        return baseLegal.Id;
     }
 
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)

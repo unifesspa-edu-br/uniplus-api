@@ -1714,6 +1714,71 @@
           ]
         },
         {
+          "name": "Criar Base Legal de Bônus Regional (smoke)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/base-legal-bonus-regional",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "base-legal-bonus-regional"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoInstrumento\": \"PORTARIA\",\n  \"identificacao\": \"Portaria Unifesspa nº 2514/2023 (smoke)\",\n  \"descricao\": \"Institui inclusão regional (smoke)\",\n  \"municipios\": [\n    { \"codigoIbge\": \"1504208\", \"nome\": \"Marabá\", \"uf\": \"PA\" }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('base_legal_bonus_regional_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Definir Bônus Regional",
           "request": {
             "method": "PUT",
@@ -1754,7 +1819,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCodigo\": \"BONUS-MULTIPLICATIVO\",\n  \"regraVersao\": \"v1\",\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"municipioConvenio\": \"Marabá\",\n  \"baseLegal\": \"RN05\"\n}",
+              "raw": "{\n  \"regraCodigo\": \"BONUS-MULTIPLICATIVO\",\n  \"regraVersao\": \"v1\",\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegalBonusRegionalId\": \"{{base_legal_bonus_regional_id}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

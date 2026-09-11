@@ -259,8 +259,11 @@ public sealed class EnvelopeCodecRecusaTests
             bonus["presente"] = false;
             bonus.Remove("regra");
             bonus.Remove("teto");
-            bonus.Remove("municipioConvenio");
-            bonus.Remove("baseLegal");
+            bonus.Remove("baseLegalBonusRegionalId");
+            bonus.Remove("tipoInstrumento");
+            bonus.Remove("identificacao");
+            bonus.Remove("descricao");
+            bonus.Remove("municipios");
             // Sobra `fator` — a forma "ausente" só admite `presente`.
         });
 

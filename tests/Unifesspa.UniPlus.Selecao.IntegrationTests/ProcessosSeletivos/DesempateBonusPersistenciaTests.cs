@@ -55,8 +55,11 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato], PrecondicaoIfMatch.Ausente);
         desempateResult.IsSuccess.Should().BeTrue();
 
+        Guid baseLegalId = Guid.CreateVersion7();
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.20m, null, "Marabá", "RN05 + decisão PO Jairo").Value!;
+            Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.20m, null, baseLegalId,
+            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+            [("1504208", "Marabá", "PA")]).Value!;
         processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -69,7 +72,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .Include(p => p.CriteriosDesempate)
-            .Include(p => p.BonusRegional)
+            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
             .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
 
         recarregado.Should().NotBeNull();
@@ -95,7 +98,8 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         recarregado.BonusRegional!.Regra.Codigo.Should().Be(RegraBonusCodigo.Multiplicativo);
         recarregado.BonusRegional.Fator.Should().Be(1.20m);
         recarregado.BonusRegional.Teto.Should().BeNull();
-        recarregado.BonusRegional.MunicipioConvenio.Should().Be("Marabá");
+        recarregado.BonusRegional.BaseLegalBonusRegionalId.Should().Be(baseLegalId);
+        recarregado.BonusRegional.Municipios.Should().ContainSingle(m => m.CodigoIbge == "1504208");
     }
 
     [Fact(DisplayName = "Reconfigurar desempate+bônus sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
@@ -106,7 +110,10 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirBonusRegional(
-            ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, null).Value!, PrecondicaoIfMatch.Ausente);
+            ConfiguracaoBonusRegional.Criar(
+                Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, Guid.CreateVersion7(),
+                "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+                [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -128,7 +135,10 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             desempateResult.IsSuccess.Should().BeTrue();
 
             Result bonusResult = carregado.DefinirBonusRegional(
-                ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, "Marabá", null).Value!, PrecondicaoIfMatch.Ausente);
+                ConfiguracaoBonusRegional.Criar(
+                    Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, Guid.CreateVersion7(),
+                    "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+                    [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
             bonusResult.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -137,7 +147,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .Include(p => p.CriteriosDesempate)
-            .Include(p => p.BonusRegional)
+            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
             .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
 
         recarregado.Should().NotBeNull();

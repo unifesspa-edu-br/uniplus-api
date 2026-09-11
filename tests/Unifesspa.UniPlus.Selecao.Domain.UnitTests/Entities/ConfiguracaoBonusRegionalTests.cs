@@ -9,14 +9,26 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class ConfiguracaoBonusRegionalTests
 {
+    private static readonly Guid BaseLegalId = Guid.CreateVersion7();
+    private static readonly (string CodigoIbge, string Nome, string Uf)[] MunicipioValido = [("1504208", "Marabá", "PA")];
+
     private static ReferenciaRegra RegraMultiplicativo() =>
         ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!;
+
+    private static Result<ConfiguracaoBonusRegional> Criar(
+        decimal fator = 1.20m,
+        decimal? teto = null,
+        ReferenciaRegra? regra = null,
+        IEnumerable<(string CodigoIbge, string Nome, string Uf)>? municipios = null) =>
+        ConfiguracaoBonusRegional.Criar(
+            regra ?? RegraMultiplicativo(), fator, teto, BaseLegalId,
+            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+            municipios ?? MunicipioValido);
 
     [Fact(DisplayName = "Criar com fator válido e sem teto tem sucesso (P.O.: ×1,20 sem teto)")]
     public void Criar_SemTeto_Sucesso()
     {
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(
-            RegraMultiplicativo(), 1.20m, null, "Marabá", "RN05");
+        Result<ConfiguracaoBonusRegional> resultado = Criar();
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Teto.Should().BeNull();
@@ -25,11 +37,24 @@ public sealed class ConfiguracaoBonusRegionalTests
     [Fact(DisplayName = "Criar com teto informado tem sucesso")]
     public void Criar_ComTeto_Sucesso()
     {
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(
-            RegraMultiplicativo(), 1.20m, 10m, null, null);
+        Result<ConfiguracaoBonusRegional> resultado = Criar(teto: 10m);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Teto.Should().Be(10m);
+    }
+
+    [Fact(DisplayName = "Criar congela o snapshot da Base Legal (Id, tipo, identificação, descrição e municípios)")]
+    public void Criar_CongelaSnapshotDaBaseLegal()
+    {
+        Result<ConfiguracaoBonusRegional> resultado = Criar();
+
+        resultado.IsSuccess.Should().BeTrue();
+        ConfiguracaoBonusRegional bonus = resultado.Value!;
+        bonus.BaseLegalBonusRegionalId.Should().Be(BaseLegalId);
+        bonus.TipoInstrumento.Should().Be("PORTARIA");
+        bonus.Identificacao.Should().Be("Portaria Unifesspa nº 2514/2023");
+        bonus.Descricao.Should().Be("Institui inclusão regional");
+        bonus.Municipios.Should().ContainSingle(m => m.CodigoIbge == "1504208" && m.Nome == "Marabá" && m.Uf == "PA");
     }
 
     [Fact(DisplayName = "Criar com regra de código diferente de BONUS-MULTIPLICATIVO falha")]
@@ -37,7 +62,7 @@ public sealed class ConfiguracaoBonusRegionalTests
     {
         ReferenciaRegra regraErrada = ReferenciaRegra.Criar("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64)).Value!;
 
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(regraErrada, 1.20m, null, null, null);
+        Result<ConfiguracaoBonusRegional> resultado = Criar(regra: regraErrada);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.RegraInvalida");
@@ -48,8 +73,7 @@ public sealed class ConfiguracaoBonusRegionalTests
     [InlineData(-1.2)]
     public void Criar_FatorInvalido_Falha(double fator)
     {
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(
-            RegraMultiplicativo(), (decimal)fator, null, null, null);
+        Result<ConfiguracaoBonusRegional> resultado = Criar(fator: (decimal)fator);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.FatorInvalido");
@@ -58,35 +82,19 @@ public sealed class ConfiguracaoBonusRegionalTests
     [Fact(DisplayName = "Criar com teto não positivo falha")]
     public void Criar_TetoInvalido_Falha()
     {
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(
-            RegraMultiplicativo(), 1.20m, 0m, null, null);
+        Result<ConfiguracaoBonusRegional> resultado = Criar(teto: 0m);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.TetoInvalido");
     }
 
-    [Fact(DisplayName = "Criar com município do convênio acima do limite falha")]
-    public void Criar_MunicipioConvenioMuitoLongo_Falha()
+    [Fact(DisplayName = "Criar sem nenhum município falha — defesa contra envelope adulterado com municipios:[] (Story #1466)")]
+    public void Criar_SemMunicipios_Falha()
     {
-        string municipioLongo = new('a', ConfiguracaoBonusRegional.MunicipioConvenioMaxLength + 1);
-
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(
-            RegraMultiplicativo(), 1.20m, null, municipioLongo, null);
+        Result<ConfiguracaoBonusRegional> resultado = Criar(municipios: []);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.MunicipioConvenioTamanho");
-    }
-
-    [Fact(DisplayName = "Criar com base legal acima do limite falha")]
-    public void Criar_BaseLegalMuitoLonga_Falha()
-    {
-        string baseLegalLonga = new('a', ConfiguracaoBonusRegional.BaseLegalMaxLength + 1);
-
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(
-            RegraMultiplicativo(), 1.20m, null, null, baseLegalLonga);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.BaseLegalTamanho");
+        resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.SemMunicipios");
     }
 
     [Fact(DisplayName = "ADR-0125: violações independentes acumulam num único lote")]
@@ -94,7 +102,7 @@ public sealed class ConfiguracaoBonusRegionalTests
     {
         ReferenciaRegra regraErrada = ReferenciaRegra.Criar("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64)).Value!;
 
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(regraErrada, 0m, 0m, null, null);
+        Result<ConfiguracaoBonusRegional> resultado = Criar(fator: 0m, teto: 0m, regra: regraErrada);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(

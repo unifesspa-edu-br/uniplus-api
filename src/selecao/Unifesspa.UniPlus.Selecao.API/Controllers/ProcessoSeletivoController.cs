@@ -347,7 +347,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirBonusRegionalCommand(id, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.MunicipioConvenio, request.BaseLegal, precondicao),
+            new DefinirBonusRegionalCommand(id, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.BaseLegalBonusRegionalId, precondicao),
             cancellationToken);
         return ResponderMutacao(resultado);
     }

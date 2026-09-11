@@ -5,15 +5,13 @@ using Commands.ProcessosSeletivos;
 using FluentValidation;
 
 /// <summary>
-/// Três checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
-/// identificador de rota; <c>RegraVersao</c>/<c>Fator</c> obrigatórios quando
-/// <c>RegraCodigo</c> é informado são coerência de wire anterior à resolução da regra —
-/// <c>ConfiguracaoBonusRegional.Criar</c> só é chamado depois que o handler já resolveu a
-/// regra no <c>rol_de_regras</c>, então nunca recebe esses campos crus; a precisão/escala
-/// decimal de <c>Fator</c>/<c>Teto</c> é limite de forma de wire/coluna
-/// (<c>numeric(6,4)</c>), não regra de negócio. <c>GreaterThan(0)</c> e os limites de
-/// tamanho de <c>MunicipioConvenio</c>/<c>BaseLegal</c> foram removidos: já têm equivalente
-/// em <c>ConfiguracaoBonusRegional.Criar</c>.
+/// Quatro checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
+/// identificador de rota; <c>RegraVersao</c>/<c>Fator</c>/<c>BaseLegalBonusRegionalId</c>
+/// obrigatórios quando <c>RegraCodigo</c> é informado são coerência de wire anterior à
+/// resolução da regra e da Base Legal — <c>ConfiguracaoBonusRegional.Criar</c> só é chamado
+/// depois que o handler já resolveu as duas, então nunca recebe esses campos crus; a
+/// precisão/escala decimal de <c>Fator</c>/<c>Teto</c> é limite de forma de wire/coluna
+/// (<c>numeric(6,4)</c>), não regra de negócio.
 /// </summary>
 public sealed class DefinirBonusRegionalCommandValidator : AbstractValidator<DefinirBonusRegionalCommand>
 {
@@ -40,5 +38,10 @@ public sealed class DefinirBonusRegionalCommandValidator : AbstractValidator<Def
             .PrecisionScale(6, 4, ignoreTrailingZeros: false)
             .When(x => x.Teto.HasValue)
             .WithMessage("Teto do bônus, quando informado, deve ter no máximo 4 casas decimais.");
+
+        RuleFor(x => x.BaseLegalBonusRegionalId)
+            .NotEmpty()
+            .When(x => x.RegraCodigo is not null)
+            .WithMessage("Base legal de bônus regional é obrigatória quando RegraCodigo é informado.");
     }
 }
