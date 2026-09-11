@@ -16,11 +16,20 @@ public sealed record CriterioDesempateDto(
     string? Operador,
     string? Valor);
 
-/// <summary>Projeção de leitura do bônus regional (RN05, Story #774).</summary>
+/// <summary>Projeção de leitura do bônus regional (RN05, Story #774), com o snapshot congelado da Base Legal (Story #1466).</summary>
 public sealed record ConfiguracaoBonusRegionalDto(
     Guid Id,
     ReferenciaRegraDto Regra,
     decimal Fator,
     decimal? Teto,
-    string? MunicipioConvenio,
-    string? BaseLegal);
+    Guid BaseLegalBonusRegionalId,
+    string TipoInstrumento,
+    string Identificacao,
+    string Descricao,
+    IReadOnlyList<ConfiguracaoBonusRegionalMunicipioDto> Municipios);
+
+/// <summary>Um município do snapshot congelado do bônus regional.</summary>
+public sealed record ConfiguracaoBonusRegionalMunicipioDto(
+    string CodigoIbge,
+    string Nome,
+    string Uf);

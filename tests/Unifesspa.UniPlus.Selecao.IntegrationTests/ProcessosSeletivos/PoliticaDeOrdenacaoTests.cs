@@ -62,6 +62,7 @@ using Xunit;
 ///   <item><term><c>documentosExigidos.exigencias</c></term><description>Identidade parcial (fase + tipo) vs. conteúdo — <see cref="DocumentosExigidos_Exigencias_IdentidadeParcialGovernaSobreConteudo"/></description></item>
 ///   <item><term><c>documentosExigidos.exigencias</c> (empate de identidade)</term><description>Conteúdo vs. Id — <see cref="DocumentosExigidos_Exigencias_EmpateDeIdentidade_DesempataPeloConteudo"/></description></item>
 ///   <item><term><c>grafoDependencia.nos</c>/<c>arestas</c>/<c>ordemTopologica</c></term><description>DELEGAÇÃO — ordem derivada por <see cref="Domain.ValueObjects.GrafoDependenciaConjunta"/> e apenas preservada — <see cref="GrafoDependencia_OrdemTopologica_PreservaAOrdemDoDominio_NaoReordenaAlfabeticamente"/></description></item>
+///   <item><term><c>bonusRegional.municipios</c></term><description>CodigoIbge empatado vs. ordem física de entrada — <see cref="BonusRegional_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf"/></description></item>
 /// </list>
 /// <para>
 /// <b>Fora do escopo desta suíte, por já terem oráculo de sequência exata próprio</b> (chave de
@@ -835,5 +836,35 @@ public sealed class PoliticaDeOrdenacaoTests
                 ],
                 "as arestas saem ordenadas por (Tipo, Origem, Destino) canônicos — as duas de PRODUCAO desempatam pela ordem de coleta " +
                 "efetiva da origem (B_FATO antes de A_FATO), o oposto da ordem alfabética da pré-condição acima");
+    }
+
+    // ── camada 1 — Bônus regional (Story #1466) ──
+
+    /// <summary>
+    /// Dois municípios com o MESMO código IBGE (dataset de origem corrompido ou desatualizado)
+    /// não deixam o array de <c>municipios</c> à mercê da ordem física de retorno do EF/Postgres
+    /// para linhas empatadas — Nome/UF desempatam.
+    /// </summary>
+    [Fact(DisplayName = "bonusRegional.municipios: mesmo código IBGE desempata por Nome e UF — não pela ordem física de entrada")]
+    public void BonusRegional_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf()
+    {
+        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
+            Regra(RegraBonusCodigo.Multiplicativo, 'd'), 1.20m, null, Guid.CreateVersion7(),
+            "PORTARIA", "Portaria Teste 1/2026", "Descrição de teste",
+            // Inserido fisicamente na ordem ERRADA (Zebu antes de Abaco) — um canonicalizador que
+            // preservasse a ordem de ENTRADA para um empate de CodigoIbge reproduziria esta mesma
+            // sequência errada.
+            [("1504208", "Zebu", "PA"), ("1504208", "Abaco", "PA")]).Value!;
+
+        ProcessoSeletivo processo = Montar();
+        processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        JsonArray municipiosJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
+            ["bonusRegional"]!["municipios"]!.AsArray();
+
+        municipiosJson.Should().HaveCount(2, "pré-condição: dois municípios sob o mesmo código IBGE");
+        municipiosJson.Select(static m => m!["nome"]!.GetValue<string>()).Should().Equal(
+            ["Abaco", "Zebu"],
+            "com o CodigoIbge empatado, Nome (ordinal) desempata — a ordem física de entrada era [Zebu, Abaco]");
     }
 }

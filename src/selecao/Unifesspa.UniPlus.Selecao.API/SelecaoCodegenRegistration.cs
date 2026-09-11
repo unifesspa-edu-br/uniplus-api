@@ -113,6 +113,11 @@ public static class SelecaoCodegenRegistration
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDocumentoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoProcessoReader>();
 
+        // Base Legal de Bônus Regional (Story #1465/#1466): DefinirBonusRegionalCommandHandler
+        // resolve o Id referenciado e congela o snapshot em ConfiguracaoBonusRegional. Mesmo
+        // motivo dos demais readers cross-módulo acima.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IBaseLegalBonusRegionalReader>();
+
         // Tipos de etapa (issue #1071): DefinirEtapasCommandHandler e os handlers de
         // ObrigatoriedadeLegal resolvem o cadastro configurável de Configuração para
         // congelar o snapshot-copy — mesmo motivo dos demais readers cross-módulo acima.

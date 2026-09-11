@@ -233,7 +233,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.VagasOfertadas)
-            .Include(p => p.BonusRegional)
+            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
             // Cascata de remanejamento (Story #575): mesmo motivo do Include de FatosColetados/
             // RegrasDerivacao logo abaixo — sem ele, a coleção tracked nasce vazia e a
             // restauração (AplicarGrafo) tentaria inserir uma ConfiguracaoCascataRemanejamento

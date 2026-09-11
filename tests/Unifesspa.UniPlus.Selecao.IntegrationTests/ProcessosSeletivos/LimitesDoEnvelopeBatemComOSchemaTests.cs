@@ -53,8 +53,13 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaCondicao), nameof(OfertaCondicao.CondicaoNome)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaRecurso), nameof(OfertaRecurso.RecursoNome)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaTipoDeficiencia), nameof(OfertaTipoDeficiencia.TipoDeficienciaNome)),
-        ("MunicipioConvenio", LimitesDoEnvelope.MunicipioConvenio, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.MunicipioConvenio)),
-        ("BaseLegal", LimitesDoEnvelope.BaseLegal, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.BaseLegal)),
+        // Story #1466 — bônus regional referencia Base Legal tipada (snapshot congelado).
+        ("TipoInstrumentoNormativo", LimitesDoEnvelope.TipoInstrumentoNormativo, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.TipoInstrumento)),
+        ("IdentificacaoBaseLegalBonusRegional", LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Identificacao)),
+        ("DescricaoBaseLegalBonusRegional", LimitesDoEnvelope.DescricaoBaseLegalBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Descricao)),
+        ("MunicipioBonusRegionalCodigoIbge", LimitesDoEnvelope.MunicipioBonusRegionalCodigoIbge, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.CodigoIbge)),
+        ("MunicipioBonusRegionalNome", LimitesDoEnvelope.MunicipioBonusRegionalNome, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.Nome)),
+        ("MunicipioBonusRegionalUf", LimitesDoEnvelope.MunicipioBonusRegionalUf, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.Uf)),
 
         // Story #851 — cronograma de fases.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.Codigo)),

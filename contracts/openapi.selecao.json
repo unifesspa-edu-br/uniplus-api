@@ -7235,8 +7235,11 @@
           "regra",
           "fator",
           "teto",
-          "municipioConvenio",
-          "baseLegal"
+          "baseLegalBonusRegionalId",
+          "tipoInstrumento",
+          "identificacao",
+          "descricao",
+          "municipios"
         ],
         "type": "object",
         "properties": {
@@ -7264,17 +7267,43 @@
             ],
             "format": "double"
           },
-          "municipioConvenio": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "baseLegalBonusRegionalId": {
+            "type": "string",
+            "format": "uuid"
           },
-          "baseLegal": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "tipoInstrumento": {
+            "type": "string"
+          },
+          "identificacao": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "municipios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfiguracaoBonusRegionalMunicipioDto"
+            }
+          }
+        }
+      },
+      "ConfiguracaoBonusRegionalMunicipioDto": {
+        "required": [
+          "codigoIbge",
+          "nome",
+          "uf"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
           }
         }
       },
@@ -8035,8 +8064,7 @@
           "regraVersao",
           "fator",
           "teto",
-          "municipioConvenio",
-          "baseLegal"
+          "baseLegalBonusRegionalId"
         ],
         "type": "object",
         "properties": {
@@ -8070,17 +8098,12 @@
             ],
             "format": "double"
           },
-          "municipioConvenio": {
+          "baseLegalBonusRegionalId": {
             "type": [
               "null",
               "string"
-            ]
-          },
-          "baseLegal": {
-            "type": [
-              "null",
-              "string"
-            ]
+            ],
+            "format": "uuid"
           }
         }
       },

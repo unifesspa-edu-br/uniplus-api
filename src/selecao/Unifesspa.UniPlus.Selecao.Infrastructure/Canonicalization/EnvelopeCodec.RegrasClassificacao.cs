@@ -45,20 +45,43 @@ public sealed partial class EnvelopeCodec
             return null;
         }
 
-        leitor.ExigirChaves(bloco, "bonusRegional", "presente", "regra", "fator", "teto", "municipioConvenio", "baseLegal");
+        leitor.ExigirChaves(
+            bloco, "bonusRegional", "presente", "regra", "fator", "teto",
+            "baseLegalBonusRegionalId", "tipoInstrumento", "identificacao", "descricao", "municipios");
 
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", "bonusRegional", RegraBonusCodigo.Multiplicativo);
         decimal fator = leitor.Decimal(bloco, "fator", EscalaPadrao, "bonusRegional", LimitesDoEnvelope.PrecisaoBonus);
         decimal? teto = leitor.DecimalOpcional(bloco, "teto", EscalaPadrao, "bonusRegional", LimitesDoEnvelope.PrecisaoBonus);
-        string? municipio = leitor.TextoOpcional(bloco, "municipioConvenio", "bonusRegional", LimitesDoEnvelope.MunicipioConvenio);
-        string? baseLegal = leitor.TextoOpcional(bloco, "baseLegal", "bonusRegional", LimitesDoEnvelope.BaseLegal);
-
+        Guid baseLegalBonusRegionalId = leitor.Identificador(bloco, "baseLegalBonusRegionalId", "bonusRegional");
+        string tipoInstrumento = leitor.TextoNaoVazio(bloco, "tipoInstrumento", "bonusRegional", LimitesDoEnvelope.TipoInstrumentoNormativo);
+        string identificacao = leitor.TextoNaoVazio(bloco, "identificacao", "bonusRegional", LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional);
+        string descricao = leitor.TextoNaoVazio(bloco, "descricao", "bonusRegional", LimitesDoEnvelope.DescricaoBaseLegalBonusRegional);
+        JsonArray arrayMunicipios = leitor.Array(bloco, "municipios", "bonusRegional");
         if (leitor.Falhou)
         {
             return null;
         }
 
-        Result<ConfiguracaoBonusRegional> bonus = ConfiguracaoBonusRegional.Criar(regra, fator, teto, municipio, baseLegal);
+        List<(string CodigoIbge, string Nome, string Uf)> municipios = [];
+        for (int i = 0; i < arrayMunicipios.Count; i++)
+        {
+            string path = $"bonusRegional.municipios[{i}]";
+            JsonObject item = leitor.ItemObjeto(arrayMunicipios, i, "bonusRegional.municipios");
+            leitor.ExigirChaves(item, path, "codigoIbge", "nome", "uf");
+
+            string codigoIbge = leitor.TextoNaoVazio(item, "codigoIbge", path, LimitesDoEnvelope.MunicipioBonusRegionalCodigoIbge);
+            string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.MunicipioBonusRegionalNome);
+            string uf = leitor.TextoNaoVazio(item, "uf", path, LimitesDoEnvelope.MunicipioBonusRegionalUf);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            municipios.Add((codigoIbge, nome, uf));
+        }
+
+        Result<ConfiguracaoBonusRegional> bonus = ConfiguracaoBonusRegional.Criar(
+            regra, fator, teto, baseLegalBonusRegionalId, tipoInstrumento, identificacao, descricao, municipios);
         return bonus.IsFailure ? leitor.Propagar<ConfiguracaoBonusRegional>(bonus.Error!) : bonus.Value;
     }
 
