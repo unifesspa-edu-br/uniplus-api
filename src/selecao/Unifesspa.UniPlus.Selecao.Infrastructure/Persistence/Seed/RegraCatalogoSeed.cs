@@ -105,7 +105,7 @@ public static class RegraCatalogoSeed
         new(SeedId(8), "BONUS-MULTIPLICATIVO", VersaoV1, TipoRegra.RegraBonus,
             """{"fator":"numeric","teto":"numeric|null"}""",
             """["nota_final × fator, após os pesos; teto opcional"]""",
-            "RN05 + decisão PO Jairo (×1,20 sem teto, após pesos)"),
+            "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM, sem teto por padrão"),
 
         // criterio_desempate — critérios de desempate (tipados)
         new(SeedId(9), "DESEMPATE-IDOSO", VersaoV1, TipoRegra.CriterioDesempate,

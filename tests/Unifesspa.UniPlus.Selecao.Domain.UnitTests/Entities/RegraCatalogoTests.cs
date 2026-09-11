@@ -25,7 +25,7 @@ public sealed class RegraCatalogoTests
         "BONUS-MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
         Json("""{"fator":"numeric","teto":"numeric|null"}"""),
         Json("""["nota_final × fator, após os pesos"]"""),
-        "RN05 + decisão PO");
+        "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM");
 
     [Fact(DisplayName = "Criar com definição válida computa hash content-addressable")]
     public void Criar_Valida_ComputaHash()
