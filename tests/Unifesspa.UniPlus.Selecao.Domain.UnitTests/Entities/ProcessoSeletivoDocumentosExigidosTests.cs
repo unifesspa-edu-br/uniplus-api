@@ -164,6 +164,151 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorExigenciaDocumental");
     }
 
+    private static FaseCronograma FaseComFim(int ordem, string codigo, DateTimeOffset fim) => FaseCronograma.Criar(
+        ordem,
+        Guid.CreateVersion7(),
+        codigo,
+        "CEPS",
+        OrigemDataFase.Propria,
+        agrupaEtapas: false,
+        permiteComplementacao: false,
+        coletaInscricao: false, coletaSolicitacaoIsencao: false,
+        inicio: fim.AddDays(-10),
+        fim: fim,
+        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
+
+    private static DocumentoExigido ExigenciaComIdade(Guid exigidoNaFaseId, IdadeMaximaEmissao idade) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
+            tipoDocumentoNome: "Comprovante de residência",
+            tipoDocumentoCategoria: "PESSOAL",
+            Aplicabilidade.Geral,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: idade,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
+            tamanhoMaximoBytes: null).Value!;
+
+    private static CriterioDesempate CriterioDesempateComEtapa(Guid etapaId) =>
+        CriterioDesempate.Criar(
+            1,
+            ReferenciaRegra.Criar(CriterioDesempateCodigo.MaiorNotaEtapa, "v1", new string('a', 64)).Value!,
+            new ArgsDesempateMaiorNotaEtapa(etapaId)).Value!;
+
+    // ── Remover a fase leva junto o que era só dela ──
+
+    /// <summary>
+    /// O operador removia a fase e o passo travava: as etapas dela ficavam apontando para uma
+    /// fase que não existe mais, e a gravação seguinte era recusada sem dizer o que fazer.
+    /// </summary>
+    [Fact(DisplayName = "Remover a fase leva junto as etapas que aconteciam nela")]
+    public void DefinirCronogramaFases_RemoveFase_LevaAsEtapasDela()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma habilitacao = Fase(1, "HABILITACAO");
+        FaseCronograma avaliacao = Fase(2, "AVALIACAO");
+        processo.DefinirCronogramaFases([habilitacao, avaliacao], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirEtapas(
+            [Etapa("Análise documental", "HABILITACAO", 1), Etapa("Prova objetiva", "AVALIACAO", 2)],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "AVALIACAO", avaliacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.Etapas.Should().ContainSingle()
+            .Which.FaseCodigo.Should().Be("AVALIACAO", "só a etapa da fase removida sai");
+    }
+
+    /// <summary>
+    /// O defeito que existia: remover a fase que o cadastro marca como agrupadora limpava
+    /// TODAS as etapas do processo, inclusive as das outras fases.
+    /// </summary>
+    [Fact(DisplayName = "Remover uma fase não toca nas etapas das outras")]
+    public void DefinirCronogramaFases_RemoveFase_PreservaEtapasDasOutras()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma isencao = Fase(1, "SOLICITACAO_ISENCAO");
+        FaseCronograma habilitacao = Fase(2, "HABILITACAO");
+        processo.DefinirCronogramaFases([isencao, habilitacao], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirEtapas(
+            [
+                Etapa("Conferência do pedido", "SOLICITACAO_ISENCAO", 1),
+                Etapa("Envio dos documentos pessoais", "HABILITACAO", 2),
+                Etapa("Envio dos comprovantes de renda", "HABILITACAO", 3),
+            ],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.Etapas.Should().HaveCount(2);
+        processo.Etapas.Should().OnlyContain(e => e.FaseCodigo == "HABILITACAO");
+    }
+
+    /// <summary>
+    /// A exigência declarada na fase é configuração dela. Antes, ela travava a remoção e o
+    /// operador tinha de esvaziar a lista de documentos à mão para conseguir tirar a fase.
+    /// </summary>
+    [Fact(DisplayName = "Remover a fase leva junto os documentos exigidos nela")]
+    public void DefinirCronogramaFases_RemoveFase_LevaOsDocumentosDela()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma isencao = Fase(1, "SOLICITACAO_ISENCAO");
+        FaseCronograma habilitacao = Fase(2, "HABILITACAO");
+        processo.DefinirCronogramaFases([isencao, habilitacao], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirDocumentosExigidos(
+            [
+                NoExigencia.CriarFolha(Exigencia(isencao.Id), 0).Value!,
+                NoExigencia.CriarFolha(Exigencia(habilitacao.Id), 1).Value!,
+            ],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().ContainSingle()
+            .Which.ExigidoNaFaseId.Should().Be(habilitacao.Id);
+        processo.NosExigencia.Should().ContainSingle();
+    }
+
+    /// <summary>
+    /// O que não é da fase continua barrando: apagar um critério de desempate por tabela
+    /// deixaria a classificação inexecutável sem que ninguém tivesse pedido.
+    /// </summary>
+    [Fact(DisplayName = "Remover a fase é recusado quando a etapa dela desempata a classificação")]
+    public void DefinirCronogramaFases_EtapaDaFaseDesempata_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma avaliacao = Fase(1, "AVALIACAO");
+        FaseCronograma habilitacao = Fase(2, "HABILITACAO");
+        processo.DefinirCronogramaFases([avaliacao, habilitacao], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        EtapaProcesso prova = Etapa("Prova objetiva", "AVALIACAO", 1);
+        processo.DefinirEtapas([prova], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate(
+            [CriterioDesempateComEtapa(prova.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FaseCronograma.EtapaDaFaseReferenciada");
+    }
+
     [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()
     {
@@ -242,8 +387,13 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         exigencia.ExigidoNaFaseId.Should().Be(fase.Id, "a exigência nunca deixou de referenciar uma fase existente");
     }
 
-    [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem, referenciada por exigência viva, é recusado — não retargeta o Id silenciosamente")]
-    public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemComExigenciaViva_Recusa()
+    /// <summary>
+    /// Fase diferente ocupando a mesma posição é remoção mais inserção, não edição: a
+    /// exigência que era da fase antiga sai com ela. O que este teste protege é o silêncio —
+    /// a exigência não pode sobreviver retargetada para a fase nova, que não a declarou.
+    /// </summary>
+    [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem leva a exigência da fase antiga junto — não a retargeta")]
+    public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemComExigenciaViva_LevaAExigenciaJunto()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(1, "INSCRICAO");
@@ -255,9 +405,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         // novo) — é uma fase DIFERENTE ocupando o slot, não uma edição da mesma fase.
         Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], [], PrecondicaoIfMatch.Curinga);
 
-        resultado.IsFailure.Should().BeTrue(
-            "sem exigir também o mesmo FaseCanonicaOrigemId, o Id seria reusado e a exigência silenciosamente retargetada para a fase nova");
-        resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().BeEmpty(
+            "a exigência era da fase que saiu; sobreviver seria ficar pendurada numa fase que nunca a declarou");
+        processo.NosExigencia.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem, SEM exigência viva referenciando-a, é aceito como remoção+inserção — NÃO reusa a linha (o Id muda)")]
@@ -361,16 +512,27 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.CronogramaFases.Should().ContainSingle(f => f.Codigo == "C" && f.Ordem == 1);
     }
 
-    [Fact(DisplayName = "CA-04: redefinir o cronograma removendo (Ordem que desaparece) uma fase referenciada por exigência viva é recusado")]
-    public void DefinirCronogramaFases_RemoveOrdemReferenciadaPorExigenciaViva_Recusa()
+    /// <summary>
+    /// A recusa que permanece: quem referencia a fase removida é uma exigência de OUTRA fase,
+    /// que só usa a janela dela como marco de idade máxima. Apagar configuração alheia por
+    /// tabela seria remover o que não é da fase.
+    /// </summary>
+    [Fact(DisplayName = "CA-04: remover a fase usada por documento de outra fase como âncora de idade é recusado")]
+    public void DefinirCronogramaFases_RemoveFaseAncoraDeIdadeDeOutraFase_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma fase = Fase(1, "INSCRICAO");
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(Exigencia(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FaseCronograma inscricao = FaseComFim(1, "INSCRICAO", new DateTimeOffset(2027, 3, 10, 23, 59, 0, TimeSpan.Zero));
+        FaseCronograma habilitacao = Fase(2, "HABILITACAO");
+        processo.DefinirCronogramaFases([inscricao, habilitacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        // Ordem 2 no lugar de Ordem 1 — a fase de Ordem 1 desaparece de fato.
-        Result resultado = processo.DefinirCronogramaFases([Fase(2, "INSCRICAO")], [], PrecondicaoIfMatch.Curinga);
+        IdadeMaximaEmissao idade = IdadeMaximaEmissao.Criar(
+            90, UnidadeIdade.Dias, ReferenciaTipoIdadeEmissao.FimFase, null, inscricao.Id).Value!;
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaComIdade(habilitacao.Id, idade), 0).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");

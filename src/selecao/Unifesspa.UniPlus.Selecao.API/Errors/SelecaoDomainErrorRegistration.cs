@@ -567,7 +567,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DocumentoExigido.FatoResolvidoEmFasePosterior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior", "O fato citado na condição de gatilho só é conhecido numa fase posterior à fase em que o documento é exigido")),
         // ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas (guarda B-01) removido —
         // Story #554, PR #903, issue #548: o bloco deixou de ser stub, o gate real decide.
-        new("FaseCronograma.ReferenciadaPorExigenciaViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva", "A fase removida do cronograma é referenciada por um documento exigido configurado")),
+        new("FaseCronograma.ReferenciadaPorExigenciaViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva", "A fase removida do cronograma é usada por um documento de outra fase como âncora de idade máxima")),
+        new("FaseCronograma.EtapaDaFaseReferenciada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.etapa_da_fase_referenciada", "A etapa que acontece na fase removida é referenciada pela classificação ou por um critério de desempate")),
         // Guards backward de fase (Story #554, PR #900, issue #893, CA-04) — complemento ao
         // guard acima: retirar PermiteComplementacao de uma fase referenciada por
         // exigência com consequência PENDENCIA_REENVIO.
