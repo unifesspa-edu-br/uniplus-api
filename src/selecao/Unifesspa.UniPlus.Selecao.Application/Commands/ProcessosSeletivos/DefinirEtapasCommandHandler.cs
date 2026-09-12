@@ -37,6 +37,7 @@ public static class DefinirEtapasCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ITipoEtapaReader tipoEtapaReader,
         ITipoBancaReader tipoBancaReader,
+        IRegraCatalogoReader regraCatalogoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -44,6 +45,7 @@ public static class DefinirEtapasCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(tipoBancaReader);
+        ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -271,9 +273,32 @@ public static class DefinirEtapasCommandHandler
                     declarado.SuspensividadeSegundaInstanciaValor,
                     declarado.SuspensividadeSegundaInstanciaUnidade);
 
+                // A referência é montada a partir dos valores RESOLVIDOS do catálogo, nunca
+                // ecoados do payload: é o que faz o hash bater por construção. E a recusa é
+                // de validação, nunca exceção — catálogo que não respondeu na tela chega
+                // aqui com código em branco, e o cliente precisa da mensagem, não de um 500.
+                RegraCatalogo? regraCatalogo = await regraCatalogoReader
+                    .ObterAsync(declarado.RegraCodigo, declarado.RegraVersao, cancellationToken)
+                    .ConfigureAwait(false);
+                if (regraCatalogo is null || regraCatalogo.Tipo != TipoRegra.RegraPrazoRecurso)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.Failure(new DomainError(
+                        "RecursoDaEtapa.RegraCatalogoInvalida",
+                        $"A regra {declarado.RegraCodigo}/{declarado.RegraVersao} não é uma regra de prazo de recurso do catálogo."));
+                }
+
+                Result<ReferenciaRegra> regraResult =
+                    ReferenciaRegra.Criar(regraCatalogo.Codigo, regraCatalogo.Versao, regraCatalogo.Hash);
+                if (regraResult.IsFailure)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.ValidationFailure(regraResult.Errors);
+                }
+
                 Result<RecursoDaEtapa> recursoResult = RecursoDaEtapa.Criar(
                     declarado.Ancora,
-                    ReferenciaRegra.Criar(declarado.RegraCodigo, declarado.RegraVersao, string.Empty).Value!,
+                    regraResult.Value!,
                     args,
                     ancora);
                 if (recursoResult.IsFailure)

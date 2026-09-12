@@ -40,13 +40,14 @@ public sealed class DefinirEtapasCommandHandlerTests
             .Returns((ProcessoSeletivo?)null);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
             Guid.CreateVersion7(),
             [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1)], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -62,13 +63,14 @@ public sealed class DefinirEtapasCommandHandlerTests
             .Returns(processo);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
             processo.Id,
             [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1)], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.Etapas.Should().ContainSingle(e => e.Nome == "Prova Objetiva");
@@ -91,13 +93,14 @@ public sealed class DefinirEtapasCommandHandlerTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
             processo.Id,
             [new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, 5m, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         EtapaProcesso etapaAtualizada = processo.Etapas.Single();
@@ -118,13 +121,14 @@ public sealed class DefinirEtapasCommandHandlerTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
             processo.Id,
             [new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 1)], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         EtapaProcesso etapaNova = processo.Etapas.Single();
@@ -143,6 +147,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
@@ -152,7 +157,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                 new EtapaProcessoInput("Prova Objetiva (duplicada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 2, etapaOriginal.Id),
             ], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.IdEtapaDuplicado");
@@ -168,6 +173,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             .Returns(processo);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
@@ -177,7 +183,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                 new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 2m, null, 1),
             ], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemEtapaDuplicada");
@@ -202,6 +208,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         Guid tipoInativo = Guid.CreateVersion7();
         tipoEtapaReader.ObterAtivoPorIdAsync(tipoInativo, Arg.Any<CancellationToken>()).Returns((TipoEtapaView?)null);
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
@@ -215,7 +222,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                 new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, tipoInativo, 1m, null, 2),
             ], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo");
@@ -243,6 +250,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         // publicação inteira recusaria com TipoEtapaNaoEncontradoOuInativo.
         ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         tipoEtapaReader.ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((TipoEtapaView?)null);
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -251,7 +259,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             processo.Id,
             [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Etapas.Single().Peso.Should().Be(9m);
@@ -277,6 +285,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         // renomeado — a asserção abaixo prova que ele nunca chega a consultar.
         ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         tipoEtapaReader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
             .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null));
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
@@ -285,7 +294,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             processo.Id,
             [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Etapas.Single().TipoEtapa.Nome.Should().Be("Prova Objetiva",
@@ -304,6 +313,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         // Mesma etapa (mesmo Id), agora vinculada à Redação em vez de Prova Objetiva.
@@ -311,7 +321,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             processo.Id,
             [new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Etapas.Single().TipoEtapa.Codigo.Should().Be("REDACAO");
@@ -333,6 +343,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
@@ -342,7 +353,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                 new EtapaProcessoInput("Prova — Tarde", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2),
             ], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         EtapaProcesso[] etapas = [.. processo.Etapas.OrderBy(e => e.Ordem)];
@@ -362,6 +373,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             .Returns(processo);
         ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         tipoEtapaReader.ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((TipoEtapaView?)null);
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
@@ -371,7 +383,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             processo.Id,
             [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, tipoInexistente, 3m, null, 1)], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo");
@@ -388,6 +400,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         ITipoBancaReader tipoBancaReader = Substitute.For<ITipoBancaReader>();
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
@@ -397,7 +410,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                 new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 0m, null, 2),
             ], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, unitOfWork, CancellationToken.None);
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, tipoBancaReader, regraCatalogoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["etapas[0].nome", "etapas[1].peso"]);
