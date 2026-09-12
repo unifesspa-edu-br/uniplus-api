@@ -95,16 +95,24 @@ public sealed class ProcessoSeletivoCronogramaTests
 
     // ── CA-14 — bicondicional fase×etapa (direção eager) ──
 
-    [Fact(DisplayName = "CA-14: fase que agrupa etapas é recusada quando o processo não tem NENHUMA etapa pontuada")]
-    public void Avaliacao_SemEtapa_Recusa()
+    /// <summary>
+    /// CA-14 mudou de lugar, não de conteúdo. Com a etapa declarando a fase a que pertence,
+    /// ela só pode ser gravada depois que a fase existe no cronograma — cobrar a etapa na
+    /// gravação da fase fecharia um ciclo sem ordem possível. A bicondicional continua
+    /// valendo, e é o gate de publicação que a cobra.
+    /// </summary>
+    [Fact(DisplayName = "CA-14: fase que agrupa etapas grava sem etapa; quem recusa é a publicação")]
+    public void Avaliacao_SemEtapa_GravaEFalhaNaPublicacao()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(1, "AVALIACAO", agrupaEtapas: true).Value!;
 
         Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.AvaliacaoSemEtapa");
+        resultado.IsSuccess.Should().BeTrue();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario)
+            .Should().Contain(item =>
+                item.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && !item.Ok);
     }
 
     [Fact(DisplayName = "Fase que agrupa etapas é aceita quando o processo já tem etapa pontuada")]
