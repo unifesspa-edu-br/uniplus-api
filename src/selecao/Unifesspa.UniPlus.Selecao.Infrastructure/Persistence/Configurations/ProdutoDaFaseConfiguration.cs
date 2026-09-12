@@ -26,12 +26,18 @@ public sealed class ProdutoDaFaseConfiguration : IEntityTypeConfiguration<Produt
         builder.Property(p => p.AtoCodigo).HasMaxLength(AtoCodigoMaxLength).IsRequired();
         builder.Property(p => p.Papel).HasConversion<int>();
 
-        // O mesmo tipo de ato declarado uma única vez por fase. É a chave de reconciliação
-        // de FaseCronograma.AtualizarSnapshot e a chave de round-trip do envelope — a
-        // rejeição no domínio é check-then-act não-atômico, e esta constraint é a defesa
-        // atômica.
-        builder.HasIndex(p => new { p.FaseCronogramaId, p.AtoCodigo })
+        // O par ato + papel declarado uma única vez por fase — a mesma matéria é publicada
+        // uma vez como preliminar e outra como definitiva, então o ato sozinho não é chave.
+        // É a chave de reconciliação de FaseCronograma.AtualizarSnapshot e a chave de
+        // round-trip do envelope — a rejeição no domínio é check-then-act não-atômico, e
+        // esta constraint é a defesa atômica.
+        //
+        // `AreNullsDistinct(false)` porque o papel é nulo em ato que o catálogo não marca
+        // como resultado: sem isso o Postgres trataria cada nulo como valor próprio e o
+        // índice deixaria passar duas publicações idênticas do mesmo comunicado.
+        builder.HasIndex(p => new { p.FaseCronogramaId, p.AtoCodigo, p.Papel })
             .IsUnique()
+            .AreNullsDistinct(false)
             .HasDatabaseName("ux_produtos_da_fase_ato");
     }
 }

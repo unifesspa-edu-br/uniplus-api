@@ -89,20 +89,26 @@ public sealed class EtapaProcesso : EntityBase
     private EtapaProcesso() { }
 
     /// <summary>
-    /// Substitui os produtos da etapa por inteiro, recusando o mesmo ato declarado duas
-    /// vezes — um documento publicado é um só, e dois registros do mesmo ato na mesma etapa
-    /// tornariam ambíguo o que o recurso ancora.
+    /// Substitui os produtos da etapa por inteiro, recusando o mesmo par ato e papel
+    /// declarado duas vezes — dois registros idênticos na mesma etapa tornariam ambíguo o
+    /// que o recurso ancora.
+    ///
+    /// A chave é o par, e não o ato sozinho: o catálogo nomeia a matéria, e a mesma matéria
+    /// é publicada uma vez como preliminar e outra como definitiva. Ver
+    /// <see cref="FaseCronograma"/>, onde a mesma chave governa os produtos da fase.
     /// </summary>
     public Result DefinirProdutos(IReadOnlyList<ProdutoDaEtapa> produtos)
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
-        List<string> codigos = [.. produtos.Select(p => p.AtoCodigo)];
-        if (codigos.Distinct(StringComparer.Ordinal).Count() != codigos.Count)
+        ProdutoDaEtapa? duplicado = produtos
+            .GroupBy(static p => (p.AtoCodigo, p.Papel))
+            .FirstOrDefault(static g => g.Count() > 1)?.First();
+        if (duplicado is not null)
         {
             return Result.Failure(new DomainError(
                 "EtapaProcesso.AtoDuplicadoNaEtapa",
-                "Cada tipo de ato pode ser declarado uma única vez por etapa."));
+                $"A etapa declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa."));
         }
 
         _produtos.Clear();

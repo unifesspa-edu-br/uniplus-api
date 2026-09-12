@@ -208,19 +208,24 @@ public sealed class FaseCronograma : EntityBase
                 $"A fase '{codigo}' tem origem de data própria e exige início e fim da janela.")));
         }
 
-        // O código do ato é a chave natural do produto dentro da fase, e o índice único da
-        // tabela a espelha. Declarar o mesmo ato duas vezes daria à fase duas intenções
-        // sobre a mesma publicação — possivelmente com papéis divergentes —, e o motor não
-        // teria como eleger uma. Publicar preliminar e definitiva da mesma matéria não cai
-        // aqui: são atos com códigos distintos no catálogo.
-        string? atoDuplicado = produtos
-            .GroupBy(static p => p.AtoCodigo, StringComparer.Ordinal)
-            .FirstOrDefault(static g => g.Count() > 1)?.Key;
-        if (atoDuplicado is not null)
+        // O par ato + papel é a chave natural do produto dentro da fase, e o índice único da
+        // tabela a espelha. Repetir o par daria à fase duas intenções sobre a mesma
+        // publicação, e o motor não teria como eleger uma.
+        //
+        // A chave é o par, e não o ato sozinho, porque o catálogo nomeia a MATÉRIA, não o
+        // papel: "Resultado da homologação das inscrições" é um código só, publicado uma vez
+        // como preliminar — que abre o ciclo recursal — e outra como definitivo, que o
+        // encerra. Só duas das vinte e uma entradas do catálogo trazem o papel no próprio
+        // código (gabarito e resultado), e exigir isso de todas tornaria o ciclo recursal da
+        // homologação inexprimível.
+        ProdutoDaFase? duplicado = produtos
+            .GroupBy(static p => (p.AtoCodigo, p.Papel))
+            .FirstOrDefault(static g => g.Count() > 1)?.First();
+        if (duplicado is not null)
         {
             erros.Add(new("produtos", new DomainError(
                 "FaseCronograma.AtoDuplicadoNaFase",
-                $"A fase '{codigo}' declara o ato '{atoDuplicado}' mais de uma vez — cada tipo de ato é declarado uma única vez por fase.")));
+                $"A fase '{codigo}' declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase.")));
         }
 
         bool produzResultado = produtos.Any(static p => p.Papel is not null);
@@ -544,10 +549,11 @@ public sealed class FaseCronograma : EntityBase
     /// </para>
     /// <para>
     /// <b>Os produtos exigem o mesmo cuidado, e as bancas não.</b>
-    /// <c>ux_produtos_da_fase_ato</c> torna <c>(fase, ato_codigo)</c> único, então repor a
+    /// <c>ux_produtos_da_fase_ato</c> torna <c>(fase, ato_codigo, papel)</c> único, então repor a
     /// coleção por <c>Clear()</c> + <c>Add</c> produziria DELETE+INSERT do mesmo slot na
     /// mesma transação — exatamente a colisão descrita acima. Os produtos são reconciliados
-    /// por <see cref="ProdutoDaFase.AtoCodigo"/>, reusando a instância rastreada;
+    /// pelo par <see cref="ProdutoDaFase.AtoCodigo"/> + <see cref="ProdutoDaFase.Papel"/>,
+    /// reusando a instância rastreada;
     /// <c>bancas_requeridas</c> não tem índice único e por isso segue com a reposição
     /// simples.
     /// </para>
@@ -597,20 +603,47 @@ public sealed class FaseCronograma : EntityBase
         FaseConcluinteCodigo = NormalizarCodigo(faseConcluinteCodigo);
         EmiteParecerIndividual = emiteParecerIndividual;
 
+        // Duas passadas, porque a chave da linha é o par ato + papel e o papel é justamente
+        // o que a edição pode trocar. A primeira casa o par inteiro — a linha que não mudou.
+        // A segunda casa pelo ato entre as rastreadas que sobraram, e é ela que preserva o
+        // Id de quem só trocou de papel: sem ela, a linha sairia como órfã e voltaria como
+        // inserção, DELETE e INSERT disputando o mesmo slot do índice único na mesma
+        // transação. Cada rastreada é consumida uma vez só, senão duas publicações da mesma
+        // matéria — a preliminar e a definitiva — casariam com a mesma linha.
+        List<ProdutoDaFase> disponiveis = [.. _produtos];
         List<ProdutoDaFase> reconciliados = [];
+        List<ProdutoDaFase> semPar = [];
+
         foreach (ProdutoDaFase novo in produtos)
         {
-            ProdutoDaFase? rastreado = _produtos
-                .Find(p => string.Equals(p.AtoCodigo, novo.AtoCodigo, StringComparison.Ordinal));
-            if (rastreado is not null)
+            ProdutoDaFase? mesmoParaOMesmoPapel = disponiveis
+                .Find(p => string.Equals(p.AtoCodigo, novo.AtoCodigo, StringComparison.Ordinal)
+                    && p.Papel == novo.Papel);
+            if (mesmoParaOMesmoPapel is not null)
             {
-                rastreado.AtualizarPapel(novo.Papel);
-                reconciliados.Add(rastreado);
+                disponiveis.Remove(mesmoParaOMesmoPapel);
+                reconciliados.Add(mesmoParaOMesmoPapel);
             }
             else
             {
+                // Guarda o lugar na ordem de chegada; a segunda passada o preenche.
                 reconciliados.Add(novo);
+                semPar.Add(novo);
             }
+        }
+
+        foreach (ProdutoDaFase novo in semPar)
+        {
+            ProdutoDaFase? mesmoAto = disponiveis
+                .Find(p => string.Equals(p.AtoCodigo, novo.AtoCodigo, StringComparison.Ordinal));
+            if (mesmoAto is null)
+            {
+                continue;
+            }
+
+            disponiveis.Remove(mesmoAto);
+            mesmoAto.AtualizarPapel(novo.Papel);
+            reconciliados[reconciliados.IndexOf(novo)] = mesmoAto;
         }
 
         // Os que sobraram fora de `reconciliados` saem da coleção e o EF os remove como
@@ -652,10 +685,11 @@ public sealed class FaseCronograma : EntityBase
     /// sessão de rascunho.
     /// </para>
     /// <para>
-    /// O <see cref="ProdutoDaFase.AtoCodigo"/> é a ponte porque é a chave da própria
-    /// reconciliação, e é único dentro da fase. Quando a coleção que chegou não contém o
-    /// produto âncora, não há para onde remapear e a âncora fica como está: é estado que
-    /// <see cref="Criar"/> não deixa existir.
+    /// A ponte é o par <see cref="ProdutoDaFase.AtoCodigo"/> + <see cref="ProdutoDaFase.Papel"/>,
+    /// porque é a chave da própria reconciliação e é único dentro da fase — o ato sozinho não
+    /// é, desde que a mesma matéria passou a ser publicável como preliminar e como
+    /// definitiva. Quando a coleção que chegou não contém o produto âncora, não há para onde
+    /// remapear e a âncora fica como está: é estado que <see cref="Criar"/> não deixa existir.
     /// </para>
     /// </remarks>
     private void RemapearAncoraDoRecurso(RegraRecursoFase regraRecurso, IReadOnlyList<ProdutoDaFase> produtos)
@@ -668,7 +702,8 @@ public sealed class FaseCronograma : EntityBase
         }
 
         ProdutoDaFase? ancoraReconciliada = _produtos
-            .Find(p => string.Equals(p.AtoCodigo, ancoraQueChegou.AtoCodigo, StringComparison.Ordinal));
+            .Find(p => string.Equals(p.AtoCodigo, ancoraQueChegou.AtoCodigo, StringComparison.Ordinal)
+                && p.Papel == ancoraQueChegou.Papel);
         if (ancoraReconciliada is not null && ancoraReconciliada.Id != regraRecurso.ProdutoAncoraId)
         {
             regraRecurso.RemapearAncora(ancoraReconciliada.Id);
