@@ -89,7 +89,11 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 
     private static IQueryable<ProcessoSeletivo> ComConfiguracao(IQueryable<ProcessoSeletivo> query) =>
         query
-            .Include(p => p.Etapas)
+            // Produtos da etapa: MESMO raciocínio do produto da fase abaixo. Sem o
+            // ThenInclude, a coleção nasce vazia em todo carregamento novo — o read-back
+            // diria que a etapa não publica nada, e a redefinição faria Clear() num backing
+            // list já vazio, deixando as linhas antigas no banco.
+            .Include(p => p.Etapas).ThenInclude(e => e.Produtos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
