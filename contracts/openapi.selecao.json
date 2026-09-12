@@ -10007,14 +10007,6 @@
         ],
         "type": "string"
       },
-      "PapelProdutoFase": {
-        "enum": [
-          "preliminar",
-          "definitivo",
-          null
-        ],
-        "type": "string"
-      },
       "PredicadoObrigatoriedade": {
         "required": [
           "$tipo"
@@ -10463,13 +10455,9 @@
             "type": "string"
           },
           "papel": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PapelProdutoFase"
-              }
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -10485,13 +10473,9 @@
             "type": "string"
           },
           "papel": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PapelProdutoFase"
-              }
+            "type": [
+              "null",
+              "string"
             ]
           }
         }

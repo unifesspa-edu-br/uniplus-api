@@ -59,7 +59,7 @@ public static class ObterProcessoSeletivoQueryHandler
                 e.NotaMinima,
                 e.Ordem,
                 e.FaseCodigo,
-                [.. e.Produtos.Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, pr.Papel))],
+                [.. e.Produtos.Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, pr.Papel.ToCodigo()))],
                 e.Inicio,
                 e.Fim,
                 e.EmiteParecerIndividual,

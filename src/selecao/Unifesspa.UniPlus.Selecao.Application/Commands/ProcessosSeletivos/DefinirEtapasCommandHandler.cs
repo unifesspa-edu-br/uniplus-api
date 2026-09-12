@@ -207,7 +207,11 @@ public static class DefinirEtapasCommandHandler
         {
             IReadOnlyList<ProdutoDaEtapaInput> declarados = command.Etapas[i].Produtos ?? [];
             Result produtosResult = etapas[i].DefinirProdutos(
-                [.. declarados.Select(d => ProdutoDaEtapa.Criar(d.AtoCodigo, d.Papel))]);
+                [.. declarados.Select(d =>
+                {
+                    PapelProdutoFaseCodigo.TentarConverter(d.Papel, out PapelProdutoFase? papel);
+                    return ProdutoDaEtapa.Criar(d.AtoCodigo, papel);
+                })]);
             if (produtosResult.IsFailure)
             {
                 unitOfWork.DescartarAlteracoesNaoSalvas();
