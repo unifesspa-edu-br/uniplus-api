@@ -916,12 +916,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // processo). A direção inversa ("etapa sem fase de avaliação") é validada no
         // gate de publicação (PendenciaDoCronograma) — uma etapa pode ser declarada
         // depois do cronograma, e bloquear aqui recusaria uma ordem de montagem legítima.
-        if (fases.Any(static f => f.AgrupaEtapas) && !_etapas.Any(static e => e.FaseCodigo is null))
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.AvaliacaoSemEtapa",
-                "Uma fase que agrupa etapas foi declarada, mas o processo não tem nenhuma etapa pontuada."));
-        }
+        // A guarda "fase agrupadora exige etapa já declarada" saiu daqui: com o vínculo, a
+        // etapa só pode declarar a fase depois que a fase existe no cronograma, e exigi-la
+        // na gravação do cronograma fecharia um ciclo sem ordem possível. A bicondicional
+        // continua sendo cobrada no gate de publicação (PendenciaDoCronograma), que é onde
+        // ela sempre pôde ser lazy.
 
         // §3.3 — precedência é dado de cadastro, não código: para toda aresta cujas DUAS
         // fases estão presentes no cronograma, Ordem(A) < Ordem(B); e, quando a aresta não
@@ -2422,8 +2421,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     // vínculo é quem responde por onde ela vive, e qualquer fase pode subdividir-se —
     // não só a que o cadastro marcava como agrupadora.
     private bool HaFaseDeAvaliacaoSemEtapa() =>
-        _cronogramaFases.Any(static f => f.AgrupaEtapas)
-        && !_etapas.Any(static e => e.FaseCodigo is null);
+        _cronogramaFases.Any(f => f.AgrupaEtapas
+            && !_etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
+            && !_etapas.Any(static e => e.FaseCodigo is null));
 
     private bool HaEtapaSemFaseDeAvaliacao() =>
         _etapas.Any(static e => e.FaseCodigo is null)

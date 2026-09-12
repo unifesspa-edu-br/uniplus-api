@@ -99,6 +99,30 @@ public sealed class EtapaVinculadaAFaseTests
         processo.EtapasDaFase("HABILITACAO").Single().Nome.Should().Be("Envio dos documentos pessoais");
     }
 
+    [Fact(DisplayName = "Fase agrupadora com etapa declarada nela não é recusada por falta de etapa")]
+    public void FaseAgrupadora_ComEtapaDeclarada_Aceita()
+    {
+        ProcessoSeletivo processo = Processo();
+        FaseCronograma avaliacao = FaseCronograma.Criar(
+            1, Guid.CreateVersion7(), "AVALIACAO", "CEPS", OrigemDataFase.Delegada,
+            agrupaEtapas: true, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null,
+            emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+
+        // A ordem que o vínculo impõe: a fase entra primeiro, e só então a etapa pode
+        // declará-la. É por isso que a guarda eager de "agrupadora sem etapa" saiu da
+        // gravação do cronograma — ali ela fecharia um ciclo sem ordem possível.
+        processo.DefinirCronogramaFases([avaliacao], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirEtapas(
+            [Etapa("Prova objetiva", "AVALIACAO")], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue();
+        processo.EtapasDaFase("AVALIACAO").Should().HaveCount(1);
+    }
+
     [Fact(DisplayName = "Etapa sem fase declarada continua aceita — é o formato anterior ao vínculo")]
     public void EtapaSemFaseDeclarada_ContinuaAceita()
     {
