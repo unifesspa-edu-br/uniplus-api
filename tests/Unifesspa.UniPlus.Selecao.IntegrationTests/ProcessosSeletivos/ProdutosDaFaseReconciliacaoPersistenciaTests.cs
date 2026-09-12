@@ -82,6 +82,68 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
         }
     }
 
+    /// <summary>
+    /// O caso que o catálogo real impõe: "Resultado da homologação das inscrições" é um
+    /// código só, e o ciclo recursal da matéria precisa das duas publicações — a preliminar,
+    /// que o abre, e a definitiva, que o encerra. Exercita as duas defesas ao mesmo tempo: a
+    /// reconciliação, que não pode casar as duas linhas novas com a única rastreada, e o
+    /// índice único, que passou a incluir o papel.
+    /// </summary>
+    [Fact(DisplayName = "A mesma matéria ganha a publicação definitiva ao lado da preliminar que já existia")]
+    public async Task RedefinirCronograma_MesmaMateriaEmDoisPapeis_PersisteAsDuas()
+    {
+        Guid faseCanonicaOrigemId = Guid.CreateVersion7();
+        Guid processoId;
+        Guid definitivaIdAntes;
+
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            // Começa só com a definitiva porque a fase que publica preliminar precisa de quem
+            // conclua o ciclo: o estado intermediário de um par pela metade o agregado recusa.
+            ProcessoSeletivo processo = NovoProcesso($"PS matéria {Guid.CreateVersion7()}");
+            processo.DefinirCronogramaFases(
+                [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)])],
+                [],
+                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+            await db.ProcessosSeletivos.AddAsync(processo);
+            await db.SaveChangesAsync();
+
+            processoId = processo.Id;
+            definitivaIdAntes = processo.CronogramaFases.Single().Produtos.Single().Id;
+        }
+
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
+
+            Result redefinicao = processo.DefinirCronogramaFases(
+                [Fase(faseCanonicaOrigemId,
+                [
+                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
+                ])],
+                [],
+                PrecondicaoIfMatch.Curinga);
+
+            redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
+            await db.SaveChangesAsync();
+        }
+
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
+            IReadOnlyCollection<ProdutoDaFase> produtos = processo.CronogramaFases.Single().Produtos;
+
+            produtos.Should().HaveCount(2);
+            produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Definitivo)
+                .Which.Id.Should().Be(definitivaIdAntes,
+                    "a publicação que já existia é a mesma linha — a que chegou é a outra, e a reconciliação não pode trocar uma pela outra");
+            produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Preliminar);
+            produtos.Select(p => p.AtoCodigo).Distinct().Should().ContainSingle();
+        }
+    }
+
     [Fact(DisplayName = "Produto que sai da declaração é removido da tabela, sem sobrar linha órfã")]
     public async Task RedefinirCronograma_ProdutoRemovido_SaiDaTabela()
     {

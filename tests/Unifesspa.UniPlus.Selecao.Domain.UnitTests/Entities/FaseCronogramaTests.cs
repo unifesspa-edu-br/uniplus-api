@@ -228,17 +228,58 @@ public sealed class FaseCronogramaTests
         resultado.Value!.ProduzResultado.Should().BeTrue();
     }
 
-    // ── CA-03 — o mesmo ato uma única vez por fase ──
+    // ── CA-03 — o par ato e papel uma única vez por fase ──
 
-    [Fact(DisplayName = "CA-03: declarar o MESMO tipo de ato duas vezes na fase é recusado")]
-    public void Produtos_AtoDuplicado_Recusa()
+    /// <summary>
+    /// O catálogo nomeia a matéria, não o papel: "Resultado da homologação das inscrições" é
+    /// um código só, publicado uma vez como preliminar — que abre o ciclo recursal — e outra
+    /// como definitivo, que o encerra. Recusar isso tornava o ciclo da homologação
+    /// inexprimível, porque não existe ato "definitivo da homologação" no catálogo.
+    /// </summary>
+    [Fact(DisplayName = "CA-03: a mesma matéria publicada como preliminar e como definitiva é aceita")]
+    public void Produtos_MesmoAtoEmPapeisDistintos_Aceita()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            produtos:
+            [
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
+            ]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Produtos.Should().HaveCount(2);
+    }
+
+    [Fact(DisplayName = "CA-03: declarar o MESMO ato no MESMO papel duas vezes na fase é recusado")]
+    public void Produtos_MesmoAtoEMesmoPapel_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(
             origemData: OrigemDataFase.Delegada,
             produtos:
             [
                 ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("FaseCronograma.AtoDuplicadoNaFase");
+    }
+
+    /// <summary>
+    /// Ato que não é resultado tem papel nulo, e dois nulos são o mesmo papel — senão a fase
+    /// publicaria o mesmo comunicado duas vezes sem nada que os distinga.
+    /// </summary>
+    [Fact(DisplayName = "CA-03: o mesmo ato sem papel duas vezes na fase é recusado")]
+    public void Produtos_AtoSemPapelDuplicado_Recusa()
+    {
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            produtos:
+            [
+                ProdutoDaFase.Criar("COMUNICADO", null),
+                ProdutoDaFase.Criar("COMUNICADO", null),
             ]);
 
         resultado.IsFailure.Should().BeTrue();

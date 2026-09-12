@@ -24,10 +24,14 @@ public sealed class ProdutoDaEtapaConfiguration : IEntityTypeConfiguration<Produ
         builder.Property(p => p.AtoCodigo).HasMaxLength(AtoCodigoMaxLength).IsRequired();
         builder.Property(p => p.Papel).HasConversion<int>();
 
-        // O mesmo tipo de ato uma única vez por etapa: a rejeição no domínio é
-        // check-then-act, e esta constraint é a defesa atômica.
-        builder.HasIndex(p => new { p.EtapaProcessoId, p.AtoCodigo })
+        // O par ato + papel uma única vez por etapa, pela mesma razão dos produtos da fase:
+        // a matéria é uma, o papel é que distingue a publicação que abre o ciclo recursal da
+        // que o encerra. A rejeição no domínio é check-then-act, e esta constraint é a
+        // defesa atômica; `AreNullsDistinct(false)` alcança o papel nulo dos atos que não
+        // são resultado.
+        builder.HasIndex(p => new { p.EtapaProcessoId, p.AtoCodigo, p.Papel })
             .IsUnique()
+            .AreNullsDistinct(false)
             .HasDatabaseName("ux_produtos_da_etapa_ato");
     }
 }
