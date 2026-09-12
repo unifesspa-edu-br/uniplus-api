@@ -39,7 +39,12 @@ public sealed record RecursoDaEtapaDto(
     string? AtoAncoraCodigo);
 
 /// <summary>Projeção de leitura de <c>ProdutoDaEtapa</c>.</summary>
-public sealed record ProdutoDaEtapaDto(Guid Id, string AtoCodigo, PapelProdutoFase? Papel);
+/// <param name="Papel">
+/// Token canônico UPPER_SNAKE (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>), o mesmo vocabulário
+/// que o produto da fase publica — o enum cru vazaria um segundo vocabulário no wire para
+/// o mesmo conceito.
+/// </param>
+public sealed record ProdutoDaEtapaDto(Guid Id, string AtoCodigo, string? Papel);
 
 /// <summary>Cópia por valor do tipo de etapa, projetada para leitura (ADR-0061).</summary>
 public sealed record TipoEtapaSnapshotDto(Guid OrigemId, string Codigo, string Nome);
