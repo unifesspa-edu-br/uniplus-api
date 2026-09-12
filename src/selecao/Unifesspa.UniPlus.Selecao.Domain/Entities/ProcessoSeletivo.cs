@@ -800,21 +800,48 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Dictionary<Guid, FaseCronograma> fasesAntigasPorOrigem = _cronogramaFases.ToDictionary(f => f.FaseCanonicaOrigemId);
         Dictionary<Guid, FaseCronograma> fasesNovasPorOrigem = fases.ToDictionary(f => f.FaseCanonicaOrigemId);
 
+        // O que sai do cronograma leva junto o que era só dele: as etapas que acontecem na
+        // fase e os documentos exigidos nela. Coletado aqui, aplicado depois das
+        // conferências — uma recusa mais adiante não pode deixar o agregado meio podado.
+        List<string> codigosRemovidos = [];
+
         foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values)
         {
             if (!fasesNovasPorOrigem.TryGetValue(antiga.FaseCanonicaOrigemId, out FaseCronograma? nova))
             {
-                // A fase removida pode ser referenciada por ExigidoNaFaseId OU por
-                // IdadeMaximaEmissao.ReferenciaFaseId (PR #900) — os dois são vínculos
-                // independentes, e ambos ficariam órfãos silenciosamente.
-                if (_documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id
-                    || d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id))
+                // A exigência declarada NA fase removida é configuração dela, e sai junto —
+                // o operador que remove a fase não deveria ter de esvaziar a lista de
+                // documentos antes para conseguir removê-la. A remoção em cascata acontece
+                // depois de todas as conferências, ao aplicar o cronograma.
+                //
+                // A âncora de idade máxima é outra coisa: quem a declara é uma exigência de
+                // OUTRA fase, que apenas usa esta como marco temporal. Apagar a exigência
+                // alheia por tabela seria remover configuração que não é desta fase, e por
+                // isso aqui a recusa continua.
+                DocumentoExigido? ancoraDeOutraFase = _documentosExigidos.Find(d =>
+                    d.ExigidoNaFaseId != antiga.Id && d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id);
+                if (ancoraDeOutraFase is not null)
                 {
                     return Result.Failure(new DomainError(
                         "FaseCronograma.ReferenciadaPorExigenciaViva",
-                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas é referenciada por um documento exigido configurado."));
+                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{ancoraDeOutraFase.TipoDocumentoNome}', exigido em outra fase, usa a janela dela como âncora de idade máxima de emissão."));
                 }
 
+                // A etapa que acontece na fase removida também sai junto — mas não se
+                // alguém de fora a referencia. Desempate e regra de eliminação são
+                // configuração do processo, não da fase, e apagá-los por tabela deixaria a
+                // classificação inexecutável sem que ninguém pedisse.
+                EtapaProcesso? etapaReferenciada = _etapas.Find(e =>
+                    string.Equals(e.FaseCodigo, antiga.Codigo, StringComparison.Ordinal)
+                    && EtapaReferenciadaPorClassificacaoOuDesempate(e.Id));
+                if (etapaReferenciada is not null)
+                {
+                    return Result.Failure(new DomainError(
+                        "FaseCronograma.EtapaDaFaseReferenciada",
+                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapaReferenciada.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes."));
+                }
+
+                codigosRemovidos.Add(antiga.Codigo);
                 continue;
             }
 
@@ -1028,9 +1055,73 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _cronogramaFases.Add(fase);
         }
 
+        PodarDependentesDasFasesRemovidas(codigosRemovidos, fasesAntigasPorOrigem, fasesNovasPorOrigem);
+
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
+
+    /// <summary>
+    /// Remove o que existia só por causa de uma fase que saiu do cronograma: as etapas que
+    /// aconteciam nela e os documentos exigidos nela, com os nós da árvore de satisfação que
+    /// os carregavam.
+    /// </summary>
+    /// <remarks>
+    /// Sem isso, a etapa ficava apontando para uma fase que não existe mais e a gravação
+    /// seguinte era recusada por <c>EtapaSemFaseNoCronograma</c> — o operador removia uma
+    /// fase e o passo travava, sem dizer o que fazer. Roda depois de todas as conferências e
+    /// depois da substituição da coleção, porque uma recusa no meio deixaria o agregado
+    /// podado pela metade.
+    /// </remarks>
+    private void PodarDependentesDasFasesRemovidas(
+        List<string> codigosRemovidos,
+        Dictionary<Guid, FaseCronograma> fasesAntigasPorOrigem,
+        Dictionary<Guid, FaseCronograma> fasesNovasPorOrigem)
+    {
+        if (codigosRemovidos.Count == 0)
+        {
+            return;
+        }
+
+        _etapas.RemoveAll(e => e.FaseCodigo is { } codigo
+            && codigosRemovidos.Contains(codigo, StringComparer.Ordinal));
+
+        // O Id da fase, e não o código, porque é por Id que a exigência a referencia.
+        HashSet<Guid> idsRemovidos = [.. fasesAntigasPorOrigem.Values
+            .Where(f => !fasesNovasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
+            .Select(static f => f.Id)];
+
+        HashSet<Guid> exigenciasRemovidas = [.. _documentosExigidos
+            .Where(d => idsRemovidos.Contains(d.ExigidoNaFaseId))
+            .Select(static d => d.Id)];
+        if (exigenciasRemovidas.Count == 0)
+        {
+            return;
+        }
+
+        _documentosExigidos.RemoveAll(d => exigenciasRemovidas.Contains(d.Id));
+
+        // A folha sai com o nó que a carregava; o grupo que ficou sem filho nenhum sai
+        // atrás, senão sobraria um "um destes documentos" sem documento algum.
+        _nosExigencia.RemoveAll(no => no.DocumentoExigidoId is { } id && exigenciasRemovidas.Contains(id));
+        while (_nosExigencia.RemoveAll(no => no.Tipo != TipoNo.Folha
+            && !_nosExigencia.Exists(filho => filho.NoPaiId == no.Id)) > 0)
+        {
+            // Um grupo pode ter ficado vazio porque o filho dele era outro grupo que acabou
+            // de sair: repete até a floresta parar de encolher.
+        }
+    }
+
+    /// <summary>
+    /// A etapa é referenciada por configuração que não pertence à fase dela — critério de
+    /// desempate por nota de etapa ou regra de eliminação por nota mínima.
+    /// </summary>
+    private bool EtapaReferenciadaPorClassificacaoOuDesempate(Guid etapaId) =>
+        _criteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId)
+        || (Classificacao?.RegrasEliminacao
+            .Select(static r => r.Args)
+            .OfType<ArgsElimNotaMinimaEtapa>()
+            .Any(args => args.EtapaRef == etapaId) ?? false);
 
     /// <summary>
     /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
