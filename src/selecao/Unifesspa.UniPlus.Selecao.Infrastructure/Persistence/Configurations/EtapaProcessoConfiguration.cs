@@ -56,6 +56,22 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Metadata.FindNavigation(nameof(EtapaProcesso.Produtos))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.HasMany(e => e.Bancas).WithOne()
+            .HasForeignKey(b => b.EtapaProcessoId).OnDelete(DeleteBehavior.Cascade);
+        builder.Metadata.FindNavigation(nameof(EtapaProcesso.Bancas))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(e => e.Recursos).WithOne()
+            .HasForeignKey(r => r.EtapaProcessoId).OnDelete(DeleteBehavior.Cascade);
+        builder.Metadata.FindNavigation(nameof(EtapaProcesso.Recursos))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        // A janela própria da etapa: ausente quando ela herda a da fase.
+        builder.Property(e => e.Inicio).HasColumnName("inicio");
+        builder.Property(e => e.Fim).HasColumnName("fim");
+        builder.Property(e => e.EmiteParecerIndividual)
+            .HasColumnName("emite_parecer_individual").HasDefaultValue(false);
+
         builder.Property(e => e.Peso).HasPrecision(18, 4);
         builder.Property(e => e.NotaMinima).HasPrecision(18, 4);
 

@@ -59,7 +59,26 @@ public static class ObterProcessoSeletivoQueryHandler
                 e.NotaMinima,
                 e.Ordem,
                 e.FaseCodigo,
-                [.. e.Produtos.Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, pr.Papel))]))],
+                [.. e.Produtos.Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, pr.Papel))],
+                e.Inicio,
+                e.Fim,
+                e.EmiteParecerIndividual,
+                [.. e.Bancas.Select(b => new BancaDaEtapaDto(b.Id, b.TipoBancaOrigemId, b.Codigo))],
+                // O código do ato âncora acompanha a leitura: sem ele, o cliente teria de
+                // cruzar o id do produto à mão para reexibir contra o que o recurso corre.
+                [.. e.Recursos.Select(r => new RecursoDaEtapaDto(
+                    r.Id,
+                    r.Ancora,
+                    new ReferenciaRegraDto(r.Regra.Codigo, r.Regra.Versao, r.Regra.Hash),
+                    new ArgsRegraPrazoRecursoDto(
+                        r.Args.PrazoValor,
+                        r.Args.PrazoUnidade,
+                        r.Args.SuspensividadePrimeiraInstanciaValor,
+                        r.Args.SuspensividadePrimeiraInstanciaUnidade,
+                        r.Args.SuspensividadeSegundaInstanciaValor,
+                        r.Args.SuspensividadeSegundaInstanciaUnidade),
+                    r.ProdutoAncoraId,
+                    e.Produtos.FirstOrDefault(pr => pr.Id == r.ProdutoAncoraId)?.AtoCodigo))]))],
         ProjectOfertaAtendimento(processo.OfertaAtendimento),
         [.. processo.DistribuicaoVagas.Select(ProjectDistribuicaoVagas)],
         ProjectBonusRegional(processo.BonusRegional),
