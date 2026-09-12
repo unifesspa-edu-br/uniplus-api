@@ -358,7 +358,8 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjectBaseLegal)],
         ProjectIdadeMaximaEmissao(documento.IdadeMaximaEmissao),
         ProjectFormatosPermitidos(documento.FormatosPermitidos),
-        documento.TamanhoMaximoBytes);
+        documento.TamanhoMaximoBytes,
+        documento.ExigidoNaEtapaId);
 
     /// <summary>Projeta um nó da árvore de satisfação (<see cref="NoExigencia"/>, Story #920) recursivamente — mesmo formato de <c>NoExigenciaInput</c> (comando de escrita).</summary>
     private static NoExigenciaDto ProjectNoExigencia(NoExigencia no) => new(

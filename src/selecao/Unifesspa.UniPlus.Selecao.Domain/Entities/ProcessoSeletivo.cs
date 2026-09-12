@@ -325,6 +325,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // Mesma proteção para a exigência documental que declara em que etapa da fase o
+        // documento é coletado: remover a etapa deixaria a exigência apontando para uma
+        // etapa que não existe mais, e a coleta não teria onde acontecer.
+        DocumentoExigido? exigenciaOrfa = _documentosExigidos
+            .FirstOrDefault(d => d.ExigidoNaEtapaId is { } etapaRef && !novosIdsEtapas.Contains(etapaRef));
+        if (exigenciaOrfa is not null)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.EtapaReferenciadaPorExigenciaDocumental",
+                $"A etapa {exigenciaOrfa.ExigidoNaEtapaId} coleta o documento {exigenciaOrfa.TipoDocumentoNome} e não pode ser removida sem antes reconfigurar a exigência."));
+        }
+
         // Cada etapa declara a fase a que pertence pelo código canônico; a raiz é quem
         // resolve, porque só ela enxerga o cronograma. Código, e não id, porque o id da
         // fase não sobrevive à reconciliação da restauração. Etapa sem código declarado
@@ -1057,11 +1069,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         foreach (DocumentoExigido item in folhas)
         {
-            if (!_cronogramaFases.Any(fase => fase.Id == item.ExigidoNaFaseId))
+            FaseCronograma? faseDaExigencia = _cronogramaFases.FirstOrDefault(fase => fase.Id == item.ExigidoNaFaseId);
+            if (faseDaExigencia is null)
             {
                 return Result.Failure(new DomainError(
                     "DocumentoExigido.FaseNaoPertenceAoProcesso",
                     $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo."));
+            }
+
+            // A etapa que coleta o documento tem de ser uma etapa DAQUELA fase: apontar
+            // uma etapa de outra fase diria que a habilitação coleta no dia da prova.
+            if (item.ExigidoNaEtapaId is { } exigidoNaEtapaId)
+            {
+                EtapaProcesso? etapaDaExigencia = _etapas.FirstOrDefault(etapa => etapa.Id == exigidoNaEtapaId);
+                if (etapaDaExigencia is null)
+                {
+                    return Result.Failure(new DomainError(
+                        "DocumentoExigido.EtapaNaoPertenceAoProcesso",
+                        $"A etapa {exigidoNaEtapaId} não pertence a este processo."));
+                }
+
+                if (!string.Equals(etapaDaExigencia.FaseCodigo, faseDaExigencia.Codigo, StringComparison.Ordinal))
+                {
+                    return Result.Failure(new DomainError(
+                        "DocumentoExigido.EtapaNaoPertenceAFase",
+                        $"A etapa {exigidoNaEtapaId} não acontece na fase {faseDaExigencia.Codigo}."));
+                }
             }
 
             // Story #554/issue #893 (PR #900): âncora de fase de IdadeMaximaEmissao — mesma

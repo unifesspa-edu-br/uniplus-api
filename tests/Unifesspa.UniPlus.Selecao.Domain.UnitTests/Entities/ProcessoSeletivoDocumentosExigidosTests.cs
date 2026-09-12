@@ -63,6 +63,107 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
+    private static EtapaProcesso Etapa(string nome, string faseCodigo, int ordem) =>
+        EtapaProcesso.Criar(
+            nome,
+            CaraterEtapa.Classificatoria,
+            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental").Value!,
+            peso: 1m,
+            ordem: ordem,
+            faseCodigo: faseCodigo).Value!;
+
+    private static DocumentoExigido ExigenciaNaEtapa(Guid exigidoNaFaseId, Guid exigidoNaEtapaId) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "IDENTIDADE",
+            tipoDocumentoNome: "Documento de identidade",
+            tipoDocumentoCategoria: "PESSOAL",
+            Aplicabilidade.Geral,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
+            tamanhoMaximoBytes: null,
+            exigidoNaEtapaId: exigidoNaEtapaId).Value!;
+
+    [Fact(DisplayName = "Etapa da própria fase coleta o documento")]
+    public void DefinirDocumentosExigidos_EtapaDaPropriaFase_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "HABILITACAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaNaEtapa(fase.Id, etapa.Id), 0).Value!], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().ContainSingle(d => d.ExigidoNaEtapaId == etapa.Id);
+    }
+
+    [Fact(DisplayName = "Etapa que não pertence ao processo é recusada")]
+    public void DefinirDocumentosExigidos_EtapaDeOutroProcesso_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "HABILITACAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaNaEtapa(fase.Id, Guid.CreateVersion7()), 0).Value!], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAoProcesso");
+    }
+
+    /// <summary>
+    /// A etapa existe, mas acontece em outra fase — apontá-la diria que a habilitação
+    /// coleta o documento no dia da prova.
+    /// </summary>
+    [Fact(DisplayName = "Etapa de outra fase do mesmo processo é recusada")]
+    public void DefinirDocumentosExigidos_EtapaDeOutraFase_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma habilitacao = Fase(1, "HABILITACAO");
+        FaseCronograma avaliacao = Fase(2, "AVALIACAO");
+        processo.DefinirCronogramaFases([habilitacao, avaliacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        EtapaProcesso prova = Etapa("Prova objetiva", "AVALIACAO", 1);
+        processo.DefinirEtapas([prova], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaNaEtapa(habilitacao.Id, prova.Id), 0).Value!], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");
+    }
+
+    /// <summary>
+    /// Remover a etapa deixaria a exigência apontando para uma etapa inexistente, e a
+    /// coleta sem onde acontecer — mesma proteção que desempate e eliminação já têm.
+    /// </summary>
+    [Fact(DisplayName = "Etapa que coleta documento não pode ser removida")]
+    public void DefinirEtapas_RemoveEtapaQueColetaDocumento_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "HABILITACAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaNaEtapa(fase.Id, etapa.Id), 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirEtapas(
+            [Etapa("Entrevista", "HABILITACAO", 1)], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorExigenciaDocumental");
+    }
+
     [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()
     {

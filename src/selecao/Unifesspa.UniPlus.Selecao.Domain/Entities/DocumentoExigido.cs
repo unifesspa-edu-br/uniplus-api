@@ -37,6 +37,17 @@ public sealed class DocumentoExigido : EntityBase
     /// <summary>Fase do cronograma do mesmo processo em que o documento é exigido — NOT NULL (Story #554).</summary>
     public Guid ExigidoNaFaseId { get; private set; }
 
+    /// <summary>
+    /// Etapa dessa mesma fase que coleta o documento, quando a fase se subdivide — nula
+    /// quando o documento é da fase inteira, que é o caso de toda fase sem etapa.
+    ///
+    /// A âncora da exigência continua sendo a fase: é dela que a remoção de fase se
+    /// defende e é por ela que o gate de reenvio agrupa. A etapa refina a resposta a "o
+    /// que se coleta aqui" — a habilitação do certame regional tem oito etapas, e cada
+    /// uma pede o seu comprovante, não os oito.
+    /// </summary>
+    public Guid? ExigidoNaEtapaId { get; private set; }
+
     /// <summary>Id do <c>TipoDocumento</c> vivo no momento da configuração — snapshot-copy (ADR-0061), sem FK cross-módulo.</summary>
     public Guid TipoDocumentoOrigemId { get; private set; }
 
@@ -170,7 +181,8 @@ public sealed class DocumentoExigido : EntityBase
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
         IdadeMaximaEmissao? idadeMaximaEmissao,
         FormatosPermitidos formatosPermitidos,
-        int? tamanhoMaximoBytes)
+        int? tamanhoMaximoBytes,
+        Guid? exigidoNaEtapaId = null)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -198,6 +210,7 @@ public sealed class DocumentoExigido : EntityBase
         DocumentoExigido documento = new()
         {
             ExigidoNaFaseId = exigidoNaFaseId,
+            ExigidoNaEtapaId = exigidoNaEtapaId,
             TipoDocumentoOrigemId = tipoDocumentoOrigemId,
             TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
             TipoDocumentoNome = tipoDocumentoNome.Trim(),
@@ -266,7 +279,8 @@ public sealed class DocumentoExigido : EntityBase
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
         IdadeMaximaEmissao? idadeMaximaEmissao,
         FormatosPermitidos formatosPermitidos,
-        int? tamanhoMaximoBytes)
+        int? tamanhoMaximoBytes,
+        Guid? exigidoNaEtapaId = null)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -283,6 +297,7 @@ public sealed class DocumentoExigido : EntityBase
         {
             Id = id,
             ExigidoNaFaseId = exigidoNaFaseId,
+            ExigidoNaEtapaId = exigidoNaEtapaId,
             TipoDocumentoOrigemId = tipoDocumentoOrigemId,
             TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
             TipoDocumentoNome = tipoDocumentoNome.Trim(),

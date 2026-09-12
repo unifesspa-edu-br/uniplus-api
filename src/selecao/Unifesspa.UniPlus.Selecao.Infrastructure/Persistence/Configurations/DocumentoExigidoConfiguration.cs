@@ -75,6 +75,21 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.HasIndex(d => d.ExigidoNaFaseId)
             .HasDatabaseName("ix_documentos_exigidos_exigido_na_fase_id");
 
+        // A etapa que coleta o documento, quando a fase se subdivide — opcional, com FK
+        // Restrict pela mesma razão da fase: reconfigurar as etapas não pode apagar a
+        // etapa que uma exigência viva aponta. O guard de domínio equivalente está em
+        // DefinirEtapas (EtapaReferenciadaPorExigenciaDocumental); a constraint é a
+        // defesa atômica que o check-then-act dele não dá.
+        builder.Property(d => d.ExigidoNaEtapaId);
+
+        builder.HasOne<EtapaProcesso>()
+            .WithMany()
+            .HasForeignKey(d => d.ExigidoNaEtapaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(d => d.ExigidoNaEtapaId)
+            .HasDatabaseName("ix_documentos_exigidos_exigido_na_etapa_id");
+
         // Gatilho DNF (Story #554, PR #896) — substituível por inteiro junto com o próprio
         // DocumentoExigido, mesmo padrão de FaseCronograma/BancasRequeridas.
         builder.HasMany(d => d.Condicoes)

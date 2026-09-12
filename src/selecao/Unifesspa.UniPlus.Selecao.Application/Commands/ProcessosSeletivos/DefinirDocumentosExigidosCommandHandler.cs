@@ -385,7 +385,8 @@ public static class DefinirDocumentosExigidosCommandHandler
             basesLegaisResult.Value!,
             idadeMaximaEmissaoResult.Value,
             formatosPermitidosResult.Value!,
-            input.TamanhoMaximoBytes);
+            input.TamanhoMaximoBytes,
+            input.ExigidoNaEtapaId);
     }
 
     /// <summary>

@@ -280,7 +280,7 @@ public sealed class ManifestoDoEnvelopeTests
         // (PR #903, fora deste bloco) consome para correlacionar apresentação↔exigência.
         [typeof(DocumentoExigido)] = (
             [
-                "ExigidoNaFaseId", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
+                "ExigidoNaFaseId", "ExigidoNaEtapaId", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
                 "GrupoSatisfacaoId", "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos",
                 "TamanhoMaximoBytes",
