@@ -8609,7 +8609,8 @@
           "tipoEtapa",
           "peso",
           "notaMinima",
-          "ordem"
+          "ordem",
+          "faseCodigo"
         ],
         "type": "object",
         "properties": {
@@ -8652,6 +8653,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "faseCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8709,6 +8716,12 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "faseCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
