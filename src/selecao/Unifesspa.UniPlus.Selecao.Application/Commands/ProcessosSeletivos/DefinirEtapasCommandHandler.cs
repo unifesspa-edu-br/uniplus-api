@@ -198,6 +198,20 @@ public static class DefinirEtapasCommandHandler
             }
         }
 
+        // Os produtos são declarados por etapa, depois que a etapa existe: é ela quem os
+        // vincula, e a recusa de ato repetido é dela.
+        for (int i = 0; i < etapas.Count; i++)
+        {
+            IReadOnlyList<ProdutoDaEtapaInput> declarados = command.Etapas[i].Produtos ?? [];
+            Result produtosResult = etapas[i].DefinirProdutos(
+                [.. declarados.Select(d => ProdutoDaEtapa.Criar(d.AtoCodigo, d.Papel))]);
+            if (produtosResult.IsFailure)
+            {
+                unitOfWork.DescartarAlteracoesNaoSalvas();
+                return Result<MutacaoAceita>.Failure(produtosResult.Error!);
+            }
+        }
+
         Result result = processo.DefinirEtapas(etapas, command.Precondicao);
         if (result.IsFailure)
         {
