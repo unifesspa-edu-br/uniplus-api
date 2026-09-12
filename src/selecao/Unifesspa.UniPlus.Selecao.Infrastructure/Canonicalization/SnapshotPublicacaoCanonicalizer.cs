@@ -169,7 +169,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>CriarProcessoSeletivoCommandHandler</c> (CA-02). Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.9</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.15";
+    internal const string SchemaVersionAtual = "0.0.16";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -333,6 +333,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["notaMinima"] = etapa.NotaMinima is { } notaMinima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMinima, EscalaPadrao) : null,
         ["ordem"] = etapa.Ordem,
         ["faseCodigo"] = etapa.FaseCodigo,
+        ["produtos"] = new JsonArray([.. etapa.Produtos
+            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
+            .Select(static p => (JsonNode)new JsonObject
+            {
+                ["id"] = JsonValue.Create(p.Id),
+                ["atoCodigo"] = p.AtoCodigo,
+                ["papel"] = p.Papel?.ToString(),
+            })]),
     };
 
     /// <summary>

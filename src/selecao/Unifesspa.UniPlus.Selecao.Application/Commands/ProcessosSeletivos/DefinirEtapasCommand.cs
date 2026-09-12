@@ -29,7 +29,11 @@ public sealed record EtapaProcessoInput(
     decimal? NotaMinima,
     int? Ordem,
     Guid? Id = null,
-    string? FaseCodigo = null);
+    string? FaseCodigo = null,
+    IReadOnlyList<ProdutoDaEtapaInput>? Produtos = null);
+
+/// <summary>O que uma etapa publica: o código do tipo de ato e o papel no ciclo recursal.</summary>
+public sealed record ProdutoDaEtapaInput(string AtoCodigo, PapelProdutoFase? Papel);
 
 /// <summary>
 /// Substitui integralmente as etapas pontuadas do processo (CA-02 da Story

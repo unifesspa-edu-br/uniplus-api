@@ -28,7 +28,7 @@ public sealed partial class EnvelopeCodec
         {
             string path = $"etapas[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "etapas");
-            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "ordem", "faseCodigo");
+            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "ordem", "faseCodigo", "produtos");
 
             Guid id = leitor.Identificador(item, "id", path);
             string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.EtapaNome);
@@ -58,7 +58,34 @@ public sealed partial class EnvelopeCodec
                     $"Envelope malformado em '{path}': peso e ordem devem ser maiores que zero e a nota mínima não negativa.")) ?? [];
             }
 
-            etapas.Add(EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo));
+            EtapaProcesso reidratada = EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo);
+
+            JsonArray? arrayProdutos = leitor.Array(item, "produtos", path);
+            List<ProdutoDaEtapa> produtos = [];
+            for (int j = 0; arrayProdutos is not null && j < arrayProdutos.Count; j++)
+            {
+                string pathProduto = $"{path}.produtos[{j}]";
+                JsonObject itemProduto = leitor.ItemObjeto(arrayProdutos, j, pathProduto);
+                leitor.ExigirChaves(itemProduto, pathProduto, "id", "atoCodigo", "papel");
+                Guid idProduto = leitor.Identificador(itemProduto, "id", pathProduto);
+                string ato = leitor.TextoNaoVazio(itemProduto, "atoCodigo", pathProduto, LimitesDoEnvelope.EtapaNome);
+                PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(itemProduto, "papel", pathProduto);
+                if (leitor.Falhou)
+                {
+                    return [];
+                }
+
+                produtos.Add(ProdutoDaEtapa.Reidratar(idProduto, ato, papel));
+            }
+
+            if (reidratada.DefinirProdutos(produtos).IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<EtapaProcesso>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"Envelope malformado em '{path}.produtos': o mesmo ato aparece duas vezes na etapa.")) ?? [];
+            }
+
+            etapas.Add(reidratada);
         }
 
         return etapas;

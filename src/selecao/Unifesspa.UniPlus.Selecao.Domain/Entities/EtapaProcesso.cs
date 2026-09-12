@@ -58,7 +58,42 @@ public sealed class EtapaProcesso : EntityBase
     public decimal? NotaMinima { get; private set; }
     public int? Ordem { get; private set; }
 
+    private readonly List<ProdutoDaEtapa> _produtos = [];
+
+    /// <summary>Tudo o que a etapa publica, com o papel de cada publicação (0..*).</summary>
+    public IReadOnlyCollection<ProdutoDaEtapa> Produtos => _produtos.AsReadOnly();
+
+    /// <summary>A etapa produz resultado quando declara ao menos um produto com papel.</summary>
+    public bool ProduzResultado => _produtos.Exists(static p => p.Papel is not null);
+
     private EtapaProcesso() { }
+
+    /// <summary>
+    /// Substitui os produtos da etapa por inteiro, recusando o mesmo ato declarado duas
+    /// vezes — um documento publicado é um só, e dois registros do mesmo ato na mesma etapa
+    /// tornariam ambíguo o que o recurso ancora.
+    /// </summary>
+    public Result DefinirProdutos(IReadOnlyList<ProdutoDaEtapa> produtos)
+    {
+        ArgumentNullException.ThrowIfNull(produtos);
+
+        List<string> codigos = [.. produtos.Select(p => p.AtoCodigo)];
+        if (codigos.Distinct(StringComparer.Ordinal).Count() != codigos.Count)
+        {
+            return Result.Failure(new DomainError(
+                "EtapaProcesso.AtoDuplicadoNaEtapa",
+                "Cada tipo de ato pode ser declarado uma única vez por etapa."));
+        }
+
+        _produtos.Clear();
+        foreach (ProdutoDaEtapa produto in produtos)
+        {
+            produto.VincularEtapa(Id);
+            _produtos.Add(produto);
+        }
+
+        return Result.Success();
+    }
 
     /// <summary>
     /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125). Precisão/

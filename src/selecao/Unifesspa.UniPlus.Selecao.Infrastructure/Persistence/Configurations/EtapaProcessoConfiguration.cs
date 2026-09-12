@@ -47,6 +47,15 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             .HasComment("Fase do cronograma a que a etapa pertence, resolvida a partir de fase_codigo.");
         builder.HasIndex(e => e.FaseCronogramaId);
 
+        // Produtos da etapa em cascata: a configuração em rascunho é substituída por
+        // inteiro, e nada fora do agregado referencia o produto por FK.
+        builder.HasMany(e => e.Produtos)
+            .WithOne()
+            .HasForeignKey(p => p.EtapaProcessoId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Metadata.FindNavigation(nameof(EtapaProcesso.Produtos))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
         builder.Property(e => e.Peso).HasPrecision(18, 4);
         builder.Property(e => e.NotaMinima).HasPrecision(18, 4);
 

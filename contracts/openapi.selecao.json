@@ -8610,7 +8610,8 @@
           "peso",
           "notaMinima",
           "ordem",
-          "faseCodigo"
+          "faseCodigo",
+          "produtos"
         ],
         "type": "object",
         "properties": {
@@ -8659,6 +8660,12 @@
               "null",
               "string"
             ]
+          },
+          "produtos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProdutoDaEtapaDto"
+            }
           }
         }
       },
@@ -8722,6 +8729,15 @@
               "null",
               "string"
             ]
+          },
+          "produtos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProdutoDaEtapaInput"
+            }
           }
         }
       },
@@ -9880,6 +9896,14 @@
         ],
         "type": "string"
       },
+      "PapelProdutoFase": {
+        "enum": [
+          "preliminar",
+          "definitivo",
+          null
+        ],
+        "type": "string"
+      },
       "PredicadoObrigatoriedade": {
         "required": [
           "$tipo"
@@ -10309,6 +10333,55 @@
           "criadoEm": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ProdutoDaEtapaDto": {
+        "required": [
+          "id",
+          "atoCodigo",
+          "papel"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "atoCodigo": {
+            "type": "string"
+          },
+          "papel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PapelProdutoFase"
+              }
+            ]
+          }
+        }
+      },
+      "ProdutoDaEtapaInput": {
+        "required": [
+          "atoCodigo",
+          "papel"
+        ],
+        "type": "object",
+        "properties": {
+          "atoCodigo": {
+            "type": "string"
+          },
+          "papel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PapelProdutoFase"
+              }
+            ]
           }
         }
       },
