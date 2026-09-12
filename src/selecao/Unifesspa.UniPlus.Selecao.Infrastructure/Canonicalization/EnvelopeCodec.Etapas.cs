@@ -28,7 +28,7 @@ public sealed partial class EnvelopeCodec
         {
             string path = $"etapas[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "etapas");
-            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "ordem");
+            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "ordem", "faseCodigo");
 
             Guid id = leitor.Identificador(item, "id", path);
             string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.EtapaNome);
@@ -37,6 +37,7 @@ public sealed partial class EnvelopeCodec
             decimal? peso = leitor.DecimalOpcional(item, "peso", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
             decimal? notaMinima = leitor.DecimalOpcional(item, "notaMinima", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
             int? ordem = leitor.InteiroOpcional(item, "ordem", path);
+            string? faseCodigo = leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.EtapaNome);
 
             if (leitor.Falhou)
             {
@@ -57,7 +58,7 @@ public sealed partial class EnvelopeCodec
                     $"Envelope malformado em '{path}': peso e ordem devem ser maiores que zero e a nota mínima não negativa.")) ?? [];
             }
 
-            etapas.Add(EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem));
+            etapas.Add(EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo));
         }
 
         return etapas;

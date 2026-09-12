@@ -173,7 +173,8 @@ public static class DefinirEtapasCommandHandler
                 // passada acima — esta falha só ocorreria por dessincronia entre as duas
                 // checagens, nunca pelo payload em si.
                 Result atualizarResult = etapaExistente.AtualizarDados(
-                    input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem);
+                    input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem,
+                    input.FaseCodigo);
                 if (atualizarResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
@@ -185,7 +186,8 @@ public static class DefinirEtapasCommandHandler
             else
             {
                 Result<EtapaProcesso> criarResult = EtapaProcesso.Criar(
-                    input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem);
+                    input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem,
+                    input.FaseCodigo);
                 if (criarResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();

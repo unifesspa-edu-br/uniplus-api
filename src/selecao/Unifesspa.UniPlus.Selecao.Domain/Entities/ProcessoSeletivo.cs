@@ -100,6 +100,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<EtapaProcesso> _etapas = [];
     public IReadOnlyCollection<EtapaProcesso> Etapas => _etapas.AsReadOnly();
 
+    /// <summary>
+    /// As etapas declaradas na fase de <paramref name="faseCodigo"/>, na ordem em que o
+    /// cliente as enviou. É por aqui que a leitura monta o quadro fase &rarr; etapa, sem
+    /// depender de sinalizador nenhum do cadastro.
+    /// </summary>
+    public IReadOnlyList<EtapaProcesso> EtapasDaFase(string faseCodigo) =>
+        [.. _etapas.Where(e => string.Equals(e.FaseCodigo, faseCodigo, StringComparison.Ordinal))];
+
     /// <summary>Cronograma de fases do certame (1..*, Story #851) — o eixo temporal, distinto das <see cref="Etapas"/> (eixo de pontuação).</summary>
     private readonly List<FaseCronograma> _cronogramaFases = [];
     public IReadOnlyCollection<FaseCronograma> CronogramaFases => _cronogramaFases.AsReadOnly();
@@ -317,10 +325,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // Cada etapa declara a fase a que pertence pelo código canônico; a raiz é quem
+        // resolve, porque só ela enxerga o cronograma. Código, e não id, porque o id da
+        // fase não sobrevive à reconciliação da restauração. Etapa sem código declarado
+        // continua aceita — é o formato anterior ao vínculo.
+        foreach (EtapaProcesso semFase in etapas)
+        {
+            if (semFase.FaseCodigo is { } codigo
+                && !_cronogramaFases.Any(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal)))
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.EtapaSemFaseNoCronograma",
+                    $"A etapa \"{semFase.Nome}\" declara a fase {codigo}, que não está no cronograma deste processo."));
+            }
+        }
+
         _etapas.Clear();
         foreach (EtapaProcesso etapa in etapas)
         {
             etapa.VincularProcesso(Id);
+            if (etapa.FaseCodigo is { } cod)
+            {
+                etapa.VincularFase(
+                    _cronogramaFases.First(f => string.Equals(f.Codigo, cod, StringComparison.Ordinal)).Id);
+            }
+
             _etapas.Add(etapa);
         }
 
@@ -887,7 +916,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // processo). A direção inversa ("etapa sem fase de avaliação") é validada no
         // gate de publicação (PendenciaDoCronograma) — uma etapa pode ser declarada
         // depois do cronograma, e bloquear aqui recusaria uma ordem de montagem legítima.
-        if (fases.Any(static f => f.AgrupaEtapas) && _etapas.Count == 0)
+        if (fases.Any(static f => f.AgrupaEtapas) && !_etapas.Any(static e => e.FaseCodigo is null))
         {
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.AvaliacaoSemEtapa",
@@ -2388,12 +2417,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>Fase que agrupa etapas existe, mas o processo não tem etapa pontuada (§3.5).</summary>
+    // §3.5 — a bicondicional por sinalizador sobrevive apenas para a etapa que NÃO
+    // declara a própria fase. Quando a etapa declara (EtapaProcesso.FaseCodigo), o
+    // vínculo é quem responde por onde ela vive, e qualquer fase pode subdividir-se —
+    // não só a que o cadastro marcava como agrupadora.
     private bool HaFaseDeAvaliacaoSemEtapa() =>
-        _cronogramaFases.Any(static f => f.AgrupaEtapas) && _etapas.Count == 0;
+        _cronogramaFases.Any(static f => f.AgrupaEtapas)
+        && !_etapas.Any(static e => e.FaseCodigo is null);
 
-    /// <summary>Etapa pontuada existe, mas nenhuma fase do cronograma agrupa etapas (§3.5).</summary>
     private bool HaEtapaSemFaseDeAvaliacao() =>
-        _etapas.Count > 0 && !_cronogramaFases.Any(static f => f.AgrupaEtapas);
+        _etapas.Any(static e => e.FaseCodigo is null)
+        && !_cronogramaFases.Any(static f => f.AgrupaEtapas);
 
     /// <summary>Origem InscricaoPropria sem nenhuma fase que colete inscrição (§3.4).</summary>
     private bool HaInscricaoPropriaSemFaseDeColeta() =>

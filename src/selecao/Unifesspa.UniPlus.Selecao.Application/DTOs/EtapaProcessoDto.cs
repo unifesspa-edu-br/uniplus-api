@@ -17,7 +17,8 @@ public sealed record EtapaProcessoDto(
     TipoEtapaSnapshotDto TipoEtapa,
     decimal? Peso,
     decimal? NotaMinima,
-    int? Ordem);
+    int? Ordem,
+    string? FaseCodigo);
 
 /// <summary>Cópia por valor do tipo de etapa, projetada para leitura (ADR-0061).</summary>
 public sealed record TipoEtapaSnapshotDto(Guid OrigemId, string Codigo, string Nome);

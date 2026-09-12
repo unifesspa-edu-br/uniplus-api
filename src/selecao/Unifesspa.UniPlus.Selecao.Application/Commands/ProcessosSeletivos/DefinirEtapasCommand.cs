@@ -28,7 +28,8 @@ public sealed record EtapaProcessoInput(
     decimal? Peso,
     decimal? NotaMinima,
     int? Ordem,
-    Guid? Id = null);
+    Guid? Id = null,
+    string? FaseCodigo = null);
 
 /// <summary>
 /// Substitui integralmente as etapas pontuadas do processo (CA-02 da Story

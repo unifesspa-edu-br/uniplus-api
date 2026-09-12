@@ -27,6 +27,22 @@ public sealed class EtapaProcesso : EntityBase
     public const int NomeMaxLength = 300;
 
     public Guid ProcessoSeletivoId { get; private set; }
+
+    /// <summary>
+    /// A fase do cronograma a que esta etapa pertence. É o vínculo que substitui a
+    /// bicondicional por sinalizador: qualquer fase pode subdividir-se em etapas, e é a
+    /// posição na fase — não um booleano do cadastro — que diz quais são as dela.
+    /// </summary>
+    public Guid FaseCronogramaId { get; private set; }
+
+    /// <summary>
+    /// Código canônico da fase declarada pelo cliente (ex.: <c>"AVALIACAO"</c>). A raiz o
+    /// resolve contra o cronograma para preencher <see cref="FaseCronogramaId"/>. É por
+    /// código, e não por id, porque o id da fase não sobrevive à reconciliação da
+    /// restauração — mesmo motivo de <c>FaseCronograma.FaseConcluinteCodigo</c>.
+    /// </summary>
+    public string? FaseCodigo { get; private set; }
+
     public string Nome { get; private set; } = string.Empty;
     public CaraterEtapa Carater { get; private set; }
 
@@ -57,7 +73,8 @@ public sealed class EtapaProcesso : EntityBase
         TipoEtapaSnapshot tipoEtapa,
         decimal? peso = null,
         decimal? notaMinima = null,
-        int? ordem = null)
+        int? ordem = null,
+        string? faseCodigo = null)
     {
         ArgumentNullException.ThrowIfNull(tipoEtapa);
 
@@ -75,6 +92,7 @@ public sealed class EtapaProcesso : EntityBase
             Peso = peso,
             NotaMinima = notaMinima,
             Ordem = ordem,
+            FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
         });
     }
 
@@ -160,7 +178,8 @@ public sealed class EtapaProcesso : EntityBase
         TipoEtapaSnapshot tipoEtapa,
         decimal? peso,
         decimal? notaMinima,
-        int? ordem)
+        int? ordem,
+        string? faseCodigo = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
@@ -185,6 +204,7 @@ public sealed class EtapaProcesso : EntityBase
             Peso = peso,
             NotaMinima = notaMinima,
             Ordem = ordem,
+            FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
         };
     }
 
@@ -209,7 +229,8 @@ public sealed class EtapaProcesso : EntityBase
         TipoEtapaSnapshot tipoEtapa,
         decimal? peso,
         decimal? notaMinima,
-        int? ordem)
+        int? ordem,
+        string? faseCodigo = null)
     {
         ArgumentNullException.ThrowIfNull(tipoEtapa);
 
@@ -225,10 +246,18 @@ public sealed class EtapaProcesso : EntityBase
         Peso = peso;
         NotaMinima = notaMinima;
         Ordem = ordem;
+        FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
 
         return Result.Success();
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
+
+    /// <summary>
+    /// Prende a etapa à fase que a contém. Chamado pela raiz, que é quem enxerga o
+    /// cronograma inteiro e pode conferir que a fase existe nele.
+    /// </summary>
+    internal void VincularFase(Guid faseCronogramaId) =>
+        FaseCronogramaId = faseCronogramaId;
 }
