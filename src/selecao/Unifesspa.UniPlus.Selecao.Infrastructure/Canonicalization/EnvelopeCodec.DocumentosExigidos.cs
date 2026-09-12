@@ -103,7 +103,7 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(
                 item, path,
                 "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome",
-                "tipoDocumentoCategoria", "exigidoNaFaseId", "aplicabilidade", "obrigatorio",
+                "tipoDocumentoCategoria", "exigidoNaFaseId", "exigidoNaEtapaId", "aplicabilidade", "obrigatorio",
                 "consequenciaIndeferimento", "grupoSatisfacaoId", "condicaoGatilho", "basesLegais",
                 "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes");
 
@@ -113,6 +113,7 @@ public sealed partial class EnvelopeCodec
             string tipoDocumentoNome = leitor.TextoNaoVazio(item, "tipoDocumentoNome", path, LimitesDoEnvelope.TipoDocumentoNome);
             string tipoDocumentoCategoria = leitor.TextoNaoVazio(item, "tipoDocumentoCategoria", path, LimitesDoEnvelope.TipoDocumentoCategoria);
             Guid exigidoNaFaseId = leitor.Identificador(item, "exigidoNaFaseId", path);
+            Guid? exigidoNaEtapaId = leitor.IdentificadorOpcional(item, "exigidoNaEtapaId", path);
             Aplicabilidade aplicabilidade = leitor.Enumeracao<Aplicabilidade>(item, "aplicabilidade", path);
             bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
             string? consequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token);
@@ -170,7 +171,8 @@ public sealed partial class EnvelopeCodec
                 basesLegais,
                 idadeMaximaEmissao,
                 formatosPermitidos!,
-                tamanhoMaximoBytes));
+                tamanhoMaximoBytes,
+                exigidoNaEtapaId));
         }
 
         return exigencias;

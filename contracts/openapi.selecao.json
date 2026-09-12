@@ -8562,7 +8562,8 @@
           "basesLegais",
           "idadeMaximaEmissao",
           "formatosPermitidos",
-          "tamanhoMaximoBytes"
+          "tamanhoMaximoBytes",
+          "exigidoNaEtapaId"
         ],
         "type": "object",
         "properties": {
@@ -8639,6 +8640,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "exigidoNaEtapaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -9478,6 +9486,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "exigidoNaEtapaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },

@@ -28,7 +28,8 @@ public sealed record DocumentoExigidoDto(
     IReadOnlyList<BaseLegalDto> BasesLegais,
     IdadeMaximaEmissaoDto? IdadeMaximaEmissao,
     JsonElement FormatosPermitidos,
-    int? TamanhoMaximoBytes);
+    int? TamanhoMaximoBytes,
+    Guid? ExigidoNaEtapaId);
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.ValueObjects.IdadeMaximaEmissao"/> (Story #554,

@@ -51,6 +51,12 @@ public sealed record IdadeMaximaEmissaoInput(
 /// sem gate de publicação.
 /// </summary>
 /// <remarks>
+/// <see cref="ExigidoNaEtapaId"/> é opcional e refina <see cref="ExigidoNaFaseId"/>: diz em
+/// qual etapa daquela fase o documento é coletado, quando a fase se subdivide. Ausente, o
+/// documento é da fase inteira. A raiz confere que a etapa é do processo e acontece naquela
+/// fase; a âncora da exigência continua sendo a fase.
+/// </remarks>
+/// <remarks>
 /// <see cref="FormatosPermitidos"/> (Story #918) é um valor JSON polimórfico — o mesmo
 /// tratamento já usado por <see cref="CondicaoGatilhoInput.Valor"/>/<c>CondicaoDnf.Valor</c>
 /// (ADR-0111): a string <c>"QUALQUER"</c> OU um array de <c>{formato, tamanhoMaximoBytesMax}</c>,
@@ -69,7 +75,8 @@ public sealed record ItemDocumentoExigidoInput(
     IReadOnlyList<BaseLegalInput> BasesLegais,
     IdadeMaximaEmissaoInput? IdadeMaximaEmissao,
     JsonElement? FormatosPermitidos,
-    int? TamanhoMaximoBytes);
+    int? TamanhoMaximoBytes,
+    Guid? ExigidoNaEtapaId = null);
 
 /// <summary>
 /// Entrada de um nó da árvore de satisfação (Story #920) — substitui o antigo
