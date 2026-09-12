@@ -30,7 +30,32 @@ public sealed record EtapaProcessoInput(
     int? Ordem,
     Guid? Id = null,
     string? FaseCodigo = null,
-    IReadOnlyList<ProdutoDaEtapaInput>? Produtos = null);
+    IReadOnlyList<ProdutoDaEtapaInput>? Produtos = null,
+    DateTimeOffset? Inicio = null,
+    DateTimeOffset? Fim = null,
+    bool EmiteParecerIndividual = false,
+    IReadOnlyList<BancaDaEtapaInput>? Bancas = null,
+    IReadOnlyList<RecursoDaEtapaInput>? Recursos = null);
+
+/// <summary>Uma banca requerida pela etapa — o id do tipo no cadastro de Configuração.</summary>
+public sealed record BancaDaEtapaInput(Guid TipoBancaId);
+
+/// <summary>
+/// Uma janela recursal da etapa. <paramref name="AtoAncoraCodigo"/> só é lido na âncora de
+/// ato publicado: é por ele que Application resolve, dentro dos produtos da própria etapa,
+/// qual publicação abre a janela.
+/// </summary>
+public sealed record RecursoDaEtapaInput(
+    AncoraDoRecurso Ancora,
+    string RegraCodigo,
+    string RegraVersao,
+    decimal PrazoValor,
+    UnidadePrazo PrazoUnidade,
+    string? AtoAncoraCodigo,
+    decimal? SuspensividadePrimeiraInstanciaValor,
+    UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
+    decimal? SuspensividadeSegundaInstanciaValor,
+    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
 
 /// <summary>O que uma etapa publica: o código do tipo de ato e o papel no ciclo recursal.</summary>
 public sealed record ProdutoDaEtapaInput(string AtoCodigo, PapelProdutoFase? Papel);

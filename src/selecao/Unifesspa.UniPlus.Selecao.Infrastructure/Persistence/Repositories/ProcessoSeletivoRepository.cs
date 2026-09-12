@@ -94,6 +94,8 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // diria que a etapa não publica nada, e a redefinição faria Clear() num backing
             // list já vazio, deixando as linhas antigas no banco.
             .Include(p => p.Etapas).ThenInclude(e => e.Produtos)
+            .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
+            .Include(p => p.Etapas).ThenInclude(e => e.Recursos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)

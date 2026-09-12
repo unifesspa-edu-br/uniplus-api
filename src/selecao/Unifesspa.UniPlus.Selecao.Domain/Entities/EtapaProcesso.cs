@@ -58,7 +58,27 @@ public sealed class EtapaProcesso : EntityBase
     public decimal? NotaMinima { get; private set; }
     public int? Ordem { get; private set; }
 
+    /// <summary>Início da janela própria da etapa, em UTC; ausente quando ela herda a da fase.</summary>
+    public DateTimeOffset? Inicio { get; private set; }
+
+    /// <summary>Fim da janela própria, em UTC.</summary>
+    public DateTimeOffset? Fim { get; private set; }
+
+    /// <summary>
+    /// Se a etapa promete parecer individual por candidato. É a promessa de que existirá; o
+    /// parecer sai na execução, e é dele que o candidato tira fundamento para recorrer.
+    /// </summary>
+    public bool EmiteParecerIndividual { get; private set; }
+
     private readonly List<ProdutoDaEtapa> _produtos = [];
+    private readonly List<BancaDaEtapa> _bancas = [];
+    private readonly List<RecursoDaEtapa> _recursos = [];
+
+    /// <summary>As bancas que a etapa requer (0..*).</summary>
+    public IReadOnlyCollection<BancaDaEtapa> Bancas => _bancas.AsReadOnly();
+
+    /// <summary>As janelas recursais que a etapa abre (0..*).</summary>
+    public IReadOnlyCollection<RecursoDaEtapa> Recursos => _recursos.AsReadOnly();
 
     /// <summary>Tudo o que a etapa publica, com o papel de cada publicação (0..*).</summary>
     public IReadOnlyCollection<ProdutoDaEtapa> Produtos => _produtos.AsReadOnly();
@@ -295,4 +315,94 @@ public sealed class EtapaProcesso : EntityBase
     /// </summary>
     internal void VincularFase(Guid faseCronogramaId) =>
         FaseCronogramaId = faseCronogramaId;
+
+    /// <summary>Declara a janela própria da etapa, normalizada para UTC, e o parecer individual.</summary>
+    public Result DefinirJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
+    {
+        if (inicio is not null && fim is not null && fim < inicio)
+        {
+            return Result.Failure(new DomainError(
+                "EtapaProcesso.JanelaInvertida",
+                "O fim da janela da etapa não pode ser anterior ao início."));
+        }
+
+        Inicio = inicio?.ToUniversalTime();
+        Fim = fim?.ToUniversalTime();
+        EmiteParecerIndividual = emiteParecerIndividual;
+        return Result.Success();
+    }
+
+    /// <summary>Substitui as bancas da etapa por inteiro, recusando o mesmo tipo duas vezes.</summary>
+    public Result DefinirBancas(IReadOnlyList<BancaDaEtapa> bancas)
+    {
+        ArgumentNullException.ThrowIfNull(bancas);
+
+        List<string> codigos = [.. bancas.Select(b => b.Codigo)];
+        if (codigos.Distinct(StringComparer.Ordinal).Count() != codigos.Count)
+        {
+            return Result.Failure(new DomainError(
+                "EtapaProcesso.BancaDuplicadaNaEtapa",
+                "Cada tipo de banca pode ser requerido uma única vez por etapa."));
+        }
+
+        _bancas.Clear();
+        foreach (BancaDaEtapa banca in bancas)
+        {
+            banca.VincularEtapa(Id);
+            _bancas.Add(banca);
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Substitui as janelas recursais por inteiro. Prova o que só a etapa enxerga: a âncora
+    /// em ato referencia um produto preliminar desta etapa; a âncora em ciência exige a
+    /// promessa de parecer individual, porque é dele que corre o prazo; e não há duas
+    /// janelas para o mesmo fato.
+    /// </summary>
+    public Result DefinirRecursos(IReadOnlyList<RecursoDaEtapa> recursos)
+    {
+        ArgumentNullException.ThrowIfNull(recursos);
+
+        HashSet<Guid> preliminares =
+            [.. _produtos.Where(p => p.Papel == PapelProdutoFase.Preliminar).Select(p => p.Id)];
+
+        foreach (RecursoDaEtapa recurso in recursos)
+        {
+            if (recurso.Ancora == AncoraDoRecurso.AtoPublicado && !preliminares.Contains(recurso.ProdutoAncoraId))
+            {
+                return Result.Failure(new DomainError(
+                    "EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa",
+                    "O recurso contra ato publicado ancora num resultado preliminar desta etapa — é a publicação dele que abre a janela."));
+            }
+
+            if (recurso.Ancora == AncoraDoRecurso.CienciaIndividual && !EmiteParecerIndividual)
+            {
+                return Result.Failure(new DomainError(
+                    "EtapaProcesso.CienciaSemParecerIndividual",
+                    "O prazo que corre da ciência do candidato exige que a etapa prometa parecer individual: é dele que o candidato toma ciência."));
+            }
+        }
+
+        List<string> fatos =
+            [.. recursos.Select(r => r.Ancora == AncoraDoRecurso.AtoPublicado
+                ? $"ato:{r.ProdutoAncoraId}"
+                : "ciencia")];
+        if (fatos.Distinct(StringComparer.Ordinal).Count() != fatos.Count)
+        {
+            return Result.Failure(new DomainError(
+                "EtapaProcesso.RecursoDuplicadoNaEtapa",
+                "Cada fato recorrível abre uma janela só: dois prazos para a mesma publicação, ou dois para a ciência, seriam ambíguos."));
+        }
+
+        _recursos.Clear();
+        foreach (RecursoDaEtapa recurso in recursos)
+        {
+            recurso.VincularEtapa(Id);
+            _recursos.Add(recurso);
+        }
+
+        return Result.Success();
+    }
 }

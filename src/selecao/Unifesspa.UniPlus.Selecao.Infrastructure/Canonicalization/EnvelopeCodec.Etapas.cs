@@ -28,7 +28,8 @@ public sealed partial class EnvelopeCodec
         {
             string path = $"etapas[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "etapas");
-            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "ordem", "faseCodigo", "produtos");
+            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "ordem", "faseCodigo", "produtos",
+                "inicio", "fim", "emiteParecerIndividual", "bancas", "recursos");
 
             Guid id = leitor.Identificador(item, "id", path);
             string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.EtapaNome);
@@ -78,11 +79,84 @@ public sealed partial class EnvelopeCodec
                 produtos.Add(ProdutoDaEtapa.Reidratar(idProduto, ato, papel));
             }
 
+            // Janela, parecer, bancas e recursos da etapa. O decodificador é a última linha
+            // contra envelope adulterado: as guardas da entidade rodam de novo aqui.
+            DateTimeOffset? inicioEtapa = leitor.InstanteOpcional(item, "inicio", path);
+            DateTimeOffset? fimEtapa = leitor.InstanteOpcional(item, "fim", path);
+            bool parecer = leitor.Booleano(item, "emiteParecerIndividual", path);
+            if (reidratada.DefinirJanelaEParecer(inicioEtapa, fimEtapa, parecer).IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<EtapaProcesso>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"Envelope malformado em '{path}': a janela da etapa está invertida.")) ?? [];
+            }
+
+            JsonArray? arrayBancas = leitor.Array(item, "bancas", path);
+            List<BancaDaEtapa> bancas = [];
+            for (int j = 0; arrayBancas is not null && j < arrayBancas.Count; j++)
+            {
+                string pathBanca = $"{path}.bancas[{j}]";
+                JsonObject itemBanca = leitor.ItemObjeto(arrayBancas, j, pathBanca);
+                leitor.ExigirChaves(itemBanca, pathBanca, "id", "tipoBancaOrigemId", "codigo");
+                Guid idBanca = leitor.Identificador(itemBanca, "id", pathBanca);
+                Guid origem = leitor.Identificador(itemBanca, "tipoBancaOrigemId", pathBanca);
+                string codigoBanca = leitor.TextoNaoVazio(itemBanca, "codigo", pathBanca, LimitesDoEnvelope.EtapaNome);
+                if (leitor.Falhou)
+                {
+                    return [];
+                }
+
+                bancas.Add(BancaDaEtapa.Reidratar(idBanca, origem, codigoBanca));
+            }
+
+            if (reidratada.DefinirBancas(bancas).IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<EtapaProcesso>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"Envelope malformado em '{path}.bancas': o mesmo tipo aparece duas vezes.")) ?? [];
+            }
+
             if (reidratada.DefinirProdutos(produtos).IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<EtapaProcesso>>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado,
                     $"Envelope malformado em '{path}.produtos': o mesmo ato aparece duas vezes na etapa.")) ?? [];
+            }
+
+            JsonArray? arrayRecursos = leitor.Array(item, "recursos", path);
+            List<RecursoDaEtapa> recursos = [];
+            for (int j = 0; arrayRecursos is not null && j < arrayRecursos.Count; j++)
+            {
+                string pathRecurso = $"{path}.recursos[{j}]";
+                JsonObject itemRecurso = leitor.ItemObjeto(arrayRecursos, j, pathRecurso);
+                leitor.ExigirChaves(
+                    itemRecurso, pathRecurso,
+                    "id", "ancora", "regraCodigo", "regraVersao", "prazoValor", "prazoUnidade", "produtoAncoraId");
+                Guid idRecurso = leitor.Identificador(itemRecurso, "id", pathRecurso);
+                AncoraDoRecurso ancora = leitor.Enumeracao<AncoraDoRecurso>(itemRecurso, "ancora", pathRecurso);
+                string regraCodigo = leitor.TextoNaoVazio(itemRecurso, "regraCodigo", pathRecurso, LimitesDoEnvelope.EtapaNome);
+                string regraVersao = leitor.TextoNaoVazio(itemRecurso, "regraVersao", pathRecurso, LimitesDoEnvelope.EtapaNome);
+                decimal? prazo = leitor.DecimalOpcional(itemRecurso, "prazoValor", EscalaPadrao, pathRecurso, LimitesDoEnvelope.PrecisaoEtapa);
+                UnidadePrazo unidade = leitor.Enumeracao<UnidadePrazo>(itemRecurso, "prazoUnidade", pathRecurso);
+                Guid ancoraId = leitor.Identificador(itemRecurso, "produtoAncoraId", pathRecurso);
+                if (leitor.Falhou)
+                {
+                    return [];
+                }
+
+                recursos.Add(RecursoDaEtapa.Reidratar(
+                    idRecurso,
+                    ancora,
+                    ReferenciaRegra.Criar(regraCodigo, regraVersao, string.Empty).Value!,
+                    new ArgsRegraPrazoRecurso(prazo ?? 0m, unidade, null, null, null, null),
+                    ancoraId));
+            }
+
+            if (reidratada.DefinirRecursos(recursos).IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<EtapaProcesso>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"Envelope malformado em '{path}.recursos': a âncora não resolve na etapa.")) ?? [];
             }
 
             etapas.Add(reidratada);

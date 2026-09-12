@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
@@ -35,12 +36,14 @@ public static class DefinirEtapasCommandHandler
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         ITipoEtapaReader tipoEtapaReader,
+        ITipoBancaReader tipoBancaReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
+        ArgumentNullException.ThrowIfNull(tipoBancaReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -209,6 +212,80 @@ public static class DefinirEtapasCommandHandler
             {
                 unitOfWork.DescartarAlteracoesNaoSalvas();
                 return Result<MutacaoAceita>.Failure(produtosResult.Error!);
+            }
+
+            EtapaProcessoInput input = command.Etapas[i];
+
+            Result janelaResult = etapas[i].DefinirJanelaEParecer(
+                input.Inicio, input.Fim, input.EmiteParecerIndividual);
+            if (janelaResult.IsFailure)
+            {
+                unitOfWork.DescartarAlteracoesNaoSalvas();
+                return Result<MutacaoAceita>.Failure(janelaResult.Error!);
+            }
+
+            List<BancaDaEtapa> bancas = [];
+            foreach (BancaDaEtapaInput bancaInput in input.Bancas ?? [])
+            {
+                TipoBancaView? tipoBanca = await tipoBancaReader
+                    .ObterPorIdAsync(bancaInput.TipoBancaId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (tipoBanca is null)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.Failure(new DomainError(
+                        "EtapaProcesso.TipoBancaNaoEncontradoOuInativo",
+                        $"O tipo de banca {bancaInput.TipoBancaId} não existe ou está inativo no cadastro."));
+                }
+
+                bancas.Add(BancaDaEtapa.Criar(tipoBanca.Id, tipoBanca.Codigo));
+            }
+
+            Result bancasResult = etapas[i].DefinirBancas(bancas);
+            if (bancasResult.IsFailure)
+            {
+                unitOfWork.DescartarAlteracoesNaoSalvas();
+                return Result<MutacaoAceita>.Failure(bancasResult.Error!);
+            }
+
+            // A âncora em ato é declarada pelo código, e resolvida DENTRO dos produtos desta
+            // etapa: ancorar na publicação de outra etapa deixa de ser exprimível.
+            List<RecursoDaEtapa> recursos = [];
+            foreach (RecursoDaEtapaInput declarado in input.Recursos ?? [])
+            {
+                Guid ancora = declarado.Ancora == AncoraDoRecurso.AtoPublicado
+                    ? etapas[i].Produtos
+                        .FirstOrDefault(pr => string.Equals(pr.AtoCodigo, declarado.AtoAncoraCodigo, StringComparison.Ordinal))
+                        ?.Id ?? Guid.Empty
+                    : Guid.Empty;
+
+                ArgsRegraPrazoRecurso args = new(
+                    declarado.PrazoValor,
+                    declarado.PrazoUnidade,
+                    declarado.SuspensividadePrimeiraInstanciaValor,
+                    declarado.SuspensividadePrimeiraInstanciaUnidade,
+                    declarado.SuspensividadeSegundaInstanciaValor,
+                    declarado.SuspensividadeSegundaInstanciaUnidade);
+
+                Result<RecursoDaEtapa> recursoResult = RecursoDaEtapa.Criar(
+                    declarado.Ancora,
+                    ReferenciaRegra.Criar(declarado.RegraCodigo, declarado.RegraVersao, string.Empty).Value!,
+                    args,
+                    ancora);
+                if (recursoResult.IsFailure)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.ValidationFailure(recursoResult.Errors);
+                }
+
+                recursos.Add(recursoResult.Value!);
+            }
+
+            Result recursosResult = etapas[i].DefinirRecursos(recursos);
+            if (recursosResult.IsFailure)
+            {
+                unitOfWork.DescartarAlteracoesNaoSalvas();
+                return Result<MutacaoAceita>.Failure(recursosResult.Error!);
             }
         }
 

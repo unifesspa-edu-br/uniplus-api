@@ -40,12 +40,21 @@ public sealed class ManifestoDoEnvelopeTests
     /// </summary>
     private static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Manifesto = new()
     {
+        [typeof(BancaDaEtapa)] = (
+            ["TipoBancaOrigemId", "Codigo"],
+            [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
+
+        [typeof(RecursoDaEtapa)] = (
+            ["Ancora", "Regra", "Args", "ProdutoAncoraId"],
+            [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
+
         [typeof(ProdutoDaEtapa)] = (
             ["AtoCodigo", "Papel"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(EtapaProcesso)] = (
-            ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "Ordem", "FaseCodigo", "Produtos"],
+            ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "Ordem", "FaseCodigo", "Produtos",
+             "Inicio", "Fim", "EmiteParecerIndividual", "Bancas", "Recursos"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("FaseCronogramaId", "FK interna — resolvida pela raiz a partir de FaseCodigo, que é o que o envelope congela."),

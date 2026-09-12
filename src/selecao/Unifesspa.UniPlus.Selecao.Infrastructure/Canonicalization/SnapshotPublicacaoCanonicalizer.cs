@@ -169,7 +169,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>CriarProcessoSeletivoCommandHandler</c> (CA-02). Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.9</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.16";
+    internal const string SchemaVersionAtual = "0.0.17";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -333,6 +333,30 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["notaMinima"] = etapa.NotaMinima is { } notaMinima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMinima, EscalaPadrao) : null,
         ["ordem"] = etapa.Ordem,
         ["faseCodigo"] = etapa.FaseCodigo,
+        ["inicio"] = etapa.Inicio is { } ini ? HashCanonicalComputer.SerializeInstantCanonical(ini) : null,
+        ["fim"] = etapa.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null,
+        ["emiteParecerIndividual"] = etapa.EmiteParecerIndividual,
+        ["bancas"] = new JsonArray([.. etapa.Bancas
+            .OrderBy(static b => b.Codigo, StringComparer.Ordinal)
+            .Select(static b => (JsonNode)new JsonObject
+            {
+                ["id"] = JsonValue.Create(b.Id),
+                ["tipoBancaOrigemId"] = JsonValue.Create(b.TipoBancaOrigemId),
+                ["codigo"] = b.Codigo,
+            })]),
+        ["recursos"] = new JsonArray([.. etapa.Recursos
+            .OrderBy(static r => r.Ancora)
+            .ThenBy(static r => r.ProdutoAncoraId)
+            .Select(static r => (JsonNode)new JsonObject
+            {
+                ["id"] = JsonValue.Create(r.Id),
+                ["ancora"] = r.Ancora.ToString(),
+                ["regraCodigo"] = r.Regra.Codigo,
+                ["regraVersao"] = r.Regra.Versao,
+                ["prazoValor"] = HashCanonicalComputer.SerializeDecimalCanonical(r.Args.PrazoValor, EscalaPadrao),
+                ["prazoUnidade"] = r.Args.PrazoUnidade.ToString(),
+                ["produtoAncoraId"] = JsonValue.Create(r.ProdutoAncoraId),
+            })]),
         ["produtos"] = new JsonArray([.. etapa.Produtos
             .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
             .Select(static p => (JsonNode)new JsonObject

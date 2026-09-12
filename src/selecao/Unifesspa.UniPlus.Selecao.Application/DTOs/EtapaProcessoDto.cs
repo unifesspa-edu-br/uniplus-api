@@ -19,7 +19,24 @@ public sealed record EtapaProcessoDto(
     decimal? NotaMinima,
     int? Ordem,
     string? FaseCodigo,
-    IReadOnlyList<ProdutoDaEtapaDto> Produtos);
+    IReadOnlyList<ProdutoDaEtapaDto> Produtos,
+    DateTimeOffset? Inicio,
+    DateTimeOffset? Fim,
+    bool EmiteParecerIndividual,
+    IReadOnlyList<BancaDaEtapaDto> Bancas,
+    IReadOnlyList<RecursoDaEtapaDto> Recursos);
+
+/// <summary>Projeção de leitura de <c>BancaDaEtapa</c>.</summary>
+public sealed record BancaDaEtapaDto(Guid Id, Guid TipoBancaOrigemId, string Codigo);
+
+/// <summary>Projeção de leitura de <c>RecursoDaEtapa</c>.</summary>
+public sealed record RecursoDaEtapaDto(
+    Guid Id,
+    AncoraDoRecurso Ancora,
+    ReferenciaRegraDto Regra,
+    ArgsRegraPrazoRecursoDto Args,
+    Guid ProdutoAncoraId,
+    string? AtoAncoraCodigo);
 
 /// <summary>Projeção de leitura de <c>ProdutoDaEtapa</c>.</summary>
 public sealed record ProdutoDaEtapaDto(Guid Id, string AtoCodigo, PapelProdutoFase? Papel);

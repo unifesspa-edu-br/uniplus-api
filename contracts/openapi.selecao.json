@@ -6681,6 +6681,14 @@
           }
         }
       },
+      "AncoraDoRecurso": {
+        "enum": [
+          "nenhuma",
+          "atoPublicado",
+          "cienciaIndividual"
+        ],
+        "type": "string"
+      },
       "ArgsRegraAjusteDistribuicao": {
         "required": [
           "$tipo"
@@ -6918,6 +6926,39 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "BancaDaEtapaDto": {
+        "required": [
+          "id",
+          "tipoBancaOrigemId",
+          "codigo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoBancaOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          }
+        }
+      },
+      "BancaDaEtapaInput": {
+        "required": [
+          "tipoBancaId"
+        ],
+        "type": "object",
+        "properties": {
+          "tipoBancaId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -8611,7 +8652,12 @@
           "notaMinima",
           "ordem",
           "faseCodigo",
-          "produtos"
+          "produtos",
+          "inicio",
+          "fim",
+          "emiteParecerIndividual",
+          "bancas",
+          "recursos"
         ],
         "type": "object",
         "properties": {
@@ -8665,6 +8711,35 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProdutoDaEtapaDto"
+            }
+          },
+          "inicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "fim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "emiteParecerIndividual": {
+            "type": "boolean"
+          },
+          "bancas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BancaDaEtapaDto"
+            }
+          },
+          "recursos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecursoDaEtapaDto"
             }
           }
         }
@@ -8737,6 +8812,42 @@
             ],
             "items": {
               "$ref": "#/components/schemas/ProdutoDaEtapaInput"
+            }
+          },
+          "inicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "fim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "emiteParecerIndividual": {
+            "type": "boolean",
+            "default": false
+          },
+          "bancas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BancaDaEtapaInput"
+            }
+          },
+          "recursos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RecursoDaEtapaInput"
             }
           }
         }
@@ -10483,6 +10594,123 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "RecursoDaEtapaDto": {
+        "required": [
+          "id",
+          "ancora",
+          "regra",
+          "args",
+          "produtoAncoraId",
+          "atoAncoraCodigo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ancora": {
+            "$ref": "#/components/schemas/AncoraDoRecurso"
+          },
+          "regra": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "args": {
+            "$ref": "#/components/schemas/ArgsRegraPrazoRecursoDto"
+          },
+          "produtoAncoraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "atoAncoraCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RecursoDaEtapaInput": {
+        "required": [
+          "ancora",
+          "regraCodigo",
+          "regraVersao",
+          "prazoValor",
+          "prazoUnidade",
+          "atoAncoraCodigo",
+          "suspensividadePrimeiraInstanciaValor",
+          "suspensividadePrimeiraInstanciaUnidade",
+          "suspensividadeSegundaInstanciaValor",
+          "suspensividadeSegundaInstanciaUnidade"
+        ],
+        "type": "object",
+        "properties": {
+          "ancora": {
+            "$ref": "#/components/schemas/AncoraDoRecurso"
+          },
+          "regraCodigo": {
+            "type": "string"
+          },
+          "regraVersao": {
+            "type": "string"
+          },
+          "prazoValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "prazoUnidade": {
+            "$ref": "#/components/schemas/UnidadePrazo"
+          },
+          "atoAncoraCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suspensividadePrimeiraInstanciaValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "suspensividadePrimeiraInstanciaUnidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazo"
+              }
+            ]
+          },
+          "suspensividadeSegundaInstanciaValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "suspensividadeSegundaInstanciaUnidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazo"
+              }
+            ]
           }
         }
       },
