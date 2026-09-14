@@ -80,9 +80,15 @@ O movimento é assíncrono e durável, pelo mesmo mecanismo com que o registro d
 
 A consequência é uma janela — curta, medida em segundos — em que o processo está publicado e o documento público ainda não está disponível. Ela é **a mesma janela** que já existe para o registro do ato, e recebe o mesmo tratamento: o contrato público só oferece o endereço do documento depois que a cópia concluiu, e a ausência é exibida como pendência de processamento, nunca como erro nem como "edital inexistente".
 
+**Essa resposta não é guardada em cache, em nenhuma camada.** A distinção importa e é fácil de perder: a chave de cache do contrato público compõe a versão da projeção com o hash da configuração ([ADR-0131](0131-portal-como-bff-publico-de-dominio.md)), e **nenhum dos dois muda quando a cópia conclui**. Guardar a resposta pendente faria o portal continuar anunciando "documento em processamento" depois de o documento já estar disponível, até a validade longa expirar. A regra é a mesma que já vale para a linha do tempo ainda não registrada, e pelo mesmo motivo: estado transitório não entra em cache de conteúdo endereçado por conteúdo que não o representa.
+
 ### O endereço é derivado do conteúdo
 
-A chave do objeto público é derivada do **hash do documento**, que a publicação já congela na configuração. Isso dá três propriedades de uma vez:
+A chave do objeto público é composta por identidade da publicação e **hash do documento** — na forma `editais/<ano>/<identificador da unidade>/<tipo do ato>/<identificador do processo>/<hash>.pdf`. Todos os segmentos vêm de dado já congelado: ano e tipo do ato, o identificador da unidade administradora, que já é normalizado no congelamento, e o identificador legível do processo.
+
+Incluir a identidade da publicação, e não apenas o hash, é o que **preserva a procedência**: dois certames que publiquem exatamente o mesmo arquivo produzem objetos distintos, cada um com os seus metadados de origem. Fosse a chave apenas o hash, a segunda publicação sobrescreveria a procedência da primeira, e a reconciliação do acervo sem consultar o banco — que é uma das razões de gravar metadados — deixaria de valer.
+
+O hash no fim da chave dá as três propriedades seguintes:
 
 - **Imutabilidade real.** O mesmo endereço nunca serve conteúdo diferente, o que autoriza cache perpétuo na borda e no navegador.
 - **Retificação sem sobrescrita.** Um edital retificado tem outro conteúdo, logo outro hash, logo outro endereço. O documento anterior permanece acessível, como convém a um acervo em que o ato retificado continua existindo.
@@ -100,7 +106,9 @@ Junto dos cabeçalhos de apresentação, o objeto público carrega metadados de 
 
 ### O armazenamento público é servido pela borda
 
-O acervo público é publicado por **nome próprio** no encaminhador de borda, com política de cache e de taxa — um caminho que existe só para ele.
+O acervo público é publicado por **nome próprio** no encaminhador de borda, com política de cache e de taxa — um caminho que existe só para ele. **É esse nome que o contrato público divulga**, e é por ele que o cidadão chega.
+
+A permissão anônima de leitura vale para o objeto, mas **o acervo não é servido pela porta de dados do armazenamento**. Sem essa restrição, o desenho se anula sozinho: com a porta de dados pública em produção e a chave do objeto visível no endereço divulgado, qualquer um poderia buscar o arquivo direto, contornando o cache e o controle de taxa que esta decisão atribui à borda — e o pico de abertura de inscrições bateria no armazenamento, que é justamente o que se quis evitar. A leitura do acervo chega pela borda; a porta de dados continua servindo o que sempre serviu, incluindo o envio direto por endereço assinado.
 
 A porta de dados do armazenamento segue caminho próprio e já tem destino definido: em homologação, alcançável por rede privada virtual; em produção, com endereço público. **É por isso que a separação decidida aqui importa mais, e não menos.** Quando essa porta for pública, o que protege o documento do candidato não terá nenhum componente de rede — será o bucket privado exigir assinatura em toda leitura. Um bucket que serve leitura anônima não pode ser o mesmo que guarda dado pessoal, e a distância entre as duas coisas precisa ser física.
 
