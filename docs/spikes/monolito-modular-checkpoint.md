@@ -22,7 +22,7 @@ preservadas para extração futura). Sequência: **spike → confirmar → ADR �
 
 - **Monólito** = núcleo administrativo interno: **Selecao, Ingresso, Configuracao, OrganizacaoInstitucional**.
 - **Geo**: permanece **deploy separado** (host/banco/PostGIS próprios; consumo por composição-no-cliente, ADR-0090). *(Decidido.)*
-- **Portal**: recomendado **separado** (BFF público; sem acesso in-process aos schemas internos). *(Confirmar no ADR.)*
+- **Portal**: **separado** — BFF público do candidato, sem acesso in-process aos schemas internos. *(Decidido: [ADR-0131](../adrs/0131-portal-como-bff-publico-de-dominio.md).)*
 - **IUnitOfWork**: **interface por módulo**. *(Decidido e implementado.)*
 - **#588 (OfertaCurso)**: **aguarda** esta modelagem; depois lê a Unidade in-process.
 - **#730** (POC DB-direct): a fechar pós-ADR (superada por in-process).
