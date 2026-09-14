@@ -96,8 +96,8 @@
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="Bogus" Version="35.6.5" />
-    <PackageVersion Include="Testcontainers" Version="4.14.0" />
-    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.14.0" />
+    <PackageVersion Include="Testcontainers" Version="4.15.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <!--
       SSH.NET chega como dependência transitiva do Testcontainers, que ainda resolve a
       2025.1.0 — alcançada pelo aviso GHSA-q939-rpr3-3284 (escrita arbitrária de arquivo
