@@ -84,9 +84,11 @@ A consequência é uma janela — curta, medida em segundos — em que o process
 
 ### O endereço é derivado do conteúdo
 
-A chave do objeto público é composta por identidade da publicação e **hash do documento** — na forma `editais/<ano>/<identificador da unidade>/<tipo do ato>/<identificador do processo>/<hash>.pdf`. Todos os segmentos vêm de dado já congelado: ano e tipo do ato, o identificador da unidade administradora, que já é normalizado no congelamento, e o identificador legível do processo.
+A chave do objeto público é composta por identidade da publicação e **hash do documento** — na forma `editais/<ano>/<identificador da unidade>/<tipo do ato>/<identificador do processo>/<identificador do ato>/<hash>.pdf`. Todos os segmentos vêm de dado já congelado.
 
-Incluir a identidade da publicação, e não apenas o hash, é o que **preserva a procedência**: dois certames que publiquem exatamente o mesmo arquivo produzem objetos distintos, cada um com os seus metadados de origem. Fosse a chave apenas o hash, a segunda publicação sobrescreveria a procedência da primeira, e a reconciliação do acervo sem consultar o banco — que é uma das razões de gravar metadados — deixaria de valer.
+Incluir a identidade da publicação, e não apenas o hash, é o que **preserva a procedência**: dois certames que publiquem exatamente o mesmo arquivo produzem objetos distintos, cada um com os seus metadados de origem. Fosse a chave apenas o hash, a segunda publicação sobrescreveria a procedência da primeira, e a reconciliação do acervo sem consultar o banco deixaria de valer.
+
+**O identificador do ato é o último desempate, e ele é necessário.** Os segmentos que descrevem o certame — ano, unidade, tipo e processo — não bastam, porque uma **retificação do mesmo processo pode reutilizar um documento já confirmado**, inclusive o documento do ato anterior: a conferência feita na retificação é de pertencimento e de estado, não de uso prévio. Nesse caso, todos os demais segmentos e o próprio hash coincidem, e nasce um ato distinto. Sem a identidade do ato na chave, a segunda cópia colidiria com a primeira e teria de sobrescrever a procedência ou omitir o ato novo — precisamente o que a separação por identidade existe para impedir.
 
 O hash no fim da chave dá as três propriedades seguintes:
 
