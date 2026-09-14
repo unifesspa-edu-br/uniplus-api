@@ -162,7 +162,8 @@ A porta de dados do armazenamento segue caminho próprio e já tem destino defin
 
 - **Separação verificável:** o bucket público não contém objeto algum sob prefixo de documento de candidato, e a permissão anônima cobre leitura de objeto e nada além.
 - **Caminho único de escrita:** o único trecho de código que grava no acervo público é o da publicação do ato; nenhum outro ponto do sistema tem o bucket público como destino de escrita.
-- **Nada antes da publicação:** um processo com documento confirmado e ainda não publicado não tem objeto no armazenamento público.
+- **Nada antes do ato:** não há objeto no acervo público enquanto o ato não estiver registrado com sucesso. O ensaio cobre os três estados que antecedem isso — processo com documento confirmado e ainda não publicado, processo publicado com registro do ato pendente, e processo publicado cujo registro foi recusado e foi para a fila morta. Uma implementação que enfileire a cópia logo após a publicação, sem encadeá-la ao registro, passa no primeiro caso e falha nos outros dois.
+- **Cabeçalhos no objeto:** o arquivo é entregue com tipo de conteúdo, validade de cache e nome de apresentação legível — não com o resumo criptográfico como nome.
 - **Endereço imutável:** o mesmo endereço serve sempre o mesmo conteúdo; um edital retificado produz endereço distinto e não invalida o anterior.
 - **Sem leitura anônima fora do acervo:** a interface que serve o armazenamento privado não devolve objeto a chamador anônimo, e o acervo público não permite listagem.
 - **Leitura do acervo só pela borda:** o mesmo objeto é legível pelo nome que a borda publica e **recusado** quando buscado anonimamente pela porta de dados do armazenamento. Os dois ensaios andam em par: sem o segundo, uma instalação satisfaz todos os demais e ainda aceita a leitura direta, contornando o cache e o controle de taxa que esta decisão atribui à borda.
