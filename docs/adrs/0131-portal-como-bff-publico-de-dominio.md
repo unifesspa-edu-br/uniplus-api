@@ -139,7 +139,7 @@ Por isso o critério é conjunto, e a ausência do ato não é lida como atraso:
 - **Fronteira de tipo:** um teste compara as chaves do envelope canônico contra a lista conhecida e **falha quando um bloco novo aparece**, obrigando a decisão explícita "público ou interno" a cada incremento do domínio.
 - **Fronteira de módulo:** nenhum projeto do Portal referencia projeto de Seleção. Essa checagem não enxerga acoplamento por rede, e por isso vale o que está no parágrafo seguinte.
 - **Contrato próprio, não emprestado:** o documento de contrato do Portal é gerado a partir dos seus próprios tipos. Onde um tipo do Portal tiver o mesmo nome de um de outro módulo, a verificação de contrato que já existe exige que as duas formas sejam idênticas — ela não proíbe o nome repetido, obriga a coincidência. Divergir de forma sob o mesmo nome quebra o gate; ter forma própria sob nome próprio é o caminho normal.
-- **Ausência de oráculo:** as rotas públicas respondem com o mesmo "não encontrado" para tudo que não seja "há versão vigente", sem distinguir processo inexistente de processo em rascunho.
+- **Ausência de oráculo:** as rotas públicas respondem com o mesmo "não encontrado" para tudo que não satisfaça o critério de visibilidade — versão vigente **e** ato criador registrado. Um processo inexistente, um em rascunho e um cuja publicação teve o registro do ato recusado recebem a mesma resposta, e nenhuma delas se distingue das demais. O último caso importa duas vezes: além de não vazar estado interno, é ele que impede divulgar certame sem ato correspondente.
 - **Prontidão honesta:** a sonda de prontidão do Portal não reprova por dependência que a superfície pública não usa.
 
 ## Mais informações
