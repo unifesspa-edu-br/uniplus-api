@@ -92,11 +92,11 @@ Incluir a identidade da publicação, e não apenas o hash, é o que **preserva 
 
 **O identificador do ato é o último desempate, e ele é necessário.** Os segmentos que descrevem o certame — ano, unidade, tipo e processo — não bastam, porque uma **retificação do mesmo processo pode reutilizar um documento já confirmado**, inclusive o documento do ato anterior: a conferência feita na retificação é de pertencimento e de estado, não de uso prévio. Nesse caso, todos os demais segmentos e o próprio hash coincidem, e nasce um ato distinto. Sem a identidade do ato na chave, a segunda cópia colidiria com a primeira e teria de sobrescrever a procedência ou omitir o ato novo — precisamente o que a separação por identidade existe para impedir.
 
-O hash no fim da chave dá as três propriedades seguintes:
+Disso decorrem três propriedades:
 
 - **Imutabilidade real.** O mesmo endereço nunca serve conteúdo diferente, o que autoriza cache perpétuo na borda e no navegador.
-- **Retificação sem sobrescrita.** Um edital retificado tem outro conteúdo, logo outro hash, logo outro endereço. O documento anterior permanece acessível, como convém a um acervo em que o ato retificado continua existindo.
-- **Ausência de nome falante.** A chave não carrega identificador de pessoa nem de processo, o que mantém o endereço em conformidade com a proibição de dado pessoal em caminho de URL ([ADR-0019](0019-proibir-pii-em-path-segments-de-url.md)).
+- **Retificação sem sobrescrita.** Um edital retificado ganha endereço próprio, e o anterior permanece acessível — como convém a um acervo em que o ato retificado continua existindo. Quando o conteúdo muda, é o hash que separa os dois; quando a retificação **reutiliza o documento do ato anterior**, o que separa é o identificador do ato. Vale registrar a distinção para que a implementação e os testes não tratem o hash como desempate suficiente da retificação: nesse caso ele é idêntico.
+- **Ausência de dado pessoal.** Nenhum segmento da chave identifica uma pessoa, e nenhum carrega identificador natural — o que mantém o endereço em conformidade com a proibição de dado pessoal em caminho de URL ([ADR-0019](0019-proibir-pii-em-path-segments-de-url.md)). Os segmentos que identificam o certame, a unidade, o ato e o processo são deliberadamente parte do caminho, e são o que dá legibilidade e procedência ao acervo.
 
 O endereço completo entra no contrato público de leitura do certame ([ADR-0131](0131-portal-como-bff-publico-de-dominio.md)) como um campo. **Não há endpoint de redirecionamento**, nem emissão de credencial, nem chamada de aplicação no caminho do download.
 
