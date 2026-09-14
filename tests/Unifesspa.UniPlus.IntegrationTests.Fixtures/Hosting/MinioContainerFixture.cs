@@ -16,7 +16,7 @@ using DotNet.Testcontainers.Containers;
 /// </remarks>
 public sealed class MinioContainerFixture : IAsyncLifetime
 {
-    public const string Image = "minio/minio:RELEASE.2025-09-07T16-13-09Z";
+    public const string Image = "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z";
     public const string AccessKey = "minioadmin";
     public const string SecretKey = "minioadmin";
     public const string CollectionName = "Minio";
