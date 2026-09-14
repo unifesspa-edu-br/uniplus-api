@@ -74,7 +74,7 @@ Essa cláusula existe porque **publicar é irreversível na prática**: um ender
 
 ### O objeto público nasce na publicação, não na confirmação
 
-A cópia para o armazenamento público acontece **quando o processo é publicado**, e não quando o upload é confirmado. Essa é a cláusula que impede o documento de ficar acessível antes do ato que o oficializa; o movimento é descrito logo abaixo.
+A publicação **inicia** o fluxo que leva o documento ao acervo, mas a cópia em si só ocorre **depois de o ato ser registrado com sucesso** — e nunca na confirmação do upload. São três instantes distintos, e confundi-los é o que faria o documento ficar acessível antes do ato que o oficializa: confirmar o upload é pré-requisito de publicar, publicar requisita o registro, e é o registro bem-sucedido que libera a cópia. O movimento é descrito logo abaixo.
 
 O movimento é assíncrono e durável, pelo mesmo mecanismo com que o registro do ato normativo já é feito depois do commit da publicação ([ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md)): a publicação grava a sua própria transação e emite a mensagem; a cópia ocorre depois, com retentativa e fila morta. Copiar dentro da transação exigiria desfazer efeito externo em caso de falha, o que o armazenamento não oferece.
 
