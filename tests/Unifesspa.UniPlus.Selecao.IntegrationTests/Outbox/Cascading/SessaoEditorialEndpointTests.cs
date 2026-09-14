@@ -430,14 +430,14 @@ public sealed class SessaoEditorialEndpointTests
         corrigido.Headers.Contains("Idempotency-Replayed").Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Um 400 cujo defeito está no BODY continua cacheado — ali o hash do corpo já distingue a correção")]
-    public async Task BadRequestSemIfMatch_ContinuaArmazenado()
+    [Fact(DisplayName = "Idempotency-Key malformada é recusada com 400")]
+    public async Task IdempotencyKeyMalformada_EhRecusadaCom400()
     {
-        Contexto ctx = await PublicarAsync(nameof(BadRequestSemIfMatch_ContinuaArmazenado));
+        Contexto ctx = await PublicarAsync(nameof(IdempotencyKeyMalformada_EhRecusadaCom400));
 
-        // Idempotency-Key malformada: 400 de transporte, sem If-Match na requisição. Este
-        // caminho NÃO pode ter mudado — a liberação da reserva vale só para o 400 de
-        // precondição, e o resto da ADR-0027 continua valendo.
+        // Idempotency-Key malformada: a chave é rejeitada na validação do cabeçalho,
+        // antes de qualquer reserva ou armazenamento de idempotência. Este teste garante
+        // que esse 400 de transporte continua sendo retornado para chaves inválidas.
         using HttpRequestMessage request = new(
             HttpMethod.Put,
             new Uri($"/api/selecao/processos-seletivos/{ctx.ProcessoId}/etapas", UriKind.Relative))
