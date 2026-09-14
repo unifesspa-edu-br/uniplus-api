@@ -163,6 +163,8 @@ A porta de dados do armazenamento segue caminho próprio e já tem destino defin
 - **Nada antes da publicação:** um processo com documento confirmado e ainda não publicado não tem objeto no armazenamento público.
 - **Endereço imutável:** o mesmo endereço serve sempre o mesmo conteúdo; um edital retificado produz endereço distinto e não invalida o anterior.
 - **Sem leitura anônima fora do acervo:** a interface que serve o armazenamento privado não devolve objeto a chamador anônimo, e o acervo público não permite listagem.
+- **Leitura do acervo só pela borda:** o mesmo objeto é legível pelo nome que a borda publica e **recusado** quando buscado anonimamente pela porta de dados do armazenamento. Os dois ensaios andam em par: sem o segundo, uma instalação satisfaz todos os demais e ainda aceita a leitura direta, contornando o cache e o controle de taxa que esta decisão atribui à borda.
+- **Pendência não se eterniza:** uma cópia que esgote as retentativas é sinalizada e reprocessável; um ato vigente não fica indefinidamente sem documento acessível.
 
 ## Mais informações
 
