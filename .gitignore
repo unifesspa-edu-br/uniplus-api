@@ -39,3 +39,9 @@ docker-compose.override.yml
 coverage/
 *.coverage
 *.coveragexml
+
+# Artefatos de sessão de navegador (Playwright MCP): snapshots de acessibilidade e
+# logs de console, escritos no diretório corrente sempre que uma validação usa o
+# navegador. São megabytes de dump descartável, e sem esta linha um `git add .`
+# os arrasta para o commit. O `uniplus-web` já ignora o mesmo diretório.
+.playwright-mcp/
