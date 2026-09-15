@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 // Mapeia RegimeDeFuncionamento ↔ string (varchar) usando o token canônico
-// UPPER_SNAKE (INTENSIVO, EXTENSIVO), não o nome PascalCase do enum. A
+// UPPER_SNAKE (INTENSIVO, EXTENSIVO, ALTERNANCIA_PEDAGOGICA), não o nome PascalCase do enum. A
 // reidratação falha explicitamente (com contexto) caso a coluna seja corrompida
 // fora do fluxo da aplicação — o mesmo critério do converter de regime de turno.
 public sealed class RegimeDeFuncionamentoValueConverter : ValueConverter<RegimeDeFuncionamento, string>
