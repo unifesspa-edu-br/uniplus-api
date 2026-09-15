@@ -22,12 +22,13 @@ public static class RegimesDeFuncionamento
     {
         [RegimeDeFuncionamento.Intensivo] = "INTENSIVO",
         [RegimeDeFuncionamento.Extensivo] = "EXTENSIVO",
+        [RegimeDeFuncionamento.AlternanciaPedagogica] = "ALTERNANCIA_PEDAGOGICA",
     };
 
     private static readonly Dictionary<string, RegimeDeFuncionamento> DeToken =
         ParaToken.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.Ordinal);
 
-    /// <summary>Os dois tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
+    /// <summary>Os três tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
     public static readonly IReadOnlyList<string> TokensCanonicos = [.. ParaToken.Values];
 
     /// <summary>Token textual de contrato/banco (UPPER_SNAKE) de um regime válido.</summary>
@@ -64,8 +65,8 @@ public static class RegimesDeFuncionamento
     /// <see langword="null"/> quando não restringe:
     /// <see cref="RegimeDeFuncionamento.Intensivo"/> exige
     /// <see cref="RegimeDeTurno.Integral"/>;
-    /// <see cref="RegimeDeFuncionamento.Extensivo"/> aceita qualquer um dos
-    /// regimes de turno vigentes (UNI-REQ-0138).
+    /// <see cref="RegimeDeFuncionamento.Extensivo"/> e <see cref="RegimeDeFuncionamento.AlternanciaPedagogica"/>
+    /// aceita qualquer um dos regimes de turno vigentes (UNI-REQ-0138).
     /// </summary>
     /// <remarks>
     /// A exigência é conferida, nunca aplicada: quem declara INTENSIVO com regime
@@ -76,6 +77,7 @@ public static class RegimesDeFuncionamento
     {
         RegimeDeFuncionamento.Intensivo => RegimeDeTurno.Integral,
         RegimeDeFuncionamento.Extensivo => null,
+        RegimeDeFuncionamento.AlternanciaPedagogica => null,
         _ => throw new ArgumentOutOfRangeException(
             nameof(regime), regime, "Regime de funcionamento fora do domínio fechado."),
     };

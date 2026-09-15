@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <summary>
 /// Regime de funcionamento de uma <see cref="Entities.OfertaCurso"/>
 /// (UNI-REQ-0138, ADR-0128): declara se a oferta funciona de forma
-/// <see cref="Intensivo"/> ou <see cref="Extensivo"/>. É atributo
+/// <see cref="Intensivo"/>, <see cref="Extensivo"/> ou <see cref="AlternanciaPedagogica"/>. É atributo
 /// <b>obrigatório</b> da oferta e dimensão <b>própria</b> — não substitui nem
 /// reutiliza o <see cref="RegimeDeTurno"/>, o <see cref="ProgramaDeOferta"/>, o
 /// <see cref="FormatoPedagogico"/> nem o <see cref="TurnoOferta"/>.
@@ -28,4 +28,7 @@ public enum RegimeDeFuncionamento
 
     /// <summary>Oferta extensiva — aceita regime de turno regular ou integral.</summary>
     Extensivo = 2,
+
+    /// <summary>Oferta alternância pedagógica - aceita regime de turno regular ou integral</summary>
+    AlternanciaPedagogica = 3,
 }
