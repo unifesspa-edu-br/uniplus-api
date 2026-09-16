@@ -371,11 +371,15 @@ public sealed class EtapaProcesso : EntityBase
                 ? viva
                 : congelado.ProdutoAncoraId;
 
-            RecursoDaEtapa? mesmoId = recursosVivos.Find(r => r.Id == congelado.Id);
-            RecursoDaEtapa destino = mesmoId ?? congelado;
-            if (mesmoId is not null)
+            // Casa pela ÂNCORA, que é o que identifica a janela no negócio — o envelope não
+            // congela o id do recurso, e casar por ele nunca acertaria: a linha viva sairia e
+            // voltaria a cada restauração, trocando de identidade sem que nada tivesse mudado.
+            RecursoDaEtapa? mesmaAncora = recursosVivos.Find(
+                r => r.Ancora == congelado.Ancora && r.ProdutoAncoraId == ancora);
+            RecursoDaEtapa destino = mesmaAncora ?? congelado;
+            if (mesmaAncora is not null)
             {
-                recursosVivos.Remove(mesmoId);
+                recursosVivos.Remove(mesmaAncora);
             }
 
             destino.ReporDadosCongelados(congelado.Ancora, congelado.Regra, congelado.Args, ancora);

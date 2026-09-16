@@ -360,7 +360,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             .ThenBy(static r => r.ProdutoAncoraId)
             .Select(static r => (JsonNode)new JsonObject
             {
-                ["id"] = JsonValue.Create(r.Id),
+                // Sem o id, como na regra de recurso da fase: nada no envelope o referencia, e o
+                // comando declara a janela pela âncora, não pela linha — regravar a etapa sem
+                // mudar nada constrói um recurso novo, com id novo. Congelá-lo fazia o hash da
+                // publicação mudar depois de um PUT que não mudou configuração alguma.
                 ["ancora"] = r.Ancora.ToString(),
                 // A regra INTEIRA, com o hash, e os args INTEIROS, com os dois pares de
                 // suspensividade — o mesmo que a fase congela um nível acima. Congelar só

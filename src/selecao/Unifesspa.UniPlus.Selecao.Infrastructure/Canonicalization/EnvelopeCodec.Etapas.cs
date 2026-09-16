@@ -137,8 +137,7 @@ public sealed partial class EnvelopeCodec
                 JsonObject itemRecurso = leitor.ItemObjeto(arrayRecursos, j, pathRecurso);
                 leitor.ExigirChaves(
                     itemRecurso, pathRecurso,
-                    "id", "ancora", "regra", "args", "produtoAncoraId");
-                Guid idRecurso = leitor.Identificador(itemRecurso, "id", pathRecurso);
+                    "ancora", "regra", "args", "produtoAncoraId");
                 AncoraDoRecurso ancora = leitor.Enumeracao<AncoraDoRecurso>(itemRecurso, "ancora", pathRecurso);
 
                 // A referência vem inteira e conferida contra o código de regra esperado, como
@@ -162,8 +161,11 @@ public sealed partial class EnvelopeCodec
                     return [];
                 }
 
+                // Identidade nova, como nas bancas: o envelope não congela a do recurso porque
+                // nada a referencia, e o que a publicação promete é a janela — âncora, regra e
+                // prazos —, não a linha que a guarda.
                 recursos.Add(RecursoDaEtapa.Reidratar(
-                    idRecurso,
+                    Guid.CreateVersion7(),
                     ancora,
                     regra,
                     args,
