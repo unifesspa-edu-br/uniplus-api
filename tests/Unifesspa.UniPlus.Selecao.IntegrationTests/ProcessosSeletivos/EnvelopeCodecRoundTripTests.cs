@@ -543,6 +543,33 @@ public sealed class EnvelopeCodecRoundTripTests
     }
 
     /// <summary>
+    /// Mesma razão da banca, um bloco ao lado: o recurso da etapa é declarado pela ÂNCORA, e o
+    /// comando não carrega o id da linha — regravar a etapa constrói uma janela recursal nova.
+    /// </summary>
+    [Fact(DisplayName = "Trocar o id do recurso da etapa não muda os bytes canônicos")]
+    public void IdDoRecursoDaEtapa_NaoEntraNosBytes()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+
+        EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
+        IReadOnlyList<RecursoDaEtapa> originais = [.. objetiva.Recursos];
+        originais.Should().NotBeEmpty("pré-condição: a etapa do corpus abre janela recursal");
+
+        objetiva.DefinirRecursos([.. originais.Select(r => RecursoDaEtapa.Reidratar(
+            Guid.CreateVersion7(), r.Ancora, r.Regra, r.Args, r.ProdutoAncoraId))])
+            .IsSuccess.Should().BeTrue();
+        objetiva.Recursos.Select(r => r.Id)
+            .Should().NotIntersectWith(originais.Select(r => r.Id),
+                "pré-condição: as janelas reconstruídas têm identidade nova");
+
+        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+
+        depois.Should().Equal(antes,
+            "a mesma janela recursal, numa linha nova, é a mesma publicação");
+    }
+
+    /// <summary>
     /// A banca da etapa é declarada pelo TIPO, não pela linha: regravar a etapa sem mudar nada
     /// constrói uma banca nova, com id novo. Congelar esse id fazia o hash da publicação mudar
     /// depois de um PUT que não mudou configuração alguma — e o hash é justamente o que prova

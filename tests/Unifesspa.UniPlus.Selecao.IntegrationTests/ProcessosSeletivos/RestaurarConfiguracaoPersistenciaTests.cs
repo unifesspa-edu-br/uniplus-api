@@ -322,8 +322,12 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         // banca pelo tipo. Cobrar o id aqui seria cobrar o que a publicação não promete.
         objetivaReposta.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo))
             .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo)));
-        objetivaReposta.Recursos.Select(r => (r.Id, r.Ancora, r.Args.PrazoValor, r.ProdutoAncoraId))
-            .Should().BeEquivalentTo(congeladaOriginal.Recursos.Select(r => (r.Id, r.Ancora, r.Args.PrazoValor, r.ProdutoAncoraId)));
+        // Como nas bancas, pelo CONTEÚDO: o envelope congela a janela — âncora, regra e prazos —,
+        // não a linha que a guarda. O produto que a âncora aponta continua sendo cobrado, porque
+        // esse id o envelope congela de fato.
+        objetivaReposta.Recursos.Select(r => (r.Ancora, r.Regra.Codigo, r.Args.PrazoValor, r.ProdutoAncoraId))
+            .Should().BeEquivalentTo(congeladaOriginal.Recursos
+                .Select(r => (r.Ancora, r.Regra.Codigo, r.Args.PrazoValor, r.ProdutoAncoraId)));
 
         // A prova que fecha: o agregado relido recanonicaliza nos bytes que o ato congelou. Sem
         // ela, repor "quase tudo" passaria — e o descarte relataria sucesso com a configuração
