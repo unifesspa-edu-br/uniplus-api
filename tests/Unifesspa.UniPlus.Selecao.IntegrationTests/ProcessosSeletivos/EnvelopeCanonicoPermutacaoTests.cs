@@ -78,6 +78,13 @@ public sealed class EnvelopeCanonicoPermutacaoTests
             .Should().NotEqual(permutado.Etapas.Select(static e => e.Nome),
                 "pré-condição: a permutação tem de inverter a ordem de entrada das etapas");
 
+        // Os produtos da etapa: a mesma matéria aparece nos dois papéis, e é o único par em que o
+        // código do ato não fixa a posição sozinho. Sem esta pré-condição, tirar o desempate por
+        // papel do encoder deixaria a comparação de bytes ao final sem nada a provar aqui.
+        direto.Etapas.SelectMany(static e => e.Produtos).Select(static p => p.Id)
+            .Should().NotEqual(permutado.Etapas.SelectMany(static e => e.Produtos).Select(static p => p.Id),
+                "pré-condição: a permutação tem de inverter a ordem de entrada dos produtos da etapa");
+
         // A oferta de atendimento não tem chave `Ordem` — o encoder ordena as três listas pela
         // IDENTIDADE DE ORIGEM do item (CondicaoOrigemId/RecursoOrigemId/TipoDeficienciaOrigemId),
         // não pela chave de conteúdo. Sem esta pré-condição, remover o OrderBy de
