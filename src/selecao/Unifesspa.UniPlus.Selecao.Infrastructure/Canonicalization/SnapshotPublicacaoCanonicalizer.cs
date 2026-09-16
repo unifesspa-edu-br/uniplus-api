@@ -344,11 +344,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["inicio"] = etapa.Inicio is { } ini ? HashCanonicalComputer.SerializeInstantCanonical(ini) : null,
         ["fim"] = etapa.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null,
         ["emiteParecerIndividual"] = etapa.EmiteParecerIndividual,
+        // Sem o id, como nas bancas da fase: nada no envelope o referencia, e o comando declara
+        // a banca pelo TIPO, não pela linha — então regravar a etapa sem mudar nada constrói
+        // uma banca nova, com id novo. Congelá-lo fazia o hash da publicação mudar depois de um
+        // PUT que não mudou configuração alguma, e o hash é justamente o que prova o contrário.
         ["bancas"] = new JsonArray([.. etapa.Bancas
             .OrderBy(static b => b.Codigo, StringComparer.Ordinal)
             .Select(static b => (JsonNode)new JsonObject
             {
-                ["id"] = JsonValue.Create(b.Id),
                 ["tipoBancaOrigemId"] = JsonValue.Create(b.TipoBancaOrigemId),
                 ["codigo"] = b.Codigo,
             })]),

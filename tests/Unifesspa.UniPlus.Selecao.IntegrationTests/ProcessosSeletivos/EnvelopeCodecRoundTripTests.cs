@@ -542,6 +542,33 @@ public sealed class EnvelopeCodecRoundTripTests
         }
     }
 
+    /// <summary>
+    /// A banca da etapa é declarada pelo TIPO, não pela linha: regravar a etapa sem mudar nada
+    /// constrói uma banca nova, com id novo. Congelar esse id fazia o hash da publicação mudar
+    /// depois de um PUT que não mudou configuração alguma — e o hash é justamente o que prova
+    /// que a publicação continua sendo a mesma.
+    /// </summary>
+    [Fact(DisplayName = "Trocar o id da banca da etapa não muda os bytes canônicos")]
+    public void IdDaBancaDaEtapa_NaoEntraNosBytes()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+
+        EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
+        BancaDaEtapa original = objetiva.Bancas.Single();
+        original.Id.Should().NotBe(Guid.Empty, "pré-condição: a etapa do corpus requer banca");
+
+        objetiva.DefinirBancas([BancaDaEtapa.Criar(original.TipoBancaOrigemId, original.Codigo)])
+            .IsSuccess.Should().BeTrue();
+        objetiva.Bancas.Single().Id.Should().NotBe(original.Id,
+            "pré-condição: a banca reconstruída tem identidade nova, como a que o comando monta");
+
+        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+
+        depois.Should().Equal(antes,
+            "a mesma configuração de banca, numa linha nova, é a mesma publicação");
+    }
+
     // ── Golden fixture RICA: o decoder é ancorado num artefato congelado ──
 
     [Fact(DisplayName = "Golden rica — a fixture congelada no repositório reidrata e recanonicaliza byte-a-byte")]
