@@ -63,8 +63,8 @@ internal static class CorpusEnvelope
     // Filhas da objetiva. Variam pela mesma razão que <see cref="EtapaId"/>: os testes de
     // persistência põem dois processos no MESMO Postgres, e um id fixo aqui colidiria na
     // chave primária de produtos_da_etapa / recursos_da_etapa no segundo deles.
-    private static Guid ProdutoDaObjetivaId(int variante) =>
-        new($"aaab000{variante:x}-0000-4000-8000-000000000001");
+    private static Guid ProdutoDaObjetivaId(int ordem, int variante) =>
+        new($"aaab000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
     private static Guid RecursoDaObjetivaId(int ordem, int variante) =>
         new($"aaac000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
@@ -162,9 +162,12 @@ internal static class CorpusEnvelope
         EtapaProcesso etapaObjetiva = EtapaProcesso.Reidratar(
             objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1);
         etapaObjetiva.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
-        etapaObjetiva.DefinirProdutos([
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
-        ]).IsSuccess.Should().BeTrue();
+        // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
+        // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
+        etapaObjetiva.DefinirProdutos(Ordem([
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+        ], permutar)).IsSuccess.Should().BeTrue();
         etapaObjetiva.DefinirRecursos([
             RecursoDaEtapa.Reidratar(
                 RecursoDaObjetivaId(1, variante),
@@ -174,7 +177,7 @@ internal static class CorpusEnvelope
                     3.0000m, UnidadePrazo.DiasUteis,
                     2.0000m, UnidadePrazo.DiasUteis,
                     1.0000m, UnidadePrazo.DiasUteis),
-                ProdutoDaObjetivaId(variante)),
+                ProdutoDaObjetivaId(1, variante)),
             RecursoDaEtapa.Reidratar(
                 RecursoDaObjetivaId(2, variante),
                 AncoraDoRecurso.CienciaIndividual,

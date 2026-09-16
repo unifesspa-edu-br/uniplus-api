@@ -373,6 +373,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             })]),
         ["produtos"] = new JsonArray([.. etapa.Produtos
             .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
+            .ThenBy(static p => p.Papel?.ToString() ?? string.Empty, StringComparer.Ordinal)
             .Select(static p => (JsonNode)new JsonObject
             {
                 ["id"] = JsonValue.Create(p.Id),
@@ -1306,13 +1307,17 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <remarks>
     /// O <c>id</c> É congelado, ao contrário do das bancas: é por ele que o ato publicado
     /// resolverá, de volta, a configuração de recurso que lhe corresponde. Ele não entra na
-    /// chave de ordenação porque o <c>atoCodigo</c> já desempata sozinho — ordenar por Id
-    /// faria a posição depender da ordem de inserção no banco.
+    /// chave de ordenação porque o par <c>atoCodigo</c> + <c>papel</c> já desempata sozinho —
+    /// ordenar por Id faria a posição depender da ordem de inserção no banco. O papel entra na
+    /// chave porque a mesma matéria é publicável duas vezes, uma como preliminar e outra como
+    /// definitiva: sem ele, inverter as duas num PUT preservaria os ids na reconciliação mas
+    /// trocaria a ordem de entrada, e a mesma configuração produziria bytes e hash diferentes.
     /// </remarks>
     private static JsonArray SerializarProdutosDaFase(FaseCronograma fase)
     {
         IOrderedEnumerable<ProdutoDaFase> ordenados = fase.Produtos
-            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal);
+            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
+            .ThenBy(static p => p.Papel?.ToString() ?? string.Empty, StringComparer.Ordinal);
 
         return new JsonArray([.. ordenados.Select(static p => (JsonNode)new JsonObject
         {
