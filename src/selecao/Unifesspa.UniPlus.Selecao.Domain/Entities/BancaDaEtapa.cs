@@ -48,5 +48,11 @@ public sealed class BancaDaEtapa : EntityBase
         return new BancaDaEtapa { Id = id, TipoBancaOrigemId = tipoBancaOrigemId, Codigo = codigo.Trim() };
     }
 
+    /// <summary>
+    /// Repõe o tipo de origem preservando a linha — o código é a chave do índice único da
+    /// etapa, e sair e voltar sob o mesmo código colidiria dentro da própria transação.
+    /// </summary>
+    internal void ReporOrigem(Guid tipoBancaOrigemId) => TipoBancaOrigemId = tipoBancaOrigemId;
+
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
 }

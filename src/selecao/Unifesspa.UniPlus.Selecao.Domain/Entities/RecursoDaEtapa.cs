@@ -121,5 +121,22 @@ public sealed class RecursoDaEtapa : EntityBase
         };
     }
 
+    /// <summary>
+    /// Repõe o que a versão congelada declarava, preservando a linha. Não revalida: o envelope
+    /// já provou a forma quando foi congelado, e uma regra criada depois não pode tornar a
+    /// reposição impossível — mesma postura de <see cref="Reidratar"/>.
+    /// </summary>
+    internal void ReporDadosCongelados(
+        AncoraDoRecurso ancora, ReferenciaRegra regra, ArgsRegraPrazoRecurso args, Guid produtoAncoraId)
+    {
+        ArgumentNullException.ThrowIfNull(regra);
+        ArgumentNullException.ThrowIfNull(args);
+
+        Ancora = ancora;
+        Regra = regra;
+        Args = args;
+        ProdutoAncoraId = produtoAncoraId;
+    }
+
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
 }

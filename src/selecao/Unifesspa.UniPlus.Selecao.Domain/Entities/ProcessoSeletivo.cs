@@ -337,6 +337,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"A etapa {exigenciaOrfa.ExigidoNaEtapaId} coleta o documento {exigenciaOrfa.TipoDocumentoNome} e não pode ser removida sem antes reconfigurar a exigência."));
         }
 
+
         // Cada etapa declara a fase a que pertence pelo código canônico; a raiz é quem
         // resolve, porque só ela enxerga o cronograma. Código, e não id, porque o id da
         // fase não sobrevive à reconciliação da restauração. Etapa sem código declarado
@@ -4315,6 +4316,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 // viva tem de voltar exatamente ao que foi congelado — incluindo a fase em que
                 // ela acontece, sem a qual a etapa sobrevivente perderia o vínculo com o
                 // cronograma e nenhum outro caminho a devolveria.
+                //
+                // Vai tudo, não só os escalares: a janela própria, a promessa de parecer, os
+                // produtos, as bancas e as janelas recursais são estado da etapa como qualquer
+                // outro. Repor pela metade fazia o descarte da retificação relatar sucesso com
+                // a configuração viva ainda diferente do envelope publicado — exatamente o que
+                // o descarte existe para desfazer.
                 viva.ReporDadosCongelados(
                     congelada.Nome,
                     congelada.Carater,
@@ -4322,7 +4329,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     congelada.Peso,
                     congelada.NotaMinima,
                     congelada.Ordem,
-                    congelada.FaseCodigo);
+                    congelada.FaseCodigo,
+                    congelada.Inicio,
+                    congelada.Fim,
+                    congelada.EmiteParecerIndividual,
+                    [.. congelada.Produtos],
+                    [.. congelada.Bancas],
+                    [.. congelada.Recursos]);
                 etapas.Add(viva);
             }
             else

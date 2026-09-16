@@ -255,10 +255,19 @@ public sealed class EtapaProcesso : EntityBase
         decimal? peso,
         decimal? notaMinima,
         int? ordem,
-        string? faseCodigo)
+        string? faseCodigo,
+        DateTimeOffset? inicio,
+        DateTimeOffset? fim,
+        bool emiteParecerIndividual,
+        IReadOnlyList<ProdutoDaEtapa> produtos,
+        IReadOnlyList<BancaDaEtapa> bancas,
+        IReadOnlyList<RecursoDaEtapa> recursos)
     {
         ArgumentNullException.ThrowIfNull(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
+        ArgumentNullException.ThrowIfNull(produtos);
+        ArgumentNullException.ThrowIfNull(bancas);
+        ArgumentNullException.ThrowIfNull(recursos);
 
         Nome = nome.Trim();
         Carater = carater;
@@ -267,6 +276,118 @@ public sealed class EtapaProcesso : EntityBase
         NotaMinima = notaMinima;
         Ordem = ordem;
         FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
+        Inicio = inicio?.ToUniversalTime();
+        Fim = fim?.ToUniversalTime();
+        EmiteParecerIndividual = emiteParecerIndividual;
+
+        // Produtos em duas passadas, como na fase: a primeira casa o par ato + papel — a linha
+        // que não mudou — e a segunda casa pelo ato entre as que sobraram, preservando o Id de
+        // quem só trocou de papel. Sem isso a linha sairia como órfã e voltaria como inserção,
+        // com DELETE e INSERT disputando o mesmo slot do índice único (etapa, ato, papel)
+        // dentro da mesma transação. Cada viva é consumida uma vez só, senão a preliminar e a
+        // definitiva da mesma matéria casariam com a mesma linha.
+        Dictionary<Guid, Guid> ancoraCongeladaParaViva = [];
+        List<ProdutoDaEtapa> disponiveis = [.. _produtos];
+        List<ProdutoDaEtapa> reconciliados = [];
+        List<ProdutoDaEtapa> semPar = [];
+
+        foreach (ProdutoDaEtapa congelado in produtos)
+        {
+            ProdutoDaEtapa? mesmoParaOMesmoPapel = disponiveis.Find(
+                p => string.Equals(p.AtoCodigo, congelado.AtoCodigo, StringComparison.Ordinal)
+                    && p.Papel == congelado.Papel);
+            if (mesmoParaOMesmoPapel is not null)
+            {
+                disponiveis.Remove(mesmoParaOMesmoPapel);
+                reconciliados.Add(mesmoParaOMesmoPapel);
+                ancoraCongeladaParaViva[congelado.Id] = mesmoParaOMesmoPapel.Id;
+            }
+            else
+            {
+                // Guarda o lugar na ordem de chegada; a segunda passada o preenche.
+                reconciliados.Add(congelado);
+                semPar.Add(congelado);
+            }
+        }
+
+        foreach (ProdutoDaEtapa congelado in semPar)
+        {
+            ProdutoDaEtapa? mesmoAto = disponiveis.Find(
+                p => string.Equals(p.AtoCodigo, congelado.AtoCodigo, StringComparison.Ordinal));
+            if (mesmoAto is null)
+            {
+                continue;
+            }
+
+            disponiveis.Remove(mesmoAto);
+            mesmoAto.AtualizarPapel(congelado.Papel);
+            reconciliados[reconciliados.IndexOf(congelado)] = mesmoAto;
+            ancoraCongeladaParaViva[congelado.Id] = mesmoAto.Id;
+        }
+
+        _produtos.Clear();
+        foreach (ProdutoDaEtapa produto in reconciliados)
+        {
+            produto.VincularEtapa(Id);
+            _produtos.Add(produto);
+        }
+
+        // Bancas pelo código, que é a chave do índice único da etapa — mesmo motivo do par
+        // acima. O tipo de origem é reposto na linha viva em vez de recriá-la.
+        List<BancaDaEtapa> bancasVivas = [.. _bancas];
+        List<BancaDaEtapa> bancasFinais = [];
+        foreach (BancaDaEtapa congelada in bancas)
+        {
+            BancaDaEtapa? mesmoCodigo = bancasVivas.Find(
+                b => string.Equals(b.Codigo, congelada.Codigo, StringComparison.Ordinal));
+            if (mesmoCodigo is null)
+            {
+                bancasFinais.Add(congelada);
+                continue;
+            }
+
+            bancasVivas.Remove(mesmoCodigo);
+            mesmoCodigo.ReporOrigem(congelada.TipoBancaOrigemId);
+            bancasFinais.Add(mesmoCodigo);
+        }
+
+        _bancas.Clear();
+        foreach (BancaDaEtapa banca in bancasFinais)
+        {
+            banca.VincularEtapa(Id);
+            _bancas.Add(banca);
+        }
+
+        // Recursos pelo Id, que o envelope congela: aqui não há índice único além da própria
+        // chave primária, e é ELA que colidiria se o mesmo recurso saísse e voltasse na mesma
+        // transação. A âncora é traduzida para o Id que o produto tem depois da reconciliação —
+        // sem isso ela apontaria para uma linha que esta mesma transação remove como órfã, e o
+        // sintoma só apareceria muito depois, ao resolver o recurso de um ato publicado.
+        List<RecursoDaEtapa> recursosVivos = [.. _recursos];
+        List<RecursoDaEtapa> recursosFinais = [];
+        foreach (RecursoDaEtapa congelado in recursos)
+        {
+            Guid ancora = ancoraCongeladaParaViva.TryGetValue(congelado.ProdutoAncoraId, out Guid viva)
+                ? viva
+                : congelado.ProdutoAncoraId;
+
+            RecursoDaEtapa? mesmoId = recursosVivos.Find(r => r.Id == congelado.Id);
+            RecursoDaEtapa destino = mesmoId ?? congelado;
+            if (mesmoId is not null)
+            {
+                recursosVivos.Remove(mesmoId);
+            }
+
+            destino.ReporDadosCongelados(congelado.Ancora, congelado.Regra, congelado.Args, ancora);
+            recursosFinais.Add(destino);
+        }
+
+        _recursos.Clear();
+        foreach (RecursoDaEtapa recurso in recursosFinais)
+        {
+            recurso.VincularEtapa(Id);
+            _recursos.Add(recurso);
+        }
     }
 
     /// <summary>
