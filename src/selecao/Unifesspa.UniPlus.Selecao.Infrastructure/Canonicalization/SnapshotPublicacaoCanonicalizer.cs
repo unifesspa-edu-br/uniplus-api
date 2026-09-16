@@ -168,12 +168,16 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// processo NOVO tem cidade não-nula, por força do gate de
     /// <c>CriarProcessoSeletivoCommandHandler</c> (CA-02). Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.9</c> deixa de ser reconhecida.
-    /// O bump para <c>0.0.18</c> acrescenta <c>exigidoNaEtapaId</c> a cada item de
+    /// O bump para <c>0.0.19</c> RETIRA <c>grupoSatisfacaoId</c> de cada item de
+    /// <c>documentosExigidos.exigencias[]</c>: o grupo de satisfação plano foi substituído
+    /// pela árvore de satisfação, e congelar um campo que ninguém mais lê só obrigava o
+    /// decodificador a exigir uma chave sem sentido. O bump anterior, <c>0.0.18</c>,
+    /// acrescentava <c>exigidoNaEtapaId</c> a cada item de
     /// <c>documentosExigidos.exigencias</c> — a etapa daquela fase que coleta o documento,
     /// nula quando a exigência é da fase inteira. Sem novo bloco de topo. Sem produção em
     /// ambiente nenhum: fixture nova, <c>0.0.17</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.18";
+    internal const string SchemaVersionAtual = "0.0.19";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1085,7 +1089,6 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia
             ? HashCanonicalComputer.NormalizeNfc(consequencia)
             : null,
-        ["grupoSatisfacaoId"] = exigencia.GrupoSatisfacaoId,
         ["condicaoGatilho"] = SerializarCondicaoGatilho(exigencia.Condicoes),
         ["basesLegais"] = SerializarBasesLegais(exigencia.BasesLegaisResolvidas()),
         ["idadeMaximaEmissao"] = exigencia.IdadeMaximaEmissao is { } idade ? SerializarIdadeMaximaEmissao(idade) : null,

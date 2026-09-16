@@ -128,6 +128,71 @@ public static class DefinirEtapasCommandHandler
         // e EF Core não aceita a MESMA instância pertencendo a dois donos ao mesmo tempo; duas
         // etapas com o mesmo tipo, cada uma com sua própria instância, é caso legítimo e comum.
         Dictionary<Guid, TipoEtapaView> tiposEmCache = [];
+
+        // O caráter declarado é conferido contra o que o tipo admite no cadastro — e numa passada
+        // própria, ANTES de qualquer mutação: assim um payload com duas etapas incoerentes
+        // devolve as duas (ADR-0125), e nenhuma instância tracked precisa ser descartada.
+        //
+        // A passada só lê o cadastro quando há o que conferir: etapa existente que mantém o
+        // vínculo E o caráter não é reavaliada. Sem esse recorte, estreitar um tipo ainda ATIVO
+        // — marcar que ele deixou de compor a nota final, que é justamente a operação que este
+        // cadastro existe para permitir — passaria a recusar todo PUT posterior de qualquer
+        // certame que já tivesse uma etapa daquele tipo, mesmo editando só o nome de outra.
+        List<FieldError> caraterErros = [];
+        for (int indice = 0; indice < command.Etapas.Count; indice++)
+        {
+            EtapaProcessoInput itemCarater = command.Etapas[indice];
+            EtapaProcesso? jaExistente = itemCarater.Id is { } idExistente
+                && existentes.TryGetValue(idExistente, out EtapaProcesso? emCurso) ? emCurso : null;
+            bool vinculoInalterado = jaExistente is not null
+                && jaExistente.TipoEtapaOrigemId == itemCarater.TipoEtapaOrigemId;
+            if (vinculoInalterado && jaExistente!.Carater == itemCarater.Carater)
+            {
+                continue;
+            }
+
+            if (!tiposEmCache.TryGetValue(itemCarater.TipoEtapaOrigemId, out TipoEtapaView? tipoParaConferir))
+            {
+                tipoParaConferir = await tipoEtapaReader
+                    .ObterAtivoPorIdAsync(itemCarater.TipoEtapaOrigemId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (tipoParaConferir is null)
+                {
+                    // Vínculo inalterado e tipo desde então desativado: não há de onde ler o que
+                    // ele admite, e recusar puniria quem só quer corrigir o caráter de uma etapa
+                    // que já existia. Segue sem conferir — é o mesmo tratamento que o snapshot
+                    // já congelado recebe logo abaixo.
+                    if (vinculoInalterado)
+                    {
+                        continue;
+                    }
+
+                    // Acumula com as recusas de caráter em vez de sair na primeira: quem
+                    // errou o tipo de uma etapa e o caráter de outra corrige as duas de uma
+                    // vez, e não descobre a segunda só na tentativa seguinte.
+                    caraterErros.Add(new($"etapas[{indice}].tipoEtapaOrigemId", new DomainError(
+                        "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
+                        $"Tipo de etapa {itemCarater.TipoEtapaOrigemId} não encontrado ou não está ativo.")));
+                    continue;
+                }
+
+                tiposEmCache[itemCarater.TipoEtapaOrigemId] = tipoParaConferir;
+            }
+
+            caraterErros.AddRange(EtapaProcesso
+                .ValidarCaraterAdmitido(
+                    itemCarater.Carater,
+                    tipoParaConferir.AdmitePontuacao,
+                    tipoParaConferir.AdmiteEliminacao,
+                    tipoParaConferir.Nome)
+                .Select(erro => erro with { Field = $"etapas[{indice}].{erro.Field}" }));
+        }
+
+        if (caraterErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(caraterErros);
+        }
+
         List<EtapaProcesso> etapas = [];
         foreach (EtapaProcessoInput input in command.Etapas)
         {
@@ -142,25 +207,9 @@ public static class DefinirEtapasCommandHandler
             }
             else
             {
-                if (!tiposEmCache.TryGetValue(input.TipoEtapaOrigemId, out TipoEtapaView? tipo))
-                {
-                    tipo = await tipoEtapaReader
-                        .ObterAtivoPorIdAsync(input.TipoEtapaOrigemId, cancellationToken)
-                        .ConfigureAwait(false);
-                    if (tipo is null)
-                    {
-                        // Uma etapa ANTERIOR no mesmo payload pode já ter mutado uma instância
-                        // tracked (AtualizarDados) antes desta falhar — sem descartar, o
-                        // SaveChangesAsync automático do Wolverine (AutoApplyTransactions)
-                        // persistiria essa mutação parcial mesmo com o PUT inteiro recusado.
-                        unitOfWork.DescartarAlteracoesNaoSalvas();
-                        return Result<MutacaoAceita>.Failure(new DomainError(
-                            "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
-                            $"Tipo de etapa {input.TipoEtapaOrigemId} não encontrado ou não está ativo."));
-                    }
-
-                    tiposEmCache[input.TipoEtapaOrigemId] = tipo;
-                }
+                // Vínculo novo ou alterado já foi resolvido e cacheado pela passada que confere
+                // o caráter, e é lá que o tipo inativo é recusado — antes de qualquer mutação.
+                TipoEtapaView tipo = tiposEmCache[input.TipoEtapaOrigemId];
 
                 Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
                 if (snapshotResult.IsFailure)
@@ -259,9 +308,14 @@ public static class DefinirEtapasCommandHandler
             List<RecursoDaEtapa> recursos = [];
             foreach (RecursoDaEtapaInput declarado in input.Recursos ?? [])
             {
+                // Entre os PRELIMINARES, e não entre todos os produtos: a etapa publica o mesmo
+                // ato duas vezes — preliminar e definitivo —, e é do preliminar que a janela
+                // corre. Resolver só pelo código devolveria o definitivo sempre que ele viesse
+                // primeiro na coleção, e a etapa seria recusada por ancorar onde não se pode.
                 Guid ancora = declarado.Ancora == AncoraDoRecurso.AtoPublicado
                     ? etapas[i].Produtos
-                        .FirstOrDefault(pr => string.Equals(pr.AtoCodigo, declarado.AtoAncoraCodigo, StringComparison.Ordinal))
+                        .FirstOrDefault(pr => pr.Papel == PapelProdutoFase.Preliminar
+                            && string.Equals(pr.AtoCodigo, declarado.AtoAncoraCodigo, StringComparison.Ordinal))
                         ?.Id ?? Guid.Empty
                     : Guid.Empty;
 

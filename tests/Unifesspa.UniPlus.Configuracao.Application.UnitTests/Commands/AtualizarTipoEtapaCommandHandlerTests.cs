@@ -17,7 +17,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static TipoEtapa Existente(string codigo = "CODIGO_EXISTENTE") =>
-        TipoEtapa.Criar(codigo, "Nome original", null).Value!;
+        TipoEtapa.Criar(codigo, "Nome original", null, true, true).Value!;
 
     [Fact(DisplayName = "Tipo inexistente retorna NaoEncontrado (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrado()
@@ -26,7 +26,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
         _repository.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((TipoEtapa?)null);
 
         Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(id, "Nome novo"), _repository, _unitOfWork, CancellationToken.None);
+            new AtualizarTipoEtapaCommand(id, "Nome novo", true, true), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoEtapaErrorCodes.NaoEncontrado);
@@ -40,7 +40,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(existente.Id, "Nome atualizado", "Descrição nova"),
+            new AtualizarTipoEtapaCommand(existente.Id, "Nome atualizado", true, true, "Descrição nova"),
             _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -58,7 +58,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
     public async Task Handle_IdInexistenteComNomeVazio_RetornaViolacaoDeCampoSemConsultarRepositorio()
     {
         Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), ""), _repository, _unitOfWork, CancellationToken.None);
+            new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "", true, true), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoEtapaErrorCodes.NomeObrigatorio);
@@ -69,7 +69,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
     public async Task Handle_NomeVazioEDescricaoLonga_AcumulaAsDuasViolacoes()
     {
         Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "", new string('a', 1001)),
+            new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "", true, true, new string('a', 1001)),
             _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();

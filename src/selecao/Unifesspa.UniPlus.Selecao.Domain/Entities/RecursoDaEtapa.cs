@@ -66,6 +66,15 @@ public sealed class RecursoDaEtapa : EntityBase
                 "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato."))]);
         }
 
+        // As mesmas invariantes que a regra da fase prova sobre os args — prazo estritamente
+        // positivo, em dia útil ou hora, sem fração de dia útil, e cada par de suspensividade
+        // inteiro ou inteiramente ausente. A janela da etapa recorre nas mesmas condições; o
+        // que muda entre as duas é a ÂNCORA, e ela não alcança estas regras.
+        if (ValidacaoDeArgsDeRecurso.Validar(args) is { } recusa)
+        {
+            return Result<RecursoDaEtapa>.Failure(ErroDosArgs(recusa));
+        }
+
         return Result<RecursoDaEtapa>.Success(new RecursoDaEtapa
         {
             Ancora = ancora,
@@ -74,6 +83,22 @@ public sealed class RecursoDaEtapa : EntityBase
             ProdutoAncoraId = produtoAncoraId,
         });
     }
+
+    /// <summary>
+    /// Traduz o motivo da recusa no código de erro desta entidade — literal, para que a
+    /// cobertura do registro de erros o alcance.
+    /// </summary>
+    private static DomainError ErroDosArgs(RecusaDeArgsDeRecurso recusa) => recusa.Motivo switch
+    {
+        MotivoDeRecusaDeArgs.PrazoNaoPositivo => new("RecursoDaEtapa.PrazoNaoPositivo", recusa.Mensagem),
+        MotivoDeRecusaDeArgs.PrazoEmDiasCorridos => new("RecursoDaEtapa.PrazoEmDiasCorridos", recusa.Mensagem),
+        MotivoDeRecusaDeArgs.PrazoSemUnidadeDeclaravel => new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
+        MotivoDeRecusaDeArgs.PrazoEmFracaoDeDiaUtil => new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
+        MotivoDeRecusaDeArgs.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
+        MotivoDeRecusaDeArgs.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
+        MotivoDeRecusaDeArgs.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
+        _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
+    };
 
     /// <summary>Reidrata a regra preservando o <see cref="EntityBase.Id"/> congelado.</summary>
     public static RecursoDaEtapa Reidratar(

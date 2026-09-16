@@ -1066,6 +1066,40 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Consulta a matriz normativa de derivação de modalidade do ramo da Lei 12.711/2012 (red.
+    /// Lei 14.723/2023), já recortada para as modalidades que ESTE processo oferta e na mesma
+    /// forma que <c>PUT …/regras-derivacao</c> recebe — o cliente a envia de volta sem
+    /// transformação.
+    /// </summary>
+    /// <remarks>
+    /// É proposta, não configuração: nada é gravado por esta leitura, e um processo do ramo
+    /// institucional traz outra matriz. Publicá-la é o que evita o cliente reescrever de que
+    /// opt-ins e de que elegibilidades cada cota se compõe — uma segunda cópia da lei divergiria
+    /// em silêncio, e a divergência só apareceria na classificação de um candidato real.
+    /// <para>
+    /// Lista vazia é resposta legítima: processo que ainda não declarou quadro de vagas, ou que
+    /// oferta só modalidade de outro ramo, não tem regra normativa a propor.
+    /// </para>
+    /// </remarks>
+    [HttpGet("{id:guid}/regras-derivacao/normativas")]
+    [VendorMediaType(Resource = "regras-derivacao-normativas", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDerivacaoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterRegrasDerivacaoNormativas(Guid id, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<ConfiguracaoDerivacaoDto>? normativas = await _queryBus
+            .Send(new ObterRegrasDerivacaoNormativasQuery(id), cancellationToken)
+            .ConfigureAwait(false);
+        if (normativas is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(normativas);
+    }
+
+    /// <summary>
     /// Consulta a conformidade ESTRUTURAL do processo (CA-07, issue #1092): checklist
     /// bicondicional com os seis gates estruturais de <c>Publicar</c>/<c>Retificar</c> — todo
     /// item <c>Ok</c> se e somente se nenhum dos seis gates tem pendência. Não altera o
@@ -1195,6 +1229,79 @@ public sealed class ProcessoSeletivoController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Devolve o rascunho da publicação do operador corrente — o bloco do ato que ele já
+    /// transcreveu e ainda não publicou.
+    /// </summary>
+    /// <remarks>
+    /// 404 quando não há rascunho, inclusive quando o que havia já venceu. É a leitura que
+    /// cobra o prazo: sem tarefa recorrente varrendo a tabela, quem lê é quem descarta.
+    /// </remarks>
+    [HttpGet("{id:guid}/rascunho-da-publicacao")]
+    [VendorMediaType(Resource = "rascunho-da-publicacao", Versions = [1])]
+    [ProducesResponseType(typeof(RascunhoDaPublicacaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterRascunhoDaPublicacao(Guid id, CancellationToken cancellationToken)
+    {
+        RascunhoDaPublicacaoDto? rascunho = await _queryBus.Send(
+            new ObterRascunhoDaPublicacaoQuery(id), cancellationToken);
+        return rascunho is null ? NotFound() : Ok(rascunho);
+    }
+
+    /// <summary>
+    /// Guarda o rascunho da publicação do operador corrente, substituindo por inteiro o que
+    /// houvesse antes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Sem <c>If-Match</c>, e isso não é exceção ao padrão das demais rotas de escrita.</b> A
+    /// precondição que elas exigem é da <b>sessão editorial</b> de retificação, e vale porque
+    /// elas alteram a configuração congelada de um certame publicado. O rascunho não é
+    /// configuração: não entra no envelope, é privado de quem o escreve e existe justamente
+    /// enquanto o certame é preparado. Exigir dele o ETag da sessão acoplaria um bloco de notas
+    /// à concorrência editorial do certame e, durante uma retificação, impediria de salvá-lo.
+    /// </para>
+    /// <para>
+    /// O corpo não é validado campo a campo de propósito: rascunho de formulário pela metade é
+    /// o caso de uso. A validação forte continua no ato de publicar.
+    /// </para>
+    /// </remarks>
+    [HttpPut("{id:guid}/rascunho-da-publicacao")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> SalvarRascunhoDaPublicacao(
+        Guid id,
+        [FromBody] SalvarRascunhoDaPublicacaoRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Result resultado = await _commandBus.Send(
+            new SalvarRascunhoDaPublicacaoCommand(id, request.Versao, request.Conteudo), cancellationToken);
+        return resultado.IsFailure ? resultado.ToActionResult(_mapper) : NoContent();
+    }
+
+    /// <summary>
+    /// Joga fora o rascunho da publicação do operador corrente.
+    /// </summary>
+    /// <remarks>
+    /// Idempotente: descartar o que não existe é 204, porque o pedido era que não houvesse
+    /// rascunho — e não há.
+    /// </remarks>
+    [HttpDelete("{id:guid}/rascunho-da-publicacao")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DescartarRascunhoDaPublicacao(Guid id, CancellationToken cancellationToken)
+    {
+        Result resultado = await _commandBus.Send(
+            new DescartarRascunhoDaPublicacaoCommand(id), cancellationToken);
+        return resultado.IsFailure ? resultado.ToActionResult(_mapper) : NoContent();
     }
 
     [HttpGet("{id:guid}/snapshot-vigente")]

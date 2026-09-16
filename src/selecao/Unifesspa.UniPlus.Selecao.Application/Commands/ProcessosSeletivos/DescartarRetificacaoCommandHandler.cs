@@ -38,6 +38,7 @@ public static class DescartarRetificacaoCommandHandler
         DescartarRetificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRestauradorDeConfiguracao restaurador,
+        IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -45,6 +46,7 @@ public static class DescartarRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(restaurador);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(rascunhoDePublicacaoRepository);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
@@ -147,6 +149,13 @@ public static class DescartarRetificacaoCommandHandler
                 $"O descarte falhou após a configuração congelada já ter sido reaplicada ({descarte.Error!.Code}) — "
                 + "estado inconsistente após o flush, revertendo a transação.");
         }
+
+        // A sessão foi abandonada e a configuração congelada, reposta: não haverá ato de
+        // retificação, e o rascunho que existia para ele deixa de ter destino. Apagá-lo aqui é
+        // o que impede o nome do assinante de sobreviver a uma retificação que não aconteceu.
+        await rascunhoDePublicacaoRepository
+            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 

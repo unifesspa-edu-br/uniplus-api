@@ -23,7 +23,9 @@ public static class CriarTipoEtapaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<TipoEtapa> criar = TipoEtapa.Criar(command.Codigo, command.Nome, command.Descricao);
+        Result<TipoEtapa> criar = TipoEtapa.Criar(
+            command.Codigo, command.Nome, command.Descricao,
+            command.AdmitePontuacao, command.AdmiteEliminacao);
         if (criar.IsFailure)
         {
             return Result<Guid>.ValidationFailure(criar.Errors);

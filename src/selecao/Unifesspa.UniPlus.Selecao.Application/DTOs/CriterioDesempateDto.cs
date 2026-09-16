@@ -6,6 +6,13 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// <c>CriterioDesempateInput</c> — apenas o(s) relevante(s) para o código da
 /// regra referenciada vem(êm) preenchido(s).
 /// </summary>
+/// <remarks>
+/// <see cref="Valor"/> é o texto JSON canônico do valor da condição — <c>"PRETA"</c> com
+/// aspas, <c>18</c> sem —, o mesmo formato de <c>CondicaoGatilhoDto.Valor</c>: as duas
+/// leituras carregam a mesma tripla (fato, operador, valor), e uma segunda convenção para o
+/// mesmo campo obrigaria o cliente a saber de qual das duas ela veio. Round-tripável direto de
+/// volta pelo mesmo PUT.
+/// </remarks>
 public sealed record CriterioDesempateDto(
     Guid Id,
     int Ordem,

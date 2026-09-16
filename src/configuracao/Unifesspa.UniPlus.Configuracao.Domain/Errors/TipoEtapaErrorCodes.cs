@@ -12,6 +12,9 @@ public static class TipoEtapaErrorCodes
     public const string NomeComCaractereNulo = "TipoEtapa.NomeComCaractereNulo";
     public const string DescricaoTamanho = "TipoEtapa.DescricaoTamanho";
     public const string DescricaoComCaractereNulo = "TipoEtapa.DescricaoComCaractereNulo";
+    public const string AdmitePontuacaoObrigatorio = "TipoEtapa.AdmitePontuacaoObrigatorio";
+    public const string AdmiteEliminacaoObrigatorio = "TipoEtapa.AdmiteEliminacaoObrigatorio";
+    public const string SemCaraterAdmitido = "TipoEtapa.SemCaraterAdmitido";
     public const string NaoEncontrado = "TipoEtapa.NaoEncontrado";
     public const string JaDesativado = "TipoEtapa.JaDesativado";
 }

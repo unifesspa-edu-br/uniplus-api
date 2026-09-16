@@ -8,4 +8,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// não <c>string</c> (ADR-0125) — ver justificativa equivalente em
 /// <see cref="CriarTipoEtapaCommand"/>.
 /// </summary>
-public sealed record AtualizarTipoEtapaCommand(Guid Id, string? Nome, string? Descricao = null) : ICommand<Result>;
+public sealed record AtualizarTipoEtapaCommand(
+    Guid Id,
+    string? Nome,
+    bool? AdmitePontuacao,
+    bool? AdmiteEliminacao,
+    string? Descricao = null) : ICommand<Result>;

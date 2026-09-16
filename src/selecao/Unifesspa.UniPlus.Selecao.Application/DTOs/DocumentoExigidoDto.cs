@@ -23,7 +23,6 @@ public sealed record DocumentoExigidoDto(
     string Aplicabilidade,
     bool Obrigatorio,
     string? ConsequenciaIndeferimento,
-    Guid? GrupoSatisfacaoId,
     IReadOnlyList<CondicaoGatilhoDto> Condicoes,
     IReadOnlyList<BaseLegalDto> BasesLegais,
     IdadeMaximaEmissaoDto? IdadeMaximaEmissao,

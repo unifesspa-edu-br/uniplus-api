@@ -26,6 +26,28 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
     public bool Ativo { get; private set; }
+
+    // O par diz quais caracteres de etapa este tipo admite: só pontuação admite apenas
+    // caráter classificatório; só eliminação admite apenas eliminatório; os dois juntos
+    // admitem também o caráter que acumula os dois papéis. É por ele que o cadastro
+    // responde se uma etapa daquele tipo pode ter peso e se pode ter nota mínima, em vez
+    // de o wizard carregar uma lista de códigos que envelhece a cada tipo novo.
+    //
+    // Dois sinalizadores, e não o próprio caráter da etapa: o caráter é vocabulário do
+    // módulo Seleção, e Configuração não depende de Seleção. Limitação aceita: o par
+    // expressa "só pontua", "só elimina" e "os dois", mas não expressa "pode acumular os
+    // dois papéis, nunca apenas eliminar" — nenhum tipo institucional pediu isso até aqui.
+    //
+    // O par restringe o que pode ser declarado; não declara o fato. Quem diz que UMA etapa é
+    // classificatória continua sendo quem monta o certame, na própria etapa — é por isso que
+    // isto não recria a segunda fonte de verdade que a ADR-0113 desfez ao tirar "produz
+    // resultado" e "é definitivo" do cadastro de fases canônicas: lá o cadastro afirmava sobre
+    // a fase de um certame que ele não conhece, aqui ele afirma sobre a natureza do próprio
+    // tipo. Por isso também nada disto é congelado no snapshot da etapa: restrição do cadastro
+    // corrente não é identidade do tipo (ADR-0061).
+    public bool AdmitePontuacao { get; private set; }
+    public bool AdmiteEliminacao { get; private set; }
+
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
 
@@ -68,12 +90,18 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida nome e descrição (os dois campos editáveis), acumulando toda
-    /// violação independente em vez de parar na primeira — sem mutar nada. O
+    /// Valida os campos editáveis — nome, descrição e o par de caracteres admitidos —,
+    /// acumulando toda violação independente em vez de parar na primeira, sem mutar nada. O
     /// código não participa: é imutável, então <see cref="Atualizar"/> e seu
     /// handler nunca precisam revalidá-lo.
     /// </summary>
-    public static Result<(string Nome, string? Descricao)> ValidarCamposEditaveis(string? nome, string? descricao)
+    /// <remarks>
+    /// Os dois sinalizadores chegam anuláveis para que campo ausente no payload seja recusado
+    /// aqui, com erro de domínio por campo, em vez de virar <c>false</c> em silêncio: um tipo
+    /// nasceria declarando que não compõe nota sem ninguém ter dito isso.
+    /// </remarks>
+    public static Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> ValidarCamposEditaveis(
+        string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
     {
         List<FieldError> erros = [];
 
@@ -119,12 +147,36 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
             }
         }
 
-        if (erros.Count > 0)
+        if (admitePontuacao is null)
         {
-            return Result<(string, string?)>.ValidationFailure(erros);
+            erros.Add(new("admitePontuacao", new DomainError(
+                TipoEtapaErrorCodes.AdmitePontuacaoObrigatorio,
+                "É obrigatório declarar se o tipo de etapa admite compor a nota final.")));
         }
 
-        return Result<(string, string?)>.Success((nomeNormalizado!, descricaoNormalizada));
+        if (admiteEliminacao is null)
+        {
+            erros.Add(new("admiteEliminacao", new DomainError(
+                TipoEtapaErrorCodes.AdmiteEliminacaoObrigatorio,
+                "É obrigatório declarar se o tipo de etapa admite eliminar candidato.")));
+        }
+
+        // Um tipo que não compõe nota nem elimina não configura etapa nenhuma: toda etapa
+        // do certame declara um caráter, e nenhum caráter sobraria para escolher.
+        if (admitePontuacao == false && admiteEliminacao == false)
+        {
+            erros.Add(new("admitePontuacao", new DomainError(
+                TipoEtapaErrorCodes.SemCaraterAdmitido,
+                "O tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<(string, string?, bool, bool)>.ValidationFailure(erros);
+        }
+
+        return Result<(string, string?, bool, bool)>.Success(
+            (nomeNormalizado!, descricaoNormalizada, admitePontuacao!.Value, admiteEliminacao!.Value));
     }
 
     /// <summary>
@@ -132,7 +184,8 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     /// violação no mesmo lote. A unicidade do código é responsabilidade do
     /// handler.
     /// </summary>
-    public static Result<TipoEtapa> Criar(string? codigo, string? nome, string? descricao)
+    public static Result<TipoEtapa> Criar(
+        string? codigo, string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
     {
         List<FieldError> erros = [];
 
@@ -142,7 +195,8 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
             erros.AddRange(codigoResult.Errors);
         }
 
-        Result<(string Nome, string? Descricao)> camposResult = ValidarCamposEditaveis(nome, descricao);
+        Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> camposResult =
+            ValidarCamposEditaveis(nome, descricao, admitePontuacao, admiteEliminacao);
         if (camposResult.IsFailure)
         {
             erros.AddRange(camposResult.Errors);
@@ -159,13 +213,16 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
             Nome = camposResult.Value.Nome,
             Descricao = camposResult.Value.Descricao,
             Ativo = true,
+            AdmitePontuacao = camposResult.Value.AdmitePontuacao,
+            AdmiteEliminacao = camposResult.Value.AdmiteEliminacao,
         });
     }
 
     /// <summary>Atualiza apenas os campos editáveis; o código permanece imutável.</summary>
-    public Result Atualizar(string? nome, string? descricao)
+    public Result Atualizar(string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
     {
-        Result<(string Nome, string? Descricao)> campos = ValidarCamposEditaveis(nome, descricao);
+        Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> campos =
+            ValidarCamposEditaveis(nome, descricao, admitePontuacao, admiteEliminacao);
         if (campos.IsFailure)
         {
             return Result.ValidationFailure(campos.Errors);
@@ -173,6 +230,8 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
 
         Nome = campos.Value.Nome;
         Descricao = campos.Value.Descricao;
+        AdmitePontuacao = campos.Value.AdmitePontuacao;
+        AdmiteEliminacao = campos.Value.AdmiteEliminacao;
         return Result.Success();
     }
 

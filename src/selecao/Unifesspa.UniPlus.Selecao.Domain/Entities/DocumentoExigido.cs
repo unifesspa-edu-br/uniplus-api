@@ -24,13 +24,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class DocumentoExigido : EntityBase
 {
-    private static readonly string[] ConsequenciasValidas =
-    [
-        "ELIMINA",
-        "RECLASSIFICA_AC",
-        "REMOVE_VANTAGEM",
-        "PENDENCIA_REENVIO",
-    ];
 
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -70,17 +63,6 @@ public sealed class DocumentoExigido : EntityBase
     /// é validada na PR #903 (CA-05), sem duplicar campo.
     /// </summary>
     public string? ConsequenciaIndeferimento { get; private set; }
-
-    /// <summary>
-    /// Escopo processo+fase — RESIDUAL (Story #920): a árvore de satisfação
-    /// (<see cref="NoExigencia"/>) substitui o grupo plano para toda exigência criada a
-    /// partir desta Story (<see cref="Criar"/> não aceita mais este campo — sempre
-    /// <see langword="null"/> em exigência nova). A propriedade e a coluna permanecem só
-    /// para <see cref="Reidratar"/> reconstruir com fidelidade um envelope publicado ANTES
-    /// da Story #920 (codecs 1.0–1.3, congelados) — nunca lida pelo resolvedor novo
-    /// (<see cref="Services.ResolvedorArvoreSatisfacao"/>).
-    /// </summary>
-    public Guid? GrupoSatisfacaoId { get; private set; }
 
     /// <summary>
     /// Idade máxima de emissão do ARQUIVO apresentado (Story #554, PR #900) — aviso, não
@@ -134,12 +116,12 @@ public sealed class DocumentoExigido : EntityBase
 
         string? consequenciaNormalizada = NormalizarConsequencia(consequenciaIndeferimento);
         if (consequenciaNormalizada is not null
-            && !ConsequenciasValidas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
+            && !ConsequenciaIndeferimentoCodigo.Validas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
         {
             // ADR-0023: nunca ecoar o valor rejeitado na mensagem de erro.
             erros.Add(new("consequenciaIndeferimento", new DomainError(
                 "DocumentoExigido.ConsequenciaIndeferimentoInvalida",
-                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}.")));
+                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", ConsequenciaIndeferimentoCodigo.Validas)}.")));
         }
 
         if (tamanhoMaximoBytes is <= 0)
@@ -274,7 +256,6 @@ public sealed class DocumentoExigido : EntityBase
         Aplicabilidade aplicabilidade,
         bool obrigatorio,
         string? consequenciaIndeferimento,
-        Guid? grupoSatisfacaoId,
         IReadOnlyList<CondicaoGatilho> condicoes,
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
         IdadeMaximaEmissao? idadeMaximaEmissao,
@@ -305,7 +286,6 @@ public sealed class DocumentoExigido : EntityBase
             Aplicabilidade = aplicabilidade,
             Obrigatorio = obrigatorio,
             ConsequenciaIndeferimento = consequenciaIndeferimento,
-            GrupoSatisfacaoId = grupoSatisfacaoId,
             IdadeMaximaEmissao = idadeMaximaEmissao,
             FormatosPermitidos = formatosPermitidos,
             TamanhoMaximoBytes = tamanhoMaximoBytes,

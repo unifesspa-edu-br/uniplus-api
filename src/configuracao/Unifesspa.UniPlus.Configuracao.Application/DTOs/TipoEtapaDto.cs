@@ -9,6 +9,8 @@ public sealed record TipoEtapaDto(
     string Nome,
     string? Descricao,
     bool Ativo,
+    bool AdmitePontuacao,
+    bool AdmiteEliminacao,
     DateTimeOffset CriadoEm)
 {
     [JsonPropertyName("_links")]

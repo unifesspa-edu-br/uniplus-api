@@ -129,6 +129,14 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<RascunhoRetificacao> RascunhosRetificacao => Set<RascunhoRetificacao>();
 
     /// <summary>
+    /// O bloco do ato que o operador já transcreveu no passo de Revisão, guardado para
+    /// sobreviver a um recarregamento. Conteúdo <b>opaco</b> (ver
+    /// <see cref="RascunhoDePublicacao"/>): nada aqui alimenta a publicação, que continua
+    /// recebendo os dados do ato no próprio corpo do comando.
+    /// </summary>
+    public DbSet<RascunhoDePublicacao> RascunhosDePublicacao => Set<RascunhoDePublicacao>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do agregado
     /// para permitir gravação adjacente no outbox; entries cifradas at-rest
     /// via <c>IUniPlusEncryptionService</c>.

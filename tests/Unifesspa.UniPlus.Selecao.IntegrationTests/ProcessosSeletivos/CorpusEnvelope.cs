@@ -381,7 +381,6 @@ internal static class CorpusEnvelope
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: obrigatorio,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [],
             basesLegais: [],
             idadeMaximaEmissao: null,

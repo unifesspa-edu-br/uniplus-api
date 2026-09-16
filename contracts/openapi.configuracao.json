@@ -11404,7 +11404,9 @@
       "AtualizarTipoEtapaCommand": {
         "required": [
           "id",
-          "nome"
+          "nome",
+          "admitePontuacao",
+          "admiteEliminacao"
         ],
         "type": "object",
         "properties": {
@@ -11416,6 +11418,18 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "admitePontuacao": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "admiteEliminacao": {
+            "type": [
+              "null",
+              "boolean"
             ]
           },
           "descricao": {
@@ -12718,7 +12732,9 @@
       "CriarTipoEtapaCommand": {
         "required": [
           "codigo",
-          "nome"
+          "nome",
+          "admitePontuacao",
+          "admiteEliminacao"
         ],
         "type": "object",
         "properties": {
@@ -12732,6 +12748,18 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "admitePontuacao": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "admiteEliminacao": {
+            "type": [
+              "null",
+              "boolean"
             ]
           },
           "descricao": {
@@ -14172,6 +14200,8 @@
           "nome",
           "descricao",
           "ativo",
+          "admitePontuacao",
+          "admiteEliminacao",
           "criadoEm"
         ],
         "type": "object",
@@ -14193,6 +14223,12 @@
             ]
           },
           "ativo": {
+            "type": "boolean"
+          },
+          "admitePontuacao": {
+            "type": "boolean"
+          },
+          "admiteEliminacao": {
             "type": "boolean"
           },
           "criadoEm": {

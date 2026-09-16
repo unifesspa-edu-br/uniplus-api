@@ -101,10 +101,15 @@ public static class DefinirDocumentosExigidosCommandHandler
         bool existeGatilho = ExisteGatilho(command.Raizes);
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null;
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
+        IReadOnlySet<string>? fatosResolviveis = null;
         if (existeGatilho)
         {
-            (vocabularioFatos, pontoResolucaoPorFato) = await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken)
-                .ConfigureAwait(false);
+            IReadOnlySet<string> resolvidosPorAtributo;
+            (vocabularioFatos, pontoResolucaoPorFato, resolvidosPorAtributo) =
+                await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken)
+                    .ConfigureAwait(false);
+
+            fatosResolviveis = FatosQueOProcessoResolve(processo, resolvidosPorAtributo);
         }
 
         IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos = existeGatilho
@@ -131,7 +136,7 @@ public static class DefinirDocumentosExigidosCommandHandler
 
                 Result<DocumentoExigido> documentoResult = await ConstruirDocumentoExigidoAsync(
                         documentoInput, processo, tipoDocumentoReader, vocabularioFatos, pontoResolucaoPorFato,
-                        dominiosDinamicos, tipoEntidadeEfetivo, cancellationToken)
+                        dominiosDinamicos, fatosResolviveis, tipoEntidadeEfetivo, cancellationToken)
                     .ConfigureAwait(false);
                 if (documentoResult.IsFailure)
                 {
@@ -298,6 +303,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato,
         IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos,
+        IReadOnlySet<string>? fatosResolviveis,
         TipoEntidade? tipoEntidadeRepeticao,
         CancellationToken cancellationToken)
     {
@@ -327,8 +333,16 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioEfetivo =
             MesclarVocabularioDeEntidade(vocabularioFatos, tipoEntidadeRepeticao);
 
+        // O universo acompanha o vocabulário: quando a folha repete por entidade, os atributos
+        // daquela entidade entram nos dois. Eles não vêm do catálogo de fatos do candidato nem
+        // são coletados no formulário — são respondidos por instância declarada, e conferi-los
+        // contra o universo do processo os recusaria.
+        IReadOnlySet<string>? universoEfetivo = fatosResolviveis is null
+            ? null
+            : MesclarUniversoDeEntidade(fatosResolviveis, tipoEntidadeRepeticao);
+
         Result<IReadOnlyList<CondicaoGatilho>> condicoesResult = ResolverCondicoes(
-            input.Condicoes, vocabularioEfetivo, dominiosDinamicos);
+            input.Condicoes, vocabularioEfetivo, dominiosDinamicos, universoEfetivo);
         if (condicoesResult.IsFailure)
         {
             return Result<DocumentoExigido>.Failure(condicoesResult.Error!);
@@ -400,7 +414,8 @@ public static class DefinirDocumentosExigidosCommandHandler
     private static Result<IReadOnlyList<CondicaoGatilho>> ResolverCondicoes(
         IReadOnlyList<CondicaoGatilhoInput> inputs,
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos)
+        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos,
+        IReadOnlySet<string>? fatosResolviveis)
     {
         if (inputs.Count == 0)
         {
@@ -428,8 +443,15 @@ public static class DefinirDocumentosExigidosCommandHandler
             return Result<IReadOnlyList<CondicaoGatilho>>.Failure(predicadoResult.Error!);
         }
 
+        // O universo de fatos que o processo resolve entra aqui, e não `null`: um gatilho que
+        // cita fato que o certame não coleta, não deriva e não obtém do candidato nunca se
+        // resolve para ninguém — a exigência ficaria pendente para sempre, o que é pior que
+        // recusar, porque parece funcionar.
         Result validacaoResult = PredicadoDnfValidador.Validar(
-            predicadoResult.Value!, vocabularioFatos ?? new Dictionary<string, DescritorFatoCandidato>(), null, dominiosDinamicos);
+            predicadoResult.Value!,
+            vocabularioFatos ?? new Dictionary<string, DescritorFatoCandidato>(),
+            fatosResolviveis,
+            dominiosDinamicos);
         if (validacaoResult.IsFailure)
         {
             return Result<IReadOnlyList<CondicaoGatilho>>.Failure(validacaoResult.Error!);
@@ -632,6 +654,28 @@ public static class DefinirDocumentosExigidosCommandHandler
     }
 
     /// <summary>
+    /// Acrescenta ao universo de fatos resolvíveis os atributos de escopo-entidade, quando a
+    /// folha repete por entidade — os mesmos que <see cref="MesclarVocabularioDeEntidade"/>
+    /// acrescenta ao vocabulário.
+    /// </summary>
+    private static HashSet<string> MesclarUniversoDeEntidade(
+        IReadOnlySet<string> universo, TipoEntidade? tipoEntidadeRepeticao)
+    {
+        HashSet<string> mesclado = new(universo, StringComparer.Ordinal);
+        if (tipoEntidadeRepeticao != TipoEntidade.MembroNucleoFamiliar)
+        {
+            return mesclado;
+        }
+
+        foreach (string atributo in AtributosMembroNucleoFamiliar.Keys)
+        {
+            mesclado.Add(atributo);
+        }
+
+        return mesclado;
+    }
+
+    /// <summary>
     /// Mapeia <see cref="FatoCandidatoView"/> para <see cref="DescritorFatoCandidato"/>,
     /// estendendo <c>DefinirCriteriosDesempateCommandHandler.ResolverVocabularioFatosAsync</c>
     /// (#846/#847) para incluir os fatos categóricos de escopo-processo (Story #554, PR #896) —
@@ -640,7 +684,7 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// própria deste handler, e não em <see cref="DescritorFatoCandidato"/> (VO mínimo
     /// compartilhado com <c>DefinirCriteriosDesempateCommandHandler</c>, que não precisa dela).
     /// </summary>
-    private static async Task<(IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyDictionary<string, string> PontoResolucaoPorFato)> ResolverVocabularioFatosAsync(
+    private static async Task<(IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyDictionary<string, string> PontoResolucaoPorFato, IReadOnlySet<string> ResolvidosPorAtributo)> ResolverVocabularioFatosAsync(
         IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader
@@ -649,6 +693,7 @@ public static class DefinirDocumentosExigidosCommandHandler
 
         Dictionary<string, DescritorFatoCandidato> vocabulario = [];
         Dictionary<string, string> pontoResolucaoPorFato = new(StringComparer.Ordinal);
+        HashSet<string> resolvidosPorAtributo = new(StringComparer.Ordinal);
         foreach (FatoCandidatoView fato in fatos)
         {
             TipoDominioFato? tipoDominio = fato switch
@@ -670,10 +715,53 @@ public static class DefinirDocumentosExigidosCommandHandler
             {
                 vocabulario[fato.Codigo] = descritorResult.Value!;
                 pontoResolucaoPorFato[fato.Codigo] = fato.PontoResolucao;
+
+                // Derivado tem DOIS mecanismos, e só um deles passa por regra declarada no
+                // processo. O que resolve por atributo do candidato — faixa etária, renda per
+                // capita — não tem nem pode ter regra: o processo o obtém do próprio candidato.
+                // Tratar os dois como um só recusaria justamente o gatilho por idade.
+                if (fato.Binding is { } binding
+                    && binding.StartsWith(BindingPorAtributo, StringComparison.Ordinal))
+                {
+                    resolvidosPorAtributo.Add(fato.Codigo);
+                }
             }
         }
 
-        return (vocabulario, pontoResolucaoPorFato);
+        return (vocabulario, pontoResolucaoPorFato, resolvidosPorAtributo);
+    }
+
+    /// <summary>Prefixo de binding do fato que o processo obtém direto do candidato.</summary>
+    private const string BindingPorAtributo = "ATRIBUTO_CANDIDATO:";
+
+    /// <summary>
+    /// Os fatos que ESTE processo consegue resolver para um candidato — o universo contra o
+    /// qual um gatilho é conferido.
+    /// </summary>
+    /// <remarks>
+    /// São três conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
+    /// coleta no formulário de inscrição; o que ele deriva por regra declarada (a modalidade de
+    /// concorrência); e o que o candidato traz consigo, resolvido por atributo (faixa etária,
+    /// renda per capita) — este último nunca aparece nas regras de derivação, porque não há o
+    /// que declarar sobre ele.
+    /// </remarks>
+    private static HashSet<string> FatosQueOProcessoResolve(
+        ProcessoSeletivo processo,
+        IReadOnlySet<string> resolvidosPorAtributo)
+    {
+        HashSet<string> universo = new(resolvidosPorAtributo, StringComparer.Ordinal);
+
+        foreach (FatoColetado coletado in processo.FatosColetados)
+        {
+            universo.Add(coletado.FatoCodigo);
+        }
+
+        foreach (ConfiguracaoDerivacaoFato derivado in processo.RegrasDerivacao)
+        {
+            universo.Add(derivado.CodigoFato);
+        }
+
+        return universo;
     }
 
     /// <summary>

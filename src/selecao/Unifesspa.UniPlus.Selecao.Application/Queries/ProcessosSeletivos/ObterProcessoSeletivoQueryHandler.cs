@@ -263,12 +263,18 @@ public static class ObterProcessoSeletivoQueryHandler
     }
 
     /// <summary>
-    /// Achata <c>CondicaoDnf.Valor</c> (JSON escalar ou array) para o formato
-    /// textual de <see cref="DTOs.CriterioDesempateDto.Valor"/> — projeção de
-    /// leitura, não round-trip byte-a-byte (esse é o do envelope canônico).
+    /// <c>CondicaoDnf.Valor</c> como texto JSON canônico, o mesmo formato de
+    /// <see cref="DTOs.CondicaoGatilhoDto.Valor"/>: as duas leituras carregam a mesma tripla
+    /// (fato, operador, valor) e o mesmo PUT as recebe de volta.
     /// </summary>
-    private static string ProjetarValorCondicao(JsonElement valor) =>
-        valor.ValueKind == JsonValueKind.String ? valor.GetString()! : valor.GetRawText();
+    /// <remarks>
+    /// Desachatar a string — devolver <c>PRETA</c> em vez de <c>"PRETA"</c> — perdia o tipo no
+    /// ida-e-volta: um valor de texto <c>"18"</c> voltava como <c>18</c> e era reinterpretado
+    /// como número na gravação seguinte, mudando qual ramo da matriz operador × domínio o
+    /// validaria. E obrigava quem lê os dois DTOs a conhecer duas convenções para o mesmo
+    /// campo.
+    /// </remarks>
+    private static string ProjetarValorCondicao(JsonElement valor) => valor.GetRawText();
 
     private static ConfiguracaoClassificacaoDto? ProjectClassificacao(ProcessoSeletivo processo)
     {
@@ -353,7 +359,6 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectAplicabilidade(documento.Aplicabilidade),
         documento.Obrigatorio,
         documento.ConsequenciaIndeferimento,
-        documento.GrupoSatisfacaoId,
         [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjectCondicaoGatilho)],
         [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjectBaseLegal)],
         ProjectIdadeMaximaEmissao(documento.IdadeMaximaEmissao),

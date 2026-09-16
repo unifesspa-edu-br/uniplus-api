@@ -2689,6 +2689,168 @@
       "description": "GETs de leitura — não alteram estado."
     },
     {
+      "name": "ProcessoSeletivo — Rascunho da publicação",
+      "item": [
+        {
+          "name": "Rascunho: gravar o bloco do ato",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"versao\": 1,\n  \"conteudo\": {\n    \"numero\": \"07/2027\",\n    \"periodoInscricaoInicio\": \"\",\n    \"periodoInscricaoFim\": \"\",\n    \"ato\": {\n      \"orgao\": \"REITORIA\",\n      \"serie\": \"EDITAL\",\n      \"ano\": \"2027\",\n      \"dataPublicacao\": \"2027-01-15\",\n      \"assinante\": \"Reitor\",\n      \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/rascunho-da-publicacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "rascunho-da-publicacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 — rascunho gravado', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rascunho: ler o que está guardado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.rascunho-da-publicacao.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/rascunho-da-publicacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "rascunho-da-publicacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 e o conteúdo volta como foi enviado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.versao).to.eql(1);",
+                  "  pm.expect(j.conteudo.ato.orgao).to.eql('REITORIA');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rascunho: descartar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/rascunho-da-publicacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "rascunho-da-publicacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 — e descartar de novo continua 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "ProcessoSeletivo — Publicação",
       "item": [
         {

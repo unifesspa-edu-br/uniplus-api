@@ -891,10 +891,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("exigido_na_fase_id");
 
-                    b.Property<Guid?>("GrupoSatisfacaoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("grupo_satisfacao_id");
-
                     b.Property<bool>("Obrigatorio")
                         .HasColumnType("boolean")
                         .HasColumnName("obrigatorio");
@@ -1992,6 +1988,56 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("FaseCronogramaId", "AtoCodigo", "Papel"), false);
 
                     b.ToTable("produtos_da_fase", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoDePublicacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Conteudo")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("conteudo");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expira_em");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UsuarioSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("usuario_sub");
+
+                    b.Property<int>("Versao")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rascunhos_publicacao");
+
+                    b.HasIndex("ExpiraEm")
+                        .HasDatabaseName("ix_rascunhos_publicacao_expira_em");
+
+                    b.HasIndex("ProcessoSeletivoId", "UsuarioSub")
+                        .IsUnique()
+                        .HasDatabaseName("ux_rascunhos_publicacao_processo_operador");
+
+                    b.ToTable("rascunhos_publicacao", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", b =>
@@ -3703,6 +3749,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_produtos_da_fase_fases_cronograma_fase_cronograma_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoDePublicacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithMany()
+                        .HasForeignKey("ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_rascunhos_publicacao_processos_seletivos_processo_seletivo_");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", b =>

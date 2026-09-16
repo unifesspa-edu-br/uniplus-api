@@ -11,7 +11,7 @@ public sealed class TipoEtapaTests
     [Fact(DisplayName = "Cria item ativo e preserva código como identidade")]
     public void Criar_ItemValido_AtivaEPreservaCodigo()
     {
-        Result<TipoEtapa> result = TipoEtapa.Criar("NOVO_TIPO", "Novo tipo", "Descrição");
+        Result<TipoEtapa> result = TipoEtapa.Criar("NOVO_TIPO", "Novo tipo", "Descrição", true, true);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Ativo.Should().BeTrue();
@@ -34,7 +34,7 @@ public sealed class TipoEtapaTests
         string nomeDecomposto = nomeComposto.Normalize(System.Text.NormalizationForm.FormD);
         codigoDecomposto.Should().NotBe(codigoComposto, "pre-condicao do teste: as duas formas tem bytes diferentes");
 
-        Result<TipoEtapa> result = TipoEtapa.Criar(codigoDecomposto, nomeDecomposto, null);
+        Result<TipoEtapa> result = TipoEtapa.Criar(codigoDecomposto, nomeDecomposto, null, true, true);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Codigo.Should().Be(codigoComposto);
@@ -51,9 +51,9 @@ public sealed class TipoEtapaTests
 
         Result<TipoEtapa> result = campo switch
         {
-            "codigo" => TipoEtapa.Criar(invalido, "Nome válido", "Descrição válida"),
-            "nome" => TipoEtapa.Criar("CODIGO_VALIDO", invalido, "Descrição válida"),
-            "descricao" => TipoEtapa.Criar("CODIGO_VALIDO", "Nome válido", invalido),
+            "codigo" => TipoEtapa.Criar(invalido, "Nome válido", "Descrição válida", true, true),
+            "nome" => TipoEtapa.Criar("CODIGO_VALIDO", invalido, "Descrição válida", true, true),
+            "descricao" => TipoEtapa.Criar("CODIGO_VALIDO", "Nome válido", invalido, true, true),
             _ => throw new InvalidOperationException($"Campo de teste inesperado: {campo}"),
         };
 
@@ -66,13 +66,13 @@ public sealed class TipoEtapaTests
     [InlineData("descricao", TipoEtapaErrorCodes.DescricaoComCaractereNulo)]
     public void Atualizar_CampoComCaractereNulo_Recusa(string campo, string codigoEsperado)
     {
-        TipoEtapa tipo = TipoEtapa.Criar("CODIGO_VALIDO", "Nome válido", "Descrição válida").Value!;
+        TipoEtapa tipo = TipoEtapa.Criar("CODIGO_VALIDO", "Nome válido", "Descrição válida", true, true).Value!;
         string invalido = $"valor{(char)0}invalido";
 
         Result result = campo switch
         {
-            "nome" => tipo.Atualizar(invalido, "Descrição válida"),
-            "descricao" => tipo.Atualizar("Nome válido", invalido),
+            "nome" => tipo.Atualizar(invalido, "Descrição válida", true, true),
+            "descricao" => tipo.Atualizar("Nome válido", invalido, true, true),
             _ => throw new InvalidOperationException($"Campo de teste inesperado: {campo}"),
         };
 
@@ -86,7 +86,7 @@ public sealed class TipoEtapaTests
     public void Criar_CamposObrigatoriosNulos_NaoLancaEDevolveViolacaoDeDominio(
         string? codigo, string? nome, string? descricao, string codigoEsperado)
     {
-        Result<TipoEtapa> resultado = TipoEtapa.Criar(codigo, nome, descricao);
+        Result<TipoEtapa> resultado = TipoEtapa.Criar(codigo, nome, descricao, true, true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(codigoEsperado);
@@ -103,7 +103,7 @@ public sealed class TipoEtapaTests
     public void Criar_TresCamposInvalidos_AcumulaAsTresViolacoesRotuladas()
     {
         Result<TipoEtapa> resultado = TipoEtapa.Criar(
-            new string('A', 65), "", new string('b', 1001));
+            new string('A', 65), "", new string('b', 1001), admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
@@ -118,19 +118,76 @@ public sealed class TipoEtapaTests
     [Fact(DisplayName = "Atualizar com nome e descrição inválidos acumula as duas violações sem mutar o agregado")]
     public void Atualizar_NomeEDescricaoInvalidos_AcumulaAsDuasViolacoesSemMutar()
     {
-        TipoEtapa tipo = TipoEtapa.Criar("CODIGO_VALIDO", "Nome original", null).Value!;
+        TipoEtapa tipo = TipoEtapa.Criar("CODIGO_VALIDO", "Nome original", null, true, true).Value!;
 
-        Result resultado = tipo.Atualizar("", new string('a', 1001));
+        Result resultado = tipo.Atualizar("", new string('a', 1001), true, true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
         tipo.Nome.Should().Be("Nome original", "falha de validação não pode mutar o agregado");
     }
 
+    /// <summary>
+    /// Toda etapa do certame declara um caráter. Um tipo que não compõe a nota final nem elimina
+    /// candidato não deixa caráter nenhum para escolher — não configura etapa.
+    /// </summary>
+    [Fact(DisplayName = "Tipo que não compõe nota nem elimina é recusado")]
+    public void Criar_SemNenhumCaraterAdmitido_Recusa()
+    {
+        Result<TipoEtapa> resultado = TipoEtapa.Criar(
+            "TIPO_INERTE", "Tipo inerte", null, admitePontuacao: false, admiteEliminacao: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be(TipoEtapaErrorCodes.SemCaraterAdmitido);
+    }
+
+    /// <summary>
+    /// Sinalizador ausente no payload não pode virar <c>false</c> em silêncio: o tipo nasceria
+    /// declarando que não compõe a nota final sem ninguém ter dito isso.
+    /// </summary>
+    [Theory(DisplayName = "Sinalizador de caráter admitido ausente é recusado por campo")]
+    [InlineData(null, true, "admitePontuacao", TipoEtapaErrorCodes.AdmitePontuacaoObrigatorio)]
+    [InlineData(true, null, "admiteEliminacao", TipoEtapaErrorCodes.AdmiteEliminacaoObrigatorio)]
+    public void Criar_SinalizadorAusente_RecusaComCampo(
+        bool? admitePontuacao, bool? admiteEliminacao, string campoEsperado, string codigoEsperado)
+    {
+        Result<TipoEtapa> resultado = TipoEtapa.Criar(
+            "TIPO_NOVO", "Tipo novo", null, admitePontuacao, admiteEliminacao);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be(campoEsperado);
+        resultado.Errors[0].Error.Code.Should().Be(codigoEsperado);
+    }
+
+    [Fact(DisplayName = "Atualizar troca o que o tipo admite")]
+    public void Atualizar_TrocaOCaraterAdmitido()
+    {
+        TipoEtapa tipo = TipoEtapa.Criar("ANALISE", "Análise", null, true, true).Value!;
+
+        Result resultado = tipo.Atualizar("Análise", null, admitePontuacao: false, admiteEliminacao: true);
+
+        resultado.IsSuccess.Should().BeTrue();
+        tipo.AdmitePontuacao.Should().BeFalse();
+        tipo.AdmiteEliminacao.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Atualizar sem nenhum caráter admitido recusa sem mutar o agregado")]
+    public void Atualizar_SemNenhumCaraterAdmitido_RecusaSemMutar()
+    {
+        TipoEtapa tipo = TipoEtapa.Criar("ANALISE", "Análise", null, true, true).Value!;
+
+        Result resultado = tipo.Atualizar("Análise", null, admitePontuacao: false, admiteEliminacao: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        tipo.AdmitePontuacao.Should().BeTrue("falha de validação não pode mutar o agregado");
+    }
+
     [Fact(DisplayName = "Desativação é terminal e não remove a identidade")]
     public void Desativar_ItemAtivo_DesativaSemApagarCodigo()
     {
-        TipoEtapa tipo = TipoEtapa.Criar("PS_TESTE", "Processo teste", null).Value!;
+        TipoEtapa tipo = TipoEtapa.Criar("PS_TESTE", "Processo teste", null, true, true).Value!;
 
         Result result = tipo.Desativar();
 

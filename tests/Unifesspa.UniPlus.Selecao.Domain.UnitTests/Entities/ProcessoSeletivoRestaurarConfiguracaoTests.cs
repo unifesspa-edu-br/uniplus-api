@@ -200,6 +200,55 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         depois.Ordem.Should().Be(3);
     }
 
+    /// <summary>
+    /// A fase em que a etapa acontece é dado congelado como qualquer outro. Sem repô-la, a etapa
+    /// sobrevivente volta da restauração sem vínculo com o cronograma — e nenhum outro caminho a
+    /// devolve, porque o vínculo só é declarado ao definir as etapas.
+    /// </summary>
+    [Fact(DisplayName = "A etapa que sobrevive recupera também a fase em que acontece")]
+    public void EtapaSobrevivente_RecuperaAFaseCongelada()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        GrafoConfiguracao grafo = Grafo(etapas: [
+            EtapaProcesso.Reidratar(
+                EtapaOriginal, "Prova", CaraterEtapa.Classificatoria,
+                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
+                1m, null, 1, "RESULTADO_FINAL"),
+        ]);
+
+        processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
+
+        processo.Etapas.Single().FaseCodigo.Should().Be("RESULTADO_FINAL");
+    }
+
+    /// <summary>
+    /// Repor não é declarar: o grafo vem de um envelope que foi válido quando nasceu, e uma regra
+    /// de coerência criada depois não pode tornar a reposição impossível — isso trancaria o
+    /// certame num estado do qual o descarte da retificação nunca sairia.
+    /// </summary>
+    [Fact(DisplayName = "Etapa congelada com combinação que a regra atual recusaria ainda assim é reposta")]
+    public void EtapaCongeladaComCombinacaoHojeRecusada_AindaERestaurada()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        // Nota mínima em etapa apenas classificatória: hoje o agregado recusa a declaração, e o
+        // envelope antigo a carrega.
+        GrafoConfiguracao grafo = Grafo(etapas: [
+            EtapaProcesso.Reidratar(
+                EtapaOriginal, "Prova", CaraterEtapa.Classificatoria,
+                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
+                1m, 20m, 1),
+        ]);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, grafo);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.Etapas.Single().NotaMinima.Should().Be(20m);
+    }
+
     [Fact(DisplayName = "issue #848/ADR-0115 §3.7 — restauração com AcaoQuandoIndeferido divergente entre ofertas é recusada")]
     public void RestauracaoComAcaoQuandoIndeferidoDivergenteEntreOfertas_Recusa()
     {
@@ -743,7 +792,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             Guid.CreateVersion7(), exigidoNaFaseId: faseCongeladaId, tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "IDENTIDADE", tipoDocumentoNome: "Documento de identidade",
             tipoDocumentoCategoria: "PESSOAL", aplicabilidade: Aplicabilidade.Geral, obrigatorio: true,
-            consequenciaIndeferimento: null, grupoSatisfacaoId: null, condicoes: [], basesLegais: [],
+            consequenciaIndeferimento: null, condicoes: [], basesLegais: [],
             idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null);
 
         ReferenciaTemporalFatos referenciaCongelada = ReferenciaTemporalFatos.Criar(
