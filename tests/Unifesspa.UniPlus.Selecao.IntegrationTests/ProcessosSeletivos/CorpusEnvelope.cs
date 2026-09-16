@@ -60,6 +60,15 @@ internal static class CorpusEnvelope
     private static readonly Guid OfertaMedicina = new("bbbb0000-0000-4000-8000-000000000001");
     private static readonly Guid OfertaDireito = new("bbbb0000-0000-4000-8000-000000000002");
 
+    // Filhas da objetiva. Variam pela mesma razão que <see cref="EtapaId"/>: os testes de
+    // persistência põem dois processos no MESMO Postgres, e um id fixo aqui colidiria na
+    // chave primária de produtos_da_etapa / recursos_da_etapa no segundo deles.
+    private static Guid ProdutoDaObjetivaId(int variante) =>
+        new($"aaab000{variante:x}-0000-4000-8000-000000000001");
+
+    private static Guid RecursoDaObjetivaId(int ordem, int variante) =>
+        new($"aaac000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
+
     private static readonly Guid Documento = new("cccc0000-0000-4000-8000-000000000001");
     private static readonly Guid ReferenciaDemografica = new("dddd0000-0000-4000-8000-000000000001");
     private static readonly Guid UnidadeAdministradora = new("eeee0000-0000-4000-8000-000000000001");
@@ -145,8 +154,37 @@ internal static class CorpusEnvelope
         processo.DefinirAlgoritmoContagemPrazo(
             AlgoritmoDeContagemDoCorpus(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // A objetiva carrega o recurso da ETAPA, e carrega os dois casos que o envelope
+        // precisava aprender a congelar: a suspensividade declarada nos dois pares — que voltava
+        // nula — e a âncora por CIÊNCIA, cujo produto é ausente e cujo Guid vazio fazia o
+        // envelope recusar a si mesmo na volta. Sem isto no corpus, o round-trip passava
+        // exatamente por não exercitar recurso de etapa nenhum.
+        EtapaProcesso etapaObjetiva = EtapaProcesso.Reidratar(
+            objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1);
+        etapaObjetiva.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
+        etapaObjetiva.DefinirProdutos([
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+        ]).IsSuccess.Should().BeTrue();
+        etapaObjetiva.DefinirRecursos([
+            RecursoDaEtapa.Reidratar(
+                RecursoDaObjetivaId(1, variante),
+                AncoraDoRecurso.AtoPublicado,
+                Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
+                new ArgsRegraPrazoRecurso(
+                    3.0000m, UnidadePrazo.DiasUteis,
+                    2.0000m, UnidadePrazo.DiasUteis,
+                    1.0000m, UnidadePrazo.DiasUteis),
+                ProdutoDaObjetivaId(variante)),
+            RecursoDaEtapa.Reidratar(
+                RecursoDaObjetivaId(2, variante),
+                AncoraDoRecurso.CienciaIndividual,
+                Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
+                new ArgsRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, null, null),
+                Guid.Empty),
+        ]).IsSuccess.Should().BeTrue();
+
         processo.DefinirEtapas(Ordem([
-            EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),
+            etapaObjetiva,
             EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2),
             EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3),
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

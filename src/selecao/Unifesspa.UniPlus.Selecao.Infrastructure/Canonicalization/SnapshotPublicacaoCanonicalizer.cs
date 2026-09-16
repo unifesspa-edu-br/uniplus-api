@@ -359,11 +359,17 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             {
                 ["id"] = JsonValue.Create(r.Id),
                 ["ancora"] = r.Ancora.ToString(),
-                ["regraCodigo"] = r.Regra.Codigo,
-                ["regraVersao"] = r.Regra.Versao,
-                ["prazoValor"] = HashCanonicalComputer.SerializeDecimalCanonical(r.Args.PrazoValor, EscalaPadrao),
-                ["prazoUnidade"] = r.Args.PrazoUnidade.ToString(),
-                ["produtoAncoraId"] = JsonValue.Create(r.ProdutoAncoraId),
+                // A regra INTEIRA, com o hash, e os args INTEIROS, com os dois pares de
+                // suspensividade — o mesmo que a fase congela um nível acima. Congelar só
+                // código, versão e prazo deixava o envelope indecodificável: a referência
+                // renasceria sem hash e a suspensividade declarada voltaria nula, apagando em
+                // silêncio o que o edital prometeu ao candidato.
+                ["regra"] = SerializarReferenciaRegra(r.Regra),
+                ["args"] = SerializarArgsRegraPrazoRecurso(r.Args),
+                // A âncora por CIÊNCIA não tem produto: o prazo corre da ciência individual, e
+                // não da publicação de um ato. Congelar o Guid vazio fazia o envelope recusar a
+                // si mesmo na volta, porque id vazio é malformado por regra do leitor.
+                ["produtoAncoraId"] = r.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(r.ProdutoAncoraId),
             })]),
         ["produtos"] = new JsonArray([.. etapa.Produtos
             .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)

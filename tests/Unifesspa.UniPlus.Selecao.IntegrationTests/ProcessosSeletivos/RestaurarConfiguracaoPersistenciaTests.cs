@@ -227,7 +227,13 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
 
     private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext context, Guid id) =>
         await context.ProcessosSeletivos
-            .Include(p => p.Etapas)
+            // As filhas da etapa vêm explícitas, como no repositório de produção: sem elas a
+            // coleção tracked nasce vazia e o agregado relido recanonicaliza com produtos,
+            // bancas e recursos zerados — bytes a menos que os congelados, e a prova de que
+            // "nada se perdeu no caminho" valeria só para o que o Include alcançou.
+            .Include(p => p.Etapas).ThenInclude(e => e.Produtos)
+            .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
+            .Include(p => p.Etapas).ThenInclude(e => e.Recursos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
