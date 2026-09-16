@@ -16,7 +16,7 @@ public sealed class EtapaProcessoTests
     public void Criar_DadosValidos_Sucesso()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 3m, notaMinima: 5m, ordem: 1);
+            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3m, notaMinima: 5m, ordem: 1);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Nome.Should().Be("Prova Objetiva");
@@ -121,11 +121,85 @@ public sealed class EtapaProcessoTests
         ]);
     }
 
+    /// <summary>
+    /// Peso em etapa que não pontua fica gravado sem nunca entrar no divisor da média: quem
+    /// configurou acredita que pesa, e o cálculo o ignora.
+    /// </summary>
+    [Fact(DisplayName = "Peso em etapa apenas eliminatória é recusado")]
+    public void ValidarFormaBasica_PesoEmEtapaApenasEliminatoria_Recusa()
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+            "Banca de heteroidentificação", CaraterEtapa.Eliminatoria, peso: 2m, notaMinima: null, ordem: 1);
+
+        erros.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("EtapaProcesso.PesoSemCaraterQuePontua");
+        erros[0].Field.Should().Be("peso");
+    }
+
+    [Fact(DisplayName = "Nota mínima em etapa apenas classificatória é recusada")]
+    public void ValidarFormaBasica_NotaMinimaEmEtapaApenasClassificatoria_Recusa()
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, notaMinima: 5m, ordem: 1);
+
+        erros.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("EtapaProcesso.NotaMinimaSemCaraterQueElimina");
+        erros[0].Field.Should().Be("notaMinima");
+    }
+
+    /// <summary>
+    /// Caráter ausente já é reportado por si; um segundo erro dizendo que o peso não combina com
+    /// ele mandaria a pessoa corrigir um campo que não está errado.
+    /// </summary>
+    [Fact(DisplayName = "Caráter ausente não gera também erro de coerência de peso")]
+    public void ValidarFormaBasica_CaraterAusenteComPeso_ReportaSoOCarater()
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+            "Etapa", CaraterEtapa.Nenhum, peso: 3m, notaMinima: 5m, ordem: 1);
+
+        erros.Should().ContainSingle()
+            .Which.Error.Code.Should().Be("EtapaProcesso.CaraterObrigatorio");
+    }
+
+    [Theory(DisplayName = "Caráter que o tipo de etapa não admite é recusado")]
+    [InlineData(CaraterEtapa.Classificatoria, false, true, 1)]
+    [InlineData(CaraterEtapa.Eliminatoria, true, false, 1)]
+    [InlineData(CaraterEtapa.Ambas, false, false, 2)]
+    [InlineData(CaraterEtapa.Ambas, true, true, 0)]
+    [InlineData(CaraterEtapa.Eliminatoria, false, true, 0)]
+    public void ValidarCaraterAdmitido_ConfereContraOCadastro(
+        CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, int violacoesEsperadas)
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarCaraterAdmitido(
+            carater, admitePontuacao, admiteEliminacao, "Análise Documental");
+
+        erros.Should().HaveCount(violacoesEsperadas);
+        erros.Should().AllSatisfy(erro =>
+        {
+            erro.Field.Should().Be("carater");
+            erro.Error.Code.Should().Be(EtapaProcesso.CaraterNaoAdmitidoPeloTipo);
+        });
+    }
+
+    /// <summary>
+    /// A mensagem nomeia o tipo porque quem configura escolheu um tipo e um caráter: sem o nome,
+    /// a recusa não diz qual dos dois revisar.
+    /// </summary>
+    [Fact(DisplayName = "A recusa de caráter nomeia o tipo de etapa que não o admite")]
+    public void ValidarCaraterAdmitido_Recusa_NomeiaOTipo()
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarCaraterAdmitido(
+            CaraterEtapa.Classificatoria, admitePontuacao: false, admiteEliminacao: true, "Análise Documental");
+
+        erros.Should().ContainSingle()
+            .Which.Error.Message.Should().Contain("Análise Documental");
+    }
+
     [Fact(DisplayName = "ValidarFormaBasica sem violação retorna lote vazio")]
     public void ValidarFormaBasica_SemViolacao_Vazio()
     {
         List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, notaMinima: 5m, ordem: 1);
+            "Prova Objetiva", CaraterEtapa.Ambas, peso: 3m, notaMinima: 5m, ordem: 1);
 
         erros.Should().BeEmpty();
     }

@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// referenciam.
 /// </summary>
 /// <remarks>
-/// O catálogo de tipos de etapa é cadastro do usuário — nenhuma migração o semeia, e o
-/// banco efêmero dos testes nasce sem ele. Uma regra legal que referencia código ausente
+/// A carga inicial do catálogo traz o vocabulário institucional, e não um código forjado para
+/// um cenário de teste — este nasce só aqui. Uma regra legal que referencia código ausente
 /// é recusada como inavaliável antes de a conformidade ser avaliada, então o cenário que
 /// quer provar a REPROVAÇÃO por conformidade precisa do tipo vivo no cadastro.
 /// </remarks>
@@ -31,7 +31,8 @@ internal static class TiposDeEtapaSeeder
             return;
         }
 
-        Result<TipoEtapa> tipo = TipoEtapa.Criar(codigo, "Entrevista", null);
+        Result<TipoEtapa> tipo = TipoEtapa.Criar(
+            codigo, "Entrevista", null, admitePontuacao: true, admiteEliminacao: true);
         if (tipo.IsFailure)
         {
             throw new InvalidOperationException(

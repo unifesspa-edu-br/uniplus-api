@@ -49,5 +49,5 @@ internal sealed class TipoEtapaReader : ITipoEtapaReader
     }
 
     private static TipoEtapaView ParaView(TipoEtapa tipo) =>
-        new(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao);
+        new(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao, tipo.AdmitePontuacao, tipo.AdmiteEliminacao);
 }

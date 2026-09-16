@@ -337,6 +337,7 @@ public sealed class ValoresDeDominioAtivosGateTests
                 DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
             RepositorioDoProcesso(processo),
             RepositorioDeDocumento(processo.Id),
+            Substitute.For<IRascunhoDePublicacaoRepository>(),
             canonicalizer, new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioAutenticado(),

@@ -3429,6 +3429,14 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("AdmiteEliminacao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("admite_eliminacao");
+
+                    b.Property<bool>("AdmitePontuacao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("admite_pontuacao");
+
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean")
                         .HasColumnName("ativo");
@@ -3478,7 +3486,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_tipos_etapa_codigo");
 
-                    b.ToTable("tipos_etapa", "configuracao");
+                    b.ToTable("tipos_etapa", "configuracao", t =>
+                        {
+                            t.HasCheckConstraint("ck_tipos_etapa_carater_admitido", "admite_pontuacao OR admite_eliminacao");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoProcesso", b =>

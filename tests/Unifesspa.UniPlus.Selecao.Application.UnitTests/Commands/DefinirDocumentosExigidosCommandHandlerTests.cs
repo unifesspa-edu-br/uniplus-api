@@ -156,6 +156,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]);
 
+        ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
@@ -165,6 +166,94 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         DocumentoExigido exigencia = processo.DocumentosExigidos.Should().ContainSingle().Which;
         exigencia.Condicoes.Should().ContainSingle(c => c.Fato == "SEXO");
+    }
+
+    /// <summary>
+    /// Um gatilho que cita fato que o processo não resolve nunca se aplica a candidato nenhum:
+    /// o fato fica indeterminado, e a exigência, pendente para sempre. Recusar é melhor que
+    /// aceitar uma configuração que parece funcionar e não funciona.
+    /// </summary>
+    [Fact(DisplayName = "Gatilho que cita fato não resolvido pelo processo é recusado")]
+    public async Task Handle_GatilhoFatoNaoResolvidoPeloProcesso_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]);
+
+        // O fato existe no catálogo, mas este processo não o coleta.
+        CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
+    }
+
+    /// <summary>
+    /// A faixa etária é derivada por ATRIBUTO do candidato — não é coletada no formulário nem
+    /// declarada em regra de derivação, e não tem como ser. Exigi-la no universo recusaria o
+    /// gatilho etário, que é o caso mais comum de exigência condicionada.
+    /// </summary>
+    [Fact(DisplayName = "Gatilho por faixa etária é aceito sem coleta nem regra de derivação")]
+    public async Task Handle_GatilhoPorFaixaEtaria_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoFaixaEtaria()]);
+
+        CondicaoGatilhoInput condicao = new(0, "FAIXA_ETARIA", "MAIOR_IGUAL", "18");
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    /// <summary>A faixa etária como o catálogo a publica: derivada, por atributo do candidato.</summary>
+    private static FatoCandidatoView FatoFaixaEtaria() => new(
+        Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
+        null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null);
+
+    /// <summary>
+    /// Declara a derivação da modalidade. É o que torna um gatilho por modalidade resolvível:
+    /// a modalidade de um candidato é calculada das respostas dele, não perguntada.
+    /// </summary>
+    private static void DeclararDerivacaoDeModalidade(ProcessoSeletivo processo)
+    {
+        // Uma regra âncora incondicional basta: o que este helper precisa é que o processo
+        // DECLARE a derivação, não que ela cubra o quadro de vagas inteiro.
+        RegraDerivacaoConfigurada regra = RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!;
+        ConfiguracaoDerivacaoFato derivacao = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [regra]).Value!;
+        processo.DefinirRegrasDerivacao([derivacao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Faz o processo coletar o fato, que é o que torna um gatilho sobre ele resolvível.
+    ///
+    /// Sem isto, a exigência condicionada nunca se aplicaria a candidato nenhum — o fato
+    /// ficaria indeterminado para sempre, e a exigência pendente. O comando recusa por isso.
+    /// </summary>
+    private static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.SelecaoUnica)
+    {
+        FatoColetado fato = FatoColetado.Criar(codigo, 0, codigo, renderizacao, true, null).Value!;
+        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Handle com gatilho de fato desconhecido retorna PredicadoDnf.FatoDesconhecido")]
@@ -206,6 +295,10 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]);
 
+        // A modalidade é fato derivado POR REGRA: sem regra declarada, o processo não a resolve
+        // e a recusa seria outra. Declarar a derivação é o que deixa este teste chegar à
+        // conferência que ele de fato mede — o valor contra o domínio ofertado.
+        DeclararDerivacaoDeModalidade(processo);
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE", "IGUAL", "\"LB_PPI\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
@@ -321,6 +414,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
 
+        ColetarFato(processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
@@ -358,6 +452,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
 
+        ColetarFato(processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput porCodigo = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"DEFICIENCIA_VISUAL\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [porCodigo], [], null, Qualquer, null);
 
@@ -414,6 +509,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
 
+        ColetarFato(processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
@@ -809,6 +905,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]);
 
+        ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
         ItemDocumentoExigidoInput item = new(inscricao.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
@@ -838,6 +935,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         // O documento é exigido na fase HOMOLOGACAO (ordem 2) — SEXO conhecido na própria
         // fase ou numa fase anterior (INSCRICAO, ordem 1) satisfaz o gate.
+        ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
         ItemDocumentoExigidoInput item = new(homologacao.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
@@ -862,6 +960,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]);
 
+        ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
         ItemDocumentoExigidoInput item = new(inscricao.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);

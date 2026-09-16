@@ -23,7 +23,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
     private const string TipoEtapaCodigo = "PROVA_OBJETIVA";
 
     private static ITipoEtapaReader TipoEtapaReaderAtivo() =>
-        TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null));
+        TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null, true, true));
 
     /// <summary>Leitor que dá por viva qualquer modalidade consultada — o caso comum dos testes de outro assunto.</summary>
     private static IModalidadeReader ModalidadeReaderViva()

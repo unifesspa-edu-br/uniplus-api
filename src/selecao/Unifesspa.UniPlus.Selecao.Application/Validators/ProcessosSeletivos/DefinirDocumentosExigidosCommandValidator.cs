@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Commands.ProcessosSeletivos;
 
 using FluentValidation;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Validação de <b>forma</b> do <see cref="DefinirDocumentosExigidosCommand"/> — o que
@@ -59,13 +60,6 @@ public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInp
 {
     private static readonly string[] TiposValidos = ["FOLHA", "E", "OU"];
 
-    private static readonly string[] ConsequenciasValidas =
-    [
-        "ELIMINA",
-        "RECLASSIFICA_AC",
-        "REMOVE_VANTAGEM",
-        "PENDENCIA_REENVIO",
-    ];
 
     // Story #921 — cardinalidade qualificada, catálogo fechado (Domain.Enums.ChaveDistincaoCodigo).
     private static readonly string[] ChavesDistincaoValidas = ["COMPETENCIA_MENSAL", "EXERCICIO_ANUAL", "OCORRENCIA"];
@@ -144,9 +138,9 @@ public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInp
             .WithMessage("consequencia de nó só é permitida em grupo OU/N-de.");
 
         RuleFor(x => x.Consequencia)
-            .Must(static valor => ConsequenciasValidas.Contains(valor, StringComparer.Ordinal))
+            .Must(static valor => ConsequenciaIndeferimentoCodigo.EhValida(valor))
             .When(static x => x.Tipo == "OU" && !string.IsNullOrWhiteSpace(x.Consequencia))
-            .WithMessage($"Consequência do grupo deve ser um de: {string.Join(", ", ConsequenciasValidas)}.");
+            .WithMessage($"Consequência do grupo deve ser um de: {string.Join(", ", ConsequenciaIndeferimentoCodigo.Validas)}.");
 
         RuleFor(x => x.BasesLegais)
             .Must(static basesLegais => basesLegais is null or { Count: 0 })

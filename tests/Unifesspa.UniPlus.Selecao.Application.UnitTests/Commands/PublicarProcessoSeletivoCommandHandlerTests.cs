@@ -149,6 +149,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
                     Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA")),
             mocks.ProcessoRepository,
             mocks.DocumentoRepository,
+            Substitute.For<IRascunhoDePublicacaoRepository>(),
             mocks.Canonicalizer, new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             userContext,

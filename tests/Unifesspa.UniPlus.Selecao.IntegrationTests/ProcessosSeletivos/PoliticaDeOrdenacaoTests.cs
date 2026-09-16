@@ -547,12 +547,12 @@ public sealed class PoliticaDeOrdenacaoTests
         // (Ordem 1, deve vir SEGUNDO) recebe o Id MENOR, tanto na exigência quanto no nó.
         DocumentoExigido docFilhoZeta = DocumentoExigido.Reidratar(
             IdFixo(2), fase.Id, Guid.CreateVersion7(), "FILHO_ZETA", "Documento filho zeta", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null);
         DocumentoExigido docFilhoAlfa = DocumentoExigido.Reidratar(
             IdFixo(1), fase.Id, Guid.CreateVersion7(), "FILHO_ALFA", "Documento filho alfa", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null);
 
@@ -714,12 +714,12 @@ public sealed class PoliticaDeOrdenacaoTests
 
         DocumentoExigido exigenciaComOrigemMenor = DocumentoExigido.Reidratar(
             Guid.CreateVersion7(), fase.Id, IdFixo(1), "TIPO_COMUM", "Zeta Documento", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null);
         DocumentoExigido exigenciaComOrigemMaior = DocumentoExigido.Reidratar(
             Guid.CreateVersion7(), fase.Id, IdFixo(2), "TIPO_COMUM", "Alfa Documento", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null);
 
@@ -749,12 +749,12 @@ public sealed class PoliticaDeOrdenacaoTests
 
         DocumentoExigido exigenciaComIdMaior = DocumentoExigido.Reidratar(
             IdFixo(2), fase.Id, tipoDocumentoOrigemComum, "TIPO_COMUM", "Alfa Documento", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null);
         DocumentoExigido exigenciaComIdMenor = DocumentoExigido.Reidratar(
             IdFixo(1), fase.Id, tipoDocumentoOrigemComum, "TIPO_COMUM", "Zeta Documento", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null);
 

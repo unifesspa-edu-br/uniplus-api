@@ -26,6 +26,12 @@ public sealed class EtapaProcesso : EntityBase
     /// <summary>Alinhado a <c>EtapaProcessoConfiguration</c> (varchar(300)).</summary>
     public const int NomeMaxLength = 300;
 
+    /// <summary>
+    /// Caráter declarado que o tipo de etapa não admite — ver
+    /// <see cref="ValidarCaraterAdmitido"/>.
+    /// </summary>
+    public const string CaraterNaoAdmitidoPeloTipo = "EtapaProcesso.CaraterNaoAdmitidoPeloTipo";
+
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>
@@ -194,17 +200,110 @@ public sealed class EtapaProcesso : EntityBase
             erros.Add(new("peso", new DomainError(
                 "EtapaProcesso.PesoInvalido", "O peso da etapa, quando informado, deve ser maior que zero.")));
         }
+        else if (peso.HasValue && carater is CaraterEtapa.Eliminatoria)
+        {
+            // Peso em etapa que não pontua é dado morto: CalcularDivisorMedia soma apenas as
+            // etapas cujo caráter compõe a nota, então o valor fica gravado sem nunca pesar em
+            // nada — e quem configurou acredita que pesa.
+            erros.Add(new("peso", new DomainError(
+                "EtapaProcesso.PesoSemCaraterQuePontua",
+                "Peso só se aplica a etapa cujo caráter compõe a nota final; etapa apenas eliminatória aprova ou reprova sem pontuar.")));
+        }
 
         if (notaMinima is < 0)
         {
             erros.Add(new("notaMinima", new DomainError(
                 "EtapaProcesso.NotaMinimaInvalida", "A nota mínima, quando informada, não pode ser negativa.")));
         }
+        else if (notaMinima.HasValue && carater is CaraterEtapa.Classificatoria)
+        {
+            erros.Add(new("notaMinima", new DomainError(
+                "EtapaProcesso.NotaMinimaSemCaraterQueElimina",
+                "Nota mínima só se aplica a etapa cujo caráter elimina; etapa apenas classificatória pontua sem reprovar.")));
+        }
 
         if (ordem is <= 0)
         {
             erros.Add(new("ordem", new DomainError(
                 "EtapaProcesso.OrdemInvalida", "A ordem da etapa, quando informada, deve ser maior que zero.")));
+        }
+
+        return erros;
+    }
+
+    /// <summary>
+    /// Repõe numa etapa viva os dados da sua versão congelada, preservando o
+    /// <see cref="EntityBase.Id"/> e o <c>CreatedAt</c> da instância rastreada.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Não passa por <see cref="ValidarFormaBasica"/>, e é a diferença que importa em relação a
+    /// <see cref="AtualizarDados"/>: repor não é declarar. Os dados vêm de um envelope com peso
+    /// jurídico, válidos quando foram congelados, e uma regra de forma criada depois não pode
+    /// tornar a reposição impossível — isso trancaria o certame num estado do qual o descarte da
+    /// retificação nunca sairia. É a mesma postura de <see cref="Reidratar"/>, que decodifica o
+    /// envelope sem revalidar o que ele já provou.
+    /// </para>
+    /// <para>
+    /// Chamada apenas pela reconciliação da restauração, em <c>ProcessoSeletivo.AplicarGrafo</c>.
+    /// </para>
+    /// </remarks>
+    internal void ReporDadosCongelados(
+        string nome,
+        CaraterEtapa carater,
+        TipoEtapaSnapshot tipoEtapa,
+        decimal? peso,
+        decimal? notaMinima,
+        int? ordem,
+        string? faseCodigo)
+    {
+        ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(tipoEtapa);
+
+        Nome = nome.Trim();
+        Carater = carater;
+        TipoEtapa = tipoEtapa;
+        Peso = peso;
+        NotaMinima = notaMinima;
+        Ordem = ordem;
+        FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
+    }
+
+    /// <summary>
+    /// Confere o caráter declarado contra o que o tipo de etapa admite no cadastro de
+    /// Configuração, acumulando as duas violações possíveis (ADR-0125).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Fora de <see cref="ValidarFormaBasica"/> de propósito: aquela checagem é de forma e não
+    /// depende de cadastro nenhum, enquanto esta precisa dos sinalizadores que só a Application
+    /// consegue resolver contra o catálogo vivo — é o mesmo arranjo do
+    /// <see cref="TipoEtapaSnapshot"/>, resolvido por quem chama e entregue pronto ao domínio
+    /// (ADR-0129).
+    /// </para>
+    /// <para>
+    /// Não entra em <see cref="Criar"/> nem em <see cref="AtualizarDados"/> pelo mesmo motivo:
+    /// a restauração de uma versão congelada reaplica dados que foram válidos quando o catálogo
+    /// era outro, e ela não tem como reconsultar o cadastro.
+    /// </para>
+    /// </remarks>
+    public static List<FieldError> ValidarCaraterAdmitido(
+        CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, string nomeDoTipo)
+    {
+        List<FieldError> erros = [];
+
+        if ((carater is CaraterEtapa.Classificatoria or CaraterEtapa.Ambas) && !admitePontuacao)
+        {
+            erros.Add(new("carater", new DomainError(
+                CaraterNaoAdmitidoPeloTipo,
+                $"O tipo de etapa '{nomeDoTipo}' não compõe a nota final, então a etapa não pode ter caráter que pontua.")));
+        }
+
+        if ((carater is CaraterEtapa.Eliminatoria or CaraterEtapa.Ambas) && !admiteEliminacao)
+        {
+            erros.Add(new("carater", new DomainError(
+                CaraterNaoAdmitidoPeloTipo,
+                $"O tipo de etapa '{nomeDoTipo}' não elimina candidato, então a etapa não pode ter caráter que reprova.")));
         }
 
         return erros;

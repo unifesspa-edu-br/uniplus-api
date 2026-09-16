@@ -41,13 +41,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class NoExigencia : EntityBase
 {
-    private static readonly string[] ConsequenciasValidas =
-    [
-        "ELIMINA",
-        "RECLASSIFICA_AC",
-        "REMOVE_VANTAGEM",
-        "PENDENCIA_REENVIO",
-    ];
 
     public const int QuantidadeMinimaPadrao = 1;
 
@@ -467,11 +460,11 @@ public sealed class NoExigencia : EntityBase
 
             string? consequenciaNormalizada = string.IsNullOrWhiteSpace(consequencia) ? null : consequencia.Trim();
             if (consequenciaNormalizada is not null
-                && !ConsequenciasValidas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
+                && !ConsequenciaIndeferimentoCodigo.Validas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
             {
                 return Result<NoExigencia>.Failure(new DomainError(
                     "NoExigencia.ConsequenciaInvalida",
-                    $"Consequência '{consequenciaNormalizada}' inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}."));
+                    $"Consequência '{consequenciaNormalizada}' inválida — esperado um de: {string.Join(", ", ConsequenciaIndeferimentoCodigo.Validas)}."));
             }
 
             if (basesLegais.Count > 0 && consequenciaNormalizada is null)

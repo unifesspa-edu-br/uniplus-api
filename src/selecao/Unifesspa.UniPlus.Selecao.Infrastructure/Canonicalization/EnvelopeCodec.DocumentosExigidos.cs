@@ -104,7 +104,7 @@ public sealed partial class EnvelopeCodec
                 item, path,
                 "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome",
                 "tipoDocumentoCategoria", "exigidoNaFaseId", "exigidoNaEtapaId", "aplicabilidade", "obrigatorio",
-                "consequenciaIndeferimento", "grupoSatisfacaoId", "condicaoGatilho", "basesLegais",
+                "consequenciaIndeferimento", "condicaoGatilho", "basesLegais",
                 "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes");
 
             Guid exigenciaId = leitor.Identificador(item, "exigenciaId", path);
@@ -117,7 +117,6 @@ public sealed partial class EnvelopeCodec
             Aplicabilidade aplicabilidade = leitor.Enumeracao<Aplicabilidade>(item, "aplicabilidade", path);
             bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
             string? consequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token);
-            Guid? grupoSatisfacaoId = leitor.IdentificadorOpcional(item, "grupoSatisfacaoId", path);
             int? tamanhoMaximoBytes = leitor.InteiroOpcional(item, "tamanhoMaximoBytes", path);
 
             if (leitor.Falhou)
@@ -166,7 +165,6 @@ public sealed partial class EnvelopeCodec
                 aplicabilidade,
                 obrigatorio,
                 consequenciaIndeferimento,
-                grupoSatisfacaoId,
                 condicoes,
                 basesLegais,
                 idadeMaximaEmissao,

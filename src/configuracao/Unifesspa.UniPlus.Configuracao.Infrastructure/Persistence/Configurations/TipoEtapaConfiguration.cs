@@ -15,13 +15,19 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("tipos_etapa");
+        // Um tipo que não compõe nota nem elimina não configura etapa nenhuma — toda etapa
+        // declara um caráter, e nenhum sobraria para escolher.
+        builder.ToTable("tipos_etapa", t => t.HasCheckConstraint(
+            "ck_tipos_etapa_carater_admitido",
+            "admite_pontuacao OR admite_eliminacao"));
         builder.HasKey(tipo => tipo.Id);
         builder.Property(tipo => tipo.Id).ValueGeneratedNever();
         builder.Property(tipo => tipo.Codigo).HasMaxLength(64).IsRequired();
         builder.Property(tipo => tipo.Nome).HasMaxLength(200).IsRequired();
         builder.Property(tipo => tipo.Descricao).HasMaxLength(1000);
         builder.Property(tipo => tipo.Ativo).IsRequired();
+        builder.Property(tipo => tipo.AdmitePontuacao).IsRequired();
+        builder.Property(tipo => tipo.AdmiteEliminacao).IsRequired();
         builder.Property(tipo => tipo.CreatedBy).HasMaxLength(255);
         builder.Property(tipo => tipo.UpdatedBy).HasMaxLength(255);
 

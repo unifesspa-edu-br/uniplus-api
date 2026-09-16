@@ -23,7 +23,9 @@ public static class AtualizarTipoEtapaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<(string Nome, string? Descricao)> validacao = TipoEtapa.ValidarCamposEditaveis(command.Nome, command.Descricao);
+        Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> validacao =
+            TipoEtapa.ValidarCamposEditaveis(
+                command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
         if (validacao.IsFailure)
         {
             return Result.ValidationFailure(validacao.Errors);
@@ -38,7 +40,7 @@ public static class AtualizarTipoEtapaCommandHandler
         // Revalida por dentro (barato, sem I/O) com exatamente os mesmos argumentos
         // já confirmados acima, então sempre terá sucesso aqui; esta chamada só
         // serve para aplicar a mutação.
-        tipo.Atualizar(command.Nome, command.Descricao);
+        tipo.Atualizar(command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();

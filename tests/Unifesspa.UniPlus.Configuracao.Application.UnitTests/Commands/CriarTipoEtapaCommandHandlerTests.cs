@@ -17,7 +17,7 @@ public sealed class CriarTipoEtapaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static CriarTipoEtapaCommand ComandoValido() =>
-        new("TIPO_ETAPA_TESTE", "Tipo de etapa de teste", null);
+        new("TIPO_ETAPA_TESTE", "Tipo de etapa de teste", AdmitePontuacao: true, AdmiteEliminacao: true);
 
     [Fact(DisplayName = "Código livre cria o tipo, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()

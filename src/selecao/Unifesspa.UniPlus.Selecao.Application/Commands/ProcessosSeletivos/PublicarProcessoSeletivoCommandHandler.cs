@@ -27,6 +27,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         PublicarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoEditalRepository documentoEditalRepository,
+        IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         IResolvedorFusoInstitucional resolvedorFuso,
         ISelecaoUnitOfWork unitOfWork,
@@ -50,6 +51,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(canonicalizer);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(rascunhoDePublicacaoRepository);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
@@ -285,6 +287,14 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         await processoSeletivoRepository
             .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
+            .ConfigureAwait(false);
+
+        // O ato acabou de ser registrado: o rascunho que o operador guardava enquanto o
+        // transcrevia perdeu a razão de existir, e com ele sai do banco o nome de quem
+        // assinou. Todo caminho que registra ato apaga — nenhum deles ganha isso de graça,
+        // porque a raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
+        await rascunhoDePublicacaoRepository
+            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
         try

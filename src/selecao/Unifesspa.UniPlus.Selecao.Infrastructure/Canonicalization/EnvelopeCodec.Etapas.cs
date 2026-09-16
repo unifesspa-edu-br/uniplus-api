@@ -49,6 +49,11 @@ public sealed partial class EnvelopeCodec
             // conhece. Um envelope legítimo já os satisfaz (passou pelo validator quando
             // foi criado); recusá-los aqui custa nada e fecha a porta a um envelope
             // adulterado que reidrataria num agregado impossível de persistir.
+            //
+            // São limites, e só limites: regra de coerência entre campos — peso exigindo caráter
+            // que pontua, nota mínima exigindo caráter que elimina — fica de fora de propósito.
+            // Uma regra criada depois do congelamento tornaria ilegível um envelope que era
+            // válido quando nasceu, e o certame ficaria sem como reler a própria publicação.
             if (carater == CaraterEtapa.Nenhum
                 || peso is <= 0
                 || notaMinima is < 0

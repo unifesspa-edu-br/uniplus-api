@@ -292,8 +292,13 @@ public static class DefinirCronogramaFasesCommandHandler
                 // Quando o código declarado não corresponde a produto algum desta fase, a
                 // âncora fica vazia e o domínio recusa nomeando os preliminares disponíveis
                 // — ele é quem enxerga os dois lados.
-                ProdutoDaFase? produtoAncora = produtos
-                    .Find(p => string.Equals(p.AtoCodigo, regraInput.AtoAncoraCodigo, StringComparison.Ordinal));
+                // Entre os PRELIMINARES: a fase publica o mesmo ato em dois papéis, e é da
+                // publicação preliminar que o prazo corre. Buscar só pelo código devolveria o
+                // definitivo quando ele viesse primeiro, e a fase seria recusada por ancorar
+                // onde não se pode.
+                ProdutoDaFase? produtoAncora = produtos.Find(p =>
+                    p.Papel == PapelProdutoFase.Preliminar
+                    && string.Equals(p.AtoCodigo, regraInput.AtoAncoraCodigo, StringComparison.Ordinal));
 
                 Result<RegraRecursoFase> regraRecursoResult = RegraRecursoFase.Criar(
                     referenciaResult.Value!, args, produtoAncora?.Id ?? Guid.Empty);

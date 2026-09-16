@@ -44,6 +44,7 @@ public sealed class CarregamentoDeMutacaoTests
         "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQueryHandler.cs",
         "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterConformidadeProcessoSeletivoQueryHandler.cs",
         "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterConformidadeLegalProcessoSeletivoQueryHandler.cs",
+        "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterRegrasDerivacaoNormativasQueryHandler.cs",
     ];
 
     [Fact(DisplayName = "Nenhum handler de COMANDO carrega o processo pelo caminho de leitura — a sessão editorial não seria vista")]

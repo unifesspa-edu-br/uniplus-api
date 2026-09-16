@@ -126,8 +126,12 @@ internal static class CadastrosVivos
     public static TipoDocumentoView TipoDocumento(string codigo) =>
         new(IdentidadeDe(codigo), codigo, "Documento", "OUTROS");
 
+    /// <summary>
+    /// Tipo de etapa vivo que admite qualquer caráter, por ser o caso comum dos cenários de
+    /// outro assunto. Quem testa o recorte de caráter declara os sinalizadores explicitamente.
+    /// </summary>
     public static TipoEtapaView TipoEtapa(string codigo) =>
-        new(IdentidadeDe(codigo), codigo, "Etapa", null);
+        new(IdentidadeDe(codigo), codigo, "Etapa", null, AdmitePontuacao: true, AdmiteEliminacao: true);
 
     /// <summary>
     /// Identidade que o cadastro atribui a um código, estável por código dentro da suíte.

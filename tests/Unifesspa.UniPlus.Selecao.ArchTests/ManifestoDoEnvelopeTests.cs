@@ -276,13 +276,13 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(Customizado)] = (["Parametros"], []),
 
         // Documentos exigidos (Story #554, PR #903) — exigencias[] real, CA-09 (exigenciaId
-        // estável). GrupoSatisfacaoId e Aplicabilidade entram porque são o que o resolvedor
-        // (PR #903, fora deste bloco) consome para correlacionar apresentação↔exigência.
+        // estável). Aplicabilidade entra porque é o que o resolvedor (PR #903, fora deste
+        // bloco) consome para correlacionar apresentação↔exigência.
         [typeof(DocumentoExigido)] = (
             [
                 "ExigidoNaFaseId", "ExigidoNaEtapaId", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
-                "GrupoSatisfacaoId", "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos",
+                "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos",
                 "TamanhoMaximoBytes",
             ],
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
@@ -295,8 +295,8 @@ public sealed class ManifestoDoEnvelopeTests
             ["Referencia", "Abrangencia", "Status", "Observacao"],
             [("DocumentoExigidoId", "FK interna.")]),
 
-        // Árvore de satisfação (Story #920, #921, #922) — substitui
-        // DocumentoExigido.GrupoSatisfacaoId (residual, acima). Story #923 (bump 1.4):
+        // Árvore de satisfação (Story #920, #921, #922) — substituiu o grupo de satisfação
+        // plano, que era correlação por Guid solto na exigência. Story #923 (bump 1.4):
         // congelada por inteiro no bloco de topo `arvoreSatisfacao` — cada folha referencia
         // sua exigência pelo MESMO `exigenciaId` já congelado em
         // `documentosExigidos.exigencias[]` (por isso `DocumentoExigido` — a navegação — não

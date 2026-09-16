@@ -2234,10 +2234,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     public DomainError? PendenciaDoCronograma(TimeZoneInfo? fusoInstitucional)
     {
-        // §3.5, direção "fase de avaliação sem etapa" — defesa em profundidade: o mesmo
-        // sentido já é bloqueado eagerly em DefinirCronogramaFases, mas uma etapa
-        // removida DEPOIS (via DefinirEtapas) deixaria uma fase de avaliação órfã sem
-        // que nada a pegasse na hora — o gate de publicação é a rede de segurança.
+        // §3.5, direção "fase de avaliação sem etapa". Desde que a etapa passou a declarar a
+        // própria fase, a gravação do cronograma não recusa mais esse estado na hora — ele é
+        // legítimo enquanto se monta o certame, e quem o barra é este gate, na publicação.
         if (HaFaseDeAvaliacaoSemEtapa())
         {
             return new DomainError(
@@ -4312,13 +4311,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             if (tracked.TryGetValue(congelada.Id, out EtapaProcesso? viva))
             {
-                viva.AtualizarDados(
+                // Repõe sem revalidar forma: o grafo veio de um envelope já provado, e a etapa
+                // viva tem de voltar exatamente ao que foi congelado — incluindo a fase em que
+                // ela acontece, sem a qual a etapa sobrevivente perderia o vínculo com o
+                // cronograma e nenhum outro caminho a devolveria.
+                viva.ReporDadosCongelados(
                     congelada.Nome,
                     congelada.Carater,
                     congelada.TipoEtapa,
                     congelada.Peso,
                     congelada.NotaMinima,
-                    congelada.Ordem);
+                    congelada.Ordem,
+                    congelada.FaseCodigo);
                 etapas.Add(viva);
             }
             else
