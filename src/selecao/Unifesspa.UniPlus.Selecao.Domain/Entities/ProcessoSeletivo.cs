@@ -4046,19 +4046,29 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A mesma fase canônica não pode aparecer duas vezes no cronograma.");
         }
 
-        bool existeFaseDeAvaliacaoNoGrafo = grafo.CronogramaFases.Any(static f => f.AgrupaEtapas);
-        if (existeFaseDeAvaliacaoNoGrafo && grafo.Etapas.Count == 0)
+        // A bicondicional fase×etapa é lida pelo VÍNCULO, como na publicação: a etapa que
+        // declara a fase em que acontece responde por si, e qualquer fase pode subdividir-se —
+        // não só a que o cadastro marca como agrupadora. Aplicar aqui a regra global antiga
+        // recusava a restauração de um envelope que a publicação aceita: o certame com todas as
+        // etapas vinculadas a fases não agrupadoras podia ser publicado e decodificado, mas o
+        // descarte da retificação ficava impossível.
+        bool haFaseAgrupadoraSemEtapa = grafo.CronogramaFases.Any(f => f.AgrupaEtapas
+            && !grafo.Etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
+            && !grafo.Etapas.Any(static e => e.FaseCodigo is null));
+        if (haFaseAgrupadoraSemEtapa)
         {
             return new DomainError(
                 "ProcessoSeletivo.AvaliacaoSemEtapa",
-                "Há uma fase que agrupa etapas no cronograma restaurado, mas nenhuma etapa pontuada.");
+                "Há uma fase que agrupa etapas no cronograma restaurado, mas nenhuma etapa acontece nela.");
         }
 
-        if (grafo.Etapas.Count > 0 && !existeFaseDeAvaliacaoNoGrafo)
+        bool haEtapaSemFaseAlguma = grafo.Etapas.Any(static e => e.FaseCodigo is null)
+            && !grafo.CronogramaFases.Any(static f => f.AgrupaEtapas);
+        if (haEtapaSemFaseAlguma)
         {
             return new DomainError(
                 "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",
-                "Há etapa pontuada no grafo restaurado, mas nenhuma fase agrupa etapas.");
+                "Há etapa pontuada no grafo restaurado sem fase declarada, e nenhuma fase agrupa etapas.");
         }
 
         return ValidarNosExigencia(grafo);

@@ -263,9 +263,13 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
                     TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
                     1m, null, 1, "AVALIACAO"),
             ],
-            cronogramaFases: [FaseConforme(), avaliacao]);
+            // Só a fase nova: a bicondicional é por vínculo, e deixar no grafo uma fase que
+            // agrupa etapas sem nenhuma etapa nela é estado que a restauração recusa — com
+            // razão, e é outro teste.
+            cronogramaFases: [avaliacao]);
 
-        processo.RestaurarConfiguracaoCongelada(versao, daSessao).IsSuccess.Should().BeTrue();
+        Result restauracaoDaSessao = processo.RestaurarConfiguracaoCongelada(versao, daSessao);
+        restauracaoDaSessao.IsSuccess.Should().BeTrue(restauracaoDaSessao.Error?.Message);
         processo.Etapas.Single().FaseCronogramaId
             .Should().Be(processo.CronogramaFases.Single(f => f.Codigo == "AVALIACAO").Id,
                 "pré-condição: a etapa está presa à fase que o descarte vai desfazer");
@@ -286,6 +290,52 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         reposta.FaseCronogramaId.Should().Be(
             processo.CronogramaFases.Single(f => f.Codigo == "RESULTADO_FINAL").Id,
             "o vínculo que o banco usa tem de apontar para a fase restaurada, não para a que a sessão criou");
+    }
+
+    /// <summary>
+    /// A bicondicional fase×etapa é lida pelo VÍNCULO desde que a etapa passou a declarar em que
+    /// fase acontece: qualquer fase pode subdividir-se, não só a que o cadastro marca como
+    /// agrupadora. A publicação já lia assim; a restauração ainda usava a regra global, e
+    /// recusava justamente o envelope que a publicação aceita — o certame com a habilitação
+    /// dividida em etapas podia ser publicado e decodificado, mas o descarte da retificação
+    /// ficava impossível.
+    /// </summary>
+    [Fact(DisplayName = "Grafo com todas as etapas vinculadas a fase que não agrupa é restaurável")]
+    public void GrafoComEtapasVinculadasAFaseQueNaoAgrupa_ERestaurado()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        FaseCronograma habilitacao = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000003"),
+            codigo: "HABILITACAO",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 3, 31, 0, 0, 0, TimeSpan.Zero),
+            produtos: [],
+            faseConcluinteCodigo: null,
+            emiteParecerIndividual: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+
+        GrafoConfiguracao grafo = Grafo(
+            etapas: [
+                EtapaProcesso.Reidratar(
+                    EtapaOriginal, "Análise documental", CaraterEtapa.Classificatoria,
+                    TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental").Value!,
+                    1m, null, 1, "HABILITACAO"),
+            ],
+            cronogramaFases: [habilitacao]);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, grafo);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.Etapas.Single().FaseCodigo.Should().Be("HABILITACAO");
     }
 
     /// <summary>
