@@ -224,6 +224,71 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     }
 
     /// <summary>
+    /// O código da fase é metade do vínculo; a outra é o id, e é por ele que o banco liga a
+    /// etapa à fase. Repor só o código deixava a linha dizendo duas coisas: o código da fase de
+    /// origem e o id da fase para onde a retificação a tinha movido — depois de um descarte que
+    /// relatou sucesso.
+    /// </summary>
+    [Fact(DisplayName = "A etapa restaurada volta presa à fase restaurada, e não à da sessão descartada")]
+    public void EtapaSobrevivente_RecuperaOVinculoComAFaseCongelada()
+    {
+        // O estado de que o descarte parte: duas fases, e a etapa na segunda delas.
+        FaseCronograma avaliacao = FaseCronograma.Criar(
+            ordem: 2,
+            faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000002"),
+            codigo: "AVALIACAO",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
+            produtos: [],
+            faseConcluinteCodigo: null,
+            emiteParecerIndividual: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+
+        // O estado de que o descarte parte chega por uma restauração: o agregado publicado
+        // recusa mudar de fase uma etapa fora de sessão editorial, e o que se testa aqui é o
+        // vínculo que a reposição refaz, não o caminho que sujou a configuração.
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        GrafoConfiguracao daSessao = Grafo(
+            etapas: [
+                EtapaProcesso.Reidratar(
+                    EtapaOriginal, "Prova", CaraterEtapa.Classificatoria,
+                    TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
+                    1m, null, 1, "AVALIACAO"),
+            ],
+            cronogramaFases: [FaseConforme(), avaliacao]);
+
+        processo.RestaurarConfiguracaoCongelada(versao, daSessao).IsSuccess.Should().BeTrue();
+        processo.Etapas.Single().FaseCronogramaId
+            .Should().Be(processo.CronogramaFases.Single(f => f.Codigo == "AVALIACAO").Id,
+                "pré-condição: a etapa está presa à fase que o descarte vai desfazer");
+
+        GrafoConfiguracao grafo = Grafo(
+            etapas: [
+                EtapaProcesso.Reidratar(
+                    EtapaOriginal, "Prova", CaraterEtapa.Classificatoria,
+                    TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
+                    1m, null, 1, "RESULTADO_FINAL"),
+            ],
+            cronogramaFases: [FaseConforme()]);
+
+        processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
+
+        EtapaProcesso reposta = processo.Etapas.Single();
+        reposta.FaseCodigo.Should().Be("RESULTADO_FINAL");
+        reposta.FaseCronogramaId.Should().Be(
+            processo.CronogramaFases.Single(f => f.Codigo == "RESULTADO_FINAL").Id,
+            "o vínculo que o banco usa tem de apontar para a fase restaurada, não para a que a sessão criou");
+    }
+
+    /// <summary>
     /// Repor não é declarar: o grafo vem de um envelope que foi válido quando nasceu, e uma regra
     /// de coerência criada depois não pode tornar a reposição impossível — isso trancaria o
     /// certame num estado do qual o descarte da retificação nunca sairia.
