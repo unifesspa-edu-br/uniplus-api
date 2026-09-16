@@ -113,7 +113,11 @@ public sealed class RecursoDaEtapa : EntityBase
 
         return new RecursoDaEtapa
         {
-            Id = id, Ancora = ancora, Regra = regra, Args = args, ProdutoAncoraId = produtoAncoraId,
+            Id = id,
+            Ancora = ancora,
+            Regra = regra,
+            Args = args,
+            ProdutoAncoraId = produtoAncoraId,
         };
     }
 
