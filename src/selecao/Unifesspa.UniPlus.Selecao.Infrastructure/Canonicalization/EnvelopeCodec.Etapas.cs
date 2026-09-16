@@ -136,15 +136,27 @@ public sealed partial class EnvelopeCodec
                 JsonObject itemRecurso = leitor.ItemObjeto(arrayRecursos, j, pathRecurso);
                 leitor.ExigirChaves(
                     itemRecurso, pathRecurso,
-                    "id", "ancora", "regraCodigo", "regraVersao", "prazoValor", "prazoUnidade", "produtoAncoraId");
+                    "id", "ancora", "regra", "args", "produtoAncoraId");
                 Guid idRecurso = leitor.Identificador(itemRecurso, "id", pathRecurso);
                 AncoraDoRecurso ancora = leitor.Enumeracao<AncoraDoRecurso>(itemRecurso, "ancora", pathRecurso);
-                string regraCodigo = leitor.TextoNaoVazio(itemRecurso, "regraCodigo", pathRecurso, LimitesDoEnvelope.EtapaNome);
-                string regraVersao = leitor.TextoNaoVazio(itemRecurso, "regraVersao", pathRecurso, LimitesDoEnvelope.EtapaNome);
-                decimal? prazo = leitor.DecimalOpcional(itemRecurso, "prazoValor", EscalaPadrao, pathRecurso, LimitesDoEnvelope.PrecisaoEtapa);
-                UnidadePrazo unidade = leitor.Enumeracao<UnidadePrazo>(itemRecurso, "prazoUnidade", pathRecurso);
-                Guid ancoraId = leitor.Identificador(itemRecurso, "produtoAncoraId", pathRecurso);
+
+                // A referência vem inteira e conferida contra o código de regra esperado, como
+                // na fase: reconstruí-la com hash vazio produzia uma `ReferenciaRegra` inválida,
+                // cujo `Value` nulo seguia adiante e só estourava lá na frente.
+                ReferenciaRegra regra = leitor.Regra(
+                    itemRecurso, "regra", pathRecurso, RegraPrazoRecursoCodigo.AncoradoEmAto);
+
+                // A âncora por ciência não tem produto — o campo vem nulo, e é assim que o
+                // recurso volta com a mesma âncora que o comando lhe deu.
+                Guid? ancoraId = leitor.IdentificadorOpcional(itemRecurso, "produtoAncoraId", pathRecurso);
+                JsonObject argsObjeto = leitor.Objeto(itemRecurso, "args", pathRecurso);
                 if (leitor.Falhou)
+                {
+                    return [];
+                }
+
+                ArgsRegraPrazoRecurso? args = LerArgsDePrazoDeRecurso(leitor, argsObjeto, $"{pathRecurso}.args");
+                if (leitor.Falhou || args is null)
                 {
                     return [];
                 }
@@ -152,9 +164,9 @@ public sealed partial class EnvelopeCodec
                 recursos.Add(RecursoDaEtapa.Reidratar(
                     idRecurso,
                     ancora,
-                    ReferenciaRegra.Criar(regraCodigo, regraVersao, string.Empty).Value!,
-                    new ArgsRegraPrazoRecurso(prazo ?? 0m, unidade, null, null, null, null),
-                    ancoraId));
+                    regra,
+                    args,
+                    ancoraId ?? Guid.Empty));
             }
 
             if (reidratada.DefinirRecursos(recursos).IsFailure)

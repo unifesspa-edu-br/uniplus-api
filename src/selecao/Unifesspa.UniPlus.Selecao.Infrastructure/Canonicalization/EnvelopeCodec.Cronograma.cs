@@ -273,7 +273,30 @@ public sealed partial class EnvelopeCodec
             return null;
         }
 
-        string argsPath = $"{path}.args";
+        ArgsRegraPrazoRecurso? args = LerArgsDePrazoDeRecurso(leitor, argsObjeto, $"{path}.args");
+        if (leitor.Falhou || args is null)
+        {
+            return null;
+        }
+
+        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Reidratar(regra, args, produtoAncoraId);
+        return regraRecurso.IsFailure ? leitor.Propagar<RegraRecursoFase>(regraRecurso.Error!) : regraRecurso.Value;
+    }
+
+    /// <summary>
+    /// Lê os args do prazo de recurso — prazo e os dois pares de suspensividade.
+    /// </summary>
+    /// <remarks>
+    /// Um lugar só porque fase e etapa carregam o MESMO value object, e enquanto cada uma lia o
+    /// seu, a da etapa lia menos: ela reconstruía os args com as quatro suspensividades nulas,
+    /// de modo que o que o edital prometeu ao candidato voltava vazio do envelope sem que nada
+    /// acusasse.
+    /// </remarks>
+    internal static ArgsRegraPrazoRecurso? LerArgsDePrazoDeRecurso(
+        LeitorEnvelope leitor,
+        JsonObject argsObjeto,
+        string argsPath)
+    {
         leitor.ExigirChaves(
             argsObjeto, argsPath,
             "prazoValor", "prazoUnidade",
@@ -291,17 +314,11 @@ public sealed partial class EnvelopeCodec
         UnidadePrazo? suspensividade2Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
             argsObjeto, "suspensividadeSegundaInstanciaUnidade", argsPath);
 
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        ArgsRegraPrazoRecurso args = new(
-            prazoValor, prazoUnidade,
-            suspensividade1Valor, suspensividade1Unidade,
-            suspensividade2Valor, suspensividade2Unidade);
-
-        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Reidratar(regra, args, produtoAncoraId);
-        return regraRecurso.IsFailure ? leitor.Propagar<RegraRecursoFase>(regraRecurso.Error!) : regraRecurso.Value;
+        return leitor.Falhou
+            ? null
+            : new ArgsRegraPrazoRecurso(
+                prazoValor, prazoUnidade,
+                suspensividade1Valor, suspensividade1Unidade,
+                suspensividade2Valor, suspensividade2Unidade);
     }
 }
