@@ -339,6 +339,55 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     }
 
     /// <summary>
+    /// A fase publica a MESMA matéria duas vezes — preliminar e definitiva — e o recurso corre
+    /// da preliminar. Quando a restauração recria os produtos (a fase congelada caiu sobre uma
+    /// fase viva de outra identidade), a âncora precisa reencontrar o produto pelo par ato e
+    /// papel: casar só pelo ato remapeava o recurso para a publicação definitiva sempre que ela
+    /// viesse primeiro, e o prazo passaria a correr do ato errado sem nada denunciar.
+    /// </summary>
+    [Fact(DisplayName = "A âncora restaurada reencontra o produto preliminar, e não o definitivo do mesmo ato")]
+    public void AncoraRestaurada_ReencontraOPreliminarDoMesmoAto()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO", PapelProdutoFase.Definitivo);
+
+        FaseCronograma congelada = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000009"),
+            codigo: "RESULTADO_FINAL",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            // O definitivo PRIMEIRO: é a ordem em que o envelope canônico os devolve, e é ela
+            // que o casamento só por ato lia como se fosse a âncora.
+            produtos: [definitivo, preliminar],
+            faseConcluinteCodigo: null,
+            emiteParecerIndividual: false,
+            bancasRequeridas: [],
+            regraRecurso: RegraRecursoFase.Criar(
+                ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
+                new ArgsRegraPrazoRecurso(3m, UnidadePrazo.DiasUteis, null, null, null, null),
+                preliminar.Id).Value!).Value!;
+
+        GrafoConfiguracao grafo = Grafo(cronogramaFases: [congelada]);
+
+        processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
+
+        FaseCronograma reposta = processo.CronogramaFases.Single();
+        ProdutoDaFase ancorado = reposta.Produtos.Single(p => p.Id == reposta.RegraRecurso!.ProdutoAncoraId);
+
+        ancorado.Papel.Should().Be(PapelProdutoFase.Preliminar,
+            "o recurso corre da publicação preliminar — é dela que o candidato toma ciência para recorrer");
+    }
+
+    /// <summary>
     /// Repor não é declarar: o grafo vem de um envelope que foi válido quando nasceu, e uma regra
     /// de coerência criada depois não pode tornar a reposição impossível — isso trancaria o
     /// certame num estado do qual o descarte da retificação nunca sairia.

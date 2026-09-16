@@ -4323,10 +4323,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <remarks>
     /// Sem isto a regra de recurso restaurada ficaria apontando para um produto que a
     /// restauração acabou de descartar, e o ato publicado deixaria de encontrar o prazo que
-    /// lhe corresponde. O <see cref="ProdutoDaFase.AtoCodigo"/> é a ponte porque é único
-    /// dentro da fase e é a mesma chave que as demais reconciliações de produto usam; a
-    /// segunda etapa — do produto recriado para a instância rastreada que porventura
-    /// sobreviva — é feita por <c>FaseCronograma.AtualizarSnapshot</c>.
+    /// lhe corresponde. A ponte é o PAR <see cref="ProdutoDaFase.AtoCodigo"/> +
+    /// <see cref="ProdutoDaFase.Papel"/>, a mesma chave que as demais reconciliações de produto
+    /// usam: o ato sozinho deixou de ser único dentro da fase quando a mesma matéria passou a
+    /// ser publicável como preliminar e como definitiva, e casar só por ele remapeava a âncora
+    /// do preliminar para o definitivo sempre que este viesse primeiro — o recurso passaria a
+    /// correr da publicação errada, e a snapshot preservaria o engano. A segunda etapa — do
+    /// produto recriado para a instância rastreada que porventura sobreviva — é feita por
+    /// <c>FaseCronograma.AtualizarSnapshot</c>.
     /// </remarks>
     private static void ReancorarRecursoNosProdutosRecriados(
         FaseCronograma congelada,
@@ -4338,8 +4342,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return;
         }
 
-        ProdutoDaFase? ancoraRecriada = produtosDaViva
-            .FirstOrDefault(p => string.Equals(p.AtoCodigo, ancoraCongelada.AtoCodigo, StringComparison.Ordinal));
+        ProdutoDaFase? ancoraRecriada = produtosDaViva.FirstOrDefault(
+            p => string.Equals(p.AtoCodigo, ancoraCongelada.AtoCodigo, StringComparison.Ordinal)
+                && p.Papel == ancoraCongelada.Papel);
         if (ancoraRecriada is not null && ancoraRecriada.Id != regraRecurso.ProdutoAncoraId)
         {
             regraRecurso.RemapearAncora(ancoraRecriada.Id);
