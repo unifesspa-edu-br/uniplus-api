@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Commands.ProcessosSeletivos;
 
 using FluentValidation;
+
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
