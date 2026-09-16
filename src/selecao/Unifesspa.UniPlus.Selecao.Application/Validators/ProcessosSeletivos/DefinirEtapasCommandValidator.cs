@@ -62,6 +62,21 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
                 .When(e => e.NotaMinima.HasValue)
                 .WithMessage("Nota mínima deve ter no máximo 4 casas decimais.");
 
+            // Mesma proteção do array de etapas, um nível abaixo: item nulo nas coleções
+            // aninhadas passa incólume pelo ChildRules, e o handler o desreferencia — o papel
+            // do produto, o tipo da banca, a âncora do recurso — estourando como 500.
+            etapa.RuleForEach(e => e.Produtos)
+                .NotNull()
+                .WithMessage("Item de produto da etapa não pode ser nulo.");
+
+            etapa.RuleForEach(e => e.Bancas)
+                .NotNull()
+                .WithMessage("Item de banca da etapa não pode ser nulo.");
+
+            etapa.RuleForEach(e => e.Recursos)
+                .NotNull()
+                .WithMessage("Item de janela recursal da etapa não pode ser nulo.");
+
             // Forma do item, e só ela — mesma regra que os produtos da fase já tinham. Sem
             // ela, o código vazio chega a ProdutoDaEtapa.Criar, cuja guarda de argumento
             // LANÇA: um corpo malformado viraria 500 em vez da recusa de validação que
