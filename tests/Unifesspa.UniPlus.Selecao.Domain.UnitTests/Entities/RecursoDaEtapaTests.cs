@@ -178,4 +178,32 @@ public sealed class RecursoDaEtapaTests
 
         resultado.IsFailure.Should().BeTrue();
     }
+    /// <summary>
+    /// O decodificador do envelope exige este código exato ao reidratar a janela recursal da
+    /// etapa. Aceitar outra entrada do catálogo — ainda que do tipo certo — produziria um
+    /// certame publicável cujo envelope não volta, e o descarte da retificação deixaria de ser
+    /// possível. A regra da fase já recusava o mesmo input.
+    /// </summary>
+    [Fact(DisplayName = "Recusa regra de código diferente do prazo ancorado em ato")]
+    public void Recusa_RegraDeOutroCodigo()
+    {
+        ReferenciaRegra outra = ReferenciaRegra.Criar(
+            "RECURSO-PRAZO-OUTRA-CONTAGEM", "v1", new string('b', 64)).Value!;
+
+        Result<RecursoDaEtapa> resultado = RecursoDaEtapa.Criar(
+            AncoraDoRecurso.AtoPublicado, outra, Args(), Ancora);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RecursoDaEtapa.RegraCatalogoInvalida");
+    }
+
+    [Fact(DisplayName = "Aceita a regra de prazo ancorado em ato")]
+    public void Aceita_RegraAncoradaEmAto()
+    {
+        Result<RecursoDaEtapa> resultado = RecursoDaEtapa.Criar(
+            AncoraDoRecurso.AtoPublicado, Regra, Args(), Ancora);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
 }
