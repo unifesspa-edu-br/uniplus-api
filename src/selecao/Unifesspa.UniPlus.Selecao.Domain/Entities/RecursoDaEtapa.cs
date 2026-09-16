@@ -66,6 +66,19 @@ public sealed class RecursoDaEtapa : EntityBase
                 "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato."))]);
         }
 
+        // Só a regra de prazo ancorado em ato, como na fase — e não qualquer entrada do catálogo
+        // cujo tipo seja "regra de prazo de recurso", que é a checagem que o handler faz. O
+        // decodificador do envelope exige este código exato ao reidratar a janela recursal da
+        // etapa: aceitar outro aqui produziria um certame publicável cujo envelope não volta,
+        // e o descarte da retificação deixaria de ser possível. A defesa fica no domínio para
+        // valer também fora do caminho do handler, como a reidratação.
+        if (regra.Codigo != RegraPrazoRecursoCodigo.AncoradoEmAto)
+        {
+            return Result<RecursoDaEtapa>.Failure(new DomainError(
+                "RecursoDaEtapa.RegraCatalogoInvalida",
+                $"A janela recursal da etapa só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
+        }
+
         // As mesmas invariantes que a regra da fase prova sobre os args — prazo estritamente
         // positivo, em dia útil ou hora, sem fração de dia útil, e cada par de suspensividade
         // inteiro ou inteiramente ausente. A janela da etapa recorre nas mesmas condições; o
