@@ -317,8 +317,11 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         objetivaReposta.EmiteParecerIndividual.Should().Be(congeladaOriginal.EmiteParecerIndividual);
         objetivaReposta.Produtos.Select(p => (p.Id, p.AtoCodigo, p.Papel))
             .Should().BeEquivalentTo(congeladaOriginal.Produtos.Select(p => (p.Id, p.AtoCodigo, p.Papel)));
-        objetivaReposta.Bancas.Select(b => (b.Id, b.Codigo))
-            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.Id, b.Codigo)));
+        // A banca volta pelo CONTEÚDO, não pela identidade: o envelope congela o tipo e o
+        // código, e não o id — que a etapa refaz a cada gravação, porque o comando declara a
+        // banca pelo tipo. Cobrar o id aqui seria cobrar o que a publicação não promete.
+        objetivaReposta.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo))
+            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo)));
         objetivaReposta.Recursos.Select(r => (r.Id, r.Ancora, r.Args.PrazoValor, r.ProdutoAncoraId))
             .Should().BeEquivalentTo(congeladaOriginal.Recursos.Select(r => (r.Id, r.Ancora, r.Args.PrazoValor, r.ProdutoAncoraId)));
 

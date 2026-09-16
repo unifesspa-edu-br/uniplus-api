@@ -102,8 +102,7 @@ public sealed partial class EnvelopeCodec
             {
                 string pathBanca = $"{path}.bancas[{j}]";
                 JsonObject itemBanca = leitor.ItemObjeto(arrayBancas, j, pathBanca);
-                leitor.ExigirChaves(itemBanca, pathBanca, "id", "tipoBancaOrigemId", "codigo");
-                Guid idBanca = leitor.Identificador(itemBanca, "id", pathBanca);
+                leitor.ExigirChaves(itemBanca, pathBanca, "tipoBancaOrigemId", "codigo");
                 Guid origem = leitor.Identificador(itemBanca, "tipoBancaOrigemId", pathBanca);
                 string codigoBanca = leitor.TextoNaoVazio(itemBanca, "codigo", pathBanca, LimitesDoEnvelope.EtapaNome);
                 if (leitor.Falhou)
@@ -111,7 +110,9 @@ public sealed partial class EnvelopeCodec
                     return [];
                 }
 
-                bancas.Add(BancaDaEtapa.Reidratar(idBanca, origem, codigoBanca));
+                // Id novo, como nas bancas da fase: o envelope não o congela porque nada o
+                // referencia, e a identidade da linha não é o que a publicação promete.
+                bancas.Add(BancaDaEtapa.Criar(origem, codigoBanca));
             }
 
             if (reidratada.DefinirBancas(bancas).IsFailure)

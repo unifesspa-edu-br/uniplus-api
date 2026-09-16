@@ -66,6 +66,11 @@ internal static class CorpusEnvelope
     private static Guid ProdutoDaObjetivaId(int ordem, int variante) =>
         new($"aaab000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
+    private static readonly Guid TipoBancaExaminadora = new("dddd2222-0000-4000-8000-000000000001");
+
+    private static Guid BancaDaObjetivaId(int variante) =>
+        new($"aaad000{variante:x}-0000-4000-8000-000000000001");
+
     private static Guid RecursoDaObjetivaId(int ordem, int variante) =>
         new($"aaac000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
@@ -168,6 +173,11 @@ internal static class CorpusEnvelope
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
         ], permutar)).IsSuccess.Should().BeTrue();
+        // A etapa requer banca: é o bloco em que o envelope congela o TIPO e o código, e não a
+        // linha — o id dela muda a cada gravação, porque o comando declara a banca pelo tipo.
+        etapaObjetiva.DefinirBancas([
+            BancaDaEtapa.Reidratar(BancaDaObjetivaId(variante), TipoBancaExaminadora, "BANCA_EXAMINADORA"),
+        ]).IsSuccess.Should().BeTrue();
         etapaObjetiva.DefinirRecursos([
             RecursoDaEtapa.Reidratar(
                 RecursoDaObjetivaId(1, variante),
