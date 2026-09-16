@@ -337,6 +337,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"A etapa {exigenciaOrfa.ExigidoNaEtapaId} coleta o documento {exigenciaOrfa.TipoDocumentoNome} e não pode ser removida sem antes reconfigurar a exigência."));
         }
 
+        // Manter o Id não basta: a exigência declara a fase E a etapa em que o documento é
+        // coletado, e uma etapa que continua existindo mas passou a acontecer noutra fase
+        // deixaria a exigência dizendo que a habilitação é coletada no dia da prova. É a mesma
+        // invariante que a definição da exigência impõe, reconferida aqui porque só este
+        // caminho pode mover a etapa depois de ela já estar referenciada.
+        foreach (DocumentoExigido exigencia in _documentosExigidos)
+        {
+            if (exigencia.ExigidoNaEtapaId is not { } etapaRef)
+            {
+                continue;
+            }
+
+            EtapaProcesso? etapaNova = etapas.FirstOrDefault(e => e.Id == etapaRef);
+            FaseCronograma? faseDaExigencia = _cronogramaFases.FirstOrDefault(f => f.Id == exigencia.ExigidoNaFaseId);
+            if (etapaNova is null
+                || faseDaExigencia is null
+                || string.Equals(etapaNova.FaseCodigo, faseDaExigencia.Codigo, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            return Result.Failure(new DomainError(
+                "DocumentoExigido.EtapaNaoPertenceAFase",
+                $"A etapa {etapaRef} coleta o documento {exigencia.TipoDocumentoNome} na fase {faseDaExigencia.Codigo} e não pode passar para outra fase sem antes reconfigurar a exigência."));
+        }
 
         // Cada etapa declara a fase a que pertence pelo código canônico; a raiz é quem
         // resolve, porque só ela enxerga o cronograma. Código, e não id, porque o id da
