@@ -164,6 +164,43 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorExigenciaDocumental");
     }
 
+    /// <summary>
+    /// Manter o id não basta: a exigência declara a fase E a etapa em que o documento é
+    /// coletado, e mover a etapa para outra fase a deixaria dizendo que a habilitação é
+    /// coletada no dia da prova. É a mesma invariante que a definição da exigência impõe.
+    /// </summary>
+    [Fact(DisplayName = "Etapa que coleta documento não pode mudar de fase")]
+    public void DefinirEtapas_MoveEtapaQueColetaDocumentoParaOutraFase_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma habilitacao = Fase(1, "HABILITACAO");
+        FaseCronograma avaliacao = Fase(2, "AVALIACAO");
+        processo.DefinirCronogramaFases([habilitacao, avaliacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(ExigenciaNaEtapa(habilitacao.Id, etapa.Id), 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        // A MESMA etapa, com o MESMO id — só a fase mudou. A guarda de remoção não vê nada,
+        // porque o id continua na lista.
+        EtapaProcesso movida = EtapaProcesso.Reidratar(
+            etapa.Id,
+            etapa.Nome,
+            etapa.Carater,
+            etapa.TipoEtapa,
+            etapa.Peso,
+            etapa.NotaMinima,
+            etapa.Ordem,
+            faseCodigo: "AVALIACAO");
+
+        Result resultado = processo.DefinirEtapas([movida], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");
+    }
+
     private static FaseCronograma FaseComFim(int ordem, string codigo, DateTimeOffset fim) => FaseCronograma.Criar(
         ordem,
         Guid.CreateVersion7(),
