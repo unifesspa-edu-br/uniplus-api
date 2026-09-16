@@ -257,12 +257,26 @@ public static class DefinirEtapasCommandHandler
         for (int i = 0; i < etapas.Count; i++)
         {
             IReadOnlyList<ProdutoDaEtapaInput> declarados = command.Etapas[i].Produtos ?? [];
-            Result produtosResult = etapas[i].DefinirProdutos(
-                [.. declarados.Select(d =>
+
+            // O papel desconhecido é RECUSADO, e não tratado como ausente. Ignorar a conversão
+            // fazia um erro de digitação — `PRELIMINARR` por `PRELIMINAR` — virar produto sem
+            // papel: a etapa deixava de publicar resultado, o recurso perdia onde ancorar, e
+            // nada dizia isso a quem declarou. Mesma recusa que a fase dá um nível acima.
+            List<ProdutoDaEtapa> produtosDaEtapa = [];
+            foreach (ProdutoDaEtapaInput d in declarados)
+            {
+                if (!PapelProdutoFaseCodigo.TentarConverter(d.Papel, out PapelProdutoFase? papel))
                 {
-                    PapelProdutoFaseCodigo.TentarConverter(d.Papel, out PapelProdutoFase? papel);
-                    return ProdutoDaEtapa.Criar(d.AtoCodigo, papel);
-                })]);
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.Failure(new DomainError(
+                        "ProdutoDaEtapa.PapelDesconhecido",
+                        $"O papel '{d.Papel}' não é declarável — use '{PapelProdutoFaseCodigo.Preliminar}', '{PapelProdutoFaseCodigo.Definitivo}' ou nenhum."));
+                }
+
+                produtosDaEtapa.Add(ProdutoDaEtapa.Criar(d.AtoCodigo, papel));
+            }
+
+            Result produtosResult = etapas[i].DefinirProdutos(produtosDaEtapa);
             if (produtosResult.IsFailure)
             {
                 unitOfWork.DescartarAlteracoesNaoSalvas();

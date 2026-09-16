@@ -496,6 +496,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // resultado — classificação intrínseca do tipo, que nunca varia por edital.
         new("ProdutoDaFase.AtoNaoEncontradoNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.ato_nao_encontrado_no_catalogo", "O tipo de ato declarado pela fase não tem versão vigente no catálogo de Publicações")),
         new("ProdutoDaFase.PapelDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.papel_desconhecido", "O papel do produto não é declarável")),
+        new("ProdutoDaEtapa.PapelDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_etapa.papel_desconhecido", "O papel do produto da etapa não é declarável")),
         new("ProdutoDaFase.PapelEmAtoQueNaoEhResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado", "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo")),
         // A identidade da regra é o par (codigo, versao): pedir uma versão que não existe de um
         // código que existe é o mesmo 404 de pedir um código inventado, e distinguir os dois
