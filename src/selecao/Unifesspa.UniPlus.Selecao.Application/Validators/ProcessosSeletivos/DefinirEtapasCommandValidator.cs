@@ -61,6 +61,18 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
                 .PrecisionScale(18, 4, ignoreTrailingZeros: false)
                 .When(e => e.NotaMinima.HasValue)
                 .WithMessage("Nota mínima deve ter no máximo 4 casas decimais.");
+
+            // Forma do item, e só ela — mesma regra que os produtos da fase já tinham. Sem
+            // ela, o código vazio chega a ProdutoDaEtapa.Criar, cuja guarda de argumento
+            // LANÇA: um corpo malformado viraria 500 em vez da recusa de validação que
+            // nomeia o campo. Que o papel seja declarável e que o ato exista no catálogo
+            // continuam sendo resolução do handler.
+            etapa.RuleForEach(e => e.Produtos).ChildRules(produto =>
+            {
+                produto.RuleFor(p => p.AtoCodigo)
+                    .NotEmpty()
+                    .WithMessage("O código do ato do produto é obrigatório.");
+            });
         });
     }
 }

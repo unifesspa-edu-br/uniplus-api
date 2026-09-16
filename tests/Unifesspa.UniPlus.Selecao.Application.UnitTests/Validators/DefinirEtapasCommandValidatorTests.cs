@@ -25,6 +25,40 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
+    /// <summary>
+    /// A guarda de argumento de <c>ProdutoDaEtapa.Criar</c> LANÇA com código vazio. Sem a
+    /// regra de forma aqui, o corpo malformado chegaria lá e viraria falha de servidor, em vez
+    /// da recusa de validação que nomeia o campo — como já acontece nos produtos da fase.
+    /// </summary>
+    [Fact(DisplayName = "Validator recusa produto da etapa sem código de ato")]
+    public void Rejeita_ProdutoSemAtoCodigo()
+    {
+        EtapaProcessoInput etapa = EtapaValida() with
+        {
+            Produtos = [new ProdutoDaEtapaInput(string.Empty, "PRELIMINAR")],
+        };
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("código do ato", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Validator aceita produto da etapa com código declarado")]
+    public void Aceita_ProdutoComAtoCodigo()
+    {
+        EtapaProcessoInput etapa = EtapaValida() with
+        {
+            Produtos = [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")],
+        };
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
+
+        result.IsValid.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Validator aceita lista de etapas vazia (Story #851 §3.5 — processo sem prova é válido)")]
     public void Aceita_ListaVazia()
     {
