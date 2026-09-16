@@ -74,5 +74,15 @@ public interface IRascunhoDePublicacaoRepository : IRepository<RascunhoDePublica
     /// em algum processo, ainda esteja salvando rascunhos para que os abandonados saiam.
     /// </para>
     /// </remarks>
-    Task<int> ApagarVencidosAsync(DateTimeOffset agora, CancellationToken cancellationToken = default);
+    /// <param name="exceto">
+    /// O rascunho que está sendo gravado nesta mesma transação, que a varredura precisa poupar.
+    /// Sem isso, o dono que volta a um rascunho vencido perde justamente o que veio salvar: a
+    /// renovação do prazo vive na entidade rastreada e só chega ao banco no <c>SaveChanges</c>,
+    /// enquanto a varredura roda como SQL imediato e ainda enxerga a data velha — apagaria a
+    /// linha, e o <c>SaveChanges</c> seguinte falharia tentando atualizar o que não existe.
+    /// </param>
+    Task<int> ApagarVencidosAsync(
+        DateTimeOffset agora,
+        Guid? exceto = null,
+        CancellationToken cancellationToken = default);
 }

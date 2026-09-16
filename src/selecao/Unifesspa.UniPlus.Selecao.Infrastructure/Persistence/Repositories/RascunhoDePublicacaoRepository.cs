@@ -57,10 +57,13 @@ public sealed class RascunhoDePublicacaoRepository : IRascunhoDePublicacaoReposi
             .ConfigureAwait(false);
     }
 
-    public async Task<int> ApagarVencidosAsync(DateTimeOffset agora, CancellationToken cancellationToken = default)
+    public async Task<int> ApagarVencidosAsync(
+        DateTimeOffset agora,
+        Guid? exceto = null,
+        CancellationToken cancellationToken = default)
     {
         return await _context.RascunhosDePublicacao
-            .Where(r => r.ExpiraEm <= agora)
+            .Where(r => r.ExpiraEm <= agora && (exceto == null || r.Id != exceto))
             .ExecuteDeleteAsync(cancellationToken)
             .ConfigureAwait(false);
     }

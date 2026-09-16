@@ -85,7 +85,13 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
         // qualquer operador. É o que faz o prazo valer para o caso que mais importa: o certame
         // abandonado no meio, que ninguém volta a abrir e cuja expiração na leitura nunca
         // aconteceria. Sai antes do SaveChanges para ir na mesma transação.
-        await rascunhoRepository.ApagarVencidosAsync(agora, cancellationToken).ConfigureAwait(false);
+        //
+        // Poupa o rascunho desta gravação: quando o dono volta a um que venceu, a renovação do
+        // prazo ainda está só na entidade rastreada, e a varredura — SQL imediato — enxergaria a
+        // data velha e apagaria a linha que o SaveChanges tentaria atualizar em seguida.
+        await rascunhoRepository
+            .ApagarVencidosAsync(agora, existente?.Id, cancellationToken)
+            .ConfigureAwait(false);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
