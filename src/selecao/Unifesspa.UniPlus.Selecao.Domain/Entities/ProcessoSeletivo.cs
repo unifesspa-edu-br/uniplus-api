@@ -831,6 +831,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // conferências — uma recusa mais adiante não pode deixar o agregado meio podado.
         List<string> codigosRemovidos = [];
 
+        // O documento exigido numa fase que TAMBÉM está saindo sai junto com ela, pela poda em
+        // cascata aplicada mais abaixo. Contá-lo como referência viva recusaria uma remoção que
+        // o próprio comando resolve: remover duas fases de uma vez, com o documento de uma
+        // ancorado na janela da outra, é configuração legítima e ficava impossível. Só quem
+        // fica é que pode reclamar do que sai.
+        HashSet<Guid> fasesQueFicam = [.. fasesAntigasPorOrigem.Values
+            .Where(f => fasesNovasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
+            .Select(f => f.Id)];
+        List<DocumentoExigido> documentosQueFicam =
+            [.. _documentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
+
         foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values)
         {
             if (!fasesNovasPorOrigem.TryGetValue(antiga.FaseCanonicaOrigemId, out FaseCronograma? nova))
@@ -844,8 +855,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 // OUTRA fase, que apenas usa esta como marco temporal. Apagar a exigência
                 // alheia por tabela seria remover configuração que não é desta fase, e por
                 // isso aqui a recusa continua.
-                DocumentoExigido? ancoraDeOutraFase = _documentosExigidos.Find(d =>
-                    d.ExigidoNaFaseId != antiga.Id && d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id);
+                DocumentoExigido? ancoraDeOutraFase = documentosQueFicam.Find(d =>
+                    d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id);
                 if (ancoraDeOutraFase is not null)
                 {
                     return Result.Failure(new DomainError(
@@ -889,7 +900,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // preventivo (na escrita do cronograma), não descoberto só na publicação.
             bool perdeuInicio = antiga.Inicio is not null && nova.Inicio is null;
             bool perdeuFim = antiga.Fim is not null && nova.Fim is null;
-            if ((perdeuInicio || perdeuFim) && _documentosExigidos.Any(d =>
+            if ((perdeuInicio || perdeuFim) && documentosQueFicam.Exists(d =>
                 d.IdadeMaximaEmissao is { ReferenciaFaseId: { } refFaseId } idade
                 && refFaseId == antiga.Id
                 && ((perdeuInicio && idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase)
@@ -908,7 +919,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // fase de coleta com Fim definido, mesmo com exigência viva ancorada em
         // FIM_INSCRICAO. É uma checagem GLOBAL, não por fase — não importa QUAL fase
         // perdeu o papel, o que importa é se ainda sobra alguma no cronograma NOVO.
-        if (_documentosExigidos.Any(d => d.IdadeMaximaEmissao?.ReferenciaTipo == ReferenciaTipoIdadeEmissao.FimInscricao)
+        if (documentosQueFicam.Exists(d => d.IdadeMaximaEmissao?.ReferenciaTipo == ReferenciaTipoIdadeEmissao.FimInscricao)
             && !fases.Any(f => f.ColetaInscricao && f.Fim is not null))
         {
             return Result.Failure(new DomainError(

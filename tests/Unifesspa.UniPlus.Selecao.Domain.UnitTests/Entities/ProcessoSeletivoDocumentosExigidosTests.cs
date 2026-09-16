@@ -683,12 +683,45 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Ordem 2 (faseAncora) desaparece — só a Ordem 1 (faseExigencia, referenciada por
-        // ExigidoNaFaseId) é mantida.
-        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Curinga);
+        // ExigidoNaFaseId) é mantida. A identidade de origem vai explícita porque é ela que diz
+        // "é a MESMA fase": recriá-la com origem nova faria a fase da exigência contar como
+        // removida também, e o documento sairia junto — outro cenário, não este.
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "INSCRICAO", faseExigencia.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsFailure.Should().BeTrue(
             "faseAncora não é a fase de ExigidoNaFaseId, mas é a âncora de IdadeMaximaEmissao.ReferenciaFaseId");
         resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
+    }
+
+    /// <summary>
+    /// Duas fases saem na mesma redefinição, e o documento de uma delas ancora na janela da
+    /// outra. Ele não é referência externa a proteger: sai junto com a própria fase, pela poda
+    /// em cascata. Contá-lo recusava uma remoção que o próprio comando resolve, e o operador
+    /// não tinha como sair do impasse — esvaziar a lista de documentos antes é exatamente o
+    /// que a cascata existe para dispensar.
+    /// </summary>
+    [Fact(DisplayName = "Remover as duas fases de uma vez é aceito quando o documento ancorado sai junto")]
+    public void DefinirCronogramaFases_RemoveAsDuasFases_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
+        FaseCronograma faseAncora = FaseComExtremo(1, "ANALISE", inicio: null, fim: fim);
+        FaseCronograma faseExigencia = Fase(2, "RECURSO");
+        FaseCronograma faseQueFica = Fase(3, "RESULTADO");
+        processo.DefinirCronogramaFases([faseAncora, faseExigencia, faseQueFica], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(
+                ExigenciaComIdadeAncoradaEmFase(faseExigencia.Id, faseAncora.Id, ReferenciaTipoIdadeEmissao.FimFase), 0).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // As duas primeiras saem juntas; só a terceira permanece, com a identidade preservada.
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "RESULTADO", faseQueFica.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().BeEmpty("o documento saiu junto com a fase em que era exigido");
     }
 
     [Fact(DisplayName = "Fase sobrevivente que perde o extremo usado como âncora de idade é recusado")]
