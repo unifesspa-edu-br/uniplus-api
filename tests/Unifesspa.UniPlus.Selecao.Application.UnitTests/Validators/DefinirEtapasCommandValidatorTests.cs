@@ -30,6 +30,31 @@ public sealed class DefinirEtapasCommandValidatorTests
     /// regra de forma aqui, o corpo malformado chegaria lá e viraria falha de servidor, em vez
     /// da recusa de validação que nomeia o campo — como já acontece nos produtos da fase.
     /// </summary>
+    /// <summary>
+    /// Item nulo dentro das coleções aninhadas passa incólume pelo `ChildRules`, e o handler o
+    /// desreferencia — o papel do produto, o tipo da banca, a âncora do recurso. É a mesma
+    /// proteção que o array de etapas já tinha, um nível abaixo.
+    /// </summary>
+    [Theory(DisplayName = "Validator recusa item nulo nas coleções da etapa")]
+    [InlineData("produtos")]
+    [InlineData("bancas")]
+    [InlineData("recursos")]
+    public void Rejeita_ItemNuloNasColecoesAninhadas(string colecao)
+    {
+        EtapaProcessoInput etapa = colecao switch
+        {
+            "produtos" => EtapaValida() with { Produtos = [null!] },
+            "bancas" => EtapaValida() with { Bancas = [null!] },
+            _ => EtapaValida() with { Recursos = [null!] },
+        };
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("não pode ser nulo", StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "Validator recusa produto da etapa sem código de ato")]
     public void Rejeita_ProdutoSemAtoCodigo()
     {
