@@ -68,5 +68,12 @@ public sealed class ProdutoDaEtapa : EntityBase
         };
     }
 
+    /// <summary>
+    /// Troca o papel preservando a linha. A reconciliação da restauração casa o produto vivo
+    /// pelo ato quando o papel foi o que mudou; recriá-lo faria a mesma matéria sair e voltar,
+    /// com DELETE e INSERT disputando o mesmo slot do índice único na mesma transação.
+    /// </summary>
+    internal void AtualizarPapel(PapelProdutoFase? papel) => Papel = papel;
+
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
 }

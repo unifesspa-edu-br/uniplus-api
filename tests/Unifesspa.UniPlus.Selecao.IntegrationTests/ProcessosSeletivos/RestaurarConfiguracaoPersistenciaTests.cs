@@ -219,10 +219,122 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         reconciliada.NotaMinima.Should().Be(congeladaOriginal.NotaMinima);
         reconciliada.Ordem.Should().Be(congeladaOriginal.Ordem);
 
+        // ...inclusive o que não é escalar. A etapa descaracterizada pela sessão perdeu a
+        // janela própria, a promessa de parecer, os produtos, as bancas e as janelas recursais;
+        // repor só os escalares deixaria o descarte relatar sucesso com a configuração viva
+        // ainda diferente do envelope publicado, que é precisamente o que ele desfaz.
+        reconciliada.Inicio.Should().Be(congeladaOriginal.Inicio);
+        reconciliada.Fim.Should().Be(congeladaOriginal.Fim);
+        reconciliada.EmiteParecerIndividual.Should().Be(congeladaOriginal.EmiteParecerIndividual);
+
+        reconciliada.Produtos.Select(p => (p.AtoCodigo, p.Papel))
+            .Should().BeEquivalentTo(congeladaOriginal.Produtos.Select(p => (p.AtoCodigo, p.Papel)));
+        reconciliada.Bancas.Select(b => (b.Codigo, b.TipoBancaOrigemId))
+            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.Codigo, b.TipoBancaOrigemId)));
+        reconciliada.Recursos.Select(r => (r.Ancora, r.Regra.Codigo, r.Args.PrazoValor, r.ProdutoAncoraId))
+            .Should().BeEquivalentTo(congeladaOriginal.Recursos
+                .Select(r => (r.Ancora, r.Regra.Codigo, r.Args.PrazoValor, r.ProdutoAncoraId)));
+
         // ...e o CreatedAt não voltou, porque nunca saiu: é a MESMA linha (ADR-0110 D2).
         reconciliada.CreatedAt.Should().Be(criadoEm,
             "a etapa reconciliada é a mesma linha — a D2 declara que ela preserva o CreatedAt original, ao contrário " +
             "das demais filhas, que são recriadas e recebem o instante do descarte");
+    }
+
+    [Fact(DisplayName = "O descarte devolve à etapa a janela, os produtos, as bancas e os recursos que o ato congelou")]
+    public async Task Restaurar_ReponAsFilhasDaEtapaRetida()
+    {
+        // Variante própria: a classe inteira compartilha um Postgres, e o id da etapa é fixo
+        // por variante — dois processos com as mesmas etapas colidiriam na chave primária.
+        const int Variante = 3;
+        ProcessoSeletivo original = CorpusEnvelope.ProcessoRico(Variante);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(original));
+        CorpusEnvelope.Publicar(original);
+
+        Guid processoId = original.Id;
+        Guid objetivaId = original.Etapas.Single(e => e.Nome == "Prova Objetiva").Id;
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
+            original, congelado.Bytes, new Guid($"01900000-0000-7000-8000-00000000000{Variante:x}"));
+
+        await using (SelecaoDbContext escrita = fixture.CreateDbContext())
+        {
+            escrita.ProcessosSeletivos.Add(original);
+            escrita.Add(versao);
+            await escrita.SaveChangesAsync();
+        }
+
+        // A sessão editorial esvazia a etapa RETIDA pelos comandos que o operador tem à mão —
+        // não por um grafo. É a diferença que faz o teste dizer algo: aplicar um grafo cuja
+        // etapa nasce vazia passaria por inércia se a reposição não mexesse nas coleções, já
+        // que elas nunca teriam saído.
+        await using (SelecaoDbContext sessao = fixture.CreateDbContext())
+        {
+            ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
+            EtapaProcesso objetiva = tracked.Etapas.Single(e => e.Id == objetivaId);
+
+            // Recursos antes dos produtos: a âncora em ato é conferida contra os produtos da
+            // etapa, e esvaziá-los primeiro deixaria a janela recursal sem onde ancorar.
+            objetiva.DefinirRecursos([]).IsSuccess.Should().BeTrue();
+            objetiva.DefinirProdutos([]).IsSuccess.Should().BeTrue();
+            objetiva.DefinirBancas([]).IsSuccess.Should().BeTrue();
+            objetiva.DefinirJanelaEParecer(
+                new DateTimeOffset(2027, 5, 1, 0, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2027, 5, 2, 0, 0, 0, TimeSpan.Zero),
+                emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
+
+            await sessao.SaveChangesAsync();
+        }
+
+        await using (SelecaoDbContext leitura = fixture.CreateDbContext())
+        {
+            EtapaProcesso suja = (await CarregarAsync(leitura, processoId)).Etapas.Single(e => e.Id == objetivaId);
+            suja.Produtos.Should().BeEmpty("pré-condição: a sessão editorial esvaziou a etapa");
+            suja.Recursos.Should().BeEmpty("pré-condição: a sessão editorial esvaziou a etapa");
+            suja.EmiteParecerIndividual.Should().BeFalse("pré-condição: a sessão editorial retirou a promessa de parecer");
+        }
+
+        await using (SelecaoDbContext descarte = fixture.CreateDbContext())
+        {
+            ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
+
+            Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(tracked, versao);
+            prova.IsSuccess.Should().BeTrue(prova.Error?.Message);
+
+            tracked.LimparColetaEDerivacaoParaRestauracao();
+            await descarte.SaveChangesAsync();
+
+            tracked.RestaurarConfiguracaoCongelada(versao, prova.Value!).IsSuccess.Should().BeTrue();
+            await descarte.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext verificacao = fixture.CreateDbContext();
+        ProcessoSeletivo reposto = await CarregarAsync(verificacao, processoId);
+        EtapaProcesso objetivaReposta = reposto.Etapas.Single(e => e.Id == objetivaId);
+        EtapaProcesso congeladaOriginal = CorpusEnvelope.ProcessoRico(Variante).Etapas.Single(e => e.Id == objetivaId);
+
+        objetivaReposta.Inicio.Should().Be(congeladaOriginal.Inicio);
+        objetivaReposta.Fim.Should().Be(congeladaOriginal.Fim);
+        objetivaReposta.EmiteParecerIndividual.Should().Be(congeladaOriginal.EmiteParecerIndividual);
+        objetivaReposta.Produtos.Select(p => (p.Id, p.AtoCodigo, p.Papel))
+            .Should().BeEquivalentTo(congeladaOriginal.Produtos.Select(p => (p.Id, p.AtoCodigo, p.Papel)));
+        objetivaReposta.Bancas.Select(b => (b.Id, b.Codigo))
+            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.Id, b.Codigo)));
+        objetivaReposta.Recursos.Select(r => (r.Id, r.Ancora, r.Args.PrazoValor, r.ProdutoAncoraId))
+            .Should().BeEquivalentTo(congeladaOriginal.Recursos.Select(r => (r.Id, r.Ancora, r.Args.PrazoValor, r.ProdutoAncoraId)));
+
+        // A prova que fecha: o agregado relido recanonicaliza nos bytes que o ato congelou. Sem
+        // ela, repor "quase tudo" passaria — e o descarte relataria sucesso com a configuração
+        // viva ainda diferente da publicação.
+        Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
+            versao.SchemaVersion,
+            new EntradaCanonicalizacao(
+                reposto, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
+                ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos(),
+                CalendarioDiasUteis: CorpusEnvelope.CalendarioRico()));
+
+        recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
+            "a etapa que o descarte devolve tem de ser a que o documento publicado descreve — janela, produtos, " +
+            "bancas e janelas recursais inclusive");
     }
 
     private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext context, Guid id) =>
