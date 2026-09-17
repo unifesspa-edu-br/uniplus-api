@@ -71,7 +71,7 @@ public sealed class SessaoEditorialEndpointTests
     /// A gravação substitui a coleção inteira, então a chave ausente era indistinguível de
     /// "a etapa não tem nenhum": um cliente que não conhecesse os campos apagava em silêncio
     /// os produtos, as bancas e as janelas recursais de TODAS as etapas do processo, e recebia
-    /// 200. Exigir a chave torna a omissão um erro de forma, e mantém a lista vazia como o que
+    /// 204. Exigir a chave torna a omissão um erro de forma, e mantém a lista vazia como o que
     /// ela deve ser — uma declaração explícita.
     /// </summary>
     [Fact(DisplayName = "PUT /etapas que omite produtos, bancas ou recursos é recusado pela forma")]
@@ -484,6 +484,9 @@ public sealed class SessaoEditorialEndpointTests
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId)
     {
+        /// <summary>Tipo de etapa "prova objetiva" semeado pela fixture do cenário.</summary>
+        private static readonly Guid TipoEtapaProvaObjetivaOrigemId = new("019fee1e-7000-7000-8000-000000000001");
+
         public async Task<HttpResponseMessage> AbrirAsync(string motivo, string? idempotencyKey = null)
         {
             using HttpRequestMessage request = new(
@@ -540,7 +543,7 @@ public sealed class SessaoEditorialEndpointTests
                     new
                     {
                         nome = "Prova Objetiva", carater = 1,
-                        tipoEtapaOrigemId = new Guid("019fee1e-7000-7000-8000-000000000001"),
+                        tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId,
                         peso = 1.0m, notaMinima = (decimal?)null, ordem = 1,
                     },
                 }),
@@ -572,7 +575,7 @@ public sealed class SessaoEditorialEndpointTests
                     new
                     {
                         nome = "Prova Objetiva", carater = 1,
-                        tipoEtapaOrigemId = new Guid("019fee1e-7000-7000-8000-000000000001"),
+                        tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId,
                         peso = 1.0m, notaMinima = (decimal?)null, ordem = 1,
                         produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>(),
                     },

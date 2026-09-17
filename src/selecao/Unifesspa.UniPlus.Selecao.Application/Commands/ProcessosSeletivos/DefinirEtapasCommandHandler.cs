@@ -287,6 +287,45 @@ public static class DefinirEtapasCommandHandler
             return resolvido;
         }
 
+        // Mesma memoização, e pela mesma razão: o tipo de banca e a regra de prazo são os dois
+        // outros cadastros que este handler relê por ITEM de CADA etapa. Duas etapas que
+        // requerem a mesma banca, ou que abrem janela recursal sob a mesma regra, são o caso
+        // comum — não a exceção —, e cada releitura acontece com o SELECT ... FOR UPDATE do
+        // certame na mão. O TipoBancaView e o RegraCatalogo memoizados são dado bruto do
+        // cadastro: BancaDaEtapa.Criar e ReferenciaRegra.Criar continuam construindo uma
+        // instância própria por etapa, como o snapshot do tipo de etapa já exige.
+        Dictionary<Guid, TipoBancaView?> tiposDeBancaResolvidos = [];
+
+        async Task<TipoBancaView?> ResolverTipoDeBancaAsync(Guid tipoBancaId)
+        {
+            if (tiposDeBancaResolvidos.TryGetValue(tipoBancaId, out TipoBancaView? memoizado))
+            {
+                return memoizado;
+            }
+
+            TipoBancaView? resolvido = await tipoBancaReader
+                .ObterPorIdAsync(tipoBancaId, cancellationToken)
+                .ConfigureAwait(false);
+            tiposDeBancaResolvidos[tipoBancaId] = resolvido;
+            return resolvido;
+        }
+
+        Dictionary<(string Codigo, string Versao), RegraCatalogo?> regrasResolvidas = [];
+
+        async Task<RegraCatalogo?> ResolverRegraAsync(string codigo, string versao)
+        {
+            if (regrasResolvidas.TryGetValue((codigo, versao), out RegraCatalogo? memoizada))
+            {
+                return memoizada;
+            }
+
+            RegraCatalogo? resolvida = await regraCatalogoReader
+                .ObterAsync(codigo, versao, cancellationToken)
+                .ConfigureAwait(false);
+            regrasResolvidas[(codigo, versao)] = resolvida;
+            return resolvida;
+        }
+
         // Os produtos são declarados por etapa, depois que a etapa existe: é ela quem os
         // vincula, e a recusa de ato repetido é dela.
         for (int i = 0; i < etapas.Count; i++)
@@ -370,8 +409,7 @@ public static class DefinirEtapasCommandHandler
             List<BancaDaEtapa> bancas = [];
             foreach (BancaDaEtapaInput bancaInput in input.Bancas)
             {
-                TipoBancaView? tipoBanca = await tipoBancaReader
-                    .ObterPorIdAsync(bancaInput.TipoBancaId, cancellationToken)
+                TipoBancaView? tipoBanca = await ResolverTipoDeBancaAsync(bancaInput.TipoBancaId)
                     .ConfigureAwait(false);
                 if (tipoBanca is null)
                 {
@@ -453,8 +491,7 @@ public static class DefinirEtapasCommandHandler
                 // ecoados do payload: é o que faz o hash bater por construção. E a recusa é
                 // de validação, nunca exceção — catálogo que não respondeu na tela chega
                 // aqui com código em branco, e o cliente precisa da mensagem, não de um 500.
-                RegraCatalogo? regraCatalogo = await regraCatalogoReader
-                    .ObterAsync(declarado.RegraCodigo, declarado.RegraVersao, cancellationToken)
+                RegraCatalogo? regraCatalogo = await ResolverRegraAsync(declarado.RegraCodigo, declarado.RegraVersao)
                     .ConfigureAwait(false);
                 if (regraCatalogo is null || regraCatalogo.Tipo != TipoRegra.RegraPrazoRecurso)
                 {

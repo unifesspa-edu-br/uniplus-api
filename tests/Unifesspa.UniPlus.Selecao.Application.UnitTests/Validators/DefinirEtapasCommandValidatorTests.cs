@@ -36,6 +36,45 @@ public sealed class DefinirEtapasCommandValidatorTests
     /// desreferencia — o papel do produto, o tipo da banca, a âncora do recurso. É a mesma
     /// proteção que o array de etapas já tinha, um nível abaixo.
     /// </summary>
+    /// <summary>
+    /// <c>[JsonRequired]</c> recusa a carga que OMITE a chave, mas <c>"produtos": null</c>
+    /// atravessa a desserialização — e, como a gravação substitui a coleção inteira, o nulo
+    /// apagaria em silêncio o que a etapa declara. É esta regra que o transforma em recusa
+    /// nomeada, em vez de deixá-lo virar lista vazia no handler.
+    /// </summary>
+    [Theory(DisplayName = "Validator recusa coleção nula na etapa — o nulo não vira lista vazia")]
+    [InlineData("produtos", "Etapas[0].Produtos")]
+    [InlineData("bancas", "Etapas[0].Bancas")]
+    [InlineData("recursos", "Etapas[0].Recursos")]
+    public void Rejeita_ColecaoNula(string colecao, string propriedadeEsperada)
+    {
+        EtapaProcessoInput etapa = colecao switch
+        {
+            "produtos" => EtapaValida() with { Produtos = null! },
+            "bancas" => EtapaValida() with { Bancas = null! },
+            _ => EtapaValida() with { Recursos = null! },
+        };
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == propriedadeEsperada);
+    }
+
+    /// <summary>
+    /// A lista vazia é a declaração explícita de que a etapa não tem nenhum — o contraponto
+    /// da recusa acima, e o que impede que exigir a chave vire exigir conteúdo.
+    /// </summary>
+    [Fact(DisplayName = "Validator aceita as três coleções vazias — vazio é declaração, não omissão")]
+    public void Aceita_ColecoesVazias()
+    {
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [EtapaValida()], PrecondicaoIfMatch.Ausente));
+
+        result.IsValid.Should().BeTrue();
+    }
+
     [Theory(DisplayName = "Validator recusa item nulo nas coleções da etapa")]
     [InlineData("produtos")]
     [InlineData("bancas")]
@@ -123,7 +162,8 @@ public sealed class DefinirEtapasCommandValidatorTests
     [Fact(DisplayName = "Validator falha quando TipoEtapaOrigemId não é informado")]
     public void Rejeita_TipoEtapaOrigemIdVazio()
     {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, Guid.Empty, 3m, null, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, Guid.Empty, 3m, null, 1,
+            Produtos: [], Bancas: [], Recursos: []);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
@@ -148,7 +188,8 @@ public sealed class DefinirEtapasCommandValidatorTests
     public void Rejeita_PesoComEscalaExcessiva()
     {
         // 0.00001 > 0 mas numeric(18,4) arredondaria para 0.0000 — divisor da média viraria zero.
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 0.00001m, null, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 0.00001m, null, 1,
+            Produtos: [], Bancas: [], Recursos: []);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
@@ -160,7 +201,8 @@ public sealed class DefinirEtapasCommandValidatorTests
     [Fact(DisplayName = "Validator falha quando a nota mínima tem mais de 4 casas decimais")]
     public void Rejeita_NotaMinimaComEscalaExcessiva()
     {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Eliminatoria, TipoEtapaOrigemIdValido, 3m, 5.00001m, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Eliminatoria, TipoEtapaOrigemIdValido, 3m, 5.00001m, 1,
+            Produtos: [], Bancas: [], Recursos: []);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
