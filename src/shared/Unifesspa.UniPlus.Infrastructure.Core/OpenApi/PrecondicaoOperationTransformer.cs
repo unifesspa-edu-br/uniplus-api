@@ -36,7 +36,10 @@ public sealed class PrecondicaoOperationTransformer : IOpenApiOperationTransform
     /// <b>toda mutação aceita</b> (204) — esta última é a que importa, porque é o único
     /// lugar em que o cliente recebe a precondição da chamada seguinte.
     /// </summary>
-    private static readonly string[] StatusQueCarregamETag = ["200", "201", "204"];
+    // 304 entra porque a resposta condicional devolve o selo do recurso: é por ele que o cliente
+    // confirma qual representação continua válida, e sem o header declarado o cliente gerado não
+    // sabe de onde tirar o valor a repetir no pedido seguinte.
+    private static readonly string[] StatusQueCarregamETag = ["200", "201", "204", "304"];
 
     public Task TransformAsync(
         OpenApiOperation operation,

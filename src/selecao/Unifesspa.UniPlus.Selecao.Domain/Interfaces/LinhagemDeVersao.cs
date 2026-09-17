@@ -11,6 +11,3 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// <param name="NumeroVersao">Número da versão na cadeia, crescente.</param>
 /// <param name="AtoCriadorId">Ato normativo que criou a versão, referenciado por valor.</param>
 public readonly record struct LinhagemDeVersao(int NumeroVersao, Guid AtoCriadorId);
-
-/// <summary>Uma versão identificada pelo processo a que pertence e pelo seu número.</summary>
-public readonly record struct LinhagemDeVersaoDeProcesso(Guid ProcessoSeletivoId, int NumeroVersao);
