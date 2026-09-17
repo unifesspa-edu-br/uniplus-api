@@ -942,17 +942,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ciclo fechado num único SaveChanges (cada linha depende da outra liberar o valor
         // primeiro). Detecta o ciclo em termos puramente de domínio (sem conhecer EF/SQL) e
         // recusa com um erro nomeado, em vez de deixar a exceção do EF escapar do Result
-        // pattern.
-        //
-        // A troca entre linhas RETIDAS é o que não tem saída, e não a substituição de uma
-        // coleção por inteiro: ali as linhas são outras, o DELETE libera o slot antes do
-        // INSERT que o quer, e o EF ordena os comandos sozinho — é por isso que duas bancas
-        // da etapa trocam de código sem colidir. Aqui são as mesmas duas linhas disputando o
-        // valor uma da outra, e o EF interrompe antes de emitir SQL, com
-        // "circular dependency was detected". FaseOrdemPermutacaoPersistenciaTests mede as
-        // duas coisas contra o Postgres real. Uma cadeia que termina numa Ordem livre (nunca usada) ou na Ordem de uma
+        // pattern. Uma cadeia que termina numa Ordem livre (nunca usada) ou na Ordem de uma
         // fase REMOVIDA (que libera a linha via DELETE) não é um ciclo — só o é quando a
         // cadeia volta a uma fase já visitada NA MESMA caminhada.
+        //
+        // O que não tem saída é a troca entre linhas RETIDAS, e não a substituição de uma
+        // coleção por inteiro: ali as linhas são outras, e o EF ordena os comandos sozinho,
+        // emitindo o DELETE que libera o slot antes do INSERT que o quer — é por isso que
+        // duas bancas da etapa trocam de código sem colidir, medido em
+        // EtapaBancaPersistenciaTests. Uma cadeia ABERTA de UPDATEs o EF também resolve, como
+        // mostra o deslocamento de ordens em DescarteAposDeslocamentoDeOrdemPersistenciaTests.
+        // Só o ciclo FECHADO não tem ordenação possível: são as mesmas duas linhas disputando
+        // o valor uma da outra, e o EF interrompe antes de emitir SQL, com "circular
+        // dependency was detected", medido em FaseOrdemPermutacaoPersistenciaTests.
+        //
+        // Há um caminho mais fundo, já usado no repositório: trocar o índice único por uma
+        // EXCLUDE constraint GiST DEFERRABLE INITIALLY DEFERRED, mantida fora do modelo do
+        // EF, que adia a checagem para o COMMIT e aceitaria o ciclo num SaveChanges só — é o
+        // que nos_exigencia faz com ex_nos_exigencia_irmaos_ordem. Enquanto fases_cronograma
+        // não fizer o mesmo, a permutação cíclica é recusada aqui e o operador tem de
+        // quebrá-la em duas chamadas.
         Dictionary<int, Guid> origemAntigaPorOrdem = [];
         foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values.Where(f => fasesNovasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId)))
         {
@@ -4612,14 +4621,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // Cronograma de fases (Story #851): a reconciliação é por ORDEM, não por Id —
         // reusa a instância TRACKED cuja Ordem bate com a da fase congelada,
-        // atualizando-a no lugar (mesmo cuidado do EF que as etapas já tomam — ver a
-        // nota em FaseCronograma.AtualizarSnapshot). Sem isso, o caso comum de
-        // restauração (mesmas ordens, dados diferentes) faria DELETE+INSERT do mesmo
-        // valor de Ordem na mesma transação, colidindo em
-        // ux_fases_cronograma_processo_ordem — o EF não infere essa ordem entre
-        // entidades sem relação de FK. O Id da fase É congelado no envelope e
-        // preservado por FaseCronograma.Reidratar; é justamente por a reconciliação
-        // acima poder trocá-lo pelo da instância viva que o mapa abaixo existe.
+        // atualizando-a no lugar (mesmo cuidado que as etapas já tomam — ver a nota em
+        // FaseCronograma.AtualizarSnapshot). O que a sustenta é a identidade da linha, e
+        // não risco de colidir em ux_fases_cronograma_processo_ordem: um índice único sem
+        // filtro entra no grafo de comandos do EF Core, que emite o DELETE liberando a
+        // Ordem antes do INSERT que a quer — medido em EtapaBancaPersistenciaTests, sobre o
+        // índice equivalente das bancas da etapa. Recriar a fase a cada restauração é que
+        // seria o estrago: trocaria Id e CreatedAt de uma fase que nunca deixou de existir.
+        // O Id da fase É congelado no envelope e preservado por FaseCronograma.Reidratar; é
+        // justamente por a reconciliação acima poder trocá-lo pelo da instância viva que o
+        // mapa abaixo existe.
         Dictionary<int, FaseCronograma> fasesTracked = _cronogramaFases.ToDictionary(f => f.Ordem);
         List<FaseCronograma> fases = [];
 
