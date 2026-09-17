@@ -53,6 +53,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public StatusProcesso Status { get; private set; }
 
     /// <summary>
+    /// Início da janela de inscrição da versão publicamente vigente. <see langword="null"/>
+    /// enquanto o processo nunca foi publicado.
+    /// </summary>
+    /// <remarks>
+    /// Cópia do que a configuração congelada já carrega, mantida aqui por uma razão de consulta: a
+    /// vitrine pública ordena por prazo e filtra por situação, e o prazo vive DENTRO do documento
+    /// congelado. Resolver "o prazo da versão vigente de cada processo" a cada leitura seria uma
+    /// correlação por processo, que nenhum índice serve bem.
+    /// <para>
+    /// <b>É estado derivado, e só é correto porque não tem como divergir:</b> as duas transições que
+    /// criam versão vigente — a publicação e a sucessão por retificação — gravam estas colunas na
+    /// MESMA transação, a partir do MESMO <see cref="DadosEdital"/> que alimentou a canonicalização.
+    /// Quem acrescentar uma terceira transição que crie versão precisa gravá-las também; o teste de
+    /// coerência entre coluna e envelope é o que recusa o esquecimento.
+    /// </para>
+    /// </remarks>
+    public DateTimeOffset? PeriodoInscricaoInicioVigente { get; private set; }
+
+    /// <summary>
+    /// Fim da janela de inscrição da versão publicamente vigente — a chave por que a vitrine
+    /// ordena, do prazo mais próximo ao mais distante. <see langword="null"/> enquanto o processo
+    /// nunca foi publicado.
+    /// </summary>
+    public DateTimeOffset? PeriodoInscricaoFimVigente { get; private set; }
+
+    /// <summary>
     /// De onde vêm os candidatos deste certame (§3.4, Story #851) — NOT NULL, exigido na
     /// criação. Deriva o piso mínimo do cronograma de fases; nunca ramifica por
     /// <see cref="TipoProcesso"/>.
@@ -3528,6 +3554,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             instantePublicacao);
 
         Status = StatusProcesso.Publicado;
+        RegistrarPeriodoVigente(dados);
 
         AddDomainEvent(new ProcessoPublicadoEvent(
             Id,
@@ -3905,6 +3932,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // Avro/tópico sem consumidor. O nome do membro EditalId é o histórico: ele é
         // contrato do envelope durável e do schema Avro, e o valor sempre foi o do
         // ato criador.
+        RegistrarPeriodoVigente(dados);
+
         AddDomainEvent(new ProcessoPublicadoEvent(
             Id,
             versao.AtoCriadorId,
@@ -3914,6 +3943,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             versao.VigenteAPartirDe));
 
         return Result<VersaoConfiguracao>.Success(versao);
+    }
+
+    /// <summary>
+    /// Copia a janela de inscrição da versão que acaba de se tornar vigente. Chamado pelas duas
+    /// transições que criam versão, sempre com o mesmo <paramref name="dados"/> que a
+    /// canonicalização congelou.
+    /// </summary>
+    private void RegistrarPeriodoVigente(DadosEdital dados)
+    {
+        PeriodoInscricaoInicioVigente = dados.PeriodoInscricaoInicio;
+        PeriodoInscricaoFimVigente = dados.PeriodoInscricaoFim;
     }
 
     /// <summary>

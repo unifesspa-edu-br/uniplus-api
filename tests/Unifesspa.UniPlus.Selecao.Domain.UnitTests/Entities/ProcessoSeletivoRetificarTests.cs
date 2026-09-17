@@ -145,6 +145,59 @@ public sealed class ProcessoSeletivoRetificarTests
         return processo;
     }
 
+    [Fact(DisplayName = "Publicar copia a janela de inscrição para as colunas por que a vitrine ordena")]
+    public void Publicar_CopiaPeriodoVigente()
+    {
+        // O prazo vive DENTRO do documento congelado. A vitrine pública ordena por ele, e resolver
+        // "o prazo da versão vigente de cada processo" a cada leitura seria uma correlação por
+        // processo que nenhum índice serve bem — daí a cópia, gravada na mesma transação.
+        RelogioManual clock = Relogio();
+        DadosEdital dados = NovosDados();
+
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock,
+            ContextoDeContagemDePrazos.SemCalendario);
+
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        processo.PeriodoInscricaoInicioVigente.Should().Be(dados.PeriodoInscricaoInicio);
+        processo.PeriodoInscricaoFimVigente.Should().Be(dados.PeriodoInscricaoFim);
+    }
+
+    [Fact(DisplayName = "Processo em rascunho não tem janela vigente")]
+    public void Rascunho_NaoTemPeriodoVigente()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+
+        processo.PeriodoInscricaoInicioVigente.Should().BeNull();
+        processo.PeriodoInscricaoFimVigente.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Retificar que muda o prazo atualiza a janela vigente, e não deixa a anterior")]
+    public void Retificar_AtualizaPeriodoVigente()
+    {
+        // É o cenário que a cópia existe para não errar: retificação que encurta a inscrição. Sem
+        // atualizar aqui, a vitrine ordenaria pelo prazo REVOGADO por tempo indeterminado.
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
+        clock.Avancar(TimeSpan.FromMinutes(1));
+
+        DadosEdital prazoEncurtado = DadosEdital.Criar(
+            numero: "001/2026",
+            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+            periodoInscricaoFim: new DateTimeOffset(2026, 1, 15, 23, 59, 59, TimeSpan.FromHours(-3)),
+            documentoEditalId: Guid.CreateVersion7()).Value!;
+
+        Result<VersaoConfiguracao> retificacao = processo.Retificar(
+            prazoEncurtado, versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo,
+            "user-sub-123", motivo: "Encurtamento do prazo de inscrição", clock: clock,
+            ContextoDeContagemDePrazos.SemCalendario);
+
+        retificacao.IsSuccess.Should().BeTrue(retificacao.Error?.Message);
+        processo.PeriodoInscricaoFimVigente.Should().Be(prazoEncurtado.PeriodoInscricaoFim);
+        processo.PeriodoInscricaoFimVigente.Should().NotBe(NovosDados().PeriodoInscricaoFim);
+    }
+
     [Fact(DisplayName = "Retificar processo publicado emite um ato que emenda o ato criador da versão corrente, com motivo")]
     public void Retificar_ProcessoPublicado_EmiteAtoQueEmendaOVigente()
     {
