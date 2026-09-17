@@ -33,6 +33,139 @@ public sealed class EtapaVinculadaAFaseTests
         nome, CaraterEtapa.Classificatoria, Tipo(), peso: 1m, notaMinima: null, ordem: null,
         faseCodigo: faseCodigo).Value!;
 
+    // ── A etapa acontece dentro da fase que a abriga ──
+    //
+    // A matriz abaixo é a mesma que o editor já aplica na tela: dentro passa, bordas
+    // coincidentes passam, transbordo de qualquer lado recusa, e o que não foi declarado não
+    // é conferido.
+
+    [Theory(DisplayName = "Etapa contida na janela da fase é aceita")]
+    [InlineData("2027-03-02T08:00:00Z", "2027-03-09T18:00:00Z")]   // dentro
+    [InlineData("2027-03-01T00:00:00Z", "2027-03-10T00:00:00Z")]   // bordas coincidentes
+    public void EtapaDentroDaFase_Aceita(string inicio, string fim)
+    {
+        ProcessoSeletivo processo = ProcessoComFaseDeMarco();
+
+        Result resultado = processo.DefinirEtapas(
+            [EtapaComJanela("Prova objetiva", "AVALIACAO", Instante(inicio), Instante(fim))],
+            PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Etapa que começa antes da fase é recusada, nomeando etapa e fase")]
+    public void EtapaComecaAntesDaFase_Recusada()
+    {
+        ProcessoSeletivo processo = ProcessoComFaseDeMarco();
+
+        Result resultado = processo.DefinirEtapas(
+            [EtapaComJanela("Prova objetiva", "AVALIACAO",
+                Instante("2027-02-28T08:00:00Z"), Instante("2027-03-09T18:00:00Z"))],
+            PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaComecaAntesDaFase");
+        resultado.Error.Message.Should().Contain("Prova objetiva").And.Contain("AVALIACAO");
+    }
+
+    [Fact(DisplayName = "Etapa que termina depois da fase é recusada, nomeando etapa e fase")]
+    public void EtapaTerminaDepoisDaFase_Recusada()
+    {
+        ProcessoSeletivo processo = ProcessoComFaseDeMarco();
+
+        Result resultado = processo.DefinirEtapas(
+            [EtapaComJanela("Prova objetiva", "AVALIACAO",
+                Instante("2027-03-02T08:00:00Z"), Instante("2027-03-11T18:00:00Z"))],
+            PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaTerminaDepoisDaFase");
+        resultado.Error.Message.Should().Contain("Prova objetiva").And.Contain("AVALIACAO");
+    }
+
+    [Fact(DisplayName = "Etapa que transborda dos dois lados é recusada pelo início, sem somar mensagens")]
+    public void EtapaTransbordaDosDoisLados_RecusaPeloInicio()
+    {
+        ProcessoSeletivo processo = ProcessoComFaseDeMarco();
+
+        Result resultado = processo.DefinirEtapas(
+            [EtapaComJanela("Prova objetiva", "AVALIACAO",
+                Instante("2027-02-28T08:00:00Z"), Instante("2027-03-11T18:00:00Z"))],
+            PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaComecaAntesDaFase");
+    }
+
+    [Fact(DisplayName = "Etapa sem janela não é conferida — em branco ela acontece na janela da fase")]
+    public void EtapaSemJanela_NaoEhConferida()
+    {
+        ProcessoSeletivo processo = ProcessoComFaseDeMarco();
+
+        Result resultado = processo.DefinirEtapas(
+            [Etapa("Prova objetiva", "AVALIACAO")], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Fase sem janela não contém nada — a etapa datada passa")]
+    public void FaseSemJanela_NaoEhConferida()
+    {
+        ProcessoSeletivo processo = Processo();
+        processo.DefinirCronogramaFases([Fase(1, "AVALIACAO")], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirEtapas(
+            [EtapaComJanela("Prova objetiva", "AVALIACAO",
+                Instante("2027-03-02T08:00:00Z"), Instante("2027-03-09T18:00:00Z"))],
+            PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(
+            "exigir data da fase por causa da etapa inventaria obrigação que o cadastro não faz");
+    }
+
+    [Fact(DisplayName = "Etapa sem fase declarada não é conferida contra fase alguma")]
+    public void EtapaSemFaseDeclarada_NaoEhConferida()
+    {
+        ProcessoSeletivo processo = ProcessoComFaseDeMarco();
+
+        Result resultado = processo.DefinirEtapas(
+            [EtapaComJanela("Prova objetiva", faseCodigo: null,
+                Instante("2020-01-01T08:00:00Z"), Instante("2020-01-02T18:00:00Z"))],
+            PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    private static DateTimeOffset Instante(string iso) =>
+        DateTimeOffset.Parse(iso, System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Certame com uma fase AVALIACAO de 1 a 10 de março de 2027.</summary>
+    private static ProcessoSeletivo ProcessoComFaseDeMarco()
+    {
+        ProcessoSeletivo processo = Processo();
+        processo.DefinirCronogramaFases(
+            [FaseComJanela(1, "AVALIACAO", Instante("2027-03-01T00:00:00Z"), Instante("2027-03-10T00:00:00Z"))],
+            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    private static FaseCronograma FaseComJanela(int ordem, string codigo, DateTimeOffset inicio, DateTimeOffset fim) =>
+        FaseCronograma.Criar(
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Propria,
+            agrupaEtapas: false, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: inicio, fim: fim, produtos: [], faseConcluinteCodigo: null,
+            emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+
+    private static EtapaProcesso EtapaComJanela(
+        string nome, string? faseCodigo, DateTimeOffset inicio, DateTimeOffset fim)
+    {
+        EtapaProcesso etapa = Etapa(nome, faseCodigo);
+        etapa.DefinirJanelaEParecer(inicio, fim, emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
+        return etapa;
+    }
+
     [Fact(DisplayName = "Etapa que declara fase presente no cronograma é vinculada ao Id daquela fase")]
     public void EtapaComFaseDeclarada_VinculaAoIdDaFase()
     {
