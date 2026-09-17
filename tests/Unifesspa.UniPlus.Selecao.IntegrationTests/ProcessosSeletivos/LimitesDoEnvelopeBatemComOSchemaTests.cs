@@ -107,6 +107,14 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("Justificativa", LimitesDoEnvelope.Justificativa, typeof(ConfiguracaoDivulgacao), nameof(ConfiguracaoDivulgacao.Justificativa)),
     ];
 
+    /// <summary>
+    /// A escala com que o decodificador lê todo prazo de recurso (o <c>EscalaPadrao</c> do
+    /// codec). A precisão tem constante própria em <c>LimitesDoEnvelope</c>; a escala não —
+    /// e sem confrontá-la uma coluna <c>numeric(18,2)</c> passaria batido, arredondando o
+    /// prazo que o edital prometeu.
+    /// </summary>
+    private const int EscalaDoPrazo = 4;
+
     private static readonly (string Nome, int PrecisaoNoCodec, int EscalaNoCodec, Type Entidade, string Propriedade)[] Precisoes =
     [
         ("PrecisaoEtapa", LimitesDoEnvelope.PrecisaoEtapa, 4, typeof(EtapaProcesso), nameof(EtapaProcesso.Peso)),
@@ -209,8 +217,47 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             nameof(ArgsRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
         })
         {
-            argsPrazoRecurso.FindProperty(campoPrazo)!.GetPrecision()
+            IProperty coluna = argsPrazoRecurso.FindProperty(campoPrazo)!;
+            coluna.GetPrecision()
                 .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo}");
+            coluna.GetScale().Should().Be(EscalaDoPrazo);
+        }
+
+        // A janela recursal da ETAPA guarda a mesma referência de regra e os mesmos prazos que a
+        // da fase, e as colunas dela precisam das mesmas larguras: o decodificador do envelope
+        // usa uma constante só para os dois lados, então uma coluna mais estreita aqui produz
+        // envelope que ele aprova e o INSERT recusa. Confrontar só o lado da fase deixava essa
+        // metade sem gate.
+        IEntityType recursoDaEtapa = contexto.Model.FindEntityType(typeof(RecursoDaEtapa))!;
+
+        IEntityType regraDoRecursoDaEtapa = recursoDaEtapa
+            .GetNavigations()
+            .Single(n => n.Name == nameof(RecursoDaEtapa.Regra))
+            .TargetEntityType;
+
+        regraDoRecursoDaEtapa.FindProperty(nameof(ReferenciaRegra.Codigo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.RegraCodigo, "LimitesDoEnvelope.RegraCodigo espelha regra_codigo de recursos_da_etapa");
+        regraDoRecursoDaEtapa.FindProperty(nameof(ReferenciaRegra.Versao))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.RegraVersao, "LimitesDoEnvelope.RegraVersao espelha regra_versao de recursos_da_etapa");
+
+        IEntityType argsDoRecursoDaEtapa = recursoDaEtapa
+            .GetNavigations()
+            .Single(n => n.Name == nameof(RecursoDaEtapa.Args))
+            .TargetEntityType;
+
+        foreach (string campoPrazo in new[]
+        {
+            nameof(ArgsRegraPrazoRecurso.PrazoValor),
+            nameof(ArgsRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
+            nameof(ArgsRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
+        })
+        {
+            IProperty coluna = argsDoRecursoDaEtapa.FindProperty(campoPrazo)!;
+            coluna.GetPrecision()
+                .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo} em recursos_da_etapa");
+            coluna.GetScale().Should().Be(EscalaDoPrazo,
+                $"a escala de {campoPrazo} é o que o decodificador aceita; uma coluna com menos casas ARREDONDA o prazo " +
+                "em silêncio, e a prova de round-trip não enxerga arredondamento — só o valor restaurado sai diferente do congelado");
         }
 
         // Issue #849 — Unidade administradora (identidadesUnidade).
