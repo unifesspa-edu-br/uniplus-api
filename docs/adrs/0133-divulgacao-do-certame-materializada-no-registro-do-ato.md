@@ -13,62 +13,55 @@ informed:
 
 ## Contexto e enunciado do problema
 
-A [ADR-0131](0131-portal-como-bff-publico-de-dominio.md) fixou de onde o Portal tira o que mostra — um contrato público de leitura publicado por Seleção — e fixou também **quando** um certame aparece: *"um processo aparece no portal quando tem versão de configuração vigente e o ato que a criou está registrado"*. Na seção de confirmações, ela acrescenta que processo inexistente, processo em rascunho e processo cuja publicação teve o registro do ato recusado recebem a mesma resposta de não encontrado.
+A [ADR-0131](0131-portal-como-bff-publico-de-dominio.md) fixou de onde o Portal tira o que mostra e fixou também **quando** um certame aparece: *"um processo aparece no portal quando tem versão de configuração vigente e o ato que a criou está registrado"*. Na seção de confirmações, ela acrescenta que processo inexistente, processo em rascunho e processo cuja publicação teve o registro do ato recusado recebem a mesma resposta de não encontrado.
 
-Esse critério foi implementado e exercitado. O que a implementação revelou não foi um defeito de escrita: foi uma consequência estrutural do critério.
+Esse critério amarra a visibilidade a um fato que vive em **Publicações**, enquanto tudo que a leitura pública precisa para ordenar, filtrar e contar vive em **Seleção**. A fronteira entre os módulos corta uma invariante no meio, e isso tem duas consequências estruturais.
 
-**A existência do ato é fato de Publicações; o dado que ordena, filtra e conta vive em Seleção; e a visibilidade depende dos dois.** A fronteira entre os módulos corta uma invariante no meio, e toda dificuldade encontrada é a mesma aparecendo em lugares diferentes:
+**A primeira é de acoplamento.** Resolver visibilidade a cada leitura obriga a consultar o outro módulo no caminho da requisição — numa superfície anônima, com pico previsível na abertura de inscrições. Pior, o recorte por situação e a contagem por situação são agregações sobre um conjunto que Seleção não consegue definir sozinha: ela não sabe quais dos seus certames são visíveis. O resultado é que a ordem e os números podem discordar do conteúdo servido.
 
-- a leitura do certame descia a linhagem de versões para achar a mais nova com ato registrado;
-- essa descida exigia consultar Publicações **no caminho da requisição**, numa rota anônima de pico previsível — com o acoplamento de disponibilidade que isso traz;
-- a vitrine ordenava e contava por uma coluna denormalizada em Seleção que descrevia a publicação mais nova, **inclusive a retificação cujo ato ainda não registrou** — o item exibia um prazo e era posicionado por outro;
-- a página da vitrine encolhia depois de formada, porque o descarte de quem não tem ato só podia acontecer fora do SQL;
-- o título do certame não existia no contrato, porque não vive na configuração congelada e não havia instante em que congelá-lo.
-
-Há ainda uma tensão de mérito. O critério da ADR-0131 retira do ar um certame **que já era público** quando o ato de uma retificação não se confirma — e a recusa de mérito é terminal, então a retirada é indefinida. Publicação é ato público. Torná-la invisível fere a transparência: é para isso que existe retificação de ato, e não supressão.
+**A segunda é de mérito.** O critério retira do ar um certame **que já era público** quando o ato de uma retificação não se confirma. A recusa de mérito é terminal, então a retirada é indefinida. Publicação é ato público, e torná-la invisível fere a transparência: é para isso que existe retificação de ato, e não supressão.
 
 ## Drivers da decisão
 
 - **Transparência da publicação.** O que foi publicado com ato normativo não sai do ar porque um ato posterior falhou.
 - **Não divulgar certame sem ato correspondente** — o driver original da ADR-0131, que permanece.
-- **Leitura pública barata e previsível.** É a primeira superfície anônima de alto valor do sistema, com pico na abertura de inscrições.
-- **Sem acoplamento de disponibilidade entre módulos no caminho da requisição.**
-- **Ordenação, filtro e contagem coerentes entre si e com o conteúdo servido.**
+- **Sem acoplamento de disponibilidade entre módulos no caminho da requisição**, numa superfície anônima de alto valor.
+- **Ordem, recorte, contagem e conteúdo coerentes entre si**, sem depender de disciplina de quem escreve a consulta.
 
 ## Opções consideradas
 
-- **A. Manter o critério e a leitura sob demanda** — descer a linhagem a cada requisição e perguntar a Publicações.
-- **B. Espelhar o desfecho do registro em Seleção**, mantendo a projeção sob demanda.
-- **C. Materializar a projeção pública quando o ato se registra** — a alternativa que a ADR-0131 já nomeia nas suas opções, avaliada e não escolhida à época.
+- **A. Manter o critério e resolver a visibilidade a cada leitura**, consultando Publicações sob demanda.
+- **B. Espelhar em Seleção o desfecho do registro**, mantendo a projeção pública calculada a cada leitura.
+- **C. Materializar a projeção pública no instante em que o ato se registra** — alternativa que a ADR-0131 já nomeia entre as suas opções, avaliada e não escolhida à época.
 
 ## Resultado da decisão
 
 **Escolhida: "C — materializar a projeção pública quando o ato se registra".**
 
-Publicações, ao registrar o ato com sucesso, emite o desfecho na mesma transação que grava o ato. Seleção consome, projeta o certame a partir da versão de configuração correspondente e grava uma linha numa tabela própria.
+Publicações confirma o registro do ato ao domínio que publicou, com a mesma durabilidade com que recebeu a requisição. Seleção, ao receber a confirmação, materializa a projeção pública do certame a partir da versão de configuração correspondente.
 
-### A existência da linha é a publicidade
+### A existência do registro é a publicidade
 
-Não há coluna de "visível". **Não existir e não ser público são a mesma coisa**, e é dessa identidade que decorre o resto:
+Não há estado de "visível" a consultar. **Não existir e não ser público são a mesma coisa**, e é dessa identidade que decorre o resto:
 
-- **Abertura sem ato confirmado**: não há linha, o certame não é divulgado. Ele nunca foi público, e divulgá-lo sem ato normativo é o que o critério existe para impedir — o driver da ADR-0131 é preservado inteiro.
-- **Retificação cujo ato não se confirma**: a linha não avança, e o certame permanece no ar com o conteúdo anterior. Isso **emenda** o critério da ADR-0131, que mandava retirá-lo.
+- **Abertura sem ato confirmado**: não há projeção, e o certame não é divulgado. Ele nunca foi público, e divulgá-lo sem ato normativo é o que o critério existe para impedir — o driver original da ADR-0131 é preservado inteiro.
+- **Retificação cujo ato não se confirma**: a projeção não avança, e o certame permanece no ar com o conteúdo anterior. Isso **emenda** o critério da ADR-0131, que mandava retirá-lo.
 
-A emenda não encobre a retificação. Enquanto o ato dela não existe, **ela não tem publicidade nenhuma** — o que se serve é o último estado que tem ato normativo. A recusa de mérito continua terminal, na fila morta, como estado que alguém reconcilia; o público não paga por ela com a ausência do certame.
+A emenda não encobre a retificação. Enquanto o ato dela não existe, **ela não tem publicidade nenhuma** — o que se serve é o último estado que tem ato normativo. A recusa de mérito permanece terminal e permanece sendo estado que alguém reconcilia; o público deixa de pagar por ela com a ausência do certame.
 
-### O que a leitura pública passa a ser
+### A leitura pública deixa de depender de outro módulo
 
-Uma consulta de tabela única. Ordenar por prazo, filtrar por situação, contar por situação e servir o detalhe olham a mesma linha, e por isso não podem discordar entre si nem do conteúdo entregue.
+Ordem, recorte por situação, contagem e detalhe passam a resolver sobre a mesma projeção. A coerência entre eles deixa de ser regra a seguir e passa a ser propriedade da forma: não há duas fontes de onde discordar.
 
-Some, por consequência: a resolução de linhagem, o leitor cross-módulo no caminho da requisição com o seu opt-in de service location, a coluna denormalizada de prazo com o seu índice e a invariante de mantê-la, a interpretação do documento congelado a cada linha de cada página, e o descarte posterior de candidatos.
+O custo de interpretar a configuração congelada passa a ser pago uma vez por publicação, em vez de uma vez por leitura.
 
-### O título é congelado no instante da divulgação
+### O que a projeção congela
 
-O título do certame é atributo do processo, não da configuração congelada. A materialização abre um instante que antes não existia — aquele em que o certame passa a ser público — e é nele que o título é lido e congelado. Uma edição posterior do nome só alcança o público quando o ato da retificação correspondente se confirma, como todo o resto do conteúdo.
+Além do que a configuração congelada carrega, a projeção congela o **título** do certame. Ele é atributo do processo, não da configuração, e antes não havia instante em que fixá-lo. A materialização cria esse instante: uma edição posterior do título só alcança o público quando o ato da retificação correspondente se confirma, como todo o resto do conteúdo.
 
-### Reconstruível, nunca fonte
+### Derivado, nunca fonte
 
-A tabela é derivada: tudo nela sai da versão de configuração congelada, que permanece a fonte de verdade. Perdê-la custa reprojetar, nunca dado.
+A projeção é reconstruível: tudo nela sai da versão de configuração congelada, que permanece a fonte de verdade. Perdê-la custa reprojetar, nunca dado.
 
 ## Consequências
 
@@ -76,16 +69,14 @@ A tabela é derivada: tudo nela sai da versão de configuração congelada, que 
 
 - O certame publicado não sai do ar por falha em ato posterior.
 - A leitura pública deixa de depender da disponibilidade de outro módulo.
-- Ordenação, contadores e conteúdo passam a ser coerentes por construção, não por regra.
-- O documento projetado tem forma fixa: um bloco novo na configuração congelada não alcança o público nem por descuido.
-- O custo de interpretar o documento congelado passa a ser pago uma vez por publicação, em vez de uma vez por requisição.
+- Ordem, contadores e conteúdo passam a ser coerentes por construção.
+- A forma da projeção é fechada: um bloco novo na configuração congelada não alcança o público por descuido.
 
 ### Negativas
 
-- **Há um instante em que o certame está publicado e ainda não é público** — entre o commit da publicação e o dreno da mensagem de registro. Ele é o mesmo instante que o critério anterior já produzia; o que muda é que ele deixa de reaparecer a cada retificação.
-- **Estado derivado a manter.** Uma mudança na forma da projeção exige reprojetar o que já está divulgado, e a versão do formato precisa subir junto.
-- **Uma escrita a mais no consumo do registro do ato**, não na transação de publicação.
-- A recusa de mérito continua exigindo reconciliação humana, e agora o sintoma visível é mais silencioso: o certame fica no conteúdo antigo em vez de sumir. Exige alarme sobre a fila morta.
+- **Há um intervalo em que o certame está publicado e ainda não é público** — entre a publicação e a confirmação do registro. É o mesmo intervalo que o critério anterior já produzia; o que muda é que ele deixa de reaparecer a cada retificação.
+- **Estado derivado a manter.** Mudar a forma da projeção exige reprojetar o que já está divulgado, e versionar o formato.
+- A recusa de mérito continua exigindo reconciliação humana, e agora o sintoma é mais silencioso: o certame fica no conteúdo antigo em vez de sumir. Exige alarme sobre o que morre na fila.
 
 ### Neutras
 
@@ -93,13 +84,13 @@ A tabela é derivada: tudo nela sai da versão de configuração congelada, que 
 
 ## Confirmação
 
-Exercitado contra o host real, com Postgres e fila durável:
+As três propriedades que a decisão promete são verificáveis em integração, contra a infraestrutura real:
 
-- o retorno da publicação volta e o certame ainda não é público; a linha nasce quando o ato chega pela fila;
+- a publicação retorna e o certame ainda não é público; ele passa a ser quando o registro do ato se confirma;
 - a retificação avança a divulgação quando o ato dela se registra;
-- **a retificação cujo ato é recusado por mérito não avança a linha, e o certame permanece no ar com o conteúdo anterior.**
+- **a retificação cujo ato é recusado por mérito não avança a divulgação, e o certame permanece no ar com o conteúdo anterior.**
 
-O terceiro cenário é a propriedade que decide esta ADR, e é o que a separa da anterior.
+O terceiro é o que separa esta decisão da anterior.
 
 ## Emenda à ADR-0131
 
