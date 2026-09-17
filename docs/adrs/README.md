@@ -161,6 +161,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0130](0130-integracao-com-o-sigaa-por-consulta-http-paginada.md) | Integração com o SIGAA por consulta HTTP paginada, não por tópico de mensageria | accepted | 2026-09-02 |
 | [0131](0131-portal-como-bff-publico-de-dominio.md) | O Portal do candidato consome um contrato público de Seleção, não o envelope congelado | accepted | 2026-09-13 |
 | [0132](0132-armazenamento-publico-separado-para-documento-publicado.md) | Documento tornado público vive em armazenamento separado, com leitura anônima e endereço imutável | accepted | 2026-09-13 |
+| [0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) | A divulgação do certame é materializada quando o ato normativo se registra — a existência da linha é a publicidade | proposed | 2026-09-17 |
 
 > **Nota de numeração:** a sequência de `0001` a `0132` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0133+`.
 
