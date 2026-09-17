@@ -70,6 +70,23 @@ A resposta de um endpoint de coleção segue a [ADR-0025](0025-wire-formato-suce
 
 Total de itens **não é exposto por padrão**. Endpoints que precisam expor total declaram opt-in explícito via parâmetro de query (ex.: `?include_total=true`) e o resultado é retornado como header `X-Total-Count-Estimated`, com valor obtido de estimadores eficientes (`pg_class.reltuples` ou similares); contagem exata é custosa o bastante para ser opt-in caso a caso, com justificativa no endpoint.
 
+### Total exato e total estimado
+
+**Acrescentado pós-implementação (task #1513, 2026-09-17).** O parágrafo acima admite a contagem exata como opt-in por endpoint, mas não diz em que header ela viaja — e o único header nomeado ali, `X-Total-Count-Estimated`, mentiria sobre um valor que é exato. A [ADR-0025](0025-wire-formato-sucesso-body-direto.md) já cita `X-Total-Count` pelo nome e delega a definição a esta decisão, que até aqui não a fazia.
+
+O caminho do estimador não serve toda listagem, e o motivo é estrutural: `pg_class.reltuples` conta a **tabela**, não a consulta. Numa listagem com busca ou filtro, o número ao lado da tabela divergiria do que a tabela mostra assim que alguém filtrasse. Ele também não garante o zero exato nem o valor imediatamente após uma criação ou remoção. A preocupação de custo que originou a decisão — `COUNT(*)` linear sobre dezenas de milhares de inscrições — é real onde a coleção é grande, e é por isso que a contagem exata continua sendo escolha por endpoint, não capacidade automática.
+
+A emenda fixa:
+
+1. **O opt-in permanece.** Sem o parâmetro de query, nenhum header de total é emitido, e quem não pede não paga a contagem.
+2. **Contagem exata responde em `X-Total-Count`.** `X-Total-Count-Estimated` fica reservado ao valor vindo de estimador, e os dois **nunca coexistem** na mesma resposta: um número só, com o nome que diz o que ele é.
+3. **A contagem exata é opt-in por endpoint**, com a justificativa registrada na documentação do endpoint. Adotar o total exato numa coleção que cresce sem teto é decisão a defender, não default a herdar.
+4. **O total é contado sobre a MESMA consulta que produziu a página** — filtros de query, busca e o filtro global de exclusão lógica —, nunca sobre a tabela inteira. Um número que promete uma lista diferente da que o filtro traz é um rótulo que mente.
+5. **O endpoint que adota o total declara o header no contrato OpenAPI**, junto de `Link` e `X-Page-Size`. Cliente gerado só enxerga header declarado; sem isso, a tela pede a contagem e não tem de onde lê-la.
+6. **E o declara na lista de headers expostos pelo CORS.** Uma resposta de origem cruzada só entrega ao JavaScript sete headers considerados seguros, e nenhum dos nossos é um deles. Declarar no contrato sem expor no CORS produz o pior desfecho possível: o servidor emite, o navegador recebe, a documentação promete, e a leitura devolve nulo — sem erro, sem status diferente, sem nada a investigar. Os dois passos andam juntos ou o header não existe para quem consome do navegador.
+
+A paginação por cursor não muda: esta é emenda datada da forma da resposta, não supersessão.
+
 ### Parâmetros de query aceitos
 
 - **`cursor`** (string opaca) — cursor recebido em `Link` da página anterior. Ausência indica primeira página.
