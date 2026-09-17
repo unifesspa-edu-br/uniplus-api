@@ -332,14 +332,6 @@ public static class RetificarProcessoSeletivoCommandHandler
             .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
             .ConfigureAwait(false);
 
-        // O ato acabou de ser registrado: o rascunho que o operador guardava enquanto o
-        // transcrevia perdeu a razão de existir, e com ele sai do banco o nome de quem
-        // assinou. Todo caminho que registra ato apaga — nenhum deles ganha isso de graça,
-        // porque a raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
-        await rascunhoDePublicacaoRepository
-            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -354,8 +346,26 @@ public static class RetificarProcessoSeletivoCommandHandler
             // transação. É aqui que a linearidade da cadeia é garantida — Publicações
             // também a barra, mas só no consumo da fila, depois do commit.
             // Filtro do `when` garante que outras exceções propagam intactas.
+
+            // Descarta o rastreamento antes de devolver a recusa. O Wolverine chama
+            // SaveChangesAsync de novo ao término normal do handler, e sem a limpeza a mesma
+            // violação estoura fora deste catch: o erro que acabou de ser traduzido chegaria
+            // ao cliente como 500 em vez da recusa que ele descreve. A captura local é
+            // obrigatória porque o endpoint exige chave de idempotência (ADR-0119).
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return (Result.Failure(erroVersao), []);
         }
+
+        // Só com a versão gravada o rascunho perde a razão de existir, e só aqui sai do banco
+        // o nome de quem assinou. Apagar antes do flush punha a transcrição do operador numa
+        // aposta: ApagarDoProcessoAsync emite o DELETE na hora, e qualquer recusa daí em
+        // diante devolveria "nada foi publicado" com os sete campos do Diário Oficial já
+        // destruídos — inclusive o rascunho do colega, que a exclusão alcança por ser por
+        // processo. Todo caminho que registra ato apaga: nenhum ganha isso de graça, porque a
+        // raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
+        await rascunhoDePublicacaoRepository
+            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
 
         // ADR-0108: a retificação segue a MESMA orquestração da abertura — a requisição do
         // ato viaja no outbox, na transação que acabou de gravar a nova versão. O que muda

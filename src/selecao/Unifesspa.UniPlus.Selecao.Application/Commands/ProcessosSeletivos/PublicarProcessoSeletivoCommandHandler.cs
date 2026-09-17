@@ -289,14 +289,6 @@ public static class PublicarProcessoSeletivoCommandHandler
             .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
             .ConfigureAwait(false);
 
-        // O ato acabou de ser registrado: o rascunho que o operador guardava enquanto o
-        // transcrevia perdeu a razão de existir, e com ele sai do banco o nome de quem
-        // assinou. Todo caminho que registra ato apaga — nenhum deles ganha isso de graça,
-        // porque a raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
-        await rascunhoDePublicacaoRepository
-            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -310,8 +302,26 @@ public static class PublicarProcessoSeletivoCommandHandler
             // índice deixa passar uma só. É o backstop transacional que substitui o
             // antigo índice de abertura única, e sem literal de tipo de ato no filtro.
             // Filtro do `when` garante que outras exceções propagam intactas.
+
+            // Descarta o rastreamento antes de devolver a recusa. O Wolverine chama
+            // SaveChangesAsync de novo ao término normal do handler, e sem a limpeza a mesma
+            // violação estoura fora deste catch: o erro que acabou de ser traduzido chegaria
+            // ao cliente como 500 em vez da recusa que ele descreve. A captura local é
+            // obrigatória porque o endpoint exige chave de idempotência (ADR-0119).
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return (Result.Failure(erroVersao), []);
         }
+
+        // Só com a versão gravada o rascunho perde a razão de existir, e só aqui sai do banco
+        // o nome de quem assinou. Apagar antes do flush punha a transcrição do operador numa
+        // aposta: ApagarDoProcessoAsync emite o DELETE na hora, e qualquer recusa daí em
+        // diante devolveria "nada foi publicado" com os sete campos do Diário Oficial já
+        // destruídos — inclusive o rascunho do colega, que a exclusão alcança por ser por
+        // processo. Todo caminho que registra ato apaga: nenhum ganha isso de graça, porque a
+        // raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
+        await rascunhoDePublicacaoRepository
+            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
 
         // ADR-0108: a requisição de registro do ato viaja como cascading message, junto dos
         // domain events — o Wolverine instala o envelope no outbox DENTRO da transação que
