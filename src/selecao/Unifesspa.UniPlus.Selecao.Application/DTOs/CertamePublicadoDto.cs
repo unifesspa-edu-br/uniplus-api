@@ -1,7 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
-/// <summary>Tipo do processo, como congelado na publicação.</summary>
-public sealed record TipoProcessoCertameDto(string Codigo, string Nome);
+/// <summary>
+/// Par código/nome de um item de catálogo congelado na publicação — serve tanto ao tipo do
+/// processo quanto ao tipo de uma etapa.
+/// </summary>
+/// <remarks>
+/// Nome deliberadamente genérico: um schema chamado "tipo de processo" referenciado pelo campo
+/// <c>tipoEtapa</c> diria ao integrador que o tipo de uma etapa é um tipo de processo.
+/// </remarks>
+public sealed record TipoCatalogadoCertameDto(string Codigo, string Nome);
 
 /// <summary>
 /// Janela de inscrição e o identificador legível do edital. O número é opcional: nem toda
@@ -48,7 +55,7 @@ public sealed record UnidadeAdministradoraCertameDto(
 public sealed record EtapaCertameDto(
     string Nome,
     string Carater,
-    TipoProcessoCertameDto TipoEtapa,
+    TipoCatalogadoCertameDto TipoEtapa,
     string? Peso,
     string? NotaMinima,
     int? Ordem,
@@ -94,12 +101,20 @@ public sealed record FormatosAceitosCertameDto(bool Qualquer, IReadOnlyList<stri
 /// Uma exigência documental, reduzida ao que o candidato precisa saber para reunir os documentos.
 /// </summary>
 /// <remarks>
-/// Rótulo, obrigatoriedade e formatos aceitos, e nada mais. O que motiva juridicamente cada
-/// exigência, a condição que a dispara, a fase em que ela incide e os metadados dos fatos que a
-/// condicionam ficam fora: a página do certame não explica o requisito legal de cada exigência.
+/// Rótulo, aplicabilidade, obrigatoriedade e formatos aceitos, e nada mais. O que motiva
+/// juridicamente cada exigência, a condição que a dispara, a fase em que ela incide e os metadados
+/// dos fatos que a condicionam ficam fora: a página do certame não explica o requisito legal de
+/// cada exigência.
+/// <para>
+/// <see cref="Aplicabilidade"/> acompanha <see cref="Obrigatorio"/> porque sozinha a
+/// obrigatoriedade mente: uma exigência condicional incide apenas sobre quem satisfaz o gatilho, e
+/// publicá-la como obrigatória faria o candidato de ampla concorrência reunir documento que não lhe
+/// é pedido.
+/// </para>
 /// </remarks>
 public sealed record ExigenciaDocumentalCertameDto(
     string Rotulo,
+    string Aplicabilidade,
     bool Obrigatorio,
     FormatosAceitosCertameDto Formatos);
 
@@ -129,7 +144,7 @@ public sealed record AtendimentoCertameDto(
 public sealed record CertamePublicadoDto(
     Guid ProcessoSeletivoId,
     Guid AtoCriadorId,
-    TipoProcessoCertameDto TipoProcesso,
+    TipoCatalogadoCertameDto TipoProcesso,
     PeriodoInscricaoCertameDto Periodo,
     LocalidadeCertameDto Localidade,
     UnidadeAdministradoraCertameDto UnidadeAdministradora,

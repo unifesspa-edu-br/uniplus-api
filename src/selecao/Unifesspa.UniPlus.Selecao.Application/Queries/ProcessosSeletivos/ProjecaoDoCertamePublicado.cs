@@ -28,7 +28,7 @@ internal static class ProjecaoDoCertamePublicado
     public static Result<CertamePublicadoDto> Projetar(Guid processoSeletivoId, Guid atoCriadorId, JsonObject envelope)
     {
         if (!TentarObjeto(envelope, "tipoProcesso", out JsonObject? tipoProcessoNode)
-            || !TentarTipoNomeado(tipoProcessoNode, out TipoProcessoCertameDto? tipoProcesso))
+            || !TentarTipoNomeado(tipoProcessoNode, out TipoCatalogadoCertameDto? tipoProcesso))
         {
             return Recusar("tipoProcesso");
         }
@@ -133,7 +133,7 @@ internal static class ProjecaoDoCertamePublicado
             $"O bloco '{bloco}' da configuração congelada não tem a forma esperada — a leitura pública do certame foi recusada em vez de projetar parcialmente."));
 
     /// <summary>Par código/nome, a forma que tipo de processo e tipo de etapa compartilham.</summary>
-    private static bool TentarTipoNomeado(JsonObject? objeto, [NotNullWhen(true)] out TipoProcessoCertameDto? tipo)
+    private static bool TentarTipoNomeado(JsonObject? objeto, [NotNullWhen(true)] out TipoCatalogadoCertameDto? tipo)
     {
         tipo = null;
         if (!TentarTexto(objeto, "codigo", out string codigo) || !TentarTexto(objeto, "nome", out string nome))
@@ -141,7 +141,7 @@ internal static class ProjecaoDoCertamePublicado
             return false;
         }
 
-        tipo = new TipoProcessoCertameDto(codigo, nome);
+        tipo = new TipoCatalogadoCertameDto(codigo, nome);
         return true;
     }
 
@@ -221,7 +221,7 @@ internal static class ProjecaoDoCertamePublicado
                 || !TentarTexto(etapa, "nome", out string nome)
                 || !TentarTexto(etapa, "carater", out string carater)
                 || !TentarObjeto(etapa, "tipoEtapa", out JsonObject? tipoEtapaNode)
-                || !TentarTipoNomeado(tipoEtapaNode, out TipoProcessoCertameDto? tipoEtapa)
+                || !TentarTipoNomeado(tipoEtapaNode, out TipoCatalogadoCertameDto? tipoEtapa)
                 || !TentarTextoOpcional(etapa, "peso", out string? peso)
                 || !TentarTextoOpcional(etapa, "notaMinima", out string? notaMinima)
                 || !TentarInteiroOpcional(etapa, "ordem", out int? ordem)
@@ -301,13 +301,14 @@ internal static class ProjecaoDoCertamePublicado
         {
             if (item is not JsonObject exigencia
                 || !TentarTexto(exigencia, "tipoDocumentoNome", out string rotulo)
+                || !TentarTexto(exigencia, "aplicabilidade", out string aplicabilidade)
                 || !TentarBooleano(exigencia, "obrigatorio", out bool obrigatorio)
                 || !TentarFormatos(exigencia, out FormatosAceitosCertameDto? formatos))
             {
                 return false;
             }
 
-            lidas.Add(new ExigenciaDocumentalCertameDto(rotulo, obrigatorio, formatos));
+            lidas.Add(new ExigenciaDocumentalCertameDto(rotulo, aplicabilidade, obrigatorio, formatos));
         }
 
         exigencias = lidas;
@@ -328,13 +329,16 @@ internal static class ProjecaoDoCertamePublicado
             return false;
         }
 
+        // A bicondicional é CONFERIDA, não só documentada: "aceita qualquer formato" com uma lista
+        // de formatos ao lado são duas afirmações contraditórias, e repassá-las publicaria a
+        // contradição num documento com efeito jurídico — o resto desta classe recusa forma
+        // inesperada em vez de repassar, e aqui não é diferente.
         if (listaNode is null)
         {
-            formatos = new FormatosAceitosCertameDto(qualquer, null);
-            return true;
+            return qualquer && Aceitar(out formatos, new FormatosAceitosCertameDto(true, null));
         }
 
-        if (listaNode is not JsonArray array)
+        if (qualquer || listaNode is not JsonArray array)
         {
             return false;
         }
@@ -350,7 +354,14 @@ internal static class ProjecaoDoCertamePublicado
             lista.Add(formato);
         }
 
-        formatos = new FormatosAceitosCertameDto(qualquer, lista);
+        formatos = new FormatosAceitosCertameDto(false, lista);
+        return true;
+    }
+
+    /// <summary>Atribui o valor e devolve <see langword="true"/>, para caber numa expressão.</summary>
+    private static bool Aceitar(out FormatosAceitosCertameDto? destino, FormatosAceitosCertameDto valor)
+    {
+        destino = valor;
         return true;
     }
 
