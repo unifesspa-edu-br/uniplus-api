@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
+using System.Globalization;
+
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -281,6 +283,166 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
                 && _context.ProcessosSeletivos.Any(p => p.Id == processoSeletivoId))
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    public async Task<(IReadOnlyList<CandidatoDaVitrine> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
+        ListarVitrineAsync(
+            DateTimeOffset instanteSeForAPrimeiraPagina,
+            SituacaoDoCertame situacao,
+            string? afterSortKey,
+            Guid? afterId,
+            int limit,
+            PaginationDirection direction,
+            CancellationToken cancellationToken = default)
+    {
+        DateTimeOffset instanteUtc = (InstanteDaAncora(afterSortKey) ?? instanteSeForAPrimeiraPagina).ToUniversalTime();
+
+        IQueryable<ProcessoSeletivo> query = _context.ProcessosSeletivos
+            .AsNoTracking()
+            // Janela nula = nunca publicado. É também o que mantém a chave de ordenação não-nula,
+            // que o motor de seek exige: com NULL o WHERE do seek não casa e a página vem vazia.
+            .Where(p => p.PeriodoInscricaoFimVigente != null);
+
+        query = situacao switch
+        {
+            SituacaoDoCertame.InscricoesAbertas => query.Where(p => p.PeriodoInscricaoFimVigente >= instanteUtc),
+            SituacaoDoCertame.Encerradas => query.Where(p => p.PeriodoInscricaoFimVigente < instanteUtc),
+            _ => query,
+        };
+
+        // A ordem por urgência é uma ROTAÇÃO da ordem de prazo no ponto `instante`: o booleano põe
+        // quem já encerrou depois, e dentro de cada segmento o prazo crescente é a mesma ordem.
+        // O identificador fecha a ordem total — sem ele, dois certames que encerram no mesmo
+        // instante trocariam de lugar entre páginas.
+        OrderedKeysetPage<ProcessoSeletivo> page = await OrderedKeysetCursor
+            .ApplyAsync(
+                query,
+                b => b
+                    .Ascending(p => p.PeriodoInscricaoFimVigente!.Value < instanteUtc)
+                    .Ascending(p => p.PeriodoInscricaoFimVigente!.Value)
+                    .Ascending(p => p.Id),
+                p => SortKeyDaVitrine(p, instanteUtc),
+                (sortKey, id) => AncoraDaVitrine(sortKey, id),
+                afterSortKey,
+                afterId,
+                limit,
+                direction,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        CandidatoDaVitrine[] itens =
+            [.. page.Items.Select(static p => new CandidatoDaVitrine(p.Id, p.Nome, p.PeriodoInscricaoFimVigente!.Value))];
+
+        return (itens, instanteUtc, page.Previous, page.Next);
+    }
+
+    /// <summary>
+    /// Chave de ordenação da âncora: o segmento e o prazo, nessa ordem. O prazo vai em forma
+    /// canônica UTC — ordem lexicográfica e ordem cronológica coincidem nesse formato, e ele é
+    /// estável entre culturas.
+    /// </summary>
+    private static string SortKeyDaVitrine(ProcessoSeletivo processo, DateTimeOffset instanteUtc)
+    {
+        DateTimeOffset prazo = processo.PeriodoInscricaoFimVigente!.Value;
+
+        // O instante entra na chave para sobreviver ao percurso. A segmentação entre abertos e
+        // encerrados depende dele, e recomputá-lo a cada página moveria de segmento o certame cujo
+        // prazo vence no meio da navegação — ele apareceria duas vezes ou sumiria.
+        return CompositeSortKey.Serialize(
+            Instante(instanteUtc),
+            prazo < instanteUtc ? "1" : "0",
+            Instante(prazo));
+    }
+
+    /// <summary>Instante em forma canônica UTC — ordem lexicográfica e cronológica coincidem.</summary>
+    private static string Instante(DateTimeOffset valor) =>
+        valor.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Instante congelado na primeira página, lido de volta da âncora. <see langword="null"/> quando
+    /// não há âncora — é a primeira página, e o relógio decide.
+    /// </summary>
+    private static DateTimeOffset? InstanteDaAncora(string? sortKey)
+    {
+        if (!CompositeSortKey.TryDeserialize(sortKey, 3, out IReadOnlyList<string> partes)
+            || !DateTimeOffset.TryParse(
+                partes[0], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset instante))
+        {
+            return null;
+        }
+
+        return instante;
+    }
+
+    private static object AncoraDaVitrine(string sortKey, Guid id)
+    {
+        if (!CompositeSortKey.TryDeserialize(sortKey, 3, out IReadOnlyList<string> partes)
+            || !DateTimeOffset.TryParse(
+                partes[2], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset prazo))
+        {
+            throw new CursorAnchorMismatchException("Âncora da vitrine fora da forma esperada.");
+        }
+
+        return new { Encerrado = partes[1] == "1", Prazo = prazo, Id = id };
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<LinhagemDeVersao>>> ObterLinhagensVigentesAsync(
+        IReadOnlyCollection<Guid> processoSeletivoIds,
+        DateTimeOffset instante,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(processoSeletivoIds);
+
+        if (processoSeletivoIds.Count == 0)
+        {
+            return new Dictionary<Guid, IReadOnlyList<LinhagemDeVersao>>();
+        }
+
+        DateTimeOffset instanteUtc = instante.ToUniversalTime();
+        Guid[] ids = [.. processoSeletivoIds];
+
+        var linhas = await _context.VersoesConfiguracao
+            .AsNoTracking()
+            .Where(v => ids.Contains(v.ProcessoSeletivoId)
+                && v.VigenteAPartirDe <= instanteUtc
+                && _context.ProcessosSeletivos.Any(p => p.Id == v.ProcessoSeletivoId))
+            .OrderByDescending(v => v.VigenteAPartirDe)
+            .ThenByDescending(v => v.NumeroVersao)
+            .Select(v => new { v.ProcessoSeletivoId, Degrau = new LinhagemDeVersao(v.NumeroVersao, v.AtoCriadorId) })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return linhas
+            .GroupBy(static l => l.ProcessoSeletivoId)
+            .ToDictionary(
+                static g => g.Key,
+                static g => (IReadOnlyList<LinhagemDeVersao>)[.. g.Select(static l => l.Degrau)]);
+    }
+
+    public async Task<IReadOnlyList<VersaoConfiguracao>> ObterVersoesPorNumeroAsync(
+        IReadOnlyCollection<LinhagemDeVersaoDeProcesso> versoes,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(versoes);
+
+        if (versoes.Count == 0)
+        {
+            return [];
+        }
+
+        // Um IN por processo e outro por número, com o par conferido em memória: o par composto não
+        // tem tradução SQL direta no provider, e a sobra que o filtro largo traz é descartada aqui.
+        Guid[] processoIds = [.. versoes.Select(static v => v.ProcessoSeletivoId).Distinct()];
+        int[] numeros = [.. versoes.Select(static v => v.NumeroVersao).Distinct()];
+        HashSet<LinhagemDeVersaoDeProcesso> procurados = [.. versoes];
+
+        List<VersaoConfiguracao> candidatas = await _context.VersoesConfiguracao
+            .AsNoTracking()
+            .Where(v => processoIds.Contains(v.ProcessoSeletivoId) && numeros.Contains(v.NumeroVersao))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. candidatas.Where(v => procurados.Contains(new LinhagemDeVersaoDeProcesso(v.ProcessoSeletivoId, v.NumeroVersao)))];
     }
 
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)

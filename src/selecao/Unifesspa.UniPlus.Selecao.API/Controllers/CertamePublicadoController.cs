@@ -5,6 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,13 +33,62 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
 public sealed class CertamePublicadoController : ControllerBase
 {
+    private const string RecursoDaVitrine = "certames";
+
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
 
-    public CertamePublicadoController(IQueryBus queryBus, IDomainErrorMapper mapper)
+    private readonly TimeProvider _relogio;
+
+    public CertamePublicadoController(IQueryBus queryBus, IDomainErrorMapper mapper, TimeProvider relogio)
     {
         _queryBus = queryBus;
         _mapper = mapper;
+        _relogio = relogio;
+    }
+
+    /// <summary>
+    /// Vitrine pública: os certames publicados, ordenados por urgência — quem ainda recebe inscrição
+    /// primeiro, do prazo mais próximo ao mais distante, e os encerrados depois.
+    /// </summary>
+    /// <remarks>
+    /// <b>A página pode vir menor que o limite pedido, inclusive vazia com continuação disponível.</b>
+    /// A visibilidade exige ato normativo registrado, que vive fora deste módulo: a ordenação e o
+    /// corte da página acontecem no banco, e o descarte de quem ainda não tem ato acontece depois.
+    /// Quem navega deve seguir a âncora de continuação, nunca concluir fim de coleção por página
+    /// vazia. O descarte é raro por construção — só alcança certame entre a publicação e o registro
+    /// do ato, ou cuja publicação teve o registro recusado.
+    /// </remarks>
+    [HttpGet("certames")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "certame", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CertameNaVitrineDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ListarVitrine(
+        [FromCursor(RecursoDaVitrine)] PageRequest page,
+        [FromQuery(Name = "situacao")] SituacaoDoCertame situacao,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+
+        ListarCertamesPublicadosResult resultado = await _queryBus
+            .Send(
+                new ListarCertamesPublicadosQuery(
+                    _relogio.GetUtcNow(), situacao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        // Mesma revalidação obrigatória do detalhe, e pelo mesmo motivo: o endereço de uma página da
+        // vitrine não muda quando uma publicação insere ou uma retificação reposiciona um certame
+        // nela, de modo que uma representação guardada continuaria omitindo o que já vigora.
+        Response.Headers.CacheControl = "no-cache";
+
+        return await this.OkPaginatedOrdenadoAsync(
+            resultado.Items, resultado.Anterior, resultado.Proximo, page, RecursoDaVitrine,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -49,7 +101,7 @@ public sealed class CertamePublicadoController : ControllerBase
     /// registro foi recusado. A resposta não distingue os casos de propósito: para um chamador
     /// anônimo, distinguir seria responder "esse identificador é um rascunho?".
     /// </remarks>
-    [HttpGet("processos-seletivos/{id:guid}/certame")]
+    [HttpGet("certames/{id:guid}")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "certame", Versions = [1])]
     [ProducesResponseType(typeof(CertamePublicadoDto), StatusCodes.Status200OK)]
