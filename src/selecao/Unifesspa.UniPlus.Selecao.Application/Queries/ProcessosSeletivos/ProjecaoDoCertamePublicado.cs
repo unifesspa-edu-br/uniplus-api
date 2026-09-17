@@ -1,0 +1,643 @@
+namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text.Json.Nodes;
+
+using DTOs;
+
+using Unifesspa.UniPlus.Kernel.Results;
+
+/// <summary>
+/// Projeta os blocos públicos do envelope congelado para o contrato do certame.
+/// </summary>
+/// <remarks>
+/// <b>Tipos declarados campo a campo</b>, nunca recorte de subárvore do documento congelado. A
+/// distinção não é estilo: um contrato montado por filtro devolve o campo novo por omissão — basta
+/// o envelope ganhar um bloco para ele atravessar a fronteira pública sem que ninguém decida. Com
+/// a forma declarada, a fronteira é a assinatura do tipo, e o campo novo só passa quando alguém o
+/// escreve aqui.
+/// <para>
+/// Toda extração confere presença, tipo e nulidade antes de usar o valor. Uma forma inesperada
+/// recusa a leitura inteira em vez de emitir campo silenciosamente vazio: o certame é documento com
+/// efeito jurídico, e meia projeção mente mais que uma recusa.
+/// </para>
+/// </remarks>
+internal static class ProjecaoDoCertamePublicado
+{
+    public static Result<CertamePublicadoDto> Projetar(Guid processoSeletivoId, Guid atoCriadorId, JsonObject envelope)
+    {
+        if (!TentarObjeto(envelope, "tipoProcesso", out JsonObject? tipoProcessoNode)
+            || !TentarTipoNomeado(tipoProcessoNode, out TipoProcessoCertameDto? tipoProcesso))
+        {
+            return Recusar("tipoProcesso");
+        }
+
+        if (!TentarObjeto(envelope, "periodo", out JsonObject? periodo)
+            || !TentarTextoOpcional(periodo, "numero", out string? numero)
+            || !TentarInstante(periodo, "inicio", out DateTimeOffset inicio)
+            || !TentarInstante(periodo, "fim", out DateTimeOffset fim))
+        {
+            return Recusar("periodo");
+        }
+
+        if (!TentarObjeto(envelope, "localidade", out JsonObject? localidade)
+            || !TentarTexto(localidade, "codigoIbge", out string codigoIbge)
+            || !TentarTexto(localidade, "nome", out string localidadeNome)
+            || !TentarTexto(localidade, "uf", out string uf)
+            || !TentarTexto(localidade, "fusoHorario", out string fusoHorario))
+        {
+            return Recusar("localidade");
+        }
+
+        if (!TentarUnidadeAdministradora(envelope, out UnidadeAdministradoraCertameDto? unidade))
+        {
+            return Recusar("identidadesUnidade");
+        }
+
+        if (!TentarObjeto(envelope, "hashesEdital", out JsonObject? hashes)
+            || !TentarIdentificador(hashes, "documentoEditalId", out Guid documentoEditalId)
+            || !TentarTexto(hashes, "hashSha256", out string hashSha256))
+        {
+            return Recusar("hashesEdital");
+        }
+
+        if (!TentarIdentificadores(envelope, "ofertas", out List<Guid>? ofertas))
+        {
+            return Recusar("ofertas");
+        }
+
+        if (!TentarTextos(envelope, "modalidadesOfertadas", out List<string>? modalidades))
+        {
+            return Recusar("modalidadesOfertadas");
+        }
+
+        if (!TentarVagas(envelope, out List<QuadroDeVagasCertameDto>? vagas))
+        {
+            return Recusar("vagas");
+        }
+
+        if (!TentarEtapas(envelope, out List<EtapaCertameDto>? etapas))
+        {
+            return Recusar("etapas");
+        }
+
+        if (!TentarCronograma(envelope, out string? origemCandidatos, out List<FaseCronogramaCertameDto>? fases))
+        {
+            return Recusar("cronogramaFases");
+        }
+
+        if (!TentarExigencias(envelope, out List<ExigenciaDocumentalCertameDto>? exigencias))
+        {
+            return Recusar("documentosExigidos");
+        }
+
+        if (!TentarAtendimento(envelope, out AtendimentoCertameDto? atendimento))
+        {
+            return Recusar("atendimento");
+        }
+
+        if (!TentarTaxaInscricao(envelope, out TaxaInscricaoCertameDto? taxa))
+        {
+            return Recusar("taxaInscricao");
+        }
+
+        if (!TentarRetificacao(envelope, out RetificacaoCertameDto? retificacao))
+        {
+            return Recusar("retificacao");
+        }
+
+        return Result<CertamePublicadoDto>.Success(new CertamePublicadoDto(
+            processoSeletivoId,
+            atoCriadorId,
+            tipoProcesso,
+            new PeriodoInscricaoCertameDto(numero, inicio, fim),
+            new LocalidadeCertameDto(codigoIbge, localidadeNome, uf, fusoHorario),
+            unidade,
+            new DocumentoEditalCertameDto(documentoEditalId, hashSha256),
+            ofertas,
+            modalidades,
+            vagas,
+            etapas,
+            origemCandidatos,
+            fases,
+            exigencias,
+            atendimento,
+            taxa,
+            retificacao));
+    }
+
+    private static Result<CertamePublicadoDto> Recusar(string bloco) =>
+        Result<CertamePublicadoDto>.Failure(new DomainError(
+            "CertamePublicado.EnvelopeInesperado",
+            $"O bloco '{bloco}' da configuração congelada não tem a forma esperada — a leitura pública do certame foi recusada em vez de projetar parcialmente."));
+
+    /// <summary>Par código/nome, a forma que tipo de processo e tipo de etapa compartilham.</summary>
+    private static bool TentarTipoNomeado(JsonObject? objeto, [NotNullWhen(true)] out TipoProcessoCertameDto? tipo)
+    {
+        tipo = null;
+        if (!TentarTexto(objeto, "codigo", out string codigo) || !TentarTexto(objeto, "nome", out string nome))
+        {
+            return false;
+        }
+
+        tipo = new TipoProcessoCertameDto(codigo, nome);
+        return true;
+    }
+
+    private static bool TentarUnidadeAdministradora(
+        JsonObject envelope,
+        [NotNullWhen(true)] out UnidadeAdministradoraCertameDto? unidade)
+    {
+        unidade = null;
+        if (!TentarObjeto(envelope, "identidadesUnidade", out JsonObject? bloco)
+            || !TentarObjeto(bloco, "administradora", out JsonObject? administradora)
+            || !TentarTexto(administradora, "sigla", out string sigla)
+            || !TentarTexto(administradora, "nome", out string nome)
+            || !TentarTexto(administradora, "tipo", out string tipo)
+            || !TentarTextoOpcional(administradora, "cidadeNome", out string? cidadeNome)
+            || !TentarTextoOpcional(administradora, "cidadeUf", out string? cidadeUf))
+        {
+            return false;
+        }
+
+        // O identificador de origem e o slug ficam fora: são chave de integração com o cadastro
+        // institucional, não informação que o edital comunica ao candidato.
+        unidade = new UnidadeAdministradoraCertameDto(sigla, nome, tipo, cidadeNome, cidadeUf);
+        return true;
+    }
+
+    private static bool TentarVagas(JsonObject envelope, [NotNullWhen(true)] out List<QuadroDeVagasCertameDto>? vagas)
+    {
+        vagas = null;
+        if (!TentarArray(envelope, "vagas", out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<QuadroDeVagasCertameDto> lidas = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject configuracao
+                || !TentarIdentificador(configuracao, "ofertaCursoOrigemId", out Guid ofertaId)
+                || !TentarInteiro(configuracao, "totalPublicado", out int total)
+                || !TentarArray(configuracao, "quadro", out JsonArray? quadroArray))
+            {
+                return false;
+            }
+
+            List<VagaPorModalidadeCertameDto> quadro = [];
+            foreach (JsonNode? linha in quadroArray)
+            {
+                if (linha is not JsonObject vaga
+                    || !TentarTexto(vaga, "modalidadeCodigo", out string modalidadeCodigo)
+                    || !TentarInteiro(vaga, "quantidade", out int quantidade))
+                {
+                    return false;
+                }
+
+                quadro.Add(new VagaPorModalidadeCertameDto(modalidadeCodigo, quantidade));
+            }
+
+            lidas.Add(new QuadroDeVagasCertameDto(ofertaId, quadro, total));
+        }
+
+        vagas = lidas;
+        return true;
+    }
+
+    private static bool TentarEtapas(JsonObject envelope, [NotNullWhen(true)] out List<EtapaCertameDto>? etapas)
+    {
+        etapas = null;
+        if (!TentarArray(envelope, "etapas", out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<EtapaCertameDto> lidas = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject etapa
+                || !TentarTexto(etapa, "nome", out string nome)
+                || !TentarTexto(etapa, "carater", out string carater)
+                || !TentarObjeto(etapa, "tipoEtapa", out JsonObject? tipoEtapaNode)
+                || !TentarTipoNomeado(tipoEtapaNode, out TipoProcessoCertameDto? tipoEtapa)
+                || !TentarTextoOpcional(etapa, "peso", out string? peso)
+                || !TentarTextoOpcional(etapa, "notaMinima", out string? notaMinima)
+                || !TentarInteiroOpcional(etapa, "ordem", out int? ordem)
+                || !TentarTextoOpcional(etapa, "faseCodigo", out string? faseCodigo)
+                || !TentarInstanteOpcional(etapa, "inicio", out DateTimeOffset? inicio)
+                || !TentarInstanteOpcional(etapa, "fim", out DateTimeOffset? fim)
+                || !TentarBooleano(etapa, "emiteParecerIndividual", out bool emiteParecer))
+            {
+                return false;
+            }
+
+            lidas.Add(new EtapaCertameDto(
+                nome, carater, tipoEtapa, peso, notaMinima, ordem, faseCodigo, inicio, fim, emiteParecer));
+        }
+
+        etapas = lidas;
+        return true;
+    }
+
+    private static bool TentarCronograma(
+        JsonObject envelope,
+        [NotNullWhen(true)] out string? origemCandidatos,
+        [NotNullWhen(true)] out List<FaseCronogramaCertameDto>? fases)
+    {
+        origemCandidatos = null;
+        fases = null;
+
+        if (!TentarObjeto(envelope, "cronogramaFases", out JsonObject? bloco)
+            || !TentarTexto(bloco, "origemCandidatos", out string origem)
+            || !TentarArray(bloco, "fases", out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<FaseCronogramaCertameDto> lidas = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject fase
+                || !TentarInteiro(fase, "ordem", out int ordem)
+                || !TentarTexto(fase, "codigo", out string codigo)
+                || !TentarInstanteOpcional(fase, "inicio", out DateTimeOffset? inicio)
+                || !TentarInstanteOpcional(fase, "fim", out DateTimeOffset? fim)
+                || !TentarBooleano(fase, "coletaInscricao", out bool coletaInscricao)
+                || !TentarBooleano(fase, "coletaSolicitacaoIsencao", out bool coletaIsencao)
+                || !TentarBooleano(fase, "permiteComplementacao", out bool permiteComplementacao))
+            {
+                return false;
+            }
+
+            lidas.Add(new FaseCronogramaCertameDto(
+                ordem, codigo, inicio, fim, coletaInscricao, coletaIsencao, permiteComplementacao));
+        }
+
+        origemCandidatos = origem;
+        fases = lidas;
+        return true;
+    }
+
+    /// <summary>
+    /// Só o que o candidato precisa para reunir documentos. Os blocos irmãos de
+    /// <c>documentosExigidos</c> — obrigatoriedades legais, referência temporal dos fatos e os
+    /// metadados dos fatos que condicionam cada exigência — não entram.
+    /// </summary>
+    private static bool TentarExigencias(
+        JsonObject envelope,
+        [NotNullWhen(true)] out List<ExigenciaDocumentalCertameDto>? exigencias)
+    {
+        exigencias = null;
+        if (!TentarObjeto(envelope, "documentosExigidos", out JsonObject? bloco)
+            || !TentarArray(bloco, "exigencias", out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<ExigenciaDocumentalCertameDto> lidas = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject exigencia
+                || !TentarTexto(exigencia, "tipoDocumentoNome", out string rotulo)
+                || !TentarBooleano(exigencia, "obrigatorio", out bool obrigatorio)
+                || !TentarFormatos(exigencia, out FormatosAceitosCertameDto? formatos))
+            {
+                return false;
+            }
+
+            lidas.Add(new ExigenciaDocumentalCertameDto(rotulo, obrigatorio, formatos));
+        }
+
+        exigencias = lidas;
+        return true;
+    }
+
+    /// <summary>
+    /// Bicondicional do envelope: lista nula equivale a "qualquer formato". O tamanho máximo por
+    /// formato fica fora — é limite de upload, não informação do edital.
+    /// </summary>
+    private static bool TentarFormatos(JsonObject exigencia, [NotNullWhen(true)] out FormatosAceitosCertameDto? formatos)
+    {
+        formatos = null;
+        if (!TentarObjeto(exigencia, "formatosPermitidos", out JsonObject? bloco)
+            || !TentarBooleano(bloco, "qualquer", out bool qualquer)
+            || !bloco.TryGetPropertyValue("lista", out JsonNode? listaNode))
+        {
+            return false;
+        }
+
+        if (listaNode is null)
+        {
+            formatos = new FormatosAceitosCertameDto(qualquer, null);
+            return true;
+        }
+
+        if (listaNode is not JsonArray array)
+        {
+            return false;
+        }
+
+        List<string> lista = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject entrada || !TentarTexto(entrada, "formato", out string formato))
+            {
+                return false;
+            }
+
+            lista.Add(formato);
+        }
+
+        formatos = new FormatosAceitosCertameDto(qualquer, lista);
+        return true;
+    }
+
+    private static bool TentarAtendimento(JsonObject envelope, [NotNullWhen(true)] out AtendimentoCertameDto? atendimento)
+    {
+        atendimento = null;
+        if (!TentarObjeto(envelope, "atendimento", out JsonObject? bloco)
+            || !TentarParesNomeados(bloco, "condicoes", "condicaoCodigo", "condicaoNome", out List<CondicaoAtendimentoCertameDto>? condicoes)
+            || !TentarParesNomeados(bloco, "tiposDeficiencia", "tipoDeficienciaCodigo", "tipoDeficienciaNome", out List<CondicaoAtendimentoCertameDto>? tipos)
+            || !TentarArray(bloco, "recursos", out JsonArray? recursosArray))
+        {
+            return false;
+        }
+
+        List<string> recursos = [];
+        foreach (JsonNode? item in recursosArray)
+        {
+            if (item is not JsonObject recurso || !TentarTexto(recurso, "recursoNome", out string nome))
+            {
+                return false;
+            }
+
+            recursos.Add(nome);
+        }
+
+        atendimento = new AtendimentoCertameDto(condicoes, recursos, tipos);
+        return true;
+    }
+
+    private static bool TentarParesNomeados(
+        JsonObject bloco,
+        string chaveArray,
+        string chaveCodigo,
+        string chaveNome,
+        [NotNullWhen(true)] out List<CondicaoAtendimentoCertameDto>? pares)
+    {
+        pares = null;
+        if (!TentarArray(bloco, chaveArray, out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<CondicaoAtendimentoCertameDto> lidos = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject entrada
+                || !TentarTexto(entrada, chaveCodigo, out string codigo)
+                || !TentarTexto(entrada, chaveNome, out string nome))
+            {
+                return false;
+            }
+
+            lidos.Add(new CondicaoAtendimentoCertameDto(codigo, nome));
+        }
+
+        pares = lidos;
+        return true;
+    }
+
+    /// <summary>
+    /// Bloco de presença explícita: <c>presente: false</c> significa publicação sem taxa
+    /// configurada, e vira ausência do bloco na resposta pública — não um objeto com campos nulos,
+    /// que o candidato leria como "taxa de valor desconhecido".
+    /// </summary>
+    private static bool TentarTaxaInscricao(JsonObject envelope, out TaxaInscricaoCertameDto? taxa)
+    {
+        taxa = null;
+        if (!TentarObjeto(envelope, "taxaInscricao", out JsonObject? bloco)
+            || !TentarBooleano(bloco, "presente", out bool presente))
+        {
+            return false;
+        }
+
+        if (!presente)
+        {
+            return true;
+        }
+
+        if (!TentarBooleano(bloco, "cobra", out bool cobra)
+            || !TentarTextoOpcional(bloco, "valor", out string? valor)
+            || !TentarTextos(bloco, "fundamentos", out List<string>? fundamentos))
+        {
+            return false;
+        }
+
+        taxa = new TaxaInscricaoCertameDto(cobra, valor, fundamentos);
+        return true;
+    }
+
+    /// <summary>
+    /// Bloco condicional: ausente na publicação original, presente quando o edital foi emendado.
+    /// Ausência é sucesso com <see langword="null"/>; presença malformada é falha.
+    /// </summary>
+    private static bool TentarRetificacao(JsonObject envelope, out RetificacaoCertameDto? retificacao)
+    {
+        retificacao = null;
+        if (!envelope.TryGetPropertyValue("retificacao", out JsonNode? node) || node is null)
+        {
+            return true;
+        }
+
+        if (node is not JsonObject bloco
+            || !TentarIdentificador(bloco, "editalRetificadoId", out Guid atoRetificadoId)
+            || !TentarTexto(bloco, "motivo", out string motivo))
+        {
+            return false;
+        }
+
+        retificacao = new RetificacaoCertameDto(atoRetificadoId, motivo);
+        return true;
+    }
+
+    private static bool TentarIdentificadores(JsonObject objeto, string chave, [NotNullWhen(true)] out List<Guid>? valores)
+    {
+        valores = null;
+        if (!TentarArray(objeto, chave, out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<Guid> lidos = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonValue valor
+                || !valor.TryGetValue(out string? texto)
+                || !Guid.TryParse(texto, CultureInfo.InvariantCulture, out Guid identificador))
+            {
+                return false;
+            }
+
+            lidos.Add(identificador);
+        }
+
+        valores = lidos;
+        return true;
+    }
+
+    private static bool TentarTextos(JsonObject objeto, string chave, [NotNullWhen(true)] out List<string>? valores)
+    {
+        valores = null;
+        if (!TentarArray(objeto, chave, out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<string> lidos = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonValue valor || !valor.TryGetValue(out string? texto))
+            {
+                return false;
+            }
+
+            lidos.Add(texto);
+        }
+
+        valores = lidos;
+        return true;
+    }
+
+    private static bool TentarArray(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonArray? valor)
+    {
+        valor = null;
+        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is not JsonArray array)
+        {
+            return false;
+        }
+
+        valor = array;
+        return true;
+    }
+
+    private static bool TentarObjeto(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonObject? valor)
+    {
+        valor = null;
+        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is not JsonObject encontrado)
+        {
+            return false;
+        }
+
+        valor = encontrado;
+        return true;
+    }
+
+    private static bool TentarTexto(JsonObject? objeto, string chave, out string valor)
+    {
+        valor = "";
+        return objeto is not null
+            && objeto.TryGetPropertyValue(chave, out JsonNode? node)
+            && node is JsonValue jv
+            && jv.TryGetValue(out valor!);
+    }
+
+    /// <summary>
+    /// Chave presente com <c>null</c> explícito ou com texto: sucesso. Chave ausente ou de outro
+    /// tipo: falha — a ausência da chave é forma inesperada, não campo opcional vazio.
+    /// </summary>
+    private static bool TentarTextoOpcional(JsonObject? objeto, string chave, out string? valor)
+    {
+        valor = null;
+        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node))
+        {
+            return false;
+        }
+
+        return node is null || (node is JsonValue jv && jv.TryGetValue(out valor));
+    }
+
+    private static bool TentarBooleano(JsonObject? objeto, string chave, out bool valor)
+    {
+        valor = false;
+        return objeto is not null
+            && objeto.TryGetPropertyValue(chave, out JsonNode? node)
+            && node is JsonValue jv
+            && jv.TryGetValue(out valor);
+    }
+
+    private static bool TentarInteiro(JsonObject? objeto, string chave, out int valor)
+    {
+        valor = 0;
+        return objeto is not null
+            && objeto.TryGetPropertyValue(chave, out JsonNode? node)
+            && node is JsonValue jv
+            && jv.TryGetValue(out valor);
+    }
+
+    private static bool TentarInteiroOpcional(JsonObject? objeto, string chave, out int? valor)
+    {
+        valor = null;
+        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node))
+        {
+            return false;
+        }
+
+        if (node is null)
+        {
+            return true;
+        }
+
+        if (node is JsonValue jv && jv.TryGetValue(out int lido))
+        {
+            valor = lido;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TentarIdentificador(JsonObject? objeto, string chave, out Guid valor)
+    {
+        valor = Guid.Empty;
+        return TentarTexto(objeto, chave, out string texto)
+            && Guid.TryParse(texto, CultureInfo.InvariantCulture, out valor);
+    }
+
+    /// <summary>
+    /// Instante congelado em forma canônica, lido com <see cref="DateTimeStyles.RoundtripKind"/>
+    /// para não deslocar o valor pelo fuso do processo que lê.
+    /// </summary>
+    private static bool TentarInstante(JsonObject? objeto, string chave, out DateTimeOffset valor)
+    {
+        valor = default;
+        return TentarTexto(objeto, chave, out string texto)
+            && DateTimeOffset.TryParse(texto, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out valor);
+    }
+
+    private static bool TentarInstanteOpcional(JsonObject? objeto, string chave, out DateTimeOffset? valor)
+    {
+        valor = null;
+        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node))
+        {
+            return false;
+        }
+
+        if (node is null)
+        {
+            return true;
+        }
+
+        if (node is JsonValue jv
+            && jv.TryGetValue(out string? texto)
+            && DateTimeOffset.TryParse(texto, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset lido))
+        {
+            valor = lido;
+            return true;
+        }
+
+        return false;
+    }
+}
