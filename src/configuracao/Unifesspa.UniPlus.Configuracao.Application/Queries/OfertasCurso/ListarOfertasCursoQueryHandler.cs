@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.OfertasCurso;
 
-using Unifesspa.UniPlus.Configuracao.Application.Consultas;
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;

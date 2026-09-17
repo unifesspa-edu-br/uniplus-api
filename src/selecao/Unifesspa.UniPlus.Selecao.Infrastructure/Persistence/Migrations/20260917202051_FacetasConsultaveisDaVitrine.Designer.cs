@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    partial class SelecaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917202051_FacetasConsultaveisDaVitrine")]
+    partial class FacetasConsultaveisDaVitrine
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1117,7 +1120,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("fase_codigo")
-                        .HasComment("Código canônico da fase em que a etapa acontece; é por ele que a raiz a resolve no cronograma.");
+                        .HasComment("Código canônico da fase declarada pelo cliente; a raiz o resolve para fase_cronograma_id.");
+
+                    b.Property<Guid>("FaseCronogramaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fase_cronograma_id")
+                        .HasComment("Fase do cronograma a que a etapa pertence, resolvida a partir de fase_codigo.");
 
                     b.Property<DateTimeOffset?>("Fim")
                         .HasColumnType("timestamp with time zone")
@@ -1157,6 +1165,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_etapas_processo");
+
+                    b.HasIndex("FaseCronogramaId")
+                        .HasDatabaseName("ix_etapas_processo_fase_cronograma_id");
 
                     b.HasIndex("ProcessoSeletivoId", "Ordem")
                         .IsUnique()
@@ -3879,8 +3890,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .HasColumnName("prazo_unidade");
 
                             b1.Property<decimal>("PrazoValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
+                                .HasColumnType("numeric")
                                 .HasColumnName("prazo_valor");
 
                             b1.Property<int?>("SuspensividadePrimeiraInstanciaUnidade")
@@ -3888,8 +3898,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .HasColumnName("susp_1a_unidade");
 
                             b1.Property<decimal?>("SuspensividadePrimeiraInstanciaValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
+                                .HasColumnType("numeric")
                                 .HasColumnName("susp_1a_valor");
 
                             b1.Property<int?>("SuspensividadeSegundaInstanciaUnidade")
@@ -3897,8 +3906,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .HasColumnName("susp_2a_unidade");
 
                             b1.Property<decimal?>("SuspensividadeSegundaInstanciaValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
+                                .HasColumnType("numeric")
                                 .HasColumnName("susp_2a_valor");
 
                             b1.HasKey("RecursoDaEtapaId");
@@ -3918,21 +3926,20 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.Property<string>("Codigo")
                                 .IsRequired()
-                                .HasMaxLength(128)
-                                .HasColumnType("character varying(128)")
+                                .HasMaxLength(120)
+                                .HasColumnType("character varying(120)")
                                 .HasColumnName("regra_codigo");
 
                             b1.Property<string>("Hash")
                                 .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character(64)")
-                                .HasColumnName("regra_hash")
-                                .IsFixedLength();
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_hash");
 
                             b1.Property<string>("Versao")
                                 .IsRequired()
-                                .HasMaxLength(16)
-                                .HasColumnType("character varying(16)")
+                                .HasMaxLength(40)
+                                .HasColumnType("character varying(40)")
                                 .HasColumnName("regra_versao");
 
                             b1.HasKey("RecursoDaEtapaId");

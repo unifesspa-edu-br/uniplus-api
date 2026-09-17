@@ -104,6 +104,15 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
+        // As facetas saem da MESMA projeção que produziu o documento. Extraí-las aqui, e não de
+        // volta do documento guardado, é o que impede a consulta e o que se serve de divergirem.
+        FacetasDoCertameDivulgado facetas = new(
+            certame.Nome,
+            certame.Periodo.Numero,
+            certame.ModalidadesOfertadas,
+            certame.Periodo.Inicio,
+            certame.Periodo.Fim);
+
         CertameDivulgado? divulgado = await certameDivulgadoRepository
             .ObterParaMutacaoAsync(versao.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
@@ -118,8 +127,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                         versao.AtoCriadorId,
                         versao.HashConfiguracao,
                         ProjecaoDoCertamePublicado.Versao,
-                        certame.Periodo.Inicio,
-                        certame.Periodo.Fim,
+                        facetas,
                         documento,
                         agora),
                     cancellationToken)
@@ -130,8 +138,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             versao.AtoCriadorId,
             versao.HashConfiguracao,
             ProjecaoDoCertamePublicado.Versao,
-            certame.Periodo.Inicio,
-            certame.Periodo.Fim,
+            facetas,
             documento,
             agora))
         {
