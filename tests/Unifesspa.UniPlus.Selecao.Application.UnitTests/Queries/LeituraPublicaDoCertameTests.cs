@@ -135,7 +135,7 @@ public sealed class LeituraPublicaDoCertameTests
             ProjecaoDoCertamePublicado.Versao,
             inscricoesDe ?? Agora.AddDays(-1),
             inscricoesAte ?? Agora.AddDays(20),
-            JsonSerializer.Serialize(projecao),
+            JsonSerializer.Serialize(projecao, ProjecaoDoCertamePublicado.OpcoesDoDocumento),
             Agora);
 
     private static CertamePublicadoDto Projecao(Guid processoId) => new(

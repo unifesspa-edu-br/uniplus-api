@@ -576,6 +576,137 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
             .Should().Be(1, "e não abre uma segunda vaga contra a própria linhagem");
     }
 
+    [Fact(DisplayName = "o registro do ato divulga o certame: a linha da projeção pública nasce pela fila")]
+    public async Task RegistroDoAto_DivulgaOCertame()
+    {
+        // A publicação congela a configuração e decide o id do ato, mas a publicidade depende do
+        // ato existir. É o desfecho do registro que materializa a divulgação — e é por isso que a
+        // leitura pública pode ser uma consulta de tabela única.
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nameof(RegistroDoAto_DivulgaOCertame));
+
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Guid atoId = await ObterAtoIdAsync(api, processoId);
+
+        // Logo depois do 204 o certame ainda NÃO é público: o ato não chegou.
+        (await ObterDivulgacaoAsync(api, processoId)).Should().BeNull(
+            "a publicidade depende do ato, e ele viaja pela fila depois do commit");
+
+        await EsperaDeAtoRegistrado.AguardarAsync(api, atoId, "ato da publicação", processoId);
+
+        CertameDivulgado divulgado = await EsperarDivulgacaoAsync(api, processoId, "divulgação da abertura");
+
+        divulgado.AtoCriadorId.Should().Be(atoId);
+        divulgado.NumeroVersao.Should().Be(1);
+        divulgado.Certame.Should().Contain("\"atoCriadorId\"", "a projeção pública inteira é materializada na linha");
+    }
+
+    [Fact(DisplayName = "a retificação avança a divulgação quando o ato dela se registra")]
+    public async Task Retificacao_AvancaADivulgacao()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nameof(Retificacao_AvancaADivulgacao));
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await EsperaDeAtoRegistrado.AguardarAsync(api, await ObterAtoIdAsync(api, processoId), "ato da abertura", processoId);
+        await EsperarDivulgacaoAsync(api, processoId, "divulgação da abertura");
+
+        Guid documentoDaRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
+        (await RetificarAsync(client, processoId, documentoDaRetificacao)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        Guid atoDaRetificacao = await ObterAtoCriadorDaVersaoAsync(api, processoId, numeroVersao: 2);
+        await EsperaDeAtoRegistrado.AguardarAsync(api, atoDaRetificacao, "ato da retificação", processoId);
+
+        CertameDivulgado divulgado = await EsperarDivulgacaoAsync(
+            api, processoId, "divulgação avançada", numeroVersaoEsperado: 2);
+
+        divulgado.NumeroVersao.Should().Be(2);
+        divulgado.AtoCriadorId.Should().Be(atoDaRetificacao);
+    }
+
+    [Fact(DisplayName = "retificação cujo ato NÃO se registra deixa o certame no ar com o conteúdo anterior")]
+    public async Task RetificacaoComAtoRecusado_MantemADivulgacaoAnterior()
+    {
+        // É a propriedade que decide o desenho. Publicação é ato público, e torná-la invisível fere
+        // a transparência — para isso existe retificação de ato, não supressão. Enquanto o ato da
+        // retificação não existe, ela não tem publicidade, e o que se serve é o último estado que
+        // tem. Sem esta prova, a afirmação é só um comentário.
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(
+            api, nameof(RetificacaoComAtoRecusado_MantemADivulgacaoAnterior));
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        Guid atoDaAbertura = await ObterAtoIdAsync(api, processoId);
+        await EsperaDeAtoRegistrado.AguardarAsync(api, atoDaAbertura, "ato da abertura", processoId);
+        CertameDivulgado antes = await EsperarDivulgacaoAsync(api, processoId, "divulgação da abertura");
+
+        // Retificação declarando tipo que o catálogo não conhece: Publicações recusa por mérito, o
+        // envelope vai para a fila morta, e nenhum desfecho é respondido.
+        Guid documentoDaRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
+        await RetificarAsync(client, processoId, documentoDaRetificacao, tipoAto: "TIPO_QUE_NAO_EXISTE_NO_CATALOGO");
+
+        // Tempo suficiente para o desfecho chegar, se fosse chegar.
+        await Task.Delay(TimeSpan.FromSeconds(3));
+
+        CertameDivulgado? depois = await ObterDivulgacaoAsync(api, processoId);
+
+        depois.Should().NotBeNull("o certame já era público, e continua — supressão feriria a transparência");
+        depois!.NumeroVersao.Should().Be(antes.NumeroVersao, "a divulgação não avança para uma versão sem ato");
+        depois.AtoCriadorId.Should().Be(atoDaAbertura);
+    }
+
+    private static async Task<CertameDivulgado?> ObterDivulgacaoAsync(CascadingApiFactory api, Guid processoId)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        return await db.CertamesDivulgados.AsNoTracking().FirstOrDefaultAsync(c => c.Id == processoId);
+    }
+
+    /// <summary>
+    /// Espera a divulgação aparecer — ou avançar até o número de versão informado. A projeção vem
+    /// pela fila durável, então o 204 da publicação volta muito antes dela existir.
+    /// </summary>
+    private static async Task<CertameDivulgado> EsperarDivulgacaoAsync(
+        CascadingApiFactory api, Guid processoId, string checkpoint, int? numeroVersaoEsperado = null)
+    {
+        DateTimeOffset limite = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(30);
+        CertameDivulgado? ultima = null;
+        while (DateTimeOffset.UtcNow < limite)
+        {
+            ultima = await ObterDivulgacaoAsync(api, processoId);
+            if (ultima is not null && (numeroVersaoEsperado is null || ultima.NumeroVersao >= numeroVersaoEsperado))
+            {
+                return ultima;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(300));
+        }
+
+        throw new InvalidOperationException(
+            $"A divulgação do processo {processoId} não chegou em 30s ({checkpoint}). " +
+            $"Versão esperada: {numeroVersaoEsperado?.ToString(CultureInfo.InvariantCulture) ?? "qualquer"}; " +
+            $"encontrada: {ultima?.NumeroVersao.ToString(CultureInfo.InvariantCulture) ?? "nenhuma linha"}.");
+    }
+
+    private static async Task<Guid> ObterAtoCriadorDaVersaoAsync(
+        CascadingApiFactory api, Guid processoId, int numeroVersao)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        return await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId && v.NumeroVersao == numeroVersao)
+            .Select(v => v.AtoCriadorId)
+            .SingleAsync();
+    }
+
     private static async Task<Unifesspa.UniPlus.Publicacoes.Contracts.RegistrarAtoNormativoRequisicao> MontarRequisicaoDoAtoAsync(
         CascadingApiFactory api, Guid atoId, Guid processoId)
     {

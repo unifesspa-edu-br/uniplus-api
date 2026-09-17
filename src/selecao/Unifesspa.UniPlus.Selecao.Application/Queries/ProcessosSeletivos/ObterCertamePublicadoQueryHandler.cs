@@ -46,7 +46,7 @@ public static class ObterCertamePublicadoQueryHandler
                 "Processo Seletivo não encontrado."));
         }
 
-        CertamePublicadoDto? certame = JsonSerializer.Deserialize<CertamePublicadoDto>(divulgado.Certame);
+        CertamePublicadoDto? certame = JsonSerializer.Deserialize<CertamePublicadoDto>(divulgado.Certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
 
         return certame is null
             ? Result<CertamePublicadoDto>.Failure(new DomainError(
