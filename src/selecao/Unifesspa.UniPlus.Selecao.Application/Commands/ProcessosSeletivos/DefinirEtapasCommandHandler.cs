@@ -21,10 +21,14 @@ public static class DefinirEtapasCommandHandler
     /// enrolado nela (ver comentário em <c>ProcessoSeletivoRepository.ObterParaMutacaoAsync</c>);
     /// <c>[NonTransactional]</c> desabilitaria esse enrolamento e o lock pessimista deixaria
     /// de bloquear qualquer coisa. <see cref="PublicarProcessoSeletivoCommandHandler"/> já prova
-    /// que injetar reader cross-módulo (<see cref="ITipoEtapaReader"/>, aqui) junto do mesmo
-    /// lock não é ambíguo para o <c>AutoApplyTransactions</c> — só um handler que injeta
+    /// que injetar reader cross-módulo (aqui, <see cref="ITipoEtapaReader"/> sobre o cadastro de
+    /// Configuração e <see cref="ITipoAtoPublicadoReader"/> sobre o catálogo de Publicações) junto
+    /// do mesmo lock não é ambíguo para o <c>AutoApplyTransactions</c> — só um handler que injeta
     /// diretamente um <em>segundo DbContext concreto</em> (não um reader por trás de interface
-    /// pública) precisaria do opt-in.
+    /// pública) precisaria do opt-in. O que mantém o segundo DbContext fora da árvore que o
+    /// codegen enxerga é o <c>AlwaysUseServiceLocationFor</c> declarado para cada um desses
+    /// contratos: um reader novo sem esse opt-in reintroduz a ambiguidade de DbContext e derruba
+    /// o enrolamento transacional de que o lock depende.
     /// </summary>
     /// <remarks>
     /// Em duas passadas (ADR-0125): a primeira acumula a forma de TODAS as etapas via
@@ -257,13 +261,38 @@ public static class DefinirEtapasCommandHandler
             }
         }
 
+        // UMA leitura do relógio para toda a operação (ADR-0068): todo produto declarado, de
+        // qualquer etapa da coleção, resolve a vigência contra o MESMO instante. Duas leituras
+        // deixariam a coleção atravessar a virada do dia e aceitar metade dela.
         DateOnly hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
+        // Memoiza a resolução por código dentro da execução do comando, como o cronograma de
+        // fases faz um nível acima. A etapa publica o mesmo ato duas vezes — preliminar e
+        // definitivo —, e o número de produtos cresce com a coleção inteira: sem isto, cada item
+        // de cada etapa releria o catálogo, e as idas ao banco acontecem com o SELECT ... FOR
+        // UPDATE do certame na mão, serializando quem edita o mesmo certame por todo esse tempo.
+        Dictionary<string, TipoAtoPublicadoView?> tiposDeAtoResolvidos = new(StringComparer.Ordinal);
+
+        async Task<TipoAtoPublicadoView?> ResolverTipoDeAtoAsync(string codigo)
+        {
+            if (tiposDeAtoResolvidos.TryGetValue(codigo, out TipoAtoPublicadoView? memoizado))
+            {
+                return memoizado;
+            }
+
+            TipoAtoPublicadoView? resolvido = await tipoAtoPublicadoReader
+                .ObterVigenteAsync(codigo, hoje, cancellationToken)
+                .ConfigureAwait(false);
+            tiposDeAtoResolvidos[codigo] = resolvido;
+            return resolvido;
+        }
 
         // Os produtos são declarados por etapa, depois que a etapa existe: é ela quem os
         // vincula, e a recusa de ato repetido é dela.
         for (int i = 0; i < etapas.Count; i++)
         {
-            IReadOnlyList<ProdutoDaEtapaInput> declarados = command.Etapas[i].Produtos ?? [];
+            EtapaProcessoInput input = command.Etapas[i];
+            IReadOnlyList<ProdutoDaEtapaInput> declarados = input.Produtos ?? [];
 
             // O papel desconhecido é RECUSADO, e não tratado como ausente. Ignorar a conversão
             // fazia um erro de digitação — `PRELIMINARR` por `PRELIMINAR` — virar produto sem
@@ -277,7 +306,22 @@ public static class DefinirEtapasCommandHandler
                     unitOfWork.DescartarAlteracoesNaoSalvas();
                     return Result<MutacaoAceita>.Failure(new DomainError(
                         "ProdutoDaEtapa.PapelDesconhecido",
-                        $"O papel '{d.Papel}' não é declarável — use '{PapelProdutoFaseCodigo.Preliminar}', '{PapelProdutoFaseCodigo.Definitivo}' ou nenhum."));
+                        $"O papel '{d.Papel}', declarado pela etapa '{input.Nome}', não é declarável — use '{PapelProdutoFaseCodigo.Preliminar}', '{PapelProdutoFaseCodigo.Definitivo}' ou nenhum."));
+                }
+
+                // Conferido contra o catálogo SÓ quando a etapa passa a declarar este par
+                // (ato, papel) — nunca para um que ela já declarava. É a mesma distinção que o
+                // tipo da etapa recebe acima, e pela mesma razão: aposentar no catálogo um ato
+                // já declarado bloquearia QUALQUER PUT posterior da coleção inteira, porque o
+                // endpoint substitui tudo e o cliente devolve o produto que leu. Quem só quis
+                // corrigir o nome de outra etapa ficaria preso, sem nada na tela dizendo que o
+                // caminho de saída é apagar um produto que ele não declarou hoje.
+                bool jaDeclarado = etapas[i].Produtos.Any(p =>
+                    string.Equals(p.AtoCodigo, d.AtoCodigo, StringComparison.Ordinal) && p.Papel == papel);
+                if (jaDeclarado)
+                {
+                    produtosDaEtapa.Add(ProdutoDaEtapa.Criar(d.AtoCodigo, papel));
+                    continue;
                 }
 
                 // O ato precisa existir no catálogo de Publicações, pela mesma razão que a fase
@@ -285,15 +329,13 @@ public static class DefinirEtapasCommandHandler
                 // cronograma público e a chave pela qual a restauração da configuração congelada
                 // reencontra o produto. Um código que o catálogo não conhece não resolve para
                 // nada — e só apareceria depois de publicado.
-                TipoAtoPublicadoView? tipoAto = await tipoAtoPublicadoReader
-                    .ObterVigenteAsync(d.AtoCodigo, hoje, cancellationToken)
-                    .ConfigureAwait(false);
+                TipoAtoPublicadoView? tipoAto = await ResolverTipoDeAtoAsync(d.AtoCodigo).ConfigureAwait(false);
                 if (tipoAto is null)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
                     return Result<MutacaoAceita>.Failure(new DomainError(
                         "ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo",
-                        $"O tipo de ato '{d.AtoCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje."));
+                        $"O tipo de ato '{d.AtoCodigo}', declarado pela etapa '{input.Nome}', não tem versão vigente no catálogo de Publicações na data de hoje."));
                 }
 
                 // Papel preliminar ou definitivo só faz sentido sobre resultado: é o par que a
@@ -304,7 +346,7 @@ public static class DefinirEtapasCommandHandler
                     unitOfWork.DescartarAlteracoesNaoSalvas();
                     return Result<MutacaoAceita>.Failure(new DomainError(
                         "ProdutoDaEtapa.PapelEmAtoQueNaoEhResultado",
-                        $"O tipo de ato '{d.AtoCodigo}' não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo."));
+                        $"O tipo de ato '{d.AtoCodigo}', declarado pela etapa '{input.Nome}', não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo."));
                 }
 
                 produtosDaEtapa.Add(ProdutoDaEtapa.Criar(tipoAto.Codigo, papel));
@@ -316,8 +358,6 @@ public static class DefinirEtapasCommandHandler
                 unitOfWork.DescartarAlteracoesNaoSalvas();
                 return Result<MutacaoAceita>.Failure(produtosResult.Error!);
             }
-
-            EtapaProcessoInput input = command.Etapas[i];
 
             Result janelaResult = etapas[i].DefinirJanelaEParecer(
                 input.Inicio, input.Fim, input.EmiteParecerIndividual);
