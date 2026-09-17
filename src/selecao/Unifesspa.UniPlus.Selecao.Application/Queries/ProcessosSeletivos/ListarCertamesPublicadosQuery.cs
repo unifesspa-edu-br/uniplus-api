@@ -21,10 +21,12 @@ public sealed record ListarCertamesPublicadosQuery(
     string? AfterSortKey,
     Guid? AfterId,
     int Limit,
-    PaginationDirection Direction) : IQuery<ListarCertamesPublicadosResult>;
+    PaginationDirection Direction,
+    bool IncluirContadores) : IQuery<ListarCertamesPublicadosResult>;
 
 /// <summary>Página da vitrine, com as âncoras de continuação.</summary>
 public sealed record ListarCertamesPublicadosResult(
     IReadOnlyList<CertameNaVitrineDto> Items,
     (string SortKey, Guid Id)? Anterior,
-    (string SortKey, Guid Id)? Proximo);
+    (string SortKey, Guid Id)? Proximo,
+    ContadoresDaVitrine? Contadores);

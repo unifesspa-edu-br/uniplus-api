@@ -128,11 +128,30 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
             .Which.InscricoesAte.Should().Be(prazoPublicamenteVisivel);
     }
 
+    [Fact(DisplayName = "Contadores só são calculados quando pedidos, e refletem o conjunto e não a página")]
+    public async Task Handle_ComContadores_AgregaSobreOConjunto()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        Guid ato = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = RepositorioCom((processoId, "SISU", ato));
+        repository.ContarVitrinePorSituacaoAsync(Arg.Any<DateTimeOffset>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(new ContadoresDaVitrine(InscricoesAbertas: 12, UltimosDias: 3, Encerrados: 40));
+
+        ListarCertamesPublicadosResult semContadores = await HandleAsync(repository, LeitorCom(ato));
+        ListarCertamesPublicadosResult comContadores = await HandleAsync(repository, LeitorCom(ato), incluirContadores: true);
+
+        semContadores.Contadores.Should().BeNull("contar é trabalho que a maioria das navegações não pede");
+        comContadores.Contadores.Should().Be(new ContadoresDaVitrine(12, 3, 40));
+        comContadores.Items.Should().ContainSingle("os contadores são do conjunto, a página continua com um item");
+    }
+
     private static Task<ListarCertamesPublicadosResult> HandleAsync(
         IProcessoSeletivoRepository repository,
-        IAtoRegistradoReader leitor) =>
+        IAtoRegistradoReader leitor,
+        bool incluirContadores = false) =>
         ListarCertamesPublicadosQueryHandler.Handle(
-            new ListarCertamesPublicadosQuery(Agora, SituacaoDoCertame.Todas, null, null, 20, PaginationDirection.Next),
+            new ListarCertamesPublicadosQuery(
+                Agora, SituacaoDoCertame.Todas, null, null, 20, PaginationDirection.Next, incluirContadores),
             repository,
             leitor,
             RegistroReconhecendo(VersaoReconhecida),
