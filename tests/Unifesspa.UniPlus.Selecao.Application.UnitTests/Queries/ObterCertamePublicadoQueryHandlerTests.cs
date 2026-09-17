@@ -88,6 +88,7 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
               "tipoDocumentoOrigemId": "0199a1b2-bbbb-7000-8000-00000000000b",
               "tipoDocumentoCodigo": "DOC_OFICIAL_FOTO",
               "tipoDocumentoNome": "Documento oficial com foto",
+              "aplicabilidade": "Geral",
               "obrigatorio": true,
               "formatosPermitidos": {"qualquer": false, "lista": [{"formato": "PDF", "tamanhoMaximoBytesMax": 5242880}]}
             }],
@@ -230,6 +231,46 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
         string envelope = EnvelopeCompleto.Replace(
             "\"inicio\": \"2026-03-01T03:00:00Z\", \"fim\": \"2026-03-20T02:59:59Z\"",
             "\"inicio\": \"2026-03-01T03:00:00\", \"fim\": \"2026-03-20T02:59:59Z\"",
+            StringComparison.Ordinal);
+
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelope, out Guid atoCriadorId);
+
+        Result<CertamePublicadoDto> resultado = await HandleAsync(repository, LeitorRespondendo(atoCriadorId, true), processoId);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("CertamePublicado.EnvelopeInesperado");
+    }
+
+    [Fact(DisplayName = "Exigência condicional é publicada como condicional, não como obrigatória para todos")]
+    public async Task Handle_ExigenciaCondicional_PublicaAAplicabilidade()
+    {
+        // Sozinha, a obrigatoriedade mente: uma exigência condicional incide apenas sobre quem
+        // satisfaz o gatilho, e publicá-la como obrigatória faria o candidato de ampla concorrência
+        // reunir documento que não lhe é pedido.
+        string envelope = EnvelopeCompleto.Replace(
+            "\"aplicabilidade\": \"Geral\"",
+            "\"aplicabilidade\": \"Condicional\"",
+            StringComparison.Ordinal);
+
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelope, out Guid atoCriadorId);
+
+        Result<CertamePublicadoDto> resultado = await HandleAsync(repository, LeitorRespondendo(atoCriadorId, true), processoId);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.DocumentosExigidos.Should().ContainSingle()
+            .Which.Aplicabilidade.Should().Be("Condicional");
+    }
+
+    [Fact(DisplayName = "Formatos que dizem aceitar qualquer um E trazem lista são recusados")]
+    public async Task Handle_FormatosContraditorios_RecusaAProjecao()
+    {
+        // "aceita qualquer formato" com uma lista de formatos ao lado são duas afirmações
+        // contraditórias no mesmo objeto — repassá-las publicaria a contradição.
+        string envelope = EnvelopeCompleto.Replace(
+            "\"qualquer\": false, \"lista\"",
+            "\"qualquer\": true, \"lista\"",
             StringComparison.Ordinal);
 
         Guid processoId = Guid.CreateVersion7();
