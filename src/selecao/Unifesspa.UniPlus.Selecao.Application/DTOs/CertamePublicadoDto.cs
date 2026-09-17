@@ -141,6 +141,11 @@ public sealed record AtendimentoCertameDto(
 /// publicações — sem isso, "a linha do tempo está completa" e "a linha do tempo está atrasada"
 /// seriam indistinguíveis para o consumidor.
 /// <para>
+/// <see cref="Nome"/> é o título do certame no instante da publicação. Ele não vive na configuração
+/// congelada — é atributo do processo —, e congelá-lo aqui é o que impede a página pública de
+/// exibir um título editado depois, sob uma retificação que ainda não tem publicidade.
+/// </para>
+/// <para>
 /// <see cref="VersaoProjecao"/> e <see cref="HashConfiguracao"/> são o selo do conteúdo, e viajam
 /// no corpo porque quem compõe a página precisa deles para montar o próprio selo. O hash sozinho
 /// não basta: ele identifica o ENVELOPE congelado, e acrescentar um campo a esta projeção não o
@@ -151,6 +156,7 @@ public sealed record AtendimentoCertameDto(
 public sealed record CertamePublicadoDto(
     Guid ProcessoSeletivoId,
     Guid AtoCriadorId,
+    string Nome,
     string VersaoProjecao,
     string HashConfiguracao,
     TipoCatalogadoCertameDto TipoProcesso,

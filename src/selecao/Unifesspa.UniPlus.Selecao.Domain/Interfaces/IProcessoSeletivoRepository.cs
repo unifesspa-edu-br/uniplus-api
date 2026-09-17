@@ -139,5 +139,14 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         IReadOnlyCollection<Guid> atoCriadorIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Título do processo. <see langword="null"/> quando ele não existe.
+    /// </summary>
+    /// <remarks>
+    /// Projeção estreita: quem divulga precisa só do título, e carregar o agregado inteiro para
+    /// lê-lo traria todas as coleções da configuração viva.
+    /// </remarks>
+    Task<string?> ObterNomeAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
+
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);
 }

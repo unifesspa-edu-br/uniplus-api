@@ -84,6 +84,7 @@ internal static class ProjecaoDoCertamePublicado
     public static Result<CertamePublicadoDto> Projetar(
         Guid processoSeletivoId,
         Guid atoCriadorId,
+        string nome,
         string hashConfiguracao,
         JsonObject envelope)
     {
@@ -170,6 +171,7 @@ internal static class ProjecaoDoCertamePublicado
         return Result<CertamePublicadoDto>.Success(new CertamePublicadoDto(
             processoSeletivoId,
             atoCriadorId,
+            nome,
             Versao,
             hashConfiguracao,
             tipoProcesso,

@@ -78,8 +78,21 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                 $"Configuração congelada do processo {versao.ProcessoSeletivoId} não pôde ser lida para divulgação.");
         }
 
+        // O título não vive na configuração congelada: é atributo do processo. Lê-lo AGORA, no
+        // instante em que a divulgação se materializa, é o que o congela — a página pública deixa de
+        // poder exibir um título editado depois, sob retificação que ainda não tem publicidade.
+        string? nome = await processoSeletivoRepository
+            .ObterNomeAsync(versao.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (nome is null)
+        {
+            throw new InvalidOperationException(
+                $"Processo {versao.ProcessoSeletivoId} não encontrado para divulgar o certame.");
+        }
+
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            versao.ProcessoSeletivoId, versao.AtoCriadorId, versao.HashConfiguracao, envelope);
+            versao.ProcessoSeletivoId, versao.AtoCriadorId, nome, versao.HashConfiguracao, envelope);
 
         if (projecao.IsFailure)
         {
