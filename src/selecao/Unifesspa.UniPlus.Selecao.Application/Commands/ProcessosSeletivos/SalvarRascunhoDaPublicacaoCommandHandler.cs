@@ -7,6 +7,10 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+// O detector de conflito de gravação mora no slice dos motivos de isenção, onde nasceu;
+// reconhece a exceção do EF pelo nome do tipo para não trazer o ORM à camada Application.
+using MotivosDecisaoIsencao;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
@@ -137,6 +141,32 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
             rascunhoRepository.Atualizar(vencedor);
             await rascunhoRepository
                 .ApagarVencidosAsync(agora, vencedor.Id, cancellationToken)
+                .ConfigureAwait(false);
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // A linha que esta gravação ia atualizar não existe mais. Acontece quando o dono
+            // volta a um rascunho JÁ VENCIDO: a renovação do prazo fica só na entidade
+            // rastreada até o flush, e a varredura de vencidos de qualquer outra gravação —
+            // SQL imediato, em outra transação — enxerga a data velha e apaga a linha no
+            // intervalo.
+            //
+            // O conteúdo continua em mãos, e recriar é exatamente o que a leitura teria feito
+            // se tivesse chegado depois da varredura. Recusar mandaria o operador reenviar o
+            // que o servidor já tem.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+
+            Result<RascunhoDePublicacao> recriacao = RascunhoDePublicacao.Criar(
+                command.ProcessoSeletivoId, usuarioSub, conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
+            if (recriacao.IsFailure)
+            {
+                return Result.Failure(recriacao.Error!);
+            }
+
+            await rascunhoRepository.AdicionarAsync(recriacao.Value!, cancellationToken).ConfigureAwait(false);
+            await rascunhoRepository
+                .ApagarVencidosAsync(agora, recriacao.Value!.Id, cancellationToken)
                 .ConfigureAwait(false);
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
