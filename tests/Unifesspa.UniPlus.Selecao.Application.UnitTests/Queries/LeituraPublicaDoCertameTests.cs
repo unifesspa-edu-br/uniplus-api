@@ -1,0 +1,161 @@
+namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
+
+using System.Text.Json;
+
+using AwesomeAssertions;
+
+using NSubstitute;
+
+using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+
+/// <summary>
+/// Leitura pública do certame, detalhe e vitrine, sobre a tabela de divulgações.
+/// </summary>
+/// <remarks>
+/// A existência da linha É a publicidade, e é isso que estes testes exercitam: não há critério de
+/// visibilidade a aplicar na leitura, porque quem não é público não tem linha.
+/// </remarks>
+public sealed class LeituraPublicaDoCertameTests
+{
+    private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact(DisplayName = "Certame sem divulgação responde não encontrado")]
+    public async Task Detalhe_SemDivulgacao_NaoEncontrado()
+    {
+        // Inexistente, rascunho, sem versão vigente e com ato não confirmado caem aqui pelo mesmo
+        // caminho: nenhum deles tem linha. Distinguir deixou de ser possível, em vez de ser
+        // possível e proibido.
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        repository.ObterParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns((CertameDivulgado?)null);
+
+        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
+            new ObterCertamePublicadoQuery(Guid.CreateVersion7()), repository, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+    }
+
+    [Fact(DisplayName = "Certame divulgado devolve a projeção que foi materializada")]
+    public async Task Detalhe_ComDivulgacao_DevolveAProjecao()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        CertamePublicadoDto esperado = Projecao(processoId);
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>())
+            .Returns(Divulgado(processoId, esperado));
+
+        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
+            new ObterCertamePublicadoQuery(processoId), repository, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.AtoCriadorId.Should().Be(esperado.AtoCriadorId);
+        resultado.Value.Periodo.Numero.Should().Be("001/2026");
+    }
+
+    [Fact(DisplayName = "A vitrine devolve a página inteira: não há descarte depois de formada")]
+    public async Task Vitrine_DevolveAPaginaInteira()
+    {
+        Guid a = Guid.CreateVersion7();
+        Guid b = Guid.CreateVersion7();
+        ICertameDivulgadoRepository repository = RepositorioComVitrine(a, b);
+
+        ListarCertamesPublicadosResult resultado = await ListarCertamesPublicadosQueryHandler.Handle(
+            Consulta(), repository, CancellationToken.None);
+
+        resultado.Items.Should().HaveCount(2, "só há linha para certame público, então nada é filtrado depois");
+        resultado.Items.Select(static i => i.ProcessoSeletivoId).Should().ContainInOrder(a, b);
+    }
+
+    [Fact(DisplayName = "A situação das inscrições é resolvida no servidor, contra o instante da navegação")]
+    public async Task Vitrine_JanelaAindaNaoAberta_NaoMarcaAberta()
+    {
+        // O fuso de quem lê não decide prazo de edital, e a janela tem dois lados: um edital
+        // publicado antes de a inscrição abrir não está recebendo inscrição.
+        Guid processoId = Guid.CreateVersion7();
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        CertameDivulgado futuro = Divulgado(
+            processoId, Projecao(processoId), inscricoesDe: Agora.AddDays(5), inscricoesAte: Agora.AddDays(30));
+        repository.ListarVitrineAsync(
+                Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame>(), Arg.Any<TimeSpan>(), Arg.Any<string?>(),
+                Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
+            .Returns(((IReadOnlyList<CertameDivulgado>)[futuro], Agora, ((string, Guid)?)null, ((string, Guid)?)null));
+
+        ListarCertamesPublicadosResult resultado = await ListarCertamesPublicadosQueryHandler.Handle(
+            Consulta(), repository, CancellationToken.None);
+
+        resultado.Items.Should().ContainSingle().Which.InscricoesAbertas.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Contadores só são calculados quando pedidos")]
+    public async Task Vitrine_ContadoresSaoOptIn()
+    {
+        ICertameDivulgadoRepository repository = RepositorioComVitrine(Guid.CreateVersion7());
+        repository.ContarPorSituacaoAsync(Arg.Any<DateTimeOffset>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(new ContadoresDaVitrine(12, 3, 40));
+
+        ListarCertamesPublicadosResult sem = await ListarCertamesPublicadosQueryHandler.Handle(
+            Consulta(), repository, CancellationToken.None);
+        ListarCertamesPublicadosResult com = await ListarCertamesPublicadosQueryHandler.Handle(
+            Consulta(incluirContadores: true), repository, CancellationToken.None);
+
+        sem.Contadores.Should().BeNull();
+        com.Contadores.Should().Be(new ContadoresDaVitrine(12, 3, 40));
+    }
+
+    private static ListarCertamesPublicadosQuery Consulta(bool incluirContadores = false) =>
+        new(Agora, SituacaoDoCertame.Todas, null, null, 20, PaginationDirection.Next, incluirContadores);
+
+    private static ICertameDivulgadoRepository RepositorioComVitrine(params Guid[] processoIds)
+    {
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        CertameDivulgado[] linhas = [.. processoIds.Select(id => Divulgado(id, Projecao(id)))];
+        repository.ListarVitrineAsync(
+                Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame>(), Arg.Any<TimeSpan>(), Arg.Any<string?>(),
+                Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
+            .Returns(((IReadOnlyList<CertameDivulgado>)linhas, Agora, ((string, Guid)?)null, ("ancora", processoIds[^1])));
+        return repository;
+    }
+
+    private static CertameDivulgado Divulgado(
+        Guid processoId,
+        CertamePublicadoDto projecao,
+        DateTimeOffset? inscricoesDe = null,
+        DateTimeOffset? inscricoesAte = null) =>
+        CertameDivulgado.Criar(
+            processoId,
+            numeroVersao: 1,
+            projecao.AtoCriadorId,
+            new string('a', 64),
+            ProjecaoDoCertamePublicado.Versao,
+            inscricoesDe ?? Agora.AddDays(-1),
+            inscricoesAte ?? Agora.AddDays(20),
+            JsonSerializer.Serialize(projecao),
+            Agora);
+
+    private static CertamePublicadoDto Projecao(Guid processoId) => new(
+        processoId,
+        Guid.CreateVersion7(),
+        ProjecaoDoCertamePublicado.Versao,
+        new string('a', 64),
+        new TipoCatalogadoCertameDto("SISU", "Sistema de Seleção Unificada"),
+        new PeriodoInscricaoCertameDto("001/2026", Agora.AddDays(-1), Agora.AddDays(20)),
+        new LocalidadeCertameDto("1504208", "Marabá", "PA", "America/Belem"),
+        new UnidadeAdministradoraCertameDto("UNIFESSPA", "Universidade", "Autarquia", "Marabá", "PA"),
+        new DocumentoEditalCertameDto(Guid.CreateVersion7(), new string('b', 64)),
+        [],
+        ["AC"],
+        [new QuadroDeVagasCertameDto(Guid.CreateVersion7(), [], 100)],
+        [],
+        "Externa",
+        [],
+        [],
+        new AtendimentoCertameDto([], [], []),
+        null,
+        null);
+}

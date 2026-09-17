@@ -53,13 +53,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public StatusProcesso Status { get; private set; }
 
     /// <summary>
-    /// Fim da janela de inscrição da versão publicamente vigente — a chave por que a vitrine
-    /// ordena, do prazo mais próximo ao mais distante. <see langword="null"/> enquanto o processo
-    /// nunca foi publicado.
-    /// </summary>
-    public DateTimeOffset? PeriodoInscricaoFimVigente { get; private set; }
-
-    /// <summary>
     /// De onde vêm os candidatos deste certame (§3.4, Story #851) — NOT NULL, exigido na
     /// criação. Deriva o piso mínimo do cronograma de fases; nunca ramifica por
     /// <see cref="TipoProcesso"/>.
@@ -3535,7 +3528,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             instantePublicacao);
 
         Status = StatusProcesso.Publicado;
-        RegistrarPeriodoVigente(dados);
 
         AddDomainEvent(new ProcessoPublicadoEvent(
             Id,
@@ -3907,7 +3899,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             atorUsuarioSub,
             instantePublicacao);
 
-        RegistrarPeriodoVigente(dados);
 
         // Reaproveita ProcessoPublicadoEvent (não um evento distinto): o fato de
         // negócio drenado é "novo ato + nova versão da configuração", idêntico em
@@ -3924,16 +3915,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             versao.VigenteAPartirDe));
 
         return Result<VersaoConfiguracao>.Success(versao);
-    }
-
-    /// <summary>
-    /// Copia o encerramento da janela de inscrição da versão que acaba de se tornar vigente. Chamado pelas duas
-    /// transições que criam versão, sempre com o mesmo <paramref name="dados"/> que a
-    /// canonicalização congelou.
-    /// </summary>
-    private void RegistrarPeriodoVigente(DadosEdital dados)
-    {
-        PeriodoInscricaoFimVigente = dados.PeriodoInscricaoFim;
     }
 
     /// <summary>

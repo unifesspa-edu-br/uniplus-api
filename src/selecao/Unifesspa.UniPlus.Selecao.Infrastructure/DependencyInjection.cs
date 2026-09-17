@@ -57,6 +57,9 @@ public static class SelecaoInfrastructureRegistration
             serviceProvider.GetRequiredService<SelecaoDbContext>());
 
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
+
+        // Projeção pública do certame: a tabela cuja existência de linha é a publicidade.
+        services.AddScoped<ICertameDivulgadoRepository, CertameDivulgadoRepository>();
         services.AddScoped<ISnapshotPublicacaoCanonicalizer, SnapshotPublicacaoCanonicalizer>();
         // Singleton: a zona é constante e o resultado da busca na base de fusos do sistema não
         // muda durante a execução — inclusive quando a base falta, que é o caso que o erro nomeado

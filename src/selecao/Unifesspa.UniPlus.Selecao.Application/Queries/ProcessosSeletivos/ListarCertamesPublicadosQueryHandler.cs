@@ -1,31 +1,24 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
-using Abstractions;
+using System.Text.Json;
 
 using Domain.Entities;
 using Domain.Interfaces;
 
 using DTOs;
 
-using Unifesspa.UniPlus.Publicacoes.Contracts;
-
 /// <summary>
-/// Handler da vitrine pública: pagina candidatos por urgência, resolve a versão publicamente
-/// visível de cada um e projeta o item de lista do envelope congelado.
+/// Handler da vitrine pública: uma página da tabela de divulgações, ordenada por urgência.
 /// </summary>
 /// <remarks>
-/// <b>O tamanho da página pode vir menor que o pedido.</b> A ordenação e a paginação acontecem no
-/// banco, sobre estado publicado; a visibilidade exige ato normativo registrado, que vive em outro
-/// módulo e nenhuma consulta daqui pode afirmar. Um candidato sem ato em nenhuma versão da linhagem
-/// é descartado depois de a página ser formada.
 /// <para>
-/// Isso não repete nem omite item: a âncora de continuação é a do último candidato CONSIDERADO, não
-/// a do último devolvido, então o percurso avança sobre a mesma ordem independentemente do descarte.
-/// Quem navega deve seguir a âncora, nunca concluir fim de coleção por página vazia.
+/// Só existe linha para certame público, então a página sai do banco com o tamanho pedido e não há
+/// descarte depois. Some a ressalva de página curta, some a advertência de que página vazia não
+/// significa fim de coleção, e some a pergunta a outro módulo no caminho da requisição.
 /// </para>
 /// <para>
-/// O descarte é raro por construção: só alcança certame entre a publicação e o dreno da mensagem de
-/// registro, ou cuja publicação teve o registro recusado — estado que alguém reconcilia.
+/// Um item cuja divulgação não se deserializa é omitido, não derruba a lista: o defeito de uma
+/// linha não é culpa dos outros certames, e ele aflora no detalhe, que recusa.
 /// </para>
 /// </remarks>
 public static class ListarCertamesPublicadosQueryHandler
@@ -43,96 +36,42 @@ public static class ListarCertamesPublicadosQueryHandler
 
     public static async Task<ListarCertamesPublicadosResult> Handle(
         ListarCertamesPublicadosQuery query,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IAtoRegistradoReader atoRegistradoReader,
-        IRegistroCodecsEnvelope registroCodecs,
+        ICertameDivulgadoRepository certameDivulgadoRepository,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(atoRegistradoReader);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
 
-        (IReadOnlyList<CandidatoDaVitrine> candidatos, DateTimeOffset instante, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
-            await processoSeletivoRepository
+        (IReadOnlyList<CertameDivulgado> divulgados, DateTimeOffset instante, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
+            await certameDivulgadoRepository
                 .ListarVitrineAsync(
-                    query.Instante, query.Situacao, LimiarDosUltimosDias, query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
-                    cancellationToken)
+                    query.Instante, query.Situacao, LimiarDosUltimosDias, query.AfterSortKey, query.AfterId,
+                    query.Limit, query.Direction, cancellationToken)
                 .ConfigureAwait(false);
 
         ContadoresDaVitrine? contadores = query.IncluirContadores
-            ? await processoSeletivoRepository
-                .ContarVitrinePorSituacaoAsync(instante, LimiarDosUltimosDias, cancellationToken)
+            ? await certameDivulgadoRepository
+                .ContarPorSituacaoAsync(instante, LimiarDosUltimosDias, cancellationToken)
                 .ConfigureAwait(false)
             : null;
 
-        if (candidatos.Count == 0)
-        {
-            return new ListarCertamesPublicadosResult([], anterior, proximo, contadores);
-        }
-
-        IReadOnlyDictionary<Guid, IReadOnlyList<LinhagemDeVersao>> linhagens = await processoSeletivoRepository
-            .ObterLinhagensVigentesAsync([.. candidatos.Select(static c => c.ProcessoSeletivoId)], instante, cancellationToken)
-            .ConfigureAwait(false);
-
-        IReadOnlySet<Guid> registrados = await atoRegistradoReader
-            .FiltrarRegistradosAsync(
-                [.. linhagens.Values.SelectMany(static degraus => degraus).Select(static d => d.AtoCriadorId)],
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        // Um degrau por candidato: o mais novo cujo ato existe. Candidato sem nenhum fica de fora.
-        List<Guid> atosEleitos = [];
-        foreach (CandidatoDaVitrine candidato in candidatos)
-        {
-            if (!linhagens.TryGetValue(candidato.ProcessoSeletivoId, out IReadOnlyList<LinhagemDeVersao>? degraus))
-            {
-                continue;
-            }
-
-            foreach (LinhagemDeVersao degrau in degraus)
-            {
-                if (registrados.Contains(degrau.AtoCriadorId))
-                {
-                    atosEleitos.Add(degrau.AtoCriadorId);
-                    break;
-                }
-            }
-        }
-
-        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
-            .ObterVersoesPorAtoCriadorAsync(atosEleitos, cancellationToken)
-            .ConfigureAwait(false);
-
-        // Agrupar em vez de indexar: a unicidade ato por versão é garantida por índice, mas se ela
-        // for violada — importação de acervo, carga corrigindo dado — indexar lançaria e a vitrine
-        // inteira responderia erro. Em todo o resto este handler omite o item e segue; aqui não é
-        // diferente. Vence a versão de maior número, que é a mais nova entre as eleitas.
-        Dictionary<Guid, VersaoConfiguracao> porProcesso = versoes
-            .GroupBy(static v => v.ProcessoSeletivoId)
-            .ToDictionary(
-                static g => g.Key,
-                static g => g.OrderByDescending(static v => v.NumeroVersao).First());
-
-        // A ordem da página é a do banco: o dicionário resolve conteúdo, nunca posição.
         List<CertameNaVitrineDto> itens = [];
-        foreach (CandidatoDaVitrine candidato in candidatos)
+        foreach (CertameDivulgado divulgado in divulgados)
         {
-            if (!porProcesso.TryGetValue(candidato.ProcessoSeletivoId, out VersaoConfiguracao? versao)
-                || !registroCodecs.SabeLer(versao.SchemaVersion))
+            if (JsonSerializer.Deserialize<CertamePublicadoDto>(divulgado.Certame) is not { } certame)
             {
                 continue;
             }
 
-            if (ProjecaoDoCertamePublicado.TentarLerDocumento(versao.ConfiguracaoCongelada) is not { } envelope)
-            {
-                continue;
-            }
-
-            if (ProjecaoDaVitrine.Projetar(candidato, instante, envelope) is { } item)
-            {
-                itens.Add(item);
-            }
+            itens.Add(new CertameNaVitrineDto(
+                divulgado.Id,
+                certame.Periodo.Numero,
+                certame.TipoProcesso.Nome,
+                certame.TipoProcesso,
+                certame.ModalidadesOfertadas,
+                divulgado.InscricoesAte,
+                divulgado.InscricoesDe <= instante && divulgado.InscricoesAte >= instante,
+                certame.Vagas.Sum(static v => v.TotalPublicado)));
         }
 
         return new ListarCertamesPublicadosResult(itens, anterior, proximo, contadores);

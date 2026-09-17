@@ -128,82 +128,6 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// pelo seletor de snapshot vigente para distinguir 404 (processo
     /// inexistente) de 422 (sem publicação vigente ≤ o instante).
     /// </summary>
-    /// <summary>
-    /// Linhagem de versões vigentes por relógio no <paramref name="instante"/>, da mais nova para a
-    /// mais antiga: o número da versão e o ato que a criou, sem materializar a configuração
-    /// congelada.
-    /// </summary>
-    /// <remarks>
-    /// Insumo do seletor de versão PUBLICAMENTE visível. A visibilidade pública exige o ato
-    /// registrado, e a versão mais nova pode ainda não o ter — entre a retificação e o dreno da
-    /// mensagem, ou indefinidamente quando o registro é recusado. Um certame já público não pode
-    /// sair do ar por isso: publicação é ato público, e torná-la invisível fere a transparência.
-    /// Quem lê desce a linhagem até a versão cujo ato existe, e é ela que responde.
-    /// <para>
-    /// Herda o mesmo filtro de exclusão lógica de <see cref="ObterVersaoVigenteAsync"/>: processo
-    /// excluído logicamente não vaza a sua configuração congelada.
-    /// </para>
-    /// </remarks>
-    Task<IReadOnlyList<LinhagemDeVersao>> ObterLinhagemVigenteAsync(
-        Guid processoSeletivoId,
-        DateTimeOffset instante,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Versão de configuração de um processo pelo seu número. <see langword="null"/> quando não
-    /// existe.
-    /// </summary>
-    Task<VersaoConfiguracao?> ObterVersaoPorNumeroAsync(
-        Guid processoSeletivoId,
-        int numeroVersao,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Página da vitrine pública, ordenada por urgência: os que ainda recebem inscrição primeiro, do
-    /// prazo mais próximo ao mais distante, e os encerrados depois.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A ordem é uma ROTAÇÃO da ordem de prazo no ponto <paramref name="instante"/>: tudo com prazo
-    /// a vencer forma o primeiro segmento, o resto forma o segundo, e dentro de cada um a ordem é a
-    /// mesma crescente. É o que permite ao índice de prazo servir os dois segmentos.
-    /// </para>
-    /// <para>
-    /// O instante que segmenta é congelado na PRIMEIRA página e viaja na âncora: as seguintes o
-    /// recuperam dali e ignoram <paramref name="instanteSeForAPrimeiraPagina"/>. Sem isso, um prazo
-    /// que vence no meio do percurso mudaria o item de segmento, e ele apareceria duas vezes ou
-    /// sumiria. O instante efetivamente usado volta na resposta, porque quem projeta precisa do
-    /// mesmo para dizer se as inscrições estão abertas.
-    /// </para>
-    /// <para>
-    /// Devolve CANDIDATOS: a visibilidade pública exige ato registrado, que vive em outro módulo e
-    /// nenhuma consulta daqui pode afirmar. Quem monta a página confere e descarta.
-    /// </para>
-    /// </remarks>
-    Task<(IReadOnlyList<CandidatoDaVitrine> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
-        ListarVitrineAsync(
-            DateTimeOffset instanteSeForAPrimeiraPagina,
-            SituacaoDoCertame situacao,
-            TimeSpan limiarDosUltimosDias,
-            string? afterSortKey,
-            Guid? afterId,
-            int limit,
-            PaginationDirection direction,
-            CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Linhagens vigentes de vários processos de uma vez, cada uma da versão mais nova para a mais
-    /// antiga. Mesma semântica de <see cref="ObterLinhagemVigenteAsync"/>, em lote.
-    /// </summary>
-    /// <remarks>
-    /// A vitrine resolve a versão publicamente visível de uma página inteira. Perguntar processo a
-    /// processo faria uma consulta por linha da página, numa rota anônima de pico previsível.
-    /// </remarks>
-    Task<IReadOnlyDictionary<Guid, IReadOnlyList<LinhagemDeVersao>>> ObterLinhagensVigentesAsync(
-        IReadOnlyCollection<Guid> processoSeletivoIds,
-        DateTimeOffset instante,
-        CancellationToken cancellationToken = default);
-
     /// <summary>Versões de configuração identificadas pelos seus atos criadores, em lote.</summary>
     /// <remarks>
     /// Chaveado pelo ATO, e não pelo par processo e número: um ato cria no máximo uma versão
@@ -213,19 +137,6 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// </remarks>
     Task<IReadOnlyList<VersaoConfiguracao>> ObterVersoesPorAtoCriadorAsync(
         IReadOnlyCollection<Guid> atoCriadorIds,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Contagem de certames publicados por situação, num único percurso.
-    /// </summary>
-    /// <remarks>
-    /// Três contagens condicionais numa consulta só, e não uma consulta por situação: são números
-    /// que a tela exibe lado a lado, e resolvê-los separadamente abriria janela para eles
-    /// discordarem entre si.
-    /// </remarks>
-    Task<ContadoresDaVitrine> ContarVitrinePorSituacaoAsync(
-        DateTimeOffset instante,
-        TimeSpan limiarDosUltimosDias,
         CancellationToken cancellationToken = default);
 
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);

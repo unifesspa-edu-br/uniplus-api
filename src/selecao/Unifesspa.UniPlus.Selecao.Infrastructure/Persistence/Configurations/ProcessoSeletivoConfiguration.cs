@@ -49,21 +49,6 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.TipoProcesso).IsRequired();
         builder.Ignore(p => p.Tipo);
         builder.Property(p => p.Status).HasConversion<int>().IsRequired();
-
-        // Encerramento da janela de inscrição da versão publicamente vigente, copiado do que a
-        // configuração congelada carrega. Nulo enquanto o processo nunca foi publicado. O início não
-        // entra: nada ordena nem filtra por ele, e estado derivado sem leitor só acumula risco de
-        // desincronizar.
-        builder.Property(p => p.PeriodoInscricaoFimVigente);
-
-        // Índice da vitrine pública: ordena do prazo mais próximo ao mais distante, com o Id como
-        // desempate para tornar a ordem TOTAL — sem ele, dois certames que encerram no mesmo
-        // instante trocariam de lugar entre páginas, e a navegação por cursor repetiria um e
-        // omitiria o outro. Parcial: processo sem publicação não entra na vitrine e não precisa
-        // ocupar o índice.
-        builder.HasIndex(p => new { p.PeriodoInscricaoFimVigente, p.Id })
-            .HasDatabaseName("ix_processos_seletivos_vitrine_prazo")
-            .HasFilter("periodo_inscricao_fim_vigente IS NOT NULL");
         // Story #851 §3.4: NOT NULL, exigido na criação — sem produção, migration direta.
         builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired();
 

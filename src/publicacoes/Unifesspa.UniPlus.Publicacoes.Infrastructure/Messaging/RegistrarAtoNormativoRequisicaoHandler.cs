@@ -84,7 +84,7 @@ public static class RegistrarAtoNormativoRequisicaoHandler
     }
 
     [Transactional]
-    public static async Task Handle(
+    public static async Task<AtoNormativoRegistrado> Handle(
         RegistrarAtoNormativoRequisicao requisicao,
         PublicacoesDbContext db,
         ITipoAtoPublicadoRepository tiposRepository,
@@ -113,7 +113,7 @@ public static class RegistrarAtoNormativoRequisicaoHandler
             .ConfigureAwait(false);
         if (jaRegistrado is not null)
         {
-            return;
+            return Registrado(requisicao.AtoId);
         }
 
         // O tipo tem de ser do CADASTRO — o vocabulário é de Publicações, e um domínio não
@@ -173,7 +173,7 @@ public static class RegistrarAtoNormativoRequisicaoHandler
             db.ChangeTracker.Clear();
             await GarantirRegistradoOuPropagarAsync(ex, requisicao.AtoId, atosRepository, cancellationToken)
                 .ConfigureAwait(false);
-            return;
+            return Registrado(requisicao.AtoId);
         }
 
         if (resultado.IsFailure)
@@ -189,13 +189,23 @@ public static class RegistrarAtoNormativoRequisicaoHandler
                 .ConfigureAwait(false);
             if (registradoPorOutraEntrega is not null)
             {
-                return;
+                return Registrado(requisicao.AtoId);
             }
 
             throw new RegistroDeAtoRecusadoException(
                 requisicao.AtoId, resultado.Error!.Code, resultado.Error!.Message);
         }
+
+        return Registrado(requisicao.AtoId);
     }
+
+    /// <summary>
+    /// Anuncia o registro. Emitido nos QUATRO caminhos em que o ato termina registrado — gravado
+    /// agora, reentrega do mesmo envelope, corrida perdida na unicidade e recusa que era sombra de
+    /// uma corrida —, porque o que o emissor precisa saber é o estado, não por qual porta se chegou
+    /// nele. O envelope é instalado na mesma transação que gravou o ato.
+    /// </summary>
+    private static AtoNormativoRegistrado Registrado(Guid atoId) => new(atoId);
 
     /// <summary>
     /// Uma violação de unicidade só é reentrega se o ato deste envelope existir depois dela.

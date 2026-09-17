@@ -82,36 +82,3 @@ public interface IVagaDeLinhagemReader
     /// </remarks>
     Task<bool> AtoJaFoiRetificadoAsync(Guid atoId, CancellationToken cancellationToken = default);
 }
-
-/// <summary>
-/// Leitor do registro efetivo de um ato normativo (ADR-0056). Responde se o ato já existe em
-/// Publicações, e nada além disso.
-/// </summary>
-/// <remarks>
-/// Uma versão de configuração carrega, congelado, o identificador do ato que a criou
-/// (referência por valor, ADR-0061) — mas carregar a referência não é o mesmo que o ato
-/// existir: o registro acontece depois da publicação, por mensagem durável (ADR-0108), e uma
-/// recusa de mérito só aflora no consumo da fila. É essa distinção que o critério de
-/// visibilidade pública exige (ADR-0131): um certame só é divulgado quando o ato que criou a
-/// sua versão vigente está registrado.
-/// <para>
-/// A ausência tem duas causas de naturezas opostas — a mensagem ainda não drenou, ou foi
-/// recusada por mérito e parou na fila morta, sem retentativa — e este leitor <b>não</b> as
-/// distingue, de propósito. Quem pergunta responde o mesmo "não encontrado" nos dois casos; um
-/// leitor que separasse os dois viraria oráculo de estado interno para um chamador anônimo.
-/// </para>
-/// </remarks>
-public interface IAtoRegistradoReader
-{
-    /// <summary>
-    /// Dos identificadores informados, quais correspondem a ato normativo já registrado.
-    /// </summary>
-    /// <remarks>
-    /// Em lote por duas razões. A leitura de um certame percorre a linhagem de versões do topo
-    /// para baixo até achar a que tem ato registrado, e a vitrine resolve uma página inteira de
-    /// certames de uma vez — uma assinatura unitária faria as duas consultarem em laço.
-    /// </remarks>
-    Task<IReadOnlySet<Guid>> FiltrarRegistradosAsync(
-        IReadOnlyCollection<Guid> atoIds,
-        CancellationToken cancellationToken = default);
-}

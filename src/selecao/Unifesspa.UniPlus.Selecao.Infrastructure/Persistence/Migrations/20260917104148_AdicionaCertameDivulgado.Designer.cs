@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20260917041318_AdicionaPrazoVigenteDoCertame")]
-    partial class AdicionaPrazoVigenteDoCertame
+    [Migration("20260917104148_AdicionaCertameDivulgado")]
+    partial class AdicionaCertameDivulgado
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -206,6 +206,63 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_categorias_julgadas_codigo");
 
                     b.ToTable("categorias_julgadas", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CertameDivulgado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AtoCriadorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ato_criador_id");
+
+                    b.Property<string>("Certame")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("certame");
+
+                    b.Property<DateTimeOffset>("DivulgadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("divulgado_em");
+
+                    b.Property<string>("HashConfiguracao")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("hash_configuracao")
+                        .IsFixedLength();
+
+                    b.Property<DateTimeOffset>("InscricoesAte")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inscricoes_ate");
+
+                    b.Property<DateTimeOffset>("InscricoesDe")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inscricoes_de");
+
+                    b.Property<int>("NumeroVersao")
+                        .HasColumnType("integer")
+                        .HasColumnName("numero_versao");
+
+                    b.Property<string>("VersaoProjecao")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("versao_projecao");
+
+                    b.HasKey("Id")
+                        .HasName("pk_certames_divulgados");
+
+                    b.HasIndex("AtoCriadorId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_certames_divulgados_ato_criador");
+
+                    b.HasIndex("InscricoesAte", "Id")
+                        .HasDatabaseName("ix_certames_divulgados_prazo");
+
+                    b.ToTable("certames_divulgados", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoGatilho", b =>
@@ -1891,10 +1948,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("origem_candidatos");
 
-                    b.Property<DateTimeOffset?>("PeriodoInscricaoFimVigente")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("periodo_inscricao_fim_vigente");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -1910,10 +1963,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_processos_seletivos");
-
-                    b.HasIndex("PeriodoInscricaoFimVigente", "Id")
-                        .HasDatabaseName("ix_processos_seletivos_vitrine_prazo")
-                        .HasFilter("periodo_inscricao_fim_vigente IS NOT NULL");
 
                     b.ToTable("processos_seletivos", "selecao", t =>
                         {
