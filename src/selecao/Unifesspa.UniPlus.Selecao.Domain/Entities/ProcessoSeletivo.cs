@@ -378,6 +378,45 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // A etapa acontece DENTRO da fase que a abriga, e é a raiz quem confere: a etapa não
+        // enxerga o cronograma e a fase não enxerga as etapas, pelo mesmo motivo que só a raiz
+        // resolve o vínculo logo acima. Sem isto, o certame é publicável com uma prova marcada
+        // para antes de a fase que a contém começar, e o envelope congela a incoerência.
+        //
+        // Só compara o que os dois lados declararam. Fase sem janela não contém nada — exigir
+        // data dela por causa da etapa inventaria obrigação que o cadastro não faz —, e etapa
+        // sem janela acontece na janela da fase, que é o que a tela promete. Bordas
+        // coincidentes passam: começar junto com a fase é o caso comum.
+        foreach (EtapaProcesso etapa in etapas)
+        {
+            if (etapa.FaseCodigo is not { } codigoDaFase)
+            {
+                continue;
+            }
+
+            FaseCronograma? fase = _cronogramaFases
+                .FirstOrDefault(f => string.Equals(f.Codigo, codigoDaFase, StringComparison.Ordinal));
+            if (fase is null)
+            {
+                continue;
+            }
+
+            if (etapa.Inicio is { } inicioDaEtapa && fase.Inicio is { } inicioDaFase
+                && inicioDaEtapa < inicioDaFase)
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.EtapaComecaAntesDaFase",
+                    $"A etapa \"{etapa.Nome}\" começa em {inicioDaEtapa:O}, antes da fase {codigoDaFase} ({inicioDaFase:O}) — a etapa acontece dentro da fase."));
+            }
+
+            if (etapa.Fim is { } fimDaEtapa && fase.Fim is { } fimDaFase && fimDaEtapa > fimDaFase)
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.EtapaTerminaDepoisDaFase",
+                    $"A etapa \"{etapa.Nome}\" termina em {fimDaEtapa:O}, depois da fase {codigoDaFase} ({fimDaFase:O}) — a etapa acontece dentro da fase."));
+            }
+        }
+
         _etapas.Clear();
         foreach (EtapaProcesso etapa in etapas)
         {
