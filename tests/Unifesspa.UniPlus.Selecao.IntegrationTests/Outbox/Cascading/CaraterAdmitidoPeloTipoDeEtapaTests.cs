@@ -68,8 +68,8 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
 
         Result<MutacaoAceita> resultado = await DefinirEtapasAsync(
             processoId,
-            new EtapaProcessoInput("Prova", CaraterEtapa.Classificatoria, ProvaObjetiva, 1m, null, 1),
-            new EtapaProcessoInput("Documentos", CaraterEtapa.Eliminatoria, AnaliseDocumental, null, 5m, 2));
+            new EtapaProcessoInput("Prova", CaraterEtapa.Classificatoria, ProvaObjetiva, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+            new EtapaProcessoInput("Documentos", CaraterEtapa.Eliminatoria, AnaliseDocumental, null, 5m, 2, Produtos: [], Bancas: [], Recursos: []));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -102,7 +102,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
         decimal? notaMinima = null) =>
         DefinirEtapasAsync(
             processoId,
-            new EtapaProcessoInput("Etapa", carater, tipoEtapaOrigemId, peso, notaMinima, 1));
+            new EtapaProcessoInput("Etapa", carater, tipoEtapaOrigemId, peso, notaMinima, 1, Produtos: [], Bancas: [], Recursos: []));
 
     private async Task<Result<MutacaoAceita>> DefinirEtapasAsync(
         Guid processoId,

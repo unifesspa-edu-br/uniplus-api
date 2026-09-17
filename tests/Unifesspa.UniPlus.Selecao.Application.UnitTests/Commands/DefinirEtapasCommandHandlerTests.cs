@@ -60,7 +60,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             [
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELMINAR", null)]),
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELMINAR", null)], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -101,7 +101,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             [
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("EDITAL_ABERTURA", "PRELIMINAR")]),
+                    Produtos: [new ProdutoDaEtapaInput("EDITAL_ABERTURA", "PRELIMINAR")], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -144,14 +144,14 @@ public sealed class DefinirEtapasCommandHandlerTests
                     [
                         new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR"),
                         new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "DEFINITIVO"),
-                    ]),
+                    ], Bancas: [], Recursos: []),
                 new EtapaProcessoInput(
                     "Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2,
                     Produtos:
                     [
                         new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR"),
                         new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "DEFINITIVO"),
-                    ]),
+                    ], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -217,7 +217,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             [
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")]),
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -237,7 +237,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                 new EtapaProcessoInput(
                     "Prova Objetiva — 1ª fase", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
                     etapaId,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")]),
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Curinga);
 
@@ -330,7 +330,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                         new RecursoDaEtapaInput(
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
                             2m, UnidadePrazo.DiasUteis, "RESULTADO_PRELIMINAR", null, null, null, null),
-                    ]),
+                    ], Bancas: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -355,7 +355,7 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             Guid.CreateVersion7(),
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
@@ -376,7 +376,7 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
@@ -404,7 +404,7 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
@@ -430,7 +430,7 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 1)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
@@ -455,8 +455,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         DefinirEtapasCommand command = new(
             processo.Id,
             [
-                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id),
-                new EtapaProcessoInput("Prova Objetiva (duplicada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 2, etapaOriginal.Id),
+                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Prova Objetiva (duplicada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 2, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
             ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
@@ -479,8 +479,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         DefinirEtapasCommand command = new(
             processo.Id,
             [
-                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1),
-                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 2m, null, 1),
+                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 2m, null, 1, Produtos: [], Bancas: [], Recursos: []),
             ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
@@ -519,9 +519,9 @@ public sealed class DefinirEtapasCommandHandlerTests
             processo.Id,
             [
                 // Vínculo e caráter inalterados: só o peso muda, e a etapa é a instância tracked.
-                new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id),
+                new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
                 // Etapa nova com tipo inativo — é ela que derruba o PUT inteiro.
-                new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, tipoInativo, 1m, null, 2),
+                new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, tipoInativo, 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
             ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
@@ -562,7 +562,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         // Edita só o Peso — TipoEtapaOrigemId permanece o mesmo do snapshot já congelado.
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
@@ -597,7 +597,7 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
@@ -622,7 +622,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         // Mesma etapa (mesmo Id), agora vinculada à Redação em vez de Prova Objetiva.
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
@@ -650,8 +650,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         DefinirEtapasCommand command = new(
             processo.Id,
             [
-                new EtapaProcessoInput("Prova — Manhã", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1),
-                new EtapaProcessoInput("Prova — Tarde", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2),
+                new EtapaProcessoInput("Prova — Manhã", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Prova — Tarde", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
             ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
@@ -682,7 +682,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         Guid tipoInexistente = Guid.CreateVersion7();
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, tipoInexistente, 3m, null, 1)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, tipoInexistente, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
@@ -707,8 +707,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         DefinirEtapasCommand command = new(
             processo.Id,
             [
-                new EtapaProcessoInput(" ", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1),
-                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 0m, null, 2),
+                new EtapaProcessoInput(" ", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 0m, null, 2, Produtos: [], Bancas: [], Recursos: []),
             ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
@@ -765,7 +765,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                         new RecursoDaEtapaInput(
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
                             2m, UnidadePrazo.DiasUteis, "RESULTADO_PRELIMINAR", null, null, null, null),
-                    ]),
+                    ], Bancas: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -792,7 +792,7 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id)],
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])],
             PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, ReaderComTipoQueNaoPontua());
@@ -823,7 +823,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         // Edita só o peso; o caráter classificatório continua o mesmo que o tipo passou a recusar.
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 7m, null, 1, etapaOriginal.Id)],
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 7m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])],
             PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
@@ -854,8 +854,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         DefinirEtapasCommand command = new(
             processo.Id,
             [
-                new EtapaProcessoInput("Análise", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1),
-                new EtapaProcessoInput("Entrevista", CaraterEtapa.Eliminatoria, tipoInativo, null, 5m, 2),
+                new EtapaProcessoInput("Análise", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Entrevista", CaraterEtapa.Eliminatoria, tipoInativo, null, 5m, 2, Produtos: [], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -880,8 +880,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         DefinirEtapasCommand command = new(
             processo.Id,
             [
-                new EtapaProcessoInput("Análise 1", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1),
-                new EtapaProcessoInput("Análise 2", CaraterEtapa.Ambas, TipoProvaObjetivaOrigemId, 2m, 5m, 2),
+                new EtapaProcessoInput("Análise 1", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Análise 2", CaraterEtapa.Ambas, TipoProvaObjetivaOrigemId, 2m, 5m, 2, Produtos: [], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
 

@@ -62,6 +62,22 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
                 .When(e => e.NotaMinima.HasValue)
                 .WithMessage("Nota mínima deve ter no máximo 4 casas decimais.");
 
+            // A COLEÇÃO em si não pode ser nula. `[JsonRequired]` recusa a carga que omite a
+            // chave, mas `"produtos": null` atravessa a desserialização — e, como a gravação
+            // substitui a coleção inteira, um nulo apagaria em silêncio o que a etapa declara.
+            // A lista vazia continua válida: é a declaração explícita de que não há nenhum.
+            etapa.RuleFor(e => e.Produtos)
+                .NotNull()
+                .WithMessage("Declare os produtos da etapa: lista vazia se ela não publica nenhum.");
+
+            etapa.RuleFor(e => e.Bancas)
+                .NotNull()
+                .WithMessage("Declare as bancas da etapa: lista vazia se ela não requer nenhuma.");
+
+            etapa.RuleFor(e => e.Recursos)
+                .NotNull()
+                .WithMessage("Declare as janelas recursais da etapa: lista vazia se ela não abre nenhuma.");
+
             // Mesma proteção do array de etapas, um nível abaixo: item nulo nas coleções
             // aninhadas passa incólume pelo ChildRules, e o handler o desreferencia — o papel
             // do produto, o tipo da banca, a âncora do recurso — estourando como 500.

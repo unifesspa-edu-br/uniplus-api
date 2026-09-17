@@ -9089,7 +9089,10 @@
           "tipoEtapaOrigemId",
           "peso",
           "notaMinima",
-          "ordem"
+          "ordem",
+          "produtos",
+          "bancas",
+          "recursos"
         ],
         "type": "object",
         "properties": {
@@ -9144,10 +9147,7 @@
             ]
           },
           "produtos": {
-            "type": [
-              "null",
-              "array"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProdutoDaEtapaInput"
             }
@@ -9171,19 +9171,13 @@
             "default": false
           },
           "bancas": {
-            "type": [
-              "null",
-              "array"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/BancaDaEtapaInput"
             }
           },
           "recursos": {
-            "type": [
-              "null",
-              "array"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/RecursoDaEtapaInput"
             }

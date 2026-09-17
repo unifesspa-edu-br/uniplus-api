@@ -292,7 +292,7 @@ public static class DefinirEtapasCommandHandler
         for (int i = 0; i < etapas.Count; i++)
         {
             EtapaProcessoInput input = command.Etapas[i];
-            IReadOnlyList<ProdutoDaEtapaInput> declarados = input.Produtos ?? [];
+            IReadOnlyList<ProdutoDaEtapaInput> declarados = input.Produtos;
 
             // O papel desconhecido é RECUSADO, e não tratado como ausente. Ignorar a conversão
             // fazia um erro de digitação — `PRELIMINARR` por `PRELIMINAR` — virar produto sem
@@ -368,7 +368,7 @@ public static class DefinirEtapasCommandHandler
             }
 
             List<BancaDaEtapa> bancas = [];
-            foreach (BancaDaEtapaInput bancaInput in input.Bancas ?? [])
+            foreach (BancaDaEtapaInput bancaInput in input.Bancas)
             {
                 TipoBancaView? tipoBanca = await tipoBancaReader
                     .ObterPorIdAsync(bancaInput.TipoBancaId, cancellationToken)
@@ -394,7 +394,7 @@ public static class DefinirEtapasCommandHandler
             // A âncora em ato é declarada pelo código, e resolvida DENTRO dos produtos desta
             // etapa: ancorar na publicação de outra etapa deixa de ser exprimível.
             List<RecursoDaEtapa> recursos = [];
-            foreach (RecursoDaEtapaInput declarado in input.Recursos ?? [])
+            foreach (RecursoDaEtapaInput declarado in input.Recursos)
             {
                 // Entre os PRELIMINARES, e não entre todos os produtos: a etapa publica o mesmo
                 // ato duas vezes — preliminar e definitivo —, e é do preliminar que a janela

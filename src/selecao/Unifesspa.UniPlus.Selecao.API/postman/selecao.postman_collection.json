@@ -1390,7 +1390,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3599,7 +3599,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva (revisada)\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 2.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva (revisada)\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 2.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4211,7 +4211,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4740,7 +4740,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5275,7 +5275,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5803,7 +5803,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6335,7 +6335,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
