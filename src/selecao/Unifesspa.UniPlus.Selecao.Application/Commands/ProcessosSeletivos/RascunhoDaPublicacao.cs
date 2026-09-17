@@ -18,6 +18,16 @@ internal static class RascunhoDaPublicacao
         "RascunhoDePublicacao.SemUsuarioAutenticado",
         "O rascunho da publicação pertence a quem o escreve, e a requisição não identifica nenhum usuário autenticado.");
 
+    /// <summary>
+    /// Duas gravações do mesmo operador no mesmo processo chegando juntas: as duas leem que
+    /// não há rascunho e as duas inserem, e o índice único deixa passar uma só. É conflito
+    /// transitório — a segunda tentativa encontra a linha da primeira e a substitui —, não
+    /// corpo inválido, e por isso não pode chegar ao operador como falha de servidor.
+    /// </summary>
+    internal static readonly DomainError GravacaoConcorrente = new(
+        "RascunhoDaPublicacao.GravacaoConcorrente",
+        "Outra gravação deste rascunho chegou primeiro — tente novamente.");
+
     internal static DomainError ProcessoNaoEncontrado(Guid processoSeletivoId) => new(
         "ProcessoSeletivo.NaoEncontrado",
         $"Processo Seletivo {processoSeletivoId} não encontrado.");

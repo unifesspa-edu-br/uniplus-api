@@ -559,6 +559,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // de uso, e a validação forte continua no ato de publicar.
         new("RascunhoDePublicacao.VersaoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.rascunho_publicacao.versao_invalida", "Versão do formato do rascunho inválida")),
         new("RascunhoDePublicacao.ConteudoMuitoGrande", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.rascunho_publicacao.conteudo_muito_grande", "Rascunho da publicação acima do tamanho permitido")),
+        // Conflito transitório entre duas gravações do mesmo operador, e não corpo inválido:
+        // 409, como a ADR-0119 fixa para concorrência. A segunda tentativa encontra a linha
+        // que a primeira criou e a substitui.
+        new("RascunhoDaPublicacao.GravacaoConcorrente", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.rascunho_publicacao.gravacao_concorrente", "Outra gravação do mesmo rascunho chegou primeiro")),
         new("RascunhoDePublicacao.SemUsuarioAutenticado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.rascunho_publicacao.sem_usuario_autenticado", "O rascunho da publicação pertence a quem o escreve")),
         new("RascunhoRetificacao.JaAberta", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.retificacao_ja_aberta", "Já existe uma retificação em curso neste processo")),
         new("RascunhoRetificacao.NaoAberta", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.retificacao_nao_aberta", "Não há retificação em curso neste processo")),
