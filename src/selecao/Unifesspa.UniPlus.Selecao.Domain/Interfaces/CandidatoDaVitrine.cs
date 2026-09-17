@@ -20,17 +20,27 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// <param name="Nome">Título do certame.</param>
 public readonly record struct CandidatoDaVitrine(Guid ProcessoSeletivoId, string Nome);
 
-/// <summary>Filtro por situação da janela de inscrição, resolvido contra o instante da consulta.</summary>
+/// <summary>
+/// Filtro por situação da janela de inscrição, resolvido contra o instante da consulta.
+/// </summary>
+/// <remarks>
+/// Os três valores concretos PARTICIONAM o conjunto publicado: cada certame cai em exatamente um.
+/// É o que torna os contadores somáveis e o que faz cada número exibido ter um filtro que o serve —
+/// um contador cujo recorte não existisse como filtro seria um rótulo em que não se pode clicar.
+/// </remarks>
 public enum SituacaoDoCertame
 {
     /// <summary>Sem filtro: publicado aparece, encerrado ou não.</summary>
     Todas = 0,
 
-    /// <summary>Apenas os que ainda recebem inscrição.</summary>
+    /// <summary>Recebem inscrição e ainda não entraram no limiar final.</summary>
     InscricoesAbertas = 1,
 
     /// <summary>Apenas os que já encerraram.</summary>
     Encerradas = 2,
+
+    /// <summary>Recebem inscrição e encerram dentro do limiar final.</summary>
+    UltimosDias = 3,
 }
 
 /// <summary>

@@ -56,7 +56,7 @@ public static class ListarCertamesPublicadosQueryHandler
         (IReadOnlyList<CandidatoDaVitrine> candidatos, DateTimeOffset instante, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await processoSeletivoRepository
                 .ListarVitrineAsync(
-                    query.Instante, query.Situacao, query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
+                    query.Instante, query.Situacao, LimiarDosUltimosDias, query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
                     cancellationToken)
                 .ConfigureAwait(false);
 

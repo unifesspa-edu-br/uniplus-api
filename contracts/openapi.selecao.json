@@ -12355,7 +12355,8 @@
         "enum": [
           "todas",
           "inscricoesAbertas",
-          "encerradas"
+          "encerradas",
+          "ultimosDias"
         ],
         "type": "string"
       },

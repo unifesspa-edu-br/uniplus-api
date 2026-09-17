@@ -184,6 +184,7 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         ListarVitrineAsync(
             DateTimeOffset instanteSeForAPrimeiraPagina,
             SituacaoDoCertame situacao,
+            TimeSpan limiarDosUltimosDias,
             string? afterSortKey,
             Guid? afterId,
             int limit,
