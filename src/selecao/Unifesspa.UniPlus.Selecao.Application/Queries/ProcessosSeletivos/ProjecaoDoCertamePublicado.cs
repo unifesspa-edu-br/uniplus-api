@@ -35,6 +35,17 @@ internal static class ProjecaoDoCertamePublicado
     public const string Versao = "1";
 
     /// <summary>
+    /// Opções de serialização do documento divulgado — as MESMAS do wire.
+    /// </summary>
+    /// <remarks>
+    /// O documento guardado é a resposta pública, e guardá-lo com outra convenção de nomes o faria
+    /// divergir do contrato que ele serve: as chaves do jsonb deixariam de casar com as do corpo, e
+    /// quem fosse consultar dentro dele — que é a razão de ser jsonb, e não texto — escreveria o
+    /// caminho errado. Fixar aqui evita que a convenção dependa de quem chamou o serializador.
+    /// </remarks>
+    public static readonly JsonSerializerOptions OpcoesDoDocumento = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
     /// Código único da recusa de leitura do envelope. Vive aqui, e não repetido em cada ponto que
     /// recusa, porque é ele que o mapeador de erros da API associa ao 422.
     /// </summary>

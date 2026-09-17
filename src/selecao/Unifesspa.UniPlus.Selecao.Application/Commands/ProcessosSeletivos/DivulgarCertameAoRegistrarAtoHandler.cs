@@ -88,7 +88,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         }
 
         CertamePublicadoDto certame = projecao.Value!;
-        string documento = JsonSerializer.Serialize(certame);
+        string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
         CertameDivulgado? divulgado = await certameDivulgadoRepository

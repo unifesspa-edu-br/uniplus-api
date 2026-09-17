@@ -58,7 +58,7 @@ public static class ListarCertamesPublicadosQueryHandler
         List<CertameNaVitrineDto> itens = [];
         foreach (CertameDivulgado divulgado in divulgados)
         {
-            if (JsonSerializer.Deserialize<CertamePublicadoDto>(divulgado.Certame) is not { } certame)
+            if (JsonSerializer.Deserialize<CertamePublicadoDto>(divulgado.Certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento) is not { } certame)
             {
                 continue;
             }
