@@ -496,10 +496,14 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // resultado — classificação intrínseca do tipo, que nunca varia por edital.
         new("ProdutoDaFase.AtoNaoEncontradoNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.ato_nao_encontrado_no_catalogo", "O tipo de ato declarado pela fase não tem versão vigente no catálogo de Publicações")),
         new("ProdutoDaFase.PapelDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.papel_desconhecido", "O papel do produto não é declarável")),
-        new("ProdutoDaEtapa.PapelDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_etapa.papel_desconhecido", "O papel do produto da etapa não é declarável")),
-        new("ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_etapa.ato_nao_encontrado_no_catalogo", "O tipo de ato declarado pela etapa não tem versão vigente no catálogo de Publicações")),
-        new("ProdutoDaEtapa.PapelEmAtoQueNaoEhResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_etapa.papel_em_ato_que_nao_eh_resultado", "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo")),
         new("ProdutoDaFase.PapelEmAtoQueNaoEhResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado", "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo")),
+        // O produto da etapa é conferido contra o MESMO catálogo, pelas mesmas duas perguntas:
+        // a etapa declara o que publicará, e o código declarado ali vira o nome do produto no
+        // cronograma público e a chave por onde a restauração da configuração congelada
+        // reencontra o produto.
+        new("ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_etapa.ato_nao_encontrado_no_catalogo", "O tipo de ato declarado pela etapa não tem versão vigente no catálogo de Publicações")),
+        new("ProdutoDaEtapa.PapelDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_etapa.papel_desconhecido", "O papel do produto da etapa não é declarável")),
+        new("ProdutoDaEtapa.PapelEmAtoQueNaoEhResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_etapa.papel_em_ato_que_nao_eh_resultado", "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo")),
         // A identidade da regra é o par (codigo, versao): pedir uma versão que não existe de um
         // código que existe é o mesmo 404 de pedir um código inventado, e distinguir os dois
         // revelaria quais códigos há no catálogo a quem só tentou adivinhar.
