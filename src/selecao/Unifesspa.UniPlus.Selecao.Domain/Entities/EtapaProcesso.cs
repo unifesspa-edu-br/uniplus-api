@@ -117,8 +117,40 @@ public sealed class EtapaProcesso : EntityBase
                 $"A etapa declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa."));
         }
 
+        // Reconcilia pelo par que identifica o produto, em vez de trocar a coleção inteira: o
+        // cliente devolve o que leu, e recriar a linha do que não mudou gira o Id, que entra nos
+        // bytes canônicos. O hash da publicação passaria a mudar a cada gravação idêntica, e com
+        // ele a resposta para "esta configuração ainda é a que foi publicada?".
+        //
+        // É o mesmo tratamento que a reposição da versão congelada já dá alguns métodos abaixo,
+        // e pela mesma razão que o cronograma reconcilia as fases: preservar a linha preserva o
+        // CreatedAt e as referências que apontam para o Id — aqui, o produto âncora do recurso.
+        List<ProdutoDaEtapa> disponiveis = [.. _produtos];
+        List<ProdutoDaEtapa> reconciliados = [];
+        foreach (ProdutoDaEtapa declarado in produtos)
+        {
+            // Compara sob a mesma normalização que o documento canônico usa: o cliente pode
+            // devolver o acento em forma decomposta, e ordinalmente esse texto não é o mesmo.
+            // Sem isto, um reenvio idêntico aos olhos do operador recriaria a linha.
+            ProdutoDaEtapa? existente = disponiveis.FirstOrDefault(p =>
+                string.Equals(
+                    HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
+                    HashCanonicalComputer.NormalizeNfc(declarado.AtoCodigo),
+                    StringComparison.Ordinal)
+                && p.Papel == declarado.Papel);
+
+            if (existente is null)
+            {
+                reconciliados.Add(declarado);
+                continue;
+            }
+
+            disponiveis.Remove(existente);
+            reconciliados.Add(existente);
+        }
+
         _produtos.Clear();
-        foreach (ProdutoDaEtapa produto in produtos)
+        foreach (ProdutoDaEtapa produto in reconciliados)
         {
             produto.VincularEtapa(Id);
             _produtos.Add(produto);
@@ -575,8 +607,31 @@ public sealed class EtapaProcesso : EntityBase
                 "Cada tipo de banca pode ser requerido uma única vez por etapa."));
         }
 
+        // Mesma reconciliação dos produtos, pela mesma razão: o código identifica a banca, e a
+        // linha que continua declarada continua sendo a mesma linha.
+        List<BancaDaEtapa> bancasDisponiveis = [.. _bancas];
+        List<BancaDaEtapa> bancasReconciliadas = [];
+        foreach (BancaDaEtapa declarada in bancas)
+        {
+            BancaDaEtapa? existente = bancasDisponiveis.FirstOrDefault(b =>
+                string.Equals(
+                    HashCanonicalComputer.NormalizeNfc(b.Codigo),
+                    HashCanonicalComputer.NormalizeNfc(declarada.Codigo),
+                    StringComparison.Ordinal));
+
+            if (existente is null)
+            {
+                bancasReconciliadas.Add(declarada);
+                continue;
+            }
+
+            bancasDisponiveis.Remove(existente);
+            existente.ReporOrigem(declarada.TipoBancaOrigemId);
+            bancasReconciliadas.Add(existente);
+        }
+
         _bancas.Clear();
-        foreach (BancaDaEtapa banca in bancas)
+        foreach (BancaDaEtapa banca in bancasReconciliadas)
         {
             banca.VincularEtapa(Id);
             _bancas.Add(banca);
