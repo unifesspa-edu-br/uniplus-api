@@ -37,6 +37,10 @@ public sealed class CertamePublicadoController : ControllerBase
 {
     private const string RecursoDaVitrine = "certames";
 
+    private const string ContagemEmBreve =
+        "Quantos certames divulgados ainda não abriram a janela de inscrição, no instante da "
+        + "consulta. Presente só quando incluir_contadores=true.";
+
     private const string ContagemAbertas =
         "Quantos certames divulgados ainda recebem inscrição sem estar no limiar final, no instante "
         + "da consulta. Presente só quando incluir_contadores=true.";
@@ -68,14 +72,21 @@ public sealed class CertamePublicadoController : ControllerBase
     }
 
     /// <summary>
-    /// Vitrine pública: os certames publicados, ordenados por urgência — quem ainda recebe inscrição
+    /// Vitrine pública: os certames publicados, ordenados por urgência — quem ainda não encerrou
     /// primeiro, do prazo mais próximo ao mais distante, e os encerrados depois.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Só existe linha para certame publicamente divulgável, então a página sai do banco já com o
     /// tamanho pedido: não há descarte de visibilidade depois de formada, e não há pergunta a outro
     /// módulo no caminho da requisição. A continuação segue pela âncora do header <c>Link</c>, e o
     /// cursor só vale para o mesmo recorte por situação que o emitiu.
+    /// </para>
+    /// <para>
+    /// Sem <c>situacao</c> vem a vitrine inteira. Com ela, vêm exatamente os itens que trazem
+    /// aquela situação — e o contador homônimo diz quantos são: as quatro situações particionam o
+    /// conjunto divulgado, e os quatro contadores somam o total.
+    /// </para>
     /// </remarks>
     [HttpGet("certames")]
     [AllowAnonymous]
@@ -84,6 +95,7 @@ public sealed class CertamePublicadoController : ControllerBase
     // Presentes só quando a requisição pede `incluir_contadores`. Declarados porque um cliente
     // gerado só enxerga header declarado: sem isto, a tela pediria a contagem e não teria de onde
     // lê-la.
+    [EmiteHeader("X-Certames-Em-Breve", ContagemEmBreve, Inteiro = true)]
     [EmiteHeader("X-Certames-Inscricoes-Abertas", ContagemAbertas, Inteiro = true)]
     [EmiteHeader("X-Certames-Ultimos-Dias", ContagemUltimosDias, Inteiro = true)]
     [EmiteHeader("X-Certames-Encerrados", ContagemEncerrados, Inteiro = true)]
@@ -96,7 +108,7 @@ public sealed class CertamePublicadoController : ControllerBase
         // (SortKey, Id). Sem a exigência, um cursor sem a chave de ordenação — legado ou forjado —
         // degradaria em silêncio para "primeira página" em vez de ser recusado.
         [FromCursor(RecursoDaVitrine, RequireSortKey = true)] PageRequest page,
-        [FromQuery(Name = "situacao")] SituacaoDoCertame situacao,
+        [FromQuery(Name = "situacao")] SituacaoDoCertame? situacao,
         [FromQuery(Name = "incluir_contadores")] bool incluirContadores,
         CancellationToken cancellationToken)
     {
@@ -123,6 +135,7 @@ public sealed class CertamePublicadoController : ControllerBase
         // página. Pedir só na primeira requisição é o uso pretendido.
         if (resultado.Contadores is { } contadores)
         {
+            Response.Headers["X-Certames-Em-Breve"] = Numero(contadores.EmBreve);
             Response.Headers["X-Certames-Inscricoes-Abertas"] = Numero(contadores.InscricoesAbertas);
             Response.Headers["X-Certames-Ultimos-Dias"] = Numero(contadores.UltimosDias);
             Response.Headers["X-Certames-Encerrados"] = Numero(contadores.Encerrados);

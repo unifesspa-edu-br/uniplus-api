@@ -40,9 +40,11 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         // perdedora estoura e a fila reentrega, e aí a guarda de monotonia enxerga o estado real.
         builder.Property<uint>("Version").IsRowVersion();
 
-        // Índice da vitrine: prazo e identificador, na ordem em que a página desempata. Serve o
-        // RECORTE por situação, que é sempre uma faixa sobre o prazo, e o desempate por
-        // identificador. NÃO serve a ordenação inteira: a primeira coluna que a vitrine ordena é o
+        // Índice da vitrine: prazo e identificador, na ordem em que a página desempata. Serve a
+        // faixa sobre o prazo — que é o que reduz o conjunto em todo recorte por situação — e o
+        // desempate por identificador. O lado da abertura da janela, que distingue o que ainda não
+        // abriu do que já recebe inscrição, fica como filtro residual sobre as linhas que a faixa
+        // já reduziu. NÃO serve a ordenação inteira: a primeira coluna que a vitrine ordena é o
         // segmento aberto/encerrado, uma expressão sobre o instante da consulta, que nenhum índice
         // sobre a coluna crua alcança — o Postgres ordena o recorte já reduzido. Indexar a
         // expressão é impossível: o instante é parâmetro, não constante.

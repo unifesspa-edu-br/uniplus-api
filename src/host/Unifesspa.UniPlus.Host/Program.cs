@@ -79,6 +79,7 @@ builder.Services.AddCorsConfiguration(
     builder.Environment,
     // Contagem por situação da vitrine pública de certames, que alimenta os filtros da tela. Vive
     // aqui, e não na lista comum do CORS compartilhado, porque só o Seleção emite estes headers.
+    "X-Certames-Em-Breve",
     "X-Certames-Inscricoes-Abertas",
     "X-Certames-Ultimos-Dias",
     "X-Certames-Encerrados");

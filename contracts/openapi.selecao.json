@@ -167,6 +167,13 @@
                   "format": "int32"
                 }
               },
+              "X-Certames-Em-Breve": {
+                "description": "Quantos certames divulgados ainda n\u00E3o abriram a janela de inscri\u00E7\u00E3o, no instante da consulta. Presente s\u00F3 quando incluir_contadores=true.",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
               "X-Certames-Inscricoes-Abertas": {
                 "description": "Quantos certames divulgados ainda recebem inscri\u00E7\u00E3o sem estar no limiar final, no instante da consulta. Presente s\u00F3 quando incluir_contadores=true.",
                 "schema": {
@@ -7737,8 +7744,9 @@
           "nome",
           "tipoProcesso",
           "modalidadesOfertadas",
+          "inscricoesDe",
           "inscricoesAte",
-          "inscricoesAbertas",
+          "situacao",
           "totalDeVagas"
         ],
         "type": "object",
@@ -7765,12 +7773,16 @@
               "type": "string"
             }
           },
+          "inscricoesDe": {
+            "type": "string",
+            "format": "date-time"
+          },
           "inscricoesAte": {
             "type": "string",
             "format": "date-time"
           },
-          "inscricoesAbertas": {
-            "type": "boolean"
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDoCertame"
           },
           "totalDeVagas": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -12378,10 +12390,10 @@
       },
       "SituacaoDoCertame": {
         "enum": [
-          "todas",
+          "emBreve",
           "inscricoesAbertas",
-          "encerradas",
-          "ultimosDias"
+          "ultimosDias",
+          "encerradas"
         ],
         "type": "string"
       },
