@@ -60,13 +60,59 @@ public sealed class PrecondicaoOperationTransformer : IOpenApiOperationTransform
             MarcarIfMatchComoObrigatorio(operation);
         }
 
-        if (metodo.GetCustomAttribute<EmiteETagAttribute>(inherit: true) is not null)
+        if (metodo.GetCustomAttribute<EmiteETagAttribute>(inherit: true) is { } emiteETag)
         {
-            DeclararETagNasRespostas(operation);
+            DeclararETagNasRespostas(operation, emiteETag.Descricao ?? DescricaoDoETagDaSessaoEditorial);
         }
+
+        DeclararHeadersProprios(operation, metodo.GetCustomAttributes<EmiteHeaderAttribute>(inherit: true));
 
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Headers de resposta que só um endpoint emite. O ASP.NET não os infere pelo mesmo motivo do
+    /// <c>ETag</c> — são escritos em <c>Response.Headers</c>, que é código, não contrato —, e sem
+    /// declará-los o cliente gerado não os enxerga.
+    /// </summary>
+    private static void DeclararHeadersProprios(
+        OpenApiOperation operation,
+        IEnumerable<EmiteHeaderAttribute> headers)
+    {
+        foreach (EmiteHeaderAttribute header in headers)
+        {
+            if (operation.Responses is null
+                || !operation.Responses.TryGetValue(header.Status, out IOpenApiResponse? resposta)
+                || resposta is not OpenApiResponse concreta)
+            {
+                continue;
+            }
+
+            concreta.Headers ??= new Dictionary<string, IOpenApiHeader>(StringComparer.Ordinal);
+            concreta.Headers[header.Nome] = new OpenApiHeader
+            {
+                Description = header.Descricao,
+                Schema = new OpenApiSchema
+                {
+                    Type = header.Inteiro ? JsonSchemaType.Integer : JsonSchemaType.String,
+                    Format = header.Inteiro ? "int32" : null,
+                },
+            };
+        }
+    }
+
+    /// <summary>
+    /// Texto padrão do <c>ETag</c>: o da sessão editorial de retificação, que é de onde a maioria
+    /// dos emissores vem. Quem emite selo com outro papel — uma leitura pública, que se revalida
+    /// com <c>If-None-Match</c> e não abre precondição de mutação alguma — declara o seu próprio em
+    /// <see cref="EmiteETagAttribute.Descricao"/>, porque repetir este aqui diria ao integrador
+    /// para devolver o selo num <c>If-Match</c> que a rota nem aceita.
+    /// </summary>
+    private const string DescricaoDoETagDaSessaoEditorial =
+        "ETag forte da sessão editorial de retificação, no formato \"{idDaSessao}:{revisao}\". "
+        + "Devolva-o no If-Match da próxima mutação. Toda mutação aceita INCREMENTA a revisão e emite o "
+        + "tag novo aqui — o cliente encadeia sem um GET no meio. Ausente quando não há sessão em curso "
+        + "(o processo em rascunho não tem precondição a satisfazer).";
 
     private static void MarcarIfMatchComoObrigatorio(OpenApiOperation operation)
     {
@@ -89,7 +135,7 @@ public sealed class PrecondicaoOperationTransformer : IOpenApiOperationTransform
         }
     }
 
-    private static void DeclararETagNasRespostas(OpenApiOperation operation)
+    private static void DeclararETagNasRespostas(OpenApiOperation operation, string descricao)
     {
         if (operation.Responses is null)
         {
@@ -107,10 +153,7 @@ public sealed class PrecondicaoOperationTransformer : IOpenApiOperationTransform
             concreta.Headers ??= new Dictionary<string, IOpenApiHeader>(StringComparer.Ordinal);
             concreta.Headers[ETagHeader] = new OpenApiHeader
             {
-                Description = "ETag forte da sessão editorial de retificação, no formato \"{idDaSessao}:{revisao}\". "
-                    + "Devolva-o no If-Match da próxima mutação. Toda mutação aceita INCREMENTA a revisão e emite o "
-                    + "tag novo aqui — o cliente encadeia sem um GET no meio. Ausente quando não há sessão em curso "
-                    + "(o processo em rascunho não tem precondição a satisfazer).",
+                Description = descricao,
                 Schema = new OpenApiSchema
                 {
                     Type = JsonSchemaType.String,
@@ -137,4 +180,34 @@ public sealed class PrecondicaoObrigatoriaAttribute : Attribute;
 /// gerado não o enxerga.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class EmiteETagAttribute : Attribute;
+public sealed class EmiteETagAttribute : Attribute
+{
+    /// <summary>
+    /// O que o selo significa NESTA rota. Nulo usa o texto da sessão editorial de retificação, que
+    /// é o papel da maioria dos emissores — uma leitura pública, que revalida com
+    /// <c>If-None-Match</c>, declara o seu.
+    /// </summary>
+    public string? Descricao { get; init; }
+}
+
+/// <summary>
+/// A resposta carrega um header próprio do endpoint — o contrato precisa declará-lo, ou o cliente
+/// gerado não o enxerga.
+/// </summary>
+/// <param name="nome">Nome do header, como o endpoint o escreve.</param>
+/// <param name="descricao">O que ele carrega.</param>
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+public sealed class EmiteHeaderAttribute(string nome, string descricao) : Attribute
+{
+    /// <summary>Nome do header.</summary>
+    public string Nome { get; } = nome;
+
+    /// <summary>O que o header carrega.</summary>
+    public string Descricao { get; } = descricao;
+
+    /// <summary>Status em que ele é emitido. <c>200</c> por padrão.</summary>
+    public string Status { get; init; } = "200";
+
+    /// <summary>O valor é um inteiro, e não texto.</summary>
+    public bool Inteiro { get; init; }
+}

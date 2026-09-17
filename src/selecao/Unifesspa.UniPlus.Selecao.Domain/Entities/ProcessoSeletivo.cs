@@ -3899,7 +3899,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             atorUsuarioSub,
             instantePublicacao);
 
-
         // Reaproveita ProcessoPublicadoEvent (não um evento distinto): o fato de
         // negócio drenado é "novo ato + nova versão da configuração", idêntico em
         // forma ao da abertura — o payload serve aos dois. Evita um segundo schema

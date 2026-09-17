@@ -1,26 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// Uma linha candidata da vitrine, como o banco a devolve: identidade e nome.
-/// </summary>
-/// <remarks>
-/// <para>
-/// Candidata, e não item final: a visibilidade pública exige ato normativo registrado, e isso vive
-/// em outro módulo — nenhuma consulta SQL daqui pode afirmá-lo. Quem monta a página confere os atos
-/// da linhagem e descarta o que não tem.
-/// </para>
-/// <para>
-/// <b>Sem a janela de inscrição.</b> A coluna por que o banco ordena descreve a publicação mais
-/// nova, e a versão publicamente visível pode ser anterior a ela enquanto o ato da retificação não
-/// se registra. Quem projeta lê o prazo do envelope ELEITO; carregá-lo aqui só ofereceria, ao lado
-/// do valor certo, o valor que não pode ser anunciado.
-/// </para>
-/// </remarks>
-/// <param name="ProcessoSeletivoId">Identificador do processo.</param>
-/// <param name="Nome">Título do certame.</param>
-public readonly record struct CandidatoDaVitrine(Guid ProcessoSeletivoId, string Nome);
-
-/// <summary>
 /// Filtro por situação da janela de inscrição, resolvido contra o instante da consulta.
 /// </summary>
 /// <remarks>

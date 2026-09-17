@@ -122,12 +122,6 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         DateTimeOffset instante,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// <see langword="true"/> se existe um Processo Seletivo com este id
-    /// (checagem barata via <c>AnyAsync</c>, sem materializar o agregado). Usada
-    /// pelo seletor de snapshot vigente para distinguir 404 (processo
-    /// inexistente) de 422 (sem publicação vigente ≤ o instante).
-    /// </summary>
     /// <summary>Versões de configuração identificadas pelos seus atos criadores, em lote.</summary>
     /// <remarks>
     /// Chaveado pelo ATO, e não pelo par processo e número: um ato cria no máximo uma versão
@@ -148,5 +142,11 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// </remarks>
     Task<string?> ObterNomeAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// <see langword="true"/> se existe um Processo Seletivo com este id
+    /// (checagem barata via <c>AnyAsync</c>, sem materializar o agregado). Usada
+    /// pelo seletor de snapshot vigente para distinguir 404 (processo
+    /// inexistente) de 422 (sem publicação vigente ≤ o instante).
+    /// </summary>
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);
 }

@@ -37,6 +37,24 @@ public sealed class CertamePublicadoController : ControllerBase
 {
     private const string RecursoDaVitrine = "certames";
 
+    private const string ContagemAbertas =
+        "Quantos certames divulgados ainda recebem inscrição sem estar no limiar final, no instante "
+        + "da consulta. Presente só quando incluir_contadores=true.";
+
+    private const string ContagemUltimosDias =
+        "Quantos certames divulgados encerram dentro do limiar final, no instante da consulta. "
+        + "Presente só quando incluir_contadores=true.";
+
+    private const string ContagemEncerrados =
+        "Quantos certames divulgados já encerraram, no instante da consulta. Presente só quando "
+        + "incluir_contadores=true.";
+
+    private const string DescricaoDoSeloDoCertame =
+        "Selo da representação servida, no formato \"{versaoDaProjecao}:{hashDaConfiguracao}\". "
+        + "Devolva-o no If-None-Match da próxima leitura: a resposta é de revalidação obrigatória "
+        + "(Cache-Control: no-cache), e o selo é o que permite receber 304 em vez do documento "
+        + "inteiro. Esta rota é somente leitura e não aceita If-Match.";
+
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
 
@@ -54,17 +72,21 @@ public sealed class CertamePublicadoController : ControllerBase
     /// primeiro, do prazo mais próximo ao mais distante, e os encerrados depois.
     /// </summary>
     /// <remarks>
-    /// <b>A página pode vir menor que o limite pedido, inclusive vazia com continuação disponível.</b>
-    /// A visibilidade exige ato normativo registrado, que vive fora deste módulo: a ordenação e o
-    /// corte da página acontecem no banco, e o descarte de quem ainda não tem ato acontece depois.
-    /// Quem navega deve seguir a âncora de continuação, nunca concluir fim de coleção por página
-    /// vazia. O descarte é raro por construção — só alcança certame entre a publicação e o registro
-    /// do ato, ou cuja publicação teve o registro recusado.
+    /// Só existe linha para certame publicamente divulgável, então a página sai do banco já com o
+    /// tamanho pedido: não há descarte de visibilidade depois de formada, e não há pergunta a outro
+    /// módulo no caminho da requisição. A continuação segue pela âncora do header <c>Link</c>, e o
+    /// cursor só vale para o mesmo recorte por situação que o emitiu.
     /// </remarks>
     [HttpGet("certames")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "certame", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CertameNaVitrineDto>), StatusCodes.Status200OK)]
+    // Presentes só quando a requisição pede `incluir_contadores`. Declarados porque um cliente
+    // gerado só enxerga header declarado: sem isto, a tela pediria a contagem e não teria de onde
+    // lê-la.
+    [EmiteHeader("X-Certames-Inscricoes-Abertas", ContagemAbertas, Inteiro = true)]
+    [EmiteHeader("X-Certames-Ultimos-Dias", ContagemUltimosDias, Inteiro = true)]
+    [EmiteHeader("X-Certames-Encerrados", ContagemEncerrados, Inteiro = true)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
@@ -95,8 +117,10 @@ public sealed class CertamePublicadoController : ControllerBase
 
         // Metadado de coleção vai em header, nunca no corpo: envolver o array num objeto para
         // acomodá-lo trocaria a forma do recurso pela forma do envelope (ADR-0025). Opt-in porque
-        // é trabalho que a maioria das navegações não precisa — a tela pede os números uma vez, ao
-        // montar os filtros, e não a cada página.
+        // é trabalho que a maioria das navegações não precisa — a tela pede os números ao montar os
+        // filtros. Quem pedir e depois seguir o Link continua pedindo: o link de continuação
+        // preserva os parâmetros não reservados da requisição, e a contagem corre de novo em cada
+        // página. Pedir só na primeira requisição é o uso pretendido.
         if (resultado.Contadores is { } contadores)
         {
             Response.Headers["X-Certames-Inscricoes-Abertas"] = Numero(contadores.InscricoesAbertas);
@@ -126,7 +150,7 @@ public sealed class CertamePublicadoController : ControllerBase
     [VendorMediaType(Resource = "certame", Versions = [1])]
     [ProducesResponseType(typeof(CertamePublicadoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status304NotModified)]
-    [EmiteETag]
+    [EmiteETag(Descricao = DescricaoDoSeloDoCertame)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]

@@ -29,10 +29,23 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         // documento inteiro, buscar dentro dele é a próxima necessidade previsível da vitrine.
         builder.Property(c => c.Certame).HasColumnType("jsonb").IsRequired();
 
-        // Índice da vitrine: ordena do prazo mais próximo ao mais distante, com o identificador
-        // fechando a ordem total. Aqui ele SERVE a ordenação, ao contrário do arranjo anterior —
-        // não há mais expressão sobre parâmetro na primeira coluna, porque a linha só existe quando
-        // o certame é público e não há mais nada a filtrar por fora dela.
+        // Token de concorrência otimista mapeado para a coluna de sistema `xmin` do Postgres
+        // (shadow property `uint` + IsRowVersion — convenção do provider Npgsql, sem coluna nem
+        // migration própria; ADR-0119, mesmo padrão de MotivoDecisaoIsencaoConfiguration).
+        // Avançar a divulgação é check-then-act: dois desfechos de registro do mesmo processo,
+        // um da retificação e outro da versão seguinte, podem ser consumidos em paralelo, ler a
+        // MESMA linha e ambos passar a guarda de monotonia — que é de memória, não do banco. Sem
+        // o xmin, a entrega mais lenta sobrescreveria a versão mais nova e o certame ficaria
+        // preso num conteúdo antigo, sem mensagem alguma sobrando para repará-lo. Com ele, a
+        // perdedora estoura e a fila reentrega, e aí a guarda de monotonia enxerga o estado real.
+        builder.Property<uint>("Version").IsRowVersion();
+
+        // Índice da vitrine: prazo e identificador, na ordem em que a página desempata. Serve o
+        // RECORTE por situação, que é sempre uma faixa sobre o prazo, e o desempate por
+        // identificador. NÃO serve a ordenação inteira: a primeira coluna que a vitrine ordena é o
+        // segmento aberto/encerrado, uma expressão sobre o instante da consulta, que nenhum índice
+        // sobre a coluna crua alcança — o Postgres ordena o recorte já reduzido. Indexar a
+        // expressão é impossível: o instante é parâmetro, não constante.
         builder.HasIndex(c => new { c.InscricoesAte, c.Id })
             .HasDatabaseName("ix_certames_divulgados_prazo");
 

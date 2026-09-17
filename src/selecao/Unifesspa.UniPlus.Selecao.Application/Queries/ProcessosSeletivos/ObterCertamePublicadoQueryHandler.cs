@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
-using System.Text.Json;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -19,10 +17,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// outro módulo no caminho da requisição, nem documento congelado a interpretar por leitura.
 /// </para>
 /// <para>
-/// <b>A ausência da linha é a única recusa.</b> Processo inexistente, processo em rascunho, processo
-/// sem versão vigente e processo cujo ato não se confirmou devolvem a mesma resposta — não por uma
-/// regra que os colapse, mas porque nenhum deles tem linha. Distinguir deixou de ser possível, em
-/// vez de ser possível e proibido.
+/// <b>A ausência da linha é a única recusa de visibilidade.</b> Processo inexistente, processo em
+/// rascunho, processo sem versão vigente e processo cujo ato não se confirmou devolvem a mesma
+/// resposta — não por uma regra que os colapse, mas porque nenhum deles tem linha. Distinguir
+/// deixou de ser possível, em vez de ser possível e proibido. A outra recusa possível não é de
+/// visibilidade: é a projeção guardada que não se deixa ler, e essa aflora como falha de leitura.
 /// </para>
 /// </remarks>
 public static class ObterCertamePublicadoQueryHandler
@@ -46,12 +45,8 @@ public static class ObterCertamePublicadoQueryHandler
                 "Processo Seletivo não encontrado."));
         }
 
-        CertamePublicadoDto? certame = JsonSerializer.Deserialize<CertamePublicadoDto>(divulgado.Certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
-
-        return certame is null
-            ? Result<CertamePublicadoDto>.Failure(new DomainError(
-                "CertamePublicado.EnvelopeInesperado",
-                "A divulgação deste certame não pôde ser lida."))
-            : Result<CertamePublicadoDto>.Success(certame);
+        return ProjecaoDoCertamePublicado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame)
+            ? Result<CertamePublicadoDto>.Success(certame)
+            : ProjecaoDoCertamePublicado.RecusarDocumentoIlegivel();
     }
 }

@@ -271,7 +271,6 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .ConfigureAwait(false);
     }
 
-
     public Task<string?> ObterNomeAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
         _context.ProcessosSeletivos
             .AsNoTracking()

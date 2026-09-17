@@ -67,8 +67,8 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
                     .Ascending(c => c.InscricoesAte < instanteUtc)
                     .Ascending(c => c.InscricoesAte)
                     .Ascending(c => c.Id),
-                c => SortKeyDaVitrine(c, instanteUtc),
-                AncoraDaVitrine,
+                c => SortKeyDaVitrine(c, instanteUtc, situacao),
+                (sortKey, id) => AncoraDaVitrine(sortKey, id, situacao),
                 afterSortKey,
                 afterId,
                 limit,
@@ -108,17 +108,33 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
     }
 
     /// <summary>
-    /// Chave de ordenação da âncora: o instante congelado e o prazo, nessa ordem. O segmento não
-    /// entra — ele deriva dos dois, e guardá-lo seria uma segunda cópia do mesmo fato.
+    /// Identifica o RECORTE sobre o qual a travessia corre. Viaja na chave da âncora para que um
+    /// cursor só continue a consulta que o emitiu.
     /// </summary>
-    private static string SortKeyDaVitrine(CertameDivulgado certame, DateTimeOffset instanteUtc) =>
-        CompositeSortKey.Serialize(Instante(instanteUtc), Instante(certame.InscricoesAte));
+    /// <remarks>
+    /// A âncora é uma posição <b>dentro de um conjunto</b>. Sem esta assinatura, o cursor emitido
+    /// na lista dos encerrados seria aceito de volta com <c>situacao=inscricoesAbertas</c>, e o
+    /// seek partiria de um prazo que não existe naquele conjunto: a página voltaria vazia e sem
+    /// continuação, indistinguível de fim de coleção. É a mesma proteção que
+    /// <c>KeysetSort.Signature</c> dá às listagens que declaram a ordenação pelo catálogo.
+    /// </remarks>
+    private static string AssinaturaDaVitrine(SituacaoDoCertame situacao) =>
+        string.Create(CultureInfo.InvariantCulture, $"vitrine-certames:{situacao}");
 
-    private static object AncoraDaVitrine(string sortKey, Guid id)
+    /// <summary>
+    /// Chave de ordenação da âncora: a assinatura do recorte, o instante congelado e o prazo,
+    /// nessa ordem. O segmento não entra — ele deriva dos dois últimos, e guardá-lo seria uma
+    /// segunda cópia do mesmo fato.
+    /// </summary>
+    private static string SortKeyDaVitrine(CertameDivulgado certame, DateTimeOffset instanteUtc, SituacaoDoCertame situacao) =>
+        CompositeSortKey.Serialize(
+            AssinaturaDaVitrine(situacao), Instante(instanteUtc), Instante(certame.InscricoesAte));
+
+    private static object AncoraDaVitrine(string sortKey, Guid id, SituacaoDoCertame situacao)
     {
-        if (!CompositeSortKey.TryDeserialize(sortKey, 2, out IReadOnlyList<string> partes)
-            || !DateTimeOffset.TryParse(
-                partes[1], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset prazo))
+        if (!CompositeSortKey.TryDeserialize(sortKey, 3, out IReadOnlyList<string> partes)
+            || !string.Equals(partes[0], AssinaturaDaVitrine(situacao), StringComparison.Ordinal)
+            || !TentarLerInstante(partes[2], out DateTimeOffset prazo))
         {
             throw new CursorAnchorMismatchException("Âncora da vitrine fora da forma esperada.");
         }
@@ -131,10 +147,25 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
     private static string Instante(DateTimeOffset valor) =>
         valor.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture);
 
+    /// <summary>
+    /// Lê um instante da âncora assumindo UTC na ausência de designador de fuso.
+    /// </summary>
+    /// <remarks>
+    /// Sem <see cref="DateTimeStyles.AssumeUniversal"/>, um texto sem o <c>Z</c> receberia o fuso
+    /// LOCAL do processo que lê, e a mesma âncora retomaria de posições diferentes conforme a
+    /// máquina que serve a requisição. É a mesma disciplina que a projeção do certame aplica ao
+    /// instante congelado.
+    /// </remarks>
+    private static bool TentarLerInstante(string texto, out DateTimeOffset valor) =>
+        DateTimeOffset.TryParse(
+            texto,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out valor);
+
     private static DateTimeOffset? InstanteDaAncora(string? sortKey) =>
-        CompositeSortKey.TryDeserialize(sortKey, 2, out IReadOnlyList<string> partes)
-            && DateTimeOffset.TryParse(
-                partes[0], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset instante)
+        CompositeSortKey.TryDeserialize(sortKey, 3, out IReadOnlyList<string> partes)
+            && TentarLerInstante(partes[1], out DateTimeOffset instante)
             ? instante
             : null;
 }

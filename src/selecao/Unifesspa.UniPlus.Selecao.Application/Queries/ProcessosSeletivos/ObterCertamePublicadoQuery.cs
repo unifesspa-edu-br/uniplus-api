@@ -12,16 +12,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// Duas coisas distinguem esta consulta das leituras internas do módulo.
 /// <para>
-/// <b>A visibilidade é conjunta</b>: não basta existir versão vigente, o ato normativo que a criou
-/// precisa estar registrado em Publicações. A versão carrega o identificador desse ato congelado,
-/// por valor, mas carregar a referência não é o mesmo que o ato existir — o registro acontece
-/// depois da publicação, por mensagem durável, e uma recusa de mérito só aflora no consumo da
-/// fila. Divulgar sem essa conferência publicaria certame sem ato normativo correspondente
-/// (ADR-0131).
+/// <b>A visibilidade já está resolvida</b>: a divulgação é materializada quando o ato normativo se
+/// confirma no registro central, e a existência dessa linha É a publicidade do certame (ADR-0133).
+/// A consulta não confere ato nenhum, nem pergunta a Publicações no caminho da requisição — ela lê
+/// a projeção que já está pronta.
 /// </para>
 /// <para>
 /// <b>As recusas colapsam numa só</b>: processo inexistente, processo em rascunho, processo sem
-/// versão vigente e processo cujo ato não está registrado devolvem o mesmo <c>NaoEncontrado</c>.
+/// versão vigente e processo cujo ato não está registrado devolvem o mesmo <c>NaoEncontrado</c>,
+/// porque nenhum deles tem linha de divulgação.
 /// Distinguir responderia "esse identificador é um rascunho?" a um chamador anônimo, que é
 /// exatamente o que a restrição de leitura administrativa existe para impedir.
 /// </para>

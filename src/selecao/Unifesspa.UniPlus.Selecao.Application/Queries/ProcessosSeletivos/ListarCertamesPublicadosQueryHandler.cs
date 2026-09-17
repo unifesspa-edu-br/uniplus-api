@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
-using System.Text.Json;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -58,7 +56,7 @@ public static class ListarCertamesPublicadosQueryHandler
         List<CertameNaVitrineDto> itens = [];
         foreach (CertameDivulgado divulgado in divulgados)
         {
-            if (JsonSerializer.Deserialize<CertamePublicadoDto>(divulgado.Certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento) is not { } certame)
+            if (!ProjecaoDoCertamePublicado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame))
             {
                 continue;
             }
