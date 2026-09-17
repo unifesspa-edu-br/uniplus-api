@@ -56,6 +56,7 @@ public sealed class LeituraPublicaDoCertameTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.AtoCriadorId.Should().Be(esperado.AtoCriadorId);
         resultado.Value.Periodo.Numero.Should().Be("001/2026");
+        resultado.Value.Nome.Should().Be("SISU 2026.1", "o título é congelado na divulgação, não lido do agregado vivo");
     }
 
     [Fact(DisplayName = "A vitrine devolve a página inteira: não há descarte depois de formada")]
@@ -141,6 +142,7 @@ public sealed class LeituraPublicaDoCertameTests
     private static CertamePublicadoDto Projecao(Guid processoId) => new(
         processoId,
         Guid.CreateVersion7(),
+        "SISU 2026.1",
         ProjecaoDoCertamePublicado.Versao,
         new string('a', 64),
         new TipoCatalogadoCertameDto("SISU", "Sistema de Seleção Unificada"),

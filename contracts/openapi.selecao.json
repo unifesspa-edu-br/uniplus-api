@@ -7765,6 +7765,7 @@
         "required": [
           "processoSeletivoId",
           "atoCriadorId",
+          "nome",
           "versaoProjecao",
           "hashConfiguracao",
           "tipoProcesso",
@@ -7792,6 +7793,9 @@
           "atoCriadorId": {
             "type": "string",
             "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
           },
           "versaoProjecao": {
             "type": "string"

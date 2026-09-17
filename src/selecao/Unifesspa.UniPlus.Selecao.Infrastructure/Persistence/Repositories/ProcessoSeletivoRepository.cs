@@ -272,6 +272,13 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
     }
 
 
+    public Task<string?> ObterNomeAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
+        _context.ProcessosSeletivos
+            .AsNoTracking()
+            .Where(p => p.Id == processoSeletivoId)
+            .Select(p => p.Nome)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.ProcessosSeletivos

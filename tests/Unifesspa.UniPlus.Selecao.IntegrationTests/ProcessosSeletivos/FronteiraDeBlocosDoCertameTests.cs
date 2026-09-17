@@ -115,7 +115,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), new string('a', 64), envelope);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope);
 
         resultado.IsSuccess.Should().BeTrue(
             "o contrato público precisa saber ler o envelope que o canonicalizador de fato emite — recusa: {0}",
