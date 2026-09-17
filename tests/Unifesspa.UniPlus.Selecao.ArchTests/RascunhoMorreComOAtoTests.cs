@@ -77,7 +77,7 @@ public sealed class RascunhoMorreComOAtoTests
             $"o handler de {comando.Name} registra o ato e precisa apagar o rascunho da publicação");
     }
 
-    [Theory(DisplayName = "O handler só apaga o rascunho depois de gravar — nunca antes de saber se gravou")]
+    [Theory(DisplayName = "O handler não emite a exclusão do rascunho antes do primeiro flush")]
     [MemberData(nameof(ComandosQueRegistramAto))]
     public void HandlerApagaDepoisDeGravar(Type comando)
     {
@@ -85,15 +85,27 @@ public sealed class RascunhoMorreComOAtoTests
 
         // A exclusão é ExecuteDelete: SQL na hora, fora do rastreamento. Emitida antes do
         // flush, ela aposta que nada dali em diante recusa a operação — e quando alguma coisa
-        // recusa, o operador recebe "nada foi publicado" com os sete campos que transcreveu do
-        // Diário Oficial já destruídos, o do colega junto, porque a exclusão é por processo.
+        // recusa, o operador recebe "nada foi publicado" com o bloco que transcreveu do Diário
+        // Oficial já destruído, o do colega junto, porque a exclusão é por processo.
         // Ordem, aqui, é a diferença entre apagar o que perdeu a razão de existir e apagar o
         // que ainda vai ser preciso.
-        string fonte = File.ReadAllText(CaminhoDoHandler(HandleDoComando(comando).DeclaringType!.Name));
+        // Sem os comentários: a guarda compara POSIÇÃO no texto, e prosa que cite a chamada
+        // deslocaria a âncora para antes do flush de verdade — um handler que apagasse cedo
+        // passaria, e a guarda diria o contrário. O que interessa é onde o CÓDIGO chama.
+        string fonte = SemComentariosDeLinha(
+            File.ReadAllText(CaminhoDoHandler(HandleDoComando(comando).DeclaringType!.Name)));
 
+        // Âncora no PRIMEIRO flush, e é só isso que a guarda promete: a exclusão não vem antes
+        // de qualquer gravação. Onde o handler tem flush intermediário — o descarte da
+        // retificação repõe a configuração congelada antes de encerrar a sessão —, a ordem entre
+        // a exclusão e o flush FINAL é decidida pelo desenho do handler, que ali proíbe qualquer
+        // retorno de recusa depois do primeiro. Exigir flush explícito é deliberado: quem apaga
+        // o rascunho precisa de um ponto no código onde já sabe que gravou, e não o `SaveChanges`
+        // que o Wolverine dispara depois que o handler acabou.
         int primeiroFlush = fonte.IndexOf(".SalvarAlteracoesAsync(", StringComparison.Ordinal);
         primeiroFlush.Should().BeGreaterThan(-1,
-            $"o handler de {comando.Name} grava antes de apagar, então precisa ter um flush");
+            $"a exclusão do rascunho só é segura depois de um flush bem-sucedido, e o handler de "
+            + $"{comando.Name} não tem nenhum");
 
         foreach (Match exclusao in Regex.Matches(fonte, @"\.ApagarDoProcessoAsync\(", RegexOptions.None, TimeSpan.FromSeconds(5)))
         {
@@ -102,6 +114,13 @@ public sealed class RascunhoMorreComOAtoTests
                 + "posterior devolveria 'nada foi publicado' com a transcrição do operador já apagada");
         }
     }
+
+    /// <summary>
+    /// Apaga os comentários <c>//</c> preservando o comprimento das linhas, para que os índices
+    /// comparados continuem sendo os do arquivo original.
+    /// </summary>
+    private static string SemComentariosDeLinha(string fonte) =>
+        Regex.Replace(fonte, @"//[^\r\n]*", m => new string(' ', m.Length), RegexOptions.None, TimeSpan.FromSeconds(5));
 
     private static IEnumerable<string> ArquivosDaApplication([CallerFilePath] string origem = "") =>
         Directory.EnumerateFiles(

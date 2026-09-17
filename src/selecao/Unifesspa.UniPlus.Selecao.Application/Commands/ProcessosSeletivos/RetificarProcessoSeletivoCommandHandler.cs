@@ -359,7 +359,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         // Só com a versão gravada o rascunho perde a razão de existir, e só aqui sai do banco
         // o nome de quem assinou. Apagar antes do flush punha a transcrição do operador numa
         // aposta: ApagarDoProcessoAsync emite o DELETE na hora, e qualquer recusa daí em
-        // diante devolveria "nada foi publicado" com os sete campos do Diário Oficial já
+        // diante devolveria "nada foi publicado" com o bloco transcrito do Diário Oficial
         // destruídos — inclusive o rascunho do colega, que a exclusão alcança por ser por
         // processo. Todo caminho que registra ato apaga: nenhum ganha isso de graça, porque a
         // raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
