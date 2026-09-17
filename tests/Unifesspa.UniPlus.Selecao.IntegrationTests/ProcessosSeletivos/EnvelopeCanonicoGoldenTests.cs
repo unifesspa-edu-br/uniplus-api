@@ -405,7 +405,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             Regra(RegraRemanejamentoCodigo.Cascata, "1"), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
-    private static SnapshotCanonico CanonicalizarReferenciaComCascata() =>
+    internal static SnapshotCanonico CanonicalizarReferenciaComCascata() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
