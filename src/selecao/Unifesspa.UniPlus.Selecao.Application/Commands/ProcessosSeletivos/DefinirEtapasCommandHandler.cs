@@ -10,6 +10,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 public static class DefinirEtapasCommandHandler
 {
@@ -38,6 +39,8 @@ public static class DefinirEtapasCommandHandler
         ITipoEtapaReader tipoEtapaReader,
         ITipoBancaReader tipoBancaReader,
         IRegraCatalogoReader regraCatalogoReader,
+        ITipoAtoPublicadoReader tipoAtoPublicadoReader,
+        TimeProvider timeProvider,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -46,6 +49,8 @@ public static class DefinirEtapasCommandHandler
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(tipoBancaReader);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
+        ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -252,6 +257,8 @@ public static class DefinirEtapasCommandHandler
             }
         }
 
+        DateOnly hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
         // Os produtos são declarados por etapa, depois que a etapa existe: é ela quem os
         // vincula, e a recusa de ato repetido é dela.
         for (int i = 0; i < etapas.Count; i++)
@@ -273,7 +280,34 @@ public static class DefinirEtapasCommandHandler
                         $"O papel '{d.Papel}' não é declarável — use '{PapelProdutoFaseCodigo.Preliminar}', '{PapelProdutoFaseCodigo.Definitivo}' ou nenhum."));
                 }
 
-                produtosDaEtapa.Add(ProdutoDaEtapa.Criar(d.AtoCodigo, papel));
+                // O ato precisa existir no catálogo de Publicações, pela mesma razão que a fase
+                // o exige um nível acima: o código declarado aqui vira o nome do produto no
+                // cronograma público e a chave pela qual a restauração da configuração congelada
+                // reencontra o produto. Um código que o catálogo não conhece não resolve para
+                // nada — e só apareceria depois de publicado.
+                TipoAtoPublicadoView? tipoAto = await tipoAtoPublicadoReader
+                    .ObterVigenteAsync(d.AtoCodigo, hoje, cancellationToken)
+                    .ConfigureAwait(false);
+                if (tipoAto is null)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.Failure(new DomainError(
+                        "ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo",
+                        $"O tipo de ato '{d.AtoCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje."));
+                }
+
+                // Papel preliminar ou definitivo só faz sentido sobre resultado: é o par que a
+                // janela recursal ancora. A fase recusa o mesmo, e deixar passar aqui produziria
+                // uma etapa cujo recurso aponta para um produto que nunca divulga resultado.
+                if (papel is not null && !tipoAto.EhResultado)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.Failure(new DomainError(
+                        "ProdutoDaEtapa.PapelEmAtoQueNaoEhResultado",
+                        $"O tipo de ato '{d.AtoCodigo}' não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo."));
+                }
+
+                produtosDaEtapa.Add(ProdutoDaEtapa.Criar(tipoAto.Codigo, papel));
             }
 
             Result produtosResult = etapas[i].DefinirProdutos(produtosDaEtapa);
