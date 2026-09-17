@@ -29,7 +29,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// substitui a coleção inteira, e uma chave ausente era indistinguível de "a etapa não tem
 /// nenhum". Um cliente que não conhecesse os campos — uma tela anterior, um script de
 /// importação, uma chamada montada a partir de exemplo antigo — apagava em silêncio os
-/// produtos, as bancas e as janelas recursais de TODAS as etapas do processo, e recebia 200.
+/// produtos, as bancas e as janelas recursais de TODAS as etapas do processo, e recebia 204.
 /// </para>
 /// <para>
 /// Exigir a chave torna a omissão um 400 e mantém a lista vazia como o que ela deve ser: uma
@@ -38,10 +38,17 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// escolha que o operador não fez.
 /// </para>
 /// <para>
-/// O <c>= null!</c> existe só para o compilador: parâmetro sem default não pode vir depois de
-/// um que tem, e mover as três coleções para o fim da lista trocaria a posição de quem já as
-/// declara. Esse default nunca é usado pela desserialização, porque <c>[JsonRequired]</c>
-/// recusa a carga sem a chave; o <c>null</c> explícito é recusado pelo validador.
+/// O <c>= null!</c> existe só para o compilador: <c>Id</c>, <c>FaseCodigo</c>, <c>Inicio</c>,
+/// <c>Fim</c> e <c>EmiteParecerIndividual</c> já têm valor padrão, e parâmetro sem default não
+/// pode vir depois de um que tem — nem aqui, nem se as três coleções fossem para o fim da
+/// lista. Esse default nunca é usado pela desserialização, porque <c>[JsonRequired]</c> recusa
+/// a carga sem a chave; o <c>null</c> explícito é recusado pelo validador.
+/// </para>
+/// <para>
+/// O que ele NÃO cobre é a construção em C#: o default deixa o compilador aceitar, em
+/// silêncio, uma instância sem as coleções, apesar de o tipo delas ser não-anulável. Quem
+/// construir o record em código — teste, fixture, qualquer chamador futuro — precisa declarar
+/// as três explicitamente; nenhum diagnóstico avisa se esquecer, e o handler desreferencia.
 /// </para>
 /// </remarks>
 public sealed record EtapaProcessoInput(
