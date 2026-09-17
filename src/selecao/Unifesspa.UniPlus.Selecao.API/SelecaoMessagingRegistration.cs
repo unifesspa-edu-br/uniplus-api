@@ -95,6 +95,13 @@ public static partial class SelecaoMessagingRegistration
         opts.PublishMessage<ProcessoPublicadoEvent>().ToPostgresqlQueue("domain-events");
         opts.ListenToPostgresqlQueue("domain-events");
 
+        // Desfecho do registro do ato, vindo de Publicações: é ele que materializa a divulgação
+        // pública do certame. Fila PostgreSQL, e não local: a local é em memória, e um encerramento
+        // entre o commit do ato e a projeção deixaria um certame registrado que nunca aparece.
+        opts.PublishMessage<Unifesspa.UniPlus.Publicacoes.Contracts.AtoNormativoRegistrado>()
+            .ToPostgresqlQueue("selecao-divulgacao-certame");
+        opts.ListenToPostgresqlQueue("selecao-divulgacao-certame");
+
         bool kafkaConfigured = !string.IsNullOrWhiteSpace(configuration["Kafka:BootstrapServers"]);
         if (kafkaConfigured && srClient is not null)
         {

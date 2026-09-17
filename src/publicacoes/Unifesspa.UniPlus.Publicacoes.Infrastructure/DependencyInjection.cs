@@ -43,10 +43,6 @@ public static class PublicacoesInfrastructureRegistration
         services.AddScoped<ITipoAtoPublicadoReader, TipoAtoPublicadoReader>();
         services.AddScoped<IVagaDeLinhagemReader, VagaDeLinhagemReader>();
 
-        // Registro efetivo do ato: sustenta o critério de visibilidade pública do certame —
-        // a versão carrega o id do ato criador por valor, e carregar a referência não prova
-        // que o ato existe.
-        services.AddScoped<IAtoRegistradoReader, AtoRegistradoReader>();
         services.AddScoped<IAtoNormativoRepository, AtoNormativoRepository>();
 
         return services;

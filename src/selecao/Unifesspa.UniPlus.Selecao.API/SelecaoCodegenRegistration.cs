@@ -79,10 +79,9 @@ public static class SelecaoCodegenRegistration
         opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.ITipoAtoPublicadoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.IVagaDeLinhagemReader>();
 
-        // Registro efetivo do ato, consultado pela leitura pública do certame: um processo só
-        // é divulgado quando o ato que criou a sua versão vigente existe em Publicações.
-        // Mesmo motivo dos dois acima — contrato público, concreto internal no outro módulo.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.IAtoRegistradoReader>();
+        // Projeção pública do certame: concreto internal na Infrastructure de Seleção, injetado
+        // tanto no handler que divulga quanto nos dois de leitura.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICertameDivulgadoRepository>();
 
         // Vocabulário fechado de fatos do candidato (#846, ADR-0111), consumido pelo
         // handler de critérios de desempate para validar DESEMPATE-PREDICADO-FATO
