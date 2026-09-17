@@ -30,6 +30,91 @@ public sealed record DocumentoEditalCertameDto(Guid DocumentoEditalId, string Ha
 /// </summary>
 public sealed record RetificacaoCertameDto(Guid AtoRetificadoId, string Motivo);
 
+/// <summary>A unidade que administra o certame, e onde ela fica.</summary>
+public sealed record UnidadeAdministradoraCertameDto(
+    string Sigla,
+    string Nome,
+    string Tipo,
+    string? CidadeNome,
+    string? CidadeUf);
+
+/// <summary>Uma etapa do processo, como o edital a comunica.</summary>
+/// <remarks>
+/// Sem bancas, sem regras de recurso e sem produtos: bancas e produtos são maquinário de execução
+/// interna, e a regra de recurso viaja no envelope como referência ao catálogo de regras, com
+/// código, versão e resumo criptográfico — publicá-la exporia o modelo interno de regras a um
+/// consumidor anônimo sem lhe dizer nada que o edital já não diga em prosa.
+/// </remarks>
+public sealed record EtapaCertameDto(
+    string Nome,
+    string Carater,
+    TipoProcessoCertameDto TipoEtapa,
+    string? Peso,
+    string? NotaMinima,
+    int? Ordem,
+    string? FaseCodigo,
+    DateTimeOffset? Inicio,
+    DateTimeOffset? Fim,
+    bool EmiteParecerIndividual);
+
+/// <summary>Quantas vagas cada modalidade recebe numa oferta de curso.</summary>
+public sealed record VagaPorModalidadeCertameDto(string ModalidadeCodigo, int Quantidade);
+
+/// <summary>
+/// O quadro de vagas de uma oferta de curso.
+/// </summary>
+/// <remarks>
+/// Só o quadro e o total publicado. Os campos de conferência da distribuição — nominal, final,
+/// estouro e o corte no volume de oferta — são o rastro aritmético de como o total foi alcançado, e
+/// pertencem à auditoria da distribuição, não ao que o edital comunica.
+/// </remarks>
+public sealed record QuadroDeVagasCertameDto(
+    Guid OfertaCursoOrigemId,
+    IReadOnlyList<VagaPorModalidadeCertameDto> Quadro,
+    int TotalPublicado);
+
+/// <summary>Uma fase do cronograma, com a janela que o candidato precisa observar.</summary>
+public sealed record FaseCronogramaCertameDto(
+    int Ordem,
+    string Codigo,
+    DateTimeOffset? Inicio,
+    DateTimeOffset? Fim,
+    bool ColetaInscricao,
+    bool ColetaSolicitacaoIsencao,
+    bool PermiteComplementacao);
+
+/// <summary>Formatos de arquivo aceitos numa exigência documental.</summary>
+/// <remarks>
+/// <see cref="Qualquer"/> verdadeiro e <see cref="Lista"/> nula são a mesma afirmação vista de dois
+/// ângulos — o envelope os congela em bicondicional, e a projeção preserva a forma.
+/// </remarks>
+public sealed record FormatosAceitosCertameDto(bool Qualquer, IReadOnlyList<string>? Lista);
+
+/// <summary>
+/// Uma exigência documental, reduzida ao que o candidato precisa saber para reunir os documentos.
+/// </summary>
+/// <remarks>
+/// Rótulo, obrigatoriedade e formatos aceitos, e nada mais. O que motiva juridicamente cada
+/// exigência, a condição que a dispara, a fase em que ela incide e os metadados dos fatos que a
+/// condicionam ficam fora: a página do certame não explica o requisito legal de cada exigência.
+/// </remarks>
+public sealed record ExigenciaDocumentalCertameDto(
+    string Rotulo,
+    bool Obrigatorio,
+    FormatosAceitosCertameDto Formatos);
+
+/// <summary>Uma condição de atendimento especializado ofertada no certame.</summary>
+public sealed record CondicaoAtendimentoCertameDto(string Codigo, string Nome);
+
+/// <summary>
+/// O atendimento especializado ofertado: as condições que o candidato pode declarar, os recursos
+/// disponíveis e os tipos de deficiência contemplados.
+/// </summary>
+public sealed record AtendimentoCertameDto(
+    IReadOnlyList<CondicaoAtendimentoCertameDto> Condicoes,
+    IReadOnlyList<string> Recursos,
+    IReadOnlyList<CondicaoAtendimentoCertameDto> TiposDeficiencia);
+
 /// <summary>
 /// O certame como o cidadão o vê — projetado campo a campo da configuração congelada, nunca por
 /// recorte de subárvore do documento: é a forma declarada que impede um bloco novo do domínio de
@@ -47,7 +132,15 @@ public sealed record CertamePublicadoDto(
     TipoProcessoCertameDto TipoProcesso,
     PeriodoInscricaoCertameDto Periodo,
     LocalidadeCertameDto Localidade,
+    UnidadeAdministradoraCertameDto UnidadeAdministradora,
     DocumentoEditalCertameDto DocumentoEdital,
     IReadOnlyList<Guid> Ofertas,
+    IReadOnlyList<string> ModalidadesOfertadas,
+    IReadOnlyList<QuadroDeVagasCertameDto> Vagas,
+    IReadOnlyList<EtapaCertameDto> Etapas,
+    string OrigemCandidatos,
+    IReadOnlyList<FaseCronogramaCertameDto> CronogramaFases,
+    IReadOnlyList<ExigenciaDocumentalCertameDto> DocumentosExigidos,
+    AtendimentoCertameDto Atendimento,
     TaxaInscricaoCertameDto? TaxaInscricao,
     RetificacaoCertameDto? Retificacao);
