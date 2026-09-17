@@ -24,14 +24,29 @@ internal sealed class AtoRegistradoReader(PublicacoesDbContext db) : IAtoRegistr
 {
     private readonly PublicacoesDbContext _db = db ?? throw new ArgumentNullException(nameof(db));
 
-    public async Task<bool> EstaRegistradoAsync(Guid atoId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlySet<Guid>> FiltrarRegistradosAsync(
+        IReadOnlyCollection<Guid> atoIds,
+        CancellationToken cancellationToken = default)
     {
-        // Existência pela chave primária, sem materializar o ato: quem pergunta só decide
-        // visibilidade, e trazer o agregado exporia a Seleção atributos documentais que ela
+        ArgumentNullException.ThrowIfNull(atoIds);
+
+        if (atoIds.Count == 0)
+        {
+            return new HashSet<Guid>();
+        }
+
+        Guid[] procurados = [.. atoIds];
+
+        // Projeção só do identificador, sem materializar o ato: quem pergunta só decide
+        // visibilidade, e trazer o agregado exporia à Seleção atributos documentais que ela
         // deliberadamente não guarda (ADR-0108).
-        return await _db.Set<AtoNormativo>()
+        List<Guid> registrados = await _db.Set<AtoNormativo>()
             .AsNoTracking()
-            .AnyAsync(a => a.Id == atoId, cancellationToken)
+            .Where(a => procurados.Contains(a.Id))
+            .Select(a => a.Id)
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        return new HashSet<Guid>(registrados);
     }
 }

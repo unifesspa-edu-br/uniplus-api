@@ -105,20 +105,20 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
         }
         """;
 
-    [Fact(DisplayName = "Sem versão vigente devolve não encontrado sem sequer perguntar pelo ato")]
+    [Fact(DisplayName = "Linhagem vazia devolve não encontrado sem sequer perguntar pelos atos")]
     public async Task Handle_SemVersaoVigente_NaoEncontradoESemConsultarOAto()
     {
         Guid processoId = Guid.CreateVersion7();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterVersaoVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns((VersaoConfiguracao?)null);
+        repository.ObterLinhagemVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns<IReadOnlyList<LinhagemDeVersao>>([]);
         IAtoRegistradoReader leitor = Substitute.For<IAtoRegistradoReader>();
 
         Result<CertamePublicadoDto> resultado = await HandleAsync(repository, leitor, processoId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
-        await leitor.DidNotReceiveWithAnyArgs().EstaRegistradoAsync(default, default);
+        await leitor.DidNotReceiveWithAnyArgs().FiltrarRegistradosAsync(default!, default);
     }
 
     [Fact(DisplayName = "Versão vigente cujo ato criador não está registrado devolve o MESMO não encontrado")]
@@ -328,10 +328,15 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
             Relogio,
             CancellationToken.None);
 
-    private static IAtoRegistradoReader LeitorRespondendo(Guid atoId, bool registrado)
+    private static IAtoRegistradoReader LeitorRespondendo(Guid atoId, bool registrado) =>
+        LeitorComRegistrados(registrado ? [atoId] : []);
+
+    private static IAtoRegistradoReader LeitorComRegistrados(params Guid[] registrados)
     {
         IAtoRegistradoReader leitor = Substitute.For<IAtoRegistradoReader>();
-        leitor.EstaRegistradoAsync(atoId, Arg.Any<CancellationToken>()).Returns(registrado);
+        leitor.FiltrarRegistradosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo => (IReadOnlySet<Guid>)new HashSet<Guid>(
+                callInfo.Arg<IReadOnlyCollection<Guid>>().Where(registrados.Contains)));
         return leitor;
     }
 
@@ -342,6 +347,72 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
             .Select(static v => new CapacidadeCodec(v, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null))
             .ToList());
         return registro;
+    }
+
+    [Fact(DisplayName = "Retificação cujo ato não registrou mantém o certame visível na versão anterior")]
+    public async Task Handle_RetificacaoSemAtoRegistrado_CaiParaAVersaoAnterior()
+    {
+        // Um certame já publicado é ato público, e torná-lo invisível fere a transparência — para
+        // isso existe retificação de ato, não supressão. Entre a retificação e o dreno da mensagem
+        // de registro, e indefinidamente se esse registro for recusado, a versão nova não tem ato.
+        Guid processoId = Guid.CreateVersion7();
+        string envelopeAnterior = EnvelopeCompleto.Replace(
+            "\"numero\": \"001/2026\"", "\"numero\": \"001/2026\"", StringComparison.Ordinal);
+
+        (IProcessoSeletivoRepository repository, Guid atoDaAnterior, Guid atoDaNova) =
+            MockComDuasVersoes(processoId, envelopeAnterior, EnvelopeCompleto);
+
+        // Só o ato da versão ANTERIOR está registrado.
+        Result<CertamePublicadoDto> resultado = await HandleAsync(
+            repository, LeitorComRegistrados(atoDaAnterior), processoId);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.AtoCriadorId.Should().Be(atoDaAnterior, "o público vê o último estado que tem ato normativo");
+        resultado.Value.AtoCriadorId.Should().NotBe(atoDaNova);
+    }
+
+    [Fact(DisplayName = "Abertura sem nenhum ato registrado não divulga o certame")]
+    public async Task Handle_NenhumAtoRegistradoNaLinhagem_NaoEncontrado()
+    {
+        // O oposto do caso acima, e igualmente correto: o certame nunca foi público, e divulgá-lo
+        // sem ato normativo é o que o critério existe para impedir.
+        Guid processoId = Guid.CreateVersion7();
+        (IProcessoSeletivoRepository repository, _, _) =
+            MockComDuasVersoes(processoId, EnvelopeCompleto, EnvelopeCompleto);
+
+        Result<CertamePublicadoDto> resultado = await HandleAsync(repository, LeitorComRegistrados(), processoId);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+    }
+
+    /// <summary>Linhagem de duas versões, da mais nova para a mais antiga.</summary>
+    private static (IProcessoSeletivoRepository Repository, Guid AtoDaAnterior, Guid AtoDaNova) MockComDuasVersoes(
+        Guid processoId,
+        string envelopeAnterior,
+        string envelopeNovo)
+    {
+        Guid atoDaAnterior = Guid.CreateVersion7();
+        Guid atoDaNova = Guid.CreateVersion7();
+
+        VersaoConfiguracao anterior = VersaoConfiguracao.Abrir(
+            processoId, Encoding.UTF8.GetBytes(envelopeAnterior), VersaoCorrenteReconhecida,
+            "canonical-json/sha256@v1", atoDaAnterior, new string('a', 64), "user-sub-123", Relogio.GetUtcNow());
+        VersaoConfiguracao nova = VersaoConfiguracao.Abrir(
+            processoId, Encoding.UTF8.GetBytes(envelopeNovo), VersaoCorrenteReconhecida,
+            "canonical-json/sha256@v1", atoDaNova, new string('b', 64), "user-sub-123", Relogio.GetUtcNow());
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterLinhagemVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns<IReadOnlyList<LinhagemDeVersao>>([
+                new LinhagemDeVersao(anterior.NumeroVersao + 1, atoDaNova),
+                new LinhagemDeVersao(anterior.NumeroVersao, atoDaAnterior),
+            ]);
+        repository.ObterVersaoPorNumeroAsync(processoId, anterior.NumeroVersao, Arg.Any<CancellationToken>())
+            .Returns(anterior);
+        repository.ObterVersaoPorNumeroAsync(processoId, anterior.NumeroVersao + 1, Arg.Any<CancellationToken>())
+            .Returns(nova);
+        return (repository, atoDaAnterior, atoDaNova);
     }
 
     private static IProcessoSeletivoRepository MockComVersaoVigente(
@@ -362,7 +433,9 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
             Relogio.GetUtcNow());
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterVersaoVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(versao);
+        repository.ObterLinhagemVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns<IReadOnlyList<LinhagemDeVersao>>([new LinhagemDeVersao(versao.NumeroVersao, atoCriadorId)]);
+        repository.ObterVersaoPorNumeroAsync(processoId, versao.NumeroVersao, Arg.Any<CancellationToken>()).Returns(versao);
         return repository;
     }
 }

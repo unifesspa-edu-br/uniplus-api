@@ -104,7 +104,14 @@ public interface IVagaDeLinhagemReader
 public interface IAtoRegistradoReader
 {
     /// <summary>
-    /// <see langword="true"/> quando existe ato normativo com este identificador.
+    /// Dos identificadores informados, quais correspondem a ato normativo já registrado.
     /// </summary>
-    Task<bool> EstaRegistradoAsync(Guid atoId, CancellationToken cancellationToken = default);
+    /// <remarks>
+    /// Em lote por duas razões. A leitura de um certame percorre a linhagem de versões do topo
+    /// para baixo até achar a que tem ato registrado, e a vitrine resolve uma página inteira de
+    /// certames de uma vez — uma assinatura unitária faria as duas consultarem em laço.
+    /// </remarks>
+    Task<IReadOnlySet<Guid>> FiltrarRegistradosAsync(
+        IReadOnlyCollection<Guid> atoIds,
+        CancellationToken cancellationToken = default);
 }
