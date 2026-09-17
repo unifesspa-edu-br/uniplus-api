@@ -33,7 +33,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
     public async Task<(IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarVitrineAsync(
             DateTimeOffset instanteSeForAPrimeiraPagina,
-            SituacaoDoCertame situacao,
+            SituacaoDoCertame? situacao,
             TimeSpan limiarDosUltimosDias,
             string? afterSortKey,
             Guid? afterId,
@@ -49,12 +49,18 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
 
         IQueryable<CertameDivulgado> query = _context.CertamesDivulgados.AsNoTracking();
 
-        // Os três recortes particionam o conjunto divulgado: cada certame cai em exatamente um, e é
-        // isso que faz cada contador ter um filtro que o serve.
+        // Os quatro recortes particionam o conjunto divulgado: cada certame cai em exatamente um. É
+        // isso que faz cada contador ter um filtro que o serve, e o que permite marcar o item com a
+        // mesma palavra pela qual ele foi filtrado.
+        //
+        // São o predicado traduzível da regra que SituacaoDaVitrine.Classificar enuncia — o banco
+        // não pode chamá-la. A conferência de que as duas concordam é obrigação de teste, contra
+        // Postgres real: divergirem em silêncio é o defeito que este recorte pode ter.
         query = situacao switch
         {
-            SituacaoDoCertame.InscricoesAbertas => query.Where(c => c.InscricoesAte >= limiar),
-            SituacaoDoCertame.UltimosDias => query.Where(c => c.InscricoesAte >= instanteUtc && c.InscricoesAte < limiar),
+            SituacaoDoCertame.EmBreve => query.Where(c => c.InscricoesAte >= instanteUtc && c.InscricoesDe > instanteUtc),
+            SituacaoDoCertame.InscricoesAbertas => query.Where(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= limiar),
+            SituacaoDoCertame.UltimosDias => query.Where(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= instanteUtc && c.InscricoesAte < limiar),
             SituacaoDoCertame.Encerradas => query.Where(c => c.InscricoesAte < instanteUtc),
             _ => query,
         };
@@ -87,24 +93,26 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         DateTimeOffset instanteUtc = instante.ToUniversalTime();
         DateTimeOffset limiar = instanteUtc + limiarDosUltimosDias;
 
-        // Agrupamento constante para o provider emitir UMA consulta com as três contagens
+        // Agrupamento constante para o provider emitir UMA consulta com as quatro contagens
         // condicionais: são números que a tela exibe lado a lado, e resolvê-los separadamente
-        // abriria janela para discordarem entre si.
+        // abriria janela para discordarem entre si. Cada condição é a do recorte homônimo, e é
+        // dessa identidade que vem a promessa de que somam o total.
         var contagem = await _context.CertamesDivulgados
             .AsNoTracking()
             .GroupBy(static _ => 1)
             .Select(g => new
             {
-                Abertas = g.Count(c => c.InscricoesAte >= limiar),
-                UltimosDias = g.Count(c => c.InscricoesAte >= instanteUtc && c.InscricoesAte < limiar),
+                EmBreve = g.Count(c => c.InscricoesAte >= instanteUtc && c.InscricoesDe > instanteUtc),
+                Abertas = g.Count(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= limiar),
+                UltimosDias = g.Count(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= instanteUtc && c.InscricoesAte < limiar),
                 Encerrados = g.Count(c => c.InscricoesAte < instanteUtc),
             })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return contagem is null
-            ? new ContadoresDaVitrine(0, 0, 0)
-            : new ContadoresDaVitrine(contagem.Abertas, contagem.UltimosDias, contagem.Encerrados);
+            ? new ContadoresDaVitrine(0, 0, 0, 0)
+            : new ContadoresDaVitrine(contagem.EmBreve, contagem.Abertas, contagem.UltimosDias, contagem.Encerrados);
     }
 
     /// <summary>
@@ -118,19 +126,19 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
     /// continuação, indistinguível de fim de coleção. É a mesma proteção que
     /// <c>KeysetSort.Signature</c> dá às listagens que declaram a ordenação pelo catálogo.
     /// </remarks>
-    private static string AssinaturaDaVitrine(SituacaoDoCertame situacao) =>
-        string.Create(CultureInfo.InvariantCulture, $"vitrine-certames:{situacao}");
+    private static string AssinaturaDaVitrine(SituacaoDoCertame? situacao) =>
+        string.Create(CultureInfo.InvariantCulture, $"vitrine-certames:{situacao?.ToString() ?? "todas"}");
 
     /// <summary>
     /// Chave de ordenação da âncora: a assinatura do recorte, o instante congelado e o prazo,
     /// nessa ordem. O segmento não entra — ele deriva dos dois últimos, e guardá-lo seria uma
     /// segunda cópia do mesmo fato.
     /// </summary>
-    private static string SortKeyDaVitrine(CertameDivulgado certame, DateTimeOffset instanteUtc, SituacaoDoCertame situacao) =>
+    private static string SortKeyDaVitrine(CertameDivulgado certame, DateTimeOffset instanteUtc, SituacaoDoCertame? situacao) =>
         CompositeSortKey.Serialize(
             AssinaturaDaVitrine(situacao), Instante(instanteUtc), Instante(certame.InscricoesAte));
 
-    private static object AncoraDaVitrine(string sortKey, Guid id, SituacaoDoCertame situacao)
+    private static object AncoraDaVitrine(string sortKey, Guid id, SituacaoDoCertame? situacao)
     {
         if (!CompositeSortKey.TryDeserialize(sortKey, 3, out IReadOnlyList<string> partes)
             || !string.Equals(partes[0], AssinaturaDaVitrine(situacao), StringComparison.Ordinal)

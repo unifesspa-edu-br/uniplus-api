@@ -15,9 +15,13 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// seguintes: sem isso, um prazo que vence no meio do percurso moveria o certame de segmento, e ele
 /// apareceria duas vezes ou sumiria.
 /// </param>
+/// <param name="Situacao">
+/// Recorte por situação da janela. Nulo é a vitrine inteira — sem filtro é sem parâmetro, não um
+/// valor de vocabulário que certame algum tem.
+/// </param>
 public sealed record ListarCertamesPublicadosQuery(
     DateTimeOffset Instante,
-    SituacaoDoCertame Situacao,
+    SituacaoDoCertame? Situacao,
     string? AfterSortKey,
     Guid? AfterId,
     int Limit,

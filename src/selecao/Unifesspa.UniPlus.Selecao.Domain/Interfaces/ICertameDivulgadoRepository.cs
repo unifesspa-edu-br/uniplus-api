@@ -19,18 +19,24 @@ public interface ICertameDivulgadoRepository
     Task AdicionarAsync(CertameDivulgado divulgado, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Página da vitrine, ordenada por urgência: os que ainda recebem inscrição primeiro, do prazo
-    /// mais próximo ao mais distante, e os encerrados depois.
+    /// Página da vitrine, ordenada por urgência: os que ainda não encerraram primeiro, do prazo mais
+    /// próximo ao mais distante, e os encerrados depois.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Consulta de tabela única. Só há linha para certame público, então não há filtro de
     /// visibilidade a aplicar depois — a página sai do banco com o tamanho pedido, e o percurso não
     /// depende de descarte posterior.
+    /// </para>
+    /// <para>
+    /// <paramref name="situacao"/> nula é a vitrine inteira: a ausência de recorte é a ausência do
+    /// filtro, não um valor do vocabulário.
+    /// </para>
     /// </remarks>
     Task<(IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarVitrineAsync(
             DateTimeOffset instanteSeForAPrimeiraPagina,
-            SituacaoDoCertame situacao,
+            SituacaoDoCertame? situacao,
             TimeSpan limiarDosUltimosDias,
             string? afterSortKey,
             Guid? afterId,

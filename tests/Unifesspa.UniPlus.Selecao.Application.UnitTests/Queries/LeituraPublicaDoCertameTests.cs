@@ -73,24 +73,29 @@ public sealed class LeituraPublicaDoCertameTests
         resultado.Items.Select(static i => i.ProcessoSeletivoId).Should().ContainInOrder(a, b);
     }
 
-    [Fact(DisplayName = "A situação das inscrições é resolvida no servidor, contra o instante da navegação")]
-    public async Task Vitrine_JanelaAindaNaoAberta_NaoMarcaAberta()
+    [Theory(DisplayName = "A situação do item é resolvida no servidor, contra o instante da navegação")]
+    [InlineData(5, 30, SituacaoDoCertame.EmBreve)]
+    [InlineData(-1, 30, SituacaoDoCertame.InscricoesAbertas)]
+    [InlineData(-1, 3, SituacaoDoCertame.UltimosDias)]
+    [InlineData(-30, -1, SituacaoDoCertame.Encerradas)]
+    public async Task Vitrine_MarcaOItemComASituacaoDoInstante(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada)
     {
         // O fuso de quem lê não decide prazo de edital, e a janela tem dois lados: um edital
         // publicado antes de a inscrição abrir não está recebendo inscrição.
         Guid processoId = Guid.CreateVersion7();
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
-        CertameDivulgado futuro = Divulgado(
-            processoId, Projecao(processoId), inscricoesDe: Agora.AddDays(5), inscricoesAte: Agora.AddDays(30));
+        CertameDivulgado linha = Divulgado(
+            processoId, Projecao(processoId),
+            inscricoesDe: Agora.AddDays(diasAteAbrir), inscricoesAte: Agora.AddDays(diasAteFechar));
         repository.ListarVitrineAsync(
-                Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame>(), Arg.Any<TimeSpan>(), Arg.Any<string?>(),
+                Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame?>(), Arg.Any<TimeSpan>(), Arg.Any<string?>(),
                 Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
-            .Returns(((IReadOnlyList<CertameDivulgado>)[futuro], Agora, ((string, Guid)?)null, ((string, Guid)?)null));
+            .Returns(((IReadOnlyList<CertameDivulgado>)[linha], Agora, ((string, Guid)?)null, ((string, Guid)?)null));
 
         ListarCertamesPublicadosResult resultado = await ListarCertamesPublicadosQueryHandler.Handle(
             Consulta(), repository, CancellationToken.None);
 
-        resultado.Items.Should().ContainSingle().Which.InscricoesAbertas.Should().BeFalse();
+        resultado.Items.Should().ContainSingle().Which.Situacao.Should().Be(esperada);
     }
 
     [Fact(DisplayName = "Contadores só são calculados quando pedidos")]
@@ -98,7 +103,7 @@ public sealed class LeituraPublicaDoCertameTests
     {
         ICertameDivulgadoRepository repository = RepositorioComVitrine(Guid.CreateVersion7());
         repository.ContarPorSituacaoAsync(Arg.Any<DateTimeOffset>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
-            .Returns(new ContadoresDaVitrine(12, 3, 40));
+            .Returns(new ContadoresDaVitrine(5, 12, 3, 40));
 
         ListarCertamesPublicadosResult sem = await ListarCertamesPublicadosQueryHandler.Handle(
             Consulta(), repository, CancellationToken.None);
@@ -106,18 +111,18 @@ public sealed class LeituraPublicaDoCertameTests
             Consulta(incluirContadores: true), repository, CancellationToken.None);
 
         sem.Contadores.Should().BeNull();
-        com.Contadores.Should().Be(new ContadoresDaVitrine(12, 3, 40));
+        com.Contadores.Should().Be(new ContadoresDaVitrine(5, 12, 3, 40));
     }
 
     private static ListarCertamesPublicadosQuery Consulta(bool incluirContadores = false) =>
-        new(Agora, SituacaoDoCertame.Todas, null, null, 20, PaginationDirection.Next, incluirContadores);
+        new(Agora, null, null, null, 20, PaginationDirection.Next, incluirContadores);
 
     private static ICertameDivulgadoRepository RepositorioComVitrine(params Guid[] processoIds)
     {
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         CertameDivulgado[] linhas = [.. processoIds.Select(id => Divulgado(id, Projecao(id)))];
         repository.ListarVitrineAsync(
-                Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame>(), Arg.Any<TimeSpan>(), Arg.Any<string?>(),
+                Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame?>(), Arg.Any<TimeSpan>(), Arg.Any<string?>(),
                 Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
             .Returns(((IReadOnlyList<CertameDivulgado>)linhas, Agora, ((string, Guid)?)null, ("ancora", processoIds[^1])));
         return repository;

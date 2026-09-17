@@ -18,6 +18,11 @@ using DTOs;
 /// Um item cuja divulgação não se deserializa é omitido, não derruba a lista: o defeito de uma
 /// linha não é culpa dos outros certames, e ele aflora no detalhe, que recusa.
 /// </para>
+/// <para>
+/// A situação de cada item é classificada aqui contra o instante que a consulta congelou — o mesmo
+/// que segmentou o recorte no banco, devolvido por ela — e contra o mesmo limiar. Reclassificar
+/// contra o relógio de agora faria o item marcado discordar do grupo em que ele foi listado.
+/// </para>
 /// </remarks>
 public static class ListarCertamesPublicadosQueryHandler
 {
@@ -67,8 +72,10 @@ public static class ListarCertamesPublicadosQueryHandler
                 certame.Nome,
                 certame.TipoProcesso,
                 certame.ModalidadesOfertadas,
+                divulgado.InscricoesDe,
                 divulgado.InscricoesAte,
-                divulgado.InscricoesDe <= instante && divulgado.InscricoesAte >= instante,
+                SituacaoDaVitrine.Classificar(
+                    divulgado.InscricoesDe, divulgado.InscricoesAte, instante, LimiarDosUltimosDias),
                 certame.Vagas.Sum(static v => v.TotalPublicado)));
         }
 
