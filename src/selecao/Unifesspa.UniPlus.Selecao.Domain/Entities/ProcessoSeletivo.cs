@@ -62,11 +62,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// congelado. Resolver "o prazo da versão vigente de cada processo" a cada leitura seria uma
     /// correlação por processo, que nenhum índice serve bem.
     /// <para>
-    /// <b>É estado derivado, e só é correto porque não tem como divergir:</b> as duas transições que
-    /// criam versão vigente — a publicação e a sucessão por retificação — gravam estas colunas na
-    /// MESMA transação, a partir do MESMO <see cref="DadosEdital"/> que alimentou a canonicalização.
-    /// Quem acrescentar uma terceira transição que crie versão precisa gravá-las também; o teste de
-    /// coerência entre coluna e envelope é o que recusa o esquecimento.
+    /// <b>É estado derivado</b>: as duas transições que criam versão vigente — a publicação e a
+    /// sucessão por retificação — gravam estas colunas na MESMA transação, a partir do MESMO
+    /// <see cref="DadosEdital"/> que alimentou a canonicalização.
+    /// </para>
+    /// <para>
+    /// Duas ressalvas, porque hoje <b>nada</b> as verifica automaticamente. A primeira: quem
+    /// acrescentar uma transição que crie versão fora de <c>Publicar</c>/<c>SucederVersao</c>
+    /// precisa gravá-las também, e o esquecimento só aparece em revisão — os testes comparam a
+    /// coluna com o <see cref="DadosEdital"/> de entrada, não com o envelope congelado. A segunda:
+    /// quando o relógio regride, <c>SucederVersao</c> ancora a vigência da versão nova no instante
+    /// da anterior, e até aquele instante chegar a versão resolvida como vigente ainda é a ANTIGA
+    /// enquanto estas colunas já descrevem a NOVA.
     /// </para>
     /// </remarks>
     public DateTimeOffset? PeriodoInscricaoInicioVigente { get; private set; }
