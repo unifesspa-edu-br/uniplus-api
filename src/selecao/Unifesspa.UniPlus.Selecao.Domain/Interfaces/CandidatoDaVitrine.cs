@@ -26,3 +26,24 @@ public enum SituacaoDoCertame
     /// <summary>Apenas os que já encerraram.</summary>
     Encerradas = 2,
 }
+
+/// <summary>
+/// Quantos certames publicados há em cada situação, no instante da consulta.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Agregação sobre o conjunto filtrado <b>exceto</b> pela própria situação: são estes números que
+/// alimentam o filtro de situação, e filtrá-los por ele deixaria todos zerados menos um.
+/// </para>
+/// <para>
+/// <b>Contam o que está publicado, não o que está visível.</b> A visibilidade exige ato normativo
+/// registrado, que vive noutro módulo e nenhuma agregação SQL daqui pode afirmar. A diferença
+/// alcança apenas o certame cuja publicação de abertura teve o registro do ato ainda não drenado ou
+/// recusado — estado raro, e que alguém reconcilia. Conferi-lo exigiria trazer a linhagem de todos
+/// os certames para contar três números.
+/// </para>
+/// </remarks>
+/// <param name="InscricoesAbertas">Ainda recebem inscrição, sem estar no limiar final.</param>
+/// <param name="UltimosDias">Ainda recebem inscrição, e encerram dentro do limiar final.</param>
+/// <param name="Encerrados">Já encerraram.</param>
+public readonly record struct ContadoresDaVitrine(int InscricoesAbertas, int UltimosDias, int Encerrados);

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
@@ -73,6 +74,7 @@ public sealed class CertamePublicadoController : ControllerBase
         // degradaria em silêncio para "primeira página" em vez de ser recusado.
         [FromCursor(RecursoDaVitrine, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "situacao")] SituacaoDoCertame situacao,
+        [FromQuery(Name = "incluir_contadores")] bool incluirContadores,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
@@ -80,7 +82,8 @@ public sealed class CertamePublicadoController : ControllerBase
         ListarCertamesPublicadosResult resultado = await _queryBus
             .Send(
                 new ListarCertamesPublicadosQuery(
-                    _relogio.GetUtcNow(), situacao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+                    _relogio.GetUtcNow(), situacao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction,
+                    incluirContadores),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -89,10 +92,23 @@ public sealed class CertamePublicadoController : ControllerBase
         // nela, de modo que uma representação guardada continuaria omitindo o que já vigora.
         Response.Headers.CacheControl = "no-cache";
 
+        // Metadado de coleção vai em header, nunca no corpo: envolver o array num objeto para
+        // acomodá-lo trocaria a forma do recurso pela forma do envelope (ADR-0025). Opt-in porque
+        // é trabalho que a maioria das navegações não precisa — a tela pede os números uma vez, ao
+        // montar os filtros, e não a cada página.
+        if (resultado.Contadores is { } contadores)
+        {
+            Response.Headers["X-Certames-Inscricoes-Abertas"] = Numero(contadores.InscricoesAbertas);
+            Response.Headers["X-Certames-Ultimos-Dias"] = Numero(contadores.UltimosDias);
+            Response.Headers["X-Certames-Encerrados"] = Numero(contadores.Encerrados);
+        }
+
         return await this.OkPaginatedOrdenadoAsync(
             resultado.Items, resultado.Anterior, resultado.Proximo, page, RecursoDaVitrine,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
+
+    private static string Numero(int valor) => valor.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Certame publicado, projetado da versão de configuração vigente e visível apenas quando o ato

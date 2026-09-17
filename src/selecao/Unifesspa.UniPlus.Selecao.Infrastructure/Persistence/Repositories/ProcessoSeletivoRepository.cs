@@ -476,6 +476,35 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<ContadoresDaVitrine> ContarVitrinePorSituacaoAsync(
+        DateTimeOffset instante,
+        TimeSpan limiarDosUltimosDias,
+        CancellationToken cancellationToken = default)
+    {
+        DateTimeOffset instanteUtc = instante.ToUniversalTime();
+        DateTimeOffset limiar = instanteUtc + limiarDosUltimosDias;
+
+        // Agrupamento constante para o provider emitir UMA consulta com as três contagens
+        // condicionais, em vez de três viagens que poderiam discordar entre si.
+        var contagem = await _context.ProcessosSeletivos
+            .AsNoTracking()
+            .Where(p => p.PeriodoInscricaoFimVigente != null)
+            .GroupBy(static _ => 1)
+            .Select(g => new
+            {
+                Abertas = g.Count(p => p.PeriodoInscricaoFimVigente >= limiar),
+                UltimosDias = g.Count(p =>
+                    p.PeriodoInscricaoFimVigente >= instanteUtc && p.PeriodoInscricaoFimVigente < limiar),
+                Encerrados = g.Count(p => p.PeriodoInscricaoFimVigente < instanteUtc),
+            })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return contagem is null
+            ? new ContadoresDaVitrine(0, 0, 0)
+            : new ContadoresDaVitrine(contagem.Abertas, contagem.UltimosDias, contagem.Encerrados);
+    }
+
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.ProcessosSeletivos

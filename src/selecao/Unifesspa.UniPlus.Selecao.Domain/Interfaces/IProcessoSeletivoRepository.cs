@@ -214,5 +214,18 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         IReadOnlyCollection<Guid> atoCriadorIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Contagem de certames publicados por situação, num único percurso.
+    /// </summary>
+    /// <remarks>
+    /// Três contagens condicionais numa consulta só, e não uma consulta por situação: são números
+    /// que a tela exibe lado a lado, e resolvê-los separadamente abriria janela para eles
+    /// discordarem entre si.
+    /// </remarks>
+    Task<ContadoresDaVitrine> ContarVitrinePorSituacaoAsync(
+        DateTimeOffset instante,
+        TimeSpan limiarDosUltimosDias,
+        CancellationToken cancellationToken = default);
+
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);
 }

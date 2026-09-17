@@ -30,6 +30,17 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </remarks>
 public static class ListarCertamesPublicadosQueryHandler
 {
+    /// <summary>
+    /// A partir de quanto tempo do encerramento um certame é "últimos dias".
+    /// </summary>
+    /// <remarks>
+    /// <b>Valor provisório.</b> O estado aparece no modelo de interface do portal, mas o limiar que o
+    /// define não está declarado em requisito nem em regra de negócio publicada — e ele é decisão de
+    /// produto, não de implementação: encurtá-lo ou alargá-lo muda o que o cidadão lê como urgente.
+    /// Sete dias é o que se assume até a regra existir, e trocá-lo é mudar esta constante.
+    /// </remarks>
+    private static readonly TimeSpan LimiarDosUltimosDias = TimeSpan.FromDays(7);
+
     public static async Task<ListarCertamesPublicadosResult> Handle(
         ListarCertamesPublicadosQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -49,9 +60,15 @@ public static class ListarCertamesPublicadosQueryHandler
                     cancellationToken)
                 .ConfigureAwait(false);
 
+        ContadoresDaVitrine? contadores = query.IncluirContadores
+            ? await processoSeletivoRepository
+                .ContarVitrinePorSituacaoAsync(instante, LimiarDosUltimosDias, cancellationToken)
+                .ConfigureAwait(false)
+            : null;
+
         if (candidatos.Count == 0)
         {
-            return new ListarCertamesPublicadosResult([], anterior, proximo);
+            return new ListarCertamesPublicadosResult([], anterior, proximo, contadores);
         }
 
         IReadOnlyDictionary<Guid, IReadOnlyList<LinhagemDeVersao>> linhagens = await processoSeletivoRepository
@@ -110,6 +127,6 @@ public static class ListarCertamesPublicadosQueryHandler
             }
         }
 
-        return new ListarCertamesPublicadosResult(itens, anterior, proximo);
+        return new ListarCertamesPublicadosResult(itens, anterior, proximo, contadores);
     }
 }
