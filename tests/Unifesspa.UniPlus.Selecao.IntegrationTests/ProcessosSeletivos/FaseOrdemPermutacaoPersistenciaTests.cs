@@ -19,15 +19,17 @@ using Xunit;
 /// <remarks>
 /// <para>
 /// O agregado recusa a permutação cíclica antes de chegar aqui, com erro nomeado, apoiado na
-/// premissa de que o EF não resolveria a troca. Este teste mede a premissa direto no contexto,
-/// sem passar pelo domínio — e ela se confirma.
+/// premissa de que nenhuma ordenação de comandos resolve um ciclo FECHADO de <c>UPDATE</c>
+/// sobre um valor único. Este teste mede a premissa direto no contexto, sem passar pelo
+/// domínio — e ela se confirma.
 /// </para>
 /// <para>
 /// <b>Por que isto não contradiz o caso das bancas da etapa.</b> Lá duas bancas trocam de
-/// código e gravam sem erro, porque a coleção é substituída por inteiro: são <c>INSERT</c> e
-/// <c>DELETE</c> de linhas diferentes, e o EF os ordena de modo que o <c>DELETE</c> libere o
-/// slot antes do <c>INSERT</c> que o quer. Aqui são duas linhas RETIDAS trocando valores entre
-/// si — <c>UPDATE</c> contra <c>UPDATE</c> —, e não existe ordenação que resolva: cada uma
+/// código e gravam sem erro — medido em <c>EtapaBancaPersistenciaTests</c>, não aqui —,
+/// porque a coleção é substituída por inteiro: são <c>INSERT</c> e <c>DELETE</c> de linhas
+/// diferentes, e o EF os ordena de modo que o <c>DELETE</c> libere o slot antes do
+/// <c>INSERT</c> que o quer. Aqui são duas linhas RETIDAS trocando valores entre si —
+/// <c>UPDATE</c> contra <c>UPDATE</c> —, e não existe ordenação que resolva: cada uma
 /// depende de a outra ceder o valor primeiro. São casos distintos, e confundi-los faria
 /// remover um guard que ainda protege.
 /// </para>
@@ -56,11 +58,14 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
         Func<Task> gravar = async () => await troca.SaveChangesAsync();
 
         // É esta exceção que o guard de domínio existe para evitar: ela escapa do Result
-        // pattern e chega ao operador como 500, sem dizer o que ele fez de errado.
-        (await gravar.Should().ThrowAsync<InvalidOperationException>(
-            "o EF ordena comandos, e nenhuma ordem resolve duas linhas que trocam o mesmo valor "
-            + "coberto por índice único — é a premissa que sustenta o guard de permutação cíclica"))
-            .WithMessage("*circular dependency*");
+        // pattern e chega ao operador como 500, sem dizer o que ele fez de errado. O trecho
+        // casado é a mensagem interna do EF Core — inglês, sem contrato de estabilidade: se
+        // uma atualização mudar a redação, a quebra aqui é de redação, não de garantia.
+        (await gravar.Should().ThrowAsync<InvalidOperationException>())
+            .WithMessage(
+                "*circular dependency*",
+                "o EF ordena comandos, e nenhuma ordem resolve duas linhas que trocam o mesmo valor "
+                + "coberto por índice único — é a premissa que sustenta o guard de permutação cíclica");
 
         // E o estado no banco não mudou: a transação inteira não chegou a ser emitida.
         await using SelecaoDbContext leitura = fixture.CreateDbContext();

@@ -540,22 +540,24 @@ public sealed class FaseCronograma : EntityBase
     /// <para>
     /// Sem esta reconciliação, repor o cronograma faria <c>Clear()</c> + <c>Add</c> de
     /// instâncias novas — DELETE das fases antigas e INSERT das novas na MESMA
-    /// transação. Quando a nova fase reocupa a MESMA <see cref="Ordem"/> da antiga (o
-    /// caso comum: a sessão editorial só mudou datas, não renumerou o cronograma),
-    /// <c>ux_fases_cronograma_processo_ordem</c> não tem como saber que o DELETE
-    /// "libera" o valor antes do INSERT — o EF Core não infere essa ordem entre
-    /// entidades sem relação de FK, e o SaveChanges pode colidir na constraint.
-    /// Reconciliar em vez de recriar evita o DELETE+INSERT do mesmo slot.
+    /// transação, com a nova fase reocupando a MESMA <see cref="Ordem"/> da antiga (o
+    /// caso comum: a sessão editorial só mudou datas, não renumerou o cronograma).
+    /// <b>Esse DELETE+INSERT do mesmo slot de <c>ux_fases_cronograma_processo_ordem</c>
+    /// não colide</b>: um índice único sem filtro entra no grafo de comandos do EF Core,
+    /// que emite o DELETE liberando o valor antes do INSERT que o quer. Medido contra
+    /// Postgres real em <c>EtapaBancaPersistenciaTests</c>, sobre o índice equivalente das
+    /// bancas da etapa, e confirmado pela própria mensagem do EF quando o grafo não tem
+    /// solução, que nomeia o índice (<c>FaseOrdemPermutacaoPersistenciaTests</c>).
     /// </para>
     /// <para>
-    /// <b>Os produtos exigem o mesmo cuidado, e as bancas não.</b>
-    /// <c>ux_produtos_da_fase_ato</c> torna <c>(fase, ato_codigo, papel)</c> único, então repor a
-    /// coleção por <c>Clear()</c> + <c>Add</c> produziria DELETE+INSERT do mesmo slot na
-    /// mesma transação — exatamente a colisão descrita acima. Os produtos são reconciliados
+    /// <b>O que sustenta a reconciliação é a identidade da linha, não risco de colisão.</b>
+    /// Recriar a fase a cada restauração trocaria o <c>Id</c> e o <c>CreatedAt</c> de uma
+    /// fase que nunca deixou de existir, e derrubaria toda referência guardada por Id —
+    /// documentos exigidos e referência temporal de fatos apontam para a fase pelo Id
+    /// congelado. Os produtos exigem o mesmo cuidado pela mesma razão, e são reconciliados
     /// pelo par <see cref="ProdutoDaFase.AtoCodigo"/> + <see cref="ProdutoDaFase.Papel"/>,
-    /// reusando a instância rastreada;
-    /// <c>bancas_requeridas</c> não tem índice único e por isso segue com a reposição
-    /// simples.
+    /// reusando a instância rastreada; <c>bancas_requeridas</c> não é referenciada por Id
+    /// de fora da fase e por isso segue com a reposição simples.
     /// </para>
     /// <para>
     /// <b>O recorte de competência viaja junto da sua banca, e não precisa de reconciliação
