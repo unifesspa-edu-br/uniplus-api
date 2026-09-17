@@ -107,7 +107,8 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        ContadoresDaVitrine contadores = await repository.ContarPorSituacaoAsync(Agora, Limiar, CancellationToken.None);
+        ContadoresDaVitrine contadores = await repository.ContarPorSituacaoAsync(
+            Agora, new RecorteDaVitrine(), Limiar, CancellationToken.None);
 
         // Um número exibido ao lado de um filtro promete quantos itens aquele filtro traz. Contar
         // por um critério e filtrar por outro é a forma de o rótulo mentir sem nada quebrar.
@@ -130,8 +131,8 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
 
         (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
             await repository.ListarVitrineAsync(
-                Agora, situacao, Limiar, afterSortKey: null, afterId: null,
-                limit: Deslocamentos.Length * Deslocamentos.Length, PaginationDirection.Next, CancellationToken.None);
+                Agora, new RecorteDaVitrine(situacao), [], Limiar, null, null,
+                Deslocamentos.Length * Deslocamentos.Length, PaginationDirection.Next, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Id)];
     }
@@ -143,8 +144,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
             Guid.CreateVersion7(),
             new string('a', 64),
             versaoProjecao: "1",
-            inscricoesDe,
-            inscricoesAte,
-            certame: """{"nome":"Certame de recorte"}""",
-            divulgadoEm: Agora);
+            new FacetasDoCertameDivulgado("Certame de recorte", "001/2026", ["AC"], inscricoesDe, inscricoesAte),
+            """{"nome":"Certame de recorte"}""",
+            Agora);
 }

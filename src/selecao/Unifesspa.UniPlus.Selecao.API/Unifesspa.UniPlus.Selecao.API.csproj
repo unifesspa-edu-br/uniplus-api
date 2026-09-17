@@ -39,6 +39,9 @@
   -->
   <ItemGroup>
     <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.IntegrationTests" />
+    <!-- A descrição dos campos de ordenação é constante de atributo, e por isso não pode ser
+         montada a partir do catálogo. O teste de arquitetura que confere as duas precisa lê-la. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.ArchTests" />
   </ItemGroup>
 
 </Project>

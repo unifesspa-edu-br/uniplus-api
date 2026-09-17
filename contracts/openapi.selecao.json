@@ -113,6 +113,30 @@
             }
           },
           {
+            "name": "modalidade",
+            "in": "query",
+            "description": "C\u00F3digo da modalidade que o certame precisa ofertar. Sem o par\u00E2metro, n\u00E3o recorta.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Texto pesquisado no t\u00EDtulo do certame e no n\u00FAmero do edital. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Campos de ordena\u00E7\u00E3o separados por v\u00EDrgula, na ordem de prioridade; \u0027-\u0027 prefixa o campo decrescente. Exemplo: sort=inscricoesAte,-nome. Campos aceitos: inscricoesAte, inscricoesDe, nome, divulgadoEm. Sem o par\u00E2metro, vale a ordem por urg\u00EAncia: quem ainda n\u00E3o encerrou primeiro, do prazo mais pr\u00F3ximo ao mais distante, e os encerrados depois.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "incluir_contadores",
             "in": "query",
             "schema": {

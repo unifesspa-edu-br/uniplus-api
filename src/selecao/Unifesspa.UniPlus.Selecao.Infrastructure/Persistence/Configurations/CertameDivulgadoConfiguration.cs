@@ -7,6 +7,21 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<CertameDivulgado>
 {
+    /// <summary>
+    /// Nome da propriedade sombra que carrega a chave de ordenação alfabética do certame. O
+    /// repositório da vitrine a projeta por <c>EF.Property&lt;string&gt;</c>.
+    /// </summary>
+    internal const string NomeOrdenacaoPropriedade = "NomeOrdenacao";
+
+    private const int NomeMaxLength = 200;
+    private const int NumeroMaxLength = 60;
+
+    /// <summary>
+    /// Expressão da coluna gerada, vinda da normalização compartilhada: a mesma regra que a
+    /// aplicação aplica ao termo pesquisado, para que a comparação entre os dois seja possível.
+    /// </summary>
+    private static readonly string NomeOrdenacaoSql = NormalizacaoTextual.ExpressaoSql("nome");
+
     public void Configure(EntityTypeBuilder<CertameDivulgado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -21,6 +36,18 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         builder.Property(c => c.AtoCriadorId).IsRequired();
         builder.Property(c => c.HashConfiguracao).HasMaxLength(64).IsFixedLength().IsRequired();
         builder.Property(c => c.VersaoProjecao).HasMaxLength(16).IsRequired();
+        // Facetas: os mesmos valores que o documento carrega, em coluna, porque buscar, recortar e
+        // ordenar não se fazem sobre documento. Não são segunda fonte — saem da mesma projeção, no
+        // mesmo instante, e avançam com ela.
+        builder.Property(c => c.Nome).HasMaxLength(NomeMaxLength).IsRequired();
+        builder.Property(c => c.Numero).HasMaxLength(NumeroMaxLength);
+
+        // Arranjo nativo do Postgres, e não jsonb: o recorte por modalidade é um teste de
+        // pertinência, que o operador de sobreposição resolve com índice GIN.
+        builder.Property(c => c.ModalidadesOfertadas)
+            .HasColumnType("text[]")
+            .IsRequired();
+
         builder.Property(c => c.InscricoesDe).IsRequired();
         builder.Property(c => c.InscricoesAte).IsRequired();
         builder.Property(c => c.DivulgadoEm).IsRequired();
@@ -56,5 +83,41 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         builder.HasIndex(c => c.AtoCriadorId)
             .IsUnique()
             .HasDatabaseName("ux_certames_divulgados_ato_criador");
+
+        ConfigurarOrdenacaoAlfabetica(builder);
+
+        // Sobreposição de arranjos (`&&`) é o operador que o recorte por modalidade usa, e GIN é o
+        // método que o serve. Sem ele, o recorte varre a tabela — numa rota anônima com pico
+        // previsível na abertura de inscrições.
+        builder.HasIndex(c => c.ModalidadesOfertadas)
+            .HasMethod("gin")
+            .HasDatabaseName("ix_certames_divulgados_modalidades");
+    }
+
+    /// <summary>
+    /// Chave de ordenação alfabética do título, como coluna gerada.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Ordenar pela coluna crua daria a ordem do ponto de código: acentuada depois de tudo, e
+    /// maiúscula antes de minúscula. Normalizar na consulta impediria o uso de índice.
+    /// </para>
+    /// <para>
+    /// Coluna gerada não tem caminho de escrita próprio: não há como dessincronizá-la do título. A
+    /// chave é não-nula porque o título é obrigatório — é o que a regra de chave de ordenação
+    /// não-nula (ADR-0095) exige para o seek não devolver conjunto vazio.
+    /// </para>
+    /// </remarks>
+    private static void ConfigurarOrdenacaoAlfabetica(EntityTypeBuilder<CertameDivulgado> builder)
+    {
+        builder.Property<string>(NomeOrdenacaoPropriedade)
+            .HasMaxLength(NomeMaxLength)
+            .UseCollation("C")
+            .HasComputedColumnSql(NomeOrdenacaoSql, stored: true)
+            .IsRequired();
+
+        // Casa o ORDER BY da vitrine ordenada por título, com o identificador de desempate.
+        builder.HasIndex(NomeOrdenacaoPropriedade, nameof(CertameDivulgado.Id))
+            .HasDatabaseName("ix_certames_divulgados_nome_ordenacao");
     }
 }

@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
-using Unifesspa.UniPlus.Configuracao.Application.Consultas;
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 

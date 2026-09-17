@@ -51,12 +51,27 @@ public sealed class CertameDivulgado : IIdentificavel
     /// <summary>Versão do formato da projeção pública. Sobe quando a forma da resposta muda.</summary>
     public string VersaoProjecao { get; private set; } = null!;
 
+    /// <summary>
+    /// Título congelado do certame. Coluna, e não só campo do documento, porque a vitrine o busca e
+    /// ordena por ele.
+    /// </summary>
+    public string Nome { get; private set; } = null!;
+
+    /// <summary>Identificador legível do edital, quando a publicação o declara. A busca o alcança.</summary>
+    public string? Numero { get; private set; }
+
+    /// <summary>
+    /// Códigos das modalidades com vaga no certame — o recorte por modalidade da vitrine corre
+    /// sobre eles.
+    /// </summary>
+    public IReadOnlyList<string> ModalidadesOfertadas { get; private set; } = [];
+
     /// <summary>Abertura da janela de inscrição da versão projetada.</summary>
     public DateTimeOffset InscricoesDe { get; private set; }
 
     /// <summary>
-    /// Encerramento da janela da versão projetada — a chave por que a vitrine ordena, e a única
-    /// grandeza da qual as três situações derivam.
+    /// Encerramento da janela da versão projetada — a chave por que a vitrine ordena por padrão, e a
+    /// grandeza de que as quatro situações derivam, junto com a abertura.
     /// </summary>
     public DateTimeOffset InscricoesAte { get; private set; }
 
@@ -76,22 +91,28 @@ public sealed class CertameDivulgado : IIdentificavel
         Guid atoCriadorId,
         string hashConfiguracao,
         string versaoProjecao,
-        DateTimeOffset inscricoesDe,
-        DateTimeOffset inscricoesAte,
+        FacetasDoCertameDivulgado facetas,
         string certame,
-        DateTimeOffset divulgadoEm) =>
-        new()
+        DateTimeOffset divulgadoEm)
+    {
+        ArgumentNullException.ThrowIfNull(facetas);
+
+        return new()
         {
             Id = processoSeletivoId,
             NumeroVersao = numeroVersao,
             AtoCriadorId = atoCriadorId,
             HashConfiguracao = hashConfiguracao,
             VersaoProjecao = versaoProjecao,
-            InscricoesDe = inscricoesDe,
-            InscricoesAte = inscricoesAte,
+            Nome = facetas.Nome,
+            Numero = facetas.Numero,
+            ModalidadesOfertadas = facetas.ModalidadesOfertadas,
+            InscricoesDe = facetas.InscricoesDe,
+            InscricoesAte = facetas.InscricoesAte,
             Certame = certame,
             DivulgadoEm = divulgadoEm,
         };
+    }
 
     /// <summary>
     /// Avança a divulgação para uma versão mais nova. Recusa retroceder: a reentrega da mensagem de
@@ -103,11 +124,12 @@ public sealed class CertameDivulgado : IIdentificavel
         Guid atoCriadorId,
         string hashConfiguracao,
         string versaoProjecao,
-        DateTimeOffset inscricoesDe,
-        DateTimeOffset inscricoesAte,
+        FacetasDoCertameDivulgado facetas,
         string certame,
         DateTimeOffset divulgadoEm)
     {
+        ArgumentNullException.ThrowIfNull(facetas);
+
         if (numeroVersao <= NumeroVersao)
         {
             return false;
@@ -117,8 +139,11 @@ public sealed class CertameDivulgado : IIdentificavel
         AtoCriadorId = atoCriadorId;
         HashConfiguracao = hashConfiguracao;
         VersaoProjecao = versaoProjecao;
-        InscricoesDe = inscricoesDe;
-        InscricoesAte = inscricoesAte;
+        Nome = facetas.Nome;
+        Numero = facetas.Numero;
+        ModalidadesOfertadas = facetas.ModalidadesOfertadas;
+        InscricoesDe = facetas.InscricoesDe;
+        InscricoesAte = facetas.InscricoesAte;
         Certame = certame;
         DivulgadoEm = divulgadoEm;
         return true;

@@ -1,9 +1,16 @@
-namespace Unifesspa.UniPlus.Configuracao.Application.Consultas;
+namespace Unifesspa.UniPlus.Application.Abstractions.Consultas;
 
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>Códigos de recusa dos parâmetros de consulta das listagens.</summary>
+/// <summary>
+/// Códigos de recusa dos parâmetros de consulta das listagens.
+/// </summary>
+/// <remarks>
+/// Compartilhados entre os módulos porque recusar um campo de ordenação inexistente ou um texto
+/// pesquisado longo demais não tem nada de específico de um domínio — é a forma do parâmetro. O que
+/// cada módulo declara é o código que trafega, no seu próprio catálogo de erros.
+/// </remarks>
 public static class ConsultaErrorCodes
 {
     /// <summary>A ordenação pediu um campo que o recurso não sabe ordenar.</summary>
@@ -23,7 +30,7 @@ public static class ConsultaErrorCodes
 /// quilobytes é aceita na primeira página e produz um link de continuação que
 /// estoura o limite de linha de requisição do servidor ou de um proxy no caminho —
 /// a listagem responde, mas paginar deixa de ser possível. O teto acompanha o
-/// maior campo pesquisável, que é o nome do curso.
+/// maior campo pesquisável das listagens que o usam, que é um nome.
 /// </remarks>
 public static class BuscaPedida
 {

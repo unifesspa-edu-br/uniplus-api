@@ -6,6 +6,7 @@ using Domain.Interfaces;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Vitrine pública de certames, ordenada por urgência e paginada por chave.
@@ -15,18 +16,19 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// seguintes: sem isso, um prazo que vence no meio do percurso moveria o certame de segmento, e ele
 /// apareceria duas vezes ou sumiria.
 /// </param>
-/// <param name="Situacao">
-/// Recorte por situação da janela. Nulo é a vitrine inteira — sem filtro é sem parâmetro, não um
-/// valor de vocabulário que certame algum tem.
+/// <param name="Recorte">O que reduz a vitrine: situação da janela, modalidade e texto pesquisado.</param>
+/// <param name="Ordenacao">
+/// Campos pedidos pela consulta, na ordem de prioridade. Vazio é a ordem canônica por urgência.
 /// </param>
 public sealed record ListarCertamesPublicadosQuery(
     DateTimeOffset Instante,
-    SituacaoDoCertame? Situacao,
+    RecorteDaVitrine Recorte,
+    IReadOnlyList<SortField> Ordenacao,
     string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,
-    bool IncluirContadores) : IQuery<ListarCertamesPublicadosResult>;
+    bool IncluirContadores) : IQuery<Result<ListarCertamesPublicadosResult>>;
 
 /// <summary>Página da vitrine, com as âncoras de continuação.</summary>
 public sealed record ListarCertamesPublicadosResult(

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -7,6 +8,7 @@ using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 using Microsoft.AspNetCore.Authorization;
@@ -36,6 +38,20 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class CertamePublicadoController : ControllerBase
 {
     private const string RecursoDaVitrine = "certames";
+
+    /// <summary>
+    /// Descrição do parâmetro de ordenação, com os campos aceitos escritos por extenso.
+    /// </summary>
+    /// <remarks>
+    /// Atributo exige constante, então a lista não pode ser montada a partir do catálogo. Um teste
+    /// confere que as duas coincidem: acrescentar campo ao catálogo sem citá-lo aqui quebra a
+    /// suíte, em vez de deixar o contrato anunciar menos do que a rota aceita.
+    /// </remarks>
+    internal const string DescricaoDoSort =
+        "Campos de ordenação separados por vírgula, na ordem de prioridade; '-' prefixa o campo "
+        + "decrescente. Exemplo: sort=inscricoesAte,-nome. Campos aceitos: inscricoesAte, "
+        + "inscricoesDe, nome, divulgadoEm. Sem o parâmetro, vale a ordem por urgência: quem ainda "
+        + "não encerrou primeiro, do prazo mais próximo ao mais distante, e os encerrados depois.";
 
     private const string ContagemEmBreve =
         "Quantos certames divulgados ainda não abriram a janela de inscrição, no instante da "
@@ -109,18 +125,37 @@ public sealed class CertamePublicadoController : ControllerBase
         // degradaria em silêncio para "primeira página" em vez de ser recusado.
         [FromCursor(RecursoDaVitrine, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "situacao")] SituacaoDoCertame? situacao,
+        [FromQuery(Name = "modalidade")]
+        [Description("Código da modalidade que o certame precisa ofertar. Sem o parâmetro, não recorta.")]
+        string? modalidade,
+        [FromQuery(Name = "q")]
+        [Description("Texto pesquisado no título do certame e no número do edital. Insensível a caixa e a acentuação.")]
+        string? q,
+        [FromQuery(Name = "sort")] [Description(DescricaoDoSort)] string? sort,
         [FromQuery(Name = "incluir_contadores")] bool incluirContadores,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        ListarCertamesPublicadosResult resultado = await _queryBus
+        if (!SortExpressionParser.TentarLer(sort, out IReadOnlyList<SortField> ordenacao, out SortExpressionError erro))
+        {
+            return erro.ParaResposta();
+        }
+
+        Result<ListarCertamesPublicadosResult> saida = await _queryBus
             .Send(
                 new ListarCertamesPublicadosQuery(
-                    _relogio.GetUtcNow(), situacao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction,
-                    incluirContadores),
+                    _relogio.GetUtcNow(), new RecorteDaVitrine(situacao, modalidade, q), ordenacao,
+                    page.AfterSortKey, page.AfterId, page.Limit, page.Direction, incluirContadores),
                 cancellationToken)
             .ConfigureAwait(false);
+
+        if (saida.IsFailure)
+        {
+            return saida.ToActionResult(_mapper);
+        }
+
+        ListarCertamesPublicadosResult resultado = saida.Value!;
 
         // Mesma revalidação obrigatória do detalhe, e pelo mesmo motivo: o endereço de uma página da
         // vitrine não muda quando uma publicação insere ou uma retificação reposiciona um certame

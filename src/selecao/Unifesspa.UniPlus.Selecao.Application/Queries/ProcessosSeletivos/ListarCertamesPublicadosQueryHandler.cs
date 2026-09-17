@@ -5,6 +5,10 @@ using Domain.Interfaces;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
+using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
+
 /// <summary>
 /// Handler da vitrine pública: uma página da tabela de divulgações, ordenada por urgência.
 /// </summary>
@@ -37,7 +41,15 @@ public static class ListarCertamesPublicadosQueryHandler
     /// </remarks>
     private static readonly TimeSpan LimiarDosUltimosDias = TimeSpan.FromDays(7);
 
-    public static async Task<ListarCertamesPublicadosResult> Handle(
+    /// <summary>
+    /// A ordem que vale quando a consulta não pede outra: vazia, porque a rotação por urgência não
+    /// é composta de campos do catálogo — ela mistura o segmento aberto/encerrado, que depende do
+    /// instante da consulta e não é atributo de linha nenhuma, com o prazo. Quem a monta é a
+    /// consulta, que tem o instante congelado em mãos.
+    /// </summary>
+    private static readonly IReadOnlyList<SortField> OrdemCanonica = [];
+
+    public static async Task<Result<ListarCertamesPublicadosResult>> Handle(
         ListarCertamesPublicadosQuery query,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         CancellationToken cancellationToken)
@@ -45,16 +57,33 @@ public static class ListarCertamesPublicadosQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
 
+        Result<string?> busca = BuscaPedida.Validar(query.Recorte.Busca);
+        if (!busca.IsSuccess)
+        {
+            return Result<ListarCertamesPublicadosResult>.Failure(busca.Error!);
+        }
+
+        // Campo fora do catálogo é recusado nomeando o campo e os aceitos. Numa rota anônima,
+        // traduzir o desconhecido em ordem arbitrária seria oferecer consulta livre sobre o banco;
+        // ignorá-lo em silêncio seria deixar o cliente crer que ordenou.
+        Result<IReadOnlyList<SortField>> ordenacao = OrdenacaoPedida.Resolver(
+            query.Ordenacao, CamposOrdenacaoDaVitrine.Todos, OrdemCanonica);
+
+        if (!ordenacao.IsSuccess)
+        {
+            return Result<ListarCertamesPublicadosResult>.Failure(ordenacao.Error!);
+        }
+
         (IReadOnlyList<CertameDivulgado> divulgados, DateTimeOffset instante, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await certameDivulgadoRepository
                 .ListarVitrineAsync(
-                    query.Instante, query.Situacao, LimiarDosUltimosDias, query.AfterSortKey, query.AfterId,
-                    query.Limit, query.Direction, cancellationToken)
+                    query.Instante, query.Recorte, ordenacao.Value!, LimiarDosUltimosDias,
+                    query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
                 .ConfigureAwait(false);
 
         ContadoresDaVitrine? contadores = query.IncluirContadores
             ? await certameDivulgadoRepository
-                .ContarPorSituacaoAsync(instante, LimiarDosUltimosDias, cancellationToken)
+                .ContarPorSituacaoAsync(instante, query.Recorte, LimiarDosUltimosDias, cancellationToken)
                 .ConfigureAwait(false)
             : null;
 
@@ -79,6 +108,7 @@ public static class ListarCertamesPublicadosQueryHandler
                 certame.Vagas.Sum(static v => v.TotalPublicado)));
         }
 
-        return new ListarCertamesPublicadosResult(itens, anterior, proximo, contadores);
+        return Result<ListarCertamesPublicadosResult>.Success(
+            new ListarCertamesPublicadosResult(itens, anterior, proximo, contadores));
     }
 }
