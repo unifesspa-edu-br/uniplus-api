@@ -77,6 +77,30 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
                 .NotNull()
                 .WithMessage("Item de janela recursal da etapa não pode ser nulo.");
 
+            // O prazo de interposição e os dois pares de suspensividade são persistidos como
+            // numeric(18,4), e o que sobra de escala o banco ARREDONDA em silêncio: um prazo
+            // de 0,00001 hora é estritamente positivo para ValidacaoDeArgsDeRecurso, vira
+            // 0,0000 na coluna, e a janela recursal passa a fechar no mesmo instante em que
+            // abre — exatamente o que aquela validação existe para impedir. Acima de catorze
+            // dígitos inteiros o banco nem arredonda: estoura 22003 como 500 no meio do PUT.
+            // Mesma proteção que Peso e NotaMinima já recebem um nível acima.
+            etapa.RuleForEach(e => e.Recursos).ChildRules(recurso =>
+            {
+                recurso.RuleFor(r => r.PrazoValor)
+                    .PrecisionScale(18, 4, ignoreTrailingZeros: false)
+                    .WithMessage("O prazo de interposição deve caber em numeric(18,4) — no máximo 4 casas decimais.");
+
+                recurso.RuleFor(r => r.SuspensividadePrimeiraInstanciaValor)
+                    .PrecisionScale(18, 4, ignoreTrailingZeros: false)
+                    .When(r => r.SuspensividadePrimeiraInstanciaValor.HasValue)
+                    .WithMessage("A suspensividade da 1ª instância deve caber em numeric(18,4) — no máximo 4 casas decimais.");
+
+                recurso.RuleFor(r => r.SuspensividadeSegundaInstanciaValor)
+                    .PrecisionScale(18, 4, ignoreTrailingZeros: false)
+                    .When(r => r.SuspensividadeSegundaInstanciaValor.HasValue)
+                    .WithMessage("A suspensividade da 2ª instância deve caber em numeric(18,4) — no máximo 4 casas decimais.");
+            });
+
             // Forma do item, e só ela — mesma regra que os produtos da fase já tinham. Sem
             // ela, o código vazio chega a ProdutoDaEtapa.Criar, cuja guarda de argumento
             // LANÇA: um corpo malformado viraria 500 em vez da recusa de validação que

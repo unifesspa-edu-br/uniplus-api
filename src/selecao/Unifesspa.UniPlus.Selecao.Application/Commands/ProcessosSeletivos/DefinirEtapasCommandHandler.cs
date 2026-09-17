@@ -400,12 +400,46 @@ public static class DefinirEtapasCommandHandler
                 // ato duas vezes — preliminar e definitivo —, e é do preliminar que a janela
                 // corre. Resolver só pelo código devolveria o definitivo sempre que ele viesse
                 // primeiro na coleção, e a etapa seria recusada por ancorar onde não se pode.
-                Guid ancora = declarado.Ancora == AncoraDoRecurso.AtoPublicado
+                ProdutoDaEtapa? produtoAncora = declarado.Ancora == AncoraDoRecurso.AtoPublicado
                     ? etapas[i].Produtos
                         .FirstOrDefault(pr => pr.Papel == PapelProdutoFase.Preliminar
                             && string.Equals(pr.AtoCodigo, declarado.AtoAncoraCodigo, StringComparison.Ordinal))
-                        ?.Id ?? Guid.Empty
-                    : Guid.Empty;
+                    : null;
+                Guid ancora = produtoAncora?.Id ?? Guid.Empty;
+
+                // As mesmas duas recusas que a fase dá sobre a âncora dela, e pelas mesmas
+                // razões. O ato que CONGELA a configuração é o que fixa as regras do certame:
+                // contar prazo de recurso a partir dele é contar contra o documento que o
+                // candidato não está contestando. E o ato de EFEITO IRREVERSÍVEL concede
+                // direito que não se desfaz — uma vaga escassa já entregue a outro —, então o
+                // recurso não teria o que reverter; o cabível é contra o resultado que o
+                // fundamentou (UNI-REQ-0080).
+                //
+                // Conferido sobre o produto âncora JÁ RESOLVIDO, e não sobre o código cru do
+                // payload: um código que não corresponde a produto preliminar algum desta etapa
+                // não é uma âncora indevida, é uma âncora que não existe, e quem sabe dizer isso
+                // — nomeando os preliminares disponíveis — é a etapa, logo abaixo. A memoização
+                // por código evita reler o catálogo quando o produto acabou de ser resolvido;
+                // quando ele já era declarado, esta é a única leitura que o confere.
+                if (produtoAncora is not null
+                    && await ResolverTipoDeAtoAsync(produtoAncora.AtoCodigo).ConfigureAwait(false) is { } tipoAncora)
+                {
+                    if (tipoAncora.CongelaConfiguracao)
+                    {
+                        unitOfWork.DescartarAlteracoesNaoSalvas();
+                        return Result<MutacaoAceita>.Failure(new DomainError(
+                            "RecursoDaEtapa.AncoraEmAtoCongelante",
+                            $"O tipo de ato âncora '{tipoAncora.Codigo}', declarado pela etapa '{input.Nome}', congela configuração — a âncora do recurso nunca é o ato que congela a configuração."));
+                    }
+
+                    if (tipoAncora.EfeitoIrreversivel)
+                    {
+                        unitOfWork.DescartarAlteracoesNaoSalvas();
+                        return Result<MutacaoAceita>.Failure(new DomainError(
+                            "RecursoDaEtapa.AncoraEmAtoIrreversivel",
+                            $"O tipo de ato âncora '{tipoAncora.Codigo}', declarado pela etapa '{input.Nome}', tem efeito irreversível — não cabe recurso contra ele, e sim contra o resultado que o fundamenta."));
+                    }
+                }
 
                 ArgsRegraPrazoRecurso args = new(
                     declarado.PrazoValor,

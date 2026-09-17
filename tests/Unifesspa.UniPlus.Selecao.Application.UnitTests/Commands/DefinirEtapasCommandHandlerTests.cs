@@ -290,6 +290,60 @@ public sealed class DefinirEtapasCommandHandlerTests
         return reader;
     }
 
+    [Theory(DisplayName = "Âncora do recurso da etapa em ato congelante ou irreversível é recusada, como na fase")]
+    [InlineData(true, false, "RecursoDaEtapa.AncoraEmAtoCongelante")]
+    [InlineData(false, true, "RecursoDaEtapa.AncoraEmAtoIrreversivel")]
+    public async Task Handle_AncoraEmAtoQueNaoCabeRecurso_Recusa(
+        bool congelaConfiguracao, bool efeitoIrreversivel, string codigoEsperado)
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+            "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
+            "Lei 9.784/1999, art. 59");
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(regra.Value!);
+
+        // O ato é resultado — a conferência do produto passa —, mas carrega a flag que torna
+        // a âncora indevida. As três flags são independentes no catálogo: garantir que o ato
+        // é resultado não garante que ele não congela a configuração nem que é irreversível.
+        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
+        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView(
+                "RESULTADO_PRELIMINAR", "Resultado preliminar",
+                CongelaConfiguracao: congelaConfiguracao, UnicoPorObjeto: false,
+                EfeitoIrreversivel: efeitoIrreversivel, EhResultado: true));
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput(
+                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")],
+                    Recursos:
+                    [
+                        new RecursoDaEtapaInput(
+                            AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_PRELIMINAR", null, null, null, null),
+                    ]),
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(
+            command, repository, unitOfWork,
+            regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(codigoEsperado);
+        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
