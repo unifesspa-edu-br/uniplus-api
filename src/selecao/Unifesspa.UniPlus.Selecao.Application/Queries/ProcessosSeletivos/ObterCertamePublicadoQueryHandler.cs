@@ -114,15 +114,6 @@ public static class ObterCertamePublicadoQueryHandler
     /// Distinguir qualquer um deles entregaria a um chamador anônimo um oráculo sobre estado
     /// interno, e o caso do ato ausente importa duas vezes: além de não vazar estado, é ele que
     /// impede divulgar certame sem ato normativo correspondente.
-    /// <para>
-    /// <b>Retirar do ar um certame já visível é comportamento pretendido, não efeito colateral.</b>
-    /// Entre a retificação e o registro do novo ato, e indefinidamente quando esse registro é
-    /// recusado por mérito, o certame deixa de aparecer. A alternativa — cair para a versão anterior,
-    /// cujo ato está registrado — foi avaliada e recusada: ela serviria, por tempo indeterminado, um
-    /// edital cuja retificação já vigora, que é encobrir retificação na origem em vez de no cache.
-    /// A ADR-0131 fixa a escolha na seção de confirmações, ao mandar que o processo cuja publicação
-    /// teve o registro do ato recusado receba a mesma resposta de inexistente e de rascunho.
-    /// </para>
     /// </summary>
     private static Result<CertamePublicadoDto> NaoEncontrado() =>
         Result<CertamePublicadoDto>.Failure(new DomainError(
