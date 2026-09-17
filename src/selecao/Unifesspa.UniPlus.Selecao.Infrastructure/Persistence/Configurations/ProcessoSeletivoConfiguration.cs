@@ -10,6 +10,13 @@ using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<ProcessoSeletivo>
 {
+    /// <summary>
+    /// Comprimento máximo do título do processo. É a ORIGEM do título que a divulgação pública
+    /// congela — quem o copia referencia esta constante, porque uma cópia mais curta recusa um
+    /// cadastro legítimo no ponto em que já não há quem responda.
+    /// </summary>
+    internal const int NomeMaxLength = 300;
+
     private const int ReferenciaTemporalFatosTipoMaxLength = 20;
 
     // Mesmas larguras das demais referências ao rol_de_regras no módulo — a identidade
@@ -35,7 +42,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // linhas nunca inseridas. Convenção do repo (ver UnidadeIdentificadorHistorico).
         builder.Property(p => p.Id).ValueGeneratedNever();
 
-        builder.Property(p => p.Nome).HasMaxLength(300).IsRequired();
+        builder.Property(p => p.Nome).HasMaxLength(NomeMaxLength).IsRequired();
         builder.Ignore(p => p.TipoProcessoOrigemId);
         builder.OwnsOne(p => p.TipoProcesso, tipo =>
         {

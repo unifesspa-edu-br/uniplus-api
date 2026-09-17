@@ -38,8 +38,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 name: "nome",
                 schema: "selecao",
                 table: "certames_divulgados",
-                type: "character varying(200)",
-                maxLength: 200,
+                type: "character varying(300)",
+                maxLength: 300,
                 nullable: false);
 
             migrationBuilder.AddColumn<string>(
@@ -54,8 +54,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 name: "nome_ordenacao",
                 schema: "selecao",
                 table: "certames_divulgados",
-                type: "character varying(200)",
-                maxLength: 200,
+                type: "character varying(300)",
+                maxLength: 300,
                 nullable: false,
                 computedColumnSql: "selecao.normalizar_para_comparacao(nome)",
                 stored: true,

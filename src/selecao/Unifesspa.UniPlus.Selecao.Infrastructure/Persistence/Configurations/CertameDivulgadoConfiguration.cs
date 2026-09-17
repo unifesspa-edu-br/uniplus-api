@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<CertameDivulgado>
 {
@@ -13,8 +14,18 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
     /// </summary>
     internal const string NomeOrdenacaoPropriedade = "NomeOrdenacao";
 
-    private const int NomeMaxLength = 200;
-    private const int NumeroMaxLength = 60;
+    /// <summary>
+    /// Espelha o limite do título na origem. Uma cópia mais curta que ela recusa um processo de
+    /// nome legítimo — e recusa no PIOR lugar: aqui a escrita é assíncrona, disparada pelo registro
+    /// do ato, e a falha não volta a ninguém. A mensagem morre na fila, a linha nunca nasce, e como
+    /// a existência da linha é a publicidade, o certame fica invisível com o ato já registrado.
+    /// </summary>
+    private const int NomeMaxLength = ProcessoSeletivoConfiguration.NomeMaxLength;
+
+    /// <summary>
+    /// Espelha o limite do número do ato no envelope congelado, que é de onde este valor vem.
+    /// </summary>
+    private const int NumeroMaxLength = LimitesDoEnvelope.NumeroDoAto;
 
     /// <summary>
     /// Expressão da coluna gerada, vinda da normalização compartilhada: a mesma regra que a

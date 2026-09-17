@@ -183,6 +183,7 @@ public sealed class CertamePublicadoController : ControllerBase
 
     private static string Numero(int valor) => valor.ToString(CultureInfo.InvariantCulture);
 
+
     /// <summary>
     /// Certame publicado, projetado da versão de configuração vigente e visível apenas quando o ato
     /// normativo que a criou está registrado.
