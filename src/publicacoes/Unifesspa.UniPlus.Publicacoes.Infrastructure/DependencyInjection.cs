@@ -42,7 +42,6 @@ public static class PublicacoesInfrastructureRegistration
         // conferir o tipo declarado ANTES de escrever, em vez de descobrir na dead letter.
         services.AddScoped<ITipoAtoPublicadoReader, TipoAtoPublicadoReader>();
         services.AddScoped<IVagaDeLinhagemReader, VagaDeLinhagemReader>();
-
         services.AddScoped<IAtoNormativoRepository, AtoNormativoRepository>();
 
         return services;

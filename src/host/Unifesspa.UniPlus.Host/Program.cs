@@ -74,7 +74,14 @@ builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, builder.Environment);
 builder.Services.AddReverseProxyConfiguration(builder.Configuration, builder.Environment);
-builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
+builder.Services.AddCorsConfiguration(
+    builder.Configuration,
+    builder.Environment,
+    // Contagem por situação da vitrine pública de certames, que alimenta os filtros da tela. Vive
+    // aqui, e não na lista comum do CORS compartilhado, porque só o Seleção emite estes headers.
+    "X-Certames-Inscricoes-Abertas",
+    "X-Certames-Ultimos-Dias",
+    "X-Certames-Encerrados");
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
 

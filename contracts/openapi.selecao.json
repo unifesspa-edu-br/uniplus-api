@@ -166,6 +166,27 @@
                   "type": "integer",
                   "format": "int32"
                 }
+              },
+              "X-Certames-Inscricoes-Abertas": {
+                "description": "Quantos certames divulgados ainda recebem inscri\u00E7\u00E3o sem estar no limiar final, no instante da consulta. Presente s\u00F3 quando incluir_contadores=true.",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "X-Certames-Ultimos-Dias": {
+                "description": "Quantos certames divulgados encerram dentro do limiar final, no instante da consulta. Presente s\u00F3 quando incluir_contadores=true.",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "X-Certames-Encerrados": {
+                "description": "Quantos certames divulgados j\u00E1 encerraram, no instante da consulta. Presente s\u00F3 quando incluir_contadores=true.",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
               }
             },
             "content": {
@@ -251,7 +272,7 @@
             "description": "OK",
             "headers": {
               "ETag": {
-                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "description": "Selo da representa\u00E7\u00E3o servida, no formato \u0022{versaoDaProjecao}:{hashDaConfiguracao}\u0022. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo \u00E9 o que permite receber 304 em vez do documento inteiro. Esta rota \u00E9 somente leitura e n\u00E3o aceita If-Match.",
                 "schema": {
                   "type": "string"
                 }
@@ -269,7 +290,7 @@
             "description": "Not Modified",
             "headers": {
               "ETag": {
-                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "description": "Selo da representa\u00E7\u00E3o servida, no formato \u0022{versaoDaProjecao}:{hashDaConfiguracao}\u0022. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo \u00E9 o que permite receber 304 em vez do documento inteiro. Esta rota \u00E9 somente leitura e n\u00E3o aceita If-Match.",
                 "schema": {
                   "type": "string"
                 }
