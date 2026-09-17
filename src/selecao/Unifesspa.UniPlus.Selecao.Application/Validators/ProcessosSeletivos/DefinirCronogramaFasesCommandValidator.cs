@@ -47,6 +47,20 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                 .NotEmpty()
                 .WithMessage("O id da fase canônica é obrigatório.");
 
+            // A COLEÇÃO em si não pode ser nula. O host não habilita
+            // RespectRequiredConstructorParameters, então a chave omitida no corpo não faz o
+            // System.Text.Json recusar nada: o parâmetro de construtor recebe null, e o
+            // handler o percorre por índice (BancasRequeridas.Count, Produtos.Count), o que
+            // estoura como 500. A lista vazia continua válida — é a declaração explícita de
+            // que a fase não requer banca alguma e não publica nada.
+            fase.RuleFor(f => f.BancasRequeridas)
+                .NotNull()
+                .WithMessage("Declare as bancas requeridas pela fase: lista vazia se ela não requer nenhuma.");
+
+            fase.RuleFor(f => f.Produtos)
+                .NotNull()
+                .WithMessage("Declare os produtos da fase: lista vazia se ela não publica nenhum.");
+
             // Forma do item, e só ela. Quando o recorte de competência é obrigatório e
             // quando dois recortes se confundem são invariantes da fase (ADR-0125), e a
             // existência da categoria no cadastro é resolução do handler.
