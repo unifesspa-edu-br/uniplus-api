@@ -58,16 +58,28 @@ public static class LimitesDoEnvelope
     public const int NumeroDoAto = 60;
 
     // Story #851 — cronograma de fases.
-    /// <summary><c>FaseCronograma.Codigo</c> — snapshot-copy do código canônico de <c>FaseCanonica</c>.</summary>
+    /// <summary>
+    /// <c>FaseCronograma.Codigo</c> — snapshot-copy do código canônico de <c>FaseCanonica</c>.
+    /// Governa também <c>EtapaProcesso.FaseCodigo</c>, o vínculo que a etapa declara com a
+    /// fase: é a mesma grandeza um nível abaixo, e a mesma coluna de 60.
+    /// </summary>
     public const int FaseCodigo = 60;
 
     /// <summary><c>FaseCronograma.DonoInstitucional</c> — snapshot-copy do dono típico.</summary>
     public const int DonoInstitucional = 60;
 
-    /// <summary>Código de tipo de ato de Publicações — <c>ProdutoDaFase.AtoCodigo</c>.</summary>
+    /// <summary>
+    /// Código de tipo de ato de Publicações — <c>ProdutoDaFase.AtoCodigo</c> e, um nível
+    /// abaixo, <c>ProdutoDaEtapa.AtoCodigo</c>: a etapa publica por conta própria, na mesma
+    /// coluna de 60.
+    /// </summary>
     public const int TipoAtoCodigo = 60;
 
-    /// <summary><c>BancaRequerida.Codigo</c> — snapshot-copy do código classificatório de <c>TipoBanca</c>.</summary>
+    /// <summary>
+    /// <c>BancaRequerida.Codigo</c> — snapshot-copy do código classificatório de
+    /// <c>TipoBanca</c>. Governa também <c>BancaDaEtapa.Codigo</c>, o mesmo snapshot no nível
+    /// da etapa, na mesma coluna de 60.
+    /// </summary>
     public const int TipoBancaCodigo = 60;
 
     /// <summary><c>CategoriaJulgada.Codigo</c> — snapshot-copy do código classificatório de <c>CategoriaDocumento</c>.</summary>

@@ -69,6 +69,19 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), nameof(BancaRequerida.Codigo)),
         ("CategoriaDocumentoCodigo", LimitesDoEnvelope.CategoriaDocumentoCodigo, typeof(CategoriaJulgada), nameof(CategoriaJulgada.Codigo)),
 
+        // As mesmas grandezas, um nível abaixo: a etapa repete fase, ato e banca, e as colunas
+        // dela têm a mesma largura. Sem estas linhas a tabela cobria só o lado da fase, e
+        // estreitar uma coluna da etapa não acusaria nada.
+        //
+        // O que estas linhas NÃO alcançam, e convém não confiar que alcancem: o decodificador
+        // media faseCodigo contra o teto do NOME da etapa, e isso passou porque aquele teto
+        // batia com a coluna do nome — a tabela confere constante contra coluna, nunca que o
+        // call site pegou a constante da coluna que vai receber o valor. Quem prende esse
+        // segundo erro é o teste de recusa por campo, em EnvelopeCodecRecusaTests.
+        ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(EtapaProcesso), nameof(EtapaProcesso.FaseCodigo)),
+        ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaEtapa), nameof(ProdutoDaEtapa.AtoCodigo)),
+        ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaDaEtapa), nameof(BancaDaEtapa.Codigo)),
+
         // Story #554 (PR #903) — exigencias[] real.
         ("TipoDocumentoCodigo", LimitesDoEnvelope.TipoDocumentoCodigo, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoCodigo)),
         ("TipoDocumentoNome", LimitesDoEnvelope.TipoDocumentoNome, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoNome)),
