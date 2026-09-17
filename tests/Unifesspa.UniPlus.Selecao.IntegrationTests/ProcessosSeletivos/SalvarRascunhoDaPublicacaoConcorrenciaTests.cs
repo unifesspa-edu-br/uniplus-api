@@ -33,6 +33,62 @@ public sealed class SalvarRascunhoDaPublicacaoConcorrenciaTests
     private const string Operador = "operador-do-rascunho";
     private const string IndiceDoOperador = "ux_rascunhos_publicacao_processo_operador";
 
+    [Fact(DisplayName = "Rascunho vencido apagado pela varredura alheia durante a renovação é recriado")]
+    public async Task Handle_VarreduraAlheiaApagaALinhaEmRenovacao_Recria()
+    {
+        Guid processoId = Guid.CreateVersion7();
+
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
+
+        // O dono volta a um rascunho JÁ VENCIDO. A renovação do prazo fica só na entidade
+        // rastreada até o flush — e nesse intervalo a varredura de vencidos de outra gravação,
+        // que roda SQL imediato numa transação própria, enxerga a data velha e apaga a linha.
+        RascunhoDePublicacao vencido = RascunhoDePublicacao.Criar(
+            processoId, Operador, """{"ato":{"assinante":"do mês passado"}}""", 1,
+            DateTimeOffset.UtcNow.AddDays(-40), RascunhoDePublicacao.Prazo).Value!;
+
+        IRascunhoDePublicacaoRepository rascunhoRepository = Substitute.For<IRascunhoDePublicacaoRepository>();
+        rascunhoRepository.ObterDoOperadorAsync(processoId, Operador, Arg.Any<CancellationToken>())
+            .Returns(vencido);
+
+        // O UPDATE não encontra a linha; a recriação passa.
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        bool primeiroFlush = true;
+        unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ =>
+            {
+                if (!primeiroFlush)
+                {
+                    return Task.FromResult(1);
+                }
+
+                primeiroFlush = false;
+                throw new DbUpdateConcurrencyException("a linha não existe mais");
+            });
+
+        IUserContext userContext = Substitute.For<IUserContext>();
+        userContext.UserId.Returns(Operador);
+
+        Result resultado = await SalvarRascunhoDaPublicacaoCommandHandler.Handle(
+            new SalvarRascunhoDaPublicacaoCommand(processoId, 1, JsonDocument.Parse("""{"ato":{"assinante":"de agora"}}""").RootElement),
+            processoRepository,
+            rascunhoRepository,
+            unitOfWork,
+            userContext,
+            TimeProvider.System,
+            CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(
+            $"o conteúdo continua em mãos, e recriar é o que a leitura teria feito se chegasse "
+            + $"depois da varredura. Veio '{resultado.Error?.Code}'");
+
+        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await rascunhoRepository.Received(1).AdicionarAsync(
+            Arg.Is<RascunhoDePublicacao>(r => r.UsuarioSub == Operador && r.Conteudo.Contains("de agora")),
+            Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Quem perde a corrida relê a linha do vencedor e substitui — a gravação conclui")]
     public async Task Handle_CorridaNoIndiceDoOperador_SubstituiOVencedor()
     {
