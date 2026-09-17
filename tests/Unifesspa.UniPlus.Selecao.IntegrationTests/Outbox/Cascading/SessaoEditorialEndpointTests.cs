@@ -67,6 +67,28 @@ public sealed class SessaoEditorialEndpointTests
     // CA-03 — a precondição protege os seis Definir*, não só o motivo
     // ══════════════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// A gravação substitui a coleção inteira, então a chave ausente era indistinguível de
+    /// "a etapa não tem nenhum": um cliente que não conhecesse os campos apagava em silêncio
+    /// os produtos, as bancas e as janelas recursais de TODAS as etapas do processo, e recebia
+    /// 200. Exigir a chave torna a omissão um erro de forma, e mantém a lista vazia como o que
+    /// ela deve ser — uma declaração explícita.
+    /// </summary>
+    [Fact(DisplayName = "PUT /etapas que omite produtos, bancas ou recursos é recusado pela forma")]
+    public async Task Definir_SemAsColecoes_Recusa()
+    {
+        Contexto ctx = await PublicarAsync(nameof(Definir_SemAsColecoes_Recusa));
+
+        HttpResponseMessage abertura = await ctx.AbrirAsync("Correção do prazo");
+        abertura.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage semColecoes = await ctx.PutEtapasSemColecoesAsync(LerETag(abertura));
+
+        semColecoes.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "a carga sem as chaves é malformada para este contrato — antes ela era aceita e "
+            + "apagava o que a etapa declarava, devolvendo 204");
+    }
+
     [Fact(DisplayName = "CA-03: com sessão aberta, PUT /etapas SEM If-Match devolve 428; com If-Match DEFASADO devolve 412")]
     public async Task Definir_ComSessao_Precondicao()
     {
@@ -503,6 +525,33 @@ public sealed class SessaoEditorialEndpointTests
         }
 
         /// <summary>
+        /// Corpo de etapa <b>sem</b> as três coleções, como um cliente que não as conhece
+        /// enviaria — uma tela anterior, um script de importação, uma chamada montada a partir
+        /// de exemplo antigo.
+        /// </summary>
+        public async Task<HttpResponseMessage> PutEtapasSemColecoesAsync(string ifMatch)
+        {
+            using HttpRequestMessage request = new(
+                HttpMethod.Put,
+                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/etapas", UriKind.Relative))
+            {
+                Content = JsonContent.Create(new[]
+                {
+                    new
+                    {
+                        nome = "Prova Objetiva", carater = 1,
+                        tipoEtapaOrigemId = new Guid("019fee1e-7000-7000-8000-000000000001"),
+                        peso = 1.0m, notaMinima = (decimal?)null, ordem = 1,
+                    },
+                }),
+            };
+            AppendTestAuth(request);
+            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+            return await Client.SendAsync(request).ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// O <c>PUT /etapas</c> é o representante dos <b>seis</b> <c>Definir*</c>: eles
         /// compartilham o guard, e é o guard que estes testes provam. Body constante — a
         /// idempotência identifica a requisição pelo hash dele, e um payload que variasse
@@ -525,6 +574,7 @@ public sealed class SessaoEditorialEndpointTests
                         nome = "Prova Objetiva", carater = 1,
                         tipoEtapaOrigemId = new Guid("019fee1e-7000-7000-8000-000000000001"),
                         peso = 1.0m, notaMinima = (decimal?)null, ordem = 1,
+                        produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>(),
                     },
                 }),
             };

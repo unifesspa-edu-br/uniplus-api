@@ -14,7 +14,8 @@ public sealed class DefinirEtapasCommandValidatorTests
     private static readonly Guid TipoEtapaOrigemIdValido = Guid.CreateVersion7();
 
     private static EtapaProcessoInput EtapaValida() =>
-        new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 3m, null, 1);
+        new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 3m, null, 1,
+            Produtos: [], Bancas: [], Recursos: []);
 
     [Fact(DisplayName = "Validator passa com ao menos uma etapa válida")]
     public void Aceita_ComandoValido()
@@ -106,7 +107,8 @@ public sealed class DefinirEtapasCommandValidatorTests
     [Fact(DisplayName = "Validator passa com caráter Nenhum — a rejeição é do agregado (EtapaProcesso.Criar, ADR-0125)")]
     public void Aceita_CaraterNenhumNoValidator()
     {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Nenhum, TipoEtapaOrigemIdValido, 3m, null, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Nenhum, TipoEtapaOrigemIdValido, 3m, null, 1,
+            Produtos: [], Bancas: [], Recursos: []);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
@@ -133,7 +135,8 @@ public sealed class DefinirEtapasCommandValidatorTests
     [Fact(DisplayName = "Validator passa com peso não positivo — a rejeição é do agregado (EtapaProcesso.Criar, ADR-0125)")]
     public void Aceita_PesoNaoPositivoNoValidator()
     {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 0m, null, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 0m, null, 1,
+            Produtos: [], Bancas: [], Recursos: []);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));

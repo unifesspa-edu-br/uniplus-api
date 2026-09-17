@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.Text.Json.Serialization;
+
 using Domain.Enums;
 using Domain.ValueObjects;
 
@@ -21,6 +23,27 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// definição — o handler resolve o item via <c>ITipoEtapaReader</c> e congela um
 /// snapshot-copy independente do rótulo editorial (<paramref name="Nome"/>).
 /// </param>
+/// <remarks>
+/// <para>
+/// <c>Produtos</c>, <c>Bancas</c> e <c>Recursos</c> são <c>[JsonRequired]</c>: a gravação
+/// substitui a coleção inteira, e uma chave ausente era indistinguível de "a etapa não tem
+/// nenhum". Um cliente que não conhecesse os campos — uma tela anterior, um script de
+/// importação, uma chamada montada a partir de exemplo antigo — apagava em silêncio os
+/// produtos, as bancas e as janelas recursais de TODAS as etapas do processo, e recebia 200.
+/// </para>
+/// <para>
+/// Exigir a chave torna a omissão um 400 e mantém a lista vazia como o que ela deve ser: uma
+/// declaração explícita de que não há nenhum. É a mesma razão pela qual <c>BaseadoEmEnem</c> e
+/// <c>Cobra</c> são obrigatórios nos seus comandos — o silêncio não pode significar uma
+/// escolha que o operador não fez.
+/// </para>
+/// <para>
+/// O <c>= null!</c> existe só para o compilador: parâmetro sem default não pode vir depois de
+/// um que tem, e mover as três coleções para o fim da lista trocaria a posição de quem já as
+/// declara. Esse default nunca é usado pela desserialização, porque <c>[JsonRequired]</c>
+/// recusa a carga sem a chave; o <c>null</c> explícito é recusado pelo validador.
+/// </para>
+/// </remarks>
 public sealed record EtapaProcessoInput(
     string Nome,
     CaraterEtapa Carater,
@@ -30,12 +53,12 @@ public sealed record EtapaProcessoInput(
     int? Ordem,
     Guid? Id = null,
     string? FaseCodigo = null,
-    IReadOnlyList<ProdutoDaEtapaInput>? Produtos = null,
+    [property: JsonRequired] IReadOnlyList<ProdutoDaEtapaInput> Produtos = null!,
     DateTimeOffset? Inicio = null,
     DateTimeOffset? Fim = null,
     bool EmiteParecerIndividual = false,
-    IReadOnlyList<BancaDaEtapaInput>? Bancas = null,
-    IReadOnlyList<RecursoDaEtapaInput>? Recursos = null);
+    [property: JsonRequired] IReadOnlyList<BancaDaEtapaInput> Bancas = null!,
+    [property: JsonRequired] IReadOnlyList<RecursoDaEtapaInput> Recursos = null!);
 
 /// <summary>Uma banca requerida pela etapa — o id do tipo no cadastro de Configuração.</summary>
 public sealed record BancaDaEtapaInput(Guid TipoBancaId);
