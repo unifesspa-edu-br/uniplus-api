@@ -6,20 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AdicionaPeriodoVigenteDoCertame : Migration
+    public partial class AdicionaPrazoVigenteDoCertame : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<DateTimeOffset>(
                 name: "periodo_inscricao_fim_vigente",
-                schema: "selecao",
-                table: "processos_seletivos",
-                type: "timestamp with time zone",
-                nullable: true);
-
-            migrationBuilder.AddColumn<DateTimeOffset>(
-                name: "periodo_inscricao_inicio_vigente",
                 schema: "selecao",
                 table: "processos_seletivos",
                 type: "timestamp with time zone",
@@ -43,11 +36,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropColumn(
                 name: "periodo_inscricao_fim_vigente",
-                schema: "selecao",
-                table: "processos_seletivos");
-
-            migrationBuilder.DropColumn(
-                name: "periodo_inscricao_inicio_vigente",
                 schema: "selecao",
                 table: "processos_seletivos");
         }

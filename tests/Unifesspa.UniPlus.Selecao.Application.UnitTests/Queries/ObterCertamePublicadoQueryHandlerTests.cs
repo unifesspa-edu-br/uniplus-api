@@ -356,8 +356,12 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
         // isso existe retificação de ato, não supressão. Entre a retificação e o dreno da mensagem
         // de registro, e indefinidamente se esse registro for recusado, a versão nova não tem ato.
         Guid processoId = Guid.CreateVersion7();
+
+        // Os dois envelopes precisam DIFERIR no conteúdo: com envelopes idênticos, a asserção só
+        // provaria o identificador do ato, e uma projeção que servisse a versão errada passaria.
         string envelopeAnterior = EnvelopeCompleto.Replace(
-            "\"numero\": \"001/2026\"", "\"numero\": \"001/2026\"", StringComparison.Ordinal);
+            "\"numero\": \"01/2026\"", "\"numero\": \"01/2026-original\"", StringComparison.Ordinal);
+        envelopeAnterior.Should().NotBe(EnvelopeCompleto);
 
         (IProcessoSeletivoRepository repository, Guid atoDaAnterior, Guid atoDaNova) =
             MockComDuasVersoes(processoId, envelopeAnterior, EnvelopeCompleto);
@@ -369,6 +373,8 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.AtoCriadorId.Should().Be(atoDaAnterior, "o público vê o último estado que tem ato normativo");
         resultado.Value.AtoCriadorId.Should().NotBe(atoDaNova);
+        resultado.Value.Periodo.Numero.Should().Be(
+            "01/2026-original", "o CONTEÚDO servido é o da versão anterior, não só o identificador do ato");
     }
 
     [Fact(DisplayName = "Abertura sem nenhum ato registrado não divulga o certame")]

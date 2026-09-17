@@ -50,9 +50,10 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Ignore(p => p.Tipo);
         builder.Property(p => p.Status).HasConversion<int>().IsRequired();
 
-        // Janela de inscrição da versão publicamente vigente, copiada do que a configuração
-        // congelada carrega. Nulas enquanto o processo nunca foi publicado.
-        builder.Property(p => p.PeriodoInscricaoInicioVigente);
+        // Encerramento da janela de inscrição da versão publicamente vigente, copiado do que a
+        // configuração congelada carrega. Nulo enquanto o processo nunca foi publicado. O início não
+        // entra: nada ordena nem filtra por ele, e estado derivado sem leitor só acumula risco de
+        // desincronizar.
         builder.Property(p => p.PeriodoInscricaoFimVigente);
 
         // Índice da vitrine pública: ordena do prazo mais próximo ao mais distante, com o Id como

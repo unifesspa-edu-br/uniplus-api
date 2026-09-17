@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
+using System.Globalization;
 using System.Text;
 
 using AwesomeAssertions;
@@ -23,10 +24,14 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
     private const string VersaoReconhecida = "1.0";
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
 
-    private const string Envelope = """
+    /// <summary>
+    /// Envelope da versão eleita, com a janela de inscrição que a projeção LÊ — a vitrine publica o
+    /// prazo da versão publicamente visível, não o da coluna denormalizada da raiz.
+    /// </summary>
+    private static string Envelope(DateTimeOffset prazo) => $$"""
         {
           "tipoProcesso": {"origemId": "0199a1b2-1111-7000-8000-000000000001", "codigo": "SISU", "nome": "Sistema de Seleção Unificada"},
-          "periodo": {"numero": "001/2026", "inicio": "2026-03-01T03:00:00Z", "fim": "2026-03-20T02:59:59Z"},
+          "periodo": {"numero": "001/2026", "inicio": "2026-03-01T03:00:00Z", "fim": "{{Instante(prazo)}}"},
           "modalidadesOfertadas": ["AC", "LB_PPI"],
           "vagas": [
             {"ofertaCursoOrigemId": "0199a1b2-2222-7000-8000-000000000002", "quadro": [], "totalPublicado": 40},
@@ -34,6 +39,10 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
           ]
         }
         """;
+
+    /// <summary>Forma canônica do instante no envelope congelado: RFC 3339, UTC, sem fração.</summary>
+    private static string Instante(DateTimeOffset valor) =>
+        valor.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
 
     [Fact(DisplayName = "Certame com ato registrado entra na página, com o total de vagas somado por oferta")]
     public async Task Handle_AtoRegistrado_EntraNaPagina()
@@ -99,6 +108,26 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
         resultado.Items.Should().ContainSingle().Which.InscricoesAbertas.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "A vitrine anuncia o prazo da versão VISÍVEL, nunca o da retificação sem ato registrado")]
+    public async Task Handle_RetificacaoSemAtoRegistrado_NaoAnunciaOPrazoDela()
+    {
+        // A coluna por que o banco ordena descreve a publicação mais nova; a versão eleita é a
+        // anterior enquanto o ato da retificação não se registra. Anunciar o prazo da coluna daria
+        // publicidade a uma versão que ainda não tem nenhuma — e faria vitrine e detalhe discordar.
+        Guid processoId = Guid.CreateVersion7();
+        Guid ato = Guid.CreateVersion7();
+        DateTimeOffset prazoDaRetificacaoSemAto = Agora.AddDays(1);
+        DateTimeOffset prazoPublicamenteVisivel = Agora.AddDays(30);
+
+        IProcessoSeletivoRepository repository = RepositorioCom(
+            prazoDaRetificacaoSemAto, prazoPublicamenteVisivel, (processoId, "SISU 2026.1", ato));
+
+        ListarCertamesPublicadosResult resultado = await HandleAsync(repository, LeitorCom(ato));
+
+        resultado.Items.Should().ContainSingle()
+            .Which.InscricoesAte.Should().Be(prazoPublicamenteVisivel);
+    }
+
     private static Task<ListarCertamesPublicadosResult> HandleAsync(
         IProcessoSeletivoRepository repository,
         IAtoRegistradoReader leitor) =>
@@ -115,12 +144,24 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
 
     private static IProcessoSeletivoRepository RepositorioCom(
         DateTimeOffset prazo,
+        params (Guid ProcessoId, string Nome, Guid AtoCriadorId)[] certames) =>
+        RepositorioCom(prazo, prazo, certames);
+
+    /// <summary>
+    /// <paramref name="prazoDaColuna"/> é o da coluna denormalizada da raiz — a publicação MAIS
+    /// NOVA, por onde o banco ordena. <paramref name="prazoDoEnvelope"/> é o da versão ELEITA, a
+    /// única com ato registrado. Os dois divergem entre a retificação e o registro do ato dela.
+    /// </summary>
+    private static IProcessoSeletivoRepository RepositorioCom(
+        DateTimeOffset prazoDaColuna,
+        DateTimeOffset prazoDoEnvelope,
         params (Guid ProcessoId, string Nome, Guid AtoCriadorId)[] certames)
     {
+        DateTimeOffset prazo = prazoDoEnvelope;
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
 
         CandidatoDaVitrine[] candidatos =
-            [.. certames.Select(c => new CandidatoDaVitrine(c.ProcessoId, c.Nome, prazo))];
+            [.. certames.Select(c => new CandidatoDaVitrine(c.ProcessoId, c.Nome, prazoDaColuna))];
 
         repository.ListarVitrineAsync(
                 Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame>(), Arg.Any<string?>(), Arg.Any<Guid?>(),
@@ -133,15 +174,15 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
                 c => (IReadOnlyList<LinhagemDeVersao>)[new LinhagemDeVersao(1, c.AtoCriadorId)])
                 as IReadOnlyDictionary<Guid, IReadOnlyList<LinhagemDeVersao>>);
 
-        repository.ObterVersoesPorNumeroAsync(Arg.Any<IReadOnlyCollection<LinhagemDeVersaoDeProcesso>>(), Arg.Any<CancellationToken>())
+        repository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(callInfo => (IReadOnlyList<VersaoConfiguracao>)
-                [.. callInfo.Arg<IReadOnlyCollection<LinhagemDeVersaoDeProcesso>>()
-                    .Select(eleita => VersaoConfiguracao.Abrir(
-                        eleita.ProcessoSeletivoId,
-                        Encoding.UTF8.GetBytes(Envelope),
+                [.. callInfo.Arg<IReadOnlyCollection<Guid>>()
+                    .Select(ato => VersaoConfiguracao.Abrir(
+                        certames.First(c => c.AtoCriadorId == ato).ProcessoId,
+                        Encoding.UTF8.GetBytes(Envelope(prazo)),
                         VersaoReconhecida,
                         "canonical-json/sha256@v1",
-                        certames.First(c => c.ProcessoId == eleita.ProcessoSeletivoId).AtoCriadorId,
+                        ato,
                         new string('a', 64),
                         "user-sub-123",
                         Agora))]);

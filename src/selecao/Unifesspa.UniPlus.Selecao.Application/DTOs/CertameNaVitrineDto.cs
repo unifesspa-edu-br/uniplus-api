@@ -14,7 +14,11 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// <param name="Nome">Título do certame.</param>
 /// <param name="TipoProcesso">Tipo do processo, como congelado na publicação.</param>
 /// <param name="ModalidadesOfertadas">Códigos das modalidades com vagas no certame.</param>
-/// <param name="InscricoesAte">Encerramento da janela de inscrição — a chave por que a vitrine ordena.</param>
+/// <param name="InscricoesAte">
+/// Encerramento da janela de inscrição, lido da versão publicamente visível — a mesma que a página
+/// do certame serve. Não da publicação mais nova: enquanto o ato de uma retificação não se
+/// registra, ela não tem publicidade nenhuma, e anunciar aqui o prazo dela seria dar-lhe uma.
+/// </param>
 /// <param name="InscricoesAbertas">
 /// Se o certame ainda recebe inscrição no instante da consulta. Resolvido no servidor, e não pelo
 /// cliente a partir da data: o fuso de quem lê não decide prazo de edital.

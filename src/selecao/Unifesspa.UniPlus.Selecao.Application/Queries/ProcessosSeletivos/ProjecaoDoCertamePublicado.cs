@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using DTOs;
@@ -45,6 +46,29 @@ internal static class ProjecaoDoCertamePublicado
     /// solta aqui viraria 500 num endereço anônimo.
     /// </summary>
     public static Result<CertamePublicadoDto> RecusarDocumentoIlegivel() => Recusar("documento do certame");
+
+    /// <summary>
+    /// O documento congelado como objeto JSON, ou <see langword="null"/> quando ele não é sequer
+    /// isso. Uma só implementação para os dois contratos públicos do certame — o detalhe recusa,
+    /// a vitrine omite, e ambos partem da mesma leitura.
+    /// </summary>
+    /// <remarks>
+    /// Conteúdo que não fecha como JSON, ou que fecha como array ou escalar, só é alcançável por
+    /// uma linha adulterada diretamente no banco — nunca pelo caminho de escrita, que sempre passa
+    /// pelo canonicalizador. Ainda assim a leitura o trata como recusa: um <c>cast</c> cru viraria
+    /// 500 num endereço anônimo.
+    /// </remarks>
+    internal static JsonObject? TentarLerDocumento(string documentoCongelado)
+    {
+        try
+        {
+            return JsonNode.Parse(documentoCongelado) as JsonObject;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 
     public static Result<CertamePublicadoDto> Projetar(
         Guid processoSeletivoId,
@@ -177,14 +201,14 @@ internal static class ProjecaoDoCertamePublicado
     /// conferência transforma isso em falha dura, que qualquer teste de projeção do certame
     /// alcança.
     /// </remarks>
-    private static string BlocoPublico(string chave) =>
+    internal static string BlocoPublico(string chave) =>
         ClassificacaoDosBlocosDoCertame.Publicados.Contains(chave)
             ? chave
             : throw new InvalidOperationException(
                 $"O contrato público do certame não projeta '{chave}': o bloco não está classificado como público.");
 
     /// <summary>Par código/nome, a forma que tipo de processo e tipo de etapa compartilham.</summary>
-    private static bool TentarTipoNomeado(JsonObject? objeto, [NotNullWhen(true)] out TipoCatalogadoCertameDto? tipo)
+    internal static bool TentarTipoNomeado(JsonObject? objeto, [NotNullWhen(true)] out TipoCatalogadoCertameDto? tipo)
     {
         tipo = null;
         if (!TentarTexto(objeto, "codigo", out string codigo) || !TentarTexto(objeto, "nome", out string nome))
@@ -552,7 +576,7 @@ internal static class ProjecaoDoCertamePublicado
         return true;
     }
 
-    private static bool TentarTextos(JsonObject objeto, string chave, [NotNullWhen(true)] out List<string>? valores)
+    internal static bool TentarTextos(JsonObject objeto, string chave, [NotNullWhen(true)] out List<string>? valores)
     {
         valores = null;
         if (!TentarArray(objeto, chave, out JsonArray? array))
@@ -575,7 +599,7 @@ internal static class ProjecaoDoCertamePublicado
         return true;
     }
 
-    private static bool TentarArray(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonArray? valor)
+    internal static bool TentarArray(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonArray? valor)
     {
         valor = null;
         if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is not JsonArray array)
@@ -587,7 +611,7 @@ internal static class ProjecaoDoCertamePublicado
         return true;
     }
 
-    private static bool TentarObjeto(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonObject? valor)
+    internal static bool TentarObjeto(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonObject? valor)
     {
         valor = null;
         if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is not JsonObject encontrado)
@@ -599,7 +623,7 @@ internal static class ProjecaoDoCertamePublicado
         return true;
     }
 
-    private static bool TentarTexto(JsonObject? objeto, string chave, out string valor)
+    internal static bool TentarTexto(JsonObject? objeto, string chave, out string valor)
     {
         valor = "";
         return objeto is not null
@@ -612,7 +636,7 @@ internal static class ProjecaoDoCertamePublicado
     /// Chave presente com <c>null</c> explícito ou com texto: sucesso. Chave ausente ou de outro
     /// tipo: falha — a ausência da chave é forma inesperada, não campo opcional vazio.
     /// </summary>
-    private static bool TentarTextoOpcional(JsonObject? objeto, string chave, out string? valor)
+    internal static bool TentarTextoOpcional(JsonObject? objeto, string chave, out string? valor)
     {
         valor = null;
         if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node))
@@ -632,7 +656,7 @@ internal static class ProjecaoDoCertamePublicado
             && jv.TryGetValue(out valor);
     }
 
-    private static bool TentarInteiro(JsonObject? objeto, string chave, out int valor)
+    internal static bool TentarInteiro(JsonObject? objeto, string chave, out int valor)
     {
         valor = 0;
         return objeto is not null
@@ -685,7 +709,7 @@ internal static class ProjecaoDoCertamePublicado
     /// a projeção mais leniente que o decodificador do envelope, que recusa qualquer forma fora
     /// da canônica — divergência que esconde adulteração em vez de expô-la.
     /// </remarks>
-    private static bool TentarInstante(JsonObject? objeto, string chave, out DateTimeOffset valor)
+    internal static bool TentarInstante(JsonObject? objeto, string chave, out DateTimeOffset valor)
     {
         valor = default;
         return TentarTexto(objeto, chave, out string texto) && TentarInstanteCanonico(texto, out valor);

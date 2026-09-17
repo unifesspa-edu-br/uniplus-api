@@ -65,7 +65,7 @@ public static class ListarCertamesPublicadosQueryHandler
             .ConfigureAwait(false);
 
         // Um degrau por candidato: o mais novo cujo ato existe. Candidato sem nenhum fica de fora.
-        List<LinhagemDeVersaoDeProcesso> eleitas = [];
+        List<Guid> atosEleitos = [];
         foreach (CandidatoDaVitrine candidato in candidatos)
         {
             if (!linhagens.TryGetValue(candidato.ProcessoSeletivoId, out IReadOnlyList<LinhagemDeVersao>? degraus))
@@ -77,14 +77,14 @@ public static class ListarCertamesPublicadosQueryHandler
             {
                 if (registrados.Contains(degrau.AtoCriadorId))
                 {
-                    eleitas.Add(new LinhagemDeVersaoDeProcesso(candidato.ProcessoSeletivoId, degrau.NumeroVersao));
+                    atosEleitos.Add(degrau.AtoCriadorId);
                     break;
                 }
             }
         }
 
         IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
-            .ObterVersoesPorNumeroAsync(eleitas, cancellationToken)
+            .ObterVersoesPorAtoCriadorAsync(atosEleitos, cancellationToken)
             .ConfigureAwait(false);
 
         Dictionary<Guid, VersaoConfiguracao> porProcesso = versoes.ToDictionary(static v => v.ProcessoSeletivoId);
@@ -94,12 +94,12 @@ public static class ListarCertamesPublicadosQueryHandler
         foreach (CandidatoDaVitrine candidato in candidatos)
         {
             if (!porProcesso.TryGetValue(candidato.ProcessoSeletivoId, out VersaoConfiguracao? versao)
-                || !ProjecaoDaVitrine.VersaoLegivel(registroCodecs, versao.SchemaVersion))
+                || !registroCodecs.SabeLer(versao.SchemaVersion))
             {
                 continue;
             }
 
-            if (ProjecaoDaVitrine.TentarLer(versao.ConfiguracaoCongelada) is not { } envelope)
+            if (ProjecaoDoCertamePublicado.TentarLerDocumento(versao.ConfiguracaoCongelada) is not { } envelope)
             {
                 continue;
             }

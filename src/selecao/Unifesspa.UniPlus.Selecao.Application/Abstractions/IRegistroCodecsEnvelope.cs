@@ -174,3 +174,28 @@ public interface IRegistroCodecsEnvelope
     /// <summary>A versão que o sistema <b>emite</b> hoje — uma só (ADR-0109 D1).</summary>
     string SchemaVersionDeEmissaoCorrente { get; }
 }
+
+/// <summary>
+/// Perguntas de capacidade que toda leitura de envelope congelado faz antes de tocar nos bytes.
+/// </summary>
+public static class RegistroCodecsEnvelopeExtensions
+{
+    /// <summary>
+    /// A <paramref name="schemaVersion"/> está entre as capacidades que o registro hoje sabe
+    /// <b>LER</b>?
+    /// </summary>
+    /// <remarks>
+    /// Comparação ordinal — <c>SchemaVersion</c> é token, não texto localizável, e <c>"0.0.7"</c>
+    /// não é apelido de <c>"0.0.07"</c> nem de variante de caixa. Vive aqui, e não repetida em cada
+    /// leitura pública, porque uma cópia que envelhecesse sozinha faria dois endpoints discordarem
+    /// sobre o que o sistema sabe ler.
+    /// </remarks>
+    public static bool SabeLer(this IRegistroCodecsEnvelope registroCodecs, string schemaVersion)
+    {
+        ArgumentNullException.ThrowIfNull(registroCodecs);
+
+        return registroCodecs.Capacidades.Any(capacidade =>
+            string.Equals(capacidade.SchemaVersion, schemaVersion, StringComparison.Ordinal)
+            && capacidade.TemDecoder);
+    }
+}

@@ -68,7 +68,10 @@ public sealed class CertamePublicadoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ListarVitrine(
-        [FromCursor(RecursoDaVitrine)] PageRequest page,
+        // RequireSortKey: a vitrine ordena por keyset multi-coluna, e a âncora é o par
+        // (SortKey, Id). Sem a exigência, um cursor sem a chave de ordenação — legado ou forjado —
+        // degradaria em silêncio para "primeira página" em vez de ser recusado.
+        [FromCursor(RecursoDaVitrine, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "situacao")] SituacaoDoCertame situacao,
         CancellationToken cancellationToken)
     {
