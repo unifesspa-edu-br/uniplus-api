@@ -5,15 +5,12 @@ using System.Diagnostics.CodeAnalysis;
 using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
 
-using Http;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
-using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>

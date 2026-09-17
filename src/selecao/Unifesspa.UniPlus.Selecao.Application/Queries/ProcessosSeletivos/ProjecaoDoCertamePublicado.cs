@@ -607,14 +607,24 @@ internal static class ProjecaoDoCertamePublicado
     }
 
     /// <summary>
-    /// Instante congelado em forma canônica, lido com <see cref="DateTimeStyles.RoundtripKind"/>
-    /// para não deslocar o valor pelo fuso do processo que lê.
+    /// A forma exata em que o envelope congela um instante: RFC 3339, UTC, granularidade de
+    /// segundo, sem fração.
     /// </summary>
+    private const string FormatoInstanteCanonico = "yyyy-MM-ddTHH:mm:ssZ";
+
+    /// <summary>Instante congelado, exigido na forma canônica — nunca em outra.</summary>
+    /// <remarks>
+    /// Exato, e assumindo UTC, pelos dois lados da mesma moeda. Um texto sem designador de fuso
+    /// recebe, numa leitura permissiva, o fuso LOCAL do processo que lê: o mesmo envelope
+    /// responderia instantes diferentes conforme a máquina que serve a requisição. E aceitar
+    /// variações que o emissor nunca produz (fração de segundo, deslocamento explícito) tornaria
+    /// a projeção mais leniente que o decodificador do envelope, que recusa qualquer forma fora
+    /// da canônica — divergência que esconde adulteração em vez de expô-la.
+    /// </remarks>
     private static bool TentarInstante(JsonObject? objeto, string chave, out DateTimeOffset valor)
     {
         valor = default;
-        return TentarTexto(objeto, chave, out string texto)
-            && DateTimeOffset.TryParse(texto, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out valor);
+        return TentarTexto(objeto, chave, out string texto) && TentarInstanteCanonico(texto, out valor);
     }
 
     private static bool TentarInstanteOpcional(JsonObject? objeto, string chave, out DateTimeOffset? valor)
@@ -632,7 +642,7 @@ internal static class ProjecaoDoCertamePublicado
 
         if (node is JsonValue jv
             && jv.TryGetValue(out string? texto)
-            && DateTimeOffset.TryParse(texto, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset lido))
+            && TentarInstanteCanonico(texto, out DateTimeOffset lido))
         {
             valor = lido;
             return true;
@@ -640,4 +650,12 @@ internal static class ProjecaoDoCertamePublicado
 
         return false;
     }
+
+    private static bool TentarInstanteCanonico(string texto, out DateTimeOffset valor) =>
+        DateTimeOffset.TryParseExact(
+            texto,
+            FormatoInstanteCanonico,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out valor);
 }
