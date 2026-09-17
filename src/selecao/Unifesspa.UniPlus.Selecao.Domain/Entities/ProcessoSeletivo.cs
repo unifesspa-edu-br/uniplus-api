@@ -942,7 +942,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ciclo fechado num único SaveChanges (cada linha depende da outra liberar o valor
         // primeiro). Detecta o ciclo em termos puramente de domínio (sem conhecer EF/SQL) e
         // recusa com um erro nomeado, em vez de deixar a exceção do EF escapar do Result
-        // pattern. Uma cadeia que termina numa Ordem livre (nunca usada) ou na Ordem de uma
+        // pattern.
+        //
+        // A troca entre linhas RETIDAS é o que não tem saída, e não a substituição de uma
+        // coleção por inteiro: ali as linhas são outras, o DELETE libera o slot antes do
+        // INSERT que o quer, e o EF ordena os comandos sozinho — é por isso que duas bancas
+        // da etapa trocam de código sem colidir. Aqui são as mesmas duas linhas disputando o
+        // valor uma da outra, e o EF interrompe antes de emitir SQL, com
+        // "circular dependency was detected". FaseOrdemPermutacaoPersistenciaTests mede as
+        // duas coisas contra o Postgres real. Uma cadeia que termina numa Ordem livre (nunca usada) ou na Ordem de uma
         // fase REMOVIDA (que libera a linha via DELETE) não é um ciclo — só o é quando a
         // cadeia volta a uma fase já visitada NA MESMA caminhada.
         Dictionary<int, Guid> origemAntigaPorOrdem = [];
