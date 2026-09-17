@@ -406,6 +406,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Renderização pública do formulário de inscrição (Story #559) contra uma versão vigente
         // congelada antes de a apresentação existir no envelope.
         new("FormularioInscricao.VersaoSemApresentacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_inscricao.versao_sem_apresentacao", "A versão publicada vigente não tem apresentação de formulário")),
+        // Leitura pública do certame contra uma configuração congelada cujo bloco não tem a forma
+        // que a projeção espera. É falha de leitura, não ausência: não colapsa no não encontrado,
+        // pelo mesmo motivo da versão de envelope desconhecida — um certame publicado e visível
+        // que some da consulta pública é defeito, e defeito tem de aflorar.
+        new("CertamePublicado.EnvelopeInesperado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.certame_publicado.envelope_inesperado", "A configuração congelada não tem a forma que a projeção pública espera")),
         // Reposição da configuração congelada (Story #859, ADR-0110 D2). Todos 422: são
         // regras de negócio, e o operador que dispara um descarte precisa saber por que ele
         // foi recusado — reidratar mal é pior do que não reidratar.
