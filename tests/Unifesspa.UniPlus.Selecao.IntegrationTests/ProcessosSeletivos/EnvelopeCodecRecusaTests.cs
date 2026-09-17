@@ -1182,6 +1182,72 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    [Fact(DisplayName = "etapas[].faseCodigo acima do limite da coluna (60) é recusado")]
+    public void Etapa_FaseCodigoAcimaDoLimite_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["faseCodigo"] = new string('A', 61));
+
+        resultado.IsFailure.Should().BeTrue(
+            "um código de 61 caracteres não cabe na coluna fase_codigo (varchar 60) — o teto do decodificador " +
+            "media 300, então o valor passava aqui para estourar no INSERT, com 500 no meio do descarte");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+
+        // EnvelopeMalformado é o código de dezenas de guardas. Sem prender a mensagem ao campo
+        // e ao teto, uma guarda futura que recusasse este envelope por outro motivo — o código
+        // de fase que não resolve no cronograma, por exemplo — deixaria o teste verde com o
+        // limite de volta em 300, que é exatamente a regressão que ele existe para prender.
+        resultado.Error.Message.Should().Contain("etapas[0].faseCodigo").And.Contain("60");
+    }
+
+    [Fact(DisplayName = "etapas[].produtos[].atoCodigo acima do limite da coluna (60) é recusado")]
+    public void Etapa_ProdutoAtoCodigoAcimaDoLimite_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["produtos"]!.AsArray()[0]!["atoCodigo"] = new string('A', 61));
+
+        resultado.IsFailure.Should().BeTrue(
+            "um código de 61 caracteres não cabe na coluna ato_codigo de produtos_da_etapa (varchar 60)");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("etapas[0].produtos[0].atoCodigo").And.Contain("60");
+    }
+
+    [Fact(DisplayName = "etapas[].bancas[].codigo acima do limite da coluna (60) é recusado")]
+    public void Etapa_BancaCodigoAcimaDoLimite_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["bancas"]!.AsArray()[0]!["codigo"] = new string('A', 61));
+
+        resultado.IsFailure.Should().BeTrue(
+            "um código de 61 caracteres não cabe na coluna codigo de bancas_da_etapa (varchar 60)");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("etapas[0].bancas[0].codigo").And.Contain("60");
+    }
+
+    [Fact(DisplayName = "etapas[].recursos[].ancora com o sentinela 'Nenhuma' é recusada")]
+    public void Etapa_RecursoSemAncora_Recusa()
+    {
+        // Adultera a janela que corre da CIÊNCIA, e não a que corre do ato, porque é ela que
+        // escapa por inteiro: DefinirRecursos classifica tudo que não é ato publicado como
+        // "ciencia" ao procurar janelas duplicadas, então trocar a de ciência por 'Nenhuma'
+        // mantém o balde ocupado uma vez só e não colide com nada. A guarda de ciência —
+        // "exige que a etapa prometa parecer individual" — também deixa de valer, porque só
+        // olha CienciaIndividual. Nenhuma outra checagem sobra.
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()
+                .SelectMany(etapa => etapa!["recursos"]!.AsArray())
+                .First(recurso => recurso!["ancora"]!.GetValue<string>() == nameof(AncoraDoRecurso.CienciaIndividual))!
+                ["ancora"] = nameof(AncoraDoRecurso.Nenhuma));
+
+        resultado.IsFailure.Should().BeTrue(
+            "'Nenhuma' é a ausência declarada que RecursoDaEtapa.Criar recusa e que Reidratar não reconfere; " +
+            "sem a guarda do decodificador o valor atravessa DefinirRecursos, persiste como ancora = 0, e a " +
+            "reemissão dá os mesmos bytes — o certame volta com uma janela recursal cujo prazo não corre de " +
+            "instante nenhum, e o round-trip aprova porque os bytes conferem");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("ancora");
+    }
+
     // ── Infraestrutura dos testes ──
 
     // ── Coleta de fatos / derivação / grafo conjunto (Story #928, §7.4) ──

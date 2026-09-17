@@ -38,7 +38,7 @@ public sealed partial class EnvelopeCodec
             decimal? peso = leitor.DecimalOpcional(item, "peso", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
             decimal? notaMinima = leitor.DecimalOpcional(item, "notaMinima", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
             int? ordem = leitor.InteiroOpcional(item, "ordem", path);
-            string? faseCodigo = leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.EtapaNome);
+            string? faseCodigo = leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.FaseCodigo);
 
             if (leitor.Falhou)
             {
@@ -67,14 +67,20 @@ public sealed partial class EnvelopeCodec
             EtapaProcesso reidratada = EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo);
 
             JsonArray? arrayProdutos = leitor.Array(item, "produtos", path);
+            string pathProdutos = $"{path}.produtos";
             List<ProdutoDaEtapa> produtos = [];
             for (int j = 0; arrayProdutos is not null && j < arrayProdutos.Count; j++)
             {
-                string pathProduto = $"{path}.produtos[{j}]";
-                JsonObject itemProduto = leitor.ItemObjeto(arrayProdutos, j, pathProduto);
+                string pathProduto = $"{pathProdutos}[{j}]";
+
+                // O caminho que `ItemObjeto` recebe é o do ARRAY: é ele que acrescenta o
+                // índice. Passar o caminho do item já indexado emitiria `produtos[0][0]`, um
+                // ponteiro para lugar nenhum justamente no erro que manda alguém abrir o
+                // envelope adulterado e procurar o campo.
+                JsonObject itemProduto = leitor.ItemObjeto(arrayProdutos, j, pathProdutos);
                 leitor.ExigirChaves(itemProduto, pathProduto, "id", "atoCodigo", "papel");
                 Guid idProduto = leitor.Identificador(itemProduto, "id", pathProduto);
-                string ato = leitor.TextoNaoVazio(itemProduto, "atoCodigo", pathProduto, LimitesDoEnvelope.EtapaNome);
+                string ato = leitor.TextoNaoVazio(itemProduto, "atoCodigo", pathProduto, LimitesDoEnvelope.TipoAtoCodigo);
                 PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(itemProduto, "papel", pathProduto);
                 if (leitor.Falhou)
                 {
@@ -97,14 +103,15 @@ public sealed partial class EnvelopeCodec
             }
 
             JsonArray? arrayBancas = leitor.Array(item, "bancas", path);
+            string pathBancas = $"{path}.bancas";
             List<BancaDaEtapa> bancas = [];
             for (int j = 0; arrayBancas is not null && j < arrayBancas.Count; j++)
             {
-                string pathBanca = $"{path}.bancas[{j}]";
-                JsonObject itemBanca = leitor.ItemObjeto(arrayBancas, j, pathBanca);
+                string pathBanca = $"{pathBancas}[{j}]";
+                JsonObject itemBanca = leitor.ItemObjeto(arrayBancas, j, pathBancas);
                 leitor.ExigirChaves(itemBanca, pathBanca, "tipoBancaOrigemId", "codigo");
                 Guid origem = leitor.Identificador(itemBanca, "tipoBancaOrigemId", pathBanca);
-                string codigoBanca = leitor.TextoNaoVazio(itemBanca, "codigo", pathBanca, LimitesDoEnvelope.EtapaNome);
+                string codigoBanca = leitor.TextoNaoVazio(itemBanca, "codigo", pathBanca, LimitesDoEnvelope.TipoBancaCodigo);
                 if (leitor.Falhou)
                 {
                     return [];
@@ -130,11 +137,12 @@ public sealed partial class EnvelopeCodec
             }
 
             JsonArray? arrayRecursos = leitor.Array(item, "recursos", path);
+            string pathRecursos = $"{path}.recursos";
             List<RecursoDaEtapa> recursos = [];
             for (int j = 0; arrayRecursos is not null && j < arrayRecursos.Count; j++)
             {
-                string pathRecurso = $"{path}.recursos[{j}]";
-                JsonObject itemRecurso = leitor.ItemObjeto(arrayRecursos, j, pathRecurso);
+                string pathRecurso = $"{pathRecursos}[{j}]";
+                JsonObject itemRecurso = leitor.ItemObjeto(arrayRecursos, j, pathRecursos);
                 leitor.ExigirChaves(
                     itemRecurso, pathRecurso,
                     "ancora", "regra", "args", "produtoAncoraId");
@@ -153,6 +161,19 @@ public sealed partial class EnvelopeCodec
                 if (leitor.Falhou)
                 {
                     return [];
+                }
+
+                // `Nenhuma` é o sentinela de ausência que `RecursoDaEtapa.Criar` recusa e que
+                // `Reidratar` não reconfere — mesma razão pela qual o caráter `Nenhum` da etapa
+                // é barrado acima. Sem esta guarda, um envelope adulterado restaura uma janela
+                // recursal sem relógio: `DefinirRecursos` só reconhece ato publicado e ciência
+                // individual, então o valor atravessa todas as guardas, persiste, e a reemissão
+                // produz os mesmos bytes — nada acusa um prazo que não corre de instante nenhum.
+                if (ancora == AncoraDoRecurso.Nenhuma)
+                {
+                    return leitor.Propagar<IReadOnlyList<EtapaProcesso>>(new DomainError(
+                        ErrosCodecEnvelope.EnvelopeMalformado,
+                        $"Envelope malformado em '{pathRecurso}.ancora': o recurso tem de declarar de que instante o prazo corre.")) ?? [];
                 }
 
                 ArgsRegraPrazoRecurso? args = LerArgsDePrazoDeRecurso(leitor, argsObjeto, $"{pathRecurso}.args");
