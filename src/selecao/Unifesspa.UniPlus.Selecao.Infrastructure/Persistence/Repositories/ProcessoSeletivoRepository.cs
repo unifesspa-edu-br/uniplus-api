@@ -246,6 +246,43 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<LinhagemDeVersao>> ObterLinhagemVigenteAsync(
+        Guid processoSeletivoId,
+        DateTimeOffset instante,
+        CancellationToken cancellationToken = default)
+    {
+        DateTimeOffset instanteUtc = instante.ToUniversalTime();
+
+        // Mesma ordenação e mesmo filtro de exclusão lógica de ObterVersaoVigenteAsync — o que muda
+        // é que aqui a lista inteira desce, em vez de só o topo: a versão mais nova pode não ter
+        // ato registrado, e quem lê precisa do degrau seguinte para não tirar do ar um certame que
+        // já é público.
+        return await _context.VersoesConfiguracao
+            .AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoSeletivoId
+                && v.VigenteAPartirDe <= instanteUtc
+                && _context.ProcessosSeletivos.Any(p => p.Id == processoSeletivoId))
+            .OrderByDescending(v => v.VigenteAPartirDe)
+            .ThenByDescending(v => v.NumeroVersao)
+            .Select(v => new LinhagemDeVersao(v.NumeroVersao, v.AtoCriadorId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<VersaoConfiguracao?> ObterVersaoPorNumeroAsync(
+        Guid processoSeletivoId,
+        int numeroVersao,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.VersoesConfiguracao
+            .AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoSeletivoId
+                && v.NumeroVersao == numeroVersao
+                && _context.ProcessosSeletivos.Any(p => p.Id == processoSeletivoId))
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.ProcessosSeletivos

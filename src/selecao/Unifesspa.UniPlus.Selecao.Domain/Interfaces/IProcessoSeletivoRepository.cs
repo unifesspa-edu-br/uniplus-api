@@ -128,5 +128,35 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// pelo seletor de snapshot vigente para distinguir 404 (processo
     /// inexistente) de 422 (sem publicação vigente ≤ o instante).
     /// </summary>
+    /// <summary>
+    /// Linhagem de versões vigentes por relógio no <paramref name="instante"/>, da mais nova para a
+    /// mais antiga: o número da versão e o ato que a criou, sem materializar a configuração
+    /// congelada.
+    /// </summary>
+    /// <remarks>
+    /// Insumo do seletor de versão PUBLICAMENTE visível. A visibilidade pública exige o ato
+    /// registrado, e a versão mais nova pode ainda não o ter — entre a retificação e o dreno da
+    /// mensagem, ou indefinidamente quando o registro é recusado. Um certame já público não pode
+    /// sair do ar por isso: publicação é ato público, e torná-la invisível fere a transparência.
+    /// Quem lê desce a linhagem até a versão cujo ato existe, e é ela que responde.
+    /// <para>
+    /// Herda o mesmo filtro de exclusão lógica de <see cref="ObterVersaoVigenteAsync"/>: processo
+    /// excluído logicamente não vaza a sua configuração congelada.
+    /// </para>
+    /// </remarks>
+    Task<IReadOnlyList<LinhagemDeVersao>> ObterLinhagemVigenteAsync(
+        Guid processoSeletivoId,
+        DateTimeOffset instante,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Versão de configuração de um processo pelo seu número. <see langword="null"/> quando não
+    /// existe.
+    /// </summary>
+    Task<VersaoConfiguracao?> ObterVersaoPorNumeroAsync(
+        Guid processoSeletivoId,
+        int numeroVersao,
+        CancellationToken cancellationToken = default);
+
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);
 }

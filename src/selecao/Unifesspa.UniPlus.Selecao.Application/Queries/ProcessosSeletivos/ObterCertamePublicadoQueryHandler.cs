@@ -48,22 +48,11 @@ public static class ObterCertamePublicadoQueryHandler
         // Sempre "agora": leitura pública, nunca consulta forense a um instante passado.
         DateTimeOffset instante = timeProvider.GetUtcNow();
 
-        // Este seletor já recusa o processo excluído logicamente, e é por isso que ele é o
-        // caminho — uma consulta própria de versão precisaria repetir essa amarra.
-        VersaoConfiguracao? versao = await processoSeletivoRepository
-            .ObterVersaoVigenteAsync(query.ProcessoSeletivoId, instante, cancellationToken)
+        VersaoConfiguracao? versao = await ResolverVersaoPublicamenteVisivelAsync(
+            query.ProcessoSeletivoId, instante, processoSeletivoRepository, atoRegistradoReader, cancellationToken)
             .ConfigureAwait(false);
 
         if (versao is null)
-        {
-            return NaoEncontrado();
-        }
-
-        bool atoRegistrado = await atoRegistradoReader
-            .EstaRegistradoAsync(versao.AtoCriadorId, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (!atoRegistrado)
         {
             return NaoEncontrado();
         }
@@ -106,6 +95,64 @@ public static class ObterCertamePublicadoQueryHandler
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// A versão que o público vê: a mais nova, entre as vigentes por relógio, cujo ato criador está
+    /// registrado. <see langword="null"/> quando nenhuma tem — o que inclui o processo inexistente,
+    /// o processo em rascunho e o excluído logicamente, porque a linhagem vem vazia nos três casos.
+    /// </summary>
+    /// <remarks>
+    /// <b>Por que descer a linhagem em vez de exigir o ato da versão mais nova.</b> Um certame já
+    /// publicado é ato público, e torná-lo invisível fere a transparência — é para isso que existe
+    /// retificação de ato, e não supressão. Entre a retificação e o dreno da mensagem de registro, e
+    /// indefinidamente quando esse registro é recusado por mérito, a versão mais nova não tem ato.
+    /// Exigi-lo ali tiraria do ar um edital com inscrições abertas.
+    /// <para>
+    /// Descer não encobre a retificação: enquanto o ato dela não existe, ela não tem publicidade
+    /// nenhuma. O que se serve é o último estado que de fato tem ato normativo — e a recusa do
+    /// registro é estado que alguém reconcilia, não algo que o público deva pagar com a ausência do
+    /// certame.
+    /// </para>
+    /// <para>
+    /// Na ABERTURA o efeito é o oposto e igualmente correto: nenhuma versão tem ato registrado, a
+    /// linhagem não oferece degrau nenhum, e o certame não é divulgado — ele nunca foi público, e
+    /// divulgá-lo sem ato normativo é o que o critério existe para impedir.
+    /// </para>
+    /// </remarks>
+    private static async Task<VersaoConfiguracao?> ResolverVersaoPublicamenteVisivelAsync(
+        Guid processoSeletivoId,
+        DateTimeOffset instante,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IAtoRegistradoReader atoRegistradoReader,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<LinhagemDeVersao> linhagem = await processoSeletivoRepository
+            .ObterLinhagemVigenteAsync(processoSeletivoId, instante, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (linhagem.Count == 0)
+        {
+            return null;
+        }
+
+        IReadOnlySet<Guid> registrados = await atoRegistradoReader
+            .FiltrarRegistradosAsync([.. linhagem.Select(static degrau => degrau.AtoCriadorId)], cancellationToken)
+            .ConfigureAwait(false);
+
+        // A linhagem já vem da mais nova para a mais antiga: o primeiro degrau com ato registrado é
+        // o que o público deve ver.
+        foreach (LinhagemDeVersao degrau in linhagem)
+        {
+            if (registrados.Contains(degrau.AtoCriadorId))
+            {
+                return await processoSeletivoRepository
+                    .ObterVersaoPorNumeroAsync(processoSeletivoId, degrau.NumeroVersao, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
