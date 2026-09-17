@@ -199,8 +199,8 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
         CandidatoDaVitrine[] candidatos = [.. certames.Select(c => new CandidatoDaVitrine(c.ProcessoId, c.Nome))];
 
         repository.ListarVitrineAsync(
-                Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame>(), Arg.Any<string?>(), Arg.Any<Guid?>(),
-                Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
+                Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame>(), Arg.Any<TimeSpan>(), Arg.Any<string?>(),
+                Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
             .Returns((candidatos, Agora, ((string, Guid)?)null, ("ancora", certames[^1].ProcessoId)));
 
         repository.ObterLinhagensVigentesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())

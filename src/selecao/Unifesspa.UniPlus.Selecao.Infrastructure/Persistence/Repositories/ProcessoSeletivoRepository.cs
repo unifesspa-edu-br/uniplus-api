@@ -289,6 +289,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         ListarVitrineAsync(
             DateTimeOffset instanteSeForAPrimeiraPagina,
             SituacaoDoCertame situacao,
+            TimeSpan limiarDosUltimosDias,
             string? afterSortKey,
             Guid? afterId,
             int limit,
@@ -303,9 +304,15 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // que o motor de seek exige: com NULL o WHERE do seek não casa e a página vem vazia.
             .Where(p => p.PeriodoInscricaoFimVigente != null);
 
+        // Mesmo limiar dos contadores, e por isso os três recortes particionam: um chip que anuncia
+        // doze e devolve quinze ao ser clicado é pior que não ter chip.
+        DateTimeOffset limiar = instanteUtc + limiarDosUltimosDias;
+
         query = situacao switch
         {
-            SituacaoDoCertame.InscricoesAbertas => query.Where(p => p.PeriodoInscricaoFimVigente >= instanteUtc),
+            SituacaoDoCertame.InscricoesAbertas => query.Where(p => p.PeriodoInscricaoFimVigente >= limiar),
+            SituacaoDoCertame.UltimosDias => query.Where(p =>
+                p.PeriodoInscricaoFimVigente >= instanteUtc && p.PeriodoInscricaoFimVigente < limiar),
             SituacaoDoCertame.Encerradas => query.Where(p => p.PeriodoInscricaoFimVigente < instanteUtc),
             _ => query,
         };
