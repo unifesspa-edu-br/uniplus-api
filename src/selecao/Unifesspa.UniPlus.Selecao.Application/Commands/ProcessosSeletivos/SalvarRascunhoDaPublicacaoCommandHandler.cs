@@ -152,21 +152,49 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
             // SQL imediato, em outra transação — enxerga a data velha e apaga a linha no
             // intervalo.
             //
-            // O conteúdo continua em mãos, e recriar é exatamente o que a leitura teria feito
-            // se tivesse chegado depois da varredura. Recusar mandaria o operador reenviar o
-            // que o servidor já tem.
+            // O conteúdo continua em mãos, e gravá-lo de novo é exatamente o que a leitura
+            // teria feito se tivesse chegado depois da varredura. Recusar mandaria o operador
+            // reenviar o que o servidor já tem.
+            //
+            // Descarta o rastreamento antes de tentar de novo: sem isso o flush repetiria a
+            // atualização sobre a linha que já não existe (ADR-0119).
             unitOfWork.DescartarAlteracoesNaoSalvas();
 
-            Result<RascunhoDePublicacao> recriacao = RascunhoDePublicacao.Criar(
-                command.ProcessoSeletivoId, usuarioSub, conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
-            if (recriacao.IsFailure)
+            // Relê antes de escolher entre inserir e substituir. Entre a varredura que apagou
+            // a linha e esta retentativa, outra gravação do mesmo operador pode ter inserido a
+            // dela — inserir às cegas esbarraria no índice único, e uma violação que nasce
+            // DENTRO deste catch não é alcançável pelo catch irmão que a traduziria: chegaria
+            // ao operador como falha de servidor, e a chave de idempotência da requisição
+            // ficaria presa até o fim do prazo.
+            RascunhoDePublicacao? atual = await rascunhoRepository
+                .ObterDoOperadorAsync(command.ProcessoSeletivoId, usuarioSub, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (atual is null)
             {
-                return Result.Failure(recriacao.Error!);
+                Result<RascunhoDePublicacao> recriacao = RascunhoDePublicacao.Criar(
+                    command.ProcessoSeletivoId, usuarioSub, conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
+                if (recriacao.IsFailure)
+                {
+                    return Result.Failure(recriacao.Error!);
+                }
+
+                atual = recriacao.Value!;
+                await rascunhoRepository.AdicionarAsync(atual, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                Result regravacao = atual.Substituir(conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
+                if (regravacao.IsFailure)
+                {
+                    return regravacao;
+                }
+
+                rascunhoRepository.Atualizar(atual);
             }
 
-            await rascunhoRepository.AdicionarAsync(recriacao.Value!, cancellationToken).ConfigureAwait(false);
             await rascunhoRepository
-                .ApagarVencidosAsync(agora, recriacao.Value!.Id, cancellationToken)
+                .ApagarVencidosAsync(agora, atual.Id, cancellationToken)
                 .ConfigureAwait(false);
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
