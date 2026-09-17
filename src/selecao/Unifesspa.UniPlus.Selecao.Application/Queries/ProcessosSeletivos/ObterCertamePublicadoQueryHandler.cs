@@ -71,12 +71,14 @@ public static class ObterCertamePublicadoQueryHandler
         {
             return Result<CertamePublicadoDto>.Failure(new DomainError(
                 ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de " +
-                "leitura reconhecidas pelo codec vivo."));
+                // Sem citar a versão: ela é identificador interno do codec, e o chamador anônimo não deve
+                // aprender por mensagem de erro qual formato o sistema está lendo hoje.
+                "A configuração publicada deste certame não pôde ser lida no formato vigente."));
         }
 
         JsonObject envelope = (JsonObject)JsonNode.Parse(versao.ConfiguracaoCongelada)!;
-        return ProjecaoDoCertamePublicado.Projetar(query.ProcessoSeletivoId, versao.AtoCriadorId, envelope);
+        return ProjecaoDoCertamePublicado.Projetar(
+            query.ProcessoSeletivoId, versao.AtoCriadorId, versao.HashConfiguracao, envelope);
     }
 
     /// <summary>

@@ -53,15 +53,57 @@ public sealed class CertamePublicadoController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "certame", Versions = [1])]
     [ProducesResponseType(typeof(CertamePublicadoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ObterCertamePublicado(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterCertamePublicado(
+        Guid id,
+        [FromHeader(Name = "If-None-Match")] string? ifNoneMatch,
+        CancellationToken cancellationToken)
     {
         Result<CertamePublicadoDto> resultado = await _queryBus
             .Send(new ObterCertamePublicadoQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        CertamePublicadoDto certame = resultado.Value!;
+        string etag = $"\"{certame.VersaoProjecao}:{certame.HashConfiguracao}\"";
+
+        // Revalidação OBRIGATÓRIA, não cache proibido: o cliente pode guardar, mas precisa
+        // confirmar antes de usar. O endereço da página não muda quando o certame é retificado, de
+        // modo que uma representação já guardada na borda ou no navegador seria servida sem que
+        // ninguém consultasse a origem — e é na confirmação que o selo faz o seu trabalho.
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers.ETag = etag;
+
+        return EtagCoincide(ifNoneMatch, etag) ? StatusCode(StatusCodes.Status304NotModified) : Ok(certame);
+    }
+
+    /// <summary>
+    /// Compara o selo recebido com o corrente. Aceita lista separada por vírgula e o curinga, como
+    /// a especificação de requisições condicionais manda, e compara byte a byte — o selo é opaco
+    /// para o cliente, e normalizá-lo abriria espaço para dois selos distintos passarem por iguais.
+    /// </summary>
+    private static bool EtagCoincide(string? ifNoneMatch, string etagAtual)
+    {
+        if (string.IsNullOrWhiteSpace(ifNoneMatch))
+        {
+            return false;
+        }
+
+        foreach (string candidato in ifNoneMatch.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (candidato == "*" || string.Equals(candidato, etagAtual, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

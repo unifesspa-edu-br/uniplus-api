@@ -25,12 +25,25 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 internal static class ProjecaoDoCertamePublicado
 {
-    public static Result<CertamePublicadoDto> Projetar(Guid processoSeletivoId, Guid atoCriadorId, JsonObject envelope)
+    /// <summary>
+    /// Versão desta projeção pública. Sobe sempre que o formato desta resposta muda — acrescentar,
+    /// remover ou renomear campo. O hash da configuração NÃO cobre essa mudança: ele identifica o
+    /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
+    /// apenas por ele serviria a resposta antiga depois do deploy.
+    /// </summary>
+    public const string Versao = "1";
+
+
+    public static Result<CertamePublicadoDto> Projetar(
+        Guid processoSeletivoId,
+        Guid atoCriadorId,
+        string hashConfiguracao,
+        JsonObject envelope)
     {
         if (!TentarObjeto(envelope, "tipoProcesso", out JsonObject? tipoProcessoNode)
             || !TentarTipoNomeado(tipoProcessoNode, out TipoCatalogadoCertameDto? tipoProcesso))
         {
-            return Recusar("tipoProcesso");
+            return Recusar("tipo do processo");
         }
 
         if (!TentarObjeto(envelope, "periodo", out JsonObject? periodo)
@@ -38,7 +51,7 @@ internal static class ProjecaoDoCertamePublicado
             || !TentarInstante(periodo, "inicio", out DateTimeOffset inicio)
             || !TentarInstante(periodo, "fim", out DateTimeOffset fim))
         {
-            return Recusar("periodo");
+            return Recusar("período de inscrição");
         }
 
         if (!TentarObjeto(envelope, "localidade", out JsonObject? localidade)
@@ -52,14 +65,14 @@ internal static class ProjecaoDoCertamePublicado
 
         if (!TentarUnidadeAdministradora(envelope, out UnidadeAdministradoraCertameDto? unidade))
         {
-            return Recusar("identidadesUnidade");
+            return Recusar("unidade administradora");
         }
 
         if (!TentarObjeto(envelope, "hashesEdital", out JsonObject? hashes)
             || !TentarIdentificador(hashes, "documentoEditalId", out Guid documentoEditalId)
             || !TentarTexto(hashes, "hashSha256", out string hashSha256))
         {
-            return Recusar("hashesEdital");
+            return Recusar("documento do edital");
         }
 
         if (!TentarIdentificadores(envelope, "ofertas", out List<Guid>? ofertas))
@@ -69,12 +82,12 @@ internal static class ProjecaoDoCertamePublicado
 
         if (!TentarTextos(envelope, "modalidadesOfertadas", out List<string>? modalidades))
         {
-            return Recusar("modalidadesOfertadas");
+            return Recusar("modalidades ofertadas");
         }
 
         if (!TentarVagas(envelope, out List<QuadroDeVagasCertameDto>? vagas))
         {
-            return Recusar("vagas");
+            return Recusar("quadro de vagas");
         }
 
         if (!TentarEtapas(envelope, out List<EtapaCertameDto>? etapas))
@@ -84,32 +97,34 @@ internal static class ProjecaoDoCertamePublicado
 
         if (!TentarCronograma(envelope, out string? origemCandidatos, out List<FaseCronogramaCertameDto>? fases))
         {
-            return Recusar("cronogramaFases");
+            return Recusar("cronograma");
         }
 
         if (!TentarExigencias(envelope, out List<ExigenciaDocumentalCertameDto>? exigencias))
         {
-            return Recusar("documentosExigidos");
+            return Recusar("documentos exigidos");
         }
 
         if (!TentarAtendimento(envelope, out AtendimentoCertameDto? atendimento))
         {
-            return Recusar("atendimento");
+            return Recusar("atendimento especializado");
         }
 
         if (!TentarTaxaInscricao(envelope, out TaxaInscricaoCertameDto? taxa))
         {
-            return Recusar("taxaInscricao");
+            return Recusar("taxa de inscrição");
         }
 
         if (!TentarRetificacao(envelope, out RetificacaoCertameDto? retificacao))
         {
-            return Recusar("retificacao");
+            return Recusar("retificação");
         }
 
         return Result<CertamePublicadoDto>.Success(new CertamePublicadoDto(
             processoSeletivoId,
             atoCriadorId,
+            Versao,
+            hashConfiguracao,
             tipoProcesso,
             new PeriodoInscricaoCertameDto(numero, inicio, fim),
             new LocalidadeCertameDto(codigoIbge, localidadeNome, uf, fusoHorario),
@@ -127,10 +142,16 @@ internal static class ProjecaoDoCertamePublicado
             retificacao));
     }
 
-    private static Result<CertamePublicadoDto> Recusar(string bloco) =>
+    /// <summary>
+    /// Recusa nomeando a parte do certame pelo nome que o CONTRATO PÚBLICO usa, nunca pela chave
+    /// interna do envelope congelado. Um chamador anônimo não deve aprender a estrutura interna do
+    /// documento pela mensagem de erro — é a mesma disciplina de ausência de oráculo que motivou o
+    /// colapso das recusas numa só resposta.
+    /// </summary>
+    private static Result<CertamePublicadoDto> Recusar(string parte) =>
         Result<CertamePublicadoDto>.Failure(new DomainError(
             "CertamePublicado.EnvelopeInesperado",
-            $"O bloco '{bloco}' da configuração congelada não tem a forma esperada — a leitura pública do certame foi recusada em vez de projetar parcialmente."));
+            $"A configuração publicada não pôde ser lida em '{parte}' — a leitura do certame foi recusada em vez de responder parcialmente."));
 
     /// <summary>Par código/nome, a forma que tipo de processo e tipo de etapa compartilham.</summary>
     private static bool TentarTipoNomeado(JsonObject? objeto, [NotNullWhen(true)] out TipoCatalogadoCertameDto? tipo)
