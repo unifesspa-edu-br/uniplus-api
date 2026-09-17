@@ -20,6 +20,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 /// </remarks>
 public static class SalvarRascunhoDaPublicacaoCommandHandler
 {
+    /// <summary>O índice que admite um rascunho por operador em cada processo.</summary>
+    private const string IndiceDoOperador = "ux_rascunhos_publicacao_processo_operador";
+
     public static async Task<Result> Handle(
         SalvarRascunhoDaPublicacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -93,7 +96,51 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
             .ApagarVencidosAsync(agora, existente?.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (string.Equals(
+            UniqueConstraintViolation.GetViolatedConstraint(ex), IndiceDoOperador, StringComparison.Ordinal))
+        {
+            // Duas gravações do mesmo operador chegaram juntas: ambas leram que não havia
+            // rascunho e ambas inseriram. O índice deixa passar uma — e a perda desta corrida
+            // diz exatamente o que fazer: a linha existe agora, então basta reler e substituir,
+            // que é o caminho que a leitura teria tomado se tivesse chegado um instante depois.
+            //
+            // Recusar aqui seria pior que inútil. O endpoint exige chave de idempotência, e o
+            // filtro guarda a resposta de qualquer status abaixo de 500: a recusa ficaria
+            // cacheada pelo prazo inteiro, e a retentativa sob a mesma chave receberia o
+            // conflito de volta mesmo depois de a gravação ter passado a ser possível.
+            //
+            // Descarta o rastreamento antes de tentar de novo: sem isso o flush repetiria as
+            // mesmas entradas em conflito (ADR-0119).
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+
+            RascunhoDePublicacao? vencedor = await rascunhoRepository
+                .ObterDoOperadorAsync(command.ProcessoSeletivoId, usuarioSub, cancellationToken)
+                .ConfigureAwait(false);
+            if (vencedor is null)
+            {
+                // A linha sumiu entre a colisão e a releitura — descarte ou expiração. Não há
+                // segunda tentativa a fazer, e insistir arriscaria um laço.
+                return Result.Failure(RascunhoDaPublicacao.GravacaoConcorrente);
+            }
+
+            Result substituicaoAposCorrida = vencedor.Substituir(
+                conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
+            if (substituicaoAposCorrida.IsFailure)
+            {
+                return substituicaoAposCorrida;
+            }
+
+            rascunhoRepository.Atualizar(vencedor);
+            await rascunhoRepository
+                .ApagarVencidosAsync(agora, vencedor.Id, cancellationToken)
+                .ConfigureAwait(false);
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         return Result.Success();
     }
 
