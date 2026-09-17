@@ -99,6 +99,76 @@
         ]
       }
     },
+    "/api/selecao/processos-seletivos/{id}/certame": {
+      "get": {
+        "tags": [
+          "CertamePublicado"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.certame.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertamePublicadoDto"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/selecao/processos-seletivos/{processoSeletivoId}/documentos-edital": {
       "get": {
         "tags": [
@@ -7145,6 +7215,34 @@
           }
         }
       },
+      "AtendimentoCertameDto": {
+        "required": [
+          "condicoes",
+          "recursos",
+          "tiposDeficiencia"
+        ],
+        "type": "object",
+        "properties": {
+          "condicoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CondicaoAtendimentoCertameDto"
+            }
+          },
+          "recursos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tiposDeficiencia": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CondicaoAtendimentoCertameDto"
+            }
+          }
+        }
+      },
       "AtualizarMotivoDecisaoIsencaoCommand": {
         "required": [
           "id",
@@ -7470,6 +7568,139 @@
           "outros"
         ],
         "type": "string"
+      },
+      "CertamePublicadoDto": {
+        "required": [
+          "processoSeletivoId",
+          "atoCriadorId",
+          "versaoProjecao",
+          "hashConfiguracao",
+          "tipoProcesso",
+          "periodo",
+          "localidade",
+          "unidadeAdministradora",
+          "documentoEdital",
+          "ofertas",
+          "modalidadesOfertadas",
+          "vagas",
+          "etapas",
+          "origemCandidatos",
+          "cronogramaFases",
+          "documentosExigidos",
+          "atendimento",
+          "taxaInscricao",
+          "retificacao"
+        ],
+        "type": "object",
+        "properties": {
+          "processoSeletivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "atoCriadorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versaoProjecao": {
+            "type": "string"
+          },
+          "hashConfiguracao": {
+            "type": "string"
+          },
+          "tipoProcesso": {
+            "$ref": "#/components/schemas/TipoCatalogadoCertameDto"
+          },
+          "periodo": {
+            "$ref": "#/components/schemas/PeriodoInscricaoCertameDto"
+          },
+          "localidade": {
+            "$ref": "#/components/schemas/LocalidadeCertameDto"
+          },
+          "unidadeAdministradora": {
+            "$ref": "#/components/schemas/UnidadeAdministradoraCertameDto"
+          },
+          "documentoEdital": {
+            "$ref": "#/components/schemas/DocumentoEditalCertameDto"
+          },
+          "ofertas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "modalidadesOfertadas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "vagas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuadroDeVagasCertameDto"
+            }
+          },
+          "etapas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaCertameDto"
+            }
+          },
+          "origemCandidatos": {
+            "type": "string"
+          },
+          "cronogramaFases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FaseCronogramaCertameDto"
+            }
+          },
+          "documentosExigidos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExigenciaDocumentalCertameDto"
+            }
+          },
+          "atendimento": {
+            "$ref": "#/components/schemas/AtendimentoCertameDto"
+          },
+          "taxaInscricao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaxaInscricaoCertameDto"
+              }
+            ]
+          },
+          "retificacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RetificacaoCertameDto"
+              }
+            ]
+          }
+        }
+      },
+      "CondicaoAtendimentoCertameDto": {
+        "required": [
+          "codigo",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
       },
       "CondicaoDerivacaoDto": {
         "required": [
@@ -8828,6 +9059,22 @@
           }
         }
       },
+      "DocumentoEditalCertameDto": {
+        "required": [
+          "documentoEditalId",
+          "hashSha256"
+        ],
+        "type": "object",
+        "properties": {
+          "documentoEditalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hashSha256": {
+            "type": "string"
+          }
+        }
+      },
       "DocumentoEditalDto": {
         "required": [
           "id",
@@ -8977,6 +9224,76 @@
               "string"
             ],
             "format": "uuid"
+          }
+        }
+      },
+      "EtapaCertameDto": {
+        "required": [
+          "nome",
+          "carater",
+          "tipoEtapa",
+          "peso",
+          "notaMinima",
+          "ordem",
+          "faseCodigo",
+          "inicio",
+          "fim",
+          "emiteParecerIndividual"
+        ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "carater": {
+            "type": "string"
+          },
+          "tipoEtapa": {
+            "$ref": "#/components/schemas/TipoCatalogadoCertameDto"
+          },
+          "peso": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notaMinima": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "faseCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "inicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "fim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "emiteParecerIndividual": {
+            "type": "boolean"
           }
         }
       },
@@ -9187,6 +9504,77 @@
             "items": {
               "$ref": "#/components/schemas/RecursoDaEtapaInput"
             }
+          }
+        }
+      },
+      "ExigenciaDocumentalCertameDto": {
+        "required": [
+          "rotulo",
+          "aplicabilidade",
+          "obrigatorio",
+          "formatos"
+        ],
+        "type": "object",
+        "properties": {
+          "rotulo": {
+            "type": "string"
+          },
+          "aplicabilidade": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "formatos": {
+            "$ref": "#/components/schemas/FormatosAceitosCertameDto"
+          }
+        }
+      },
+      "FaseCronogramaCertameDto": {
+        "required": [
+          "ordem",
+          "codigo",
+          "inicio",
+          "fim",
+          "coletaInscricao",
+          "coletaSolicitacaoIsencao",
+          "permiteComplementacao"
+        ],
+        "type": "object",
+        "properties": {
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "inicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "fim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "coletaInscricao": {
+            "type": "boolean"
+          },
+          "coletaSolicitacaoIsencao": {
+            "type": "boolean"
+          },
+          "permiteComplementacao": {
+            "type": "boolean"
           }
         }
       },
@@ -9558,6 +9946,27 @@
           }
         }
       },
+      "FormatosAceitosCertameDto": {
+        "required": [
+          "qualquer",
+          "lista"
+        ],
+        "type": "object",
+        "properties": {
+          "qualquer": {
+            "type": "boolean"
+          },
+          "lista": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "FormularioRenderizavelDto": {
         "required": [
           "titulo",
@@ -9828,6 +10237,29 @@
       },
       "JsonElement": {},
       "JsonNode": {},
+      "LocalidadeCertameDto": {
+        "required": [
+          "codigoIbge",
+          "nome",
+          "uf",
+          "fusoHorario"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          },
+          "fusoHorario": {
+            "type": "string"
+          }
+        }
+      },
       "LocalidadeRegenteDto": {
         "required": [
           "codigoIbge",
@@ -10351,6 +10783,30 @@
           "importacaoExterna"
         ],
         "type": "string"
+      },
+      "PeriodoInscricaoCertameDto": {
+        "required": [
+          "numero",
+          "inicio",
+          "fim"
+        ],
+        "type": "object",
+        "properties": {
+          "numero": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "PredicadoObrigatoriedade": {
         "required": [
@@ -10902,6 +11358,34 @@
           },
           "ato": {
             "$ref": "#/components/schemas/DadosDoAtoRequest"
+          }
+        }
+      },
+      "QuadroDeVagasCertameDto": {
+        "required": [
+          "ofertaCursoOrigemId",
+          "quadro",
+          "totalPublicado"
+        ],
+        "type": "object",
+        "properties": {
+          "ofertaCursoOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quadro": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VagaPorModalidadeCertameDto"
+            }
+          },
+          "totalPublicado": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -11545,6 +12029,22 @@
           }
         }
       },
+      "RetificacaoCertameDto": {
+        "required": [
+          "atoRetificadoId",
+          "motivo"
+        ],
+        "type": "object",
+        "properties": {
+          "atoRetificadoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "motivo": {
+            "type": "string"
+          }
+        }
+      },
       "RetificacaoEmCursoDto": {
         "required": [
           "id",
@@ -11712,6 +12212,46 @@
         ],
         "type": "string"
       },
+      "TaxaInscricaoCertameDto": {
+        "required": [
+          "cobra",
+          "valor",
+          "fundamentos"
+        ],
+        "type": "object",
+        "properties": {
+          "cobra": {
+            "type": "boolean"
+          },
+          "valor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fundamentos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TipoCatalogadoCertameDto": {
+        "required": [
+          "codigo",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
+      },
       "TipoEtapaSnapshotDto": {
         "required": [
           "origemId",
@@ -11749,6 +12289,39 @@
           },
           "nome": {
             "type": "string"
+          }
+        }
+      },
+      "UnidadeAdministradoraCertameDto": {
+        "required": [
+          "sigla",
+          "nome",
+          "tipo",
+          "cidadeNome",
+          "cidadeUf"
+        ],
+        "type": "object",
+        "properties": {
+          "sigla": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "cidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeUf": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -11896,6 +12469,26 @@
           }
         }
       },
+      "VagaPorModalidadeCertameDto": {
+        "required": [
+          "modalidadeCodigo",
+          "quantidade"
+        ],
+        "type": "object",
+        "properties": {
+          "modalidadeCodigo": {
+            "type": "string"
+          },
+          "quantidade": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "ValorSelecionavelDto": {
         "required": [
           "codigo",
@@ -11939,6 +12532,9 @@
     },
     {
       "name": "Profile"
+    },
+    {
+      "name": "CertamePublicado"
     },
     {
       "name": "DocumentosEdital"

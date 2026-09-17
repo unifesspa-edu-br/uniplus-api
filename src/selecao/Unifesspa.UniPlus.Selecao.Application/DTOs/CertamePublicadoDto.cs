@@ -140,10 +140,19 @@ public sealed record AtendimentoCertameDto(
 /// resposta porque quem compõe a página do certame precisa casá-lo com a linha do tempo de
 /// publicações — sem isso, "a linha do tempo está completa" e "a linha do tempo está atrasada"
 /// seriam indistinguíveis para o consumidor.
+/// <para>
+/// <see cref="VersaoProjecao"/> e <see cref="HashConfiguracao"/> são o selo do conteúdo, e viajam
+/// no corpo porque quem compõe a página precisa deles para montar o próprio selo. O hash sozinho
+/// não basta: ele identifica o ENVELOPE congelado, e acrescentar um campo a esta projeção não o
+/// altera — um cache endereçado só por ele continuaria servindo a resposta anterior depois do
+/// deploy. A versão da projeção é o que separa as duas.
+/// </para>
 /// </remarks>
 public sealed record CertamePublicadoDto(
     Guid ProcessoSeletivoId,
     Guid AtoCriadorId,
+    string VersaoProjecao,
+    string HashConfiguracao,
     TipoCatalogadoCertameDto TipoProcesso,
     PeriodoInscricaoCertameDto Periodo,
     LocalidadeCertameDto Localidade,
