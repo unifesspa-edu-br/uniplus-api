@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Text;
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -53,6 +56,11 @@ public sealed class HashEstavelEntreGravacoesTests
         const string EmNfc = "RESULTADO_AVALIAÇÃO";
         const string EmNfd = "RESULTADO_AVALIAÇÃO";
 
+        // As duas literais são indistinguíveis na tela: nada além desta afirmação garante que
+        // o arquivo-fonte ainda carrega a sequência decomposta. Se uma ferramenta normalizar o
+        // arquivo, é aqui que o teste acusa, em vez de passar a valer por nada.
+        EmNfd.Should().NotBe(EmNfc, "a segunda literal tem de estar decomposta no arquivo-fonte");
+
         // No MESMO processo: o produto declarado em NFC é regravado em NFD. Comparar dois
         // processos distintos não serviria enquanto o id do produto entrar nos bytes.
         ProcessoSeletivo processo = ProcessoComProdutoDeAto(EmNfc);
@@ -68,11 +76,37 @@ public sealed class HashEstavelEntreGravacoesTests
             + "textos indistinguíveis na tela produziam hashes diferentes de um lado e iguais do outro");
     }
 
+    [Fact(DisplayName = "O ato gravado em forma decomposta sai do documento em NFC")]
+    public void AtoGravadoEmNfd_SaiDoDocumentoEmNfc()
+    {
+        // A forma decomposta é DERIVADA, não escrita à mão: duas literais indistinguíveis no
+        // editor viram a mesma string ao primeiro arquivo que alguma ferramenta normalize, e o
+        // teste passaria a valer por nada sem que ninguém percebesse.
+        const string EmNfc = "RESULTADO_AVALIAÇÃO";
+        string emNfd = EmNfc.Normalize(NormalizationForm.FormD);
+        emNfd.Should().NotBe(EmNfc, "pré-condição: o ato tem acentos, e decompô-los muda os bytes");
+
+        // Numa etapa sem produto algum não há linha com que reconciliar, então o que a etapa
+        // passa a guardar é o texto decomposto — a única forma de exercitar a normalização da
+        // EMISSÃO, que a reconciliação esconde quando já existe linha equivalente.
+        ProcessoSeletivo processo = ProcessoComProdutoDeAto(emNfd);
+        processo.Etapas.Single().Produtos.Single().AtoCodigo.Should().Be(emNfd,
+            "pré-condição: a etapa guarda a forma decomposta que o cliente declarou");
+
+        using JsonDocument documento = JsonDocument.Parse(Canonicalizar(processo));
+        string emitido = documento.RootElement
+            .GetProperty("etapas")[0].GetProperty("produtos")[0].GetProperty("atoCodigo").GetString()!;
+
+        emitido.Should().Be(EmNfc,
+            "o documento canônico emite toda string de negócio em NFC — duas grafias do mesmo "
+            + "ato produziriam hashes diferentes para a mesma configuração");
+    }
+
     private static byte[] Canonicalizar(ProcessoSeletivo processo) =>
         Canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId)).Bytes;
 
-    /// <summary>Certame publicável com uma etapa que declara produtos, banca e janela recursal.</summary>
+    /// <summary>Certame publicável com uma etapa que declara produtos, banca e janelas recursais.</summary>
     private static ProcessoSeletivo ProcessoComEtapaCompleta()
     {
         ProcessoSeletivo processo = ProcessoBase();
@@ -91,11 +125,34 @@ public sealed class HashEstavelEntreGravacoesTests
         etapa.DefinirProdutos([
             ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
         ]).IsSuccess.Should().BeTrue();
 
         etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaOrigem, "BANCA_TECNICA")])
             .IsSuccess.Should().BeTrue();
+
+        // Duas janelas, declaradas na ordem INVERSA à que o documento emite: a posição de cada
+        // uma tem de sair do conteúdo da âncora, não da ordem de chegada nem do id sorteado da
+        // linha do produto. Sem estas duas linhas, o bloco de recursos da etapa fica fora do
+        // cenário de estabilidade de bytes.
+        etapa.DefinirRecursos([
+            JanelaAncoradaEm(etapa, "RESULTADO_PRELIMINAR"),
+            JanelaAncoradaEm(etapa, "GABARITO"),
+        ]).IsSuccess.Should().BeTrue();
     }
+
+    /// <summary>
+    /// Janela recursal que corre da publicação do produto preliminar do ato indicado — a
+    /// âncora é resolvida DEPOIS da gravação dos produtos, contra a linha que sobreviveu à
+    /// reconciliação, que é o que o handler do comando também faz.
+    /// </summary>
+    private static RecursoDaEtapa JanelaAncoradaEm(EtapaProcesso etapa, string atoCodigo) =>
+        RecursoDaEtapa.Criar(
+            AncoraDoRecurso.AtoPublicado,
+            ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", HashFixo).Value!,
+            new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, null, null),
+            etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar
+                && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal)).Id).Value!;
 
     private static ProcessoSeletivo ProcessoComProdutoDeAto(string atoCodigo)
     {

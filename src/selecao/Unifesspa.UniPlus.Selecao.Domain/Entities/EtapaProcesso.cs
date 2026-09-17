@@ -107,8 +107,13 @@ public sealed class EtapaProcesso : EntityBase
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
+        // A chave da duplicidade é a mesma sob a qual a reconciliação abaixo e o documento
+        // canônico comparam o ato: sem normalizar aqui, o mesmo código escrito uma vez com
+        // acento composto e outra com acento decomposto atravessa a guarda e produz duas
+        // linhas que o documento emite com atoCodigo e papel idênticos — duas âncoras
+        // indistinguíveis para a janela recursal resolver.
         ProdutoDaEtapa? duplicado = produtos
-            .GroupBy(static p => (p.AtoCodigo, p.Papel))
+            .GroupBy(static p => (Ato: HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), p.Papel))
             .FirstOrDefault(static g => g.Count() > 1)?.First();
         if (duplicado is not null)
         {
@@ -132,10 +137,11 @@ public sealed class EtapaProcesso : EntityBase
             // Compara sob a mesma normalização que o documento canônico usa: o cliente pode
             // devolver o acento em forma decomposta, e ordinalmente esse texto não é o mesmo.
             // Sem isto, um reenvio idêntico aos olhos do operador recriaria a linha.
-            ProdutoDaEtapa? existente = disponiveis.FirstOrDefault(p =>
+            string atoDeclarado = HashCanonicalComputer.NormalizeNfc(declarado.AtoCodigo);
+            ProdutoDaEtapa? existente = disponiveis.Find(p =>
                 string.Equals(
                     HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
-                    HashCanonicalComputer.NormalizeNfc(declarado.AtoCodigo),
+                    atoDeclarado,
                     StringComparison.Ordinal)
                 && p.Papel == declarado.Papel);
 
@@ -325,8 +331,14 @@ public sealed class EtapaProcesso : EntityBase
 
         foreach (ProdutoDaEtapa congelado in produtos)
         {
+            // Sob a mesma normalização da gravação: o envelope congela o ato em NFC, e a linha
+            // viva guarda o que o cliente escreveu. Casar ordinalmente faria a linha existente
+            // sair como órfã e a congelada entrar como inserção, com DELETE e INSERT disputando
+            // o mesmo slot do índice único (etapa, ato, papel) dentro da mesma transação.
+            string atoCongelado = HashCanonicalComputer.NormalizeNfc(congelado.AtoCodigo);
             ProdutoDaEtapa? mesmoParaOMesmoPapel = disponiveis.Find(
-                p => string.Equals(p.AtoCodigo, congelado.AtoCodigo, StringComparison.Ordinal)
+                p => string.Equals(
+                        HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), atoCongelado, StringComparison.Ordinal)
                     && p.Papel == congelado.Papel);
             if (mesmoParaOMesmoPapel is not null)
             {
@@ -344,8 +356,10 @@ public sealed class EtapaProcesso : EntityBase
 
         foreach (ProdutoDaEtapa congelado in semPar)
         {
+            string atoCongelado = HashCanonicalComputer.NormalizeNfc(congelado.AtoCodigo);
             ProdutoDaEtapa? mesmoAto = disponiveis.Find(
-                p => string.Equals(p.AtoCodigo, congelado.AtoCodigo, StringComparison.Ordinal));
+                p => string.Equals(
+                    HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), atoCongelado, StringComparison.Ordinal));
             if (mesmoAto is null)
             {
                 continue;
@@ -370,8 +384,10 @@ public sealed class EtapaProcesso : EntityBase
         List<BancaDaEtapa> bancasFinais = [];
         foreach (BancaDaEtapa congelada in bancas)
         {
+            string codigoCongelado = HashCanonicalComputer.NormalizeNfc(congelada.Codigo);
             BancaDaEtapa? mesmoCodigo = bancasVivas.Find(
-                b => string.Equals(b.Codigo, congelada.Codigo, StringComparison.Ordinal));
+                b => string.Equals(
+                    HashCanonicalComputer.NormalizeNfc(b.Codigo), codigoCongelado, StringComparison.Ordinal));
             if (mesmoCodigo is null)
             {
                 bancasFinais.Add(congelada);
@@ -599,7 +615,10 @@ public sealed class EtapaProcesso : EntityBase
     {
         ArgumentNullException.ThrowIfNull(bancas);
 
-        List<string> codigos = [.. bancas.Select(b => b.Codigo)];
+        // Normalizado pela mesma razão do ato do produto: o documento canônico emite o código
+        // em NFC, e duas grafias do mesmo código passariam a guarda para depois sair do
+        // envelope como duas bancas de código idêntico.
+        List<string> codigos = [.. bancas.Select(b => HashCanonicalComputer.NormalizeNfc(b.Codigo))];
         if (codigos.Distinct(StringComparer.Ordinal).Count() != codigos.Count)
         {
             return Result.Failure(new DomainError(
@@ -613,10 +632,11 @@ public sealed class EtapaProcesso : EntityBase
         List<BancaDaEtapa> bancasReconciliadas = [];
         foreach (BancaDaEtapa declarada in bancas)
         {
-            BancaDaEtapa? existente = bancasDisponiveis.FirstOrDefault(b =>
+            string codigoDeclarado = HashCanonicalComputer.NormalizeNfc(declarada.Codigo);
+            BancaDaEtapa? existente = bancasDisponiveis.Find(b =>
                 string.Equals(
                     HashCanonicalComputer.NormalizeNfc(b.Codigo),
-                    HashCanonicalComputer.NormalizeNfc(declarada.Codigo),
+                    codigoDeclarado,
                     StringComparison.Ordinal));
 
             if (existente is null)

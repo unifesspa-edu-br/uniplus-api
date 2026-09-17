@@ -177,7 +177,17 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// nula quando a exigência é da fase inteira. Sem novo bloco de topo. Sem produção em
     /// ambiente nenhum: fixture nova, <c>0.0.17</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.19";
+    /// Issue #1524: o bump para <c>0.0.20</c> muda a POLÍTICA de ordenação de
+    /// <c>etapas[].recursos</c>, que passa a ordenar pelo conteúdo da âncora — ato e papel do
+    /// produto — em vez do id dele, e normaliza para NFC o <c>atoCodigo</c> do produto e o
+    /// <c>codigo</c> da banca da etapa, que saíam na forma bruta enquanto o bloco da fase já
+    /// normalizava. Mudança de ordenação é mudança de perfil, como a #1069 registrou ao elevar
+    /// <c>0.0.5</c> para <c>0.0.6</c> pelo desempate de <c>etapas</c>: dois envelopes sob o
+    /// mesmo rótulo deixariam de ser byte-reproduzíveis a partir da mesma configuração, e quem
+    /// recanonicalizasse o mais antigo veria divergência sem nada que distinguisse perfil novo
+    /// de documento adulterado. Sem produção em ambiente nenhum: fixture nova, <c>0.0.19</c>
+    /// deixa de ser reconhecida.
+    internal const string SchemaVersionAtual = "0.0.20";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -349,7 +359,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         // uma banca nova, com id novo. Congelá-lo fazia o hash da publicação mudar depois de um
         // PUT que não mudou configuração alguma, e o hash é justamente o que prova o contrário.
         ["bancas"] = new JsonArray([.. etapa.Bancas
-            .OrderBy(static b => b.Codigo, StringComparer.Ordinal)
+            // Ordena pelo texto que o item EMITE, não pelo que a linha guarda: o código sai
+            // normalizado, e ordenar pela forma bruta deixaria a posição no array depender de
+            // bytes que não aparecem em lugar nenhum do documento.
+            .OrderBy(static b => HashCanonicalComputer.NormalizeNfc(b.Codigo), StringComparer.Ordinal)
             .Select(static b => (JsonNode)new JsonObject
             {
                 ["tipoBancaOrigemId"] = JsonValue.Create(b.TipoBancaOrigemId),
@@ -365,6 +378,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             .ThenBy(r => ChaveDoProdutoAncora(etapa, r.ProdutoAncoraId), StringComparer.Ordinal)
             .ThenBy(static r => HashCanonicalComputer.NormalizeNfc(r.Regra.Codigo), StringComparer.Ordinal)
             .ThenBy(static r => HashCanonicalComputer.NormalizeNfc(r.Regra.Versao), StringComparer.Ordinal)
+            // Desempate TÉCNICO final, mesma política de SerializarEtapas: a chave de conteúdo
+            // acima empata sempre que a âncora não resolve num produto desta etapa, e sem um
+            // último critério total a posição cairia na ordem em que o repositório carregou a
+            // coleção — que nenhum Include ordena.
+            .ThenBy(static r => r.ProdutoAncoraId)
             .Select(static r => (JsonNode)new JsonObject
             {
                 // Sem o id, como na regra de recurso da fase: nada no envelope o referencia, e o
@@ -397,8 +415,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     /// <summary>
     /// O par ato e papel do produto em que a janela recursal ancora, em forma canônica — a
-    /// chave de ordenação que não depende do id. Âncora por ciência individual não referencia
-    /// produto algum, e ordena antes de qualquer uma que referencie.
+    /// chave de ordenação que não depende do id. Devolve vazio quando não há produto a que
+    /// recorrer: a âncora por ciência individual não referencia nenhum (e já está separada das
+    /// demais pela âncora, que ordena primeiro), e uma âncora que não resolve na etapa cai no
+    /// mesmo vazio — daí o desempate final por <c>produtoAncoraId</c>, que fecha a ordem total.
     /// </summary>
     private static string ChaveDoProdutoAncora(EtapaProcesso etapa, Guid produtoAncoraId)
     {
