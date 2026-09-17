@@ -9,6 +9,71 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class EtapaProcessoTests
 {
+    // ── A identidade do que não mudou sobrevive à regravação ──
+    //
+    // O hash canônico responde "esta configuração é a mesma que foi publicada?". Se cada
+    // gravação sorteia ids novos para produtos e bancas que ninguém tocou, ele responde "não"
+    // a um reenvio idêntico, e deixa de servir para o que existe.
+
+    [Fact(DisplayName = "Regravar o mesmo par ato e papel preserva o Id do produto")]
+    public void DefinirProdutos_MesmoAtoEPapel_PreservaOId()
+    {
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)])
+            .IsSuccess.Should().BeTrue();
+        Guid idOriginal = etapa.Produtos.Single().Id;
+
+        // O cliente devolve a coleção que leu: instâncias novas, mesmo conteúdo.
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)])
+            .IsSuccess.Should().BeTrue();
+
+        etapa.Produtos.Single().Id.Should().Be(idOriginal,
+            "o par ato e papel não mudou, e o id do produto entra nos bytes canônicos — sorteá-lo "
+            + "de novo faz o hash da publicação mudar sem que nada da configuração tenha mudado");
+    }
+
+    [Fact(DisplayName = "Regravar a mesma banca preserva o Id")]
+    public void DefinirBancas_MesmoCodigo_PreservaOId()
+    {
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+
+        Guid tipoBanca = Guid.CreateVersion7();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA")]).IsSuccess.Should().BeTrue();
+        Guid idOriginal = etapa.Bancas.Single().Id;
+
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA")]).IsSuccess.Should().BeTrue();
+
+        etapa.Bancas.Single().Id.Should().Be(idOriginal,
+            "o código não mudou; recriar a linha gira o id e o CreatedAt sem que nada tenha mudado");
+    }
+
+    [Fact(DisplayName = "Produto que sai da declaração some, e o que entra ganha Id próprio")]
+    public void DefinirProdutos_ParQueMuda_TrocaDeLinha()
+    {
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+
+        etapa.DefinirProdutos([
+            ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+        ]).IsSuccess.Should().BeTrue();
+        Guid idPreliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
+
+        // O definitivo sai, o preliminar fica, e um ato novo entra.
+        etapa.DefinirProdutos([
+            ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
+        ]).IsSuccess.Should().BeTrue();
+
+        etapa.Produtos.Should().HaveCount(2);
+        etapa.Produtos.Single(p => p.AtoCodigo == "RESULTADO_PRELIMINAR").Id.Should().Be(idPreliminar,
+            "preservar identidade não pode virar preservar conteúdo: o que continua declarado mantém a linha");
+        etapa.Produtos.Should().ContainSingle(p => p.AtoCodigo == "GABARITO");
+    }
+
     private static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
         TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!;
 

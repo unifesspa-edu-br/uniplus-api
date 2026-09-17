@@ -353,11 +353,18 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             .Select(static b => (JsonNode)new JsonObject
             {
                 ["tipoBancaOrigemId"] = JsonValue.Create(b.TipoBancaOrigemId),
-                ["codigo"] = b.Codigo,
+                ["codigo"] = HashCanonicalComputer.NormalizeNfc(b.Codigo),
             })]),
+        // A ordem sai do CONTEÚDO da janela, nunca do id do produto âncora. Ordenar por id
+        // amarra a posição no documento a um valor que não descreve nada: duas janelas podem
+        // trocar de lugar sem que uma linha da configuração tenha mudado, e o hash muda junto.
+        // O par que identifica o produto — ato e papel — é o mesmo que a restauração usa para
+        // reencontrá-lo, então a ordem sobrevive ao congelamento e à reposição.
         ["recursos"] = new JsonArray([.. etapa.Recursos
             .OrderBy(static r => r.Ancora)
-            .ThenBy(static r => r.ProdutoAncoraId)
+            .ThenBy(r => ChaveDoProdutoAncora(etapa, r.ProdutoAncoraId), StringComparer.Ordinal)
+            .ThenBy(static r => HashCanonicalComputer.NormalizeNfc(r.Regra.Codigo), StringComparer.Ordinal)
+            .ThenBy(static r => HashCanonicalComputer.NormalizeNfc(r.Regra.Versao), StringComparer.Ordinal)
             .Select(static r => (JsonNode)new JsonObject
             {
                 // Sem o id, como na regra de recurso da fase: nada no envelope o referencia, e o
@@ -378,15 +385,33 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["produtoAncoraId"] = r.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(r.ProdutoAncoraId),
             })]),
         ["produtos"] = new JsonArray([.. etapa.Produtos
-            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
+            .OrderBy(static p => HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), StringComparer.Ordinal)
             .ThenBy(static p => p.Papel?.ToString() ?? string.Empty, StringComparer.Ordinal)
             .Select(static p => (JsonNode)new JsonObject
             {
                 ["id"] = JsonValue.Create(p.Id),
-                ["atoCodigo"] = p.AtoCodigo,
+                ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
                 ["papel"] = p.Papel?.ToString(),
             })]),
     };
+
+    /// <summary>
+    /// O par ato e papel do produto em que a janela recursal ancora, em forma canônica — a
+    /// chave de ordenação que não depende do id. Âncora por ciência individual não referencia
+    /// produto algum, e ordena antes de qualquer uma que referencie.
+    /// </summary>
+    private static string ChaveDoProdutoAncora(EtapaProcesso etapa, Guid produtoAncoraId)
+    {
+        if (produtoAncoraId == Guid.Empty)
+        {
+            return string.Empty;
+        }
+
+        ProdutoDaEtapa? ancora = etapa.Produtos.FirstOrDefault(p => p.Id == produtoAncoraId);
+        return ancora is null
+            ? string.Empty
+            : $"{HashCanonicalComputer.NormalizeNfc(ancora.AtoCodigo)}\u001f{ancora.Papel?.ToString() ?? string.Empty}";
+    }
 
     /// <summary>
     /// Tipo de etapa escolhido, como cópia de valor autocontida (issue #1071) — mesmo shape de

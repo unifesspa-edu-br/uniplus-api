@@ -575,8 +575,8 @@ public sealed class EnvelopeCodecRoundTripTests
     /// depois de um PUT que não mudou configuração alguma — e o hash é justamente o que prova
     /// que a publicação continua sendo a mesma.
     /// </summary>
-    [Fact(DisplayName = "Trocar o id da banca da etapa não muda os bytes canônicos")]
-    public void IdDaBancaDaEtapa_NaoEntraNosBytes()
+    [Fact(DisplayName = "Redeclarar a mesma banca da etapa preserva a linha e os bytes canônicos")]
+    public void RedeclararAMesmaBancaDaEtapa_PreservaLinhaEBytes()
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
@@ -585,15 +585,18 @@ public sealed class EnvelopeCodecRoundTripTests
         BancaDaEtapa original = objetiva.Bancas.Single();
         original.Id.Should().NotBe(Guid.Empty, "pré-condição: a etapa do corpus requer banca");
 
+        // O cliente devolve a coleção que leu: instância nova, mesmo conteúdo.
         objetiva.DefinirBancas([BancaDaEtapa.Criar(original.TipoBancaOrigemId, original.Codigo)])
             .IsSuccess.Should().BeTrue();
-        objetiva.Bancas.Single().Id.Should().NotBe(original.Id,
-            "pré-condição: a banca reconstruída tem identidade nova, como a que o comando monta");
+
+        objetiva.Bancas.Single().Id.Should().Be(original.Id,
+            "o código não mudou, e recriar a linha giraria o id — o que basta para o hash da "
+            + "publicação mudar depois de uma gravação que não mudou configuração alguma");
 
         byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
 
         depois.Should().Equal(antes,
-            "a mesma configuração de banca, numa linha nova, é a mesma publicação");
+            "a mesma configuração de banca é a mesma publicação");
     }
 
     // ── Golden fixture RICA: o decoder é ancorado num artefato congelado ──
