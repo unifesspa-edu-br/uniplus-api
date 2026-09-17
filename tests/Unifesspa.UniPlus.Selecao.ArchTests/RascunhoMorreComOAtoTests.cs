@@ -77,6 +77,32 @@ public sealed class RascunhoMorreComOAtoTests
             $"o handler de {comando.Name} registra o ato e precisa apagar o rascunho da publicação");
     }
 
+    [Theory(DisplayName = "O handler só apaga o rascunho depois de gravar — nunca antes de saber se gravou")]
+    [MemberData(nameof(ComandosQueRegistramAto))]
+    public void HandlerApagaDepoisDeGravar(Type comando)
+    {
+        ArgumentNullException.ThrowIfNull(comando);
+
+        // A exclusão é ExecuteDelete: SQL na hora, fora do rastreamento. Emitida antes do
+        // flush, ela aposta que nada dali em diante recusa a operação — e quando alguma coisa
+        // recusa, o operador recebe "nada foi publicado" com os sete campos que transcreveu do
+        // Diário Oficial já destruídos, o do colega junto, porque a exclusão é por processo.
+        // Ordem, aqui, é a diferença entre apagar o que perdeu a razão de existir e apagar o
+        // que ainda vai ser preciso.
+        string fonte = File.ReadAllText(CaminhoDoHandler(HandleDoComando(comando).DeclaringType!.Name));
+
+        int primeiroFlush = fonte.IndexOf(".SalvarAlteracoesAsync(", StringComparison.Ordinal);
+        primeiroFlush.Should().BeGreaterThan(-1,
+            $"o handler de {comando.Name} grava antes de apagar, então precisa ter um flush");
+
+        foreach (Match exclusao in Regex.Matches(fonte, @"\.ApagarDoProcessoAsync\(", RegexOptions.None, TimeSpan.FromSeconds(5)))
+        {
+            exclusao.Index.Should().BeGreaterThan(primeiroFlush,
+                $"o handler de {comando.Name} apaga o rascunho antes de gravar a versão — uma recusa "
+                + "posterior devolveria 'nada foi publicado' com a transcrição do operador já apagada");
+        }
+    }
+
     private static IEnumerable<string> ArquivosDaApplication([CallerFilePath] string origem = "") =>
         Directory.EnumerateFiles(
             Path.GetFullPath(Path.Join(
