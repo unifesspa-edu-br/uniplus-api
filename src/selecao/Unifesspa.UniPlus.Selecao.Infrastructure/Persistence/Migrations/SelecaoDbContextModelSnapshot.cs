@@ -246,15 +246,15 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Nome")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
                         .HasColumnName("nome");
 
                     b.Property<string>("NomeOrdenacao")
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
                         .HasColumnName("nome_ordenacao")
                         .HasComputedColumnSql("selecao.normalizar_para_comparacao(nome)", true)
                         .UseCollation("C");

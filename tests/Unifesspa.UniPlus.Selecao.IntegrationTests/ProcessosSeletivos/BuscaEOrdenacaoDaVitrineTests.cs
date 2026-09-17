@@ -218,6 +218,25 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         voltando.Select(static c => c.Nome).Should().Equal(primeira.Select(static c => c.Nome));
     }
 
+    [Fact(DisplayName = "Título do comprimento máximo da origem é divulgável")]
+    public async Task Nome_NoComprimentoDaOrigem_EDivulgavel()
+    {
+        // A faceta é uma CÓPIA do título do processo, e uma cópia mais curta que a origem recusa um
+        // cadastro legítimo. Recusa no pior lugar possível: esta escrita é assíncrona, disparada
+        // pelo registro do ato, e a falha não volta a ninguém — a mensagem morre na fila, a linha
+        // nunca nasce, e como a existência da linha É a publicidade, o certame fica invisível com o
+        // ato já registrado. Nem o público nem quem publicou teriam como perceber.
+        string tituloNoLimite = new('M', 300);
+
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        context.CertamesDivulgados.Add(Divulgado(tituloNoLimite, "900/2026", ["AC"], Agora.AddDays(15)));
+
+        Func<Task> divulgar = () => context.SaveChangesAsync(CancellationToken.None);
+
+        await divulgar.Should().NotThrowAsync(
+            "o título do processo aceita 300 caracteres, e a divulgação copia o que a origem aceita");
+    }
+
     [Fact(DisplayName = "Os contadores respeitam a busca, e não só a situação")]
     public async Task Contadores_RespeitamABusca()
     {
