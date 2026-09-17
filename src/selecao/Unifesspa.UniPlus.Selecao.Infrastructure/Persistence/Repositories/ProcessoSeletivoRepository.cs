@@ -314,6 +314,12 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         // quem já encerrou depois, e dentro de cada segmento o prazo crescente é a mesma ordem.
         // O identificador fecha a ordem total — sem ele, dois certames que encerram no mesmo
         // instante trocariam de lugar entre páginas.
+        //
+        // O índice de prazo NÃO serve esta ordenação: a primeira coluna é expressão sobre um
+        // parâmetro, e o planner não a casa com uma B-tree sobre a coluna. Ele serve os predicados
+        // de recorte por situação, que são faixas sobre a mesma coluna. A ordenação paga uma
+        // ordenação em memória sobre o conjunto publicado — aceitável no volume de certames de uma
+        // instituição, e o lugar por onde começar se deixar de ser.
         OrderedKeysetPage<ProcessoSeletivo> page = await OrderedKeysetCursor
             .ApplyAsync(
                 query,
@@ -321,8 +327,8 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
                     .Ascending(p => p.PeriodoInscricaoFimVigente!.Value < instanteUtc)
                     .Ascending(p => p.PeriodoInscricaoFimVigente!.Value)
                     .Ascending(p => p.Id),
-                p => SortKeyDaVitrine(p, instanteUtc),
-                (sortKey, id) => AncoraDaVitrine(sortKey, id),
+                p => SortKeyDaVitrine(p, instanteUtc, situacao),
+                (sortKey, id) => AncoraDaVitrine(sortKey, id, situacao),
                 afterSortKey,
                 afterId,
                 limit,
@@ -336,23 +342,39 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         return (itens, instanteUtc, page.Previous, page.Next);
     }
 
+    /// <summary>Instante congelado, recorte, segmento e prazo — ver <see cref="SortKeyDaVitrine"/>.</summary>
+    private const int PartesDaAncora = 4;
+
     /// <summary>
-    /// Chave de ordenação da âncora: o segmento e o prazo, nessa ordem. O prazo vai em forma
-    /// canônica UTC — ordem lexicográfica e ordem cronológica coincidem nesse formato, e ele é
-    /// estável entre culturas.
+    /// Chave de ordenação da âncora: o instante congelado, o recorte, o segmento e o prazo, nessa
+    /// ordem. O prazo vai em forma canônica UTC — ordem lexicográfica e ordem cronológica coincidem
+    /// nesse formato, e ele é estável entre culturas.
     /// </summary>
-    private static string SortKeyDaVitrine(ProcessoSeletivo processo, DateTimeOffset instanteUtc)
+    private static string SortKeyDaVitrine(
+        ProcessoSeletivo processo,
+        DateTimeOffset instanteUtc,
+        SituacaoDoCertame situacao)
     {
         DateTimeOffset prazo = processo.PeriodoInscricaoFimVigente!.Value;
 
         // O instante entra na chave para sobreviver ao percurso. A segmentação entre abertos e
         // encerrados depende dele, e recomputá-lo a cada página moveria de segmento o certame cujo
         // prazo vence no meio da navegação — ele apareceria duas vezes ou sumiria.
+        //
+        // O recorte entra pela mesma razão que a assinatura de KeysetSort o carrega: a âncora é uma
+        // posição DENTRO de um conjunto, e continuar com outro filtro de situação é retomar de uma
+        // posição que não existe naquele conjunto — o seek passaria adiante de linhas que deveria
+        // devolver, ou não casaria com nenhuma e responderia fim de coleção com itens de sobra.
         return CompositeSortKey.Serialize(
             Instante(instanteUtc),
+            RecorteDaVitrine(situacao),
             prazo < instanteUtc ? "1" : "0",
             Instante(prazo));
     }
+
+    /// <summary>Recorte da consulta, tal como viaja na âncora. Nome do membro, não o número.</summary>
+    private static string RecorteDaVitrine(SituacaoDoCertame situacao) =>
+        situacao.ToString();
 
     /// <summary>Instante em forma canônica UTC — ordem lexicográfica e cronológica coincidem.</summary>
     private static string Instante(DateTimeOffset valor) =>
@@ -364,7 +386,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
     /// </summary>
     private static DateTimeOffset? InstanteDaAncora(string? sortKey)
     {
-        if (!CompositeSortKey.TryDeserialize(sortKey, 3, out IReadOnlyList<string> partes)
+        if (!CompositeSortKey.TryDeserialize(sortKey, PartesDaAncora, out IReadOnlyList<string> partes)
             || !DateTimeOffset.TryParse(
                 partes[0], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset instante))
         {
@@ -374,17 +396,29 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         return instante;
     }
 
-    private static object AncoraDaVitrine(string sortKey, Guid id)
+    /// <summary>
+    /// Remonta a âncora que o motor de seek compara contra as colunas do keyset.
+    /// </summary>
+    /// <remarks>
+    /// <b>Os nomes dos membros não são livres</b>: o motor resolve cada coluna do keyset no objeto
+    /// de referência pela MESMA cadeia de propriedades que a consulta usa
+    /// (<c>PeriodoInscricaoFimVigente.Value</c> e <c>Id</c>). Um membro com outro nome não é
+    /// encontrado e a continuação estoura — por isso a âncora expõe a janela crua, e o segmento
+    /// (aberto/encerrado) se deriva dela contra o instante congelado, como na consulta.
+    /// </remarks>
+    private static object AncoraDaVitrine(string sortKey, Guid id, SituacaoDoCertame situacao)
     {
-        if (!CompositeSortKey.TryDeserialize(sortKey, 3, out IReadOnlyList<string> partes)
+        if (!CompositeSortKey.TryDeserialize(sortKey, PartesDaAncora, out IReadOnlyList<string> partes)
+            || !string.Equals(partes[1], RecorteDaVitrine(situacao), StringComparison.Ordinal)
             || !DateTimeOffset.TryParse(
-                partes[2], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset prazo))
+                partes[3], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset prazo))
         {
             throw new CursorAnchorMismatchException("Âncora da vitrine fora da forma esperada.");
         }
 
-        return new { Encerrado = partes[1] == "1", Prazo = prazo, Id = id };
+        return new { PeriodoInscricaoFimVigente = (DateTimeOffset?)prazo, Id = id };
     }
+
 
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<LinhagemDeVersao>>> ObterLinhagensVigentesAsync(
         IReadOnlyCollection<Guid> processoSeletivoIds,
@@ -419,30 +453,27 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
                 static g => (IReadOnlyList<LinhagemDeVersao>)[.. g.Select(static l => l.Degrau)]);
     }
 
-    public async Task<IReadOnlyList<VersaoConfiguracao>> ObterVersoesPorNumeroAsync(
-        IReadOnlyCollection<LinhagemDeVersaoDeProcesso> versoes,
+    public async Task<IReadOnlyList<VersaoConfiguracao>> ObterVersoesPorAtoCriadorAsync(
+        IReadOnlyCollection<Guid> atoCriadorIds,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(versoes);
+        ArgumentNullException.ThrowIfNull(atoCriadorIds);
 
-        if (versoes.Count == 0)
+        if (atoCriadorIds.Count == 0)
         {
             return [];
         }
 
-        // Um IN por processo e outro por número, com o par conferido em memória: o par composto não
-        // tem tradução SQL direta no provider, e a sobra que o filtro largo traz é descartada aqui.
-        Guid[] processoIds = [.. versoes.Select(static v => v.ProcessoSeletivoId).Distinct()];
-        int[] numeros = [.. versoes.Select(static v => v.NumeroVersao).Distinct()];
-        HashSet<LinhagemDeVersaoDeProcesso> procurados = [.. versoes];
+        Guid[] atos = [.. atoCriadorIds];
 
-        List<VersaoConfiguracao> candidatas = await _context.VersoesConfiguracao
+        return await _context.VersoesConfiguracao
             .AsNoTracking()
-            .Where(v => processoIds.Contains(v.ProcessoSeletivoId) && numeros.Contains(v.NumeroVersao))
+            .Where(v => atos.Contains(v.AtoCriadorId)
+                // Mesmo filtro de exclusão lógica dos irmãos desta família: processo excluído
+                // logicamente não vaza a sua configuração congelada por nenhuma das portas.
+                && _context.ProcessosSeletivos.Any(p => p.Id == v.ProcessoSeletivoId))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-
-        return [.. candidatas.Where(v => procurados.Contains(new LinhagemDeVersaoDeProcesso(v.ProcessoSeletivoId, v.NumeroVersao)))];
     }
 
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)

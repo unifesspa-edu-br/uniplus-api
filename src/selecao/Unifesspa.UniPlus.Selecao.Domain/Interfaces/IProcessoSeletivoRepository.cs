@@ -203,9 +203,15 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         DateTimeOffset instante,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Versões de configuração identificadas por processo e número, em lote.</summary>
-    Task<IReadOnlyList<VersaoConfiguracao>> ObterVersoesPorNumeroAsync(
-        IReadOnlyCollection<LinhagemDeVersaoDeProcesso> versoes,
+    /// <summary>Versões de configuração identificadas pelos seus atos criadores, em lote.</summary>
+    /// <remarks>
+    /// Chaveado pelo ATO, e não pelo par processo e número: um ato cria no máximo uma versão
+    /// (garantido por índice único), então o lote resolve num único filtro exato. Pelo par, o filtro
+    /// seria um produto cartesiano — vinte certames em três números distintos trariam até sessenta
+    /// linhas, cada uma com o documento congelado inteiro, para ficar com vinte.
+    /// </remarks>
+    Task<IReadOnlyList<VersaoConfiguracao>> ObterVersoesPorAtoCriadorAsync(
+        IReadOnlyCollection<Guid> atoCriadorIds,
         CancellationToken cancellationToken = default);
 
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);

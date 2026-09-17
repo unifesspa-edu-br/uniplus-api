@@ -53,32 +53,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public StatusProcesso Status { get; private set; }
 
     /// <summary>
-    /// Início da janela de inscrição da versão publicamente vigente. <see langword="null"/>
-    /// enquanto o processo nunca foi publicado.
-    /// </summary>
-    /// <remarks>
-    /// Cópia do que a configuração congelada já carrega, mantida aqui por uma razão de consulta: a
-    /// vitrine pública ordena por prazo e filtra por situação, e o prazo vive DENTRO do documento
-    /// congelado. Resolver "o prazo da versão vigente de cada processo" a cada leitura seria uma
-    /// correlação por processo, que nenhum índice serve bem.
-    /// <para>
-    /// <b>É estado derivado</b>: as duas transições que criam versão vigente — a publicação e a
-    /// sucessão por retificação — gravam estas colunas na MESMA transação, a partir do MESMO
-    /// <see cref="DadosEdital"/> que alimentou a canonicalização.
-    /// </para>
-    /// <para>
-    /// Duas ressalvas, porque hoje <b>nada</b> as verifica automaticamente. A primeira: quem
-    /// acrescentar uma transição que crie versão fora de <c>Publicar</c>/<c>SucederVersao</c>
-    /// precisa gravá-las também, e o esquecimento só aparece em revisão — os testes comparam a
-    /// coluna com o <see cref="DadosEdital"/> de entrada, não com o envelope congelado. A segunda:
-    /// quando o relógio regride, <c>SucederVersao</c> ancora a vigência da versão nova no instante
-    /// da anterior, e até aquele instante chegar a versão resolvida como vigente ainda é a ANTIGA
-    /// enquanto estas colunas já descrevem a NOVA.
-    /// </para>
-    /// </remarks>
-    public DateTimeOffset? PeriodoInscricaoInicioVigente { get; private set; }
-
-    /// <summary>
     /// Fim da janela de inscrição da versão publicamente vigente — a chave por que a vitrine
     /// ordena, do prazo mais próximo ao mais distante. <see langword="null"/> enquanto o processo
     /// nunca foi publicado.
@@ -3933,14 +3907,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             atorUsuarioSub,
             instantePublicacao);
 
+        RegistrarPeriodoVigente(dados);
+
         // Reaproveita ProcessoPublicadoEvent (não um evento distinto): o fato de
         // negócio drenado é "novo ato + nova versão da configuração", idêntico em
         // forma ao da abertura — o payload serve aos dois. Evita um segundo schema
         // Avro/tópico sem consumidor. O nome do membro EditalId é o histórico: ele é
         // contrato do envelope durável e do schema Avro, e o valor sempre foi o do
         // ato criador.
-        RegistrarPeriodoVigente(dados);
-
         AddDomainEvent(new ProcessoPublicadoEvent(
             Id,
             versao.AtoCriadorId,
@@ -3953,13 +3927,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Copia a janela de inscrição da versão que acaba de se tornar vigente. Chamado pelas duas
+    /// Copia o encerramento da janela de inscrição da versão que acaba de se tornar vigente. Chamado pelas duas
     /// transições que criam versão, sempre com o mesmo <paramref name="dados"/> que a
     /// canonicalização congelou.
     /// </summary>
     private void RegistrarPeriodoVigente(DadosEdital dados)
     {
-        PeriodoInscricaoInicioVigente = dados.PeriodoInscricaoInicio;
         PeriodoInscricaoFimVigente = dados.PeriodoInscricaoFim;
     }
 

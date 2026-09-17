@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20260917034151_AdicionaPeriodoVigenteDoCertame")]
-    partial class AdicionaPeriodoVigenteDoCertame
+    [Migration("20260917041318_AdicionaPrazoVigenteDoCertame")]
+    partial class AdicionaPrazoVigenteDoCertame
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1894,10 +1894,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("PeriodoInscricaoFimVigente")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("periodo_inscricao_fim_vigente");
-
-                    b.Property<DateTimeOffset?>("PeriodoInscricaoInicioVigente")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("periodo_inscricao_inicio_vigente");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")

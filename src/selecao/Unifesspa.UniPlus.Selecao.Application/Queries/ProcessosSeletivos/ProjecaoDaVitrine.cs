@@ -1,9 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
-using System.Text.Json;
 using System.Text.Json.Nodes;
-
-using Abstractions;
 
 using Domain.Interfaces;
 
@@ -14,7 +11,11 @@ using DTOs;
 /// </summary>
 /// <remarks>
 /// Campos declarados um a um, como no contrato de detalhe e pelo mesmo motivo: um item de lista
-/// montado por recorte devolveria o bloco novo por omissão.
+/// montado por recorte devolveria o bloco novo por omissão. E todo acesso de topo passa pela mesma
+/// conferência de <see cref="ClassificacaoDosBlocosDoCertame"/> que o detalhe usa
+/// (<see cref="ProjecaoDoCertamePublicado.BlocoPublico"/>): sem ela, classificar um bloco como
+/// INTERNO não impediria a vitrine de publicá-lo, e a fronteira teria uma segunda porta sem
+/// tranca.
 /// <para>
 /// <b>Um item malformado é omitido, não derruba a página.</b> É a diferença entre a vitrine e o
 /// detalhe: lá, recusar é a resposta certa, porque o cidadão pediu aquele certame e meia projeção
@@ -24,60 +25,31 @@ using DTOs;
 /// </remarks>
 internal static class ProjecaoDaVitrine
 {
-    /// <summary>
-    /// Lê o documento congelado, ou <see langword="null"/> quando ele não é um objeto legível. Uma
-    /// linha adulterada direto no banco não pode derrubar a vitrine inteira com erro interno.
-    /// </summary>
-    public static JsonObject? TentarLer(string documentoCongelado)
-    {
-        try
-        {
-            return JsonNode.Parse(documentoCongelado) as JsonObject;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    public static bool VersaoLegivel(IRegistroCodecsEnvelope registroCodecs, string schemaVersion) =>
-        registroCodecs.Capacidades.Any(capacidade =>
-            string.Equals(capacidade.SchemaVersion, schemaVersion, StringComparison.Ordinal) && capacidade.TemDecoder);
-
     public static CertameNaVitrineDto? Projetar(CandidatoDaVitrine candidato, DateTimeOffset instante, JsonObject envelope)
     {
-        if (envelope.TryGetPropertyValue("tipoProcesso", out JsonNode? tipoNode) is false
-            || tipoNode is not JsonObject tipo
-            || !Texto(tipo, "codigo", out string tipoCodigo)
-            || !Texto(tipo, "nome", out string tipoNome))
+        if (!ProjecaoDoCertamePublicado.TentarObjeto(
+                envelope, ProjecaoDoCertamePublicado.BlocoPublico("tipoProcesso"), out JsonObject? tipoNode)
+            || !ProjecaoDoCertamePublicado.TentarTipoNomeado(tipoNode, out TipoCatalogadoCertameDto? tipoProcesso))
         {
             return null;
         }
 
-        if (!envelope.TryGetPropertyValue("periodo", out JsonNode? periodoNode) || periodoNode is not JsonObject periodo)
+        // O prazo vem do envelope ELEITO, não da coluna denormalizada da raiz: a coluna descreve a
+        // publicação mais nova, e a versão publicamente visível pode ser anterior a ela enquanto o
+        // ato da retificação não se registra. Servir a janela da retificação ali daria publicidade
+        // a uma versão que ainda não tem nenhuma, e faria vitrine e detalhe discordarem.
+        if (!ProjecaoDoCertamePublicado.TentarObjeto(
+                envelope, ProjecaoDoCertamePublicado.BlocoPublico("periodo"), out JsonObject? periodo)
+            || !ProjecaoDoCertamePublicado.TentarTextoOpcional(periodo, "numero", out string? numero)
+            || !ProjecaoDoCertamePublicado.TentarInstante(periodo, "fim", out DateTimeOffset inscricoesAte))
         {
             return null;
         }
 
-        // O número é opcional na publicação: chave ausente ou nula é estado válido.
-        periodo.TryGetPropertyValue("numero", out JsonNode? numeroNode);
-        string? numero = numeroNode is JsonValue jvNumero && jvNumero.TryGetValue(out string? lido) ? lido : null;
-
-        if (!envelope.TryGetPropertyValue("modalidadesOfertadas", out JsonNode? modalidadesNode)
-            || modalidadesNode is not JsonArray modalidadesArray)
+        if (!ProjecaoDoCertamePublicado.TentarTextos(
+                envelope, ProjecaoDoCertamePublicado.BlocoPublico("modalidadesOfertadas"), out List<string>? modalidades))
         {
             return null;
-        }
-
-        List<string> modalidades = [];
-        foreach (JsonNode? item in modalidadesArray)
-        {
-            if (item is not JsonValue valor || !valor.TryGetValue(out string? codigo))
-            {
-                return null;
-            }
-
-            modalidades.Add(codigo);
         }
 
         if (!TotalDeVagas(envelope, out int totalDeVagas))
@@ -89,10 +61,10 @@ internal static class ProjecaoDaVitrine
             candidato.ProcessoSeletivoId,
             numero,
             candidato.Nome,
-            new TipoCatalogadoCertameDto(tipoCodigo, tipoNome),
+            tipoProcesso,
             modalidades,
-            candidato.InscricoesAte,
-            candidato.InscricoesAte >= instante,
+            inscricoesAte,
+            inscricoesAte >= instante,
             totalDeVagas);
     }
 
@@ -103,7 +75,8 @@ internal static class ProjecaoDaVitrine
     private static bool TotalDeVagas(JsonObject envelope, out int total)
     {
         total = 0;
-        if (!envelope.TryGetPropertyValue("vagas", out JsonNode? node) || node is not JsonArray vagas)
+        if (!ProjecaoDoCertamePublicado.TentarArray(
+                envelope, ProjecaoDoCertamePublicado.BlocoPublico("vagas"), out JsonArray? vagas))
         {
             return false;
         }
@@ -111,9 +84,7 @@ internal static class ProjecaoDaVitrine
         foreach (JsonNode? item in vagas)
         {
             if (item is not JsonObject configuracao
-                || !configuracao.TryGetPropertyValue("totalPublicado", out JsonNode? totalNode)
-                || totalNode is not JsonValue jv
-                || !jv.TryGetValue(out int publicado))
+                || !ProjecaoDoCertamePublicado.TentarInteiro(configuracao, "totalPublicado", out int publicado))
             {
                 return false;
             }
@@ -122,13 +93,5 @@ internal static class ProjecaoDaVitrine
         }
 
         return true;
-    }
-
-    private static bool Texto(JsonObject objeto, string chave, out string valor)
-    {
-        valor = "";
-        return objeto.TryGetPropertyValue(chave, out JsonNode? node)
-            && node is JsonValue jv
-            && jv.TryGetValue(out valor!);
     }
 }

@@ -1884,10 +1884,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("periodo_inscricao_fim_vigente");
 
-                    b.Property<DateTimeOffset?>("PeriodoInscricaoInicioVigente")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("periodo_inscricao_inicio_vigente");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");

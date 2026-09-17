@@ -28,6 +28,9 @@
     <!-- Expõe internals (ex.: ResolvedorValoresSelecionaveisCongelados) aos testes de
          unidade — mesmo padrão de Selecao.Infrastructure/Configuracao/OrganizacaoInstitucional. -->
     <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.Application.UnitTests" />
+    <!-- A suíte de integração projeta o envelope canônico REAL contra a projeção pública: é o
+         único lugar onde o canonicalizador e a projeção se encontram. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.IntegrationTests" />
   </ItemGroup>
 
 </Project>

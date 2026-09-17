@@ -4,7 +4,9 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -100,6 +102,24 @@ public sealed class FronteiraDeBlocosDoCertameTests
 
         ClassificacaoDosBlocosDoCertame.Classificados.Except(emitidos, StringComparer.Ordinal)
             .Should().BeEmpty("a classificação descreve blocos que o envelope não emite mais");
+    }
+
+    [Fact(DisplayName = "A projeção pública lê o envelope canônico REAL, não só o escrito à mão nos testes")]
+    public void ProjecaoDoCertame_LeOEnvelopeCanonico()
+    {
+        // A fronteira acima compara as chaves de TOPO. Renomear uma chave INTERNA de bloco no
+        // canonicalizador — o rótulo de um documento exigido, o nome de um recurso de atendimento,
+        // a lista de formatos — a mantém verde e faz a leitura pública recusar TODO certame, com
+        // defeito detectável só em produção. Projetar o snapshot canônico fecha essa porta.
+        JsonObject envelope = (JsonObject)JsonNode.Parse(
+            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+
+        Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), new string('a', 64), envelope);
+
+        resultado.IsSuccess.Should().BeTrue(
+            "o contrato público precisa saber ler o envelope que o canonicalizador de fato emite — recusa: {0}",
+            resultado.Error?.Message);
     }
 
     private static IReadOnlyCollection<string> NaoClassificados(IEnumerable<string> chaves) =>

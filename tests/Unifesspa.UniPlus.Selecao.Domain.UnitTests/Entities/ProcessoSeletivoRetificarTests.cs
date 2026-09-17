@@ -145,7 +145,7 @@ public sealed class ProcessoSeletivoRetificarTests
         return processo;
     }
 
-    [Fact(DisplayName = "Publicar copia a janela de inscrição para as colunas por que a vitrine ordena")]
+    [Fact(DisplayName = "Publicar copia o prazo de inscrição para a coluna por que a vitrine ordena")]
     public void Publicar_CopiaPeriodoVigente()
     {
         // O prazo vive DENTRO do documento congelado. A vitrine pública ordena por ele, e resolver
@@ -160,16 +160,14 @@ public sealed class ProcessoSeletivoRetificarTests
             ContextoDeContagemDePrazos.SemCalendario);
 
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        processo.PeriodoInscricaoInicioVigente.Should().Be(dados.PeriodoInscricaoInicio);
         processo.PeriodoInscricaoFimVigente.Should().Be(dados.PeriodoInscricaoFim);
     }
 
-    [Fact(DisplayName = "Processo em rascunho não tem janela vigente")]
+    [Fact(DisplayName = "Processo em rascunho não tem prazo vigente")]
     public void Rascunho_NaoTemPeriodoVigente()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        processo.PeriodoInscricaoInicioVigente.Should().BeNull();
         processo.PeriodoInscricaoFimVigente.Should().BeNull();
     }
 

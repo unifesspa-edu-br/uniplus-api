@@ -1,8 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
-
 using Abstractions;
 
 using Domain.Entities;
@@ -57,7 +54,7 @@ public static class ObterCertamePublicadoQueryHandler
             return NaoEncontrado();
         }
 
-        if (!VersaoReconhecidaParaLeitura(registroCodecs, versao.SchemaVersion))
+        if (!registroCodecs.SabeLer(versao.SchemaVersion))
         {
             return Result<CertamePublicadoDto>.Failure(new DomainError(
                 ErrosCodecEnvelope.VersaoDesconhecida,
@@ -66,35 +63,13 @@ public static class ObterCertamePublicadoQueryHandler
                 "A configuração publicada deste certame não pôde ser lida no formato vigente."));
         }
 
-        if (TentarLerEnvelope(versao.ConfiguracaoCongelada) is not { } envelope)
+        if (ProjecaoDoCertamePublicado.TentarLerDocumento(versao.ConfiguracaoCongelada) is not { } envelope)
         {
             return ProjecaoDoCertamePublicado.RecusarDocumentoIlegivel();
         }
 
         return ProjecaoDoCertamePublicado.Projetar(
             query.ProcessoSeletivoId, versao.AtoCriadorId, versao.HashConfiguracao, envelope);
-    }
-
-    /// <summary>
-    /// O documento congelado como objeto JSON, ou <see langword="null"/> quando ele não é sequer
-    /// isso.
-    /// </summary>
-    /// <remarks>
-    /// Conteúdo que não fecha como JSON, ou que fecha como array ou escalar, só é alcançável por
-    /// uma linha adulterada diretamente no banco — nunca pelo caminho de escrita, que sempre passa
-    /// pelo canonicalizador. Ainda assim a leitura o trata como recusa: um <c>cast</c> cru viraria
-    /// 500 num endereço anônimo, e o resto desta consulta recusa forma inesperada com 422.
-    /// </remarks>
-    private static JsonObject? TentarLerEnvelope(string configuracaoCongelada)
-    {
-        try
-        {
-            return JsonNode.Parse(configuracaoCongelada) as JsonObject;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
     }
 
     /// <summary>
@@ -166,8 +141,4 @@ public static class ObterCertamePublicadoQueryHandler
         Result<CertamePublicadoDto>.Failure(new DomainError(
             "ProcessoSeletivo.NaoEncontrado",
             "Processo Seletivo não encontrado."));
-
-    private static bool VersaoReconhecidaParaLeitura(IRegistroCodecsEnvelope registroCodecs, string schemaVersion) =>
-        registroCodecs.Capacidades.Any(capacidade =>
-            string.Equals(capacidade.SchemaVersion, schemaVersion, StringComparison.Ordinal) && capacidade.TemDecoder);
 }
