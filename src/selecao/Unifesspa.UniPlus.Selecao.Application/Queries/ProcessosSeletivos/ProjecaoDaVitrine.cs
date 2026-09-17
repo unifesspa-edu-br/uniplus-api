@@ -41,6 +41,7 @@ internal static class ProjecaoDaVitrine
         if (!ProjecaoDoCertamePublicado.TentarObjeto(
                 envelope, ProjecaoDoCertamePublicado.BlocoPublico("periodo"), out JsonObject? periodo)
             || !ProjecaoDoCertamePublicado.TentarTextoOpcional(periodo, "numero", out string? numero)
+            || !ProjecaoDoCertamePublicado.TentarInstante(periodo, "inicio", out DateTimeOffset inscricoesDe)
             || !ProjecaoDoCertamePublicado.TentarInstante(periodo, "fim", out DateTimeOffset inscricoesAte))
         {
             return null;
@@ -64,7 +65,10 @@ internal static class ProjecaoDaVitrine
             tipoProcesso,
             modalidades,
             inscricoesAte,
-            inscricoesAte >= instante,
+            // A janela é FECHADA nos dois lados: o edital é publicado antes de a inscrição abrir,
+            // e comparar só contra o encerramento anunciaria como aberto todo certame que ainda
+            // nem começou a receber inscrição — que é o estado normal de um edital recém-publicado.
+            inscricoesDe <= instante && inscricoesAte >= instante,
             totalDeVagas);
     }
 

@@ -28,10 +28,10 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
     /// Envelope da versão eleita, com a janela de inscrição que a projeção LÊ — a vitrine publica o
     /// prazo da versão publicamente visível, não o da coluna denormalizada da raiz.
     /// </summary>
-    private static string Envelope(DateTimeOffset prazo) => $$"""
+    private static string Envelope(DateTimeOffset prazo, DateTimeOffset? abertura = null) => $$"""
         {
           "tipoProcesso": {"origemId": "0199a1b2-1111-7000-8000-000000000001", "codigo": "SISU", "nome": "Sistema de Seleção Unificada"},
-          "periodo": {"numero": "001/2026", "inicio": "2026-03-01T03:00:00Z", "fim": "{{Instante(prazo)}}"},
+          "periodo": {"numero": "001/2026", "inicio": "{{Instante(abertura ?? Agora.AddDays(-9))}}", "fim": "{{Instante(prazo)}}"},
           "modalidadesOfertadas": ["AC", "LB_PPI"],
           "vagas": [
             {"ofertaCursoOrigemId": "0199a1b2-2222-7000-8000-000000000002", "quadro": [], "totalPublicado": 40},
@@ -108,24 +108,41 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
         resultado.Items.Should().ContainSingle().Which.InscricoesAbertas.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "A vitrine anuncia o prazo da versão VISÍVEL, nunca o da retificação sem ato registrado")]
+    [Fact(DisplayName = "A vitrine anuncia o prazo da versão VISÍVEL, lido do envelope eleito")]
     public async Task Handle_RetificacaoSemAtoRegistrado_NaoAnunciaOPrazoDela()
     {
-        // A coluna por que o banco ordena descreve a publicação mais nova; a versão eleita é a
-        // anterior enquanto o ato da retificação não se registra. Anunciar o prazo da coluna daria
-        // publicidade a uma versão que ainda não tem nenhuma — e faria vitrine e detalhe discordar.
+        // A versão eleita é a anterior enquanto o ato da retificação não se registra, e é do
+        // envelope DELA que o prazo sai. A linha candidata nem carrega a janela da publicação mais
+        // nova: anunciá-la daria publicidade a uma versão que ainda não tem nenhuma.
         Guid processoId = Guid.CreateVersion7();
         Guid ato = Guid.CreateVersion7();
-        DateTimeOffset prazoDaRetificacaoSemAto = Agora.AddDays(1);
         DateTimeOffset prazoPublicamenteVisivel = Agora.AddDays(30);
 
         IProcessoSeletivoRepository repository = RepositorioCom(
-            prazoDaRetificacaoSemAto, prazoPublicamenteVisivel, (processoId, "SISU 2026.1", ato));
+            prazoPublicamenteVisivel, (processoId, "SISU 2026.1", ato));
 
         ListarCertamesPublicadosResult resultado = await HandleAsync(repository, LeitorCom(ato));
 
         resultado.Items.Should().ContainSingle()
             .Which.InscricoesAte.Should().Be(prazoPublicamenteVisivel);
+    }
+
+    [Fact(DisplayName = "Certame cuja janela ainda não abriu não é anunciado como recebendo inscrição")]
+    public async Task Handle_JanelaAindaNaoAberta_NaoMarcaInscricoesAbertas()
+    {
+        // O edital é publicado ANTES de a inscrição abrir — é o estado normal de um certame
+        // recém-publicado. Comparar só contra o encerramento anunciaria como aberto todo certame
+        // que ainda nem começou a receber inscrição.
+        Guid processoId = Guid.CreateVersion7();
+        Guid ato = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = RepositorioCom(
+            Agora.AddDays(40), abertura: Agora.AddDays(10), (processoId, "SISU 2026.2", ato));
+
+        ListarCertamesPublicadosResult resultado = await HandleAsync(repository, LeitorCom(ato));
+
+        CertameNaVitrineDto item = resultado.Items.Should().ContainSingle().Subject;
+        item.InscricoesAbertas.Should().BeFalse("a janela abre daqui a dez dias");
+        item.InscricoesAte.Should().Be(Agora.AddDays(40), "o encerramento continua sendo anunciado");
     }
 
     [Fact(DisplayName = "Contadores só são calculados quando pedidos, e refletem o conjunto e não a página")]
@@ -164,23 +181,22 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
     private static IProcessoSeletivoRepository RepositorioCom(
         DateTimeOffset prazo,
         params (Guid ProcessoId, string Nome, Guid AtoCriadorId)[] certames) =>
-        RepositorioCom(prazo, prazo, certames);
+        RepositorioCom(prazo, abertura: null, certames);
 
     /// <summary>
-    /// <paramref name="prazoDaColuna"/> é o da coluna denormalizada da raiz — a publicação MAIS
-    /// NOVA, por onde o banco ordena. <paramref name="prazoDoEnvelope"/> é o da versão ELEITA, a
-    /// única com ato registrado. Os dois divergem entre a retificação e o registro do ato dela.
+    /// <paramref name="prazoDoEnvelope"/> é o prazo da versão ELEITA, a única com ato registrado —
+    /// a única janela que a vitrine pode anunciar. <paramref name="abertura"/> é o início dessa
+    /// mesma janela; nulo usa uma abertura já ocorrida.
     /// </summary>
     private static IProcessoSeletivoRepository RepositorioCom(
-        DateTimeOffset prazoDaColuna,
         DateTimeOffset prazoDoEnvelope,
+        DateTimeOffset? abertura,
         params (Guid ProcessoId, string Nome, Guid AtoCriadorId)[] certames)
     {
         DateTimeOffset prazo = prazoDoEnvelope;
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
 
-        CandidatoDaVitrine[] candidatos =
-            [.. certames.Select(c => new CandidatoDaVitrine(c.ProcessoId, c.Nome, prazoDaColuna))];
+        CandidatoDaVitrine[] candidatos = [.. certames.Select(c => new CandidatoDaVitrine(c.ProcessoId, c.Nome))];
 
         repository.ListarVitrineAsync(
                 Arg.Any<DateTimeOffset>(), Arg.Any<SituacaoDoCertame>(), Arg.Any<string?>(), Arg.Any<Guid?>(),
@@ -198,7 +214,7 @@ public sealed class ListarCertamesPublicadosQueryHandlerTests
                 [.. callInfo.Arg<IReadOnlyCollection<Guid>>()
                     .Select(ato => VersaoConfiguracao.Abrir(
                         certames.First(c => c.AtoCriadorId == ato).ProcessoId,
-                        Encoding.UTF8.GetBytes(Envelope(prazo)),
+                        Encoding.UTF8.GetBytes(Envelope(prazo, abertura)),
                         VersaoReconhecida,
                         "canonical-json/sha256@v1",
                         ato,

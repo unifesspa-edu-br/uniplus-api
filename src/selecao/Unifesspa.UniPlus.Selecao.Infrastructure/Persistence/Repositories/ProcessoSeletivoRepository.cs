@@ -336,20 +336,24 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
                 cancellationToken)
             .ConfigureAwait(false);
 
-        CandidatoDaVitrine[] itens =
-            [.. page.Items.Select(static p => new CandidatoDaVitrine(p.Id, p.Nome, p.PeriodoInscricaoFimVigente!.Value))];
+        CandidatoDaVitrine[] itens = [.. page.Items.Select(static p => new CandidatoDaVitrine(p.Id, p.Nome))];
 
         return (itens, instanteUtc, page.Previous, page.Next);
     }
 
-    /// <summary>Instante congelado, recorte, segmento e prazo — ver <see cref="SortKeyDaVitrine"/>.</summary>
-    private const int PartesDaAncora = 4;
+    /// <summary>Instante congelado, recorte e prazo — ver <see cref="SortKeyDaVitrine"/>.</summary>
+    private const int PartesDaAncora = 3;
 
     /// <summary>
-    /// Chave de ordenação da âncora: o instante congelado, o recorte, o segmento e o prazo, nessa
-    /// ordem. O prazo vai em forma canônica UTC — ordem lexicográfica e ordem cronológica coincidem
-    /// nesse formato, e ele é estável entre culturas.
+    /// Chave de ordenação da âncora: o instante congelado, o recorte e o prazo, nessa ordem. O
+    /// prazo vai em forma canônica UTC — ordem lexicográfica e ordem cronológica coincidem nesse
+    /// formato, e ele é estável entre culturas.
     /// </summary>
+    /// <remarks>
+    /// O segmento (aberto/encerrado) <b>não</b> viaja: ele é a comparação do prazo contra o
+    /// instante, e os dois já estão aqui. Serializá-lo criaria uma segunda cópia de um fato
+    /// derivado, capaz de contradizer a que o seek de fato usa.
+    /// </remarks>
     private static string SortKeyDaVitrine(
         ProcessoSeletivo processo,
         DateTimeOffset instanteUtc,
@@ -368,7 +372,6 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         return CompositeSortKey.Serialize(
             Instante(instanteUtc),
             RecorteDaVitrine(situacao),
-            prazo < instanteUtc ? "1" : "0",
             Instante(prazo));
     }
 
@@ -411,14 +414,13 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         if (!CompositeSortKey.TryDeserialize(sortKey, PartesDaAncora, out IReadOnlyList<string> partes)
             || !string.Equals(partes[1], RecorteDaVitrine(situacao), StringComparison.Ordinal)
             || !DateTimeOffset.TryParse(
-                partes[3], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset prazo))
+                partes[2], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTimeOffset prazo))
         {
             throw new CursorAnchorMismatchException("Âncora da vitrine fora da forma esperada.");
         }
 
         return new { PeriodoInscricaoFimVigente = (DateTimeOffset?)prazo, Id = id };
     }
-
 
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<LinhagemDeVersao>>> ObterLinhagensVigentesAsync(
         IReadOnlyCollection<Guid> processoSeletivoIds,

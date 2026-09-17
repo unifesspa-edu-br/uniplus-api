@@ -104,7 +104,15 @@ public static class ListarCertamesPublicadosQueryHandler
             .ObterVersoesPorAtoCriadorAsync(atosEleitos, cancellationToken)
             .ConfigureAwait(false);
 
-        Dictionary<Guid, VersaoConfiguracao> porProcesso = versoes.ToDictionary(static v => v.ProcessoSeletivoId);
+        // Agrupar em vez de indexar: a unicidade ato por versão é garantida por índice, mas se ela
+        // for violada — importação de acervo, carga corrigindo dado — indexar lançaria e a vitrine
+        // inteira responderia erro. Em todo o resto este handler omite o item e segue; aqui não é
+        // diferente. Vence a versão de maior número, que é a mais nova entre as eleitas.
+        Dictionary<Guid, VersaoConfiguracao> porProcesso = versoes
+            .GroupBy(static v => v.ProcessoSeletivoId)
+            .ToDictionary(
+                static g => g.Key,
+                static g => g.OrderByDescending(static v => v.NumeroVersao).First());
 
         // A ordem da página é a do banco: o dicionário resolve conteúdo, nunca posição.
         List<CertameNaVitrineDto> itens = [];
