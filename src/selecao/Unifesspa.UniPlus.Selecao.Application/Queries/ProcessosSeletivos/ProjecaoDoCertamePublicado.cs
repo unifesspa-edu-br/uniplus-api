@@ -33,6 +33,18 @@ internal static class ProjecaoDoCertamePublicado
     /// </summary>
     public const string Versao = "1";
 
+    /// <summary>
+    /// Código único da recusa de leitura do envelope. Vive aqui, e não repetido em cada ponto que
+    /// recusa, porque é ele que o mapeador de erros da API associa ao 422.
+    /// </summary>
+    internal const string CodigoEnvelopeInesperado = "CertamePublicado.EnvelopeInesperado";
+
+    /// <summary>
+    /// Recusa a leitura de um documento congelado que sequer é um objeto JSON — a mesma recusa que
+    /// um bloco de forma inesperada produz, pela mesma razão: é falha de leitura, e uma exceção
+    /// solta aqui viraria 500 num endereço anônimo.
+    /// </summary>
+    public static Result<CertamePublicadoDto> RecusarDocumentoIlegivel() => Recusar("documento do certame");
 
     public static Result<CertamePublicadoDto> Projetar(
         Guid processoSeletivoId,
@@ -40,13 +52,13 @@ internal static class ProjecaoDoCertamePublicado
         string hashConfiguracao,
         JsonObject envelope)
     {
-        if (!TentarObjeto(envelope, "tipoProcesso", out JsonObject? tipoProcessoNode)
+        if (!TentarObjeto(envelope, BlocoPublico("tipoProcesso"), out JsonObject? tipoProcessoNode)
             || !TentarTipoNomeado(tipoProcessoNode, out TipoCatalogadoCertameDto? tipoProcesso))
         {
             return Recusar("tipo do processo");
         }
 
-        if (!TentarObjeto(envelope, "periodo", out JsonObject? periodo)
+        if (!TentarObjeto(envelope, BlocoPublico("periodo"), out JsonObject? periodo)
             || !TentarTextoOpcional(periodo, "numero", out string? numero)
             || !TentarInstante(periodo, "inicio", out DateTimeOffset inicio)
             || !TentarInstante(periodo, "fim", out DateTimeOffset fim))
@@ -54,7 +66,7 @@ internal static class ProjecaoDoCertamePublicado
             return Recusar("período de inscrição");
         }
 
-        if (!TentarObjeto(envelope, "localidade", out JsonObject? localidade)
+        if (!TentarObjeto(envelope, BlocoPublico("localidade"), out JsonObject? localidade)
             || !TentarTexto(localidade, "codigoIbge", out string codigoIbge)
             || !TentarTexto(localidade, "nome", out string localidadeNome)
             || !TentarTexto(localidade, "uf", out string uf)
@@ -68,19 +80,19 @@ internal static class ProjecaoDoCertamePublicado
             return Recusar("unidade administradora");
         }
 
-        if (!TentarObjeto(envelope, "hashesEdital", out JsonObject? hashes)
+        if (!TentarObjeto(envelope, BlocoPublico("hashesEdital"), out JsonObject? hashes)
             || !TentarIdentificador(hashes, "documentoEditalId", out Guid documentoEditalId)
             || !TentarTexto(hashes, "hashSha256", out string hashSha256))
         {
             return Recusar("documento do edital");
         }
 
-        if (!TentarIdentificadores(envelope, "ofertas", out List<Guid>? ofertas))
+        if (!TentarIdentificadores(envelope, BlocoPublico("ofertas"), out List<Guid>? ofertas))
         {
             return Recusar("ofertas");
         }
 
-        if (!TentarTextos(envelope, "modalidadesOfertadas", out List<string>? modalidades))
+        if (!TentarTextos(envelope, BlocoPublico("modalidadesOfertadas"), out List<string>? modalidades))
         {
             return Recusar("modalidades ofertadas");
         }
@@ -150,8 +162,26 @@ internal static class ProjecaoDoCertamePublicado
     /// </summary>
     private static Result<CertamePublicadoDto> Recusar(string parte) =>
         Result<CertamePublicadoDto>.Failure(new DomainError(
-            "CertamePublicado.EnvelopeInesperado",
+            CodigoEnvelopeInesperado,
             $"A configuração publicada não pôde ser lida em '{parte}' — a leitura do certame foi recusada em vez de responder parcialmente."));
+
+    /// <summary>
+    /// O nome de um bloco de topo, conferido contra a classificação de exposição
+    /// (<see cref="ClassificacaoDosBlocosDoCertame"/>) no momento em que ele é lido.
+    /// </summary>
+    /// <remarks>
+    /// A classificação sozinha só recusa o bloco NOVO — o que nasce no envelope sem categoria. Ela
+    /// não impediria ninguém de projetar aqui um bloco já classificado como INTERNO, que é a forma
+    /// mais provável de o vazamento acontecer: o bloco existe, tem categoria, e a projeção passa a
+    /// lê-lo mesmo assim, sem que verificação alguma acuse. Passar todo acesso de topo por esta
+    /// conferência transforma isso em falha dura, que qualquer teste de projeção do certame
+    /// alcança.
+    /// </remarks>
+    private static string BlocoPublico(string chave) =>
+        ClassificacaoDosBlocosDoCertame.Publicados.Contains(chave)
+            ? chave
+            : throw new InvalidOperationException(
+                $"O contrato público do certame não projeta '{chave}': o bloco não está classificado como público.");
 
     /// <summary>Par código/nome, a forma que tipo de processo e tipo de etapa compartilham.</summary>
     private static bool TentarTipoNomeado(JsonObject? objeto, [NotNullWhen(true)] out TipoCatalogadoCertameDto? tipo)
@@ -171,7 +201,7 @@ internal static class ProjecaoDoCertamePublicado
         [NotNullWhen(true)] out UnidadeAdministradoraCertameDto? unidade)
     {
         unidade = null;
-        if (!TentarObjeto(envelope, "identidadesUnidade", out JsonObject? bloco)
+        if (!TentarObjeto(envelope, BlocoPublico("identidadesUnidade"), out JsonObject? bloco)
             || !TentarObjeto(bloco, "administradora", out JsonObject? administradora)
             || !TentarTexto(administradora, "sigla", out string sigla)
             || !TentarTexto(administradora, "nome", out string nome)
@@ -191,7 +221,7 @@ internal static class ProjecaoDoCertamePublicado
     private static bool TentarVagas(JsonObject envelope, [NotNullWhen(true)] out List<QuadroDeVagasCertameDto>? vagas)
     {
         vagas = null;
-        if (!TentarArray(envelope, "vagas", out JsonArray? array))
+        if (!TentarArray(envelope, BlocoPublico("vagas"), out JsonArray? array))
         {
             return false;
         }
@@ -230,7 +260,7 @@ internal static class ProjecaoDoCertamePublicado
     private static bool TentarEtapas(JsonObject envelope, [NotNullWhen(true)] out List<EtapaCertameDto>? etapas)
     {
         etapas = null;
-        if (!TentarArray(envelope, "etapas", out JsonArray? array))
+        if (!TentarArray(envelope, BlocoPublico("etapas"), out JsonArray? array))
         {
             return false;
         }
@@ -270,7 +300,7 @@ internal static class ProjecaoDoCertamePublicado
         origemCandidatos = null;
         fases = null;
 
-        if (!TentarObjeto(envelope, "cronogramaFases", out JsonObject? bloco)
+        if (!TentarObjeto(envelope, BlocoPublico("cronogramaFases"), out JsonObject? bloco)
             || !TentarTexto(bloco, "origemCandidatos", out string origem)
             || !TentarArray(bloco, "fases", out JsonArray? array))
         {
@@ -311,7 +341,7 @@ internal static class ProjecaoDoCertamePublicado
         [NotNullWhen(true)] out List<ExigenciaDocumentalCertameDto>? exigencias)
     {
         exigencias = null;
-        if (!TentarObjeto(envelope, "documentosExigidos", out JsonObject? bloco)
+        if (!TentarObjeto(envelope, BlocoPublico("documentosExigidos"), out JsonObject? bloco)
             || !TentarArray(bloco, "exigencias", out JsonArray? array))
         {
             return false;
@@ -356,10 +386,19 @@ internal static class ProjecaoDoCertamePublicado
         // inesperada em vez de repassar, e aqui não é diferente.
         if (listaNode is null)
         {
-            return qualquer && Aceitar(out formatos, new FormatosAceitosCertameDto(true, null));
+            if (!qualquer)
+            {
+                return false;
+            }
+
+            formatos = new FormatosAceitosCertameDto(true, null);
+            return true;
         }
 
-        if (qualquer || listaNode is not JsonArray array)
+        // Lista VAZIA é a terceira forma contraditória, e não passa: "não aceita qualquer formato"
+        // sem nenhum formato ao lado publicaria uma exigência que nenhum arquivo satisfaz. O
+        // emissor nunca a produz — a lista, quando presente, tem ao menos uma entrada.
+        if (qualquer || listaNode is not JsonArray array || array.Count == 0)
         {
             return false;
         }
@@ -379,17 +418,10 @@ internal static class ProjecaoDoCertamePublicado
         return true;
     }
 
-    /// <summary>Atribui o valor e devolve <see langword="true"/>, para caber numa expressão.</summary>
-    private static bool Aceitar(out FormatosAceitosCertameDto? destino, FormatosAceitosCertameDto valor)
-    {
-        destino = valor;
-        return true;
-    }
-
     private static bool TentarAtendimento(JsonObject envelope, [NotNullWhen(true)] out AtendimentoCertameDto? atendimento)
     {
         atendimento = null;
-        if (!TentarObjeto(envelope, "atendimento", out JsonObject? bloco)
+        if (!TentarObjeto(envelope, BlocoPublico("atendimento"), out JsonObject? bloco)
             || !TentarParesNomeados(bloco, "condicoes", "condicaoCodigo", "condicaoNome", out List<CondicaoAtendimentoCertameDto>? condicoes)
             || !TentarParesNomeados(bloco, "tiposDeficiencia", "tipoDeficienciaCodigo", "tipoDeficienciaNome", out List<CondicaoAtendimentoCertameDto>? tipos)
             || !TentarArray(bloco, "recursos", out JsonArray? recursosArray))
@@ -450,7 +482,7 @@ internal static class ProjecaoDoCertamePublicado
     private static bool TentarTaxaInscricao(JsonObject envelope, out TaxaInscricaoCertameDto? taxa)
     {
         taxa = null;
-        if (!TentarObjeto(envelope, "taxaInscricao", out JsonObject? bloco)
+        if (!TentarObjeto(envelope, BlocoPublico("taxaInscricao"), out JsonObject? bloco)
             || !TentarBooleano(bloco, "presente", out bool presente))
         {
             return false;
@@ -479,7 +511,7 @@ internal static class ProjecaoDoCertamePublicado
     private static bool TentarRetificacao(JsonObject envelope, out RetificacaoCertameDto? retificacao)
     {
         retificacao = null;
-        if (!envelope.TryGetPropertyValue("retificacao", out JsonNode? node) || node is null)
+        if (!envelope.TryGetPropertyValue(BlocoPublico("retificacao"), out JsonNode? node) || node is null)
         {
             return true;
         }

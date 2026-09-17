@@ -263,6 +263,42 @@ public sealed class ObterCertamePublicadoQueryHandlerTests
             .Which.Aplicabilidade.Should().Be("Condicional");
     }
 
+    [Theory(DisplayName = "Documento congelado que não é objeto JSON é recusado, nunca estoura para o chamador")]
+    [InlineData("[]")]
+    [InlineData("\"texto\"")]
+    [InlineData("{ não é json")]
+    public async Task Handle_DocumentoCongeladoIlegivel_RecusaEmVezDeLancar(string documento)
+    {
+        // Só alcançável por linha adulterada direto no banco — mas num endereço anônimo a
+        // diferença entre recusa e exceção é a diferença entre 422 e 500.
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, documento, out Guid atoCriadorId);
+
+        Result<CertamePublicadoDto> resultado = await HandleAsync(repository, LeitorRespondendo(atoCriadorId, true), processoId);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("CertamePublicado.EnvelopeInesperado");
+    }
+
+    [Fact(DisplayName = "Lista de formatos vazia é recusada — exigência que nenhum arquivo satisfaz")]
+    public async Task Handle_ListaDeFormatosVazia_RecusaAProjecao()
+    {
+        // "não aceita qualquer formato" sem nenhum formato ao lado publicaria uma exigência
+        // impossível de cumprir. O emissor nunca produz a lista vazia.
+        string envelope = EnvelopeCompleto.Replace(
+            "\"lista\": [{\"formato\": \"PDF\", \"tamanhoMaximoBytesMax\": 5242880}]",
+            "\"lista\": []",
+            StringComparison.Ordinal);
+
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelope, out Guid atoCriadorId);
+
+        Result<CertamePublicadoDto> resultado = await HandleAsync(repository, LeitorRespondendo(atoCriadorId, true), processoId);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("CertamePublicado.EnvelopeInesperado");
+    }
+
     [Fact(DisplayName = "Formatos que dizem aceitar qualquer um E trazem lista são recusados")]
     public async Task Handle_FormatosContraditorios_RecusaAProjecao()
     {

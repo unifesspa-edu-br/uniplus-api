@@ -66,6 +66,16 @@ public sealed class CertamePublicadoController : ControllerBase
             .Send(new ObterCertamePublicadoQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
+        // Revalidação OBRIGATÓRIA, não cache proibido: o cliente pode guardar, mas precisa
+        // confirmar antes de usar. O endereço da página não muda quando o certame é retificado, de
+        // modo que uma representação já guardada na borda ou no navegador seria servida sem que
+        // ninguém consultasse a origem — e é na confirmação que o selo faz o seu trabalho.
+        //
+        // A diretiva é escrita ANTES de ramificar porque a recusa também precisa dela: sem
+        // diretiva alguma, um cache compartilhado pode atribuir frescor heurístico ao 404
+        // (RFC 9111 §4.2.2) e continuar servindo-o depois de o certame se tornar visível.
+        Response.Headers.CacheControl = "no-cache";
+
         if (resultado.IsFailure)
         {
             return resultado.ToActionResult(_mapper);
@@ -74,36 +84,10 @@ public sealed class CertamePublicadoController : ControllerBase
         CertamePublicadoDto certame = resultado.Value!;
         string etag = $"\"{certame.VersaoProjecao}:{certame.HashConfiguracao}\"";
 
-        // Revalidação OBRIGATÓRIA, não cache proibido: o cliente pode guardar, mas precisa
-        // confirmar antes de usar. O endereço da página não muda quando o certame é retificado, de
-        // modo que uma representação já guardada na borda ou no navegador seria servida sem que
-        // ninguém consultasse a origem — e é na confirmação que o selo faz o seu trabalho.
-        Response.Headers.CacheControl = "no-cache";
         Response.Headers.ETag = etag;
 
-        return EtagCoincide(ifNoneMatch, etag) ? StatusCode(StatusCodes.Status304NotModified) : Ok(certame);
-    }
-
-    /// <summary>
-    /// Compara o selo recebido com o corrente. Aceita lista separada por vírgula e o curinga, como
-    /// a especificação de requisições condicionais manda, e compara byte a byte — o selo é opaco
-    /// para o cliente, e normalizá-lo abriria espaço para dois selos distintos passarem por iguais.
-    /// </summary>
-    private static bool EtagCoincide(string? ifNoneMatch, string etagAtual)
-    {
-        if (string.IsNullOrWhiteSpace(ifNoneMatch))
-        {
-            return false;
-        }
-
-        foreach (string candidato in ifNoneMatch.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            if (candidato == "*" || string.Equals(candidato, etagAtual, StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return SeloDeEntidade.IfNoneMatchCoincide(ifNoneMatch, etag)
+            ? StatusCode(StatusCodes.Status304NotModified)
+            : Ok(certame);
     }
 }
