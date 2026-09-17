@@ -367,10 +367,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // resolve, porque só ela enxerga o cronograma. Código, e não id, porque o id da
         // fase não sobrevive à reconciliação da restauração. Etapa sem código declarado
         // continua aceita — é o formato anterior ao vínculo.
+        Dictionary<string, FaseCronograma> fasesPorCodigo = FasesPorCodigo(_cronogramaFases);
         foreach (EtapaProcesso semFase in etapas)
         {
-            if (semFase.FaseCodigo is { } codigo
-                && !_cronogramaFases.Any(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal)))
+            if (semFase.FaseCodigo is { } codigo && !fasesPorCodigo.ContainsKey(codigo))
             {
                 return Result.Failure(new DomainError(
                     "ProcessoSeletivo.EtapaSemFaseNoCronograma",
@@ -380,41 +380,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // A etapa acontece DENTRO da fase que a abriga, e é a raiz quem confere: a etapa não
         // enxerga o cronograma e a fase não enxerga as etapas, pelo mesmo motivo que só a raiz
-        // resolve o vínculo logo acima. Sem isto, o certame é publicável com uma prova marcada
-        // para antes de a fase que a contém começar, e o envelope congela a incoerência.
-        //
-        // Só compara o que os dois lados declararam. Fase sem janela não contém nada — exigir
-        // data dela por causa da etapa inventaria obrigação que o cadastro não faz —, e etapa
-        // sem janela acontece na janela da fase, que é o que a tela promete. Bordas
-        // coincidentes passam: começar junto com a fase é o caso comum.
-        foreach (EtapaProcesso etapa in etapas)
+        // resolve o vínculo logo acima. Sem isto, o certame é gravável com uma prova marcada
+        // para antes de a fase que a contém começar.
+        if (ViolacaoDaJanelaDaEtapaNaFase(etapas, fasesPorCodigo) is { } etapaForaDaFase)
         {
-            if (etapa.FaseCodigo is not { } codigoDaFase)
-            {
-                continue;
-            }
-
-            FaseCronograma? fase = _cronogramaFases
-                .FirstOrDefault(f => string.Equals(f.Codigo, codigoDaFase, StringComparison.Ordinal));
-            if (fase is null)
-            {
-                continue;
-            }
-
-            if (etapa.Inicio is { } inicioDaEtapa && fase.Inicio is { } inicioDaFase
-                && inicioDaEtapa < inicioDaFase)
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.EtapaComecaAntesDaFase",
-                    $"A etapa \"{etapa.Nome}\" começa em {inicioDaEtapa:O}, antes da fase {codigoDaFase} ({inicioDaFase:O}) — a etapa acontece dentro da fase."));
-            }
-
-            if (etapa.Fim is { } fimDaEtapa && fase.Fim is { } fimDaFase && fimDaEtapa > fimDaFase)
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.EtapaTerminaDepoisDaFase",
-                    $"A etapa \"{etapa.Nome}\" termina em {fimDaEtapa:O}, depois da fase {codigoDaFase} ({fimDaFase:O}) — a etapa acontece dentro da fase."));
-            }
+            return Result.Failure(etapaForaDaFase);
         }
 
         _etapas.Clear();
@@ -423,8 +393,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             etapa.VincularProcesso(Id);
             if (etapa.FaseCodigo is { } cod)
             {
-                etapa.VincularFase(
-                    _cronogramaFases.First(f => string.Equals(f.Codigo, cod, StringComparison.Ordinal)).Id);
+                etapa.VincularFase(fasesPorCodigo[cod].Id);
             }
 
             _etapas.Add(etapa);
@@ -1086,6 +1055,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.ValidationFailure(violacoesDaConclusao);
         }
 
+        // A etapa acontece dentro da fase que a abriga, e a fase é quem se move depois: a
+        // gravação das etapas confere a mesma coisa, mas só contra o cronograma daquele
+        // instante. Sem reconferir aqui, encolher a janela de uma fase que já hospeda uma
+        // prova datada deixa a prova pendurada fora dela — o inverso exato do caso que a
+        // gravação das etapas recusa, e por um caminho que ninguém fecha adiante. Contra o
+        // conjunto CANDIDATO, porque é ele que vai substituir o cronograma; a etapa cuja
+        // fase está saindo não entra na conta, porque ela sai junto na poda em cascata.
+        if (ViolacaoDaJanelaDaEtapaNaFase(_etapas, FasesPorCodigo(fases)) is { } etapaForaDaFase)
+        {
+            return Result.Failure(etapaForaDaFase);
+        }
+
         // Reconciliação por FaseCanonicaOrigemId — a
         // mesma chave de identidade do guard acima. Reusa a instância TRACKED existente
         // (retargetando-a via AtualizarSnapshot, preservando o Id) sempre que a fase
@@ -1198,6 +1179,98 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .Select(static r => r.Args)
             .OfType<ArgsElimNotaMinimaEtapa>()
             .Any(args => args.EtapaRef == etapaId) ?? false);
+
+    /// <summary>
+    /// As fases indexadas pelo código canônico, resolvendo a primeira quando duas o
+    /// repetem — a mesma escolha que a resolução do vínculo etapa × fase sempre fez.
+    /// </summary>
+    private static Dictionary<string, FaseCronograma> FasesPorCodigo(IEnumerable<FaseCronograma> fases)
+    {
+        Dictionary<string, FaseCronograma> porCodigo = new(StringComparer.Ordinal);
+        foreach (FaseCronograma fase in fases)
+        {
+            porCodigo.TryAdd(fase.Codigo, fase);
+        }
+
+        return porCodigo;
+    }
+
+    /// <summary>
+    /// A primeira etapa cuja janela própria não cabe na janela da fase que a abriga, ou
+    /// <see langword="null"/> quando toda etapa datada acontece dentro da fase que a hospeda.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// É a raiz quem confere, pelo mesmo motivo que só ela resolve o vínculo: a etapa não
+    /// enxerga o cronograma e a fase não enxerga as etapas. Sem esta invariante o certame é
+    /// publicável com uma prova marcada para antes de a fase que a contém começar, e o
+    /// envelope congela a incoerência.
+    /// </para>
+    /// <para>
+    /// Só compara o que os dois lados declararam. Fase sem janela não contém nada — exigir
+    /// data dela por causa da etapa inventaria obrigação que o cadastro não faz —, e etapa
+    /// sem janela acontece na janela da fase, que é o que a tela promete. Bordas coincidentes
+    /// passam: começar junto com a fase é o caso comum. A etapa que declara só um dos
+    /// extremos herda o outro da fase, e por isso o extremo declarado é conferido contra os
+    /// DOIS extremos da fase: uma prova que só diz "começa em 20 de março", numa fase que
+    /// terminou em 10, acontece inteira fora dela sem violar nenhuma das duas comparações
+    /// homônimas.
+    /// </para>
+    /// <para>
+    /// A etapa que declara uma fase ausente do conjunto é ignorada aqui: na gravação das
+    /// etapas ela já foi recusada por <c>EtapaSemFaseNoCronograma</c>, na gravação do
+    /// cronograma ela sai na poda em cascata, e na hidratação do EF não há a quem compará-la.
+    /// </para>
+    /// </remarks>
+    private static DomainError? ViolacaoDaJanelaDaEtapaNaFase(
+        IReadOnlyList<EtapaProcesso> etapas,
+        Dictionary<string, FaseCronograma> fasesPorCodigo)
+    {
+        foreach (EtapaProcesso etapa in etapas)
+        {
+            if (etapa.FaseCodigo is not { } codigoDaFase
+                || !fasesPorCodigo.TryGetValue(codigoDaFase, out FaseCronograma? fase))
+            {
+                continue;
+            }
+
+            if (etapa.Inicio is { } inicioDaEtapa)
+            {
+                if (fase.Inicio is { } inicioDaFase && inicioDaEtapa < inicioDaFase)
+                {
+                    return new DomainError(
+                        "ProcessoSeletivo.EtapaComecaAntesDaFase",
+                        $"A etapa \"{etapa.Nome}\" começa em {inicioDaEtapa:O}, antes da fase {codigoDaFase} ({inicioDaFase:O}) — a etapa acontece dentro da fase.");
+                }
+
+                if (fase.Fim is { } fimDaFaseParaOInicio && inicioDaEtapa > fimDaFaseParaOInicio)
+                {
+                    return new DomainError(
+                        "ProcessoSeletivo.EtapaForaDaJanelaDaFase",
+                        $"A etapa \"{etapa.Nome}\" começa em {inicioDaEtapa:O}, depois de a fase {codigoDaFase} ter terminado ({fimDaFaseParaOInicio:O}) — a etapa acontece dentro da fase.");
+                }
+            }
+
+            if (etapa.Fim is { } fimDaEtapa)
+            {
+                if (fase.Fim is { } fimDaFase && fimDaEtapa > fimDaFase)
+                {
+                    return new DomainError(
+                        "ProcessoSeletivo.EtapaTerminaDepoisDaFase",
+                        $"A etapa \"{etapa.Nome}\" termina em {fimDaEtapa:O}, depois da fase {codigoDaFase} ({fimDaFase:O}) — a etapa acontece dentro da fase.");
+                }
+
+                if (fase.Inicio is { } inicioDaFaseParaOFim && fimDaEtapa < inicioDaFaseParaOFim)
+                {
+                    return new DomainError(
+                        "ProcessoSeletivo.EtapaForaDaJanelaDaFase",
+                        $"A etapa \"{etapa.Nome}\" termina em {fimDaEtapa:O}, antes de a fase {codigoDaFase} ter começado ({inicioDaFaseParaOFim:O}) — a etapa acontece dentro da fase.");
+                }
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
@@ -1974,6 +2047,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase que publica resultado preliminar tem conclusão declarada e alcançável", PendenciaDaConclusaoDoCicloRecursal() is null),
         new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", PendenciaDaAncoraDoRecurso() is null),
             new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", PendenciaDoRecorteDeCompetencia() is null),
+            new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", PendenciaDaJanelaDaEtapaNaFase() is null),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
         new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
@@ -2395,8 +2469,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return pendenciaDoRecorte;
         }
 
+        // A etapa dentro da janela da fase que a abriga, pela mesma razão: as duas gravações
+        // a recusam na escrita, e o EF hidrata etapas_processo e fases_cronograma direto das
+        // linhas, sem passar por nenhuma das duas. Sem esta metade, um certame gravado antes
+        // de a invariante existir seria publicado com uma prova marcada para fora da fase que
+        // a contém — e o envelope congelaria a incoerência no que vai ao Diário Oficial.
+        if (PendenciaDaJanelaDaEtapaNaFase() is { } pendenciaDaJanelaDaEtapa)
+        {
+            return pendenciaDaJanelaDaEtapa;
+        }
+
         return null;
     }
+
+    /// <summary>
+    /// A primeira etapa fora da janela da fase que a abriga no cronograma corrente, ou
+    /// <see langword="null"/> quando toda etapa datada acontece dentro da fase que a hospeda.
+    /// </summary>
+    /// <remarks>
+    /// O gate devolve o erro; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// item do checklist. As duas metades vêm da MESMA travessia
+    /// (<see cref="ViolacaoDaJanelaDaEtapaNaFase"/>), que é a que as duas gravações chamam —
+    /// é o que mantém checklist e recusa bicondicionais.
+    /// </remarks>
+    private DomainError? PendenciaDaJanelaDaEtapaNaFase() =>
+        ViolacaoDaJanelaDaEtapaNaFase(_etapas, FasesPorCodigo(_cronogramaFases));
 
     /// <summary>
     /// A primeira violação do recorte de competência no cronograma corrente, ou

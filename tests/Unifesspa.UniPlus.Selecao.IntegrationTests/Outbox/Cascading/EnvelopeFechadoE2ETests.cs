@@ -294,6 +294,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "cronograma_conclusao_do_ciclo_recursal",
                 "cronograma_ancora_do_recurso",
                 "cronograma_recorte_de_competencia_das_bancas",
+                "cronograma_etapa_fora_da_janela_da_fase",
                 // ── PendenciaDaCascata, detalhamento por razão ──
                 "cascata_modalidade_fora_do_regime_federal",
                 "cascata_origem_ausente",
