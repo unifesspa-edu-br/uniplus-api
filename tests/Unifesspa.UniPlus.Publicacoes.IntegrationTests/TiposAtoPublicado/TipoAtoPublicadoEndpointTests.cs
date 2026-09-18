@@ -193,6 +193,15 @@ public sealed class TipoAtoPublicadoEndpointTests
             new Uri($"{Base}/{codigo}/vigente", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // E o corpo tem de continuar dizendo QUAL é o formato. Esta recusa vem de um validador
+        // que roda depois de o binding ter dado certo, e ela divide o status 400 com as recusas
+        // de leitura da requisição, que são genéricas por natureza. Cobrar só o status deixaria
+        // passar a troca da orientação específica por um "não foi possível ler o corpo" — que,
+        // além de inútil aqui, seria falso.
+        string corpo = await response.Content.ReadAsStringAsync();
+        corpo.Should().Contain("letras maiúsculas",
+            "a mensagem do validador é o que diz ao cliente como corrigir o código");
     }
 
     [Fact(DisplayName = "GET vigente com um GUID no lugar do código retorna 400")]

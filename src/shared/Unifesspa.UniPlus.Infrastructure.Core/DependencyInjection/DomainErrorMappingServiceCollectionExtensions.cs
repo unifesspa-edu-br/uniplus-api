@@ -41,18 +41,27 @@ public static class DomainErrorMappingServiceCollectionExtensions
                 registrations,
                 sp.GetRequiredService<IProblemTypeUriFactory>());
         });
-        // O envelope das recusas de binding, que o MVC responde antes de qualquer código nosso
-        // rodar. Sem isto elas saem no formato do framework — sem `code`, sem `traceId`, título
-        // em inglês e, o que é grave, com o nome completo do tipo CLR que falhou a
-        // desserialização dentro do corpo.
+        // O envelope das recusas de LEITURA da requisição, que o MVC responde antes de
+        // qualquer código nosso rodar. Sem isto elas saem no formato do framework — sem `code`,
+        // sem `traceId`, título em inglês e, o que é grave, com o nome completo do tipo CLR que
+        // falhou a desserialização dentro do corpo.
         //
-        // Registrado AQUI, e não junto de quem compõe depois, porque este é o terminal: cada
-        // `PostConfigure` seguinte captura o factory corrente como `previous` e o chama quando
-        // a falha não é dele. Instalar o terminal no primeiro registro do pipeline de erro é o
-        // que garante que ele fique na PONTA da cadeia, e não na frente dela — na frente, ele
-        // engoliria as recusas que os outros sabem traduzir melhor.
+        // Compõe, não substitui: o factory devolve `null` para tudo que não seja leitura do
+        // corpo, e a cadeia segue. É o que preserva a mensagem de um `[RegularExpression]` num
+        // parâmetro de rota — escrita por nós, dizendo ao cliente qual é o formato esperado —,
+        // que acontece DEPOIS de o binding ter dado certo e não tem nada a ver com corpo
+        // ilegível.
+        //
+        // Registrado AQUI, e não junto de quem compõe depois, porque este é o mais genérico da
+        // cadeia: cada `PostConfigure` seguinte captura o factory corrente como `previous` e o
+        // chama quando a falha não é dele. Instalar o genérico no primeiro registro do pipeline
+        // de erro é o que o mantém no FIM da cadeia, e não na frente dela.
         services.PostConfigure<ApiBehaviorOptions>(options =>
-            options.InvalidModelStateResponseFactory = RequisicaoInvalidaProblemFactory.Build);
+        {
+            Func<ActionContext, IActionResult> previous = options.InvalidModelStateResponseFactory;
+            options.InvalidModelStateResponseFactory = context =>
+                InvalidRequestProblemFactory.TryBuild(context) ?? previous(context);
+        });
 
         return services;
     }
