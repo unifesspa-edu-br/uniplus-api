@@ -100,7 +100,7 @@ public sealed class OfertasCursoController : ControllerBase
 
         if (!SortExpressionParser.TentarLer(sort, out IReadOnlyList<SortField> ordenacao, out SortExpressionError erro))
         {
-            return erro.ParaResposta();
+            return erro.ParaResposta(_mapper);
         }
 
         Result<ListarOfertasCursoResult> resultado = await _queryBus

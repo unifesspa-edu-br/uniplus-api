@@ -81,7 +81,7 @@ public sealed class CursosController : ControllerBase
 
         if (!SortExpressionParser.TentarLer(sort, out IReadOnlyList<SortField> ordenacao, out SortExpressionError erro))
         {
-            return erro.ParaResposta();
+            return erro.ParaResposta(_mapper);
         }
 
         Result<ListarCursosResult> resultado = await _queryBus

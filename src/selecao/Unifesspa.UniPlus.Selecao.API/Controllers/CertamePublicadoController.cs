@@ -136,7 +136,7 @@ public sealed class CertamePublicadoController : ControllerBase
 
         if (!SortExpressionParser.TentarLer(sort, out IReadOnlyList<SortField> ordenacao, out SortExpressionError erro))
         {
-            return erro.ParaResposta();
+            return erro.ParaResposta(_mapper);
         }
 
         Result<ListarCertamesPublicadosResult> saida = await _queryBus

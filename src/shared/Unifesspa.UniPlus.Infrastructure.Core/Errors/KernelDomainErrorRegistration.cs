@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 
@@ -61,5 +62,17 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
         new(CidadeReferenciaErrorCodes.NomeObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cidade_referencia.nome_obrigatorio", "Nome da cidade é obrigatório")),
         new(CidadeReferenciaErrorCodes.NomeCaractereNulo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cidade_referencia.nome_caractere_nulo", "Nome da cidade contém caractere nulo")),
         new(CidadeReferenciaErrorCodes.NomeTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cidade_referencia.nome_tamanho", "Nome da cidade excede o tamanho máximo")),
+
+        // Parâmetros de consulta das listagens — ConsultaErrorCodes é compartilhado por qualquer
+        // módulo que pagine com ordenação e busca (Cursos e Ofertas em Configuração, vitrine de
+        // certames em Seleção). Pelo mesmo motivo da referência de cidade acima: o registry agrega
+        // todas as IDomainErrorRegistration num dicionário único, chave por código, e registrar o
+        // mesmo código em dois módulos faz o último da ordem de DI sobrescrever o code do outro —
+        // uma listagem de Configuração passaria a responder com a taxonomia de Seleção. Registro
+        // único aqui, com taxonomia sem prefixo de módulo, porque a recusa é da FORMA do parâmetro
+        // e não tem domínio.
+        new(ConsultaErrorCodes.CampoDeOrdenacaoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.consulta.campo_de_ordenacao_invalido", "Campo de ordenação não aceito por esta listagem")),
+        new(ConsultaErrorCodes.OrdenacaoMalFormada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.consulta.ordenacao_mal_formada", "Expressão de ordenação inválida")),
+        new(ConsultaErrorCodes.BuscaMuitoLonga, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.consulta.busca_muito_longa", "Texto pesquisado excede o comprimento aceito")),
     ];
 }
