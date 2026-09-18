@@ -582,16 +582,23 @@ public sealed class EnvelopeCodecRoundTripTests
         byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
 
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
-        BancaDaEtapa original = objetiva.Bancas.Single();
-        original.Id.Should().NotBe(Guid.Empty, "pré-condição: a etapa do corpus requer banca");
+        Dictionary<string, Guid> idsOriginais = objetiva.Bancas.ToDictionary(b => b.Codigo, b => b.Id, StringComparer.Ordinal);
+        idsOriginais.Should().HaveCountGreaterThan(1, "pré-condição: a etapa do corpus requer mais de uma banca");
+        idsOriginais.Values.Should().NotContain(Guid.Empty);
 
-        // O cliente devolve a coleção que leu: instância nova, mesmo conteúdo.
-        objetiva.DefinirBancas([BancaDaEtapa.Criar(original.TipoBancaOrigemId, original.Codigo)])
+        // O cliente devolve a coleção inteira que leu: instâncias novas, mesmo conteúdo. Uma das
+        // bancas tem código acentuado em forma decomposta, então este caminho também prova que o
+        // reencontro da linha é por texto normalizado — e não por igualdade de bytes, que daria
+        // linha nova a cada gravação vinda de um cliente que normaliza diferente.
+        objetiva.DefinirBancas([.. objetiva.Bancas.Select(b => BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo))])
             .IsSuccess.Should().BeTrue();
 
-        objetiva.Bancas.Single().Id.Should().Be(original.Id,
-            "o código não mudou, e recriar a linha giraria o id — o que basta para o hash da "
-            + "publicação mudar depois de uma gravação que não mudou configuração alguma");
+        foreach (BancaDaEtapa banca in objetiva.Bancas)
+        {
+            banca.Id.Should().Be(idsOriginais[banca.Codigo],
+                "o código não mudou, e recriar a linha giraria o id — o que basta para o hash da "
+                + "publicação mudar depois de uma gravação que não mudou configuração alguma");
+        }
 
         byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
 

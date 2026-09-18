@@ -227,10 +227,16 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         reconciliada.Fim.Should().Be(congeladaOriginal.Fim);
         reconciliada.EmiteParecerIndividual.Should().Be(congeladaOriginal.EmiteParecerIndividual);
 
-        reconciliada.Produtos.Select(p => (p.AtoCodigo, p.Papel))
-            .Should().BeEquivalentTo(congeladaOriginal.Produtos.Select(p => (p.AtoCodigo, p.Papel)));
-        reconciliada.Bancas.Select(b => (b.Codigo, b.TipoBancaOrigemId))
-            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.Codigo, b.TipoBancaOrigemId)));
+        // Texto comparado sob a MESMA normalização que o envelope aplica. O operador pode
+        // declarar o acento em forma decomposta, e é a forma composta que atravessa o
+        // congelamento — o que volta do descarte é o texto canônico, não o que foi digitado.
+        // Comparar byte a byte aqui cobraria da restauração uma fidelidade que a publicação
+        // não promete, e que ela promete justamente não ter: é a normalização que faz dois
+        // operadores em sistemas diferentes produzirem o mesmo envelope.
+        reconciliada.Produtos.Select(p => (HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), p.Papel))
+            .Should().BeEquivalentTo(congeladaOriginal.Produtos.Select(p => (HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), p.Papel)));
+        reconciliada.Bancas.Select(b => (HashCanonicalComputer.NormalizeNfc(b.Codigo), b.TipoBancaOrigemId))
+            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (HashCanonicalComputer.NormalizeNfc(b.Codigo), b.TipoBancaOrigemId)));
         reconciliada.Recursos.Select(r => (r.Ancora, r.Regra.Codigo, r.Args.PrazoValor, r.ProdutoAncoraId))
             .Should().BeEquivalentTo(congeladaOriginal.Recursos
                 .Select(r => (r.Ancora, r.Regra.Codigo, r.Args.PrazoValor, r.ProdutoAncoraId)));
@@ -315,13 +321,15 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         objetivaReposta.Inicio.Should().Be(congeladaOriginal.Inicio);
         objetivaReposta.Fim.Should().Be(congeladaOriginal.Fim);
         objetivaReposta.EmiteParecerIndividual.Should().Be(congeladaOriginal.EmiteParecerIndividual);
-        objetivaReposta.Produtos.Select(p => (p.Id, p.AtoCodigo, p.Papel))
-            .Should().BeEquivalentTo(congeladaOriginal.Produtos.Select(p => (p.Id, p.AtoCodigo, p.Papel)));
+        // Sob a normalização do envelope, pela mesma razão da outra reposição: o que volta é o
+        // texto canônico, e não a forma em que o operador declarou o acento.
+        objetivaReposta.Produtos.Select(p => (p.Id, HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), p.Papel))
+            .Should().BeEquivalentTo(congeladaOriginal.Produtos.Select(p => (p.Id, HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), p.Papel)));
         // A banca volta pelo CONTEÚDO, não pela identidade: o envelope congela o tipo e o
         // código, e não o id — que a etapa refaz a cada gravação, porque o comando declara a
         // banca pelo tipo. Cobrar o id aqui seria cobrar o que a publicação não promete.
-        objetivaReposta.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo))
-            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo)));
+        objetivaReposta.Bancas.Select(b => (b.TipoBancaOrigemId, HashCanonicalComputer.NormalizeNfc(b.Codigo)))
+            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.TipoBancaOrigemId, HashCanonicalComputer.NormalizeNfc(b.Codigo))));
         // Como nas bancas, pelo CONTEÚDO: o envelope congela a janela — âncora, regra e prazos —,
         // não a linha que a guarda. O produto que a âncora aponta continua sendo cobrado, porque
         // esse id o envelope congela de fato.
