@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
+using AwesomeAssertions.Execution;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -167,6 +169,108 @@ public sealed class FronteiraDeBlocosDoCertameTests
             .Should().BeTrue();
 
         certame!.Periodo.Numero.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Todo arranjo do contrato recusa elemento nulo, em qualquer profundidade")]
+    public void TentarLerProjecao_QuandoQualquerArranjoTemElementoNulo_DeveRecusar()
+    {
+        // A família é enumerada do PRÓPRIO contrato, por reflexão, e não escrita à mão: uma lista
+        // repetida aqui envelheceria junto com a que ela deveria cobrir, e o arranjo novo passaria
+        // nos dois lugares por ausência. Arranjo de tipo de valor fica fora — nele o nulo já não
+        // desserializa.
+        List<string> caminhos = ArranjosDeReferenciaDoContrato();
+
+        caminhos.Should().NotBeEmpty("o contrato do certame é feito de arranjos");
+
+        using AssertionScope escopo = new();
+        foreach (string caminho in caminhos)
+        {
+            JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
+            SubstituirPorArranjoComNulo(documento, caminho).Should().BeTrue(
+                $"o documento de referência precisa trazer `{caminho}` para que a conferência o alcance");
+
+            ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+                .Should().BeFalse($"`{caminho}` com elemento nulo é entrada nula onde o contrato declara objeto ou texto");
+
+            certame.Should().BeNull();
+        }
+    }
+
+    /// <summary>
+    /// Caminho, em nomes de propriedade JSON, de cada arranjo de tipo de referência alcançável a
+    /// partir da raiz do contrato.
+    /// </summary>
+    private static List<string> ArranjosDeReferenciaDoContrato()
+    {
+        List<string> caminhos = [];
+        Percorrer(typeof(CertamePublicadoDto), prefixo: string.Empty, [], caminhos);
+        return caminhos;
+
+        static void Percorrer(Type tipo, string prefixo, HashSet<Type> visitados, List<string> caminhos)
+        {
+            if (!visitados.Add(tipo))
+            {
+                return;
+            }
+
+            foreach (PropertyInfo propriedade in tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                Type declarado = Nullable.GetUnderlyingType(propriedade.PropertyType) ?? propriedade.PropertyType;
+                string caminho = prefixo.Length == 0 ? NomeJson(propriedade) : $"{prefixo}.{NomeJson(propriedade)}";
+
+                if (declarado.IsGenericType && declarado.GetGenericTypeDefinition() == typeof(IReadOnlyList<>))
+                {
+                    Type elemento = declarado.GetGenericArguments()[0];
+                    if (!elemento.IsValueType)
+                    {
+                        caminhos.Add(caminho);
+                        Percorrer(elemento, $"{caminho}[]", visitados, caminhos);
+                    }
+
+                    continue;
+                }
+
+                if (declarado.Namespace == typeof(CertamePublicadoDto).Namespace)
+                {
+                    Percorrer(declarado, caminho, visitados, caminhos);
+                }
+            }
+        }
+    }
+
+    private static string NomeJson(PropertyInfo propriedade) =>
+        JsonNamingPolicy.CamelCase.ConvertName(propriedade.Name);
+
+    /// <summary>
+    /// Troca o arranjo apontado pelo caminho por <c>[null]</c>. Devolve <see langword="false"/>
+    /// quando o caminho não existe no documento de referência — o que torna o arranjo inalcançável
+    /// pela conferência, e é falha do próprio teste, não do código que ele exercita.
+    /// </summary>
+    private static bool SubstituirPorArranjoComNulo(JsonObject documento, string caminho)
+    {
+        JsonNode? atual = documento;
+
+        string[] passos = caminho.Split('.');
+        for (int i = 0; i < passos.Length; i++)
+        {
+            bool desceAoElemento = passos[i].EndsWith("[]", StringComparison.Ordinal);
+            string nome = desceAoElemento ? passos[i][..^2] : passos[i];
+
+            if (atual is not JsonObject objeto || objeto[nome] is not { } filho)
+            {
+                return false;
+            }
+
+            if (i == passos.Length - 1)
+            {
+                objeto[nome] = new JsonArray((JsonNode?)null);
+                return true;
+            }
+
+            atual = desceAoElemento ? (filho as JsonArray)?.FirstOrDefault() : filho;
+        }
+
+        return false;
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
