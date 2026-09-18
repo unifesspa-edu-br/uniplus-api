@@ -35,9 +35,23 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="HashCanonicalComputer.SerializeInstantCanonical"/>. A
 /// reordenação de chaves e a serialização byte-estável final acontecem no
 /// <see cref="IPerfilCanonico"/> — este tipo só monta o <see cref="JsonObject"/>
-/// com os valores já normalizados. A normalização NFC é responsabilidade daqui,
-/// não do perfil: o perfil serializa o nó que recebe, e uma sequência combinante
-/// que chegasse até ele produziria bytes distintos dos da forma pré-composta.
+/// com os valores já normalizados.
+/// </para>
+/// <para>
+/// <strong>Quem garante o NFC dos bytes é o perfil, não este tipo.</strong> O perfil normaliza
+/// toda string de negócio na emissão final, e é isso que fecha o caso do valor copiado por
+/// texto cru, que nunca passou por projeção nenhuma. As chamadas a <c>NormalizeNfc</c> daqui
+/// que só alimentam o valor emitido são, portanto, defesa em profundidade: removê-las não muda
+/// um byte do envelope. Ficam porque manter a projeção normalizada é propriedade declarada
+/// deste tipo, e porque um perfil futuro pode não repetir a garantia.
+/// </para>
+/// <para>
+/// A exceção, e ela é a que importa: as chamadas que alimentam <b>chave de ordenação</b>
+/// carregam peso de verdade. Ordenar acontece ANTES de serializar, sobre o texto como ele
+/// chegou, e o perfil não socorre quem já ordenou errado — dois códigos canonicamente iguais
+/// mas escritos em formas diferentes sairiam em posições diferentes do documento. Tirar a
+/// normalização de um <c>OrderBy</c> daqui reordena o envelope em silêncio, e é o corpus com um
+/// par que INVERTE de ordem entre as duas formas que faz a golden fixture recusar.
 /// </para>
 /// <para>
 /// <strong>Leitura do bloco "vagas" vs. "distribuição" (ADR-0100 item 10, issue #848/ADR-0115):</strong>
