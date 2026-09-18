@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Kernel.Results;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -72,27 +73,69 @@ public static class InvalidRequestProblemFactory
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        IReadOnlyList<string> missing = MissingFields(context.ModelState);
-        bool bodyUnreadable = HasBodyReadFailure(context.ModelState);
+        HashSet<string> bodyKeys = BodyKeys(context);
 
-        if (missing.Count == 0 && !bodyUnreadable)
+        // A ordem das três perguntas importa, e é a do afunilamento. Quando o corpo veio e não
+        // desserializa, o MVC reprova TAMBÉM o parâmetro que o receberia — então perguntar
+        // "faltou corpo?" antes de "o corpo é ilegível?" responde "faltou corpo" para um
+        // documento que chegou. O sinal de que houve documento é a entrada que aponta posição
+        // dentro dele; ela desempata.
+        bool unreadable = HasDeserializationFailure(context.ModelState);
+        IReadOnlyList<string> missing = MissingFields(context.ModelState, bodyKeys);
+        bool bodyAbsent = !unreadable && HasAbsentBody(context.ModelState, bodyKeys);
+
+        if (!unreadable && !bodyAbsent && missing.Count == 0)
         {
             return null;
         }
 
         IDomainErrorMapper mapper = context.HttpContext.RequestServices.GetRequiredService<IDomainErrorMapper>();
 
-        (string code, string detail) = missing.Count > 0
-            ? (InvalidRequestErrorCodes.MissingRequiredField, $"A requisição não declara {Enumerate(missing)}.")
-            : (InvalidRequestErrorCodes.Malformed, "A requisição não pôde ser lida: o corpo não está no formato que o contrato declara.");
+        // Nomear os campos é o que mais serve a quem chamou, então vem primeiro quando há o que
+        // nomear. Corpo ausente fica por último porque é o caso em que não há documento onde
+        // procurar campo nenhum.
+        (string code, string detail) =
+            missing.Count > 0 ? (InvalidRequestErrorCodes.MissingRequiredField, $"A requisição não declara {Enumerate(missing)}.")
+            : unreadable ? (InvalidRequestErrorCodes.Malformed, "A requisição não pôde ser lida: o corpo não está no formato que o contrato declara.")
+            : (InvalidRequestErrorCodes.MissingBody, "A requisição não traz corpo, e este recurso exige um.");
 
         return Result.Failure(new DomainError(code, detail)).ToActionResult(mapper);
     }
 
     /// <summary>
+    /// As chaves sob as quais uma falha diz respeito ao CORPO INTEIRO, e não a um campo dele: a
+    /// chave vazia, que o binder usa quando não há o que nomear, e o nome do parâmetro que o
+    /// endpoint declara vir do corpo.
+    /// </summary>
+    /// <remarks>
+    /// Sem isto, a requisição sem corpo era anunciada como "campo obrigatório não declarado",
+    /// nomeando o parâmetro da action como se fosse campo do contrato. O cliente sairia
+    /// procurando no documento um campo que falta — só que documento não houve.
+    /// </remarks>
+    private static HashSet<string> BodyKeys(ActionContext context)
+    {
+        HashSet<string> chaves = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
+
+        foreach (ParameterDescriptor parametro in context.ActionDescriptor.Parameters)
+        {
+            if (parametro.BindingInfo?.BindingSource == BindingSource.Body)
+            {
+                chaves.Add(parametro.Name);
+            }
+        }
+
+        return chaves;
+    }
+
+    private static bool HasAbsentBody(ModelStateDictionary modelState, HashSet<string> bodyKeys) =>
+        modelState.Any(entry =>
+            entry.Value is { ValidationState: ModelValidationState.Invalid, AttemptedValue: null, RawValue: null }
+            && bodyKeys.Contains(entry.Key));
+
+    /// <summary>
     /// Os nomes de campo que a recusa consegue afirmar, sem nenhum texto do framework junto.
     /// </summary>
-    private static IReadOnlyList<string> MissingFields(ModelStateDictionary modelState)
+    private static IReadOnlyList<string> MissingFields(ModelStateDictionary modelState, HashSet<string> bodyKeys)
     {
         SortedSet<string> names = new(StringComparer.Ordinal);
 
@@ -128,7 +171,7 @@ public static class InvalidRequestProblemFactory
             // FOI declarado — só não converte, e quem responde por ele é o factory anterior.
             // O que caracteriza ausência é não haver valor tentado nem valor cru: não houve o
             // que converter, porque nada veio.
-            if (!string.IsNullOrEmpty(entry.Key)
+            if (!bodyKeys.Contains(entry.Key)
                 && entry.Value.AttemptedValue is null
                 && entry.Value.RawValue is null)
             {
@@ -140,10 +183,10 @@ public static class InvalidRequestProblemFactory
     }
 
     /// <summary>
-    /// Se alguma entrada aponta posição no documento — a marca de que quem reprovou foi o
-    /// desserializador, e não um validador que rodou depois do binding.
+    /// Se alguma entrada aponta posição no documento — a marca de que HAVIA documento e quem
+    /// o reprovou foi o desserializador, e não um validador que rodou depois do binding.
     /// </summary>
-    private static bool HasBodyReadFailure(ModelStateDictionary modelState) =>
+    private static bool HasDeserializationFailure(ModelStateDictionary modelState) =>
         modelState.Any(entry =>
             entry.Value is { ValidationState: ModelValidationState.Invalid }
             && SyntheticKey.IsMatch(entry.Key));

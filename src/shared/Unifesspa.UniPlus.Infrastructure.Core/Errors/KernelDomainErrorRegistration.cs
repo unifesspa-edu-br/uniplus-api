@@ -18,6 +18,7 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
         // documento, e não do que ela pede — que nem chegou a ser lido.
         new(InvalidRequestErrorCodes.MissingRequiredField, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.campo_obrigatorio_ausente", "A requisição não declara campo obrigatório do contrato")),
         new(InvalidRequestErrorCodes.Malformed, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.malformada", "A requisição não pôde ser lida")),
+        new(InvalidRequestErrorCodes.MissingBody, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.corpo_ausente", "A requisição não traz corpo")),
 
         new("Cpf.Vazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cpf.vazio", "CPF obrigatório")),
         new("Cpf.Invalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cpf.invalido", "CPF inválido")),
