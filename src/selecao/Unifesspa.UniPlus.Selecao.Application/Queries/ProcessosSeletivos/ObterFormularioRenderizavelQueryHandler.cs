@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -92,8 +93,35 @@ public static class ObterFormularioRenderizavelQueryHandler
                 "aposentada não é reidratada."));
         }
 
-        JsonObject envelope = (JsonObject)JsonNode.Parse(versao.ConfiguracaoCongelada)!;
+        if (!TentarLerEnvelope(versao.ConfiguracaoCongelada, out JsonObject? envelope))
+        {
+            // Texto que não fecha como JSON faz JsonNode.Parse LANÇAR, e um documento que fecha
+            // sem ser objeto não sobrevive ao cast — os dois viravam 500 num endereço anônimo.
+            // São alcançáveis só por linha escrita fora do encoder, e ambos são corrupção, pelo
+            // mesmo motivo da versão ausente logo acima.
+            return Result<FormularioRenderizavelDto>.Failure(new DomainError(
+                "Snapshot.VigenteAusente",
+                $"A configuração congelada do processo {query.ProcessoSeletivoId} não é um documento legível."));
+        }
+
         return Projetar(envelope);
+    }
+
+    /// <summary>
+    /// Lê o documento congelado como objeto JSON, sem deixar passar exceção de análise.
+    /// </summary>
+    private static bool TentarLerEnvelope(string congelado, [NotNullWhen(true)] out JsonObject? envelope)
+    {
+        try
+        {
+            envelope = JsonNode.Parse(congelado) as JsonObject;
+        }
+        catch (JsonException)
+        {
+            envelope = null;
+        }
+
+        return envelope is not null;
     }
 
     /// <summary>

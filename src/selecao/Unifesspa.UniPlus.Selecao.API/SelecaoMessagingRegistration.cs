@@ -102,6 +102,10 @@ public static partial class SelecaoMessagingRegistration
             .ToPostgresqlQueue("selecao-divulgacao-certame");
         opts.ListenToPostgresqlQueue("selecao-divulgacao-certame");
 
+        // Sem regra de falha, a primeira exceção do consumo manda o envelope para a fila morta e o
+        // certame fica invisível com o ato já registrado — ver ReentregaDaDivulgacaoDoCertame.
+        opts.Policies.Add<ReentregaDaDivulgacaoDoCertame>();
+
         bool kafkaConfigured = !string.IsNullOrWhiteSpace(configuration["Kafka:BootstrapServers"]);
         if (kafkaConfigured && srClient is not null)
         {

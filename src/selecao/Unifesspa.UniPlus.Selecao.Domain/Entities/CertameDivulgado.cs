@@ -99,7 +99,10 @@ public sealed class CertameDivulgado : IIdentificavel
             VersaoProjecao = versaoProjecao,
             Nome = facetas.Nome,
             Numero = facetas.Numero,
-            ModalidadesOfertadas = facetas.ModalidadesOfertadas,
+            // Cópia: o tipo do parâmetro é só leitura, mas a instância concreta é do chamador, e
+            // uma mutação depois desta linha alteraria a coluna sem passar pela projeção — que é
+            // a divergência entre faceta e documento que a materialização existe para impedir.
+            ModalidadesOfertadas = [.. facetas.ModalidadesOfertadas],
             InscricoesDe = facetas.InscricoesDe,
             InscricoesAte = facetas.InscricoesAte,
             Certame = certame,
@@ -134,7 +137,7 @@ public sealed class CertameDivulgado : IIdentificavel
         VersaoProjecao = versaoProjecao;
         Nome = facetas.Nome;
         Numero = facetas.Numero;
-        ModalidadesOfertadas = facetas.ModalidadesOfertadas;
+        ModalidadesOfertadas = [.. facetas.ModalidadesOfertadas];
         InscricoesDe = facetas.InscricoesDe;
         InscricoesAte = facetas.InscricoesAte;
         Certame = certame;
