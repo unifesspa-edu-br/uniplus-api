@@ -224,10 +224,10 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     }
 
     /// <summary>
-    /// O código da fase é metade do vínculo; a outra é o id, e é por ele que o banco liga a
-    /// etapa à fase. Repor só o código deixava a linha dizendo duas coisas: o código da fase de
-    /// origem e o id da fase para onde a retificação a tinha movido — depois de um descarte que
-    /// relatou sucesso.
+    /// O descarte tem de devolver a etapa à fase que o envelope congelou, e não deixá-la na
+    /// que a sessão editorial criou. Com o código como única representação do vínculo isso é
+    /// consequência de repor o código — mas é justamente por ser consequência que convém
+    /// afirmá-lo: o teste vigia o efeito, e não o mecanismo que o produz.
     /// </summary>
     [Fact(DisplayName = "A etapa restaurada volta presa à fase restaurada, e não à da sessão descartada")]
     public void EtapaSobrevivente_RecuperaOVinculoComAFaseCongelada()
