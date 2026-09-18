@@ -331,14 +331,13 @@ public static class DefinirEtapasCommandHandler
         for (int i = 0; i < etapas.Count; i++)
         {
             EtapaProcessoInput input = command.Etapas[i];
-            IReadOnlyList<ProdutoDaEtapaInput> declarados = input.Produtos;
 
             // O papel desconhecido é RECUSADO, e não tratado como ausente. Ignorar a conversão
             // fazia um erro de digitação — `PRELIMINARR` por `PRELIMINAR` — virar produto sem
             // papel: a etapa deixava de publicar resultado, o recurso perdia onde ancorar, e
             // nada dizia isso a quem declarou. Mesma recusa que a fase dá um nível acima.
             List<ProdutoDaEtapa> produtosDaEtapa = [];
-            foreach (ProdutoDaEtapaInput d in declarados)
+            foreach (ProdutoDaEtapaInput d in input.Produtos)
             {
                 if (!PapelProdutoFaseCodigo.TentarConverter(d.Papel, out PapelProdutoFase? papel))
                 {
