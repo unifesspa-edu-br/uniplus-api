@@ -68,13 +68,14 @@ internal static class CorpusEnvelope
 
     private static readonly Guid TipoBancaExaminadora = new("dddd2222-0000-4000-8000-000000000001");
     private static readonly Guid TipoBancaRecursal = new("dddd2222-0000-4000-8000-000000000002");
+    private static readonly Guid TipoBancaAnulacao = new("dddd2222-0000-4000-8000-000000000003");
 
     private static Guid BancaDaObjetivaId(int ordem, int variante) =>
         new($"aaad000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
     /// <summary>
-    /// Código de ato com acento gravado em forma <b>decomposta</b> — <c>C</c> mais cedilha
-    /// combinante, <c>A</c> mais til combinante — e não na forma composta que um teclado produz.
+    /// Código de ato com acento gravado em forma <b>decomposta</b> — <c>A</c> mais acento agudo
+    /// combinante — e não na forma composta que um teclado produz.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -89,13 +90,32 @@ internal static class CorpusEnvelope
     /// golden só prova o que o corpus contém.
     /// </para>
     /// </remarks>
-    internal const string AtoResultadoAvaliacaoDecomposto = "RESULTADO_AVALIAC\u0327A\u0303O";
+    internal const string AtoAnaliseDecomposto = "RESULTADO_ANA\u0301LISE";
+
+    /// <summary>
+    /// O par de <see cref="AtoAnaliseDecomposto"/>: sem acento, e escolhido para que a ordem
+    /// entre os dois <b>vire</b> conforme o texto esteja normalizado ou não.
+    /// </summary>
+    /// <remarks>
+    /// Os dois coincidem até <c>RESULTADO_AN</c>. No caractere seguinte, a forma decomposta traz
+    /// o <c>A</c> base (U+0041) e a composta traz o <c>Á</c> inteiro (U+00C1), enquanto o par traz
+    /// <c>U</c> (U+0055) — que fica <b>entre</b> os dois. Ordenar o texto cru põe a análise antes;
+    /// ordenar o normalizado põe a anulação antes.
+    ///
+    /// É essa inversão que torna a normalização da CHAVE DE ORDENAÇÃO observável. Sem um par
+    /// assim, dois códigos acentuados quaisquer saem na mesma ordem das duas formas — porque
+    /// divergem antes de chegar ao acento — e remover a normalização da chave não muda um byte.
+    /// </remarks>
+    internal const string AtoAnulacao = "RESULTADO_ANULACAO";
 
     /// <summary>Mesmo texto do ato acentuado, na forma composta que o envelope tem de emitir.</summary>
-    internal const string AtoResultadoAvaliacaoComposto = "RESULTADO_AVALIA\u00C7\u00C3O";
+    internal const string AtoAnaliseComposto = "RESULTADO_AN\u00C1LISE";
 
     /// <summary>Código de banca acentuado, também em forma decomposta, pela mesma razão.</summary>
-    internal const string BancaRecursalDecomposta = "BANCA_RECURSAL_DE_AVALIAC\u0327A\u0303O";
+    internal const string BancaAnaliseDecomposta = "BANCA_ANA\u0301LISE";
+
+    /// <summary>Par da banca acima, pela mesma construção: a ordem entre as duas vira com a normalização.</summary>
+    internal const string BancaAnulacao = "BANCA_ANULACAO";
 
     private static Guid RecursoDaObjetivaId(int ordem, int variante) =>
         new($"aaac000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
@@ -198,20 +218,30 @@ internal static class CorpusEnvelope
         etapaObjetiva.DefinirProdutos(Ordem([
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
-            // O terceiro existe por duas razões, e nenhuma é o realismo do cenário. A primeira é
-            // o acento em forma decomposta, que faz a normalização deixar de ser identidade. A
-            // segunda é dar ao bloco de recursos uma SEGUNDA âncora preliminar de verdade: com
-            // uma só, a ordenação das janelas recursais não tinha o que ordenar, e trocar o
-            // critério não mudava um byte da fixture.
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(3, variante), AtoResultadoAvaliacaoDecomposto, PapelProdutoFase.Preliminar),
+            // Os dois últimos existem como PAR, e é o par que importa. O acento em forma
+            // decomposta faz a normalização deixar de ser identidade; a escolha do companheiro
+            // faz a ordem entre eles VIRAR conforme o texto esteja normalizado ou não — os dois
+            // coincidem até `RESULTADO_AN`, e ali o `U` fica entre o `A` base da forma decomposta
+            // e o `Á` inteiro da composta.
+            //
+            // Sem essa inversão, normalizar a chave de ordenação era indistinguível de não
+            // normalizar: dois códigos acentuados quaisquer divergem antes de chegar ao acento e
+            // saem na mesma ordem das duas formas. Com ela, remover a normalização da chave
+            // reordena o documento e a fixture recusa.
+            //
+            // De quebra, dão ao bloco de recursos uma segunda âncora preliminar de verdade.
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(3, variante), AtoAnaliseDecomposto, PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(4, variante), AtoAnulacao, PapelProdutoFase.Preliminar),
         ], permutar)).IsSuccess.Should().BeTrue();
         // A etapa requer banca: é o bloco em que o envelope congela o TIPO e o código, e não a
         // linha — o id dela muda a cada gravação, porque o comando declara a banca pelo tipo.
-        // Duas bancas, e declaradas na ordem INVERSA à que o envelope emite: com uma só, a
-        // ordenação por código não se manifestava. A segunda leva acento decomposto — o mesmo
-        // motivo do terceiro produto, aplicado ao outro campo que a canonicalização normaliza.
+        // Três bancas, declaradas fora da ordem que o envelope emite: com uma só, a ordenação
+        // por código não se manifestava. Duas delas são o mesmo par dos produtos — acento
+        // decomposto e um companheiro escolhido para que a ordem entre eles vire com a
+        // normalização —, aplicado ao outro campo que a canonicalização ordena por texto.
         etapaObjetiva.DefinirBancas(Ordem([
-            BancaDaEtapa.Reidratar(BancaDaObjetivaId(2, variante), TipoBancaRecursal, BancaRecursalDecomposta),
+            BancaDaEtapa.Reidratar(BancaDaObjetivaId(2, variante), TipoBancaRecursal, BancaAnaliseDecomposta),
+            BancaDaEtapa.Reidratar(BancaDaObjetivaId(3, variante), TipoBancaAnulacao, BancaAnulacao),
             BancaDaEtapa.Reidratar(BancaDaObjetivaId(1, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA"),
         ], permutar)).IsSuccess.Should().BeTrue();
         etapaObjetiva.DefinirRecursos([
