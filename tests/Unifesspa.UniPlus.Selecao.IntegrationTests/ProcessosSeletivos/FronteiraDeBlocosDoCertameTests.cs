@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
@@ -114,6 +115,51 @@ public sealed class FronteiraDeBlocosDoCertameTests
         resultado.IsSuccess.Should().BeTrue(
             "o contrato público precisa saber ler o envelope que o canonicalizador de fato emite — recusa: {0}",
             resultado.Error?.Message);
+    }
+
+    [Theory(DisplayName = "Documento com bloco presente mas incompleto é recusado, não servido com nulo")]
+    [InlineData("tipoProcesso", "{}")]
+    [InlineData("documentoEdital", """{"documentoEditalId":"01a0b13f-b9ed-70f4-9ff3-cfdc7503fc9b"}""")]
+    [InlineData("localidade", """{"codigoIbge":"1504208"}""")]
+    [InlineData("periodo", """{"numero":"001/2026"}""")]
+    public void TentarLerProjecao_QuandoBlocoTemMembroFaltando_DeveRecusar(string bloco, string conteudoParcial)
+    {
+        // Conferir só a presença do bloco deixa passar o bloco vazio: o desserializador constrói o
+        // registro com membros nulos, e a resposta sai 200 com campo que o contrato declara
+        // obrigatório valendo null. Descer a cada campo de cada tipo aninhado à mão duplicaria a
+        // forma do contrato e envelheceria a cada campo novo — quem recusa é a desserialização.
+        JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
+        documento[bloco] = JsonNode.Parse(conteudoParcial);
+
+        ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+            .Should().BeFalse("bloco incompleto é meia projeção, e meia projeção mente");
+
+        certame.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O documento inteiro, como a materialização o grava, é lido com sucesso")]
+    public void TentarLerProjecao_QuandoDocumentoInteiro_DeveLer()
+    {
+        // O outro lado da conferência: uma recusa severa demais tornaria toda divulgação ilegível,
+        // e o teste acima passaria com a leitura pública inteiramente quebrada.
+        ProjecaoDoCertamePublicado.TentarLerProjecao(DocumentoInteiro(), out CertamePublicadoDto? certame)
+            .Should().BeTrue();
+
+        certame.Should().NotBeNull();
+    }
+
+    /// <summary>O documento como a divulgação o grava: projetado do envelope canônico real.</summary>
+    private static string DocumentoInteiro()
+    {
+        JsonObject envelope = (JsonObject)JsonNode.Parse(
+            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+
+        Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope);
+
+        projecao.IsSuccess.Should().BeTrue(projecao.Error?.Message);
+
+        return JsonSerializer.Serialize(projecao.Value!, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
     }
 
     private static IReadOnlyCollection<string> NaoClassificados(IEnumerable<string> chaves) =>
