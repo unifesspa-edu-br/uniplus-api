@@ -109,6 +109,45 @@ public sealed class InvalidRequestProblemFactoryTests
         problema.Detail.Should().NotContain("EtapaProcessoInput");
     }
 
+    /// <summary>
+    /// Corpo ausente não é campo ausente: não adianta mandar o cliente declarar um campo quando
+    /// não chegou documento nenhum onde procurá-lo.
+    /// </summary>
+    /// <remarks>
+    /// O binder registra essa falha sob o nome do parâmetro que vem do corpo — ou sob a chave
+    /// vazia, quando não há o que nomear —, o que faz a recusa parecer um campo faltando se
+    /// nada distinguir os dois casos.
+    /// </remarks>
+    [Fact(DisplayName = "Corpo ausente tem code próprio, e não é anunciado como campo faltando")]
+    public void CorpoAusente_TemCodeProprio()
+    {
+        ActionContext contexto = Contexto();
+        contexto.ModelState.AddModelError(string.Empty, "A non-empty request body is required.");
+
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.corpo_ausente");
+        problema.Detail.Should().NotContain("campo obrigatório");
+    }
+
+    /// <summary>
+    /// Quando o corpo VEIO e não desserializa, o MVC reprova também o parâmetro que o receberia
+    /// — então a pergunta "faltou corpo?" tem de vir depois de "o corpo é ilegível?".
+    /// </summary>
+    [Fact(DisplayName = "Corpo presente e ilegível não é confundido com corpo ausente")]
+    public void CorpoIlegivel_NaoEhCorpoAusente()
+    {
+        ActionContext contexto = Contexto();
+        // As duas entradas que o MVC produz nesse caso: a do parâmetro e a da posição no
+        // documento. É a segunda que prova que documento houve.
+        contexto.ModelState.AddModelError(string.Empty, "The etapas field is required.");
+        contexto.ModelState.AddModelError("$", "'x' is an invalid start of a value.");
+
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
+    }
+
     private static ProblemDetails Executar(ActionContext contexto)
     {
         IActionResult resultado = InvalidRequestProblemFactory.TryBuild(contexto)
@@ -140,6 +179,8 @@ public sealed class InvalidRequestProblemFactoryTests
                 new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.campo_obrigatorio_ausente", "Campo obrigatório ausente")),
             new(InvalidRequestErrorCodes.Malformed,
                 new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.malformada", "Requisição malformada")),
+            new(InvalidRequestErrorCodes.MissingBody,
+                new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.corpo_ausente", "Requisição sem corpo")),
         ];
     }
 }

@@ -11,4 +11,11 @@ public static class InvalidRequestErrorCodes
 
     /// <summary>O corpo não pôde ser lido: JSON inválido, ou valor que não vira o tipo declarado.</summary>
     public const string Malformed = "Request.Malformed";
+
+    /// <summary>
+    /// O recurso exige corpo e a requisição não traz nenhum. É causa distinta de corpo
+    /// malformado — ali há documento e ele está errado; aqui não há documento —, e o cliente
+    /// corrige de forma diferente, o que é a razão de ter código próprio (ADR-0023).
+    /// </summary>
+    public const string MissingBody = "Request.MissingBody";
 }

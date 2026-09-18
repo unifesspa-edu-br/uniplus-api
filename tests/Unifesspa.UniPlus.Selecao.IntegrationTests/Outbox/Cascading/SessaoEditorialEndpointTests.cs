@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 
 using Application.DTOs;
@@ -117,6 +118,32 @@ public sealed class SessaoEditorialEndpointTests
             "o envelope de erro não expõe nome de tipo, namespace nem caminho de arquivo (ADR-0023)");
         corpo.Should().NotContain("System.",
             "nem os tipos do framework, pela mesma razão");
+    }
+
+    [Fact(DisplayName = "PUT /etapas sem corpo nenhum também responde no envelope canônico")]
+    public async Task Definir_SemCorpo_Recusa()
+    {
+        Contexto ctx = await PublicarAsync(nameof(Definir_SemCorpo_Recusa));
+
+        HttpResponseMessage abertura = await ctx.AbrirAsync("Correção do prazo");
+        abertura.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage semCorpo = await ctx.PutEtapasSemCorpoAsync(LerETag(abertura));
+
+        semCorpo.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Corpo ausente não é campo ausente, e a diferença não é sutil para quem consome: não
+        // adianta mandar o cliente declarar um campo quando não chegou documento nenhum onde
+        // procurá-lo. O binder registra essa falha sob o NOME DO PARÂMETRO que vem do corpo, o
+        // que faz a recusa parecer um campo faltando se nada distinguir os dois casos.
+        string corpo = await semCorpo.Content.ReadAsStringAsync();
+        JsonDocument problema = JsonDocument.Parse(corpo);
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.requisicao.corpo_ausente");
+        problema.RootElement.GetProperty("traceId").GetString().Should().NotBeNullOrWhiteSpace();
+
+        corpo.Should().NotContain("Unifesspa.UniPlus");
+        corpo.Should().NotContain("A non-empty request body is required",
+            "a mensagem padrão do framework é em inglês e não passa pelo catálogo de erros");
     }
 
     [Fact(DisplayName = "PUT /etapas com as três coleções presentes e NULAS é recusado com 422, não com o 400 da carga que as omite")]
@@ -601,6 +628,21 @@ public sealed class SessaoEditorialEndpointTests
                         peso = 1.0m, notaMinima = (decimal?)null, ordem = 1,
                     },
                 }),
+            };
+            AppendTestAuth(request);
+            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+            return await Client.SendAsync(request).ConfigureAwait(false);
+        }
+
+        /// <summary>Requisição sem corpo algum — o caso que o binder registra na chave vazia.</summary>
+        public async Task<HttpResponseMessage> PutEtapasSemCorpoAsync(string ifMatch)
+        {
+            using HttpRequestMessage request = new(
+                HttpMethod.Put,
+                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/etapas", UriKind.Relative))
+            {
+                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
             };
             AppendTestAuth(request);
             request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
