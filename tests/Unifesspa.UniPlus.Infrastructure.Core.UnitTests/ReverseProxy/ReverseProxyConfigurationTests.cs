@@ -24,7 +24,7 @@ public sealed class ReverseProxyConfigurationTests
     private const string RedeConfiavel = "10.42.0.0/16";
 
     [Fact]
-    public async Task Scheme_QuandoOHeaderVemDeForaDaRedeConfiavel_NaoEHonrado()
+    public async Task UseReverseProxyConfiguration_HeaderDeForaDaRedeConfiavel_NaoEHonrado()
     {
         // O caminho que importa: sem esta recusa, qualquer cliente que alcance a aplicação
         // decide o scheme das URLs que ela emite só mandando o header.
@@ -37,7 +37,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public async Task Scheme_QuandoOHeaderVemDaRedeConfiavel_EHonrado()
+    public async Task UseReverseProxyConfiguration_HeaderDaRedeConfiavel_EHonrado()
     {
         HttpContext context = await ProcessAsync(
             remoteIp: "10.42.0.7",
@@ -48,7 +48,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public async Task Scheme_QuandoNaoHaHeaderEncaminhado_PermaneceODaConexao()
+    public async Task UseReverseProxyConfiguration_SemHeaderEncaminhado_MantemOSchemeDaConexao()
     {
         HttpContext context = await ProcessAsync(
             remoteIp: "10.42.0.7",
@@ -58,7 +58,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public void Options_QuandoConfiguradas_HonramSomenteOProtocolo()
+    public void AddReverseProxyConfiguration_QuandoConfigurada_HonraSomenteOProtocolo()
     {
         ForwardedHeadersOptions options = ResolveForwardedHeaders(RedeConfiavel);
 
@@ -68,7 +68,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public void Options_QuandoConfiguradas_NaoHerdamConfiancaImplicita()
+    public void AddReverseProxyConfiguration_QuandoConfigurada_NaoHerdaConfiancaImplicita()
     {
         ForwardedHeadersOptions options = ResolveForwardedHeaders(RedeConfiavel);
 
@@ -79,7 +79,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public void Startup_ForaDeDevelopment_SemRedeConfiavel_Falha()
+    public void AddReverseProxyConfiguration_ForaDeDevelopmentSemRedeConfiavel_Falha()
     {
         Action resolver = () => ResolveOptions(Environments.Production);
 
@@ -90,7 +90,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public void Startup_EmDevelopment_SemRedeConfiavel_Sobe()
+    public void AddReverseProxyConfiguration_EmDevelopmentSemRedeConfiavel_Sobe()
     {
         Action resolver = () => ResolveOptions(Environments.Development);
 
@@ -99,7 +99,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public void Startup_ComRedeEmNotacaoInvalida_Falha()
+    public void AddReverseProxyConfiguration_ComRedeEmNotacaoInvalida_FalhaNaValidacao()
     {
         Action resolver = () => ResolveOptions(Environments.Production, "10.42.0.0");
 
@@ -108,7 +108,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public async Task Scheme_QuandoOProxyChegaComoIPv4MapeadoEmIPv6_EHonrado()
+    public async Task UseReverseProxyConfiguration_ProxyComoIPv4MapeadoEmIPv6_EHonrado()
     {
         // Socket dual-mode entrega o peer IPv4 como ::ffff:10.42.0.7. Se a comparação com a
         // rede declarada fosse por família de endereço, a rede IPv4 não casaria e a correção
@@ -121,7 +121,7 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
-    public void ForwardedHeaders_ComRedeEmNotacaoInvalida_FalhaAntesDeCompor()
+    public void AddReverseProxyConfiguration_ComRedeEmNotacaoInvalida_FalhaAntesDeComporOsHeaders()
     {
         // A composição das ForwardedHeadersOptions converte cada entrada sem filtrar, e é
         // esta validação que a autoriza a fazê-lo: compor passa por ReverseProxyOptions.Value,
