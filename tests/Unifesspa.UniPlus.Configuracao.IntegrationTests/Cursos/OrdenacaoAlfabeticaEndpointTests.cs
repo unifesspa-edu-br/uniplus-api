@@ -254,6 +254,38 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
         corpo.Should().Contain("uniplus.paginacao.cursor-invalido");
     }
 
+    /// <summary>
+    /// A recusa do cursor que falha no BINDING continua com o envelope da paginação, e não com
+    /// o genérico das cargas que não desserializam.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// As duas saem pelo mesmo gancho do MVC, e ele é uma cadeia: cada registro captura o
+    /// anterior e o chama quando a falha não é dele. O tradutor genérico é o TERMINAL — tem de
+    /// ficar na ponta, e fica porque é instalado no primeiro registro do pipeline de erro.
+    /// Instalado depois, ele passaria a ser o primeiro a responder e engoliria esta recusa, que
+    /// sabe dizer muito mais sobre a causa.
+    /// </para>
+    /// <para>
+    /// A outra recusa de cursor já coberta aqui não serve como guarda: ela nasce no handler, e
+    /// não no binding, então nem chega ao gancho. Esta força o binder a reprovar, mandando um
+    /// cursor que não decodifica.
+    /// </para>
+    /// </remarks>
+    [Fact(DisplayName = "Cursor que não decodifica é recusado pelo envelope da paginação, não pelo genérico de binding")]
+    public async Task CursorMalformado_MantemOEnvelopeDaPaginacao()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"{Cursos}?cursor=isto-nao-e-um-cursor", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().Contain("uniplus.cursor.invalido",
+            "a precedência inverteu: o tradutor genérico de binding respondeu no lugar do da paginação");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private static string Bloco() => $"ZZZ{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";

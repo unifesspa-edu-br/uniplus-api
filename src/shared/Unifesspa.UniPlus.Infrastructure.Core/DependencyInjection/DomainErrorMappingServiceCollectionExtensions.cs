@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Errors;
 
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -40,6 +41,19 @@ public static class DomainErrorMappingServiceCollectionExtensions
                 registrations,
                 sp.GetRequiredService<IProblemTypeUriFactory>());
         });
+        // O envelope das recusas de binding, que o MVC responde antes de qualquer código nosso
+        // rodar. Sem isto elas saem no formato do framework — sem `code`, sem `traceId`, título
+        // em inglês e, o que é grave, com o nome completo do tipo CLR que falhou a
+        // desserialização dentro do corpo.
+        //
+        // Registrado AQUI, e não junto de quem compõe depois, porque este é o terminal: cada
+        // `PostConfigure` seguinte captura o factory corrente como `previous` e o chama quando
+        // a falha não é dele. Instalar o terminal no primeiro registro do pipeline de erro é o
+        // que garante que ele fique na PONTA da cadeia, e não na frente dela — na frente, ele
+        // engoliria as recusas que os outros sabem traduzir melhor.
+        services.PostConfigure<ApiBehaviorOptions>(options =>
+            options.InvalidModelStateResponseFactory = RequisicaoInvalidaProblemFactory.Build);
+
         return services;
     }
 }
