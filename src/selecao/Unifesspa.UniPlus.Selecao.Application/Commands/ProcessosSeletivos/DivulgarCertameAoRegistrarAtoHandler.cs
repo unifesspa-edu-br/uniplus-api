@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -65,7 +66,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         VersaoConfiguracao versao = versoes[0];
 
         if (!registroCodecs.SabeLer(versao.SchemaVersion)
-            || JsonNode.Parse(versao.ConfiguracaoCongelada) is not JsonObject envelope)
+            || !TentarLerEnvelope(versao.ConfiguracaoCongelada, out JsonObject? envelope))
         {
             // O documento congelado existe mas não é legível pelo codec vivo. Divulgar meia
             // projeção seria pior que não divulgar — a ausência é visível e reprojetável, a
@@ -142,5 +143,27 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Lê o documento congelado como objeto JSON, sem deixar passar exceção de análise.
+    /// </summary>
+    /// <remarks>
+    /// Texto que não fecha como JSON faz <c>JsonNode.Parse</c> LANÇAR, e a exceção crua escaparia
+    /// antes da recusa nomeada logo abaixo — a fila morta receberia um <c>JsonException</c> sem o
+    /// identificador do processo, que é a única pista que alguém teria para investigar.
+    /// </remarks>
+    private static bool TentarLerEnvelope(string congelado, [NotNullWhen(true)] out JsonObject? envelope)
+    {
+        try
+        {
+            envelope = JsonNode.Parse(congelado) as JsonObject;
+        }
+        catch (JsonException)
+        {
+            envelope = null;
+        }
+
+        return envelope is not null;
     }
 }

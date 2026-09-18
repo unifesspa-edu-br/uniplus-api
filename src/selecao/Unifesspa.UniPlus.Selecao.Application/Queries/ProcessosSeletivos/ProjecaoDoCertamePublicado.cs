@@ -81,16 +81,38 @@ internal static class ProjecaoDoCertamePublicado
 
         // Um documento de formato anterior desserializa sem lançar e deixa os blocos que ele não
         // tinha como nulos. Conferir aqui é o que impede o NullReferenceException lá adiante, em
-        // quem monta a vitrine ou o corpo da resposta.
+        // quem monta a vitrine ou o corpo da resposta — e o que impede servir campo declarado
+        // obrigatório com valor nulo, que é a meia projeção que esta classe recusa. A conferência
+        // cobre TODOS os membros não-anuláveis do contrato, porque um subconjunto deles deixa o
+        // resto passar em silêncio, e desce ao ELEMENTO das coleções: um `[null]` sobrevive à
+        // conferência do bloco e estoura no primeiro `Sum`/acesso.
         return certame is not null
             && certame.Nome is not null
             && certame.VersaoProjecao is not null
             && certame.HashConfiguracao is not null
             && certame.TipoProcesso is not null
             && certame.Periodo is not null
-            && certame.ModalidadesOfertadas is not null
-            && certame.Vagas is not null;
+            && certame.Localidade is not null
+            && certame.UnidadeAdministradora is not null
+            && certame.DocumentoEdital is not null
+            && certame.OrigemCandidatos is not null
+            && SemElementoNulo(certame.ModalidadesOfertadas)
+            && SemElementoNulo(certame.Ofertas)
+            && SemElementoNulo(certame.Vagas)
+            && SemElementoNulo(certame.Etapas)
+            && SemElementoNulo(certame.CronogramaFases)
+            && SemElementoNulo(certame.DocumentosExigidos)
+            && certame.Atendimento is not null
+            && SemElementoNulo(certame.Atendimento.Condicoes)
+            && SemElementoNulo(certame.Atendimento.Recursos)
+            && SemElementoNulo(certame.Atendimento.TiposDeficiencia)
+            // O quadro de cada oferta é a única coleção aninhada que a resposta percorre.
+            && certame.Vagas.All(static v => SemElementoNulo(v.Quadro));
     }
+
+    /// <summary>A coleção existe e nenhum dos seus elementos é nulo.</summary>
+    private static bool SemElementoNulo<T>(IReadOnlyList<T>? colecao) =>
+        colecao is not null && colecao.All(static item => item is not null);
 
     /// <summary>
     /// Recusa a leitura de um documento divulgado que não é uma projeção íntegra — a mesma recusa
@@ -718,11 +740,31 @@ internal static class ProjecaoDoCertamePublicado
         return false;
     }
 
+    /// <summary>
+    /// Identificador na forma <b>exata</b> em que o envelope o congela: <c>D</c> minúsculo, e
+    /// nunca o Guid vazio.
+    /// </summary>
+    /// <remarks>
+    /// Mesma exigência do decodificador do envelope, pelo mesmo motivo do instante canônico:
+    /// aceitar chaves, maiúsculas ou o vazio tornaria a projeção mais leniente do que o
+    /// decodificador, e um identificador que o envelope recusa como malformado atravessaria a
+    /// fronteira pública — no caso do vazio, como um documento de edital ou uma oferta que o
+    /// consumidor tentaria buscar e não acharia.
+    /// </remarks>
     private static bool TentarIdentificador(JsonObject? objeto, string chave, out Guid valor)
     {
         valor = Guid.Empty;
-        return TentarTexto(objeto, chave, out string texto)
-            && Guid.TryParse(texto, CultureInfo.InvariantCulture, out valor);
+
+        if (!TentarTexto(objeto, chave, out string texto)
+            || !Guid.TryParseExact(texto, "D", out Guid lido)
+            || !string.Equals(lido.ToString(), texto, StringComparison.Ordinal)
+            || lido == Guid.Empty)
+        {
+            return false;
+        }
+
+        valor = lido;
+        return true;
     }
 
     /// <summary>

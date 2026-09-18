@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
-using System.Globalization;
-
 using Domain.Entities;
 using Domain.Interfaces;
 

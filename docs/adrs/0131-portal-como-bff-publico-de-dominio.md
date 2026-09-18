@@ -103,6 +103,8 @@ A distinção não é teórica. O registro do ato acontece por mensagem durável
 
 Por isso o critério é conjunto, e a ausência do ato não é lida como atraso: enquanto o registro não se confirma, o certame **não é divulgado**, e a recusa é estado que alguém precisa reconciliar, não pendência que o tempo resolve. O portal continua sem inventar um segundo critério de publicidade paralelo ao da [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md) — apenas deixa de presumir o que a decisão anterior não promete.
 
+> **Emenda (2026-09-17):** a [ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) manteve este critério para a **abertura** e o reverteu para a **retificação**. A visibilidade deixou de ser estado calculado a cada leitura e passou a ser uma linha materializada quando o ato se registra — a existência da linha é a publicidade. Abertura cujo ato não se confirma continua sem aparecer, porque a linha nunca nasceu. Já a retificação cujo ato é recusado **não retira o certame do ar**: a linha não avança, e ele permanece com o conteúdo anterior, que é o que tem ato. Motivo: publicação é ato público, e para emendá-la existe retificação, não supressão — retirar do ar um certame já publicado, por causa de uma emenda recusada, apagaria o que tinha publicidade legítima. As duas frases abaixo que falam em "registro do ato recusado" devem ser lidas com essa distinção: valem para a publicação original, não para a retificação.
+
 ## Consequências
 
 ### Positivas

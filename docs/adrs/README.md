@@ -163,11 +163,11 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0132](0132-armazenamento-publico-separado-para-documento-publicado.md) | Documento tornado público vive em armazenamento separado, com leitura anônima e endereço imutável | accepted | 2026-09-13 |
 | [0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) | A divulgação do certame é materializada quando o ato normativo se registra — a existência da linha é a publicidade | proposed | 2026-09-17 |
 
-> **Nota de numeração:** a sequência de `0001` a `0132` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0133+`.
+> **Nota de numeração:** a sequência de `0001` a `0133` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0134+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0132`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0133`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
