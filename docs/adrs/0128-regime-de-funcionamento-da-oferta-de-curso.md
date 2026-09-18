@@ -37,9 +37,9 @@ O risco central é de vocabulário. A `OfertaCurso` já carrega quatro domínios
 
 **Escolhida:** "Campo próprio `RegimeDeFuncionamento`, conferido contra o regime de turno".
 
-A `OfertaCurso` ganha um quinto domínio fechado, obrigatório, com dois tokens canônicos: `INTENSIVO` e `EXTENSIVO`. O parsing é por allowlist textual explícita, como o dos demais — sem `Enum.TryParse`, que aceitaria tokens numéricos e nomes PascalCase fora do contrato.
+A `OfertaCurso` ganha um quinto domínio fechado, obrigatório, com três tokens canônicos: `INTENSIVO`, `EXTENSIVO` e `ALTERNANCIA_PEDAGOGICA`. O parsing é por allowlist textual explícita, como o dos demais — sem `Enum.TryParse`, que aceitaria tokens numéricos e nomes PascalCase fora do contrato.
 
-O vocabulário é **declarado, nunca inferido**. O agregado confere as duas dimensões entre si e recusa a combinação incompatível; não promove `REGULAR` a `INTEGRAL` nem rebaixa `INTENSIVO` a `EXTENSIVO` para tornar o payload aceitável. As três combinações válidas são `EXTENSIVO`+`REGULAR`, `EXTENSIVO`+`INTEGRAL` e `INTENSIVO`+`INTEGRAL`.
+O vocabulário é **declarado, nunca inferido**. O agregado confere as duas dimensões entre si e recusa a combinação incompatível; não promove `REGULAR` a `INTEGRAL` nem rebaixa `INTENSIVO` a `EXTENSIVO` para tornar o payload aceitável. As cinco combinações válidas são `EXTENSIVO`+`REGULAR`, `EXTENSIVO`+`INTEGRAL`, `ALTERNANCIA_PEDAGOGICA`+`REGULAR`, `ALTERNANCIA_PEDAGOGICA`+`INTEGRAL` e `INTENSIVO`+`INTEGRAL`.
 
 A compatibilidade mora em um único lugar — `RegimesDeFuncionamento.RegimeDeTurnoExigido`, que responde qual regime de turno cada regime de funcionamento exige, ou `null` quando não restringe. O agregado consulta esse método, e a expressão do CHECK de banco é derivada dele: se o vocabulário crescer, a regra e o CHECK crescem juntos.
 
@@ -72,7 +72,7 @@ Esta ADR **complementa** a ADR-0126 — não a supersede nem reabre nenhum ponto
 
 ## Confirmação
 
-- Testes de domínio cobrem as três combinações válidas, a inválida, ausência, token fora do domínio e a não-derivação de erro a partir de erro.
+- Testes de domínio cobrem as cinco combinações válidas, a inválida, ausência, token fora do domínio e a não-derivação de erro a partir de erro.
 - Testes provam que a recusa não muta o agregado: nem o regime de funcionamento, nem o regime de turno, nem os turnos.
 - Dois CHECK constraints em `oferta_curso` espelham as invariantes: domínio do regime de funcionamento e compatibilidade com o regime de turno.
 - Teste de persistência prova que a coluna é `NOT NULL` sem default — omitir o regime é `23502`, não um valor presumido.

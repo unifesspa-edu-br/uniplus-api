@@ -6,14 +6,15 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// O parsing do regime de funcionamento é por allowlist textual explícita
-/// (UNI-REQ-0138): só INTENSIVO e EXTENSIVO são aceitos. A obrigatoriedade do
+/// (UNI-REQ-0138): só INTENSIVO, EXTENSIVO e ALTERNANCIA_PEDAGOGICA são aceitos. A obrigatoriedade do
 /// regime é regra da entidade, não deste mapeamento.
 /// </summary>
 public sealed class RegimesDeFuncionamentoTests
 {
-    [Theory(DisplayName = "Os dois tokens canônicos são analisados para o regime correto")]
+    [Theory(DisplayName = "Os três tokens canônicos são analisados para o regime correto")]
     [InlineData("INTENSIVO", RegimeDeFuncionamento.Intensivo)]
     [InlineData("EXTENSIVO", RegimeDeFuncionamento.Extensivo)]
+    [InlineData("ALTERNANCIA_PEDAGOGICA", RegimeDeFuncionamento.AlternanciaPedagogica)]
     public void TryAnalisar_TokenCanonico_Resolve(string token, RegimeDeFuncionamento esperado)
     {
         RegimesDeFuncionamento.TryAnalisar(token, out RegimeDeFuncionamento regime).Should().BeTrue();
@@ -55,6 +56,7 @@ public sealed class RegimesDeFuncionamentoTests
     [Theory(DisplayName = "ParaTokenCanonico é o inverso de TryAnalisar (round-trip)")]
     [InlineData(RegimeDeFuncionamento.Intensivo, "INTENSIVO")]
     [InlineData(RegimeDeFuncionamento.Extensivo, "EXTENSIVO")]
+    [InlineData(RegimeDeFuncionamento.AlternanciaPedagogica, "ALTERNANCIA_PEDAGOGICA")]
     public void ParaTokenCanonico_RoundTrip(RegimeDeFuncionamento regime, string token)
     {
         RegimesDeFuncionamento.ParaTokenCanonico(regime).Should().Be(token);
@@ -69,11 +71,11 @@ public sealed class RegimesDeFuncionamentoTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact(DisplayName = "TokensCanonicos lista exatamente os dois regimes")]
-    public void TokensCanonicos_TemDoisValores()
+    [Fact(DisplayName = "TokensCanonicos lista exatamente os três regimes")]
+    public void TokensCanonicos_TemTresValores()
     {
-        RegimesDeFuncionamento.TokensCanonicos.Should().HaveCount(2)
-            .And.Contain(["INTENSIVO", "EXTENSIVO"]);
+        RegimesDeFuncionamento.TokensCanonicos.Should().HaveCount(3)
+            .And.Contain(["INTENSIVO", "EXTENSIVO", "ALTERNANCIA_PEDAGOGICA"]);
     }
 
     [Fact(DisplayName = "INTENSIVO exige regime de turno INTEGRAL")]
@@ -84,6 +86,11 @@ public sealed class RegimesDeFuncionamentoTests
     [Fact(DisplayName = "EXTENSIVO não restringe o regime de turno")]
     public void RegimeDeTurnoExigido_Extensivo_NaoRestringe() =>
         RegimesDeFuncionamento.RegimeDeTurnoExigido(RegimeDeFuncionamento.Extensivo)
+            .Should().BeNull();
+
+    [Fact(DisplayName = "ALTERNANCIA_PEDAGOGICA não restringe o regime de turno")]
+    public void RegimeDeTurnoExigido_AlternanciaPedagogica_NaoRestringe() =>
+        RegimesDeFuncionamento.RegimeDeTurnoExigido(RegimeDeFuncionamento.AlternanciaPedagogica)
             .Should().BeNull();
 
     [Fact(DisplayName = "RegimeDeTurnoExigido do sentinela lança — não há compatibilidade sem regime")]
