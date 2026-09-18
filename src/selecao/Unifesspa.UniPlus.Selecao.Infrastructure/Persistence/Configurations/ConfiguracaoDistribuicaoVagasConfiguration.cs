@@ -18,9 +18,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeConfiguration<ConfiguracaoDistribuicaoVagas>
 {
-    private const int RegraCodigoMaxLength = 128;
-    private const int RegraVersaoMaxLength = 16;
-    private const int HashLength = 64;
 
     // Alinhado ao ReferenciaReservaDemograficaConfiguration (Configuracao) —
     // o snapshot-copy (ADR-0061) precisa caber qualquer valor aceito na
@@ -44,12 +41,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         // a regra de distribuição aplicada (codigo+versao+hash), congelada no
         // momento em que o admin configurou. EF materializa via o construtor
         // privado (constructor binding), já que o VO não expõe setters.
-        builder.OwnsOne(c => c.RegraDistribuicao, regra =>
-        {
-            regra.Property(r => r.Codigo).HasColumnName("regra_distribuicao_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
-            regra.Property(r => r.Versao).HasColumnName("regra_distribuicao_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
-            regra.Property(r => r.Hash).HasColumnName("regra_distribuicao_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
-        });
+        builder.OwnsOne(c => c.RegraDistribuicao, regra => regra.ConfigurarReferenciaRegra("regra_distribuicao"));
         builder.Navigation(c => c.RegraDistribuicao).IsRequired();
 
         // ReferenciaReservaDemograficaSnapshot — opcional (só na Lei 12.711,
@@ -67,12 +59,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
 
         // RegraAjuste (issue #848/ADR-0115) — obrigatória no ramo federal, opcional
         // no institucional (quadro fixo não reconcilia).
-        builder.OwnsOne(c => c.RegraAjuste, regraAjuste =>
-        {
-            regraAjuste.Property(r => r.Codigo).HasColumnName("regra_ajuste_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
-            regraAjuste.Property(r => r.Versao).HasColumnName("regra_ajuste_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
-            regraAjuste.Property(r => r.Hash).HasColumnName("regra_ajuste_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
-        });
+        builder.OwnsOne(c => c.RegraAjuste, regraAjuste => regraAjuste.ConfigurarReferenciaRegra("regra_ajuste"));
         builder.Navigation(c => c.RegraAjuste).IsRequired(false);
 
         // Coleção filha: entidade própria com FK para a raiz (nunca owned types).

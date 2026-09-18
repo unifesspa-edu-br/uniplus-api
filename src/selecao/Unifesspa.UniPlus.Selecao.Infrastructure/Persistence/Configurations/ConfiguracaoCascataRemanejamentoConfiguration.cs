@@ -17,9 +17,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTypeConfiguration<ConfiguracaoCascataRemanejamento>
 {
-    private const int RegraCodigoMaxLength = 128;
-    private const int RegraVersaoMaxLength = 16;
-    private const int HashLength = 64;
 
     public void Configure(EntityTypeBuilder<ConfiguracaoCascataRemanejamento> builder)
     {
@@ -29,12 +26,7 @@ internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTyp
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
 
-        builder.OwnsOne(c => c.Regra, regra =>
-        {
-            regra.Property(r => r.Codigo).HasColumnName("regra_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
-            regra.Property(r => r.Versao).HasColumnName("regra_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
-            regra.Property(r => r.Hash).HasColumnName("regra_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
-        });
+        builder.OwnsOne(c => c.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(c => c.Regra).IsRequired();
 
         builder.Property(c => c.FallbackCodigo).HasMaxLength(ConfiguracaoCascataRemanejamento.FallbackMaxLength).IsRequired();
