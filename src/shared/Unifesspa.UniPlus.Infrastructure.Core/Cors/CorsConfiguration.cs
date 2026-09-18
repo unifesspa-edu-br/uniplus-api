@@ -49,24 +49,44 @@ public static class CorsConfiguration
     //   sob retificação sairia 428 no browser — correta no servidor, inoperável na SPA.
     // - Idempotency-Replayed: diagnóstico de replay (ADR-0027); o frontend distingue
     //   "executou agora" de "resposta gravada".
+    // - Link e X-Page-Size: a navegação por cursor vive inteiramente neles. Sem expô-los, uma
+    //   aplicação de origem cruzada recebe a página e não tem como pedir a seguinte — o corpo é
+    //   um array puro, e o endereço de continuação só existe no header.
+    //
+    // Header que só um módulo emite NÃO entra aqui: esta lista é compartilhada por todos os
+    // deployables, e um nome de recurso de um módulo nela faz os outros anunciarem, no preflight,
+    // um header que nunca emitem. Quem tem header próprio o declara no seu composition root, pelo
+    // parâmetro de AddCorsConfiguration.
     private static readonly string[] DefaultExposedHeaders =
     [
         "ETag",
         "Idempotency-Replayed",
+        "Link",
+        "X-Page-Size",
     ];
 
     /// <summary>
     /// Binds <see cref="CorsOptions"/> and registers the default CORS policy.
     /// Outside Development, startup fails if <see cref="CorsOptions.AllowedOrigins"/> is empty.
     /// </summary>
+    /// <param name="exposedHeadersAdicionais">
+    /// Headers de resposta específicos da aplicação que está sendo composta, somados aos comuns.
+    /// É por aqui que um módulo declara o header que só ele emite, sem impô-lo aos demais.
+    /// </param>
     public static IServiceCollection AddCorsConfiguration(
         this IServiceCollection services,
         IConfiguration configuration,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        params string[] exposedHeadersAdicionais)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
+        ArgumentNullException.ThrowIfNull(exposedHeadersAdicionais);
+
+        string[] exposedHeaders = exposedHeadersAdicionais.Length == 0
+            ? DefaultExposedHeaders
+            : [.. DefaultExposedHeaders, .. exposedHeadersAdicionais];
 
         services.AddOptions<CorsOptions>()
             .Bind(configuration.GetSection(CorsOptions.SectionName))
@@ -83,7 +103,7 @@ public static class CorsConfiguration
                 CorsOptions opts = ourOptionsAccessor.Value;
                 frameworkOptions.AddPolicy(
                     DefaultPolicyName,
-                    builder => ConfigurePolicy(builder, opts, environment));
+                    builder => ConfigurePolicy(builder, opts, environment, exposedHeaders));
             });
 
         return services;
@@ -95,11 +115,15 @@ public static class CorsConfiguration
     public static IApplicationBuilder UseCorsConfiguration(this IApplicationBuilder app) =>
         app.UseCors(DefaultPolicyName);
 
-    private static void ConfigurePolicy(CorsPolicyBuilder builder, CorsOptions options, IHostEnvironment environment) =>
+    private static void ConfigurePolicy(
+        CorsPolicyBuilder builder,
+        CorsOptions options,
+        IHostEnvironment environment,
+        string[] exposedHeaders) =>
         builder
             .WithConfiguredOrigins(options.AllowedOrigins, environment)
             .WithConfiguredMethods(options.AllowAnyMethod, DefaultMethods)
             .WithConfiguredHeaders(options.AllowAnyHeader, DefaultHeaders)
-            .WithExposedHeaders(DefaultExposedHeaders)
+            .WithExposedHeaders(exposedHeaders)
             .WithCredentialsIfConfigured(options.AllowCredentials, hasExplicitOrigins: options.AllowedOrigins.Count > 0);
 }
