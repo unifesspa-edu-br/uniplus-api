@@ -35,18 +35,15 @@ internal static class ProjecaoDoCertamePublicado
     public const string Versao = "1";
 
     /// <summary>
-    /// Opções de serialização do documento divulgado — as MESMAS do wire.
+    /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// O documento guardado é a resposta pública, e guardá-lo com outra convenção de nomes o faria
     /// divergir do contrato que ele serve: as chaves do jsonb deixariam de casar com as do corpo, e
     /// quem fosse consultar dentro dele — que é a razão de ser jsonb, e não texto — escreveria o
     /// caminho errado. Fixar aqui evita que a convenção dependa de quem chamou o serializador.
-    /// </remarks>
-    /// <summary>
-    /// Forma do documento guardado, e a mesma usada para lê-lo de volta.
-    /// </summary>
-    /// <remarks>
+    /// </para>
     /// As duas exigências cobrem as duas formas de faltar. A de parâmetro de construtor recusa o
     /// membro <b>ausente</b> — <c>"tipoProcesso": {}</c> —; a de anotação de nulidade recusa o
     /// membro <b>presente e nulo</b> — <c>"codigo": null</c> —, que a primeira aceita porque o
@@ -86,16 +83,32 @@ internal static class ProjecaoDoCertamePublicado
         [NotNullWhen(true)] out CertamePublicadoDto? certame)
     {
         certame = null;
+        CertamePublicadoDto? lido;
 
         try
         {
-            certame = JsonSerializer.Deserialize<CertamePublicadoDto>(documentoDivulgado, OpcoesDoDocumento);
+            lido = JsonSerializer.Deserialize<CertamePublicadoDto>(documentoDivulgado, OpcoesDoDocumento);
         }
         catch (JsonException)
         {
             return false;
         }
 
+        if (!EhProjecaoIntegra(lido))
+        {
+            return false;
+        }
+
+        certame = lido;
+        return true;
+    }
+
+    /// <summary>
+    /// O documento desserializou; resta saber se o que saiu dele é uma projeção inteira desta
+    /// versão.
+    /// </summary>
+    private static bool EhProjecaoIntegra([NotNullWhen(true)] CertamePublicadoDto? certame)
+    {
         // Um documento de formato anterior desserializa sem lançar e deixa os blocos que ele não
         // tinha como nulos. Conferir aqui é o que impede o NullReferenceException lá adiante, em
         // quem monta a vitrine ou o corpo da resposta — e o que impede servir campo declarado
@@ -105,7 +118,12 @@ internal static class ProjecaoDoCertamePublicado
         // conferência do bloco e estoura no primeiro `Sum`/acesso.
         return certame is not null
             && certame.Nome is not null
-            && certame.VersaoProjecao is not null
+            // Igualdade, não presença: num deploy em fases um processo novo materializa a versão
+            // seguinte e este continua lendo a mesma linha. O documento desserializa — os campos
+            // que ele não conhece são ignorados — e a resposta sairia com a forma antiga carimbada,
+            // no corpo e no ETag, com a identidade da versão nova: um cache guardaria conteúdo
+            // incompleto sob o selo do completo.
+            && certame.VersaoProjecao == Versao
             && certame.HashConfiguracao is not null
             && certame.TipoProcesso is not null
             && certame.Periodo is not null
