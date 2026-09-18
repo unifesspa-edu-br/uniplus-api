@@ -4680,12 +4680,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _cronogramaFases.Add(fase);
         }
 
-        // As etapas voltaram antes das fases, e o vínculo de uma com a outra é por id — que a
-        // reconciliação das fases acabou de decidir. Sem refazê-lo aqui, uma etapa que a
-        // retificação moveu de fase volta com o código da fase de origem e o id da fase de
-        // destino: a linha fica dizendo duas coisas diferentes depois de um descarte que
-        // relatou sucesso. A fase é achada pelo código, que é o que o envelope congela.
-
         // Documentos exigidos (Story #554, PR #903): o bloco `documentosExigidos.exigencias`
         // do envelope agora é real (CA-09) — reconciliação por `exigenciaId` (o
         // DocumentoExigido.Id preservado por Reidratar, o segundo caso de identidade

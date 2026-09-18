@@ -35,9 +35,10 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         });
         builder.Navigation(e => e.TipoEtapa).IsRequired();
 
-        // O vínculo com a fase: o código é o que o cliente declara e o envelope congela; o
-        // id é resolvido pela raiz. Sem FK por ora — a fase é substituída por inteiro a
-        // cada gravação do cronograma, e uma FK restritiva recusaria a substituição.
+        // O vínculo com a fase é o código, e só ele: é o que o cliente declara, o que o
+        // envelope congela e o que a raiz resolve contra o cronograma quando precisa da fase.
+        // Sem FK — a fase é substituída por inteiro a cada gravação do cronograma, e uma FK
+        // restritiva recusaria a substituição.
         builder.Property(e => e.FaseCodigo)
             .HasColumnName("fase_codigo")
             .HasMaxLength(60)
