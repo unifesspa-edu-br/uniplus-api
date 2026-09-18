@@ -46,14 +46,22 @@ public sealed class InvalidRequestProblemFactoryTests
     /// esperado — capturá-la trocaria isso por "o corpo não pôde ser lido", que além de inútil
     /// seria falso, já que o binding deu certo.
     /// </remarks>
-    [Fact(DisplayName = "Valor declarado que não converte não é lido por este factory — a cadeia segue")]
-    public void ValorPresenteQueNaoConverte_Delega()
+    [Fact(DisplayName = "Valor declarado que não converte é carga malformada — não campo ausente")]
+    public void ValorPresenteQueNaoConverte_EhMalformada()
     {
-        ActionContext contexto = Contexto();
+        ActionContext contexto = Contexto(ParametroDeQuery("vigentes"));
         contexto.ModelState.SetModelValue("vigentes", rawValue: "abc", attemptedValue: "abc");
-        contexto.ModelState.AddModelError("vigentes", "The value 'abc' is not valid.");
+        // O binder guarda a EXCEÇÃO da conversão na entrada. É esse sinal que distingue
+        // "não vira o tipo" de "virou o tipo e um validador reprovou depois".
+        contexto.ModelState.TryAddModelException("vigentes", new FormatException("abc"));
 
-        InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull();
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
+        problema.Detail.Should().NotContain("abc",
+            "o envelope de erro não ecoa o valor rejeitado (ADR-0023)");
+        problema.Detail.Should().NotContain("campo obrigatório",
+            "o campo FOI declarado — mandá-lo declarar de novo é instrução que ele já cumpriu");
     }
 
     [Fact(DisplayName = "Validação que roda depois do binding não é capturada — a mensagem dela sobrevive")]
@@ -168,6 +176,27 @@ public sealed class InvalidRequestProblemFactoryTests
 
         InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
             "a chave não é de parâmetro do binder, então o sinal de ausência não vale ali");
+    }
+
+    /// <summary>
+    /// O documento JSON <c>null</c> É um corpo: o parâmetro fica nulo e a exigência implícita
+    /// reprova igual, mas o cliente enviou algo.
+    /// </summary>
+    /// <remarks>
+    /// Sem olhar o tamanho do conteúdo, as duas situações são indistinguíveis pelo
+    /// <c>ModelState</c>, e mandar acrescentar corpo a quem já mandou um é orientação que não
+    /// leva a lugar nenhum. Aqui a recusa correta é de conteúdo, não de ausência.
+    /// </remarks>
+    [Fact(DisplayName = "Corpo JSON null não é corpo ausente — o cliente enviou documento")]
+    public void CorpoJsonNull_NaoEhCorpoAusente()
+    {
+        ActionContext contexto = Contexto();
+        contexto.HttpContext.Request.ContentLength = 4;
+        contexto.ModelState.AddModelError("comando", "The comando field is required.");
+
+        InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
+            "documento houve, e quem reprovou foi a exigência implícita depois de desserializar "
+            + "— mensagem que pertence à cadeia de validação, não a este factory");
     }
 
     private static ProblemDetails Executar(ActionContext contexto)

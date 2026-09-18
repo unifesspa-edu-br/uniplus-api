@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 
 using Kernel.Results;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -81,9 +82,12 @@ public static class InvalidRequestProblemFactory
         // "faltou corpo?" antes de "o corpo é ilegível?" responde "faltou corpo" para um
         // documento que chegou. O sinal de que houve documento é a entrada que aponta posição
         // dentro dele; ela desempata.
-        bool unreadable = HasDeserializationFailure(context.ModelState);
+        bool unreadable = HasDeserializationFailure(context.ModelState)
+            || HasConversionFailure(context.ModelState, binderKeys);
         IReadOnlyList<string> missing = MissingFields(context.ModelState, binderKeys);
-        bool bodyAbsent = !unreadable && HasAbsentBody(context.ModelState, bodyKeys);
+        bool bodyAbsent = !unreadable
+            && !CarregaConteudo(context.HttpContext.Request)
+            && HasAbsentBody(context.ModelState, bodyKeys);
 
         if (!unreadable && !bodyAbsent && missing.Count == 0)
         {
@@ -144,6 +148,29 @@ public static class InvalidRequestProblemFactory
 
         return chaves;
     }
+
+    /// <summary>
+    /// Se a requisição traz documento. É o que separa "não mandou corpo" de "mandou o corpo
+    /// <c>null</c>": nos dois o parâmetro fica nulo e a exigência implícita reprova do mesmo
+    /// jeito, e só o tamanho do conteúdo distingue quem enviou algo de quem não enviou nada.
+    /// </summary>
+    private static bool CarregaConteudo(HttpRequest request) => request.ContentLength > 0;
+
+    /// <summary>
+    /// Falha de CONVERSÃO num parâmetro que o binder preenche: o valor veio e não vira o tipo
+    /// declarado.
+    /// </summary>
+    /// <remarks>
+    /// O que a distingue de uma validação que rodou depois do binding — e que este factory
+    /// deixa passar de propósito — é a exceção: o binder captura o erro de conversão e o guarda
+    /// na entrada, enquanto um atributo de validação registra só a mensagem. Sem esse sinal as
+    /// duas são indistinguíveis, porque ambas têm valor tentado.
+    /// </remarks>
+    private static bool HasConversionFailure(ModelStateDictionary modelState, HashSet<string> binderKeys) =>
+        modelState.Any(entry =>
+            entry.Value is { ValidationState: ModelValidationState.Invalid }
+            && binderKeys.Contains(entry.Key)
+            && entry.Value.Errors.Any(static error => error.Exception is not null));
 
     private static bool HasAbsentBody(ModelStateDictionary modelState, HashSet<string> bodyKeys) =>
         modelState.Any(entry =>
