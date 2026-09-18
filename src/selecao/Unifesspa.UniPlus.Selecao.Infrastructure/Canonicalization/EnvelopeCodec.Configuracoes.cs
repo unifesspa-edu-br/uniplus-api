@@ -369,8 +369,13 @@ public sealed partial class EnvelopeCodec
 
         leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente", "codigo", "versao", "hash");
 
-        string codigo = leitor.TextoNaoVazio(bloco, "codigo", "algoritmoContagemPrazo");
-        string versao = leitor.TextoNaoVazio(bloco, "versao", "algoritmoContagemPrazo");
+        // Os mesmos tetos que o leitor de referência de regra aplica em toda tripla do
+        // envelope. Esta é a única lida fora dele — a forma do bloco carrega `presente` ao
+        // lado da tripla, e aquele leitor exige exatamente codigo/versao/hash —, e sem os
+        // tetos aqui um código largo demais atravessa a leitura, recanonicaliza nos mesmos
+        // bytes e só é recusado pelo INSERT, como 22001 traduzido em 500 no meio do descarte.
+        string codigo = leitor.TextoNaoVazio(bloco, "codigo", "algoritmoContagemPrazo", LimitesDoEnvelope.RegraCodigo);
+        string versao = leitor.TextoNaoVazio(bloco, "versao", "algoritmoContagemPrazo", LimitesDoEnvelope.RegraVersao);
         string hash = leitor.TextoNaoVazio(bloco, "hash", "algoritmoContagemPrazo");
         if (leitor.Falhou)
         {

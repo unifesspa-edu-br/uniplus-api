@@ -1657,6 +1657,32 @@ public sealed class EnvelopeCodecRecusaTests
         envelope["documentosExigidos"]!["exigencias"]!.AsArray()[0]!.AsObject();
 
     /// <summary>
+    /// O código e a versão da convenção de contagem cabem nas colunas que vão recebê-los.
+    /// </summary>
+    /// <remarks>
+    /// Toda referência de regra do envelope é lida pelo leitor compartilhado, que mede
+    /// código e versão contra a largura da coluna. A convenção de contagem é a única lida
+    /// fora dele — a forma dela carrega <c>presente</c> ao lado da tripla, e o leitor
+    /// compartilhado exige exatamente <c>codigo</c>, <c>versao</c> e <c>hash</c> —, e por
+    /// isso é a única que podia atravessar a leitura com um código largo demais. O valor
+    /// recanonicaliza nos mesmos bytes, então a prova de round-trip aprova; a recusa só
+    /// chegaria no <c>INSERT</c>, como <c>22001</c> traduzido em 500 no meio do descarte.
+    /// </remarks>
+    [Theory(DisplayName = "Convenção de contagem com código ou versão maior que a coluna é recusada na leitura")]
+    [InlineData("codigo")]
+    [InlineData("versao")]
+    public void AlgoritmoContagemPrazoComCampoAcimaDaColuna_Recusa(string campo)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["algoritmoContagemPrazo"]!.AsObject()[campo] = new string('X', 200));
+
+        resultado.IsFailure.Should().BeTrue(
+            $"'{campo}' com 200 caracteres não cabe na coluna que o vai receber, e quem descobre isso tem de ser " +
+            "a leitura do envelope — não o INSERT do descarte");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    /// <summary>
     /// Os <c>args</c> da regra de recurso da única fase do corpus que a declara. Localizada
     /// pela presença do bloco, não por índice fixo: uma fase nova no corpus deslocaria o
     /// índice e faria os testes acima passarem a adulterar outra coisa.
