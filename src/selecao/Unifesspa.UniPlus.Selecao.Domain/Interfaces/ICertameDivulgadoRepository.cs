@@ -68,6 +68,11 @@ public interface ICertameDivulgadoRepository
     /// pela situação — são estes números que alimentam aquele filtro, e aplicá-lo a eles deixaria
     /// todos zerados menos um.
     /// </param>
+    /// <param name="versaoDaProjecaoServida">
+    /// Versão do documento público que quem consulta sabe servir. Linha de outra versão fica fora
+    /// da coleção inteira — da página e da contagem —, porque contá-la e não poder mostrá-la faz o
+    /// número prometer item que filtro nenhum alcança.
+    /// </param>
     Task<PaginaDaVitrine> ListarVitrineAsync(
         DateTimeOffset instanteSeForAPrimeiraPagina,
         RecorteDaVitrine recorte,
@@ -78,5 +83,6 @@ public interface ICertameDivulgadoRepository
         int limit,
         PaginationDirection direction,
         bool incluirContadores,
+        string versaoDaProjecaoServida,
         CancellationToken cancellationToken = default);
 }

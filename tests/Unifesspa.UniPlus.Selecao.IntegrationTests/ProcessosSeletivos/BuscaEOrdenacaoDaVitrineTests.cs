@@ -27,6 +27,9 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
 
+    /// <summary>Versão do documento público que a consulta sabe servir — a que os semeados gravam.</summary>
+    private const string VersaoServida = "1";
+
     private readonly ProcessoSeletivoDbFixture _fixture;
 
     public BuscaEOrdenacaoDaVitrineTests(ProcessoSeletivoDbFixture fixture)
@@ -330,7 +333,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
 
         ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(
             Agora, new RecorteDaVitrine(Busca: "sisu"), [], Limiar, null, null, 20, PaginationDirection.Next,
-            incluirContadores: true, CancellationToken.None)).Contadores!.Value;
+            incluirContadores: true, VersaoServida, CancellationToken.None)).Contadores!.Value;
 
         (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
             .Should().Be(1);
@@ -343,7 +346,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
 
         PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
-                Agora, recorte, [], Limiar, null, null, 20, PaginationDirection.Next, incluirContadores: false, CancellationToken.None);
+                Agora, recorte, [], Limiar, null, null, 20, PaginationDirection.Next, incluirContadores: false, VersaoServida, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Numero!)];
     }
@@ -360,7 +363,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, recorte, ordenacao ?? [], Limiar, afterSortKey, afterId, 20,
-                PaginationDirection.Next, incluirContadores: false, CancellationToken.None);
+                PaginationDirection.Next, incluirContadores: false, VersaoServida, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Nome)];
     }
@@ -376,7 +379,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, recorte, ordenacao ?? [], Limiar, null, null, limite,
-                PaginationDirection.Next, incluirContadores: false, CancellationToken.None);
+                PaginationDirection.Next, incluirContadores: false, VersaoServida, CancellationToken.None);
 
         return pagina.Proximo;
     }
@@ -392,7 +395,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, new RecorteDaVitrine(), ordenacao, Limiar, cursor?.SortKey, cursor?.Id, 1,
-                direcao, incluirContadores: false, CancellationToken.None);
+                direcao, incluirContadores: false, VersaoServida, CancellationToken.None);
 
         return (pagina.Itens, direcao == PaginationDirection.Prev ? pagina.Anterior : pagina.Proximo);
     }
@@ -406,7 +409,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, new RecorteDaVitrine(), [], Limiar, cursor?.SortKey, cursor?.Id, 1,
-                direcao, incluirContadores: false, CancellationToken.None);
+                direcao, incluirContadores: false, VersaoServida, CancellationToken.None);
 
         return (pagina.Itens, pagina.Anterior, pagina.Proximo);
     }

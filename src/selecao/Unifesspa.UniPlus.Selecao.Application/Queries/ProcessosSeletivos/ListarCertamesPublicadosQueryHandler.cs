@@ -77,7 +77,7 @@ public static class ListarCertamesPublicadosQueryHandler
             .ListarVitrineAsync(
                 query.Instante, query.Recorte, ordenacao.Value!, LimiarDosUltimosDias,
                 query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
-                query.IncluirContadores, cancellationToken)
+                query.IncluirContadores, ProjecaoDoCertamePublicado.Versao, cancellationToken)
             .ConfigureAwait(false);
 
         DateTimeOffset instante = pagina.InstanteEfetivo;

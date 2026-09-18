@@ -56,6 +56,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         int limit,
         PaginationDirection direction,
         bool incluirContadores,
+        string versaoDaProjecaoServida,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(recorte);
@@ -81,7 +82,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
 
         RevisaoDaColecao revisao = await RevisaoDaColecaoAsync(cancellationToken).ConfigureAwait(false);
 
-        IQueryable<CertameNaVitrine> query = Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias)
+        IQueryable<CertameNaVitrine> query = Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
             .Select(c => new CertameNaVitrine
             {
                 Id = c.Id,
@@ -105,7 +106,8 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
             .ConfigureAwait(false);
 
         ContadoresDaVitrine? contadores = incluirContadores
-            ? await ContarPorSituacaoAsync(instanteUtc, recorte, termo, limiarDosUltimosDias, cancellationToken)
+            ? await ContarPorSituacaoAsync(
+                instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida, cancellationToken)
                 .ConfigureAwait(false)
             : null;
 
@@ -120,6 +122,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         RecorteDaVitrine recorte,
         string? termo,
         TimeSpan limiarDosUltimosDias,
+        string versaoDaProjecaoServida,
         CancellationToken cancellationToken)
     {
         DateTimeOffset limiar = instanteUtc + limiarDosUltimosDias;
@@ -127,7 +130,8 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         // Os contadores alimentam o próprio filtro de situação, então correm sobre o recorte SEM
         // ela — aplicá-la deixaria todos zerados menos um. A busca e a modalidade, ao contrário,
         // entram: o número exibido promete quantos itens aquele filtro traz sobre o que está na tela.
-        var contagem = await Recortar(instanteUtc, recorte with { Situacao = null }, termo, limiarDosUltimosDias)
+        var contagem = await Recortar(
+                instanteUtc, recorte with { Situacao = null }, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
             .GroupBy(static _ => 1)
             .Select(g => new
             {
@@ -164,11 +168,17 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         DateTimeOffset instanteUtc,
         RecorteDaVitrine recorte,
         string? termo,
-        TimeSpan limiarDosUltimosDias)
+        TimeSpan limiarDosUltimosDias,
+        string versaoDaProjecaoServida)
     {
         DateTimeOffset limiar = instanteUtc + limiarDosUltimosDias;
 
-        IQueryable<CertameDivulgado> query = _context.CertamesDivulgados.AsNoTracking();
+        // Documento de outra versão não é servível por quem consulta, e a coluna espelha a versão
+        // gravada dentro do documento. Recortar por ela aqui é o que mantém a contagem e a página
+        // falando do mesmo conjunto: contar a linha que a página não pode mostrar faz o número ao
+        // lado do filtro prometer item que filtro nenhum alcança.
+        IQueryable<CertameDivulgado> query = _context.CertamesDivulgados.AsNoTracking()
+            .Where(c => c.VersaoProjecao == versaoDaProjecaoServida);
 
         query = recorte.Situacao switch
         {

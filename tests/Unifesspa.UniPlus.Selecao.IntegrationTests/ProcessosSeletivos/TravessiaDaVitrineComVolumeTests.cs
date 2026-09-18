@@ -36,6 +36,9 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
 
+    /// <summary>Versão do documento público que a consulta sabe servir — a que os semeados gravam.</summary>
+    private const string VersaoServida = "1";
+
     /// <summary>Quantos certames a vitrine tem nesta suíte.</summary>
     private const int Volume = 250;
 
@@ -261,7 +264,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, new RecorteDaVitrine(), ordenacao, Limiar, cursor?.SortKey, cursor?.Id,
-                TamanhoDaPagina, direcao, incluirContadores: false, CancellationToken.None);
+                TamanhoDaPagina, direcao, incluirContadores: false, VersaoServida, CancellationToken.None);
 
         return (pagina.Itens, pagina.Anterior, pagina.Proximo);
     }
