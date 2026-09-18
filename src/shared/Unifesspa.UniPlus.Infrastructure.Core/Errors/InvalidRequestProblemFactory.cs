@@ -32,21 +32,26 @@ using Microsoft.Extensions.DependencyInjection;
 /// </para>
 /// <para>
 /// <strong>O que este tipo NÃO responde, e por quê.</strong> Ele devolve <see langword="null"/>
-/// para tudo que não seja leitura da requisição, deixando o factory anterior da cadeia
-/// responder. É deliberado: uma falha de <c>[RegularExpression]</c> num parâmetro de rota
+/// para tudo que não seja leitura da requisição — e validação não é leitura —, deixando o
+/// factory anterior da cadeia responder. É deliberado: uma falha de <c>[RegularExpression]</c> num parâmetro de rota
 /// acontece DEPOIS de o binding ter dado certo, e a mensagem dela — escrita por nós, em pt-BR,
 /// dizendo ao cliente qual é o formato esperado — é muito melhor do que qualquer coisa que se
 /// possa dizer genericamente. Capturá-la aqui trocaria orientação útil por "o corpo não pôde
 /// ser lido", que além de inútil seria falso.
 /// </para>
 /// <para>
-/// <strong>Valor de rota ou query que não converte também fica de fora</strong>, e não por
-/// escolha: depois que o <c>ModelStateDictionary</c> normaliza a exceção do binder numa
-/// mensagem segura, uma conversão que falhou e uma validação que reprovou ficam
-/// <b>estruturalmente idênticas</b> — mesma chave, mesmo valor tentado, sem exceção guardada.
-/// Separá-las exigiria ler o texto da mensagem, que é do framework e muda quando ele quiser.
-/// Entre afirmar por heurística e não afirmar, este tipo não afirma: aquelas recusas seguem no
-/// envelope do framework, como antes desta mudança, e fechá-las pede um caminho próprio.
+/// <strong>Valor de rota ou query que não converte é respondido aqui</strong>, mas o sinal que
+/// permite afirmá-lo não vem do <c>ModelState</c>: depois que ele normaliza a exceção do binder
+/// numa mensagem segura, uma conversão que falhou e uma validação que reprovou ficam idênticas
+/// — mesma chave, mesmo valor tentado, sem exceção guardada. O que as separa é <b>quando</b> o
+/// erro entra, e isso é anotado no instante do binding por
+/// <see cref="ValueConversionTrackingModelBinderProvider"/>. Nenhuma decisão aqui depende do
+/// texto da mensagem do framework.
+/// </para>
+/// <para>
+/// A recusa de conversão só é reivindicada quando <b>toda</b> chave reprovada está anotada.
+/// Basta uma que não esteja para este tipo devolver <see langword="null"/> — essa uma reprovou
+/// por validação, e a mensagem dela vale mais do que qualquer recusa genérica.
 /// </para>
 /// </remarks>
 public static class InvalidRequestProblemFactory
@@ -98,7 +103,9 @@ public static class InvalidRequestProblemFactory
             && BodyProvablyAbsent(context.HttpContext.Request)
             && HasAbsentBody(context.ModelState, bodyKeys);
 
-        if (!unreadable && !bodyAbsent && missing.Count == 0)
+        IReadOnlyList<string> naoConvertidos = NaoConvertidos(context, binderKeys);
+
+        if (!unreadable && !bodyAbsent && missing.Count == 0 && naoConvertidos.Count == 0)
         {
             return null;
         }
@@ -111,9 +118,55 @@ public static class InvalidRequestProblemFactory
         (string code, string detail) =
             missing.Count > 0 ? (InvalidRequestErrorCodes.MissingRequiredField, $"A requisição não declara {Enumerate(missing)}.")
             : unreadable ? (InvalidRequestErrorCodes.Malformed, "A requisição não pôde ser lida: o corpo não está no formato que o contrato declara.")
+            : naoConvertidos.Count > 0 ? (InvalidRequestErrorCodes.InvalidValue, $"A requisição traz {EnumerateParameters(naoConvertidos)} com valor que não corresponde ao tipo declarado.")
             : (InvalidRequestErrorCodes.MissingBody, "A requisição não traz corpo, e este recurso exige um.");
 
         return Result.Failure(new DomainError(code, detail)).ToActionResult(mapper);
+    }
+
+    /// <summary>
+    /// Os parâmetros de rota ou query cujo valor não virou o tipo declarado — e só eles.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A anotação vem do binder, no instante da falha, e não de leitura do texto da mensagem: o
+    /// que separa conversão de validação é QUANDO o erro entra no <c>ModelState</c>, e isso não
+    /// sobrevive à normalização que o dicionário faz.
+    /// </para>
+    /// <para>
+    /// <b>Exige que toda chave reprovada esteja anotada.</b> Basta uma que não esteja para este
+    /// factory devolver nada e deixar a cadeia responder — porque essa uma reprovou por
+    /// validação, e a mensagem dela diz ao cliente qual é o formato esperado. Trocar orientação
+    /// específica por recusa genérica é regressão, e é o defeito que já apareceu ao fechar a
+    /// recusa de leitura do corpo. Na dúvida, quem responde é quem tem mais a dizer.
+    /// </para>
+    /// </remarks>
+    private static IReadOnlyList<string> NaoConvertidos(ActionContext context, HashSet<string> binderKeys)
+    {
+        IReadOnlySet<string> anotadas = ValueConversionFailures.Of(context.HttpContext);
+        if (anotadas.Count == 0)
+        {
+            return [];
+        }
+
+        SortedSet<string> nomes = new(StringComparer.Ordinal);
+
+        foreach (KeyValuePair<string, ModelStateEntry> entry in context.ModelState)
+        {
+            if (entry.Value.ValidationState != ModelValidationState.Invalid)
+            {
+                continue;
+            }
+
+            if (!anotadas.Contains(entry.Key) || !binderKeys.Contains(entry.Key))
+            {
+                return [];
+            }
+
+            nomes.Add(entry.Key);
+        }
+
+        return [.. nomes];
     }
 
     /// <summary>
@@ -281,7 +334,24 @@ public static class InvalidRequestProblemFactory
     private static string Enumerate(IReadOnlyList<string> fields) =>
         fields.Count == 1
             ? $"o campo obrigatório '{fields[0]}'"
-            : string.Create(
-                CultureInfo.InvariantCulture,
-                $"os campos obrigatórios {string.Join(", ", fields.Take(fields.Count - 1).Select(static f => $"'{f}'"))} e '{fields[^1]}'");
+            : $"os campos obrigatórios {Join(fields)}";
+
+    /// <summary>
+    /// A mesma enumeração, sem chamar o parâmetro de obrigatório.
+    /// </summary>
+    /// <remarks>
+    /// Um parâmetro de query com valor default é opcional, e anunciá-lo como obrigatório manda o
+    /// cliente procurar defeito onde não há: ele conclui que precisa passar a declará-lo, quando
+    /// o que faltava era o valor caber no tipo. A recusa de conversão nada afirma sobre
+    /// obrigatoriedade, e a frase não pode afirmar por ela.
+    /// </remarks>
+    private static string EnumerateParameters(IReadOnlyList<string> names) =>
+        names.Count == 1
+            ? $"o parâmetro '{names[0]}'"
+            : $"os parâmetros {Join(names)}";
+
+    private static string Join(IReadOnlyList<string> names) =>
+        string.Create(
+            CultureInfo.InvariantCulture,
+            $"{string.Join(", ", names.Take(names.Count - 1).Select(static f => $"'{f}'"))} e '{names[^1]}'");
 }
