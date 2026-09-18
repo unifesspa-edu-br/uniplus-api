@@ -20,7 +20,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
     private const string EscapeDoLike = "\\";
 
     /// <summary>Quantas partes o recorte da vitrine acrescenta à assinatura da ordenação.</summary>
-    private const int PartesDoRecorte = 4;
+    private const int PartesDoRecorte = 5;
 
     /// <summary>Quantas colunas a ordem canônica por urgência tem, antes do identificador.</summary>
     private const int ColunasDaOrdemCanonica = 2;
@@ -66,6 +66,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
             (InstanteDaAncora(afterSortKey, ordenacao.Count) ?? instanteSeForAPrimeiraPagina).ToUniversalTime();
 
         string? termo = NormalizacaoTextual.PrepararTermoDeBusca(recorte.Busca);
+        DateTimeOffset? revisao = await RevisaoDaColecaoAsync(cancellationToken).ConfigureAwait(false);
 
         IQueryable<CertameNaVitrine> query = Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias)
             .Select(c => new CertameNaVitrine
@@ -82,7 +83,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         OrderedKeysetPage<CertameNaVitrine> page = await OrderedKeysetCursor
             .ApplyAsync(
                 query,
-                OrdenacaoDaVitrine.Montar(ordenacao, AssinaturaDoRecorte(instanteUtc, recorte, termo)),
+                OrdenacaoDaVitrine.Montar(ordenacao, AssinaturaDoRecorte(instanteUtc, recorte, termo, revisao)),
                 afterSortKey,
                 afterId,
                 limit,
@@ -195,13 +196,30 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
     private static IReadOnlyList<string> AssinaturaDoRecorte(
         DateTimeOffset instanteUtc,
         RecorteDaVitrine recorte,
-        string? termo) =>
+        string? termo,
+        DateTimeOffset? revisao) =>
     [
         Instante(instanteUtc),
         recorte.Situacao?.ToString() ?? string.Empty,
         recorte.Modalidade ?? string.Empty,
         termo ?? string.Empty,
+        revisao is { } r ? Instante(r) : string.Empty,
     ];
+
+    /// <summary>
+    /// Instante da última mudança na coleção — nula quando não há certame divulgado.
+    /// </summary>
+    /// <remarks>
+    /// Entra na assinatura do cursor porque a âncora guarda uma POSIÇÃO, e o prazo que a define
+    /// muda: uma retificação no meio do percurso reposiciona um certame em relação à âncora, e quem
+    /// a cruza num sentido aparece duas vezes, quem cruza no outro desaparece. Com a revisão na
+    /// assinatura, a continuação sob coleção diferente é recusada e o cliente recomeça — que é o
+    /// que a ADR-0131 exige em vez de uma lista silenciosamente inconsistente.
+    /// </remarks>
+    private Task<DateTimeOffset?> RevisaoDaColecaoAsync(CancellationToken cancellationToken) =>
+        _context.CertamesDivulgados
+            .AsNoTracking()
+            .MaxAsync(c => (DateTimeOffset?)c.DivulgadoEm, cancellationToken);
 
     private static string Instante(DateTimeOffset valor) =>
         valor.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture);

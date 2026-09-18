@@ -130,6 +130,43 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await continuarSobOutroRecorte.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
 
+    [Fact(DisplayName = "Cursor emitido antes de uma retificação é recusado depois dela")]
+    public async Task ListarVitrine_QuandoAColecaoAvancaNoMeioDoPercurso_DeveRecusarAContinuacao()
+    {
+        // O prazo é a chave por que a vitrine ordena, e ele MUDA. Uma retificação no meio do
+        // percurso reposiciona um certame em relação à âncora: quem a cruza num sentido aparece
+        // duas vezes, quem cruza no outro desaparece. Prosseguir com a âncora antiga entregaria
+        // uma lista silenciosamente inconsistente — a ADR-0131 exige interromper e reiniciar.
+        (string SortKey, Guid Id)? emitido = await PrimeiraPaginaAsync(new RecorteDaVitrine(), limite: 1);
+
+        emitido.Should().NotBeNull();
+        (string SortKey, Guid Id) ancora = emitido!.Value;
+
+        // Uma divulgação avança: é o que o registro do ato de uma retificação faz.
+        await using (SelecaoDbContext mutacao = _fixture.CreateDbContext())
+        {
+            CertameDivulgado divulgado = await mutacao.CertamesDivulgados.FirstAsync(CancellationToken.None);
+            divulgado.TentarAvancar(
+                divulgado.NumeroVersao + 1,
+                Guid.CreateVersion7(),
+                new string('b', 64),
+                versaoProjecao: "1",
+                new FacetasDoCertameDivulgado(
+                    divulgado.Nome, divulgado.Numero, divulgado.ModalidadesOfertadas,
+                    divulgado.InscricoesDe, divulgado.InscricoesAte.AddDays(5)),
+                divulgado.Certame,
+                Agora.AddMinutes(1));
+
+            await mutacao.SaveChangesAsync(CancellationToken.None);
+        }
+
+        Func<Task> continuarDepoisDaMudanca = () => ListarAsync(
+            new RecorteDaVitrine(), [], ancora.SortKey, ancora.Id);
+
+        await continuarDepoisDaMudanca.Should().ThrowAsync<CursorAnchorMismatchException>(
+            "a âncora é uma posição na coleção que a emitiu, e essa coleção mudou");
+    }
+
     [Fact(DisplayName = "Cursor emitido sob uma ordenação é recusado sob outra")]
     public async Task ListarVitrine_QuandoCursorVemDeOutraOrdenacao_DeveRecusarAContinuacao()
     {

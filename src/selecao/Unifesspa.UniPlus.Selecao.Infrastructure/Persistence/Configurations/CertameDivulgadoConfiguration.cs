@@ -79,6 +79,11 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
             .IsUnique()
             .HasDatabaseName("ux_certames_divulgados_ato_criador");
 
+        // Revisão da coleção: a assinatura do cursor lê o MAIOR instante de divulgação a cada
+        // página, e sem índice isso varre a tabela numa rota anônima.
+        builder.HasIndex(c => c.DivulgadoEm)
+            .HasDatabaseName("ix_certames_divulgados_revisao");
+
         ConfigurarOrdenacaoAlfabetica(builder);
 
         // GIN é o método que serve o operador de arranjo do recorte por modalidade.
