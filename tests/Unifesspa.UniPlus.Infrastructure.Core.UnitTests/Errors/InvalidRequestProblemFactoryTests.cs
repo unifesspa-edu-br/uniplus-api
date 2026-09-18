@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Errors;
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -130,6 +131,9 @@ public sealed class InvalidRequestProblemFactoryTests
     public void CorpoAusente_TemCodeProprio()
     {
         ActionContext contexto = Contexto();
+        // Comprimento zero declarado: sem o sinal do servidor, é o único caso em que a ausência
+        // se prova só pelos cabeçalhos.
+        contexto.HttpContext.Request.ContentLength = 0;
         contexto.ModelState.AddModelError(string.Empty, "A non-empty request body is required.");
 
         ProblemDetails problema = Executar(contexto);
@@ -192,6 +196,7 @@ public sealed class InvalidRequestProblemFactoryTests
     {
         ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
         contexto.HttpContext.Request.ContentLength = 4;
+        contexto.HttpContext.Features.Set<IHttpRequestBodyDetectionFeature>(new DeteccaoDeCorpo(true));
         contexto.ModelState.AddModelError("comando", "The comando field is required.");
 
         InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
@@ -207,31 +212,56 @@ public sealed class InvalidRequestProblemFactoryTests
     /// Este é o caso ambíguo, e a regra dele é não afirmar: dizer "não mandou corpo" a quem
     /// mandou um em chunked é o mesmo erro do corpo <c>null</c>, por um caminho diferente.
     /// </remarks>
-    [Fact(DisplayName = "Corpo de tamanho não declarado não é tratado como ausente")]
-    public void CorpoDeTamanhoDesconhecido_NaoEhAusente()
+    /// <summary>
+    /// Quem sabe se cabia corpo nesta requisição é o servidor, e ele expõe isso. Deduzir dos
+    /// cabeçalhos erra em HTTP/2, que não usa codificação de transferência e manda o corpo sem
+    /// comprimento declarado.
+    /// </summary>
+    [Fact(DisplayName = "Requisição que PODE ter corpo não é tratada como ausente, mesmo sem comprimento")]
+    public void RequisicaoQuePodeTerCorpo_NaoEhAusente()
     {
         ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
         contexto.HttpContext.Request.ContentLength = null;
-        contexto.HttpContext.Request.Headers.TransferEncoding = "chunked";
+        contexto.HttpContext.Features.Set<IHttpRequestBodyDetectionFeature>(new DeteccaoDeCorpo(true));
         contexto.ModelState.AddModelError("comando", "The comando field is required.");
 
         InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
-            "sem comprimento declarado não dá para provar que não veio documento, e afirmar "
-            + "ausência que não se prova é o erro que este factory existe para não cometer");
+            "o servidor diz que cabia corpo, então não dá para afirmar que não veio documento");
     }
 
-    [Fact(DisplayName = "Requisição sem comprimento e sem codificação de transferência não tem corpo — e aí a ausência é provável")]
-    public void SemComprimentoESemTransferEncoding_EhAusencia()
+    [Fact(DisplayName = "Requisição que não pode ter corpo é ausência demonstrada")]
+    public void RequisicaoQueNaoPodeTerCorpo_EhAusencia()
     {
         ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
         contexto.HttpContext.Request.ContentLength = null;
+        contexto.HttpContext.Features.Set<IHttpRequestBodyDetectionFeature>(new DeteccaoDeCorpo(false));
         contexto.ModelState.AddModelError("comando", "The comando field is required.");
 
         ProblemDetails problema = Executar(contexto);
 
-        // É a regra do próprio HTTP: sem comprimento e sem codificação de transferência, não há
-        // corpo. Aqui a ausência não é suposição, é o que o protocolo diz.
         problema.Extensions["code"].Should().Be("uniplus.requisicao.corpo_ausente");
+    }
+
+    /// <summary>
+    /// Parâmetro exposto com nome diferente do declarado aparece no <c>ModelState</c> pelo nome
+    /// EXPOSTO. Comparar pelo declarado não encontra a entrada, e a recusa escapa em silêncio.
+    /// </summary>
+    [Fact(DisplayName = "Parâmetro com nome de binding próprio é reconhecido pelo nome exposto")]
+    public void ParametroComNomeDeBindingProprio_EhReconhecido()
+    {
+        ParameterDescriptor parametro = new()
+        {
+            Name = "includeTotal",
+            BindingInfo = new BindingInfo { BindingSource = BindingSource.Query, BinderModelName = "include_total" },
+        };
+
+        ActionContext contexto = Contexto(parametro);
+        contexto.ModelState.SetModelValue("include_total", rawValue: "abc", attemptedValue: "abc");
+        contexto.ModelState.TryAddModelException("include_total", new FormatException("abc"));
+
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
     }
 
     private static ProblemDetails Executar(ActionContext contexto)
@@ -266,6 +296,12 @@ public sealed class InvalidRequestProblemFactoryTests
 
         DefaultHttpContext http = new() { RequestServices = servicos.BuildServiceProvider() };
         return new ActionContext(http, new RouteData(), new ActionDescriptor { Parameters = parametros });
+    }
+
+    /// <summary>O sinal que o servidor dá sobre caber corpo nesta requisição.</summary>
+    private sealed class DeteccaoDeCorpo(bool podeTerCorpo) : IHttpRequestBodyDetectionFeature
+    {
+        public bool CanHaveBody => podeTerCorpo;
     }
 
     /// <summary>Só os dois códigos que este factory emite — o resto do catálogo não importa aqui.</summary>
