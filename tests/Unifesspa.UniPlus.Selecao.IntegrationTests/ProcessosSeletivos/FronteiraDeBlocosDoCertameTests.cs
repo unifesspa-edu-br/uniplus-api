@@ -169,6 +169,24 @@ public sealed class FronteiraDeBlocosDoCertameTests
         certame!.Periodo.Numero.Should().BeNull();
     }
 
+    [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
+    [InlineData("2")]
+    [InlineData("0")]
+    public void TentarLerProjecao_QuandoAVersaoNaoEADesteBinario_DeveRecusar(string outraVersao)
+    {
+        // Num deploy em fases, um processo novo materializa a versão seguinte e um processo antigo
+        // continua lendo a mesma linha. O documento desserializa — os campos que ele não conhece são
+        // ignorados —, e a resposta sairia com a forma antiga carimbada, no corpo e no ETag, com a
+        // identidade da versão nova: um cache guardaria conteúdo incompleto sob o selo do completo.
+        JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
+        documento["versaoProjecao"] = outraVersao;
+
+        ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+            .Should().BeFalse("este binário só sabe servir a projeção que ele próprio grava");
+
+        certame.Should().BeNull();
+    }
+
     [Fact(DisplayName = "O documento inteiro, como a materialização o grava, é lido com sucesso")]
     public void TentarLerProjecao_QuandoDocumentoInteiro_DeveLer()
     {
