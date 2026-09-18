@@ -137,6 +137,38 @@ public sealed class FronteiraDeBlocosDoCertameTests
         certame.Should().BeNull();
     }
 
+    [Theory(DisplayName = "Membro obrigatório presente e NULO é recusado, como o ausente")]
+    [InlineData("tipoProcesso", """{"codigo":null,"nome":"SISU"}""")]
+    [InlineData("localidade", """{"codigoIbge":"1504208","nome":null,"uf":"PA","fusoHorario":"America/Belem"}""")]
+    public void TentarLerProjecao_QuandoMembroObrigatorioENulo_DeveRecusar(string bloco, string conteudoComNulo)
+    {
+        // A exigência de parâmetro de construtor separa ausência de nulo explícito: o argumento
+        // existe, então ela aceita. Quem recusa o nulo num membro que o contrato declara
+        // não-anulável é a exigência de anotação de nulidade — e sem ela a resposta sai 200 com
+        // campo obrigatório valendo null.
+        JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
+        documento[bloco] = JsonNode.Parse(conteudoComNulo);
+
+        ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+            .Should().BeFalse();
+
+        certame.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Membro declarado anulável continua aceitando nulo")]
+    public void TentarLerProjecao_QuandoMembroAnulavelENulo_DeveAceitar()
+    {
+        // O limite da exigência: `numero` do período é opcional por contrato, e recusá-lo tornaria
+        // indivulgável todo certame cuja publicação não declara número de edital.
+        JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
+        ((JsonObject)documento["periodo"]!)["numero"] = null;
+
+        ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+            .Should().BeTrue();
+
+        certame!.Periodo.Numero.Should().BeNull();
+    }
+
     [Fact(DisplayName = "O documento inteiro, como a materialização o grava, é lido com sucesso")]
     public void TentarLerProjecao_QuandoDocumentoInteiro_DeveLer()
     {
