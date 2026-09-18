@@ -94,6 +94,29 @@ public sealed class SessaoEditorialEndpointTests
         // deixa corrigir a carga sem adivinhar.
         string corpo = await semColecoes.Content.ReadAsStringAsync();
         corpo.Should().ContainEquivalentOf("produtos");
+
+        // Esta recusa é emitida pelo MVC ANTES de existir comando, e por muito tempo saiu no
+        // envelope do framework — sem code, sem traceId, título em inglês. Como ela não passa
+        // por handler nenhum, nada da suíte de domínio a alcança: é aqui que se cobra o
+        // contrato de erro dela.
+        JsonDocument problema = JsonDocument.Parse(corpo);
+        problema.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.requisicao.campo_obrigatorio_ausente");
+        problema.RootElement.GetProperty("traceId").GetString().Should().NotBeNullOrWhiteSpace();
+        // O `type` aponta para a página do catálogo daquele code — a base é configurável (URN
+        // provisória enquanto o portal não está no ar, URI do portal depois), então o que se
+        // afirma é o que não muda: ele deriva do code, e não da RFC do status.
+        problema.RootElement.GetProperty("type").GetString()
+            .Should().EndWith("uniplus.requisicao.campo_obrigatorio_ausente");
+        problema.RootElement.GetProperty("status").GetInt32().Should().Be(400);
+
+        // E o corpo não pode entregar a estrutura interna. A mensagem do framework nomeia o
+        // tipo CLR que falhou a desserialização — namespace, camada e nome do record —, e
+        // repassá-la dava a qualquer cliente um mapa do lado de dentro.
+        corpo.Should().NotContain("Unifesspa.UniPlus",
+            "o envelope de erro não expõe nome de tipo, namespace nem caminho de arquivo (ADR-0023)");
+        corpo.Should().NotContain("System.",
+            "nem os tipos do framework, pela mesma razão");
     }
 
     [Fact(DisplayName = "PUT /etapas com as três coleções presentes e NULAS é recusado com 422, não com o 400 da carga que as omite")]

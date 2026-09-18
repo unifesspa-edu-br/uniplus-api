@@ -13,6 +13,12 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
+        // Recusas que acontecem ANTES de existir comando: a carga não desserializa, ou o
+        // modelo não passa no binding. São 400 porque o defeito é da requisição como
+        // documento, e não do que ela pede — que nem chegou a ser lido.
+        new(RequisicaoInvalidaErrorCodes.CampoObrigatorioAusente, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.campo_obrigatorio_ausente", "A requisição não declara campo obrigatório do contrato")),
+        new(RequisicaoInvalidaErrorCodes.Malformada, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.malformada", "A requisição não pôde ser lida")),
+
         new("Cpf.Vazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cpf.vazio", "CPF obrigatório")),
         new("Cpf.Invalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cpf.invalido", "CPF inválido")),
         new("Email.Vazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.email.vazio", "E-mail obrigatório")),
