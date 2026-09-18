@@ -185,12 +185,19 @@ public sealed partial class EnvelopeCodec
                 // Identidade nova, como nas bancas: o envelope não congela a do recurso porque
                 // nada a referencia, e o que a publicação promete é a janela — âncora, regra e
                 // prazos —, não a linha que a guarda.
-                recursos.Add(RecursoDaEtapa.Reidratar(
+                Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(
                     Guid.CreateVersion7(),
                     ancora,
                     regra,
                     args,
-                    ancoraId ?? Guid.Empty));
+                    ancoraId ?? Guid.Empty);
+
+                if (recurso.IsFailure)
+                {
+                    return leitor.Propagar<IReadOnlyList<EtapaProcesso>>(recurso.Error!) ?? [];
+                }
+
+                recursos.Add(recurso.Value!);
             }
 
             if (reidratada.DefinirRecursos(recursos).IsFailure)

@@ -253,7 +253,7 @@ internal static class CorpusEnvelope
                     3.0000m, UnidadePrazo.DiasUteis,
                     2.0000m, UnidadePrazo.DiasUteis,
                     1.0000m, UnidadePrazo.DiasUteis),
-                ProdutoDaObjetivaId(1, variante)),
+                ProdutoDaObjetivaId(1, variante)).Value!,
             // Segunda janela ancorada em ato, num produto DIFERENTE do primeiro — é o par que a
             // ordenação das janelas recursais precisa desempatar. Ela ordena pela chave do
             // produto âncora, não pelo id dele: com uma âncora só, trocar um critério pelo outro
@@ -262,16 +262,19 @@ internal static class CorpusEnvelope
                 RecursoDaObjetivaId(2, variante),
                 AncoraDoRecurso.AtoPublicado,
                 Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
+                // Dia útil, e não dia corrido: `UnidadePrazo.Dias` é recusado pelo domínio, e um
+                // corpus que o carregue congela no envelope uma configuração que o caminho de
+                // escrita nunca produziria.
                 new ArgsRegraPrazoRecurso(
-                    5.0000m, UnidadePrazo.Dias,
+                    5.0000m, UnidadePrazo.DiasUteis,
                     null, null, null, null),
-                ProdutoDaObjetivaId(3, variante)),
+                ProdutoDaObjetivaId(3, variante)).Value!,
             RecursoDaEtapa.Reidratar(
                 RecursoDaObjetivaId(3, variante),
                 AncoraDoRecurso.CienciaIndividual,
                 Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
                 new ArgsRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, null, null),
-                Guid.Empty),
+                Guid.Empty).Value!,
         ]).IsSuccess.Should().BeTrue();
 
         processo.DefinirEtapas(Ordem([
