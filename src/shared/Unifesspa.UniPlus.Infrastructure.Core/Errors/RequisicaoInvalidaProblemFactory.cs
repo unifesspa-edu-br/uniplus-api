@@ -23,6 +23,13 @@ using Microsoft.Extensions.DependencyInjection;
 /// Application entregues a qualquer cliente que mande uma carga incompleta.
 /// </para>
 /// <para>
+/// A recusa se divide em duas, e a separação é estrutural. <b>Ausência</b> é o campo que o
+/// contrato exige e a carga não traz — não há valor tentado nem valor cru, porque não houve o
+/// que converter. <b>Malformada</b> é todo o resto: JSON que não parseia, valor presente que
+/// não converte para o tipo declarado, parâmetro de rota fora de forma. Confundir as duas manda
+/// o cliente acrescentar um campo que ele já mandou.
+/// </para>
+/// <para>
 /// <strong>A mensagem do framework nunca é repassada.</strong> É dela que o nome do tipo vem, e
 /// repassá-la filtrando o que parece nome de tipo seria apostar no formato de um texto que não
 /// controlamos. O que se aproveita são os <b>nomes dos campos</b> — a única informação ali que
@@ -86,11 +93,28 @@ public static class RequisicaoInvalidaProblemFactory
 
         foreach (KeyValuePair<string, ModelStateEntry> entrada in modelState)
         {
+            // Entrada que casou não descreve defeito nenhum: o ModelState traz TODAS as
+            // propriedades da requisição, não só as reprovadas.
+            if (entrada.Value.ValidationState != ModelValidationState.Invalid)
+            {
+                continue;
+            }
+
             // A chave é o nome do campo quando o binder reprova o parâmetro ou a propriedade;
             // é posição no documento quando quem reprovou foi o desserializador.
+            //
+            // Reprovado não quer dizer ausente: `?vigentes=abc` também reprova, e ali o campo
+            // FOI declarado — só não converte. Chamar isso de "campo obrigatório não declarado"
+            // manda o cliente acrescentar o que ele já mandou. O que separa os dois casos é
+            // estrutural, e não o texto da mensagem: quando nada foi fornecido, não há valor
+            // tentado nem valor cru para o binder ter tentado converter.
             if (!string.IsNullOrEmpty(entrada.Key) && !ChaveSintetica.IsMatch(entrada.Key))
             {
-                nomes.Add(entrada.Key);
+                if (entrada.Value.AttemptedValue is null && entrada.Value.RawValue is null)
+                {
+                    nomes.Add(entrada.Key);
+                }
+
                 continue;
             }
 
