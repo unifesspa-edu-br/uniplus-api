@@ -1319,36 +1319,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .Where(static no => no.Tipo == TipoNo.Folha)
             .Select(static no => no.DocumentoExigido!)];
 
+        // Onde cada documento é coletado — fase do cronograma, e opcionalmente a etapa
+        // daquela fase. A conferência vive em Services.ValidadorVinculoDaExigencia porque a
+        // configuração congelada volta por um caminho próprio, que monta o mesmo grafo sem
+        // passar por aqui: guarda escrita só deste lado é guarda que o outro lado não tem.
+        if (Services.ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(folhas, _cronogramaFases, _etapas) is { } vinculoInvalido)
+        {
+            return Result.Failure(vinculoInvalido);
+        }
+
         foreach (DocumentoExigido item in folhas)
         {
-            FaseCronograma? faseDaExigencia = _cronogramaFases.FirstOrDefault(fase => fase.Id == item.ExigidoNaFaseId);
-            if (faseDaExigencia is null)
-            {
-                return Result.Failure(new DomainError(
-                    "DocumentoExigido.FaseNaoPertenceAoProcesso",
-                    $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo."));
-            }
-
-            // A etapa que coleta o documento tem de ser uma etapa DAQUELA fase: apontar
-            // uma etapa de outra fase diria que a habilitação coleta no dia da prova.
-            if (item.ExigidoNaEtapaId is { } exigidoNaEtapaId)
-            {
-                EtapaProcesso? etapaDaExigencia = _etapas.FirstOrDefault(etapa => etapa.Id == exigidoNaEtapaId);
-                if (etapaDaExigencia is null)
-                {
-                    return Result.Failure(new DomainError(
-                        "DocumentoExigido.EtapaNaoPertenceAoProcesso",
-                        $"A etapa {exigidoNaEtapaId} não pertence a este processo."));
-                }
-
-                if (!string.Equals(etapaDaExigencia.FaseCodigo, faseDaExigencia.Codigo, StringComparison.Ordinal))
-                {
-                    return Result.Failure(new DomainError(
-                        "DocumentoExigido.EtapaNaoPertenceAFase",
-                        $"A etapa {exigidoNaEtapaId} não acontece na fase {faseDaExigencia.Codigo}."));
-                }
-            }
-
             // Story #554/issue #893 (PR #900): âncora de fase de IdadeMaximaEmissao — mesma
             // família de checagem estrutural de ReferenciaTemporalFatos (PR #896), mas EAGER
             // (na escrita, não na publicação): a regra vive na exigência, e a exigência já
