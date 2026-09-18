@@ -1,11 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.API.Errors;
 
-using Unifesspa.UniPlus.Application.Abstractions.Consultas;
-
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 

@@ -166,6 +166,24 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
+
+            // A divulgação é a publicidade: sem ela o formulário não é servido, porque a
+            // renderização resolve pela mesma linha que a página do certame serve. No caminho real
+            // ela nasce quando o ato normativo se confirma no registro central; aqui é semeada
+            // direto, porque o que este teste exercita é a projeção, não a materialização.
+            await new CertameDivulgadoRepository(writeContext).AdicionarAsync(
+                CertameDivulgado.Criar(
+                    processoId,
+                    publicar.Value!.NumeroVersao,
+                    publicar.Value!.AtoCriadorId,
+                    new string('a', 64),
+                    versaoProjecao: "1",
+                    new FacetasDoCertameDivulgado(
+                        processo.Nome, dados.Numero, ["AC"], dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim),
+                    """{"nome":"documento"}""",
+                    TimeProvider.System.GetUtcNow()),
+                CancellationToken.None);
+
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -178,7 +196,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             await using SelecaoDbContext readContext = _fixture.CreateDbContext();
             ProcessoSeletivoRepository repository = new(readContext, TimeProvider.System);
             Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
-                new ObterFormularioRenderizavelQuery(processoId), repository, RegistroCodecs, TimeProvider.System, CancellationToken.None);
+                new ObterFormularioRenderizavelQuery(processoId), repository,
+                new CertameDivulgadoRepository(readContext), RegistroCodecs, CancellationToken.None);
             resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
             return resultado.Value!;
         }

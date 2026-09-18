@@ -50,14 +50,51 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     private static readonly IRegistroCodecsEnvelope RegistroReconhecendoVersaoCorrente =
         CriarRegistroReconhecendo(VersaoCorrenteReconhecida);
 
+    /// <summary>
+    /// Ato que confirmou a publicidade da versão servida. Único em todo o arquivo: os testes não
+    /// são sobre QUAL versão a divulgação aponta — isso é dos testes da vitrine —, e sim sobre o
+    /// que a projeção faz com a versão que ela aponta.
+    /// </summary>
+    private static readonly Guid AtoDaDivulgacao = Guid.CreateVersion7();
+
     private static Task<Result<FormularioRenderizavelDto>> HandleAsync(
-        IProcessoSeletivoRepository repository, Guid processoId) =>
+        IProcessoSeletivoRepository repository,
+        Guid processoId,
+        ICertameDivulgadoRepository? divulgadoRepository = null) =>
         ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processoId),
             repository,
+            divulgadoRepository ?? RepositorioComDivulgacao(processoId),
             RegistroReconhecendoVersaoCorrente,
-            Relogio,
             CancellationToken.None);
+
+    /// <summary>Repositório cuja linha de divulgação existe — o processo É público.</summary>
+    private static ICertameDivulgadoRepository RepositorioComDivulgacao(Guid processoId)
+    {
+        ICertameDivulgadoRepository repositorio = Substitute.For<ICertameDivulgadoRepository>();
+        repositorio.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>())
+            .Returns(CertameDivulgado.Criar(
+                processoId,
+                numeroVersao: 1,
+                AtoDaDivulgacao,
+                new string('a', 64),
+                versaoProjecao: "1",
+                new FacetasDoCertameDivulgado("Certame", "001/2026", ["AC"], DataHoraFixa, DataHoraFixa.AddDays(30)),
+                """{"nome":"documento"}""",
+                DataHoraFixa));
+        return repositorio;
+    }
+
+    /// <summary>Repositório sem linha: o processo não é público, seja qual for o motivo.</summary>
+    private static ICertameDivulgadoRepository RepositorioSemDivulgacao()
+    {
+        ICertameDivulgadoRepository repositorio = Substitute.For<ICertameDivulgadoRepository>();
+        repositorio.ObterParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns((CertameDivulgado?)null);
+        return repositorio;
+    }
+
+    private static readonly DateTimeOffset DataHoraFixa = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
 
     private static IRegistroCodecsEnvelope CriarRegistroReconhecendo(params string[] schemaVersionsReconhecidas)
     {
@@ -68,32 +105,71 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         return registro;
     }
 
-    [Fact(DisplayName = "Processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
-    public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
+    [Fact(DisplayName = "Certame sem divulgação não serve formulário, e a recusa não diz por quê")]
+    public async Task Handle_SemDivulgacao_RetornaNaoEncontrado()
     {
+        // Inexistente, em rascunho, sem versão vigente e com ato não confirmado caem todos aqui,
+        // pelo mesmo caminho: nenhum deles tem linha. Distinguir deixou de ser possível, em vez de
+        // ser possível e proibido — e numa rota anônima essa diferença importa, porque a recusa
+        // que distingue responde a um estranho se um identificador é um processo em rascunho.
         Guid processoId = Guid.CreateVersion7();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterVersaoVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns((VersaoConfiguracao?)null);
-        repository.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            repository, processoId, RepositorioSemDivulgacao());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Processo existente sem versão vigente retorna Snapshot.VigenteAusente")]
-    public async Task Handle_SemVersaoVigente_RetornaVigenteAusente()
+    [Fact(DisplayName = "Sem divulgação, a versão de configuração nem chega a ser consultada")]
+    public async Task Handle_SemDivulgacao_NaoConsultaVersao()
     {
+        // A publicidade é a primeira pergunta, não um filtro aplicado depois. Consultar a versão
+        // antes reabriria o oráculo por outro caminho: o tempo de resposta, e qualquer recusa que
+        // dependesse do que a consulta encontrasse.
         Guid processoId = Guid.CreateVersion7();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterVersaoVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns((VersaoConfiguracao?)null);
-        repository.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
+
+        await HandleAsync(repository, processoId, RepositorioSemDivulgacao());
+
+        await repository.DidNotReceive().ObterVersoesPorAtoCriadorAsync(
+            Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Divulgação apontando versão inexistente NÃO colapsa no não encontrado")]
+    public async Task Handle_DivulgacaoSemVersao_AfloraODefeito()
+    {
+        // A linha só nasce junto da versão, então isto é corrupção, não ausência. Responder não
+        // encontrado esconderia o defeito atrás de uma resposta plausível — e aqui não há oráculo
+        // a proteger: a existência da linha já disse que o processo é público.
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns([]);
 
         Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Snapshot.VigenteAusente");
+    }
+
+    [Fact(DisplayName = "O formulário é projetado da versão que a divulgação aponta, pelo ato criador")]
+    public async Task Handle_ResolvePelaVersaoDaDivulgacao()
+    {
+        // O ponto da issue: sob retificação pendente, a versão vigente POR RELÓGIO é a nova, que
+        // ainda não tem publicidade. Servir o formulário dela faria o candidato ler um edital e
+        // preencher o de outro. A consulta tem de partir do ato que a divulgação carrega.
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        await HandleAsync(repository, processoId);
+
+        await repository.Received(1).ObterVersoesPorAtoCriadorAsync(
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(AtoDaDivulgacao)),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Versão vigente congelada ANTES desta Story (sem formulario/campos novos) recusa com FormularioInscricao.VersaoSemApresentacao, nunca estoura")]
@@ -270,7 +346,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             Relogio.GetUtcNow());
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterVersaoVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(versao);
+        repository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
         return repository;
     }
 }

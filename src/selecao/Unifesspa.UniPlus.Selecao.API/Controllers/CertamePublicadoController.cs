@@ -7,10 +7,6 @@ using System.Globalization;
 using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
-using Unifesspa.UniPlus.Kernel.Pagination;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +14,10 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Leitura pública do certame publicado — o contrato que o portal do candidato e qualquer outro
@@ -131,7 +130,7 @@ public sealed class CertamePublicadoController : ControllerBase
         [FromQuery(Name = "q")]
         [Description("Texto pesquisado no título do certame e no número do edital. Insensível a caixa e a acentuação.")]
         string? q,
-        [FromQuery(Name = "sort")] [Description(DescricaoDoSort)] string? sort,
+        [FromQuery(Name = "sort")][Description(DescricaoDoSort)] string? sort,
         [FromQuery(Name = "incluir_contadores")] bool incluirContadores,
         CancellationToken cancellationToken)
     {
