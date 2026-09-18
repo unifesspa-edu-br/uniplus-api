@@ -158,15 +158,55 @@ public static class InvalidRequestProblemFactory
                 continue;
             }
 
-            if (!anotadas.Contains(entry.Key) || !binderKeys.Contains(entry.Key))
+            if (!anotadas.Contains(entry.Key) || ParametroDe(entry.Key, binderKeys) is not { } parametro)
             {
                 return [];
             }
 
-            nomes.Add(entry.Key);
+            nomes.Add(parametro);
         }
 
         return [.. nomes];
+    }
+
+    /// <summary>
+    /// O parâmetro a que uma chave do <c>ModelState</c> pertence, ou <see langword="null"/>
+    /// quando ela não pertence a nenhum parâmetro preenchido pelo binder.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Coleção não aparece sob o nome do parâmetro: cada elemento ganha chave indexada, e um
+    /// filho seu pode ganhar chave composta. Comparar a chave com o nome do parâmetro encontra
+    /// o escalar e perde todo o resto, e a recusa volta ao envelope do framework sem que nada
+    /// avise — exatamente o defeito que este factory existe para não ter.
+    /// </para>
+    /// <para>
+    /// O nome devolvido é o do <b>parâmetro</b>, não o da chave. O índice diz qual elemento
+    /// falhou, e não o que fazer a respeito: a correção é a mesma para todos eles — os valores
+    /// daquele parâmetro têm de caber no tipo. Com vários elementos ruins, nomear cada posição
+    /// enche a mensagem de ruído sem acrescentar uma instrução que o cliente já não tenha.
+    /// </para>
+    /// </remarks>
+    private static string? ParametroDe(string key, HashSet<string> binderKeys)
+    {
+        if (binderKeys.TryGetValue(key, out string? exato))
+        {
+            return exato;
+        }
+
+        foreach (string parametro in binderKeys)
+        {
+            // O separador é o que distingue o filho do homônimo: sem exigi-lo, um parâmetro
+            // chamado `tipoUnidade` seria atribuído ao parâmetro `tipo`.
+            if (key.Length > parametro.Length
+                && key.StartsWith(parametro, StringComparison.OrdinalIgnoreCase)
+                && (key[parametro.Length] is '[' or '.'))
+            {
+                return parametro;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

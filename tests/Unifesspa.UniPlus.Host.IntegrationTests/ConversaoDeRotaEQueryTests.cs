@@ -44,6 +44,10 @@ public sealed class ConversaoDeRotaEQueryTests
     [Theory(DisplayName = "Valor de query que não converte responde no envelope canônico")]
     [InlineData("/api/publicacoes/tipos-ato?vigentes=abc")]
     [InlineData("/api/publicacoes/tipos-ato/EDITAL_ABERTURA/vigente?data=abc")]
+    [InlineData("/api/organizacao/unidades?tipo=abc")]
+    [InlineData("/api/organizacao/unidades?tipo[0]=abc")]
+    [InlineData("/api/organizacao/unidades?tipo=abc&tipo=def")]
+    [InlineData("/api/selecao/certames?situacao=abc")]
     public async Task Ler_QuandoValorDeQueryNaoConverte_DeveResponderNoEnvelopeCanonico(string endereco)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
