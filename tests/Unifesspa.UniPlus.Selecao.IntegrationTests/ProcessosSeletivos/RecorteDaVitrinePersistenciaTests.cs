@@ -106,8 +106,9 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        ContadoresDaVitrine contadores = await repository.ContarPorSituacaoAsync(
-            Agora, new RecorteDaVitrine(), Limiar, CancellationToken.None);
+        ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(
+            Agora, new RecorteDaVitrine(), [], Limiar, null, null, 1, PaginationDirection.Next,
+            incluirContadores: true, CancellationToken.None)).Contadores!.Value;
 
         // Contar por um critério e filtrar por outro faz o rótulo mentir sem nada quebrar.
         contadores.EmBreve.Should().Be((await ListarAsync(SituacaoDoCertame.EmBreve)).Count);
@@ -127,10 +128,10 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
+        PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, new RecorteDaVitrine(situacao), [], Limiar, null, null,
-                Deslocamentos.Length * Deslocamentos.Length, PaginationDirection.Next, CancellationToken.None);
+                Deslocamentos.Length * Deslocamentos.Length, PaginationDirection.Next, incluirContadores: false, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Id)];
     }

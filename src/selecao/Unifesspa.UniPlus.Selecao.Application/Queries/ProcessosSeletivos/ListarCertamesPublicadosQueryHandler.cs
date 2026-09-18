@@ -15,7 +15,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// <para>
 /// Só existe linha para certame público, então a página sai do banco com o tamanho pedido e não há
-/// descarte depois, nem pergunta a outro módulo no caminho da requisição.
+/// descarte depois, nem pergunta a outro módulo no caminho da requisição. A página e os contadores
+/// vêm da mesma leitura, porque descrevem o mesmo conjunto.
 /// </para>
 /// <para>
 /// Um item cuja divulgação não se deserializa é omitido, não derruba a lista: o defeito de uma
@@ -72,21 +73,17 @@ public static class ListarCertamesPublicadosQueryHandler
             return Result<ListarCertamesPublicadosResult>.Failure(ordenacao.Error!);
         }
 
-        (IReadOnlyList<CertameDivulgado> divulgados, DateTimeOffset instante, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
-            await certameDivulgadoRepository
-                .ListarVitrineAsync(
-                    query.Instante, query.Recorte, ordenacao.Value!, LimiarDosUltimosDias,
-                    query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
-                .ConfigureAwait(false);
+        PaginaDaVitrine pagina = await certameDivulgadoRepository
+            .ListarVitrineAsync(
+                query.Instante, query.Recorte, ordenacao.Value!, LimiarDosUltimosDias,
+                query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
+                query.IncluirContadores, cancellationToken)
+            .ConfigureAwait(false);
 
-        ContadoresDaVitrine? contadores = query.IncluirContadores
-            ? await certameDivulgadoRepository
-                .ContarPorSituacaoAsync(instante, query.Recorte, LimiarDosUltimosDias, cancellationToken)
-                .ConfigureAwait(false)
-            : null;
+        DateTimeOffset instante = pagina.InstanteEfetivo;
 
         List<CertameNaVitrineDto> itens = [];
-        foreach (CertameDivulgado divulgado in divulgados)
+        foreach (CertameDivulgado divulgado in pagina.Itens)
         {
             if (!ProjecaoDoCertamePublicado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame))
             {
@@ -107,6 +104,6 @@ public static class ListarCertamesPublicadosQueryHandler
         }
 
         return Result<ListarCertamesPublicadosResult>.Success(
-            new ListarCertamesPublicadosResult(itens, anterior, proximo, contadores));
+            new ListarCertamesPublicadosResult(itens, pagina.Anterior, pagina.Proximo, pagina.Contadores));
     }
 }

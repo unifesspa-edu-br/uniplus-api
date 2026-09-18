@@ -90,8 +90,8 @@ public sealed class LeituraPublicaDoCertameTests
         repository.ListarVitrineAsync(
                 Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
                 Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
-                Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
-            .Returns(((IReadOnlyList<CertameDivulgado>)[linha], Agora, ((string, Guid)?)null, ((string, Guid)?)null));
+                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(new PaginaDaVitrine([linha], Agora, null, null, null));
 
         ListarCertamesPublicadosResult resultado = (await ListarCertamesPublicadosQueryHandler.Handle(
             Consulta(), repository, CancellationToken.None)).Value!;
@@ -102,10 +102,10 @@ public sealed class LeituraPublicaDoCertameTests
     [Fact(DisplayName = "Contadores só são calculados quando pedidos")]
     public async Task Handle_QuandoNaoPedeContadores_DeveOmitiLos()
     {
+        // Contar é percurso a mais sobre a coleção inteira, e o cursor preserva o parâmetro: quem
+        // pede uma vez pagaria em toda página. Quem decide é a consulta, e o repositório responde
+        // ao que ela pediu — por isso o dublê devolve os números só quando o sinalizador chega.
         ICertameDivulgadoRepository repository = RepositorioComVitrine(Guid.CreateVersion7());
-        repository.ContarPorSituacaoAsync(
-                Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
-            .Returns(new ContadoresDaVitrine(5, 12, 3, 40));
 
         ListarCertamesPublicadosResult sem = (await ListarCertamesPublicadosQueryHandler.Handle(
             Consulta(), repository, CancellationToken.None)).Value!;
@@ -115,6 +115,9 @@ public sealed class LeituraPublicaDoCertameTests
         sem.Contadores.Should().BeNull();
         com.Contadores.Should().Be(new ContadoresDaVitrine(5, 12, 3, 40));
     }
+
+    /// <summary>Posição de <c>incluirContadores</c> na chamada ao repositório.</summary>
+    private const int PosicaoDoSinalizadorDeContadores = 8;
 
     private static ListarCertamesPublicadosQuery Consulta(bool incluirContadores = false) =>
         new(Agora, new RecorteDaVitrine(), [], null, null, 20, PaginationDirection.Next, incluirContadores);
@@ -126,8 +129,13 @@ public sealed class LeituraPublicaDoCertameTests
         repository.ListarVitrineAsync(
                 Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
                 Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
-                Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
-            .Returns(((IReadOnlyList<CertameDivulgado>)linhas, Agora, ((string, Guid)?)null, ("ancora", processoIds[^1])));
+                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(chamada => new PaginaDaVitrine(
+                linhas,
+                Agora,
+                null,
+                ("ancora", processoIds[^1]),
+                chamada.ArgAt<bool>(PosicaoDoSinalizadorDeContadores) ? new ContadoresDaVitrine(5, 12, 3, 40) : null));
         return repository;
     }
 

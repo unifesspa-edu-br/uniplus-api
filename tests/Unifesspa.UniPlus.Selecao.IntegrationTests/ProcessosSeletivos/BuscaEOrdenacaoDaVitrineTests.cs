@@ -167,6 +167,32 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
             "a âncora é uma posição na coleção que a emitiu, e essa coleção mudou");
     }
 
+    [Fact(DisplayName = "Cursor é recusado quando entra certame divulgado antes do mais recente")]
+    public async Task ListarVitrine_QuandoEntraCertameComInstanteAnterior_DeveRecusarAContinuacao()
+    {
+        // O instante da divulgação é lido do relógio antes da gravação, não na ordem em que as
+        // transações confirmam: de duas materializações concorrentes, a que leu o relógio primeiro
+        // pode confirmar por último, e aí ela entra na coleção sem mover o instante mais recente.
+        // A contagem se move em toda inserção, qualquer que seja o instante que a linha carregue.
+        (string SortKey, Guid Id)? emitido = await PrimeiraPaginaAsync(new RecorteDaVitrine(), limite: 1);
+
+        emitido.Should().NotBeNull();
+        (string SortKey, Guid Id) ancora = emitido!.Value;
+
+        await using (SelecaoDbContext mutacao = _fixture.CreateDbContext())
+        {
+            mutacao.CertamesDivulgados.Add(Divulgado(
+                "Ingresso ao Mestrado", "004/2026", ["AC"], Agora.AddDays(15), divulgadoEm: Agora.AddDays(-1)));
+            await mutacao.SaveChangesAsync(CancellationToken.None);
+        }
+
+        Func<Task> continuarDepoisDaEntrada = () => ListarAsync(
+            new RecorteDaVitrine(), [], ancora.SortKey, ancora.Id);
+
+        await continuarDepoisDaEntrada.Should().ThrowAsync<CursorAnchorMismatchException>(
+            "um certame a mais desloca as posições seguintes, mesmo trazendo instante anterior ao máximo");
+    }
+
     [Fact(DisplayName = "Cursor emitido sob uma ordenação é recusado sob outra")]
     public async Task ListarVitrine_QuandoCursorVemDeOutraOrdenacao_DeveRecusarAContinuacao()
     {
@@ -302,8 +328,9 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        ContadoresDaVitrine contadores = await repository.ContarPorSituacaoAsync(
-            Agora, new RecorteDaVitrine(Busca: "sisu"), Limiar, CancellationToken.None);
+        ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(
+            Agora, new RecorteDaVitrine(Busca: "sisu"), [], Limiar, null, null, 20, PaginationDirection.Next,
+            incluirContadores: true, CancellationToken.None)).Contadores!.Value;
 
         (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
             .Should().Be(1);
@@ -314,9 +341,9 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
+        PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
-                Agora, recorte, [], Limiar, null, null, 20, PaginationDirection.Next, CancellationToken.None);
+                Agora, recorte, [], Limiar, null, null, 20, PaginationDirection.Next, incluirContadores: false, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Numero!)];
     }
@@ -330,10 +357,10 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
+        PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, recorte, ordenacao ?? [], Limiar, afterSortKey, afterId, 20,
-                PaginationDirection.Next, CancellationToken.None);
+                PaginationDirection.Next, incluirContadores: false, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Nome)];
     }
@@ -346,10 +373,10 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
+        PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, recorte, ordenacao ?? [], Limiar, null, null, limite,
-                PaginationDirection.Next, CancellationToken.None);
+                PaginationDirection.Next, incluirContadores: false, CancellationToken.None);
 
         return pagina.Proximo;
     }
@@ -362,10 +389,10 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
+        PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, new RecorteDaVitrine(), ordenacao, Limiar, cursor?.SortKey, cursor?.Id, 1,
-                direcao, CancellationToken.None);
+                direcao, incluirContadores: false, CancellationToken.None);
 
         return (pagina.Itens, direcao == PaginationDirection.Prev ? pagina.Anterior : pagina.Proximo);
     }
@@ -376,10 +403,10 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
+        PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, new RecorteDaVitrine(), [], Limiar, cursor?.SortKey, cursor?.Id, 1,
-                direcao, CancellationToken.None);
+                direcao, incluirContadores: false, CancellationToken.None);
 
         return (pagina.Itens, pagina.Anterior, pagina.Proximo);
     }
@@ -388,7 +415,8 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         string nome,
         string numero,
         IReadOnlyList<string> modalidades,
-        DateTimeOffset inscricoesAte) =>
+        DateTimeOffset inscricoesAte,
+        DateTimeOffset? divulgadoEm = null) =>
         CertameDivulgado.Criar(
             Guid.CreateVersion7(),
             numeroVersao: 1,
@@ -397,5 +425,5 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
             versaoProjecao: "1",
             new FacetasDoCertameDivulgado(nome, numero, modalidades, Agora.AddDays(-1), inscricoesAte),
             """{"nome":"documento"}""",
-            Agora);
+            divulgadoEm ?? Agora);
 }
