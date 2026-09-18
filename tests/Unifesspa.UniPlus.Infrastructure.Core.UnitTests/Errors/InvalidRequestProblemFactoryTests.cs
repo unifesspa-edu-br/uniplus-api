@@ -21,10 +21,10 @@ public sealed class InvalidRequestProblemFactoryTests
 {
     private const string BaseDoCatalogo = "https://exemplo.invalid/erros/";
 
-    [Fact(DisplayName = "Campo que a carga não traz é ausência: o code diz isso e o detail o nomeia")]
+    [Fact(DisplayName = "Parâmetro que a requisição não traz é ausência: o code diz isso e o detail o nomeia")]
     public void CampoNaoFornecido_EhAusencia()
     {
-        ActionContext contexto = Contexto();
+        ActionContext contexto = Contexto(ParametroDeQuery("etapas"));
         // Nada fornecido: nem valor tentado, nem valor cru — não houve o que converter.
         contexto.ModelState.AddModelError("etapas", "The etapas field is required.");
 
@@ -72,10 +72,10 @@ public sealed class InvalidRequestProblemFactoryTests
             + "recusa genérica que este factory saiba escrever");
     }
 
-    [Fact(DisplayName = "Campo que casou não entra na recusa, mesmo quando outro falhou")]
+    [Fact(DisplayName = "Parâmetro que casou não entra na recusa, mesmo quando outro falhou")]
     public void CampoValido_NaoEntraNaLista()
     {
-        ActionContext contexto = Contexto();
+        ActionContext contexto = Contexto(ParametroDeQuery("limite"), ParametroDeQuery("etapas"));
         // O ModelState traz TODAS as propriedades da requisição, não só as reprovadas.
         contexto.ModelState.SetModelValue("limite", rawValue: "10", attemptedValue: "10");
         contexto.ModelState.MarkFieldValid("limite");
@@ -148,6 +148,28 @@ public sealed class InvalidRequestProblemFactoryTests
         problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
     }
 
+    /// <summary>
+    /// Propriedade de dentro do corpo reprovada DEPOIS da desserialização não é ausência, ainda
+    /// que pareça: o input formatter não preenche valor tentado nem valor cru para o modelo,
+    /// nem quando a chave veio com <c>null</c>.
+    /// </summary>
+    /// <remarks>
+    /// Chamar isso de campo não declarado diria ao cliente que ele não mandou o que mandou, e
+    /// descartaria a mensagem de quem de fato reprovou — que é justamente o que este factory
+    /// deixa passar de propósito.
+    /// </remarks>
+    [Fact(DisplayName = "Propriedade do corpo reprovada após a desserialização não vira campo ausente")]
+    public void PropriedadeDoCorpoReprovadaAposDesserializar_Delega()
+    {
+        ActionContext contexto = Contexto();
+        // É o que o MVC produz para `"orgao": null` num campo declarado não-anulável: entrada
+        // inválida, sem valor tentado e sem valor cru, e nenhuma posição de documento apontada.
+        contexto.ModelState.AddModelError("Orgao", "The Orgao field is required.");
+
+        InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
+            "a chave não é de parâmetro do binder, então o sinal de ausência não vale ali");
+    }
+
     private static ProblemDetails Executar(ActionContext contexto)
     {
         IActionResult resultado = InvalidRequestProblemFactory.TryBuild(contexto)
@@ -156,7 +178,13 @@ public sealed class InvalidRequestProblemFactoryTests
         return (ProblemDetails)((ObjectResult)resultado).Value!;
     }
 
-    private static ActionContext Contexto()
+    private static ParameterDescriptor ParametroDeQuery(string nome) => new()
+    {
+        Name = nome,
+        BindingInfo = new BindingInfo { BindingSource = BindingSource.Query },
+    };
+
+    private static ActionContext Contexto(params ParameterDescriptor[] parametros)
     {
         ServiceCollection servicos = new();
         servicos.AddSingleton<IProblemTypeUriFactory>(
@@ -167,7 +195,7 @@ public sealed class InvalidRequestProblemFactoryTests
             sp.GetRequiredService<IProblemTypeUriFactory>()));
 
         DefaultHttpContext http = new() { RequestServices = servicos.BuildServiceProvider() };
-        return new ActionContext(http, new RouteData(), new ActionDescriptor());
+        return new ActionContext(http, new RouteData(), new ActionDescriptor { Parameters = parametros });
     }
 
     /// <summary>Só os dois códigos que este factory emite — o resto do catálogo não importa aqui.</summary>

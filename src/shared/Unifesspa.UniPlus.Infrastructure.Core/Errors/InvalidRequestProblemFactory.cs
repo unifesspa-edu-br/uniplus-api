@@ -74,6 +74,7 @@ public static class InvalidRequestProblemFactory
         ArgumentNullException.ThrowIfNull(context);
 
         HashSet<string> bodyKeys = BodyKeys(context);
+        HashSet<string> binderKeys = BinderKeys(context);
 
         // A ordem das três perguntas importa, e é a do afunilamento. Quando o corpo veio e não
         // desserializa, o MVC reprova TAMBÉM o parâmetro que o receberia — então perguntar
@@ -81,7 +82,7 @@ public static class InvalidRequestProblemFactory
         // documento que chegou. O sinal de que houve documento é a entrada que aponta posição
         // dentro dele; ela desempata.
         bool unreadable = HasDeserializationFailure(context.ModelState);
-        IReadOnlyList<string> missing = MissingFields(context.ModelState, bodyKeys);
+        IReadOnlyList<string> missing = MissingFields(context.ModelState, binderKeys);
         bool bodyAbsent = !unreadable && HasAbsentBody(context.ModelState, bodyKeys);
 
         if (!unreadable && !bodyAbsent && missing.Count == 0)
@@ -127,6 +128,34 @@ public static class InvalidRequestProblemFactory
         return chaves;
     }
 
+    /// <summary>
+    /// As chaves que correspondem a parâmetros que o <b>binder</b> preenche — rota, query,
+    /// header, formulário. São as únicas em que "sem valor tentado e sem valor cru" significa
+    /// mesmo que o cliente não mandou nada.
+    /// </summary>
+    /// <remarks>
+    /// Dentro do corpo o mesmo sinal não vale: o input formatter não preenche valor tentado nem
+    /// valor cru para propriedade nenhuma do modelo, inclusive quando a chave VEIO com
+    /// <c>null</c>. Tratar isso como ausência diria ao cliente que ele não declarou um campo que
+    /// ele declarou — e, pior, engoliria a mensagem do validador que reprovou, que é do mesmo
+    /// tipo que este factory deixa passar de propósito.
+    /// </remarks>
+    private static HashSet<string> BinderKeys(ActionContext context)
+    {
+        HashSet<string> chaves = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ParameterDescriptor parametro in context.ActionDescriptor.Parameters)
+        {
+            BindingSource? fonte = parametro.BindingInfo?.BindingSource;
+            if (fonte is not null && fonte != BindingSource.Body)
+            {
+                chaves.Add(parametro.Name);
+            }
+        }
+
+        return chaves;
+    }
+
     private static bool HasAbsentBody(ModelStateDictionary modelState, HashSet<string> bodyKeys) =>
         modelState.Any(entry =>
             entry.Value is { ValidationState: ModelValidationState.Invalid, AttemptedValue: null, RawValue: null }
@@ -135,7 +164,7 @@ public static class InvalidRequestProblemFactory
     /// <summary>
     /// Os nomes de campo que a recusa consegue afirmar, sem nenhum texto do framework junto.
     /// </summary>
-    private static IReadOnlyList<string> MissingFields(ModelStateDictionary modelState, HashSet<string> bodyKeys)
+    private static IReadOnlyList<string> MissingFields(ModelStateDictionary modelState, HashSet<string> binderKeys)
     {
         SortedSet<string> names = new(StringComparer.Ordinal);
 
@@ -167,11 +196,16 @@ public static class InvalidRequestProblemFactory
                 continue;
             }
 
-            // Reprovado não quer dizer ausente: `?vigentes=abc` também reprova, e ali o campo
-            // FOI declarado — só não converte, e quem responde por ele é o factory anterior.
-            // O que caracteriza ausência é não haver valor tentado nem valor cru: não houve o
-            // que converter, porque nada veio.
-            if (!bodyKeys.Contains(entry.Key)
+            // Fora do corpo, o que caracteriza ausência é não haver valor tentado nem valor
+            // cru: não houve o que converter, porque nada veio. `?vigentes=abc` também reprova,
+            // mas ali o campo FOI declarado — só não converte —, e quem responde por ele é o
+            // factory anterior da cadeia.
+            //
+            // A checagem vale só para chave de parâmetro do BINDER. Propriedade de dentro do
+            // corpo satisfaz a mesma condição mesmo tendo vindo com `null`, porque o input
+            // formatter não preenche esses valores para o modelo — dizer "não declarou" ali
+            // seria falso, e engoliria a mensagem de quem de fato reprovou.
+            if (binderKeys.Contains(entry.Key)
                 && entry.Value.AttemptedValue is null
                 && entry.Value.RawValue is null)
             {
