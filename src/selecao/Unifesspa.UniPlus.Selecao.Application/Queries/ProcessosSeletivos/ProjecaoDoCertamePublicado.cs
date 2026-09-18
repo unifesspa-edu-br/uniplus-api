@@ -43,7 +43,21 @@ internal static class ProjecaoDoCertamePublicado
     /// quem fosse consultar dentro dele — que é a razão de ser jsonb, e não texto — escreveria o
     /// caminho errado. Fixar aqui evita que a convenção dependa de quem chamou o serializador.
     /// </remarks>
-    public static readonly JsonSerializerOptions OpcoesDoDocumento = new(JsonSerializerDefaults.Web);
+    /// <summary>
+    /// Forma do documento guardado, e a mesma usada para lê-lo de volta.
+    /// </summary>
+    /// <remarks>
+    /// <c>RespectRequiredConstructorParameters</c> faz o desserializador recusar o documento a que
+    /// falte qualquer parâmetro de construtor sem valor padrão — em TODO nível do grafo, e não só
+    /// nos blocos de topo. Sem ele, um bloco presente mas vazio (<c>"tipoProcesso": {}</c>)
+    /// constrói o registro com membros nulos e atravessa qualquer conferência escrita à mão, a
+    /// menos que ela desça a cada campo de cada tipo aninhado — código que duplicaria o que a forma
+    /// do contrato já declara, e que envelheceria a cada campo novo.
+    /// </remarks>
+    public static readonly JsonSerializerOptions OpcoesDoDocumento = new(JsonSerializerDefaults.Web)
+    {
+        RespectRequiredConstructorParameters = true,
+    };
 
     /// <summary>
     /// Código único da recusa de leitura do envelope. Vive aqui, e não repetido em cada ponto que
