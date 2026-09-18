@@ -61,6 +61,18 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                 .NotNull()
                 .WithMessage("Declare os produtos da fase: lista vazia se ela não publica nenhum.");
 
+            // Item nulo dentro das coleções aninhadas passa incólume pelo ChildRules — a
+            // regra de forma do filho nem chega a rodar —, e o handler o desreferencia: o
+            // tipo da banca, o papel do produto. Mesma proteção que o array de fases já tem
+            // um nível acima, e que as coleções da etapa já tinham.
+            fase.RuleForEach(f => f.BancasRequeridas)
+                .NotNull()
+                .WithMessage("Item de banca requerida não pode ser nulo.");
+
+            fase.RuleForEach(f => f.Produtos)
+                .NotNull()
+                .WithMessage("Item de produto da fase não pode ser nulo.");
+
             // Forma do item, e só ela. Quando o recorte de competência é obrigatório e
             // quando dois recortes se confundem são invariantes da fase (ADR-0125), e a
             // existência da categoria no cadastro é resolução do handler.
@@ -69,6 +81,15 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                 banca.RuleFor(b => b.TipoBancaId)
                     .NotEmpty()
                     .WithMessage("O id do tipo de banca não pode ser vazio.");
+
+                // A COLEÇÃO em si, pela mesma razão das duas de cima: o recorte de
+                // competência é declarado não-anulável, nada exige a chave no corpo, e o
+                // handler percorre a lista para congelar cada categoria julgada. Nulo ali é
+                // falha de servidor onde deveria haver recusa nomeada; o RuleForEach abaixo
+                // não cobre isso, porque coleção nula é percorrida como vazia.
+                banca.RuleFor(b => b.CategoriasDocumentoIds)
+                    .NotNull()
+                    .WithMessage("Declare as categorias de documento julgadas pela banca: lista vazia quando o tipo já a identifica sozinho na fase.");
 
                 banca.RuleForEach(b => b.CategoriasDocumentoIds)
                     .NotEmpty()
