@@ -31,20 +31,20 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
             SuspensividadeSegundaInstanciaValor: susp2Valor,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 
+    private static FaseCronogramaInput FaseValida(RegraRecursoFaseInput? regraRecurso = null) => new(
+        Ordem: 1,
+        FaseCanonicaId: Guid.CreateVersion7(),
+        Inicio: null,
+        Fim: null,
+        Produtos: [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar)],
+        FaseConcluinteCodigo: null,
+        EmiteParecerIndividual: false,
+        BancasRequeridas: [],
+        RegraRecurso: regraRecurso);
+
     private static DefinirCronogramaFasesCommand Comando(RegraRecursoFaseInput regraRecurso) => new(
         Guid.CreateVersion7(),
-        [
-            new FaseCronogramaInput(
-                Ordem: 1,
-                FaseCanonicaId: Guid.CreateVersion7(),
-                Inicio: null,
-                Fim: null,
-                Produtos: [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar)],
-                FaseConcluinteCodigo: null,
-                EmiteParecerIndividual: false,
-                BancasRequeridas: [],
-                RegraRecurso: regraRecurso),
-        ],
+        [FaseValida(regraRecurso)],
         PrecondicaoIfMatch.Ausente);
 
     [Fact(DisplayName = "Lista de fases vazia atravessa a validação de forma — quem recusa é o domínio")]
@@ -57,6 +57,57 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         resultado.Errors.Should().NotContain(
             e => e.PropertyName == nameof(DefinirCronogramaFasesCommand.Fases),
             "ProcessoSeletivo.CronogramaFasesVazio é a causa nomeada, e recusar aqui a tornava inalcançável");
+    }
+
+    /// <summary>
+    /// As três coleções da fase são declaradas não-anuláveis, mas nada exige a chave no corpo:
+    /// o host não habilita <c>RespectRequiredConstructorParameters</c>, então o parâmetro de
+    /// construtor recebe nulo e o handler o percorre — falha de servidor onde deveria haver
+    /// recusa nomeada. A lista vazia continua válida: é a declaração explícita de que a fase
+    /// não publica, não requer banca, ou de que o tipo já identifica a banca sozinho.
+    /// </summary>
+    [Theory(DisplayName = "Validator recusa coleção nula na fase — o nulo não chega ao handler")]
+    [InlineData("produtos", "Declare os produtos da fase")]
+    [InlineData("bancas", "Declare as bancas requeridas pela fase")]
+    [InlineData("categorias", "Declare as categorias de documento julgadas pela banca")]
+    public void Rejeita_ColecaoNula(string colecao, string recusaEsperada)
+    {
+        FaseCronogramaInput fase = colecao switch
+        {
+            "produtos" => FaseValida() with { Produtos = null! },
+            "bancas" => FaseValida() with { BancasRequeridas = null! },
+            _ => FaseValida() with
+            {
+                BancasRequeridas = [new BancaRequeridaInput(Guid.CreateVersion7(), null!)],
+            },
+        };
+
+        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
+            .Validate(new DefinirCronogramaFasesCommand(Guid.CreateVersion7(), [fase], PrecondicaoIfMatch.Ausente));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.StartsWith(recusaEsperada, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Item nulo dentro das coleções aninhadas passa incólume pelo <c>ChildRules</c>, e o
+    /// handler o desreferencia — o tipo da banca, o papel do produto. Mesma proteção que o
+    /// array de fases já tem um nível acima.
+    /// </summary>
+    [Theory(DisplayName = "Validator recusa item nulo nas coleções da fase")]
+    [InlineData("produtos")]
+    [InlineData("bancas")]
+    public void Rejeita_ItemNuloNasColecoesAninhadas(string colecao)
+    {
+        FaseCronogramaInput fase = colecao == "produtos"
+            ? FaseValida() with { Produtos = [null!] }
+            : FaseValida() with { BancasRequeridas = [null!] };
+
+        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
+            .Validate(new DefinirCronogramaFasesCommand(Guid.CreateVersion7(), [fase], PrecondicaoIfMatch.Ausente));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("não pode ser nulo", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Aceita suspensividade ausente (null) — é a forma de desativar uma instância")]
