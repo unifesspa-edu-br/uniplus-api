@@ -663,6 +663,57 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         depois.AtoCriadorId.Should().Be(atoDaAbertura);
     }
 
+    [Fact(DisplayName = "O formulário só é servido quando o certame é divulgado, e a recusa não distingue rascunho de inexistente")]
+    public async Task Formulario_SegueADivulgacao_ENaoORelogio()
+    {
+        // A renderização do formulário é anônima e resolvia pela versão vigente POR RELÓGIO,
+        // separando 422 (processo existe, sem versão vigente) de 404 (não existe). Sendo anônima,
+        // essa distinção respondia a um estranho, numa requisição, se um identificador corresponde
+        // a um processo em rascunho. Resolvendo pela divulgação, deixa de ser possível distinguir
+        // — não por uma regra que colapse os casos, mas porque nenhum deles tem linha.
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(
+            api, nameof(Formulario_SegueADivulgacao_ENaoORelogio));
+
+        // Em rascunho: existe no banco, não é público.
+        using (HttpResponseMessage emRascunho = await ObterFormularioAsync(client, processoId))
+        {
+            emRascunho.StatusCode.Should().Be(
+                HttpStatusCode.NotFound,
+                "distinguir rascunho de inexistente numa rota anônima é responder se um identificador é um processo ainda não público");
+        }
+
+        // Inexistente: a MESMA resposta, sem nada que os separe.
+        using (HttpResponseMessage inexistente = await ObterFormularioAsync(client, Guid.CreateVersion7()))
+        {
+            inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        Guid atoDaAbertura = await ObterAtoIdAsync(api, processoId);
+        await EsperaDeAtoRegistrado.AguardarAsync(api, atoDaAbertura, "ato da abertura", processoId);
+        await EsperarDivulgacaoAsync(api, processoId, "divulgação da abertura");
+
+        // Com a divulgação materializada, o formulário passa a existir — pela mesma linha que a
+        // página do certame serve, e não porque o relógio passou de uma data.
+        using HttpResponseMessage divulgado = await ObterFormularioAsync(client, processoId);
+        divulgado.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using HttpResponseMessage certame = await client.GetAsync(
+            new Uri($"/api/selecao/certames/{processoId}", UriKind.Relative), CancellationToken.None);
+        certame.StatusCode.Should().Be(
+            HttpStatusCode.OK, "formulário e certame respondem sobre a mesma linha, então respondem juntos");
+    }
+
+    private static Task<HttpResponseMessage> ObterFormularioAsync(HttpClient client, Guid processoId) =>
+        client.GetAsync(
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/formulario", UriKind.Relative),
+            CancellationToken.None);
+
     private static async Task<CertameDivulgado?> ObterDivulgacaoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();

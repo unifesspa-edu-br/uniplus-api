@@ -48,11 +48,21 @@ public sealed class FormularioInscricaoController : ControllerBase
 
     /// <summary>
     /// Renderização pública do formulário de inscrição — título, termo de aceite e os fatos
-    /// coletados com sua apresentação, projetados da <c>VersaoConfiguracao</c> vigente (nunca da
-    /// raiz viva, mesmo sob retificação aberta). <c>422 Snapshot.VigenteAusente</c> quando o
-    /// processo existe mas não tem versão vigente — mesmo contrato de erro do endpoint interno
-    /// equivalente (<c>ObterSnapshotVigente</c>).
+    /// coletados com sua apresentação, projetados da versão que o certame <b>divulgado</b> serve.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// É a MESMA versão que <c>GET /certames/{id}</c> serve, e não a mais nova por relógio.
+    /// Enquanto o ato de uma retificação não se confirma, ela não tem publicidade: servir o
+    /// formulário dela faria o candidato ler um edital e preencher o de outro, e coletaria dados
+    /// sob uma configuração que pode nunca vir a ter ato normativo.
+    /// </para>
+    /// <para>
+    /// <c>404</c> cobre, com a mesma resposta, o processo inexistente, o em rascunho, o sem versão
+    /// vigente e o sem divulgação. A resposta não os distingue de propósito: para um chamador
+    /// anônimo, distinguir seria responder "esse identificador é um rascunho?".
+    /// </para>
+    /// </remarks>
     [HttpGet("processos-seletivos/{id:guid}/formulario")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "formulario-inscricao", Versions = [1])]

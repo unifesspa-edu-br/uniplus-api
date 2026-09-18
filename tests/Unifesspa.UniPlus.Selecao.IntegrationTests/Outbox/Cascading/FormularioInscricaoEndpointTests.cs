@@ -91,14 +91,22 @@ public sealed class FormularioInscricaoEndpointTests
         erros[1].GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.formulario_termo_aceite_texto_tamanho");
     }
 
-    [Fact(DisplayName = "GET público, sem autenticação, retorna 422 Snapshot.VigenteAusente para processo em rascunho")]
-    public async Task Obter_ProcessoEmRascunho_422SnapshotVigenteAusente()
+    [Fact(DisplayName = "GET público de processo em rascunho responde o MESMO que de processo inexistente")]
+    public async Task Obter_ProcessoEmRascunho_RespondeIgualAoInexistente()
     {
-        Contexto ctx = await SemearRascunhoAsync(nameof(Obter_ProcessoEmRascunho_422SnapshotVigenteAusente));
+        // A renderização é anônima. Enquanto ela distinguia rascunho (422) de inexistente (404),
+        // respondia a um estranho, numa requisição, se um identificador corresponde a um processo
+        // que ainda não é público. Resolvendo pela divulgação, os dois deixam de ser distinguíveis
+        // — nenhum dos dois tem linha.
+        Contexto ctx = await SemearRascunhoAsync(nameof(Obter_ProcessoEmRascunho_RespondeIgualAoInexistente));
 
-        HttpResponseMessage resposta = await ctx.GetFormularioAsync();
+        HttpResponseMessage emRascunho = await ctx.GetFormularioAsync();
+        HttpResponseMessage inexistente = await ctx.Client.GetAsync(
+            new Uri($"/api/selecao/processos-seletivos/{Guid.CreateVersion7()}/formulario", UriKind.Relative));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        emRascunho.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        emRascunho.StatusCode.Should().Be(
+            inexistente.StatusCode, "a resposta não pode separar o que ainda não é público do que não existe");
     }
 
     [Fact(DisplayName = "GET público, sem autenticação, retorna 404 para processo inexistente")]
@@ -125,6 +133,11 @@ public sealed class FormularioInscricaoEndpointTests
         ])).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await ctx.PublicarAsync();
 
+        // O formulário segue a divulgação, que chega pela fila durável — o 204 da publicação volta
+        // muito antes dela existir. Sem esta espera, o GET corre contra a materialização e o teste
+        // mede a corrida, não o contrato.
+        await ctx.EsperarDivulgacaoAsync();
+
         HttpResponseMessage resposta = await ctx.GetFormularioAsync();
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -150,6 +163,31 @@ public sealed class FormularioInscricaoEndpointTests
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId, Guid DocumentoId)
     {
+        /// <summary>
+        /// Espera a linha de divulgação aparecer. É ela que torna o certame público, e o formulário
+        /// resolve por ela — logo, antes dela, não há formulário a servir.
+        /// </summary>
+        public async Task EsperarDivulgacaoAsync()
+        {
+            DateTimeOffset limite = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(30);
+            while (DateTimeOffset.UtcNow < limite)
+            {
+                await using (AsyncServiceScope scope = Api.Services.CreateAsyncScope())
+                {
+                    SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+                    if (await db.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == ProcessoId))
+                    {
+                        return;
+                    }
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(300));
+            }
+
+            throw new InvalidOperationException(
+                $"A divulgação do processo {ProcessoId} não chegou em 30s — sem ela o formulário não é servido.");
+        }
+
         public async Task<HttpResponseMessage> PutFormularioAsync(
             string? titulo, string? termoAceiteTexto, Autenticacao autenticar = Autenticacao.PlataformaAdmin)
         {
