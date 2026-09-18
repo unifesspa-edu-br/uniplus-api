@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 /// errado: dizer "campo obrigatório não declarado" de um campo que veio — só que ilegível —
 /// manda acrescentar o que já foi mandado.
 /// </summary>
-public sealed class RequisicaoInvalidaProblemFactoryTests
+public sealed class InvalidRequestProblemFactoryTests
 {
     private const string BaseDoCatalogo = "https://exemplo.invalid/erros/";
 
@@ -35,22 +35,41 @@ public sealed class RequisicaoInvalidaProblemFactoryTests
         problema.Detail.Should().Contain("etapas");
     }
 
-    [Fact(DisplayName = "Campo declarado que não converte é carga malformada, não campo ausente")]
-    public void ValorPresenteQueNaoConverte_EhMalformada()
+    /// <summary>
+    /// Campo que veio e não converte não é assunto deste factory: o valor FOI declarado, e a
+    /// falha aconteceu no binding do parâmetro, não na leitura do corpo.
+    /// </summary>
+    /// <remarks>
+    /// Devolver <see langword="null"/> aqui é o que preserva a mensagem de quem sabe mais sobre
+    /// a causa. Uma recusa de <c>[RegularExpression]</c> num parâmetro de rota chega por este
+    /// mesmo caminho e traz orientação escrita por nós, em pt-BR, dizendo qual é o formato
+    /// esperado — capturá-la trocaria isso por "o corpo não pôde ser lido", que além de inútil
+    /// seria falso, já que o binding deu certo.
+    /// </remarks>
+    [Fact(DisplayName = "Valor declarado que não converte não é lido por este factory — a cadeia segue")]
+    public void ValorPresenteQueNaoConverte_Delega()
     {
         ActionContext contexto = Contexto();
-        // O cliente MANDOU o campo; ele só não vira o tipo declarado. Mandá-lo acrescentar o
-        // campo seria mandá-lo repetir o que fez.
         contexto.ModelState.SetModelValue("vigentes", rawValue: "abc", attemptedValue: "abc");
         contexto.ModelState.AddModelError("vigentes", "The value 'abc' is not valid.");
 
-        ProblemDetails problema = Executar(contexto);
+        InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull();
+    }
 
-        problema.Status.Should().Be(StatusCodes.Status400BadRequest);
-        problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
-        problema.Detail.Should().NotContain("vigentes",
-            "afirmar que o campo não foi declarado é falso quando ele veio — e nomeá-lo aqui "
-            + "daria ao cliente uma instrução que ele já cumpriu");
+    [Fact(DisplayName = "Validação que roda depois do binding não é capturada — a mensagem dela sobrevive")]
+    public void ValidacaoAposBinding_Delega()
+    {
+        ActionContext contexto = Contexto();
+        // É o caso de um [RegularExpression] em parâmetro de rota: o valor casou com o tipo, e
+        // só depois um validador o reprovou.
+        contexto.ModelState.SetModelValue("codigo", rawValue: "edital_abertura", attemptedValue: "edital_abertura");
+        contexto.ModelState.AddModelError(
+            "codigo",
+            "Código do tipo de ato deve usar apenas letras maiúsculas sem acento, separadas por underscore.");
+
+        InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
+            "a mensagem do validador diz ao cliente o que fazer, e é melhor que qualquer "
+            + "recusa genérica que este factory saiba escrever");
     }
 
     [Fact(DisplayName = "Campo que casou não entra na recusa, mesmo quando outro falhou")]
@@ -92,7 +111,9 @@ public sealed class RequisicaoInvalidaProblemFactoryTests
 
     private static ProblemDetails Executar(ActionContext contexto)
     {
-        IActionResult resultado = RequisicaoInvalidaProblemFactory.Build(contexto);
+        IActionResult resultado = InvalidRequestProblemFactory.TryBuild(contexto)
+            .Should().NotBeNull("este caso é de leitura da requisição e o factory tem de responder por ele").And.Subject as IActionResult
+            ?? throw new InvalidOperationException();
         return (ProblemDetails)((ObjectResult)resultado).Value!;
     }
 
@@ -115,9 +136,9 @@ public sealed class RequisicaoInvalidaProblemFactoryTests
     {
         public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
         [
-            new(RequisicaoInvalidaErrorCodes.CampoObrigatorioAusente,
+            new(InvalidRequestErrorCodes.MissingRequiredField,
                 new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.campo_obrigatorio_ausente", "Campo obrigatório ausente")),
-            new(RequisicaoInvalidaErrorCodes.Malformada,
+            new(InvalidRequestErrorCodes.Malformed,
                 new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.malformada", "Requisição malformada")),
         ];
     }
