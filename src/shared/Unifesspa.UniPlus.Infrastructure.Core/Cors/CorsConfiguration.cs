@@ -69,7 +69,7 @@ public static class CorsConfiguration
     /// Binds <see cref="CorsOptions"/> and registers the default CORS policy.
     /// Outside Development, startup fails if <see cref="CorsOptions.AllowedOrigins"/> is empty.
     /// </summary>
-    /// <param name="exposedHeadersAdicionais">
+    /// <param name="additionalExposedHeaders">
     /// Headers de resposta específicos da aplicação que está sendo composta, somados aos comuns.
     /// É por aqui que um módulo declara o header que só ele emite, sem impô-lo aos demais.
     /// </param>
@@ -77,16 +77,16 @@ public static class CorsConfiguration
         this IServiceCollection services,
         IConfiguration configuration,
         IHostEnvironment environment,
-        params string[] exposedHeadersAdicionais)
+        params string[] additionalExposedHeaders)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
-        ArgumentNullException.ThrowIfNull(exposedHeadersAdicionais);
+        ArgumentNullException.ThrowIfNull(additionalExposedHeaders);
 
-        string[] exposedHeaders = exposedHeadersAdicionais.Length == 0
+        string[] exposedHeaders = additionalExposedHeaders.Length == 0
             ? DefaultExposedHeaders
-            : [.. DefaultExposedHeaders, .. exposedHeadersAdicionais];
+            : [.. DefaultExposedHeaders, .. additionalExposedHeaders];
 
         services.AddOptions<CorsOptions>()
             .Bind(configuration.GetSection(CorsOptions.SectionName))
