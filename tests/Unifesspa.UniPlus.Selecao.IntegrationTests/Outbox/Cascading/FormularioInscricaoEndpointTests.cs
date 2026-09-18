@@ -154,6 +154,33 @@ public sealed class FormularioInscricaoEndpointTests
         fato.GetProperty("obrigatorio").GetBoolean().Should().BeTrue();
     }
 
+    [Fact(DisplayName = "GET público exige revalidação, inclusive na recusa anterior à divulgação")]
+    public async Task Obter_AntesEDepoisDaDivulgacao_ExigeRevalidacao()
+    {
+        // O 404 anterior à divulgação é transitório: o mesmo endereço passa a servir o formulário
+        // assim que a materialização chega. Sem diretiva, um cache compartilhado atribui frescor
+        // heurístico à recusa e segue escondendo o formulário já público.
+        Contexto ctx = await SemearRascunhoAsync(nameof(Obter_AntesEDepoisDaDivulgacao_ExigeRevalidacao));
+
+        (await ctx.PutFormularioAsync("Formulário de Inscrição", "Declaro que as informações são verdadeiras."))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage recusa = await ctx.GetFormularioAsync();
+
+        recusa.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        recusa.Headers.CacheControl!.NoCache.Should().BeTrue(
+            "a recusa é transitória e o endereço passa a servir o formulário quando a divulgação chega");
+
+        await ctx.PublicarAsync();
+        await ctx.EsperarDivulgacaoAsync();
+
+        HttpResponseMessage servido = await ctx.GetFormularioAsync();
+
+        servido.StatusCode.Should().Be(HttpStatusCode.OK);
+        servido.Headers.CacheControl!.NoCache.Should().BeTrue(
+            "o endereço também não muda quando uma retificação troca a versão servida");
+    }
+
     private enum Autenticacao
     {
         PlataformaAdmin,

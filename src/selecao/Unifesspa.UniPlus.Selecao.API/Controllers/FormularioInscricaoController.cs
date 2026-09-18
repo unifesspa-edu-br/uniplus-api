@@ -76,6 +76,13 @@ public sealed class FormularioInscricaoController : ControllerBase
             .Send(new ObterFormularioRenderizavelQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
+        // Revalidação obrigatória, não cache proibido: o endereço não muda quando a divulgação
+        // chega nem quando o certame é retificado. Escrita ANTES de ramificar porque a recusa é
+        // que precisa dela — o 404 enquanto a divulgação não materializa é transitório, e sem
+        // diretiva um cache compartilhado lhe atribui frescor heurístico (RFC 9111 §4.2.2) e
+        // segue escondendo o formulário depois que ele passa a existir.
+        Response.Headers.CacheControl = "no-cache";
+
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
