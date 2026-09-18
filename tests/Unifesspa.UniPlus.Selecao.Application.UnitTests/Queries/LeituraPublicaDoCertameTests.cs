@@ -90,7 +90,7 @@ public sealed class LeituraPublicaDoCertameTests
         repository.ListarVitrineAsync(
                 Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
                 Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
-                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new PaginaDaVitrine([linha], Agora, null, null, null));
 
         ListarCertamesPublicadosResult resultado = (await ListarCertamesPublicadosQueryHandler.Handle(
@@ -129,7 +129,7 @@ public sealed class LeituraPublicaDoCertameTests
         repository.ListarVitrineAsync(
                 Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
                 Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
-                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(chamada => new PaginaDaVitrine(
                 linhas,
                 Agora,

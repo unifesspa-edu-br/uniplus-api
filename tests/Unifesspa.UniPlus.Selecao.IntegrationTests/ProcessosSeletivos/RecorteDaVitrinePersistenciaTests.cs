@@ -34,6 +34,9 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
 
+    /// <summary>Versão do documento público que a consulta sabe servir — a que os semeados gravam.</summary>
+    private const string VersaoServida = "1";
+
     /// <summary>
     /// Bordas em dias relativos ao instante da consulta: antes, em cima e depois de cada ponto que
     /// a regra usa — a abertura, o encerramento e o limiar dos últimos dias.
@@ -108,7 +111,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
 
         ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(
             Agora, new RecorteDaVitrine(), [], Limiar, null, null, 1, PaginationDirection.Next,
-            incluirContadores: true, CancellationToken.None)).Contadores!.Value;
+            incluirContadores: true, VersaoServida, CancellationToken.None)).Contadores!.Value;
 
         // Contar por um critério e filtrar por outro faz o rótulo mentir sem nada quebrar.
         contadores.EmBreve.Should().Be((await ListarAsync(SituacaoDoCertame.EmBreve)).Count);
@@ -118,6 +121,30 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
 
         (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
             .Should().Be(_semeados.Count, "as quatro situações particionam o conjunto divulgado");
+    }
+
+    [Fact(DisplayName = "Certame de outra versão de projeção fica fora da página e da contagem")]
+    public async Task ListarVitrine_QuandoHaLinhaDeOutraVersaoDeProjecao_DeveOmitiLaDosDois()
+    {
+        // Contar o que a página não pode mostrar faz o número ao lado do filtro prometer item que
+        // filtro nenhum alcança. Numa janela de deploy em fases, o documento gravado por um
+        // processo já atualizado é ilegível para este — e a linha existe no banco.
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        CertameDivulgadoRepository repository = new(context);
+
+        context.CertamesDivulgados.Add(Divulgado(
+            Agora.AddDays(-1), Agora.AddDays(30), versaoProjecao: "2"));
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        PaginaDaVitrine pagina = await repository.ListarVitrineAsync(
+            Agora, new RecorteDaVitrine(), [], Limiar, null, null, _semeados.Count + 10,
+            PaginationDirection.Next, incluirContadores: true, VersaoServida, CancellationToken.None);
+
+        ContadoresDaVitrine contadores = pagina.Contadores!.Value;
+
+        pagina.Itens.Should().HaveCount(_semeados.Count, "a linha de outra versão não é servível por esta consulta");
+        (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
+            .Should().Be(_semeados.Count, "a contagem descreve a mesma coleção que a página");
     }
 
     private static SituacaoDoCertame Classificar(CertameDivulgado certame) =>
@@ -131,18 +158,19 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, new RecorteDaVitrine(situacao), [], Limiar, null, null,
-                Deslocamentos.Length * Deslocamentos.Length, PaginationDirection.Next, incluirContadores: false, CancellationToken.None);
+                Deslocamentos.Length * Deslocamentos.Length, PaginationDirection.Next, incluirContadores: false, VersaoServida, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Id)];
     }
 
-    private static CertameDivulgado Divulgado(DateTimeOffset inscricoesDe, DateTimeOffset inscricoesAte) =>
+    private static CertameDivulgado Divulgado(
+        DateTimeOffset inscricoesDe, DateTimeOffset inscricoesAte, string versaoProjecao = VersaoServida) =>
         CertameDivulgado.Criar(
             Guid.CreateVersion7(),
             numeroVersao: 1,
             Guid.CreateVersion7(),
             new string('a', 64),
-            versaoProjecao: "1",
+            versaoProjecao,
             new FacetasDoCertameDivulgado("Certame de recorte", "001/2026", ["AC"], inscricoesDe, inscricoesAte),
             """{"nome":"Certame de recorte"}""",
             Agora);
