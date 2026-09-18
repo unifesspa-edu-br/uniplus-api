@@ -14,9 +14,6 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
 
     // Mesmas larguras das demais referências ao rol_de_regras no módulo — a identidade
     // (codigo, versao, hash) tem a mesma forma onde quer que uma dimensão aplique regra.
-    private const int RegraCodigoMaxLength = 128;
-    private const int RegraVersaoMaxLength = 16;
-    private const int HashLength = 64;
 
     public void Configure(EntityTypeBuilder<ProcessoSeletivo> builder)
     {
@@ -134,18 +131,15 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // all-or-nothing próprio: o owned type do EF já traz as três juntas ou nenhuma.
         builder.OwnsOne(p => p.AlgoritmoContagemPrazo, algoritmo =>
         {
+            algoritmo.ConfigurarReferenciaRegra("algoritmo_contagem_prazo");
+
+            // A forma das colunas é a mesma de toda referência de regra; o que é desta aqui é o
+            // que cada uma significa para o certame.
             algoritmo.Property(x => x.Codigo)
-                .HasColumnName("algoritmo_contagem_prazo_codigo")
-                .HasMaxLength(RegraCodigoMaxLength)
                 .HasComment("Código da entrada de algoritmo de contagem do rol_de_regras que o certame declarou.");
             algoritmo.Property(x => x.Versao)
-                .HasColumnName("algoritmo_contagem_prazo_versao")
-                .HasMaxLength(RegraVersaoMaxLength)
                 .HasComment("Versão da entrada declarada — evolução da convenção é versão nova, nunca alteração da vigente.");
             algoritmo.Property(x => x.Hash)
-                .HasColumnName("algoritmo_contagem_prazo_hash")
-                .HasMaxLength(HashLength)
-                .IsFixedLength()
                 .HasComment("Hash da definição resolvida no rol_de_regras — é o que prova que a convenção aplicada não mudou depois.");
         });
 

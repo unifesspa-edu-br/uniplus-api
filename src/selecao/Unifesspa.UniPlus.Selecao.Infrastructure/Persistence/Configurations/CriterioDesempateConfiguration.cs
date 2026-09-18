@@ -21,9 +21,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<CriterioDesempate>
 {
-    private const int RegraCodigoMaxLength = 128;
-    private const int RegraVersaoMaxLength = 16;
-    private const int HashLength = 64;
 
     public void Configure(EntityTypeBuilder<CriterioDesempate> builder)
     {
@@ -35,12 +32,7 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
 
         builder.Property(c => c.Ordem).IsRequired();
 
-        builder.OwnsOne(c => c.Regra, regra =>
-        {
-            regra.Property(r => r.Codigo).HasColumnName("regra_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
-            regra.Property(r => r.Versao).HasColumnName("regra_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
-            regra.Property(r => r.Hash).HasColumnName("regra_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
-        });
+        builder.OwnsOne(c => c.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(c => c.Regra).IsRequired();
 
         // Args polimórficos (união fechada de 4 variantes, ADR-0058 §"Discriminated

@@ -16,9 +16,6 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
     // declaram, e as mesmas que o decodificador do envelope aceita: a janela recursal da etapa
     // guarda referência de regra igual à da fase, e larguras próprias aqui só produziriam
     // envelope que o decodificador aprova e a coluna recusa.
-    private const int RegraCodigoMaxLength = 128;
-    private const int RegraVersaoMaxLength = 16;
-    private const int HashLength = 64;
 
     public void Configure(EntityTypeBuilder<RecursoDaEtapa> builder)
     {
@@ -30,12 +27,7 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
         builder.Property(r => r.Ancora).HasConversion<int>().IsRequired();
         builder.Property(r => r.ProdutoAncoraId).HasColumnName("produto_ancora_id");
 
-        builder.OwnsOne(r => r.Regra, regra =>
-        {
-            regra.Property(x => x.Codigo).HasColumnName("regra_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
-            regra.Property(x => x.Versao).HasColumnName("regra_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
-            regra.Property(x => x.Hash).HasColumnName("regra_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
-        });
+        builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
         builder.OwnsOne(r => r.Args, args =>

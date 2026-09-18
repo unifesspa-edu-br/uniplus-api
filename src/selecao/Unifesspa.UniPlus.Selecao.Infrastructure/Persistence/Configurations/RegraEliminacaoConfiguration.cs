@@ -22,9 +22,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<RegraEliminacao>
 {
-    private const int RegraCodigoMaxLength = 128;
-    private const int RegraVersaoMaxLength = 16;
-    private const int HashLength = 64;
 
     public void Configure(EntityTypeBuilder<RegraEliminacao> builder)
     {
@@ -34,12 +31,7 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
 
-        builder.OwnsOne(r => r.Regra, regra =>
-        {
-            regra.Property(x => x.Codigo).HasColumnName("regra_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
-            regra.Property(x => x.Versao).HasColumnName("regra_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
-            regra.Property(x => x.Hash).HasColumnName("regra_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
-        });
+        builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
         // Args polimórficos (união fechada de 3 variantes) — mesmo padrão de

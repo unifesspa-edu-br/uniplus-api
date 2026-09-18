@@ -17,9 +17,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfiguration<ConfiguracaoBonusRegional>
 {
-    private const int RegraCodigoMaxLength = 128;
-    private const int RegraVersaoMaxLength = 16;
-    private const int HashLength = 64;
     private const int TipoInstrumentoMaxLength = 30;
     private const int IdentificacaoMaxLength = 500;
     private const int DescricaoMaxLength = 2000;
@@ -32,12 +29,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
 
-        builder.OwnsOne(b => b.Regra, regra =>
-        {
-            regra.Property(r => r.Codigo).HasColumnName("regra_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
-            regra.Property(r => r.Versao).HasColumnName("regra_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
-            regra.Property(r => r.Hash).HasColumnName("regra_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
-        });
+        builder.OwnsOne(b => b.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(b => b.Regra).IsRequired();
 
         builder.Property(b => b.Fator).HasPrecision(6, 4).IsRequired();

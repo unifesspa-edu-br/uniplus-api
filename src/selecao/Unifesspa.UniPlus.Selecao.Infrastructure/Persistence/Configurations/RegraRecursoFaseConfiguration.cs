@@ -13,9 +13,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 /// </summary>
 public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<RegraRecursoFase>
 {
-    private const int RegraCodigoMaxLength = 128;
-    private const int RegraVersaoMaxLength = 16;
-    private const int HashLength = 64;
 
     public void Configure(EntityTypeBuilder<RegraRecursoFase> builder)
     {
@@ -25,12 +22,7 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
 
-        builder.OwnsOne(r => r.Regra, regra =>
-        {
-            regra.Property(x => x.Codigo).HasColumnName("regra_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
-            regra.Property(x => x.Versao).HasColumnName("regra_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
-            regra.Property(x => x.Hash).HasColumnName("regra_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
-        });
+        builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
         builder.OwnsOne(r => r.Args, args =>
