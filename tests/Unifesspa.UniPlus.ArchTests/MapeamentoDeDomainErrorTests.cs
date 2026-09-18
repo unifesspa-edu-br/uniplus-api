@@ -268,6 +268,107 @@ public sealed partial class MapeamentoDeDomainErrorTests
     private static string SemDeclaracaoDeConstante(string conteudo) =>
         DeclaracaoDeConstanteRegex().Replace(conteudo, string.Empty);
 
+    /// <summary>
+    /// As recusas dos guard rails da cadeia de versões de configuração se dividem em duas
+    /// espécies, e o status é o que as separa para quem consome a API. Esta teoria prende
+    /// cada uma ao seu lado, porque a diferença é sutil o bastante para que uma reclassificação
+    /// distraída passe despercebida — as sete nascem no mesmo lugar, o mesmo
+    /// <c>switch</c> sobre o nome da constraint violada.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>409</b> cabe a UMA só, e quem decide isso é a ordem em que o trigger de sucessão
+    /// confere as coisas. Ele carrega como anterior a linha de maior número e devolve o
+    /// controle antes de tudo quando o número que chega não é maior que o dela, deixando a
+    /// duplicidade para o índice único. Uma sucessora montada sobre leitura que envelheceu traz
+    /// justamente o número que a publicação concorrente acabou de gravar — cai nesse retorno
+    /// antecipado e sai pelo índice. Toda corrida vira número duplicado, e só ela.
+    /// </para>
+    /// <para>
+    /// <b>422</b> fica com as outras seis. Duas nem consultam estado (o ato que retifica a si
+    /// mesmo, o contrato de abertura); uma recusa um id que o corpo informa, e reenviar não
+    /// conserta; outra é guarda contra gravação por fora do agregado. E as duas que parecem
+    /// candidatas a corrida — cadeia quebrada e vigência regressiva — não são: o agregado já as
+    /// conferiu em memória contra a MESMA linha que o trigger vai encontrar, porque as versões
+    /// são append-only e únicas por número. Só uma gravação malformada as alcança, nomeando a
+    /// anterior certa e ainda assim contradizendo o que ela diz.
+    /// </para>
+    /// </remarks>
+    [Theory(DisplayName = "Guard rail da cadeia de versões: corrida responde 409, recusa de corpo responde 422")]
+    [InlineData("VersaoConfiguracao.NumeroDuplicado", 409)]
+    [InlineData("VersaoConfiguracao.CadeiaQuebrada", 422)]
+    [InlineData("VersaoConfiguracao.VigenciaRegressiva", 422)]
+    [InlineData("VersaoConfiguracao.AtoCriadorRepetido", 422)]
+    [InlineData("VersaoConfiguracao.AtoCriadorJaCriouVersao", 422)]
+    [InlineData("VersaoConfiguracao.NumeracaoComBuraco", 422)]
+    [InlineData("VersaoConfiguracao.ContratoAberturaInvalido", 422)]
+    public void GuardRailDaCadeiaDeVersoes_TemOStatusDaSuaEspecie(string code, int statusEsperado)
+    {
+        Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados("Selecao");
+
+        mapeamentos.Should().ContainKey(code);
+        mapeamentos[code].Status.Should().Be(statusEsperado);
+    }
+
+    /// <summary>
+    /// O <c>code</c> permanece específico em todas as sete, inclusive na que passou a 409.
+    /// O status responde "dá para tentar de novo?"; o code responde "por quê?". Colapsá-las no
+    /// código genérico de conflito apagaria a segunda resposta sem melhorar a primeira, e as
+    /// tornaria indistinguíveis do conflito de concorrência otimista, que é outro mecanismo e
+    /// tem outro tratamento.
+    /// </summary>
+    [Fact(DisplayName = "As recusas da cadeia de versões mantêm code próprio, sem colapsar no conflito genérico")]
+    public void GuardRailDaCadeiaDeVersoes_NaoColapsaNoCodeGenericoDeConflito()
+    {
+        Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados("Selecao");
+
+        IEnumerable<KeyValuePair<string, DomainErrorMapping>> daCadeia = mapeamentos
+            .Where(m => m.Key.StartsWith("VersaoConfiguracao.", StringComparison.Ordinal));
+
+        daCadeia.Should().NotBeEmpty();
+        daCadeia.Should().OnlyContain(
+            m => m.Value.Code != "uniplus.concorrencia.conflito",
+            "o code identifica a causa e alimenta o catálogo público de erros; o conflito "
+                + "genérico é do middleware de concorrência otimista, e confundir os dois "
+                + "esconde qual invariante da cadeia de versões foi violada");
+    }
+
+    private static Dictionary<string, DomainErrorMapping> LerMapeamentosRegistrados(string modulo)
+    {
+        Regex assemblyDeProducao = new(
+            @"^Unifesspa\.UniPlus\.(Kernel|Application\.Abstractions|Infrastructure\.Core|"
+                + Regex.Escape(modulo) + @"\.(Domain|Application|Infrastructure|API))$",
+            RegexOptions.None, TimeSpan.FromSeconds(1));
+
+        CarregarAssembliesDoModulo(modulo);
+
+        Dictionary<string, DomainErrorMapping> mapeamentos = new(StringComparer.Ordinal);
+        IEnumerable<ReflectionType> registrations = AppDomain.CurrentDomain
+            .GetAssemblies()
+            .Where(a => a.GetName().Name is { } nome && assemblyDeProducao.IsMatch(nome))
+            .SelectMany(TiposDe)
+            .Where(t => !t.IsAbstract && !t.IsInterface && typeof(IDomainErrorRegistration).IsAssignableFrom(t));
+
+        foreach (ReflectionType tipo in registrations)
+        {
+            ConstructorInfo? ctor = tipo.GetConstructor(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                types: []);
+            if (ctor is null)
+            {
+                continue;
+            }
+
+            IDomainErrorRegistration instancia = (IDomainErrorRegistration)ctor.Invoke(null);
+            foreach ((string code, DomainErrorMapping mapeamento) in instancia.GetMappings())
+            {
+                mapeamentos[code] = mapeamento;
+            }
+        }
+
+        return mapeamentos;
+    }
+
     private static HashSet<string> LerCodesRegistrados(string modulo)
     {
         // Whitelist por módulo, não scan amplo: um code registrado apenas em OUTRO

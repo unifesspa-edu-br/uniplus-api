@@ -718,6 +718,11 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <c>Extensions["pendencias"]</c>, qualquer que seja o código do erro que
     /// efetivamente recusou.
     /// <para>
+    /// Devolve <b>409</b> quando outra publicação congelou uma versão entre a leitura da
+    /// anterior e a gravação desta: a requisição foi montada contra um estado que deixou de
+    /// ser o atual, e o corpo não tem defeito. É o caso de reler e resubmeter.
+    /// </para>
+    /// <para>
     /// O bloco <c>ato</c> é o MESMO que a retificação recebe: o tipo do ato vem
     /// declarado pelo operador e é conferido contra o catálogo de Publicações — nunca
     /// inferido do contexto. Retificar não é um tipo de ato, é uma relação entre atos
@@ -729,6 +734,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
         Guid id,
