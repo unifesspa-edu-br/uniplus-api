@@ -27,7 +27,7 @@ public static class ReverseProxyConfiguration
     //   cifrado junto.
     // - XForwardedFor reescreve RemoteIpAddress, que alimenta log e correlação. Passar a
     //   confiar nele é decisão própria, com consequências próprias — não carona nesta.
-    private const ForwardedHeaders HeadersHonrados = ForwardedHeaders.XForwardedProto;
+    private const ForwardedHeaders HonoredHeaders = ForwardedHeaders.XForwardedProto;
 
     /// <summary>
     /// Binds <see cref="ReverseProxyOptions"/> and configures forwarded header processing.
@@ -48,14 +48,14 @@ public static class ReverseProxyConfiguration
                 options => environment.IsDevelopment() || options.TrustedNetworks.Count > 0,
                 "ReverseProxy TrustedNetworks must be configured outside Development. Set 'ReverseProxy:TrustedNetworks' with the CIDR of the network the proxy reaches the API from; without it every forwarded header is ignored and absolute URLs are built with the wrong scheme.")
             .Validate(
-                options => options.TrustedNetworks.All(EhNotacaoCidrValida),
+                options => options.TrustedNetworks.All(IsValidCidrNotation),
                 "ReverseProxy TrustedNetworks accepts CIDR notation only (e.g., '10.42.0.0/16').")
             .ValidateOnStart();
 
         services.AddOptions<ForwardedHeadersOptions>()
             .Configure<IOptions<ReverseProxyOptions>>(
                 (forwardedOptions, ourOptionsAccessor) =>
-                    ConfigurarForwardedHeaders(forwardedOptions, ourOptionsAccessor.Value));
+                    ConfigureForwardedHeaders(forwardedOptions, ourOptionsAccessor.Value));
 
         return services;
     }
@@ -67,11 +67,11 @@ public static class ReverseProxyConfiguration
     public static IApplicationBuilder UseReverseProxyConfiguration(this IApplicationBuilder app) =>
         app.UseForwardedHeaders();
 
-    private static void ConfigurarForwardedHeaders(
+    private static void ConfigureForwardedHeaders(
         ForwardedHeadersOptions forwardedOptions,
         ReverseProxyOptions options)
     {
-        forwardedOptions.ForwardedHeaders = HeadersHonrados;
+        forwardedOptions.ForwardedHeaders = HonoredHeaders;
 
         // O default do framework confia em loopback. Aqui a lista é inteiramente declarada:
         // o que não está configurado não fala pelo cliente, e a configuração ausente resulta
@@ -83,11 +83,11 @@ public static class ReverseProxyConfiguration
         // antes daqui, e acessar ReverseProxyOptions.Value é o que a dispara. Descartar em
         // silêncio uma entrada malformada devolveria menos confiança do que o operador
         // declarou, sem nada que o dissesse — a falha muda de lugar, não deixa de existir.
-        foreach (string rede in options.TrustedNetworks)
+        foreach (string network in options.TrustedNetworks)
         {
-            forwardedOptions.KnownIPNetworks.Add(IPNetwork.Parse(rede));
+            forwardedOptions.KnownIPNetworks.Add(IPNetwork.Parse(network));
         }
     }
 
-    private static bool EhNotacaoCidrValida(string rede) => IPNetwork.TryParse(rede, out _);
+    private static bool IsValidCidrNotation(string network) => IPNetwork.TryParse(network, out _);
 }
