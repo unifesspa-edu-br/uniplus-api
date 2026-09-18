@@ -19,14 +19,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 public sealed class CatalogoDeOrdenacaoDaVitrineTests
 {
     [Fact(DisplayName = "Todo campo declarado no contrato aparece na descrição que o cliente lê")]
-    public void CamposDeclarados_EstaoNaDescricao() =>
+    public void Catalogo_QuandoCampoEDeclarado_DeveAparecerNaDescricao() =>
         CamposOrdenacaoDaVitrine.Todos.Should().AllSatisfy(campo =>
             CertamePublicadoController.DescricaoDoSort.Should().Contain(
                 campo,
                 "o contrato precisa anunciar exatamente os campos que a rota aceita"));
 
     [Fact(DisplayName = "A descrição não anuncia campo que o catálogo não tem")]
-    public void Descricao_NaoAnunciaCampoInexistente()
+    public void Descricao_QuandoListaOsCampos_NaoDeveAnunciarCampoForaDoCatalogo()
     {
         // O outro sentido da conferência: um campo removido do catálogo que sobra no texto faz o
         // contrato oferecer uma ordenação que a rota recusa.

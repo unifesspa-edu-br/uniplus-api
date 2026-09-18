@@ -75,7 +75,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
     [InlineData(SituacaoDoCertame.InscricoesAbertas)]
     [InlineData(SituacaoDoCertame.UltimosDias)]
     [InlineData(SituacaoDoCertame.Encerradas)]
-    public async Task Recorte_ConcordaComAClassificacao(SituacaoDoCertame situacao)
+    public async Task ListarVitrine_QuandoRecortaPorSituacao_DeveConcordarComAClassificacao(SituacaoDoCertame situacao)
     {
         IReadOnlyList<Guid> doBanco = await ListarAsync(situacao);
 
@@ -87,7 +87,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
     }
 
     [Fact(DisplayName = "Os quatro recortes particionam a vitrine: nenhum certame fica de fora nem aparece duas vezes")]
-    public async Task Recortes_ParticionamOConjuntoDivulgado()
+    public async Task ListarVitrine_QuandoPercorreOsQuatroRecortes_DeveParticionarOConjunto()
     {
         List<Guid> reunidos = [];
         foreach (SituacaoDoCertame situacao in Enum.GetValues<SituacaoDoCertame>())
@@ -102,7 +102,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
     }
 
     [Fact(DisplayName = "Cada contador é o tamanho da lista que ele promete, e os quatro somam o total")]
-    public async Task Contadores_BatemComOTamanhoDoRecorte()
+    public async Task ContarPorSituacao_QuandoHaDivulgadosEmTodasAsSituacoes_DeveBaterComOTamanhoDoRecorte()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);

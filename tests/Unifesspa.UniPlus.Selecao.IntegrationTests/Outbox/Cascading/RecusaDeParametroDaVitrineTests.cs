@@ -71,7 +71,7 @@ public sealed class RecusaDeParametroDaVitrineTests
     }
 
     [Fact(DisplayName = "Sem o parâmetro, a vitrine inteira é servida")]
-    public async Task SemSituacao_ServeAVitrineInteira()
+    public async Task Listar_QuandoOmiteASituacao_DeveServirAVitrineInteira()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 

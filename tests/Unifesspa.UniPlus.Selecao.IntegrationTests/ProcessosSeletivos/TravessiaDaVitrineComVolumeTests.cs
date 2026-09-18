@@ -90,7 +90,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     [InlineData(CamposOrdenacaoDaVitrine.Nome, "desc")]
     [InlineData(CamposOrdenacaoDaVitrine.DivulgadoEm, "asc")]
     [InlineData(CamposOrdenacaoDaVitrine.InscricoesDe, "desc")]
-    public async Task ParaAFrente_CobreOConjuntoUmaVez(string? campo, string? sentido)
+    public async Task Travessia_QuandoPercorreParaAFrente_DeveCobrirOConjuntoUmaVez(string? campo, string? sentido)
     {
         IReadOnlyList<Guid> percorridos = await PercorrerAsync(Ordenacao(campo, sentido), PaginationDirection.Next);
 
@@ -99,7 +99,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     }
 
     [Fact(DisplayName = "A travessia para trás cobre o mesmo conjunto que a de ida")]
-    public async Task ParaTras_CobreOMesmoConjunto()
+    public async Task Travessia_QuandoPercorreParaTras_DeveCobrirOMesmoConjunto()
     {
         // O sentido reverso tem seek próprio e ordenação própria antes de ser restaurada. Um erro
         // só nele produz o pior sintoma: ida correta, volta com buraco — e o cliente que navega
@@ -111,7 +111,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     }
 
     [Fact(DisplayName = "A ordem canônica por urgência vale para a coleção inteira, não por página")]
-    public async Task OrdemCanonica_ValeParaAColecaoInteira()
+    public async Task Travessia_QuandoNaoPedeOrdenacao_DeveManterAUrgenciaNaColecaoInteira()
     {
         // Ordenar dentro de cada página é o defeito que a paginação por cursor existe para evitar, e
         // ele só se revela olhando a sequência inteira: os abertos primeiro, por prazo crescente, e
@@ -130,7 +130,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     }
 
     [Fact(DisplayName = "A ordenação decrescente pedida vale para a coleção inteira")]
-    public async Task OrdenacaoPedida_ValeParaAColecaoInteira()
+    public async Task Travessia_QuandoPedeOrdenacaoDecrescente_DeveValerNaColecaoInteira()
     {
         IReadOnlyList<string> nomes = await PercorrerNomesAsync(
             [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Descending)]);
