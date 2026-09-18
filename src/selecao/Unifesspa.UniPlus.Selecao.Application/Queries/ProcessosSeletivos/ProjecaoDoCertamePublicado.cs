@@ -44,10 +44,12 @@ internal static class ProjecaoDoCertamePublicado
     /// quem fosse consultar dentro dele — que é a razão de ser jsonb, e não texto — escreveria o
     /// caminho errado. Fixar aqui evita que a convenção dependa de quem chamou o serializador.
     /// </para>
-    /// As duas exigências cobrem as duas formas de faltar. A de parâmetro de construtor recusa o
+    /// As três exigências cobrem as três formas de faltar. A de parâmetro de construtor recusa o
     /// membro <b>ausente</b> — <c>"tipoProcesso": {}</c> —; a de anotação de nulidade recusa o
     /// membro <b>presente e nulo</b> — <c>"codigo": null</c> —, que a primeira aceita porque o
-    /// argumento existe. Juntas, valem em TODO nível do grafo.
+    /// argumento existe; e <see cref="ArranjoSemElementoNulo"/> recusa o <b>elemento</b> nulo
+    /// dentro do arranjo — <c>"recursos": [null]</c> —, que nenhuma das duas alcança. As três valem
+    /// em TODO nível do grafo.
     /// <para>
     /// A alternativa seria descer a cada campo de cada tipo aninhado à mão: a forma do contrato
     /// escrita duas vezes, com a segunda cópia envelhecendo a cada campo novo.
@@ -57,6 +59,7 @@ internal static class ProjecaoDoCertamePublicado
     {
         RespectRequiredConstructorParameters = true,
         RespectNullableAnnotations = true,
+        Converters = { new ArranjoSemElementoNulo() },
     };
 
     /// <summary>
@@ -114,8 +117,8 @@ internal static class ProjecaoDoCertamePublicado
         // quem monta a vitrine ou o corpo da resposta — e o que impede servir campo declarado
         // obrigatório com valor nulo, que é a meia projeção que esta classe recusa. A conferência
         // cobre TODOS os membros não-anuláveis do contrato, porque um subconjunto deles deixa o
-        // resto passar em silêncio, e desce ao ELEMENTO das coleções: um `[null]` sobrevive à
-        // conferência do bloco e estoura no primeiro `Sum`/acesso.
+        // resto passar em silêncio. O ELEMENTO nulo dentro de um arranjo é recusado antes, na
+        // desserialização, por ArranjoSemElementoNulo.
         return certame is not null
             && certame.Nome is not null
             // Igualdade, não presença: num deploy em fases um processo novo materializa a versão
@@ -131,23 +134,14 @@ internal static class ProjecaoDoCertamePublicado
             && certame.UnidadeAdministradora is not null
             && certame.DocumentoEdital is not null
             && certame.OrigemCandidatos is not null
-            && SemElementoNulo(certame.ModalidadesOfertadas)
-            && SemElementoNulo(certame.Ofertas)
-            && SemElementoNulo(certame.Vagas)
-            && SemElementoNulo(certame.Etapas)
-            && SemElementoNulo(certame.CronogramaFases)
-            && SemElementoNulo(certame.DocumentosExigidos)
-            && certame.Atendimento is not null
-            && SemElementoNulo(certame.Atendimento.Condicoes)
-            && SemElementoNulo(certame.Atendimento.Recursos)
-            && SemElementoNulo(certame.Atendimento.TiposDeficiencia)
-            // O quadro de cada oferta é a única coleção aninhada que a resposta percorre.
-            && certame.Vagas.All(static v => SemElementoNulo(v.Quadro));
+            && certame.ModalidadesOfertadas is not null
+            && certame.Ofertas is not null
+            && certame.Vagas is not null
+            && certame.Etapas is not null
+            && certame.CronogramaFases is not null
+            && certame.DocumentosExigidos is not null
+            && certame.Atendimento is not null;
     }
-
-    /// <summary>A coleção existe e nenhum dos seus elementos é nulo.</summary>
-    private static bool SemElementoNulo<T>(IReadOnlyList<T>? colecao) =>
-        colecao is not null && colecao.All(static item => item is not null);
 
     /// <summary>
     /// Recusa a leitura de um documento divulgado que não é uma projeção íntegra — a mesma recusa
