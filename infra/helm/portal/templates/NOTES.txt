@@ -39,6 +39,24 @@ Pre-requisito obrigatório 2 — configuração de CORS:
   OptionsValidationException. Os charts uniplus-selecao e uniplus-ingresso
   seguem o mesmo contrato (`cors.allowedOrigins`).
 
+Pre-requisito obrigatorio 3 — redes confiaveis do proxy:
+  A aplicacao roda atras de um proxy que termina o TLS, e so honra o
+  X-Forwarded-Proto vindo das redes declaradas. Fora de Development,
+  AddReverseProxyConfiguration(...).ValidateOnStart() recusa subir com
+  ReverseProxy:TrustedNetworks vazio. Declare a rede de onde o proxy
+  alcanca o pod em values.yaml (`reverseProxy.trustedNetworks`) — o
+  ConfigMap renderiza cada entrada como ReverseProxy__TrustedNetworks__<i>.
+  Exemplo:
+
+    reverseProxy:
+      trustedNetworks:
+        - 10.42.0.0/16
+
+  Sem essa configuracao os pods crashloopam no startup, pelo mesmo
+  OptionsValidationException do CORS. Com a lista vazia aceita, o efeito
+  seria pior e silencioso: o app subiria enxergando http atras do TLS e
+  emitiria Link e Location apontando para endereco sem TLS.
+
   Estratégia recomendada de provisionamento:
     - PROD/HML: External Secrets Operator (ESO) sincronizando do HashiCorp
       Vault. A integração ESO/Vault é responsabilidade da Story de stand-up

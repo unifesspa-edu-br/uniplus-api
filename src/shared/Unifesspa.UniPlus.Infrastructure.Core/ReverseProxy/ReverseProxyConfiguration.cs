@@ -48,7 +48,7 @@ public static class ReverseProxyConfiguration
                 options => environment.IsDevelopment() || options.TrustedNetworks.Count > 0,
                 "ReverseProxy TrustedNetworks must be configured outside Development. Set 'ReverseProxy:TrustedNetworks' with the CIDR of the network the proxy reaches the API from; without it every forwarded header is ignored and absolute URLs are built with the wrong scheme.")
             .Validate(
-                options => options.TrustedNetworks.All(rede => TentarConverter(rede, out _)),
+                options => options.TrustedNetworks.All(EhNotacaoCidrValida),
                 "ReverseProxy TrustedNetworks accepts CIDR notation only (e.g., '10.42.0.0/16').")
             .ValidateOnStart();
 
@@ -79,15 +79,15 @@ public static class ReverseProxyConfiguration
         forwardedOptions.KnownIPNetworks.Clear();
         forwardedOptions.KnownProxies.Clear();
 
+        // Parse direto, sem filtrar: a validação das options já recusou notação inválida
+        // antes daqui, e acessar ReverseProxyOptions.Value é o que a dispara. Descartar em
+        // silêncio uma entrada malformada devolveria menos confiança do que o operador
+        // declarou, sem nada que o dissesse — a falha muda de lugar, não deixa de existir.
         foreach (string rede in options.TrustedNetworks)
         {
-            if (TentarConverter(rede, out IPNetwork convertida))
-            {
-                forwardedOptions.KnownIPNetworks.Add(convertida);
-            }
+            forwardedOptions.KnownIPNetworks.Add(IPNetwork.Parse(rede));
         }
     }
 
-    private static bool TentarConverter(string cidr, out IPNetwork rede) =>
-        IPNetwork.TryParse(cidr, out rede);
+    private static bool EhNotacaoCidrValida(string rede) => IPNetwork.TryParse(rede, out _);
 }
