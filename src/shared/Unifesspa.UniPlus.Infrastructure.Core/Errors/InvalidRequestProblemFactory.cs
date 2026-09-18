@@ -228,7 +228,14 @@ public static class InvalidRequestProblemFactory
             {
                 foreach (ModelError error in entry.Value.Errors)
                 {
-                    Match list = NamesAfterIncluding.Match(error.ErrorMessage ?? string.Empty);
+                    // A mensagem chega ora no campo de texto, ora na exceção que o formatter
+                    // guardou — depende de por onde a recusa passou. Ler as duas evita depender
+                    // de um detalhe de configuração que não controlamos; o recorte é o mesmo, e
+                    // é ele que mantém o nome do tipo de fora.
+                    Match list = NamesAfterIncluding.Match(
+                        string.IsNullOrEmpty(error.ErrorMessage)
+                            ? error.Exception?.Message ?? string.Empty
+                            : error.ErrorMessage);
                     if (!list.Success)
                     {
                         continue;

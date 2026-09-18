@@ -247,6 +247,34 @@ public sealed class InvalidRequestProblemFactoryTests
         problema.Extensions["code"].Should().Be("uniplus.requisicao.corpo_ausente");
     }
 
+    /// <summary>
+    /// A mesma extração vale quando a lista chega pela exceção que o formatter guardou, e não
+    /// pelo campo de texto da entrada.
+    /// </summary>
+    /// <remarks>
+    /// Por onde a recusa passa é detalhe de configuração do formatter, e depender de um caminho
+    /// só deixaria os campos sem nome — a recusa viraria "corpo ilegível" genérico justamente
+    /// no caso em que dá para dizer o que falta.
+    /// </remarks>
+    [Fact(DisplayName = "Os campos são nomeados mesmo quando a lista vem pela exceção do formatter")]
+    public void ListaNaExcecaoDoFormatter_TambemNomeiaOsCampos()
+    {
+        ActionContext contexto = Contexto();
+        contexto.ModelState.TryAddModelException(
+            "$[0]",
+            new InvalidOperationException(
+                "JSON deserialization for type 'Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.EtapaProcessoInput' "
+                + "was missing required properties including: 'produtos'; 'bancas'."));
+
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.campo_obrigatorio_ausente");
+        problema.Detail.Should().Contain("produtos").And.Contain("bancas");
+        problema.Detail.Should().NotContain("Unifesspa.UniPlus",
+            "o recorte começa depois de `including:`, e o nome do tipo vem antes — vale para as "
+            + "duas origens da mensagem");
+    }
+
     private static ProblemDetails Executar(ActionContext contexto)
     {
         IActionResult resultado = InvalidRequestProblemFactory.TryBuild(contexto)
