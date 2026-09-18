@@ -47,16 +47,19 @@ internal static class ProjecaoDoCertamePublicado
     /// Forma do documento guardado, e a mesma usada para lê-lo de volta.
     /// </summary>
     /// <remarks>
-    /// <c>RespectRequiredConstructorParameters</c> faz o desserializador recusar o documento a que
-    /// falte qualquer parâmetro de construtor sem valor padrão — em TODO nível do grafo, e não só
-    /// nos blocos de topo. Sem ele, um bloco presente mas vazio (<c>"tipoProcesso": {}</c>)
-    /// constrói o registro com membros nulos e atravessa qualquer conferência escrita à mão, a
-    /// menos que ela desça a cada campo de cada tipo aninhado — código que duplicaria o que a forma
-    /// do contrato já declara, e que envelheceria a cada campo novo.
+    /// As duas exigências cobrem as duas formas de faltar. A de parâmetro de construtor recusa o
+    /// membro <b>ausente</b> — <c>"tipoProcesso": {}</c> —; a de anotação de nulidade recusa o
+    /// membro <b>presente e nulo</b> — <c>"codigo": null</c> —, que a primeira aceita porque o
+    /// argumento existe. Juntas, valem em TODO nível do grafo.
+    /// <para>
+    /// A alternativa seria descer a cada campo de cada tipo aninhado à mão: a forma do contrato
+    /// escrita duas vezes, com a segunda cópia envelhecendo a cada campo novo.
+    /// </para>
     /// </remarks>
     public static readonly JsonSerializerOptions OpcoesDoDocumento = new(JsonSerializerDefaults.Web)
     {
         RespectRequiredConstructorParameters = true,
+        RespectNullableAnnotations = true,
     };
 
     /// <summary>
