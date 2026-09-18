@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
+using Unifesspa.UniPlus.Infrastructure.Core.ReverseProxy;
 using Unifesspa.UniPlus.Ingresso.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
@@ -72,6 +73,7 @@ builder.Services.AddAutorizacao(builder.Configuration);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, builder.Environment);
+builder.Services.AddReverseProxyConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
@@ -162,6 +164,9 @@ if (modoDeMigration == MigrationExecutionMode.ApplyAndExit)
     return await app.AplicarMigrationsEEncerrarAsync().ConfigureAwait(false);
 }
 
+// Antes de tudo: o log de request e toda URL absoluta emitida adiante dependem do
+// scheme original, que só existe no header que o proxy manda.
+app.UseReverseProxyConfiguration();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
