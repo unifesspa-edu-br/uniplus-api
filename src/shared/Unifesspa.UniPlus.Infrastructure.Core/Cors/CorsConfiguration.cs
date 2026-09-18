@@ -54,9 +54,9 @@ public static class CorsConfiguration
     //   um array puro, e o endereço de continuação só existe no header.
     //
     // Header que só um módulo emite NÃO entra aqui: esta lista é compartilhada por todos os
-    // deployables, e um nome de recurso de um módulo nela faz os outros anunciarem, no preflight,
-    // um header que nunca emitem. Quem tem header próprio o declara no seu composition root, pelo
-    // parâmetro de AddCorsConfiguration.
+    // deployables, e um nome de recurso de um módulo nela faz os outros autorizarem a leitura de um
+    // header que nunca emitem — num endereço onde aquele recurso sequer existe. Quem tem header
+    // próprio o declara no seu composition root, pelo parâmetro de AddCorsConfiguration.
     private static readonly string[] DefaultExposedHeaders =
     [
         "ETag",
