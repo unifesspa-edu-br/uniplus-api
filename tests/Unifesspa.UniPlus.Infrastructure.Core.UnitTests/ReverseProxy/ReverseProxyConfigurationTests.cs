@@ -28,9 +28,9 @@ public sealed class ReverseProxyConfigurationTests
     {
         // O caminho que importa: sem esta recusa, qualquer cliente que alcance a aplicação
         // decide o scheme das URLs que ela emite só mandando o header.
-        HttpContext context = await ProcessarAsync(
-            origem: "203.0.113.9",
-            protocoloEncaminhado: "https");
+        HttpContext context = await ProcessAsync(
+            remoteIp: "203.0.113.9",
+            forwardedProto: "https");
 
         context.Request.Scheme.Should().Be("http",
             because: "X-Forwarded-Proto vindo de fora das redes declaradas é ignorado");
@@ -39,9 +39,9 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public async Task Scheme_QuandoOHeaderVemDaRedeConfiavel_EHonrado()
     {
-        HttpContext context = await ProcessarAsync(
-            origem: "10.42.0.7",
-            protocoloEncaminhado: "https");
+        HttpContext context = await ProcessAsync(
+            remoteIp: "10.42.0.7",
+            forwardedProto: "https");
 
         context.Request.Scheme.Should().Be("https",
             because: "é o scheme com que a requisição chegou ao proxy que termina o TLS");
@@ -50,9 +50,9 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public async Task Scheme_QuandoNaoHaHeaderEncaminhado_PermaneceODaConexao()
     {
-        HttpContext context = await ProcessarAsync(
-            origem: "10.42.0.7",
-            protocoloEncaminhado: null);
+        HttpContext context = await ProcessAsync(
+            remoteIp: "10.42.0.7",
+            forwardedProto: null);
 
         context.Request.Scheme.Should().Be("http");
     }
@@ -60,7 +60,7 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public void Options_QuandoConfiguradas_HonramSomenteOProtocolo()
     {
-        ForwardedHeadersOptions options = ResolverForwardedHeaders(RedeConfiavel);
+        ForwardedHeadersOptions options = ResolveForwardedHeaders(RedeConfiavel);
 
         options.ForwardedHeaders.Should().Be(ForwardedHeaders.XForwardedProto,
             because: "XForwardedHost deixaria um Host forjado compor as URLs que a API emite, " +
@@ -70,7 +70,7 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public void Options_QuandoConfiguradas_NaoHerdamConfiancaImplicita()
     {
-        ForwardedHeadersOptions options = ResolverForwardedHeaders(RedeConfiavel);
+        ForwardedHeadersOptions options = ResolveForwardedHeaders(RedeConfiavel);
 
         options.KnownProxies.Should().BeEmpty();
         options.KnownIPNetworks.Should().ContainSingle()
@@ -81,7 +81,7 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public void Startup_ForaDeDevelopment_SemRedeConfiavel_Falha()
     {
-        Action resolver = () => ResolverOpcoes(Environments.Production);
+        Action resolver = () => ResolveOptions(Environments.Production);
 
         resolver.Should().Throw<OptionsValidationException>()
             .WithMessage("*TrustedNetworks*",
@@ -92,7 +92,7 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public void Startup_EmDevelopment_SemRedeConfiavel_Sobe()
     {
-        Action resolver = () => ResolverOpcoes(Environments.Development);
+        Action resolver = () => ResolveOptions(Environments.Development);
 
         resolver.Should().NotThrow(
             because: "em desenvolvimento não há proxy na frente, e nenhum header encaminhado é honrado");
@@ -101,7 +101,7 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public void Startup_ComRedeEmNotacaoInvalida_Falha()
     {
-        Action resolver = () => ResolverOpcoes(Environments.Production, "10.42.0.0");
+        Action resolver = () => ResolveOptions(Environments.Production, "10.42.0.0");
 
         resolver.Should().Throw<OptionsValidationException>()
             .WithMessage("*CIDR*");
@@ -113,9 +113,9 @@ public sealed class ReverseProxyConfigurationTests
         // Socket dual-mode entrega o peer IPv4 como ::ffff:10.42.0.7. Se a comparação com a
         // rede declarada fosse por família de endereço, a rede IPv4 não casaria e a correção
         // seria inócua justamente onde ela precisa valer.
-        HttpContext context = await ProcessarAsync(
-            origem: "::ffff:10.42.0.7",
-            protocoloEncaminhado: "https");
+        HttpContext context = await ProcessAsync(
+            remoteIp: "::ffff:10.42.0.7",
+            forwardedProto: "https");
 
         context.Request.Scheme.Should().Be("https");
     }
@@ -126,23 +126,23 @@ public sealed class ReverseProxyConfigurationTests
         // A composição das ForwardedHeadersOptions converte cada entrada sem filtrar, e é
         // esta validação que a autoriza a fazê-lo: compor passa por ReverseProxyOptions.Value,
         // que valida antes de devolver.
-        Action compor = () => ResolverForwardedHeaders("10.42.0.0");
+        Action compor = () => ResolveForwardedHeaders("10.42.0.0");
 
         compor.Should().Throw<OptionsValidationException>()
             .WithMessage("*CIDR*");
     }
 
-    private static async Task<HttpContext> ProcessarAsync(string origem, string? protocoloEncaminhado)
+    private static async Task<HttpContext> ProcessAsync(string remoteIp, string? forwardedProto)
     {
         IOptions<ForwardedHeadersOptions> options =
-            Options.Create(ResolverForwardedHeaders(RedeConfiavel));
+            Options.Create(ResolveForwardedHeaders(RedeConfiavel));
 
         DefaultHttpContext context = new();
         context.Request.Scheme = "http";
-        context.Connection.RemoteIpAddress = IPAddress.Parse(origem);
-        if (protocoloEncaminhado is not null)
+        context.Connection.RemoteIpAddress = IPAddress.Parse(remoteIp);
+        if (forwardedProto is not null)
         {
-            context.Request.Headers["X-Forwarded-Proto"] = protocoloEncaminhado;
+            context.Request.Headers["X-Forwarded-Proto"] = forwardedProto;
         }
 
         ForwardedHeadersMiddleware middleware = new(
@@ -155,24 +155,24 @@ public sealed class ReverseProxyConfigurationTests
         return context;
     }
 
-    private static ForwardedHeadersOptions ResolverForwardedHeaders(params string[] redesConfiaveis)
+    private static ForwardedHeadersOptions ResolveForwardedHeaders(params string[] trustedNetworks)
     {
-        ServiceProvider provider = ConstruirProvider(Environments.Production, redesConfiaveis);
+        ServiceProvider provider = BuildProvider(Environments.Production, trustedNetworks);
         return provider.GetRequiredService<IOptions<ForwardedHeadersOptions>>().Value;
     }
 
-    private static void ResolverOpcoes(string ambiente, params string[] redesConfiaveis)
+    private static void ResolveOptions(string environmentName, params string[] trustedNetworks)
     {
-        ServiceProvider provider = ConstruirProvider(ambiente, redesConfiaveis);
+        ServiceProvider provider = BuildProvider(environmentName, trustedNetworks);
         _ = provider.GetRequiredService<IOptions<ReverseProxyOptions>>().Value;
     }
 
-    private static ServiceProvider ConstruirProvider(string ambiente, params string[] redesConfiaveis)
+    private static ServiceProvider BuildProvider(string environmentName, params string[] trustedNetworks)
     {
         Dictionary<string, string?> valores = [];
-        for (int i = 0; i < redesConfiaveis.Length; i++)
+        for (int i = 0; i < trustedNetworks.Length; i++)
         {
-            valores[$"{ReverseProxyOptions.SectionName}:TrustedNetworks:{i}"] = redesConfiaveis[i];
+            valores[$"{ReverseProxyOptions.SectionName}:TrustedNetworks:{i}"] = trustedNetworks[i];
         }
 
         IConfiguration configuration = new ConfigurationBuilder()
@@ -180,7 +180,7 @@ public sealed class ReverseProxyConfigurationTests
             .Build();
 
         IHostEnvironment environment = Substitute.For<IHostEnvironment>();
-        environment.EnvironmentName.Returns(ambiente);
+        environment.EnvironmentName.Returns(environmentName);
 
         return new ServiceCollection()
             .AddReverseProxyConfiguration(configuration, environment)
