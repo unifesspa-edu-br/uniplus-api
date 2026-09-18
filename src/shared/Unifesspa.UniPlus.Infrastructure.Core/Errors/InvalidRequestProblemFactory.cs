@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Net.Http.Headers;
 
 /// <summary>
 /// Resposta canônica para a carga que não chega a ser lida — o corpo que o desserializador
@@ -86,7 +87,7 @@ public static class InvalidRequestProblemFactory
             || HasConversionFailure(context.ModelState, binderKeys);
         IReadOnlyList<string> missing = MissingFields(context.ModelState, binderKeys);
         bool bodyAbsent = !unreadable
-            && !CarregaConteudo(context.HttpContext.Request)
+            && CorpoComprovadamenteAusente(context.HttpContext.Request)
             && HasAbsentBody(context.ModelState, bodyKeys);
 
         if (!unreadable && !bodyAbsent && missing.Count == 0)
@@ -150,11 +151,27 @@ public static class InvalidRequestProblemFactory
     }
 
     /// <summary>
-    /// Se a requisição traz documento. É o que separa "não mandou corpo" de "mandou o corpo
-    /// <c>null</c>": nos dois o parâmetro fica nulo e a exigência implícita reprova do mesmo
-    /// jeito, e só o tamanho do conteúdo distingue quem enviou algo de quem não enviou nada.
+    /// Se dá para PROVAR que a requisição não traz documento algum.
     /// </summary>
-    private static bool CarregaConteudo(HttpRequest request) => request.ContentLength > 0;
+    /// <remarks>
+    /// <para>
+    /// Separar "não mandou corpo" de "mandou o corpo <c>null</c>" importa porque nos dois o
+    /// parâmetro fica nulo e a exigência implícita reprova igual — pelo <c>ModelState</c> são
+    /// indistinguíveis. Mandar acrescentar corpo a quem já mandou um é orientação que não leva
+    /// a lugar nenhum.
+    /// </para>
+    /// <para>
+    /// A prova é a do próprio HTTP: há corpo quando o comprimento é positivo ou quando a
+    /// codificação de transferência anuncia um de tamanho não declarado. Tamanho
+    /// <b>desconhecido</b> não é tamanho zero — um documento em chunked, ou um corpo HTTP/2 sem
+    /// comprimento declarado, chega sem <c>Content-Length</c> e existe. Na dúvida, esta função
+    /// diz não, e a recusa segue para a cadeia: afirmar ausência que não se pode provar é
+    /// exatamente o erro que este factory existe para não cometer.
+    /// </para>
+    /// </remarks>
+    private static bool CorpoComprovadamenteAusente(HttpRequest request) =>
+        request.ContentLength is null or 0
+        && !request.Headers.ContainsKey(HeaderNames.TransferEncoding);
 
     /// <summary>
     /// Falha de CONVERSÃO num parâmetro que o binder preenche: o valor veio e não vira o tipo
