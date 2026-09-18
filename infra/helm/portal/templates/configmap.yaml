@@ -12,3 +12,6 @@ data:
   {{- range $index, $origin := .Values.cors.allowedOrigins }}
   Cors__AllowedOrigins__{{ $index }}: {{ $origin | quote }}
   {{- end }}
+  {{- range $index, $rede := .Values.reverseProxy.trustedNetworks }}
+  ReverseProxy__TrustedNetworks__{{ $index }}: {{ $rede | quote }}
+  {{- end }}

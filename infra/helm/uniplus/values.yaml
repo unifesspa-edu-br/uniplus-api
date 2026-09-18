@@ -29,6 +29,15 @@ env:
 cors:
   allowedOrigins: []
 
+# Redes de onde o proxy que termina o TLS alcanca a aplicacao, em notacao CIDR.
+# Fora de Development, AddReverseProxyConfiguration().ValidateOnStart() rejeita
+# lista vazia — sem ao menos uma entrada o pod crashloopa no startup.
+# So X-Forwarded-Proto e honrado, e apenas vindo destas redes: sem isso a
+# aplicacao enxerga http atras do TLS terminado e emite Link e Location com o
+# scheme errado. Cada item vira a env var ReverseProxy__TrustedNetworks__<i>.
+reverseProxy:
+  trustedNetworks: []
+
 # Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
 # (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).
 # O monólito usa as 6 connection strings apontando para o MESMO banco `uniplus`

@@ -107,6 +107,18 @@ public sealed class ReverseProxyConfigurationTests
             .WithMessage("*CIDR*");
     }
 
+    [Fact]
+    public void ForwardedHeaders_ComRedeEmNotacaoInvalida_FalhaAntesDeCompor()
+    {
+        // A composição das ForwardedHeadersOptions converte cada entrada sem filtrar, e é
+        // esta validação que a autoriza a fazê-lo: compor passa por ReverseProxyOptions.Value,
+        // que valida antes de devolver.
+        Action compor = () => ResolverForwardedHeaders("10.42.0.0");
+
+        compor.Should().Throw<OptionsValidationException>()
+            .WithMessage("*CIDR*");
+    }
+
     private static async Task<HttpContext> ProcessarAsync(string origem, string? protocoloEncaminhado)
     {
         IOptions<ForwardedHeadersOptions> options =
