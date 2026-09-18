@@ -9,9 +9,8 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// pesquisado.
 /// </summary>
 /// <remarks>
-/// Os três juntos num objeto porque andam juntos: a listagem e os contadores precisam correr sobre
-/// exatamente o mesmo conjunto, e os três entram na assinatura do cursor. Passá-los soltos é como
-/// um deles fica para trás numa das duas pontas.
+/// Juntos porque a listagem e os contadores precisam correr sobre o mesmo conjunto, e os três
+/// entram na assinatura do cursor.
 /// </remarks>
 /// <param name="Situacao">
 /// Recorte por situação da janela. Nulo é a vitrine inteira — sem filtro é sem parâmetro, não um
@@ -43,16 +42,10 @@ public interface ICertameDivulgadoRepository
     /// próximo ao mais distante, e os encerrados depois.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Consulta de tabela única. Só há linha para certame público, então não há filtro de
-    /// visibilidade a aplicar depois — a página sai do banco com o tamanho pedido, e o percurso não
-    /// depende de descarte posterior.
-    /// </para>
-    /// <para>
-    /// <paramref name="ordenacao"/> vazia é a ordem canônica por urgência; com campos, é a que a
-    /// consulta pediu. O recorte e a ordenação entram na assinatura do cursor, de modo que uma
-    /// continuação só vale para a consulta que a emitiu.
-    /// </para>
+    /// Consulta de tabela única: só há linha para certame público, então a página sai do banco com
+    /// o tamanho pedido. <paramref name="ordenacao"/> vazia é a ordem canônica por urgência. O
+    /// recorte e a ordenação entram na assinatura do cursor, e uma continuação só vale para a
+    /// consulta que a emitiu.
     /// </remarks>
     Task<(IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarVitrineAsync(

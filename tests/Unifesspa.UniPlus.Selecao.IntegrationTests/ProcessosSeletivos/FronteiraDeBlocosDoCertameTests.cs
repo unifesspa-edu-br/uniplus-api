@@ -47,8 +47,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     [Fact(DisplayName = "O envelope com os blocos condicionais presentes também está inteiramente classificado")]
     public void Classificacao_QuandoEnvelopeTemBlocosCondicionais_NaoDeveTerBlocoSemClassificar()
     {
-        // Cascata de remanejamento e bônus regional alternam presença. Sem exercitar a variante em
-        // que existem, a verificação não os alcançaria e eles poderiam nascer sem classificação.
+        // Cascata e bônus regional alternam presença; sem a variante em que existem, escapam.
         SnapshotCanonico canonico = EnvelopeCanonicoGoldenTests.CanonicalizarReferenciaComCascata();
         IReadOnlyCollection<string> naoClassificados = NaoClassificados(ChavesDe(canonico));
 
@@ -60,8 +59,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     [Fact(DisplayName = "Um bloco fictício não classificado faz a verificação falhar, nomeando o bloco")]
     public void Classificacao_QuandoEnvelopeGanhaBlocoNaoClassificado_DeveQuebrarNomeandoOBloco()
     {
-        // O teste do próprio teste: uma verificação que não falha quando o envelope ganha bloco não
-        // é gate, é decoração.
+        // O teste do próprio teste.
         List<string> comBlocoNovo = [.. ChavesDoEnvelopeDeReferencia(), "dimensaoAindaNaoDecidida"];
 
         IReadOnlyCollection<string> naoClassificados = NaoClassificados(comBlocoNovo);
@@ -72,8 +70,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     [Fact(DisplayName = "Nenhum bloco é classificado em duas categorias ao mesmo tempo")]
     public void Classificacao_QuandoCategoriasSaoComparadas_NaoDevemSeSobrepor()
     {
-        // Um bloco em "público" e "interno" ao mesmo tempo tornaria a classificação inútil: a
-        // verificação passaria, e qual das duas vale ficaria indefinido.
+        // Bloco em duas categorias passaria na verificação com a exposição indefinida.
         ClassificacaoDosBlocosDoCertame.Publicados
             .Intersect(ClassificacaoDosBlocosDoCertame.Internos, StringComparer.Ordinal)
             .Should().BeEmpty();
@@ -90,8 +87,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     [Fact(DisplayName = "A classificação não guarda bloco que o envelope deixou de emitir")]
     public void Classificacao_QuandoEnvelopeDeixaDeEmitirBloco_NaoDeveGuardaLo()
     {
-        // A lista envelhece nos dois sentidos. Um bloco removido do domínio que sobra aqui faz a
-        // classificação descrever um envelope que não existe mais.
+        // A lista envelhece nos dois sentidos.
         HashSet<string> emitidos = [
             .. ChavesDoEnvelopeDeReferencia(),
             .. ChavesDe(EnvelopeCanonicoGoldenTests.CanonicalizarReferenciaComCascata()),
@@ -107,10 +103,8 @@ public sealed class FronteiraDeBlocosDoCertameTests
     [Fact(DisplayName = "A projeção pública lê o envelope canônico REAL, não só o escrito à mão nos testes")]
     public void Projetar_QuandoEnvelopeCanonicoReal_DeveSerLidoComSucesso()
     {
-        // A fronteira acima compara as chaves de TOPO. Renomear uma chave INTERNA de bloco no
-        // canonicalizador — o rótulo de um documento exigido, o nome de um recurso de atendimento,
-        // a lista de formatos — a mantém verde e faz a leitura pública recusar TODO certame, com
-        // defeito detectável só em produção. Projetar o snapshot canônico fecha essa porta.
+        // A fronteira acima compara só as chaves de topo: renomear chave interna a mantém verde e
+        // faz a leitura pública recusar todo certame.
         JsonObject envelope = (JsonObject)JsonNode.Parse(
             EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
 

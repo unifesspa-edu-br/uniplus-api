@@ -7,25 +7,18 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A existência desta linha É a publicidade do certame.</b> Ela nasce quando o ato normativo que
-/// criou a versão se confirma no registro central, e avança quando o ato de uma retificação se
-/// confirma. Não há coluna de "visível": não existir e não ser público são a mesma coisa.
+/// <b>A existência desta linha É a publicidade do certame.</b> Ela nasce quando o ato normativo da
+/// versão se confirma no registro central, e avança quando o ato de uma retificação se confirma.
+/// Não há coluna de "visível": não existir e não ser público são a mesma coisa. É o que torna a
+/// leitura pública uma consulta de tabela única.
 /// </para>
 /// <para>
-/// É o que torna a leitura pública uma consulta de tabela única. Ordenar por prazo, filtrar por
-/// situação, contar por situação e servir o detalhe passam a olhar só aqui — sem resolver linhagem,
-/// sem perguntar a outro módulo no caminho da requisição, e sem interpretar o documento congelado a
-/// cada leitura.
+/// <b>A retificação cujo ato não se confirma não avança a linha</b>, e o certame permanece no ar
+/// com o conteúdo anterior — publicação é ato público, e para emendá-la existe retificação de ato,
+/// não supressão.
 /// </para>
 /// <para>
-/// <b>A retificação cujo ato não se confirma não avança a linha</b>, e é isso que mantém o certame
-/// no ar com o conteúdo anterior. Publicação é ato público, e torná-la invisível fere a
-/// transparência — é para isso que existe retificação de ato, não supressão. Enquanto o ato da
-/// retificação não existe, ela não tem publicidade, e o que se serve é o último estado que tem.
-/// </para>
-/// <para>
-/// Derivado, e reconstruível: tudo aqui sai da versão de configuração congelada, que permanece a
-/// fonte. Perder esta tabela custa reprojetar, nunca dado.
+/// Derivado e reconstruível: tudo sai da versão de configuração congelada, que permanece a fonte.
 /// </para>
 /// </remarks>
 public sealed class CertameDivulgado : IIdentificavel

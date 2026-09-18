@@ -21,15 +21,12 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// É aqui que o certame passa a existir para o público. A publicação congela a configuração e
-/// decide o identificador do ato na mesma transação, mas a publicidade depende do ato existir — e
-/// isso só se sabe no consumo. Projetar neste ponto faz a leitura pública ser uma consulta de
-/// tabela única, em vez de resolver linhagem e interpretar o documento congelado a cada requisição.
+/// É aqui que o certame passa a existir para o público: a publicação congela a configuração, mas a
+/// publicidade depende de o ato existir, e isso só se sabe no consumo.
 /// </para>
 /// <para>
-/// <b>Idempotente por desenho.</b> A reentrega é esperada: a mesma mensagem pode chegar duas vezes,
-/// e uma entrega atrasada pode trazer o ato de uma versão ANTERIOR à que já está divulgada. A linha
-/// recusa retroceder — uma retificação já divulgada não se desfaz por mensagem fora de ordem.
+/// <b>Idempotente por desenho.</b> A reentrega é esperada, e uma entrega atrasada pode trazer o ato
+/// de uma versão anterior à divulgada: a linha recusa retroceder.
 /// </para>
 /// <para>
 /// A recusa de mérito não chega aqui: ela é terminal e fica na fila morta. O efeito é exatamente o
@@ -78,9 +75,8 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                 $"Configuração congelada do processo {versao.ProcessoSeletivoId} não pôde ser lida para divulgação.");
         }
 
-        // O título não vive na configuração congelada: é atributo do processo. Lê-lo AGORA, no
-        // instante em que a divulgação se materializa, é o que o congela — a página pública deixa de
-        // poder exibir um título editado depois, sob retificação que ainda não tem publicidade.
+        // O título é atributo do processo, não da configuração congelada: lê-lo aqui é o que o
+        // congela contra edição sob retificação sem publicidade.
         string? nome = await processoSeletivoRepository
             .ObterNomeAsync(versao.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
@@ -104,8 +100,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
-        // As facetas saem da MESMA projeção que produziu o documento. Extraí-las aqui, e não de
-        // volta do documento guardado, é o que impede a consulta e o que se serve de divergirem.
+        // Da MESMA projeção que produziu o documento: é o que impede consulta e resposta divergirem.
         FacetasDoCertameDivulgado facetas = new(
             certame.Nome,
             certame.Periodo.Numero,

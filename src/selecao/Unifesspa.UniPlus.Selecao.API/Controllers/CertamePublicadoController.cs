@@ -107,9 +107,8 @@ public sealed class CertamePublicadoController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "certame", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CertameNaVitrineDto>), StatusCodes.Status200OK)]
-    // Presentes só quando a requisição pede `incluir_contadores`. Declarados porque um cliente
-    // gerado só enxerga header declarado: sem isto, a tela pediria a contagem e não teria de onde
-    // lê-la.
+    // Presentes só sob `incluir_contadores`. Declarados porque cliente gerado só enxerga header
+    // declarado.
     [EmiteHeader("X-Certames-Em-Breve", ContagemEmBreve, Inteiro = true)]
     [EmiteHeader("X-Certames-Inscricoes-Abertas", ContagemAbertas, Inteiro = true)]
     [EmiteHeader("X-Certames-Ultimos-Dias", ContagemUltimosDias, Inteiro = true)]
@@ -119,9 +118,8 @@ public sealed class CertamePublicadoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ListarVitrine(
-        // RequireSortKey: a vitrine ordena por keyset multi-coluna, e a âncora é o par
-        // (SortKey, Id). Sem a exigência, um cursor sem a chave de ordenação — legado ou forjado —
-        // degradaria em silêncio para "primeira página" em vez de ser recusado.
+        // RequireSortKey: a âncora é o par (SortKey, Id). Sem a exigência, cursor sem a chave
+        // degrada em silêncio para primeira página em vez de ser recusado.
         [FromCursor(RecursoDaVitrine, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "situacao")] SituacaoDoCertame? situacao,
         [FromQuery(Name = "modalidade")]
@@ -156,17 +154,13 @@ public sealed class CertamePublicadoController : ControllerBase
 
         ListarCertamesPublicadosResult resultado = saida.Value!;
 
-        // Mesma revalidação obrigatória do detalhe, e pelo mesmo motivo: o endereço de uma página da
-        // vitrine não muda quando uma publicação insere ou uma retificação reposiciona um certame
-        // nela, de modo que uma representação guardada continuaria omitindo o que já vigora.
+        // Revalidação obrigatória: o endereço da página não muda quando um certame entra na
+        // vitrine ou se reposiciona nela.
         Response.Headers.CacheControl = "no-cache";
 
-        // Metadado de coleção vai em header, nunca no corpo: envolver o array num objeto para
-        // acomodá-lo trocaria a forma do recurso pela forma do envelope (ADR-0025). Opt-in porque
-        // é trabalho que a maioria das navegações não precisa — a tela pede os números ao montar os
-        // filtros. Quem pedir e depois seguir o Link continua pedindo: o link de continuação
-        // preserva os parâmetros não reservados da requisição, e a contagem corre de novo em cada
-        // página. Pedir só na primeira requisição é o uso pretendido.
+        // Metadado de coleção em header, nunca no corpo (ADR-0025). Opt-in: o link de continuação
+        // preserva o parâmetro, então quem pede uma vez paga a contagem em toda página — pedir só
+        // na primeira requisição é o uso pretendido.
         if (resultado.Contadores is { } contadores)
         {
             Response.Headers["X-Certames-Em-Breve"] = Numero(contadores.EmBreve);
@@ -211,14 +205,9 @@ public sealed class CertamePublicadoController : ControllerBase
             .Send(new ObterCertamePublicadoQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        // Revalidação OBRIGATÓRIA, não cache proibido: o cliente pode guardar, mas precisa
-        // confirmar antes de usar. O endereço da página não muda quando o certame é retificado, de
-        // modo que uma representação já guardada na borda ou no navegador seria servida sem que
-        // ninguém consultasse a origem — e é na confirmação que o selo faz o seu trabalho.
-        //
-        // A diretiva é escrita ANTES de ramificar porque a recusa também precisa dela: sem
-        // diretiva alguma, um cache compartilhado pode atribuir frescor heurístico ao 404
-        // (RFC 9111 §4.2.2) e continuar servindo-o depois de o certame se tornar visível.
+        // Revalidação obrigatória, não cache proibido: o endereço não muda quando o certame é
+        // retificado. Escrita ANTES de ramificar porque a recusa também precisa dela — sem
+        // diretiva, um cache compartilhado atribui frescor heurístico ao 404 (RFC 9111 §4.2.2).
         Response.Headers.CacheControl = "no-cache";
 
         if (resultado.IsFailure)

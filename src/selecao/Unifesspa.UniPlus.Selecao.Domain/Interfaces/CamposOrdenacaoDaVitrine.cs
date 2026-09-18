@@ -5,15 +5,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// que aparecem na consulta, na mensagem de recusa e na documentação da API.
 /// </summary>
 /// <remarks>
-/// <para>
-/// A lista é fechada de propósito. Ordenar por coluna arbitrária transformaria uma rota anônima
-/// numa consulta livre sobre o banco — sem índice previsível e sem limite de custo, e servindo de
-/// sonda para descobrir quais colunas existem. Acrescentar um campo aqui é decisão, não configuração.
-/// </para>
-/// <para>
-/// Nenhum deles precisa ser único: a ordenação termina sempre pelo identificador, que o motor de
-/// paginação acrescenta.
-/// </para>
+/// Fechada de propósito: ordenar por coluna arbitrária faria de uma rota anônima uma consulta livre
+/// sobre o banco, sem índice previsível e servindo de sonda para descobrir colunas. Nenhum campo
+/// precisa ser único — a ordenação termina sempre pelo identificador.
 /// </remarks>
 public static class CamposOrdenacaoDaVitrine
 {
