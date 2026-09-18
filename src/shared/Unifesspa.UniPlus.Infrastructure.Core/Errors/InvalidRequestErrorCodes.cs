@@ -9,7 +9,12 @@ public static class InvalidRequestErrorCodes
     /// <summary>O corpo não declara campo que o contrato exige.</summary>
     public const string MissingRequiredField = "Request.MissingRequiredField";
 
-    /// <summary>O corpo não pôde ser lido: JSON inválido, ou valor que não vira o tipo declarado.</summary>
+    /// <summary>
+    /// O corpo veio e não pôde ser lido — JSON inválido, ou valor que não vira o tipo declarado
+    /// <b>dentro do documento</b>. Conversão de rota ou query fica fora: depois da normalização
+    /// do ModelState ela é indistinguível de uma validação pós-binding, e este catálogo não
+    /// promete o que não se pode provar.
+    /// </summary>
     public const string Malformed = "Request.Malformed";
 
     /// <summary>
