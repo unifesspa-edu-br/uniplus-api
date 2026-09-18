@@ -108,6 +108,19 @@ public sealed class ReverseProxyConfigurationTests
     }
 
     [Fact]
+    public async Task Scheme_QuandoOProxyChegaComoIPv4MapeadoEmIPv6_EHonrado()
+    {
+        // Socket dual-mode entrega o peer IPv4 como ::ffff:10.42.0.7. Se a comparação com a
+        // rede declarada fosse por família de endereço, a rede IPv4 não casaria e a correção
+        // seria inócua justamente onde ela precisa valer.
+        HttpContext context = await ProcessarAsync(
+            origem: "::ffff:10.42.0.7",
+            protocoloEncaminhado: "https");
+
+        context.Request.Scheme.Should().Be("https");
+    }
+
+    [Fact]
     public void ForwardedHeaders_ComRedeEmNotacaoInvalida_FalhaAntesDeCompor()
     {
         // A composição das ForwardedHeadersOptions converte cada entrada sem filtrar, e é
