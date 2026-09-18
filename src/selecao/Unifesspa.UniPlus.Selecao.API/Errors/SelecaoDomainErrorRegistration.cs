@@ -315,12 +315,48 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // ArgumentException (defesa em profundidade contra erro de programação
         // do caller, nunca alcançável a partir de input do usuário) e não têm
         // entrada aqui. Já as invariantes de NEGÓCIO da cadeia de versões
-        // afloram como DomainError → 422, tanto pelo domínio quanto pelos guard
-        // rails de banco que fecham a corrida check-then-act (ADR-0102).
+        // afloram como DomainError, pelo domínio e pelos guard rails de banco
+        // que fecham a corrida check-then-act (ADR-0102).
+        //
+        // Dessas, UMA é corrida e vale 409; as outras seis são 422. A separação
+        // não é de julgamento — sai da ordem em que o trigger de sucessão
+        // confere as coisas.
+        //
+        // O trigger carrega como `anterior` a linha de MAIOR numero_versao e,
+        // antes de qualquer outra checagem, devolve o controle quando o número
+        // que chega não é maior que o dela — deixando a duplicidade para o
+        // índice único, de propósito, para não confundir "número ocupado" com
+        // "buraco na numeração".
+        //
+        // É esse retorno antecipado que decide a questão. Uma sucessora montada
+        // sobre leitura que envelheceu traz exatamente o número que a publicação
+        // concorrente acabou de gravar, cai no retorno antecipado, e sai pelo
+        // índice único: toda corrida vira NumeroDuplicado, e só ela. Nada no
+        // corpo está errado, e 422 mentiria mandando o operador corrigir o que
+        // não tem defeito — é o conflito com o estado atual do recurso que a
+        // RFC 9110 descreve, resolvido relendo e resubmetendo.
+        //
+        // As outras seis o agregado já conferiu em memória contra a MESMA linha
+        // que o trigger vai encontrar: as versões são append-only e únicas por
+        // número, então a anterior que o cliente leu e a que o trigger acha são
+        // a mesma, com o mesmo ato e a mesma vigência. Cadeia quebrada e
+        // vigência regressiva, portanto, não são alcançáveis por corrida — só
+        // por gravação malformada, que nomeia a anterior certa e ainda assim
+        // contradiz o que ela diz. Somam-se às que nem estado consultam (ato que
+        // retifica a si mesmo, contrato de abertura), à recusa de um id que o
+        // corpo informa (ato que já criou versão, e reenviar não conserta), e à
+        // guarda contra INSERT por fora do agregado (numeração com buraco).
+        // Nenhuma delas melhora ao ser retentada.
+        //
+        // O `code` continua específico em todas. O status responde "dá para
+        // tentar de novo?"; o code responde "por quê?" — colapsar no
+        // `uniplus.concorrencia.conflito` da ADR-0119 apagaria a segunda
+        // resposta sem melhorar a primeira, e confundiria com o conflito de
+        // xmin, que é outro mecanismo.
         new("VersaoConfiguracao.CadeiaQuebrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.cadeia_quebrada", "O ato criador da versão não retifica o ato criador da versão anterior")),
         new("VersaoConfiguracao.AtoCriadorRepetido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.ato_criador_repetido", "Um ato congela a configuração no máximo uma vez")),
         new("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.versao_anterior_de_outro_processo", "A cadeia de versões não atravessa certames")),
-        new("VersaoConfiguracao.NumeroDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.numero_duplicado", "Outra publicação concorrente já criou esta versão da configuração")),
+        new("VersaoConfiguracao.NumeroDuplicado", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.versao_configuracao.numero_duplicado", "Outra publicação concorrente já criou esta versão da configuração")),
         new("VersaoConfiguracao.AtoCriadorJaCriouVersao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.ato_criador_ja_criou_versao", "O ato informado já criou uma versão da configuração")),
         new("VersaoConfiguracao.NumeracaoComBuraco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.numeracao_com_buraco", "A numeração das versões da configuração é contígua")),
         new("VersaoConfiguracao.ContratoAberturaInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.contrato_abertura_invalido", "A versão 1 não retifica ato algum; toda versão seguinte retifica")),
