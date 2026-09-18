@@ -67,9 +67,35 @@ internal static class CorpusEnvelope
         new($"aaab000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
     private static readonly Guid TipoBancaExaminadora = new("dddd2222-0000-4000-8000-000000000001");
+    private static readonly Guid TipoBancaRecursal = new("dddd2222-0000-4000-8000-000000000002");
 
-    private static Guid BancaDaObjetivaId(int variante) =>
-        new($"aaad000{variante:x}-0000-4000-8000-000000000001");
+    private static Guid BancaDaObjetivaId(int ordem, int variante) =>
+        new($"aaad000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
+
+    /// <summary>
+    /// Código de ato com acento gravado em forma <b>decomposta</b> — <c>C</c> mais cedilha
+    /// combinante, <c>A</c> mais til combinante — e não na forma composta que um teclado produz.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// As duas formas são o mesmo texto para um leitor humano e <b>bytes diferentes</b> para
+    /// qualquer comparação, ordenação ou hash. O canonicalizador normaliza para a composta antes
+    /// de emitir, e é isso que faz o envelope de dois operadores — um em Linux, outro em macOS,
+    /// que normaliza nomes de arquivo em decomposto — produzir o mesmo hash.
+    /// </para>
+    /// <para>
+    /// Está no corpus em decomposto <b>de propósito</b>: com todos os códigos em ASCII, como
+    /// estavam, a normalização era identidade e removê-la não mudava um byte das fixtures. O
+    /// golden só prova o que o corpus contém.
+    /// </para>
+    /// </remarks>
+    internal const string AtoResultadoAvaliacaoDecomposto = "RESULTADO_AVALIAC\u0327A\u0303O";
+
+    /// <summary>Mesmo texto do ato acentuado, na forma composta que o envelope tem de emitir.</summary>
+    internal const string AtoResultadoAvaliacaoComposto = "RESULTADO_AVALIA\u00C7\u00C3O";
+
+    /// <summary>Código de banca acentuado, também em forma decomposta, pela mesma razão.</summary>
+    internal const string BancaRecursalDecomposta = "BANCA_RECURSAL_DE_AVALIAC\u0327A\u0303O";
 
     private static Guid RecursoDaObjetivaId(int ordem, int variante) =>
         new($"aaac000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
@@ -172,12 +198,22 @@ internal static class CorpusEnvelope
         etapaObjetiva.DefinirProdutos(Ordem([
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+            // O terceiro existe por duas razões, e nenhuma é o realismo do cenário. A primeira é
+            // o acento em forma decomposta, que faz a normalização deixar de ser identidade. A
+            // segunda é dar ao bloco de recursos uma SEGUNDA âncora preliminar de verdade: com
+            // uma só, a ordenação das janelas recursais não tinha o que ordenar, e trocar o
+            // critério não mudava um byte da fixture.
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(3, variante), AtoResultadoAvaliacaoDecomposto, PapelProdutoFase.Preliminar),
         ], permutar)).IsSuccess.Should().BeTrue();
         // A etapa requer banca: é o bloco em que o envelope congela o TIPO e o código, e não a
         // linha — o id dela muda a cada gravação, porque o comando declara a banca pelo tipo.
-        etapaObjetiva.DefinirBancas([
-            BancaDaEtapa.Reidratar(BancaDaObjetivaId(variante), TipoBancaExaminadora, "BANCA_EXAMINADORA"),
-        ]).IsSuccess.Should().BeTrue();
+        // Duas bancas, e declaradas na ordem INVERSA à que o envelope emite: com uma só, a
+        // ordenação por código não se manifestava. A segunda leva acento decomposto — o mesmo
+        // motivo do terceiro produto, aplicado ao outro campo que a canonicalização normaliza.
+        etapaObjetiva.DefinirBancas(Ordem([
+            BancaDaEtapa.Reidratar(BancaDaObjetivaId(2, variante), TipoBancaRecursal, BancaRecursalDecomposta),
+            BancaDaEtapa.Reidratar(BancaDaObjetivaId(1, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA"),
+        ], permutar)).IsSuccess.Should().BeTrue();
         etapaObjetiva.DefinirRecursos([
             RecursoDaEtapa.Reidratar(
                 RecursoDaObjetivaId(1, variante),
@@ -188,8 +224,20 @@ internal static class CorpusEnvelope
                     2.0000m, UnidadePrazo.DiasUteis,
                     1.0000m, UnidadePrazo.DiasUteis),
                 ProdutoDaObjetivaId(1, variante)),
+            // Segunda janela ancorada em ato, num produto DIFERENTE do primeiro — é o par que a
+            // ordenação das janelas recursais precisa desempatar. Ela ordena pela chave do
+            // produto âncora, não pelo id dele: com uma âncora só, trocar um critério pelo outro
+            // não mudava nada, e era possível reverter a política sem quebrar fixture nenhuma.
             RecursoDaEtapa.Reidratar(
                 RecursoDaObjetivaId(2, variante),
+                AncoraDoRecurso.AtoPublicado,
+                Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
+                new ArgsRegraPrazoRecurso(
+                    5.0000m, UnidadePrazo.Dias,
+                    null, null, null, null),
+                ProdutoDaObjetivaId(3, variante)),
+            RecursoDaEtapa.Reidratar(
+                RecursoDaObjetivaId(3, variante),
                 AncoraDoRecurso.CienciaIndividual,
                 Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
                 new ArgsRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, null, null),
