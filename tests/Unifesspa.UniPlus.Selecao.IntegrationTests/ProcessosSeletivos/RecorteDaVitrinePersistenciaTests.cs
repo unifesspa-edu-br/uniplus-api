@@ -54,8 +54,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
-        // Toda combinação de abertura e encerramento sobre as bordas — inclusive as janelas
-        // invertidas, que o agregado não produz mas das quais a partição não pode depender.
+        // Toda combinação das bordas, inclusive janelas invertidas.
         foreach (int de in Deslocamentos)
         {
             foreach (int ate in Deslocamentos)
@@ -110,8 +109,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         ContadoresDaVitrine contadores = await repository.ContarPorSituacaoAsync(
             Agora, new RecorteDaVitrine(), Limiar, CancellationToken.None);
 
-        // Um número exibido ao lado de um filtro promete quantos itens aquele filtro traz. Contar
-        // por um critério e filtrar por outro é a forma de o rótulo mentir sem nada quebrar.
+        // Contar por um critério e filtrar por outro faz o rótulo mentir sem nada quebrar.
         contadores.EmBreve.Should().Be((await ListarAsync(SituacaoDoCertame.EmBreve)).Count);
         contadores.InscricoesAbertas.Should().Be((await ListarAsync(SituacaoDoCertame.InscricoesAbertas)).Count);
         contadores.UltimosDias.Should().Be((await ListarAsync(SituacaoDoCertame.UltimosDias)).Count);

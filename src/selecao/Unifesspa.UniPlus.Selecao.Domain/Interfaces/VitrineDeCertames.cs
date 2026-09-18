@@ -5,21 +5,14 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Os quatro valores PARTICIONAM o conjunto divulgado: todo certame cai em exatamente um, sempre. É
-/// o que torna os contadores somáveis, o que faz cada número exibido ter um filtro que o serve — um
-/// contador cujo recorte não existisse como filtro seria um rótulo em que não se pode clicar — e o
-/// que permite marcar cada item com a mesma palavra pela qual ele é filtrado e contado.
+/// Os quatro valores PARTICIONAM o conjunto divulgado: é o que torna os contadores somáveis, dá a
+/// cada número exibido um filtro que o serve, e permite marcar o item com a mesma palavra pela qual
+/// ele é filtrado e contado. Não há valor para "sem filtro" — ausência de filtro é ausência do
+/// parâmetro.
 /// </para>
 /// <para>
-/// Não há valor para "sem filtro": ausência de filtro é ausência do parâmetro. Um valor "todas"
-/// seria situação que nenhum certame tem, e bastaria escrevê-lo num item para a marca deixar de
-/// querer dizer o mesmo que o recorte.
-/// </para>
-/// <para>
-/// A janela tem DOIS lados, e a partição respeita os dois. Um edital publicado antes de a inscrição
-/// abrir é o caso normal, não a exceção: o ato sai primeiro. Definir "inscrições abertas" apenas
-/// pelo fim da janela o classificaria como aberto, e o candidato tomaria uma recusa ao tentar se
-/// inscrever num certame que a própria vitrine anunciou como disponível.
+/// A partição respeita os DOIS lados da janela. Um edital publicado antes de a inscrição abrir é o
+/// caso normal, e classificá-lo como aberto faria o candidato tomar recusa ao tentar se inscrever.
 /// </para>
 /// </remarks>
 public enum SituacaoDoCertame
@@ -41,13 +34,9 @@ public enum SituacaoDoCertame
 /// A regra que classifica um certame divulgado numa das quatro situações.
 /// </summary>
 /// <remarks>
-/// <para>
-/// Existe para ser o <b>único enunciado</b> da partição em código que roda. A consulta precisa
-/// repeti-la como predicado traduzível para SQL — não há como o banco chamar este método —, e é
-/// justamente por isso que ela precisa de um lugar canônico contra o qual o recorte do banco possa
-/// ser conferido: duas expressões da mesma regra divergem em silêncio, e o sintoma seria a marca do
-/// item discordar do grupo em que ele foi listado.
-/// </para>
+/// Único enunciado da partição em código que roda. A consulta precisa repeti-la como predicado
+/// traduzível para SQL, e é contra este método que o recorte do banco é conferido — duas expressões
+/// da mesma regra divergem em silêncio.
 /// </remarks>
 public static class SituacaoDaVitrine
 {
@@ -57,8 +46,7 @@ public static class SituacaoDaVitrine
     /// </summary>
     /// <remarks>
     /// A ordem dos testes é a da linha do tempo, e é ela que garante a partição mesmo diante de
-    /// janela invertida: encerrado primeiro, depois o que ainda não abriu, e só então a distinção
-    /// entre quem tem prazo folgado e quem está no limiar.
+    /// janela invertida.
     /// </remarks>
     public static SituacaoDoCertame Classificar(
         DateTimeOffset inscricoesDe,
@@ -86,14 +74,9 @@ public static class SituacaoDaVitrine
 /// Quantos certames divulgados há em cada situação, no instante da consulta.
 /// </summary>
 /// <remarks>
-/// <para>
 /// Agregação sobre o conjunto divulgado <b>sem</b> o recorte de situação: são estes números que
-/// alimentam o próprio filtro de situação, e aplicá-lo a eles deixaria todos zerados menos um.
-/// </para>
-/// <para>
-/// Contam exatamente o que a vitrine lista — só há linha para certame divulgado —, e como as quatro
-/// situações particionam esse conjunto, os quatro números somam o total.
-/// </para>
+/// alimentam o próprio filtro, e aplicá-lo a eles deixaria todos zerados menos um. Como as quatro
+/// situações particionam o conjunto, os quatro somam o total.
 /// </remarks>
 /// <param name="EmBreve">Divulgados com a janela ainda por abrir.</param>
 /// <param name="InscricoesAbertas">Recebem inscrição, sem estar no limiar final.</param>

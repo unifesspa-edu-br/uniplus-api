@@ -15,17 +15,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// <para>
 /// Só existe linha para certame público, então a página sai do banco com o tamanho pedido e não há
-/// descarte depois. Some a ressalva de página curta, some a advertência de que página vazia não
-/// significa fim de coleção, e some a pergunta a outro módulo no caminho da requisição.
+/// descarte depois, nem pergunta a outro módulo no caminho da requisição.
 /// </para>
 /// <para>
 /// Um item cuja divulgação não se deserializa é omitido, não derruba a lista: o defeito de uma
 /// linha não é culpa dos outros certames, e ele aflora no detalhe, que recusa.
 /// </para>
 /// <para>
-/// A situação de cada item é classificada aqui contra o instante que a consulta congelou — o mesmo
-/// que segmentou o recorte no banco, devolvido por ela — e contra o mesmo limiar. Reclassificar
-/// contra o relógio de agora faria o item marcado discordar do grupo em que ele foi listado.
+/// A situação de cada item é classificada contra o instante que a consulta congelou e o mesmo
+/// limiar: reclassificar contra o relógio faria o item discordar do grupo em que foi listado.
 /// </para>
 /// </remarks>
 public static class ListarCertamesPublicadosQueryHandler

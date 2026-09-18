@@ -65,9 +65,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         List<CertameDivulgado> linhas = [];
         for (int i = 0; i < Volume; i++)
         {
-            // Prazos em 25 valores distintos ⇒ ~10 certames empatados em cada. Títulos em 12
-            // valores ⇒ ~20 empatados. Metade já encerrou, para a rotação por urgência ter os dois
-            // segmentos e uma fronteira entre eles no meio da travessia.
+            // Empates deliberados em toda coluna de ordenação, e os dois segmentos da rotação.
             int diasAtePrazo = ((i % 25) * 4) - 50;
             CertameDivulgado linha = Divulgado(
                 nome: string.Create(CultureInfo.InvariantCulture, $"Certame {(char)('A' + (i % 12))}"),
@@ -101,9 +99,8 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     [Fact(DisplayName = "A travessia para trás cobre o mesmo conjunto que a de ida")]
     public async Task Travessia_QuandoPercorreParaTras_DeveCobrirOMesmoConjunto()
     {
-        // O sentido reverso tem seek próprio e ordenação própria antes de ser restaurada. Um erro
-        // só nele produz o pior sintoma: ida correta, volta com buraco — e o cliente que navega
-        // pelo header Link vê itens sumirem ao voltar.
+        // O sentido reverso tem seek e ordenação próprios: erro só nele dá ida correta e volta
+        // com buraco.
         IReadOnlyList<Guid> voltando = await PercorrerAsync([], PaginationDirection.Prev);
 
         voltando.Should().OnlyHaveUniqueItems();
@@ -113,9 +110,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     [Fact(DisplayName = "A ordem canônica por urgência vale para a coleção inteira, não por página")]
     public async Task Travessia_QuandoNaoPedeOrdenacao_DeveManterAUrgenciaNaColecaoInteira()
     {
-        // Ordenar dentro de cada página é o defeito que a paginação por cursor existe para evitar, e
-        // ele só se revela olhando a sequência inteira: os abertos primeiro, por prazo crescente, e
-        // só então os encerrados, também por prazo crescente.
+        // Ordenar por página, e não pela coleção, só se revela olhando a sequência inteira.
         IReadOnlyList<(bool Encerrado, DateTimeOffset Prazo)> chaves = await PercorrerChavesAsync([]);
 
         chaves.Should().BeInAscendingOrder(

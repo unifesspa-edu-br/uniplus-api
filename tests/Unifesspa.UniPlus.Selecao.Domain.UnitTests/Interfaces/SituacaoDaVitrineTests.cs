@@ -23,22 +23,21 @@ public sealed class SituacaoDaVitrineTests
     [InlineData(-1, 30, SituacaoDoCertame.InscricoesAbertas)]
     [InlineData(-1, 3, SituacaoDoCertame.UltimosDias)]
     [InlineData(-30, -1, SituacaoDoCertame.Encerradas)]
-    public void Classificar_QuandoJanelaEmCadaPonto_DeveResolverASituacao(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada) =>
+    public void Classificar_QuandoJanelaEmCadaPonto_DeveResolverASituacao(
+        int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada) =>
         SituacaoDaVitrine.Classificar(
             Agora.AddDays(diasAteAbrir), Agora.AddDays(diasAteFechar), Agora, Limiar)
             .Should().Be(esperada);
 
     [Fact(DisplayName = "No instante exato da abertura o certame já recebe inscrição")]
     public void Classificar_NaAberturaExata_NaoEEmBreve() =>
-        // A borda decide quem pode se inscrever no primeiro segundo da janela. Classificar como
-        // "em breve" quem já pode se inscrever é anunciar indisponível o que está disponível.
+        // A janela é fechada nas duas pontas: quem já pode se inscrever não é "em breve".
         SituacaoDaVitrine.Classificar(Agora, Agora.AddDays(30), Agora, Limiar)
             .Should().Be(SituacaoDoCertame.InscricoesAbertas);
 
     [Fact(DisplayName = "No instante exato do encerramento o certame ainda recebe inscrição")]
     public void Classificar_NoEncerramentoExato_AindaNaoEncerrou() =>
-        // Prazo que termina "às 23h59" inclui as 23h59. Encerrar no instante exato tiraria do ar,
-        // pelo lado da vitrine, um certame que o formulário ainda aceita.
+        // Prazo que termina às 23h59 inclui as 23h59.
         SituacaoDaVitrine.Classificar(Agora.AddDays(-30), Agora, Agora, Limiar)
             .Should().Be(SituacaoDoCertame.UltimosDias);
 
@@ -49,18 +48,14 @@ public sealed class SituacaoDaVitrineTests
 
     [Fact(DisplayName = "Janela invertida cai numa situação só, em vez de em duas")]
     public void Classificar_JanelaInvertida_NaoDuplica() =>
-        // O agregado não produz janela com fim antes do início, mas a partição não pode depender
-        // disso: uma linha assim pertencendo a dois recortes faria os contadores somarem mais que
-        // o total, e o mesmo certame apareceria em duas abas.
+        // O agregado não produz janela invertida, mas a partição não pode depender disso.
         SituacaoDaVitrine.Classificar(Agora.AddDays(5), Agora.AddDays(-5), Agora, Limiar)
             .Should().Be(SituacaoDoCertame.Encerradas);
 
     [Fact(DisplayName = "Toda janela possível recebe exatamente uma das quatro situações")]
     public void Classificar_QuandoVarreTodasAsBordas_DeveDevolverSempreUmaSituacaoValida()
     {
-        // Varredura sobre o produto de bordas relevantes — antes, exatamente em cima e depois de
-        // cada ponto que a regra usa. O que se prova é que a função é total: não há janela sem
-        // situação, e cada uma tem uma só, porque a função devolve um valor.
+        // Produto das bordas de cada ponto que a regra usa: a função é total.
         int[] deslocamentos = [-30, -8, -7, -1, 0, 1, 3, 7, 8, 30];
         SituacaoDoCertame[] validas = Enum.GetValues<SituacaoDoCertame>();
 
@@ -74,8 +69,6 @@ public sealed class SituacaoDaVitrineTests
 
     [Fact(DisplayName = "O vocabulário não tem valor de \"sem filtro\"")]
     public void Vocabulario_QuandoEnumerado_NaoDeveTerValorDeAusenciaDeFiltro() =>
-        // Ausência de recorte é ausência do parâmetro. Um valor "todas" no enum seria situação que
-        // certame algum tem, e bastaria escrevê-lo num item para a marca deixar de querer dizer o
-        // mesmo que o recorte e o contador.
+        // Ausência de recorte é ausência do parâmetro, não um valor que certame algum tenha.
         Enum.GetValues<SituacaoDoCertame>().Should().HaveCount(4);
 }
