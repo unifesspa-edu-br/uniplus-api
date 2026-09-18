@@ -51,7 +51,7 @@ public sealed class HeadersDePaginacaoExpostosTests
     }
 
     [Fact(DisplayName = "A resposta de outra origem expõe Link e X-Page-Size ao JavaScript")]
-    public async Task RespostaDeOutraOrigem_ExpoeOsHeadersDaNavegacao()
+    public async Task Listar_QuandoRequisicaoDeOutraOrigem_DeveExporLinkEXPageSize()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage requisicao = new(HttpMethod.Get, ListagemPaginada);
@@ -68,7 +68,7 @@ public sealed class HeadersDePaginacaoExpostosTests
     }
 
     [Fact(DisplayName = "O selo de entidade continua exposto junto dos headers de paginação")]
-    public async Task RespostaDeOutraOrigem_MantemOSeloExposto()
+    public async Task Listar_QuandoRequisicaoDeOutraOrigem_DeveManterOSeloExposto()
     {
         // O outro sentido da conferência: acrescentar nomes à lista não pode derrubar os que já
         // estavam. O selo é a precondição da mutação seguinte — sem lê-lo, toda edição sob

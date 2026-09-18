@@ -54,7 +54,7 @@ public sealed class CorsConfigurationTests
     }
 
     [Fact]
-    public void Policy_ExpoeOsHeadersDaNavegacaoPaginada()
+    public void Policy_QuandoPoliticaPadrao_DeveExporLinkEXPageSize()
     {
         // Uma resposta de origem cruzada só entrega ao JavaScript sete headers considerados
         // seguros, e nenhum dos nossos é um deles. A navegação por cursor vive INTEIRAMENTE em
@@ -68,7 +68,7 @@ public sealed class CorsConfigurationTests
     }
 
     [Fact]
-    public void Policy_ExpoeOSeloEOReplayDeIdempotencia()
+    public void Policy_QuandoPoliticaPadrao_DeveManterSeloEReplayExpostos()
     {
         // Os dois que já estavam na lista. Entram aqui para que uma mudança futura não os remova
         // sem ninguém perceber: o ETag é a precondição da próxima mutação, e sem lê-lo toda edição
@@ -79,7 +79,7 @@ public sealed class CorsConfigurationTests
     }
 
     [Fact]
-    public void Policy_ComHeaderProprioDeModulo_SomaSemPerderOsComuns()
+    public void Policy_QuandoModuloDeclaraHeaderProprio_DeveSomarSemPerderOsComuns()
     {
         // Header que só um deployable emite não pertence à lista compartilhada: declará-lo lá faria
         // os outros anunciarem, no preflight, um header que nunca emitem. O composition root de
@@ -90,7 +90,7 @@ public sealed class CorsConfigurationTests
         policy.ExposedHeaders.Should().Contain(["ETag", "Idempotency-Replayed", "Link", "X-Page-Size"]);
     }
 
-    private static CorsPolicy BuildDefaultPolicy(bool allowAnyHeader, params string[] exposedHeadersAdicionais)
+    private static CorsPolicy BuildDefaultPolicy(bool allowAnyHeader, params string[] additionalExposedHeaders)
     {
         Dictionary<string, string?> settings = new()
         {
@@ -107,7 +107,7 @@ public sealed class CorsConfigurationTests
 
         ServiceCollection services = new();
         services.AddSingleton(NullLoggerFactory.Instance);
-        services.AddCorsConfiguration(configuration, environment, exposedHeadersAdicionais);
+        services.AddCorsConfiguration(configuration, environment, additionalExposedHeaders);
 
         using ServiceProvider provider = services.BuildServiceProvider();
         FrameworkCorsOptions options = provider.GetRequiredService<IOptions<FrameworkCorsOptions>>().Value;
