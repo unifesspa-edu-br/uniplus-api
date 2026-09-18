@@ -119,12 +119,13 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     {
         // A âncora é posição dentro de um conjunto: sob outro recorte, a página volta vazia —
         // indistinguível de fim de coleção.
-        (string SortKey, Guid Id)? proximo = await PrimeiraPaginaAsync(new RecorteDaVitrine(Busca: "a"), limite: 1);
+        (string SortKey, Guid Id)? emitido = await PrimeiraPaginaAsync(new RecorteDaVitrine(Busca: "a"), limite: 1);
 
-        proximo.Should().NotBeNull("a busca precisa ter mais de uma página para o cursor existir");
+        emitido.Should().NotBeNull("a busca precisa ter mais de uma página para o cursor existir");
+        (string SortKey, Guid Id) ancora = emitido!.Value;
 
         Func<Task> continuarSobOutroRecorte = () => ListarAsync(
-            new RecorteDaVitrine(Busca: "sisu"), [], proximo!.Value.SortKey, proximo.Value.Id);
+            new RecorteDaVitrine(Busca: "sisu"), [], ancora.SortKey, ancora.Id);
 
         await continuarSobOutroRecorte.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
@@ -133,15 +134,16 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     public async Task ListarVitrine_QuandoCursorVemDeOutraOrdenacao_DeveRecusarAContinuacao()
     {
         SortField[] porNome = [new(CamposOrdenacaoDaVitrine.Nome, SortDirection.Ascending)];
-        (string SortKey, Guid Id)? proximo = await PrimeiraPaginaAsync(new RecorteDaVitrine(), limite: 1, ordenacao: porNome);
+        (string SortKey, Guid Id)? emitido = await PrimeiraPaginaAsync(new RecorteDaVitrine(), limite: 1, ordenacao: porNome);
 
-        proximo.Should().NotBeNull();
+        emitido.Should().NotBeNull();
+        (string SortKey, Guid Id) ancora = emitido!.Value;
 
         Func<Task> continuarNoutraOrdem = () => ListarAsync(
             new RecorteDaVitrine(),
             [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Descending)],
-            proximo!.Value.SortKey,
-            proximo.Value.Id);
+            ancora.SortKey,
+            ancora.Id);
 
         await continuarNoutraOrdem.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
