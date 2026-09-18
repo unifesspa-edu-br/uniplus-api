@@ -190,13 +190,48 @@ public sealed class InvalidRequestProblemFactoryTests
     [Fact(DisplayName = "Corpo JSON null não é corpo ausente — o cliente enviou documento")]
     public void CorpoJsonNull_NaoEhCorpoAusente()
     {
-        ActionContext contexto = Contexto();
+        ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
         contexto.HttpContext.Request.ContentLength = 4;
         contexto.ModelState.AddModelError("comando", "The comando field is required.");
 
         InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
             "documento houve, e quem reprovou foi a exigência implícita depois de desserializar "
             + "— mensagem que pertence à cadeia de validação, não a este factory");
+    }
+
+    /// <summary>
+    /// Comprimento desconhecido não é comprimento zero: um documento em <c>chunked</c>, ou um
+    /// corpo HTTP/2 sem comprimento declarado, chega sem <c>Content-Length</c> e existe.
+    /// </summary>
+    /// <remarks>
+    /// Este é o caso ambíguo, e a regra dele é não afirmar: dizer "não mandou corpo" a quem
+    /// mandou um em chunked é o mesmo erro do corpo <c>null</c>, por um caminho diferente.
+    /// </remarks>
+    [Fact(DisplayName = "Corpo de tamanho não declarado não é tratado como ausente")]
+    public void CorpoDeTamanhoDesconhecido_NaoEhAusente()
+    {
+        ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
+        contexto.HttpContext.Request.ContentLength = null;
+        contexto.HttpContext.Request.Headers.TransferEncoding = "chunked";
+        contexto.ModelState.AddModelError("comando", "The comando field is required.");
+
+        InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
+            "sem comprimento declarado não dá para provar que não veio documento, e afirmar "
+            + "ausência que não se prova é o erro que este factory existe para não cometer");
+    }
+
+    [Fact(DisplayName = "Requisição sem comprimento e sem codificação de transferência não tem corpo — e aí a ausência é provável")]
+    public void SemComprimentoESemTransferEncoding_EhAusencia()
+    {
+        ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
+        contexto.HttpContext.Request.ContentLength = null;
+        contexto.ModelState.AddModelError("comando", "The comando field is required.");
+
+        ProblemDetails problema = Executar(contexto);
+
+        // É a regra do próprio HTTP: sem comprimento e sem codificação de transferência, não há
+        // corpo. Aqui a ausência não é suposição, é o que o protocolo diz.
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.corpo_ausente");
     }
 
     private static ProblemDetails Executar(ActionContext contexto)
@@ -211,6 +246,12 @@ public sealed class InvalidRequestProblemFactoryTests
     {
         Name = nome,
         BindingInfo = new BindingInfo { BindingSource = BindingSource.Query },
+    };
+
+    private static ParameterDescriptor ParametroDeCorpo(string nome) => new()
+    {
+        Name = nome,
+        BindingInfo = new BindingInfo { BindingSource = BindingSource.Body },
     };
 
     private static ActionContext Contexto(params ParameterDescriptor[] parametros)
