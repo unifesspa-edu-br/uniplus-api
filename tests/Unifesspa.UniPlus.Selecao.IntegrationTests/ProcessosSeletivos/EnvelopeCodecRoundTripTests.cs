@@ -586,12 +586,24 @@ public sealed class EnvelopeCodecRoundTripTests
         idsOriginais.Should().HaveCountGreaterThan(1, "pré-condição: a etapa do corpus requer mais de uma banca");
         idsOriginais.Values.Should().NotContain(Guid.Empty);
 
-        // O cliente devolve a coleção inteira que leu: instâncias novas, mesmo conteúdo. Uma das
-        // bancas tem código acentuado em forma decomposta, então este caminho também prova que o
-        // reencontro da linha é por texto normalizado — e não por igualdade de bytes, que daria
-        // linha nova a cada gravação vinda de um cliente que normaliza diferente.
-        objetiva.DefinirBancas([.. objetiva.Bancas.Select(b => BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo))])
+        // O cliente devolve a coleção inteira que leu, mas com o acento na forma COMPOSTA — é o
+        // que um navegador ou um sistema operacional que normaliza diferente do que gravou
+        // enviaria de volta. Devolver a cópia literal do que está guardado não provaria nada:
+        // decomposto contra decomposto casa até numa comparação ordinal, e uma regressão do
+        // reencontro para igualdade de bytes passaria batida. Com as formas trocadas, só casa
+        // quem normaliza — e quem não normalizar recria a linha, girando o id.
+        objetiva.DefinirBancas([.. objetiva.Bancas.Select(b =>
+            BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo.Normalize(NormalizationForm.FormC)))])
             .IsSuccess.Should().BeTrue();
+
+        // O que fica guardado é o código da linha PRESERVADA — a forma decomposta original —, e
+        // não a composta que o cliente acabou de mandar. É o desfecho certo: reconciliar
+        // preserva a linha, e trocar o texto dela por um canonicamente equivalente seria uma
+        // escrita sem mudança de conteúdo. Afirmar isto é o que prende as duas metades: o
+        // reencontro aconteceu apesar das formas diferentes, e a linha não foi tocada.
+        objetiva.Bancas.Select(b => b.Codigo).Should().BeEquivalentTo(idsOriginais.Keys,
+            "a redeclaração reencontrou as linhas existentes em vez de criar outras, e o texto "
+            + "delas é o que já estava guardado");
 
         foreach (BancaDaEtapa banca in objetiva.Bancas)
         {
