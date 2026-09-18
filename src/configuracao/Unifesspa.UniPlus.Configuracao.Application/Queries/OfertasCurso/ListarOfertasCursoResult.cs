@@ -12,4 +12,5 @@ using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 public sealed record ListarOfertasCursoResult(
     IReadOnlyList<OfertaCursoDto> Items,
     (string SortKey, Guid Id)? Anterior,
-    (string SortKey, Guid Id)? Proximo);
+    (string SortKey, Guid Id)? Proximo,
+    int? Total);

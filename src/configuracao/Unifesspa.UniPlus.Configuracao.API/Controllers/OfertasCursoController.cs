@@ -60,6 +60,13 @@ public sealed class OfertasCursoController : ControllerBase
     /// UI conta/pagina ofertas de um curso sob demanda sem varrer todo o acervo.
     /// O filtro viaja como query param e combina com o cursor: o cliente
     /// reanexa-o a cada página ao seguir o <c>cursor</c> do header <c>Link</c>.
+    /// <para>Aceita <c>include_total</c> (issue #1511), que responde o total em
+    /// <c>X-Total-Count</c>. O total exato é opt-in <b>por endpoint</b>, e não
+    /// capacidade automática de toda listagem (ADR-0026): a preocupação de custo
+    /// que originou a regra — <c>COUNT(*)</c> linear sobre dezenas de milhares de
+    /// linhas — não alcança um cadastro de Configuração, que vive na casa das
+    /// centenas. Numa coleção que cresce sem teto, a adoção é decisão a defender,
+    /// não default a herdar deste endpoint.</para>
     /// </summary>
     [HttpGet("ofertas-curso")]
     [AllowAnonymous]
@@ -81,7 +88,13 @@ public sealed class OfertasCursoController : ControllerBase
             + "campo decrescente. Exemplo: sort=cursoNome,-programaDeOferta. Campos aceitos: cursoNome, cursoCodigo, unidadeOfertanteSigla, programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno, criadoEm. "
             + "Sem o parâmetro, vale a ordem alfabética padrão.")]
         string? sort,
-        CancellationToken cancellationToken)
+        [FromQuery(Name = "include_total")]
+        [Description(
+            "Inclui o total de registros no header X-Total-Count. O total é contado sobre a mesma "
+            + "consulta que produziu a página — filtros e busca inclusive —, nunca sobre a tabela "
+            + "inteira. Ausente ou false, nenhum header de total é emitido.")]
+        bool includeTotal = false,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
 
@@ -93,7 +106,7 @@ public sealed class OfertasCursoController : ControllerBase
         Result<ListarOfertasCursoResult> resultado = await _queryBus
             .Send(
                 new ListarOfertasCursoQuery(
-                    ordenacao, q, page.AfterSortKey, page.AfterId, page.Limit, page.Direction, cursoId),
+                    ordenacao, q, page.AfterSortKey, page.AfterId, page.Limit, page.Direction, cursoId, includeTotal),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -106,7 +119,8 @@ public sealed class OfertasCursoController : ControllerBase
             [.. resultado.Value!.Items.Select(o => o with { Links = _linksBuilder.Build(o) })];
 
         return await this.OkPaginatedOrdenadoAsync(
-            comLinks, resultado.Value.Anterior, resultado.Value.Proximo, page, ResourceTag,
+            comLinks, resultado.Value.Anterior, resultado.Value.Proximo,
+            page, ResourceTag, total: resultado.Value.Total,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

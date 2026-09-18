@@ -68,6 +68,18 @@ public sealed class CorsConfigurationTests
     }
 
     [Fact]
+    public void Policy_QuandoPoliticaPadrao_DeveExporXTotalCount()
+    {
+        // O total da coleção sai da mesma extensão de paginação que emite Link e X-Page-Size, e
+        // não pertence a módulo nenhum. Sem expô-lo, a tela pede include_total=true, recebe 200 e
+        // o contador fica vazio — o header chega ao navegador e o JavaScript lê null.
+        CorsPolicy policy = BuildDefaultPolicy(allowAnyHeader: false);
+
+        policy.ExposedHeaders.Should().Contain("X-Total-Count",
+            because: "quem pede a contagem precisa conseguir lê-la de outra origem.");
+    }
+
+    [Fact]
     public void Policy_QuandoPoliticaPadrao_DeveManterSeloEReplayExpostos()
     {
         // Os dois que já estavam na lista. Entram aqui para que uma mudança futura não os remova
@@ -87,7 +99,7 @@ public sealed class CorsConfigurationTests
         CorsPolicy policy = BuildDefaultPolicy(allowAnyHeader: false, "X-Certames-Em-Breve");
 
         policy.ExposedHeaders.Should().Contain("X-Certames-Em-Breve");
-        policy.ExposedHeaders.Should().Contain(["ETag", "Idempotency-Replayed", "Link", "X-Page-Size"]);
+        policy.ExposedHeaders.Should().Contain(["ETag", "Idempotency-Replayed", "Link", "X-Page-Size", "X-Total-Count"]);
     }
 
     private static CorsPolicy BuildDefaultPolicy(bool allowAnyHeader, params string[] additionalExposedHeaders)

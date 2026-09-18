@@ -43,6 +43,9 @@ public sealed class HeadersDePaginacaoExpostosTests
     /// <summary>Listagem paginada anônima — serve o contrato de coleção sem exigir autenticação.</summary>
     private const string ListagemPaginada = "/api/configuracao/cursos?limit=1";
 
+    /// <summary>Listagem que oferece a contagem exata da coleção, pedida no próprio endereço.</summary>
+    private const string ListagemComTotal = "/api/configuracao/ofertas-curso?limit=1&include_total=true";
+
     private readonly MonolitoPostgresFixture _fixture;
 
     public HeadersDePaginacaoExpostosTests(MonolitoPostgresFixture fixture)
@@ -80,6 +83,25 @@ public sealed class HeadersDePaginacaoExpostosTests
         using HttpResponseMessage resposta = await client.SendAsync(requisicao, CancellationToken.None);
 
         HeadersExpostos(resposta).Should().Contain(["ETag", "Idempotency-Replayed"]);
+    }
+
+    [Fact(DisplayName = "O total pedido pela requisição sai no header e chega ao JavaScript de outra origem")]
+    public async Task Listar_QuandoPedeOTotalDeOutraOrigem_DeveExporXTotalCount()
+    {
+        // As duas pontas na mesma asserção, porque falhar em qualquer uma delas produz a mesma
+        // tela vazia: o servidor precisa emitir X-Total-Count a quem pediu include_total, e a
+        // resposta precisa autorizar a leitura dele por origem cruzada.
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage requisicao = new(HttpMethod.Get, ListagemComTotal);
+        requisicao.Headers.Add("Origin", OrigemDoSpa);
+
+        using HttpResponseMessage resposta = await client.SendAsync(requisicao, CancellationToken.None);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        resposta.Headers.Contains("X-Total-Count").Should().BeTrue(
+            "quem pede include_total recebe a contagem no header");
+        HeadersExpostos(resposta).Should().Contain("X-Total-Count",
+            "emitir sem expor devolve null ao JavaScript, sem erro e sem nada a investigar");
     }
 
     /// <summary>

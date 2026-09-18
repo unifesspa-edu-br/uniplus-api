@@ -38,7 +38,7 @@ public interface IOfertaCursoRepository
     /// Filtro opcional (issue #755): restringe às ofertas do curso informado antes
     /// do keyset — itens e âncoras respeitam o recorte; <c>null</c> lista todas.
     /// </param>
-    Task<(IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
+    Task<(IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total)>
         ListarPaginadoAsync(
             IReadOnlyList<SortField> ordenacao,
             string? busca,
@@ -47,6 +47,7 @@ public interface IOfertaCursoRepository
             int limit,
             PaginationDirection direction,
             Guid? cursoId,
+            bool includeTotal,
             CancellationToken cancellationToken);
 
     Task AdicionarAsync(OfertaCurso ofertaCurso, CancellationToken cancellationToken);

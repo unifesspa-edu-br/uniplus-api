@@ -52,6 +52,9 @@ public static class CorsConfiguration
     // - Link e X-Page-Size: a navegação por cursor vive inteiramente neles. Sem expô-los, uma
     //   aplicação de origem cruzada recebe a página e não tem como pedir a seguinte — o corpo é
     //   um array puro, e o endereço de continuação só existe no header.
+    // - X-Total-Count: o total da coleção, quando a requisição o pede (ADR-0026). Sai do mesmo
+    //   lugar que Link e X-Page-Size, e não pertence a módulo nenhum — quem o emite é a extensão
+    //   de paginação compartilhada. Sem expô-lo, a tela pede a contagem e lê null.
     //
     // Header que só um módulo emite NÃO entra aqui: esta lista é compartilhada por todos os
     // deployables, e um nome de recurso de um módulo nela faz os outros autorizarem a leitura de um
@@ -63,6 +66,7 @@ public static class CorsConfiguration
         "Idempotency-Replayed",
         "Link",
         "X-Page-Size",
+        "X-Total-Count",
     ];
 
     /// <summary>

@@ -44,7 +44,7 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
+    public async Task<(IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total)>
         ListarPaginadoAsync(
             IReadOnlyList<SortField> ordenacao,
             string? busca,
@@ -53,6 +53,7 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             int limit,
             PaginationDirection direction,
             Guid? cursoId,
+            bool includeTotal,
             CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ordenacao);
@@ -98,6 +99,14 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
                 || EF.Functions.ILike(PgFunctions.NormalizeForComparison(o.UnidadeSigla), padrao, EscapeDoLike));
         }
 
+        // Contagem sobre a MESMA consulta que produziu a página (ADR-0026): o recorte por
+        // curso, a busca e o filtro de exclusão lógica já estão aplicados, e o keyset ainda
+        // não — um total que prometesse lista diferente da que o filtro traz seria rótulo
+        // que mente. Sem include_total nenhuma contagem é disparada: quem não pede não paga.
+        int? total = includeTotal
+            ? await query.CountAsync(cancellationToken).ConfigureAwait(false)
+            : null;
+
         OrderedKeysetPage<OfertaCursoOrdenada> page = await OrderedKeysetCursor
             .ApplyAsync(
                 query,
@@ -109,7 +118,7 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next);
+        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next, total);
     }
 
     /// <summary>

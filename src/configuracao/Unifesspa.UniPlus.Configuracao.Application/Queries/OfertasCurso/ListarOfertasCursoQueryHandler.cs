@@ -40,7 +40,7 @@ public static class ListarOfertasCursoQueryHandler
             return Result<ListarOfertasCursoResult>.Failure(ordenacao.Error!);
         }
 
-        (IReadOnlyList<OfertaCurso> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
+        (IReadOnlyList<OfertaCurso> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo, int? total) =
             await repository
                 .ListarPaginadoAsync(
                     ordenacao.Value!,
@@ -50,11 +50,12 @@ public static class ListarOfertasCursoQueryHandler
                     query.Limit,
                     query.Direction,
                     query.CursoId,
+                    query.IncludeTotal,
                     cancellationToken)
                 .ConfigureAwait(false);
 
         OfertaCursoDto[] items = [.. itens.Select(o => o.ToDto())];
         return Result<ListarOfertasCursoResult>.Success(
-            new ListarOfertasCursoResult(items, anterior, proximo));
+            new ListarOfertasCursoResult(items, anterior, proximo, total));
     }
 }
