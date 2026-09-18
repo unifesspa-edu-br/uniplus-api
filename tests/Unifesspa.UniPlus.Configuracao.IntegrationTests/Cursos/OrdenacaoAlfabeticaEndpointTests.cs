@@ -273,7 +273,7 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
     /// </para>
     /// </remarks>
     [Fact(DisplayName = "Cursor que não decodifica é recusado pelo envelope da paginação, não pelo genérico de binding")]
-    public async Task CursorMalformado_MantemOEnvelopeDaPaginacao()
+    public async Task Listar_CursorMalformado_MantemOEnvelopeDaPaginacao()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage resposta = await client.GetAsync(
