@@ -47,22 +47,27 @@ public sealed class InvalidRequestProblemFactoryTests
     /// esperado — capturá-la trocaria isso por "o corpo não pôde ser lido", que além de inútil
     /// seria falso, já que o binding deu certo.
     /// </remarks>
-    [Fact(DisplayName = "Valor declarado que não converte é carga malformada — não campo ausente")]
-    public void ValorPresenteQueNaoConverte_EhMalformada()
+    /// <summary>
+    /// Valor de rota ou query que não converte NÃO é reivindicado por este factory, e isso é
+    /// limitação assumida, não descuido.
+    /// </summary>
+    /// <remarks>
+    /// O <c>ModelStateDictionary</c> normaliza a exceção do binder numa mensagem segura, e
+    /// depois disso uma conversão que falhou e uma validação que reprovou ficam idênticas:
+    /// mesma chave, mesmo valor tentado, sem exceção guardada. Separá-las exigiria ler o texto
+    /// da mensagem — que é do framework, muda quando ele quiser, e é exatamente o tipo de
+    /// heurística que este factory recusa. Entre afirmar por palpite e não afirmar, não afirma.
+    /// </remarks>
+    [Fact(DisplayName = "Valor declarado que não converte segue pela cadeia — separá-lo de validação não é demonstrável")]
+    public void ValorPresenteQueNaoConverte_Delega()
     {
         ActionContext contexto = Contexto(ParametroDeQuery("vigentes"));
+        // É o que o pipeline real produz: a exceção do binder já virou mensagem, e a entrada
+        // não se distingue de um validador tendo reprovado o mesmo parâmetro.
         contexto.ModelState.SetModelValue("vigentes", rawValue: "abc", attemptedValue: "abc");
-        // O binder guarda a EXCEÇÃO da conversão na entrada. É esse sinal que distingue
-        // "não vira o tipo" de "virou o tipo e um validador reprovou depois".
-        contexto.ModelState.TryAddModelException("vigentes", new FormatException("abc"));
+        contexto.ModelState.AddModelError("vigentes", "The value 'abc' is not valid.");
 
-        ProblemDetails problema = Executar(contexto);
-
-        problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
-        problema.Detail.Should().NotContain("abc",
-            "o envelope de erro não ecoa o valor rejeitado (ADR-0023)");
-        problema.Detail.Should().NotContain("campo obrigatório",
-            "o campo FOI declarado — mandá-lo declarar de novo é instrução que ele já cumpriu");
+        InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull();
     }
 
     [Fact(DisplayName = "Validação que roda depois do binding não é capturada — a mensagem dela sobrevive")]
@@ -240,28 +245,6 @@ public sealed class InvalidRequestProblemFactoryTests
         ProblemDetails problema = Executar(contexto);
 
         problema.Extensions["code"].Should().Be("uniplus.requisicao.corpo_ausente");
-    }
-
-    /// <summary>
-    /// Parâmetro exposto com nome diferente do declarado aparece no <c>ModelState</c> pelo nome
-    /// EXPOSTO. Comparar pelo declarado não encontra a entrada, e a recusa escapa em silêncio.
-    /// </summary>
-    [Fact(DisplayName = "Parâmetro com nome de binding próprio é reconhecido pelo nome exposto")]
-    public void ParametroComNomeDeBindingProprio_EhReconhecido()
-    {
-        ParameterDescriptor parametro = new()
-        {
-            Name = "includeTotal",
-            BindingInfo = new BindingInfo { BindingSource = BindingSource.Query, BinderModelName = "include_total" },
-        };
-
-        ActionContext contexto = Contexto(parametro);
-        contexto.ModelState.SetModelValue("include_total", rawValue: "abc", attemptedValue: "abc");
-        contexto.ModelState.TryAddModelException("include_total", new FormatException("abc"));
-
-        ProblemDetails problema = Executar(contexto);
-
-        problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
     }
 
     private static ProblemDetails Executar(ActionContext contexto)

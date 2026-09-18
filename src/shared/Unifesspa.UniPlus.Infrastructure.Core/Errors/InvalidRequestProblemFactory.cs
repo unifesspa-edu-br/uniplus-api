@@ -39,6 +39,15 @@ using Microsoft.Extensions.DependencyInjection;
 /// possa dizer genericamente. Capturá-la aqui trocaria orientação útil por "o corpo não pôde
 /// ser lido", que além de inútil seria falso.
 /// </para>
+/// <para>
+/// <strong>Valor de rota ou query que não converte também fica de fora</strong>, e não por
+/// escolha: depois que o <c>ModelStateDictionary</c> normaliza a exceção do binder numa
+/// mensagem segura, uma conversão que falhou e uma validação que reprovou ficam
+/// <b>estruturalmente idênticas</b> — mesma chave, mesmo valor tentado, sem exceção guardada.
+/// Separá-las exigiria ler o texto da mensagem, que é do framework e muda quando ele quiser.
+/// Entre afirmar por heurística e não afirmar, este tipo não afirma: aquelas recusas seguem no
+/// envelope do framework, como antes desta mudança, e fechá-las pede um caminho próprio.
+/// </para>
 /// </remarks>
 public static class InvalidRequestProblemFactory
 {
@@ -83,8 +92,7 @@ public static class InvalidRequestProblemFactory
         // "faltou corpo?" antes de "o corpo é ilegível?" responde "faltou corpo" para um
         // documento que chegou. O sinal de que houve documento é a entrada que aponta posição
         // dentro dele; ela desempata.
-        bool unreadable = HasDeserializationFailure(context.ModelState)
-            || HasConversionFailure(context.ModelState, binderKeys);
+        bool unreadable = HasDeserializationFailure(context.ModelState);
         IReadOnlyList<string> missing = MissingFields(context.ModelState, binderKeys);
         bool bodyAbsent = !unreadable
             && BodyProvablyAbsent(context.HttpContext.Request)
@@ -182,22 +190,6 @@ public static class InvalidRequestProblemFactory
             ? !detection.CanHaveBody
             : request.ContentLength == 0;
     }
-
-    /// <summary>
-    /// Falha de CONVERSÃO num parâmetro que o binder preenche: o valor veio e não vira o tipo
-    /// declarado.
-    /// </summary>
-    /// <remarks>
-    /// O que a distingue de uma validação que rodou depois do binding — e que este factory
-    /// deixa passar de propósito — é a exceção: o binder captura o erro de conversão e o guarda
-    /// na entrada, enquanto um atributo de validação registra só a mensagem. Sem esse sinal as
-    /// duas são indistinguíveis, porque ambas têm valor tentado.
-    /// </remarks>
-    private static bool HasConversionFailure(ModelStateDictionary modelState, HashSet<string> binderKeys) =>
-        modelState.Any(entry =>
-            entry.Value is { ValidationState: ModelValidationState.Invalid }
-            && binderKeys.Contains(entry.Key)
-            && entry.Value.Errors.Any(static error => error.Exception is not null));
 
     /// <summary>
     /// O nome sob o qual o <c>ModelState</c> registra o parâmetro, que é o nome configurado no
