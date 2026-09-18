@@ -249,6 +249,16 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
 
         IReadOnlyList<NoExigencia> todosOsNos = [.. raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
 
+        // Onde cada documento é coletado só significa alguma coisa contra o cronograma e as
+        // etapas repostas ao lado dele — e é a MESMA conferência que a escrita faz, não uma
+        // segunda leitura da regra. Sem ela, uma exigência apontando para fase ou etapa que
+        // o envelope não repõe atravessa a leitura e morre na chave estrangeira, e a que
+        // aponta para etapa de outra fase persiste calada.
+        if (ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(documentosExigidos, cronogramaFases, etapas) is { } vinculoInvalido)
+        {
+            return Result<EnvelopeReidratado>.Failure(vinculoInvalido);
+        }
+
         // Fail-closed do bloco de coleta/derivação (RN08): um envelope adulterado que declare fato
         // duplicado, cite fato inexistente num gatilho/pré-condição/regra, contribua código fora do
         // domínio de modalidades, feche ciclo no grafo conjunto, ou cujo grafo/modalidades congelados

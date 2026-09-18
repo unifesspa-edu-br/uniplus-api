@@ -1601,6 +1601,61 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase");
     }
 
+    // ── O vínculo da exigência documental com a fase e a etapa que a coletam ──
+
+    /// <summary>
+    /// Onde o documento é coletado é dito por dois campos que só significam alguma coisa
+    /// contra o cronograma e as etapas repostas ao lado deles.
+    /// </summary>
+    /// <remarks>
+    /// A escrita confere os três vínculos antes de aceitar a exigência; a reidratação aceitava
+    /// o que o documento dissesse. Uma exigência apontando para fase ou etapa que não existe
+    /// no processo reposto atravessa a leitura e morre na chave estrangeira, como 500 no meio
+    /// do descarte — e a que aponta para etapa de <b>outra</b> fase nem isso: persiste, e o
+    /// certame restaurado passa a coletar o documento num dia que o cronograma não prevê.
+    /// </remarks>
+    [Fact(DisplayName = "Exigência apontando para fase fora do cronograma é recusada na reidratação")]
+    public void ExigenciaComFaseForaDoCronograma_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+            PrimeiraExigencia(envelope)["exigidoNaFaseId"] = Guid.CreateVersion7().ToString());
+
+        resultado.IsFailure.Should().BeTrue(
+            "a fase que coleta o documento tem de ser uma fase deste cronograma");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.FaseNaoPertenceAoProcesso");
+    }
+
+    [Fact(DisplayName = "Exigência apontando para etapa que o processo não tem é recusada na reidratação")]
+    public void ExigenciaComEtapaForaDoProcesso_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+            PrimeiraExigencia(envelope)["exigidoNaEtapaId"] = Guid.CreateVersion7().ToString());
+
+        resultado.IsFailure.Should().BeTrue(
+            "a etapa que coleta o documento tem de existir no processo reposto — senão a exigência restaurada " +
+            "aponta para o nada, e quem descobre é a chave estrangeira");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAoProcesso");
+    }
+
+    [Fact(DisplayName = "Exigência apontando para etapa que não acontece na fase declarada é recusada na reidratação")]
+    public void ExigenciaComEtapaDeOutraFase_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+        {
+            // Uma etapa real do processo, mas que não declara a fase em que a exigência diz
+            // ser coletada: é o caso que passa pela chave estrangeira e sobrevive calado.
+            string etapaId = envelope["etapas"]!.AsArray()[0]!["id"]!.GetValue<string>();
+            PrimeiraExigencia(envelope)["exigidoNaEtapaId"] = etapaId;
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "apontar etapa de outra fase diria que a habilitação coleta no dia da prova");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");
+    }
+
+    private static JsonObject PrimeiraExigencia(JsonObject envelope) =>
+        envelope["documentosExigidos"]!["exigencias"]!.AsArray()[0]!.AsObject();
+
     /// <summary>
     /// Os <c>args</c> da regra de recurso da única fase do corpus que a declara. Localizada
     /// pela presença do bloco, não por índice fixo: uma fase nova no corpus deslocaria o
