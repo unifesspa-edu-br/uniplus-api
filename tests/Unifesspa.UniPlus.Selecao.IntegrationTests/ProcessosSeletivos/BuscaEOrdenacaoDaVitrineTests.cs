@@ -56,9 +56,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [InlineData("músic")]
     public async Task ListarVitrine_QuandoTermoVariaEmAcentoECaixa_DeveEncontrarOMesmoCertame(string termo)
     {
-        // O texto guardado tem acento e o pesquisado pode não ter, ou o contrário. Normalizar só um
-        // lado é o defeito que faz a busca não achar o que existe — e ele não aparece em memória,
-        // onde a comparação é a mesma dos dois lados.
+        // Normalizar só um lado faz a busca não achar o que existe.
         IReadOnlyList<string> nomes = await ListarAsync(new RecorteDaVitrine(Busca: termo));
 
         nomes.Should().ContainSingle().Which.Should().Be("Vestibular de Música");
@@ -75,8 +73,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "Curinga digitado é procurado como texto, não como curinga")]
     public async Task ListarVitrine_QuandoTermoTemCuringaDoLike_DeveProcuraLoComoTexto()
     {
-        // Sem escapar, '%' casaria com tudo e a busca devolveria a vitrine inteira — dando ao
-        // usuário a impressão de que o termo dele existe em todo certame.
+        // Sem escapar, '%' casaria com tudo.
         IReadOnlyList<string> nomes = await ListarAsync(new RecorteDaVitrine(Busca: "%"));
 
         nomes.Should().BeEmpty();
@@ -93,8 +90,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "A ordenação por título é alfabética real, não por ponto de código")]
     public async Task Ordenacao_PorNome_EAlfabeticaReal()
     {
-        // Pelo ponto de código, "Ingresso à..." viria depois de "SISU" e de "Vestibular" — o acento
-        // do 'à' está acima de toda letra ASCII. É o que a coluna normalizada existe para corrigir.
+        // Pelo ponto de código o 'à' viria depois de toda letra ASCII.
         IReadOnlyList<string> nomes = await ListarAsync(
             new RecorteDaVitrine(), [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Ascending)]);
 
@@ -121,9 +117,8 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "Cursor emitido sob uma busca é recusado sob outra")]
     public async Task ListarVitrine_QuandoCursorVemDeOutroRecorte_DeveRecusarAContinuacao()
     {
-        // A âncora é uma posição DENTRO de um conjunto. Aceita sob outro recorte, o seek partiria de
-        // um valor que não existe naquele conjunto e a página voltaria vazia — indistinguível de fim
-        // de coleção, que é o pior desfecho possível: silencioso e plausível.
+        // A âncora é posição dentro de um conjunto: sob outro recorte, a página volta vazia —
+        // indistinguível de fim de coleção.
         (string SortKey, Guid Id)? proximo = await PrimeiraPaginaAsync(new RecorteDaVitrine(Busca: "a"), limite: 1);
 
         proximo.Should().NotBeNull("a busca precisa ter mais de uma página para o cursor existir");
@@ -156,9 +151,8 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [InlineData(true)]
     public async Task ListarVitrine_QuandoPercorrePaginaAPagina_NaoDeveRepetirNemOmitir(bool ordenacaoEscolhida)
     {
-        // Uma página por vez é o caso que expõe a âncora: ela precisa nomear as MESMAS propriedades
-        // pelas quais a consulta ordena, senão toda página a partir da segunda parte de um valor que
-        // não é o daquelas colunas. O defeito não aparece enquanto tudo couber numa página só.
+        // Uma página por vez: a âncora precisa nomear as mesmas propriedades que a consulta ordena,
+        // e o defeito não aparece enquanto tudo couber numa página.
         IReadOnlyList<SortField> ordenacao = ordenacaoEscolhida
             ? [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Ascending)]
             : [];
@@ -197,9 +191,8 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "Voltar uma página devolve exatamente a página anterior")]
     public async Task Travessia_ParaTras_VoltaAPaginaAnterior()
     {
-        // A âncora de volta é a que a própria página emite — é assim que o cliente navega, pelo
-        // header Link. Voltar por ela precisa cair de novo no item de onde se veio, e não num
-        // vizinho: errar o lado da desigualdade do seek desloca a página em um.
+        // A âncora de volta é a que a página emite. Errar o lado da desigualdade do seek desloca
+        // a página em um.
         (IReadOnlyList<CertameDivulgado> primeira, (string SortKey, Guid Id)? anteriorDaPrimeira, (string SortKey, Guid Id)? aposPrimeira) =
             await PaginaCompletaAsync(cursor: null, PaginationDirection.Next);
 
@@ -221,11 +214,9 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "Título do comprimento máximo da origem é divulgável")]
     public async Task Nome_NoComprimentoDaOrigem_EDivulgavel()
     {
-        // A faceta é uma CÓPIA do título do processo, e uma cópia mais curta que a origem recusa um
-        // cadastro legítimo. Recusa no pior lugar possível: esta escrita é assíncrona, disparada
-        // pelo registro do ato, e a falha não volta a ninguém — a mensagem morre na fila, a linha
-        // nunca nasce, e como a existência da linha É a publicidade, o certame fica invisível com o
-        // ato já registrado. Nem o público nem quem publicou teriam como perceber.
+        // A faceta copia o título do processo. Mais curta que a origem, recusa cadastro legítimo
+        // numa escrita assíncrona cuja falha não volta a ninguém — a linha nunca nasce, e sem
+        // linha o certame não é público.
         string tituloNoLimite = new('M', 300);
 
         await using SelecaoDbContext context = _fixture.CreateDbContext();
@@ -237,11 +228,38 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
             "o título do processo aceita 300 caracteres, e a divulgação copia o que a origem aceita");
     }
 
+    [Fact(DisplayName = "Busca, modalidade e situação recortam em conjunto, e não uma de cada vez")]
+    public async Task ListarVitrine_QuandoCombinaBuscaModalidadeESituacao_DeveAplicarAsTres()
+    {
+        // Isolado, cada recorte passa mesmo que a consulta aplique só o último. A amostra tem um
+        // alvo que satisfaz os três e vizinhos que falham em exatamente um.
+        await using (SelecaoDbContext seed = _fixture.CreateDbContext())
+        {
+            seed.CertamesDivulgados.AddRange(
+                // Alvo: casa busca, modalidade e situação.
+                Divulgado("Processo Seletivo Especial", "010/2026", ["PCD"], Agora.AddDays(3)),
+                // Mesma busca e modalidade, mas encerrado — falha só na situação.
+                Divulgado("Processo Seletivo Especial", "011/2026", ["PCD"], Agora.AddDays(-3)),
+                // Mesma busca e situação, outra modalidade.
+                Divulgado("Processo Seletivo Especial", "012/2026", ["AC"], Agora.AddDays(3)),
+                // Mesma modalidade e situação, outro título.
+                Divulgado("Chamada Pública", "013/2026", ["PCD"], Agora.AddDays(3)));
+
+            await seed.SaveChangesAsync(CancellationToken.None);
+        }
+
+        IReadOnlyList<string> numeros = await ListarNumerosAsync(new RecorteDaVitrine(
+            Situacao: SituacaoDoCertame.UltimosDias, Modalidade: "PCD", Busca: "seletivo especial"));
+
+        numeros.Should().Equal(
+            ["010/2026"],
+            "os três recortes se acumulam na mesma consulta — cada vizinho falha em exatamente um deles");
+    }
+
     [Fact(DisplayName = "Os contadores respeitam a busca, e não só a situação")]
     public async Task ContarPorSituacao_QuandoHaBuscaAplicada_DeveContarSoOsCorrespondentes()
     {
-        // O número exibido ao lado do filtro promete quantos itens aquele filtro traz sobre o que
-        // está na tela. Contar a vitrine inteira sob uma busca aplicada é o rótulo mentir.
+        // O número ao lado do filtro promete o que aquele filtro traz sobre o que está na tela.
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
@@ -250,6 +268,18 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
 
         (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
             .Should().Be(1);
+    }
+
+    private async Task<IReadOnlyList<string>> ListarNumerosAsync(RecorteDaVitrine recorte)
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        CertameDivulgadoRepository repository = new(context);
+
+        (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
+            await repository.ListarVitrineAsync(
+                Agora, recorte, [], Limiar, null, null, 20, PaginationDirection.Next, CancellationToken.None);
+
+        return [.. pagina.Itens.Select(static c => c.Numero!)];
     }
 
     private async Task<IReadOnlyList<string>> ListarAsync(
