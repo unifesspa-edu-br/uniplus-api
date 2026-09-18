@@ -687,6 +687,69 @@ public sealed class OfertaCursoEndpointTests
             .Should().Equal(["MATUTINO", "VESPERTINO"]);
     }
 
+    [Fact(DisplayName = "POST em alternância pedagógica é criada, o PUT troca o regime e a leitura devolve o valor declarado")]
+    public async Task CicloAlternanciaPedagogica_CriaAtualizaELe()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        Unidade unidade = await SemearUnidadeAsync(NovoSlug("alternancia"), NovaSigla(), NovoCodigo());
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new
+        {
+            cursoId,
+            localOfertaId = localId,
+            unidadeOfertanteOrigemId = unidade.Id,
+            programaDeOferta = "REGULAR",
+            regimeDeFuncionamento = "ALTERNANCIA_PEDAGOGICA",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "MATUTINO" },
+        });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage aposCriacao = await client.GetAsync(
+            new Uri($"/api/configuracao/ofertas-curso/{id}", UriKind.Relative));
+        aposCriacao.StatusCode.Should().Be(HttpStatusCode.OK);
+        using (JsonDocument doc = JsonDocument.Parse(await aposCriacao.Content.ReadAsStringAsync()))
+        {
+            doc.RootElement.GetProperty("regimeDeFuncionamento").GetString()
+                .Should().Be("ALTERNANCIA_PEDAGOGICA");
+            doc.RootElement.GetProperty("regimeDeTurno").GetString().Should().Be("REGULAR");
+        }
+
+        HttpResponseMessage criarParaAtualizacao = await EnviarPostAdmin(client, new
+        {
+            cursoId,
+            localOfertaId = localId,
+            unidadeOfertanteOrigemId = unidade.Id,
+            programaDeOferta = "REGULAR",
+            regimeDeFuncionamento = "EXTENSIVO",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "MATUTINO" },
+        });
+        criarParaAtualizacao.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid idParaAtualizacao = await criarParaAtualizacao.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage atualizar = await EnviarPutAdmin(client, idParaAtualizacao, new
+        {
+            id = idParaAtualizacao,
+            programaDeOferta = "REGULAR",
+            regimeDeFuncionamento = "ALTERNANCIA_PEDAGOGICA",
+            regimeDeTurno = "REGULAR",
+            turnos = new[] { "VESPERTINO" },
+        });
+        atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage aposAtualizacao = await client.GetAsync(
+            new Uri($"/api/configuracao/ofertas-curso/{idParaAtualizacao}", UriKind.Relative));
+        aposAtualizacao.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument docAtualizado =
+            JsonDocument.Parse(await aposAtualizacao.Content.ReadAsStringAsync());
+        docAtualizado.RootElement.GetProperty("regimeDeFuncionamento").GetString()
+            .Should().Be("ALTERNANCIA_PEDAGOGICA");
+        docAtualizado.RootElement.GetProperty("regimeDeTurno").GetString().Should().Be("REGULAR");
+    }
+
     [Fact(DisplayName = "PUT que torna a oferta intensiva sem trocar o regime de turno retorna 422 e não converte os valores")]
     public async Task Atualizar_ParaIntensivoMantendoRegular_Retorna422SemConverter()
     {

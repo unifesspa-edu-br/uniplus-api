@@ -18,7 +18,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="UnidadeOfertanteTipo">Tipo da unidade ofertante congelado.</param>
 /// <param name="ProgramaDeOferta">Programa de oferta (token; ex.: "REGULAR").</param>
 /// <param name="FormatoPedagogico">Formato pedagógico (token; ex.: "PRESENCIAL").</param>
-/// <param name="RegimeDeFuncionamento">Regime de funcionamento (token; INTENSIVO ou EXTENSIVO) — dimensão própria, independente do regime de turno.</param>
+/// <param name="RegimeDeFuncionamento">Regime de funcionamento (token; INTENSIVO, EXTENSIVO ou ALTERNANCIA_PEDAGOGICA) — dimensão própria, independente do regime de turno.</param>
 /// <param name="RegimeDeTurno">Regime de turno (token; REGULAR ou INTEGRAL).</param>
 /// <param name="Turnos">Turnos ocupados (tokens), em ordem canônica: um sob REGULAR, dois sob INTEGRAL.</param>
 /// <param name="EMecCodigo">Código e-MEC por campus-sede, ou null.</param>

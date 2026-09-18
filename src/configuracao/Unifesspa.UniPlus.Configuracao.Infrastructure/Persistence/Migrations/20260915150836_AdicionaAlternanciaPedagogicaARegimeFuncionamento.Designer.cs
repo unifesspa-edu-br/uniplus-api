@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    partial class ConfiguracaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260915150836_AdicionaAlternanciaPedagogicaARegimeFuncionamento")]
+    partial class AdicionaAlternanciaPedagogicaARegimeFuncionamento
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3429,14 +3432,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<bool>("AdmiteEliminacao")
-                        .HasColumnType("boolean")
-                        .HasColumnName("admite_eliminacao");
-
-                    b.Property<bool>("AdmitePontuacao")
-                        .HasColumnType("boolean")
-                        .HasColumnName("admite_pontuacao");
-
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean")
                         .HasColumnName("ativo");
@@ -3486,10 +3481,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_tipos_etapa_codigo");
 
-                    b.ToTable("tipos_etapa", "configuracao", t =>
-                        {
-                            t.HasCheckConstraint("ck_tipos_etapa_carater_admitido", "admite_pontuacao OR admite_eliminacao");
-                        });
+                    b.ToTable("tipos_etapa", "configuracao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoProcesso", b =>

@@ -191,7 +191,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     }
 
     // Uma cláusula por regime de funcionamento que restringe o regime de turno;
-    // os que não restringem (EXTENSIVO) não entram na expressão. Com o roster
+    // os que não restringem (EXTENSIVO e ALTERNANCIA_PEDAGOGICA) não entram na expressão. Com o roster
     // atual resulta em
     // `regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL'`.
     private static string CompatibilidadeFuncionamentoRegimeSql()

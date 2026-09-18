@@ -296,9 +296,11 @@ public sealed class OfertaCursoPersistenceTests
             "o CHECK ck_oferta_curso_funcionamento_regime_de_turno espelha a invariante do agregado");
     }
 
-    [Theory(DisplayName = "CHECK de banco aceita as três combinações válidas de funcionamento e regime de turno")]
+    [Theory(DisplayName = "CHECK de banco aceita as cinco combinações válidas de funcionamento e regime de turno")]
     [InlineData("EXTENSIVO", "REGULAR", new[] { "MATUTINO" })]
     [InlineData("EXTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
+    [InlineData("ALTERNANCIA_PEDAGOGICA", "REGULAR", new[] { "MATUTINO" })]
+    [InlineData("ALTERNANCIA_PEDAGOGICA", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
     [InlineData("INTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
     public async Task Check_FuncionamentoRegimeDeTurno_AceitaCombinacoesValidas(
         string funcionamento, string regime, string[] turnos)

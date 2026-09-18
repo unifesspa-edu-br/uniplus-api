@@ -303,9 +303,11 @@ public sealed class OfertaCursoTests
 
     // ── Regime de funcionamento (UNI-REQ-0138) ────────────────────────────
 
-    [Theory(DisplayName = "Os dois tokens canônicos de regime de funcionamento são aceitos")]
+    [Theory(DisplayName = "Os três tokens canônicos de regime de funcionamento são aceitos")]
     [InlineData("EXTENSIVO", "REGULAR", new[] { "MATUTINO" }, RegimeDeFuncionamento.Extensivo)]
     [InlineData("EXTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" }, RegimeDeFuncionamento.Extensivo)]
+    [InlineData("ALTERNANCIA_PEDAGOGICA", "REGULAR", new[] { "MATUTINO" }, RegimeDeFuncionamento.AlternanciaPedagogica)]
+    [InlineData("ALTERNANCIA_PEDAGOGICA", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" }, RegimeDeFuncionamento.AlternanciaPedagogica)]
     [InlineData("INTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" }, RegimeDeFuncionamento.Intensivo)]
     public void Criar_FuncionamentoCanonico_Aceita(
         string funcionamento, string regimeDeTurno, string[] turnos, RegimeDeFuncionamento esperado)

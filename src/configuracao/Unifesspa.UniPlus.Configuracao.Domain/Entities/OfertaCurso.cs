@@ -37,11 +37,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// silenciosa a <c>INTEGRAL</c>. A leitura devolve os turnos em ordem canônica
 /// (matutino, vespertino, noturno), qualquer que tenha sido a ordem de entrada.</para>
 /// <para><see cref="RegimeDeFuncionamento"/> é dimensão <b>própria</b> e também
-/// obrigatória (UNI-REQ-0138, ADR-0128): <c>INTENSIVO</c> ou <c>EXTENSIVO</c>,
+/// obrigatória (UNI-REQ-0138, ADR-0128): <c>INTENSIVO</c>,
+/// <c>EXTENSIVO</c> e <c>ALTERNANCIA_PEDAGOGICA</c>,
 /// declarado e nunca inferido da quantidade de turnos, do regime de turno, do
 /// formato pedagógico ou do programa. A única compatibilidade entre as duas
 /// dimensões é que <c>INTENSIVO</c> exige regime de turno <c>INTEGRAL</c>;
-/// <c>EXTENSIVO</c> aceita ambos. A combinação incompatível é recusada — nenhuma
+/// <c>EXTENSIVO</c> e <c>ALTERNANCIA_PEDAGOGICA</c> aceitam ambos.
+/// A combinação incompatível é recusada — nenhuma
 /// das duas dimensões é convertida para acomodar a outra.</para>
 /// <para>Não há chave natural única entre ofertas vivas — a repetição
 /// curso×local×unidade é admitida (ex.: turnos ou programas distintos). A
@@ -70,7 +72,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Regime de funcionamento declarado — obrigatório, independente do
     /// <see cref="RegimeDeTurno"/>. <c>INTENSIVO</c> exige regime de turno
-    /// <c>INTEGRAL</c>; <c>EXTENSIVO</c> aceita ambos.
+    /// <c>INTEGRAL</c>; <c>EXTENSIVO</c> e <c>ALTERNANCIA_PEDAGOGICA</c> aceitam ambos.
     /// </summary>
     public RegimeDeFuncionamento RegimeDeFuncionamento { get; private set; }
 
@@ -371,10 +373,10 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         }
 
         // Compatibilidade entre as duas dimensões (UNI-REQ-0138): INTENSIVO exige
-        // regime de turno INTEGRAL; EXTENSIVO aceita ambos. Só avaliável com os
-        // dois regimes reconhecidos — senão o erro seria derivado de um token
-        // inválido, e não uma incompatibilidade independente. Nenhuma dimensão é
-        // convertida para acomodar a outra: a recusa é o resultado.
+        // regime de turno INTEGRAL; EXTENSIVO e ALTERNANCIA_PEDAGOGICA aceitam ambos.
+        // Só avaliável com os dois regimes reconhecidos — senão o erro seria derivado
+        // de um token inválido, e não uma incompatibilidade independente.
+        // Nenhuma dimensão é convertida para acomodar a outra: a recusa é o resultado.
         if (funcionamentoOk && regimeOk)
         {
             RegimeDeTurno? regimeExigido = RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento);
