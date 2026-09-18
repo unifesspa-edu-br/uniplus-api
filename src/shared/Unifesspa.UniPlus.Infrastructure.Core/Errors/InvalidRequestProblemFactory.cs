@@ -6,11 +6,11 @@ using System.Text.RegularExpressions;
 using Kernel.Results;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Net.Http.Headers;
 
 /// <summary>
 /// Resposta canônica para a carga que não chega a ser lida — o corpo que o desserializador
@@ -87,7 +87,7 @@ public static class InvalidRequestProblemFactory
             || HasConversionFailure(context.ModelState, binderKeys);
         IReadOnlyList<string> missing = MissingFields(context.ModelState, binderKeys);
         bool bodyAbsent = !unreadable
-            && CorpoComprovadamenteAusente(context.HttpContext.Request)
+            && BodyProvablyAbsent(context.HttpContext.Request)
             && HasAbsentBody(context.ModelState, bodyKeys);
 
         if (!unreadable && !bodyAbsent && missing.Count == 0)
@@ -120,12 +120,12 @@ public static class InvalidRequestProblemFactory
     /// </remarks>
     private static HashSet<string> BodyKeys(ActionContext context)
     {
-        HashSet<string> chaves = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
-        chaves.UnionWith(context.ActionDescriptor.Parameters
+        HashSet<string> keys = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
+        keys.UnionWith(context.ActionDescriptor.Parameters
             .Where(static p => p.BindingInfo?.BindingSource == BindingSource.Body)
-            .Select(static p => p.Name));
+            .Select(BindingKey));
 
-        return chaves;
+        return keys;
     }
 
     /// <summary>
@@ -142,12 +142,12 @@ public static class InvalidRequestProblemFactory
     /// </remarks>
     private static HashSet<string> BinderKeys(ActionContext context)
     {
-        HashSet<string> chaves = new(StringComparer.OrdinalIgnoreCase);
-        chaves.UnionWith(context.ActionDescriptor.Parameters
-            .Where(static p => p.BindingInfo?.BindingSource is { } fonte && fonte != BindingSource.Body)
-            .Select(static p => p.Name));
+        HashSet<string> keys = new(StringComparer.OrdinalIgnoreCase);
+        keys.UnionWith(context.ActionDescriptor.Parameters
+            .Where(static p => p.BindingInfo?.BindingSource is { } source && source != BindingSource.Body)
+            .Select(BindingKey));
 
-        return chaves;
+        return keys;
     }
 
     /// <summary>
@@ -161,17 +161,27 @@ public static class InvalidRequestProblemFactory
     /// a lugar nenhum.
     /// </para>
     /// <para>
-    /// A prova é a do próprio HTTP: há corpo quando o comprimento é positivo ou quando a
-    /// codificação de transferência anuncia um de tamanho não declarado. Tamanho
-    /// <b>desconhecido</b> não é tamanho zero — um documento em chunked, ou um corpo HTTP/2 sem
-    /// comprimento declarado, chega sem <c>Content-Length</c> e existe. Na dúvida, esta função
+    /// A prova vem do servidor, que sabe se o protocolo permite corpo nesta requisição. Tamanho
+    /// <b>desconhecido</b> não é tamanho zero: um documento em chunked, ou um corpo HTTP/2 sem
+    /// comprimento declarado, chega sem <c>Content-Length</c> e existe — e HTTP/2 nem usa
+    /// codificação de transferência, então deduzir dos cabeçalhos erra justamente ali. Sem o
+    /// sinal do servidor, só o comprimento zero declarado prova ausência. Na dúvida esta função
     /// diz não, e a recusa segue para a cadeia: afirmar ausência que não se pode provar é
     /// exatamente o erro que este factory existe para não cometer.
     /// </para>
     /// </remarks>
-    private static bool CorpoComprovadamenteAusente(HttpRequest request) =>
-        request.ContentLength is null or 0
-        && !request.Headers.ContainsKey(HeaderNames.TransferEncoding);
+    private static bool BodyProvablyAbsent(HttpRequest request)
+    {
+        // O servidor sabe se o protocolo permite corpo nesta requisição — inclusive em HTTP/2,
+        // que não usa codificação de transferência e cujo corpo chega sem comprimento
+        // declarado. Deduzir isso dos cabeçalhos erra exatamente aí.
+        IHttpRequestBodyDetectionFeature? detection =
+            request.HttpContext.Features.Get<IHttpRequestBodyDetectionFeature>();
+
+        return detection is not null
+            ? !detection.CanHaveBody
+            : request.ContentLength == 0;
+    }
 
     /// <summary>
     /// Falha de CONVERSÃO num parâmetro que o binder preenche: o valor veio e não vira o tipo
@@ -188,6 +198,18 @@ public static class InvalidRequestProblemFactory
             entry.Value is { ValidationState: ModelValidationState.Invalid }
             && binderKeys.Contains(entry.Key)
             && entry.Value.Errors.Any(static error => error.Exception is not null));
+
+    /// <summary>
+    /// O nome sob o qual o <c>ModelState</c> registra o parâmetro, que é o nome configurado no
+    /// binding quando há um, e o do parâmetro quando não há.
+    /// </summary>
+    /// <remarks>
+    /// Um parâmetro declarado como <c>includeTotal</c> e exposto como <c>include_total</c>
+    /// aparece no <c>ModelState</c> pelo segundo nome. Comparar pelo primeiro não encontra a
+    /// entrada, e a recusa volta ao envelope do framework sem que nada avise.
+    /// </remarks>
+    private static string BindingKey(ParameterDescriptor parameter) =>
+        parameter.BindingInfo?.BinderModelName ?? parameter.Name;
 
     private static bool HasAbsentBody(ModelStateDictionary modelState, HashSet<string> bodyKeys) =>
         modelState.Any(entry =>
