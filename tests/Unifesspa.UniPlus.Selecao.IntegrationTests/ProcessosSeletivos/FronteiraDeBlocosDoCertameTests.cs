@@ -35,7 +35,7 @@ using Xunit;
 public sealed class FronteiraDeBlocosDoCertameTests
 {
     [Fact(DisplayName = "Todo bloco da configuração congelada está classificado como público ou interno")]
-    public void EnvelopeDeReferencia_NaoTemBlocoSemClassificacao()
+    public void Classificacao_QuandoEnvelopeDeReferencia_NaoDeveTerBlocoSemClassificar()
     {
         IReadOnlyCollection<string> naoClassificados = NaoClassificados(ChavesDoEnvelopeDeReferencia());
 
@@ -45,7 +45,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Fact(DisplayName = "O envelope com os blocos condicionais presentes também está inteiramente classificado")]
-    public void EnvelopeComBlocosCondicionais_NaoTemBlocoSemClassificacao()
+    public void Classificacao_QuandoEnvelopeTemBlocosCondicionais_NaoDeveTerBlocoSemClassificar()
     {
         // Cascata de remanejamento e bônus regional alternam presença. Sem exercitar a variante em
         // que existem, a verificação não os alcançaria e eles poderiam nascer sem classificação.
@@ -58,7 +58,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Fact(DisplayName = "Um bloco fictício não classificado faz a verificação falhar, nomeando o bloco")]
-    public void BlocoFicticio_QuebraAVerificacao()
+    public void Classificacao_QuandoEnvelopeGanhaBlocoNaoClassificado_DeveQuebrarNomeandoOBloco()
     {
         // O teste do próprio teste: uma verificação que não falha quando o envelope ganha bloco não
         // é gate, é decoração.
@@ -70,7 +70,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Fact(DisplayName = "Nenhum bloco é classificado em duas categorias ao mesmo tempo")]
-    public void Categorias_NaoSeSobrepoem()
+    public void Classificacao_QuandoCategoriasSaoComparadas_NaoDevemSeSobrepor()
     {
         // Um bloco em "público" e "interno" ao mesmo tempo tornaria a classificação inútil: a
         // verificação passaria, e qual das duas vale ficaria indefinido.
@@ -88,7 +88,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Fact(DisplayName = "A classificação não guarda bloco que o envelope deixou de emitir")]
-    public void Classificacao_NaoTemBlocoMorto()
+    public void Classificacao_QuandoEnvelopeDeixaDeEmitirBloco_NaoDeveGuardaLo()
     {
         // A lista envelhece nos dois sentidos. Um bloco removido do domínio que sobra aqui faz a
         // classificação descrever um envelope que não existe mais.
@@ -105,7 +105,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Fact(DisplayName = "A projeção pública lê o envelope canônico REAL, não só o escrito à mão nos testes")]
-    public void ProjecaoDoCertame_LeOEnvelopeCanonico()
+    public void Projetar_QuandoEnvelopeCanonicoReal_DeveSerLidoComSucesso()
     {
         // A fronteira acima compara as chaves de TOPO. Renomear uma chave INTERNA de bloco no
         // canonicalizador — o rótulo de um documento exigido, o nome de um recurso de atendimento,

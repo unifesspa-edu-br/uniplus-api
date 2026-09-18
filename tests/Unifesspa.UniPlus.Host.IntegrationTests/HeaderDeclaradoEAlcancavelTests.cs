@@ -49,7 +49,7 @@ public sealed class HeaderDeclaradoEAlcancavelTests
     }
 
     [Fact(DisplayName = "Todo header declarado no contrato está exposto pelo CORS")]
-    public void HeadersDeclarados_EstaoExpostosPeloCors()
+    public void Contrato_QuandoEndpointDeclaraHeader_DeveExpoLoPeloCors()
     {
         IReadOnlyCollection<string> declarados = HeadersDeclaradosPelosEndpoints();
 

@@ -23,7 +23,7 @@ public sealed class SituacaoDaVitrineTests
     [InlineData(-1, 30, SituacaoDoCertame.InscricoesAbertas)]
     [InlineData(-1, 3, SituacaoDoCertame.UltimosDias)]
     [InlineData(-30, -1, SituacaoDoCertame.Encerradas)]
-    public void Classificar_ResolveOPontoDaJanela(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada) =>
+    public void Classificar_QuandoJanelaEmCadaPonto_DeveResolverASituacao(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada) =>
         SituacaoDaVitrine.Classificar(
             Agora.AddDays(diasAteAbrir), Agora.AddDays(diasAteFechar), Agora, Limiar)
             .Should().Be(esperada);
@@ -56,7 +56,7 @@ public sealed class SituacaoDaVitrineTests
             .Should().Be(SituacaoDoCertame.Encerradas);
 
     [Fact(DisplayName = "Toda janela possível recebe exatamente uma das quatro situações")]
-    public void Classificar_CobreTodasAsJanelas()
+    public void Classificar_QuandoVarreTodasAsBordas_DeveDevolverSempreUmaSituacaoValida()
     {
         // Varredura sobre o produto de bordas relevantes — antes, exatamente em cima e depois de
         // cada ponto que a regra usa. O que se prova é que a função é total: não há janela sem
@@ -73,7 +73,7 @@ public sealed class SituacaoDaVitrineTests
     }
 
     [Fact(DisplayName = "O vocabulário não tem valor de \"sem filtro\"")]
-    public void Vocabulario_NaoTemValorDeAusenciaDeFiltro() =>
+    public void Vocabulario_QuandoEnumerado_NaoDeveTerValorDeAusenciaDeFiltro() =>
         // Ausência de recorte é ausência do parâmetro. Um valor "todas" no enum seria situação que
         // certame algum tem, e bastaria escrevê-lo num item para a marca deixar de querer dizer o
         // mesmo que o recorte e o contador.

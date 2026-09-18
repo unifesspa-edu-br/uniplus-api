@@ -60,7 +60,7 @@ public sealed class LeituraPublicaDoCertameTests
     }
 
     [Fact(DisplayName = "A vitrine devolve a página inteira: não há descarte depois de formada")]
-    public async Task Vitrine_DevolveAPaginaInteira()
+    public async Task Handle_QuandoHaVariosDivulgados_DeveDevolverAPaginaInteira()
     {
         Guid a = Guid.CreateVersion7();
         Guid b = Guid.CreateVersion7();
@@ -78,7 +78,7 @@ public sealed class LeituraPublicaDoCertameTests
     [InlineData(-1, 30, SituacaoDoCertame.InscricoesAbertas)]
     [InlineData(-1, 3, SituacaoDoCertame.UltimosDias)]
     [InlineData(-30, -1, SituacaoDoCertame.Encerradas)]
-    public async Task Vitrine_MarcaOItemComASituacaoDoInstante(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada)
+    public async Task Handle_QuandoJanelaEmCadaPonto_DeveMarcarASituacaoDoInstante(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada)
     {
         // O fuso de quem lê não decide prazo de edital, e a janela tem dois lados: um edital
         // publicado antes de a inscrição abrir não está recebendo inscrição.
@@ -100,7 +100,7 @@ public sealed class LeituraPublicaDoCertameTests
     }
 
     [Fact(DisplayName = "Contadores só são calculados quando pedidos")]
-    public async Task Vitrine_ContadoresSaoOptIn()
+    public async Task Handle_QuandoNaoPedeContadores_DeveOmitiLos()
     {
         ICertameDivulgadoRepository repository = RepositorioComVitrine(Guid.CreateVersion7());
         repository.ContarPorSituacaoAsync(

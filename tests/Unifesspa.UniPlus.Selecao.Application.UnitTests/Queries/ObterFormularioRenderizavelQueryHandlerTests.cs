@@ -123,7 +123,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     }
 
     [Fact(DisplayName = "Sem divulgação, a versão de configuração nem chega a ser consultada")]
-    public async Task Handle_SemDivulgacao_NaoConsultaVersao()
+    public async Task Handle_QuandoNaoHaDivulgacao_NaoDeveConsultarAVersao()
     {
         // A publicidade é a primeira pergunta, não um filtro aplicado depois. Consultar a versão
         // antes reabriria o oráculo por outro caminho: o tempo de resposta, e qualquer recusa que
@@ -138,7 +138,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     }
 
     [Fact(DisplayName = "Divulgação apontando versão inexistente NÃO colapsa no não encontrado")]
-    public async Task Handle_DivulgacaoSemVersao_AfloraODefeito()
+    public async Task Handle_QuandoDivulgacaoApontaVersaoInexistente_DeveAflorarODefeito()
     {
         // A linha só nasce junto da versão, então isto é corrupção, não ausência. Responder não
         // encontrado esconderia o defeito atrás de uma resposta plausível — e aqui não há oráculo
@@ -155,7 +155,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     }
 
     [Fact(DisplayName = "O formulário é projetado da versão que a divulgação aponta, pelo ato criador")]
-    public async Task Handle_ResolvePelaVersaoDaDivulgacao()
+    public async Task Handle_QuandoHaDivulgacao_DeveResolverPelaVersaoQueElaAponta()
     {
         // O ponto da issue: sob retificação pendente, a versão vigente POR RELÓGIO é a nova, que
         // ainda não tem publicidade. Servir o formulário dela faria o candidato ler um edital e

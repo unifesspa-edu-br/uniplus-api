@@ -54,7 +54,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [InlineData("MÚSICA")]
     [InlineData("Música")]
     [InlineData("músic")]
-    public async Task Busca_IgnoraAcentoECaixa(string termo)
+    public async Task ListarVitrine_QuandoTermoVariaEmAcentoECaixa_DeveEncontrarOMesmoCertame(string termo)
     {
         // O texto guardado tem acento e o pesquisado pode não ter, ou o contrário. Normalizar só um
         // lado é o defeito que faz a busca não achar o que existe — e ele não aparece em memória,
@@ -65,7 +65,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     }
 
     [Fact(DisplayName = "A busca alcança o número do edital, não só o título")]
-    public async Task Busca_AlcancaONumeroDoEdital()
+    public async Task ListarVitrine_QuandoTermoEONumeroDoEdital_DeveEncontrarOCertame()
     {
         IReadOnlyList<string> nomes = await ListarAsync(new RecorteDaVitrine(Busca: "002/2026"));
 
@@ -73,7 +73,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     }
 
     [Fact(DisplayName = "Curinga digitado é procurado como texto, não como curinga")]
-    public async Task Busca_EscapaCuringas()
+    public async Task ListarVitrine_QuandoTermoTemCuringaDoLike_DeveProcuraLoComoTexto()
     {
         // Sem escapar, '%' casaria com tudo e a busca devolveria a vitrine inteira — dando ao
         // usuário a impressão de que o termo dele existe em todo certame.
@@ -83,7 +83,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     }
 
     [Fact(DisplayName = "O recorte por modalidade traz só quem a oferta")]
-    public async Task Modalidade_RecortaPorPertinencia()
+    public async Task ListarVitrine_QuandoRecortaPorModalidade_DeveTrazerSoQuemAOferta()
     {
         IReadOnlyList<string> nomes = await ListarAsync(new RecorteDaVitrine(Modalidade: "AC"));
 
@@ -111,7 +111,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     }
 
     [Fact(DisplayName = "Sem ordenação pedida, vale a ordem por urgência")]
-    public async Task SemOrdenacao_ValeAUrgencia()
+    public async Task ListarVitrine_QuandoNaoPedeOrdenacao_DeveValerAOrdemPorUrgencia()
     {
         IReadOnlyList<string> nomes = await ListarAsync(new RecorteDaVitrine());
 
@@ -119,7 +119,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     }
 
     [Fact(DisplayName = "Cursor emitido sob uma busca é recusado sob outra")]
-    public async Task Cursor_NaoAtravessaRecorte()
+    public async Task ListarVitrine_QuandoCursorVemDeOutroRecorte_DeveRecusarAContinuacao()
     {
         // A âncora é uma posição DENTRO de um conjunto. Aceita sob outro recorte, o seek partiria de
         // um valor que não existe naquele conjunto e a página voltaria vazia — indistinguível de fim
@@ -135,7 +135,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     }
 
     [Fact(DisplayName = "Cursor emitido sob uma ordenação é recusado sob outra")]
-    public async Task Cursor_NaoAtravessaOrdenacao()
+    public async Task ListarVitrine_QuandoCursorVemDeOutraOrdenacao_DeveRecusarAContinuacao()
     {
         SortField[] porNome = [new(CamposOrdenacaoDaVitrine.Nome, SortDirection.Ascending)];
         (string SortKey, Guid Id)? proximo = await PrimeiraPaginaAsync(new RecorteDaVitrine(), limite: 1, ordenacao: porNome);
@@ -154,7 +154,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Theory(DisplayName = "A travessia página a página não repete nem omite certame")]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Travessia_NaoRepeteNemOmite(bool ordenacaoEscolhida)
+    public async Task ListarVitrine_QuandoPercorrePaginaAPagina_NaoDeveRepetirNemOmitir(bool ordenacaoEscolhida)
     {
         // Uma página por vez é o caso que expõe a âncora: ela precisa nomear as MESMAS propriedades
         // pelas quais a consulta ordena, senão toda página a partir da segunda parte de um valor que
@@ -238,7 +238,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     }
 
     [Fact(DisplayName = "Os contadores respeitam a busca, e não só a situação")]
-    public async Task Contadores_RespeitamABusca()
+    public async Task ContarPorSituacao_QuandoHaBuscaAplicada_DeveContarSoOsCorrespondentes()
     {
         // O número exibido ao lado do filtro promete quantos itens aquele filtro traz sobre o que
         // está na tela. Contar a vitrine inteira sob uma busca aplicada é o rótulo mentir.
