@@ -56,6 +56,42 @@ public sealed class CursorPaginationOperationTransformerTests
         pageSizeHeader.Schema!.Type!.Value.HasFlag(JsonSchemaType.Integer).Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Operação que aceita include_total declara X-Total-Count em response 200")]
+    public async Task TransformAsync_Should_DeclareTotalCountHeader_WhenOperationAcceptsIncludeTotal()
+    {
+        CursorPaginationOperationTransformer transformer = new();
+        OpenApiOperation operation = OperationWith200Response();
+        operation.Parameters =
+        [
+            new OpenApiParameter { Name = "include_total", In = ParameterLocation.Query },
+        ];
+        OpenApiOperationTransformerContext context = ContextForActionWithCursor();
+
+        await transformer.TransformAsync(operation, context, CancellationToken.None);
+
+        OpenApiResponse okResponse = operation.Responses!["200"].Should().BeOfType<OpenApiResponse>().Subject;
+        IOpenApiHeader totalHeader = okResponse.Headers!["X-Total-Count"];
+        totalHeader.Description.Should().Contain("filtros").And.Contain("ADR-0026");
+        totalHeader.Schema!.Type!.Value.HasFlag(JsonSchemaType.Integer).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Operação paginada sem include_total não declara X-Total-Count")]
+    public async Task TransformAsync_Should_NotDeclareTotalCountHeader_WhenOperationLacksIncludeTotal()
+    {
+        // O total exato é opt-in por endpoint (ADR-0026), não capacidade automática de toda
+        // listagem paginada: declarar o header onde ninguém o emite seria promessa vazia — o
+        // cliente gerado exporia a leitura de um valor que nunca chega.
+        CursorPaginationOperationTransformer transformer = new();
+        OpenApiOperation operation = OperationWith200Response();
+        OpenApiOperationTransformerContext context = ContextForActionWithCursor();
+
+        await transformer.TransformAsync(operation, context, CancellationToken.None);
+
+        OpenApiResponse okResponse = operation.Responses!["200"].Should().BeOfType<OpenApiResponse>().Subject;
+        okResponse.Headers.Should().NotBeNull().And.NotContainKey("X-Total-Count");
+        okResponse.Headers.Should().ContainKeys("Link", "X-Page-Size");
+    }
+
     [Fact(DisplayName = "Action com [FromCursor] marca extension x-uniplus-paginated: true")]
     public async Task TransformAsync_Should_AddPaginatedExtension()
     {

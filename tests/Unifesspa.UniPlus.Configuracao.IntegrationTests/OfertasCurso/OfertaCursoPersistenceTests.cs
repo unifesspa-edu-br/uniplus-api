@@ -512,34 +512,34 @@ public sealed class OfertaCursoPersistenceTests
 
         // Dentro do recorte de um curso, nome e código são constantes e o Id é a
         // única coluna que move o seek — por isso a ordem esperada é a de Id.
-        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina1 =
+        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total) pagina1 =
             await repository.ListarPaginadoAsync(
-                OrdenacaoPadraoDeOferta, busca: null, afterSortKey: null, afterId: null, limit: 2, PaginationDirection.Next, cursoA, CancellationToken.None);
+                OrdenacaoPadraoDeOferta, busca: null, afterSortKey: null, afterId: null, limit: 2, PaginationDirection.Next, cursoA, includeTotal: false, CancellationToken.None);
         pagina1.Itens.Select(o => o.Id).Should().Equal(ordemA[0], ordemA[1]);
         pagina1.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
         pagina1.Anterior.Should().BeNull();
         pagina1.Proximo!.Value.Id.Should().Be(ordemA[1]);
 
         // Página 2 (Next a partir da 2ª): a 3ª de A; sem próximo; com anterior.
-        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina2 =
+        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total) pagina2 =
             await repository.ListarPaginadoAsync(
-                OrdenacaoPadraoDeOferta, busca: null, pagina1.Proximo!.Value.SortKey, ordemA[1], limit: 2, PaginationDirection.Next, cursoA, CancellationToken.None);
+                OrdenacaoPadraoDeOferta, busca: null, pagina1.Proximo!.Value.SortKey, ordemA[1], limit: 2, PaginationDirection.Next, cursoA, includeTotal: false, CancellationToken.None);
         pagina2.Itens.Select(o => o.Id).Should().Equal(ordemA[2]);
         pagina2.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
         pagina2.Proximo.Should().BeNull();
         pagina2.Anterior!.Value.Id.Should().Be(ordemA[2]);
 
         // Prev a partir da 3ª (limit 2): as 2 anteriores de A, já em ordem ascendente.
-        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) anterior =
+        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total) anterior =
             await repository.ListarPaginadoAsync(
-                OrdenacaoPadraoDeOferta, busca: null, pagina2.Anterior!.Value.SortKey, ordemA[2], limit: 2, PaginationDirection.Prev, cursoA, CancellationToken.None);
+                OrdenacaoPadraoDeOferta, busca: null, pagina2.Anterior!.Value.SortKey, ordemA[2], limit: 2, PaginationDirection.Prev, cursoA, includeTotal: false, CancellationToken.None);
         anterior.Itens.Select(o => o.Id).Should().Equal(ordemA[0], ordemA[1]);
         anterior.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
 
         // Curso sem ofertas → recorte vazio.
-        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) vazio =
+        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total) vazio =
             await repository.ListarPaginadoAsync(
-                OrdenacaoPadraoDeOferta, busca: null, afterSortKey: null, afterId: null, limit: 50, PaginationDirection.Next, Guid.CreateVersion7(), CancellationToken.None);
+                OrdenacaoPadraoDeOferta, busca: null, afterSortKey: null, afterId: null, limit: 50, PaginationDirection.Next, Guid.CreateVersion7(), includeTotal: false, CancellationToken.None);
         vazio.Itens.Should().BeEmpty();
     }
 

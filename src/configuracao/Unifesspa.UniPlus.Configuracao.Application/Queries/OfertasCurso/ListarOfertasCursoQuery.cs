@@ -32,4 +32,5 @@ public sealed record ListarOfertasCursoQuery(
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,
-    Guid? CursoId) : IQuery<Result<ListarOfertasCursoResult>>;
+    Guid? CursoId,
+    bool IncludeTotal) : IQuery<Result<ListarOfertasCursoResult>>;

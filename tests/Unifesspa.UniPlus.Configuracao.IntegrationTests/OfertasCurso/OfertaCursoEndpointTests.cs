@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -476,6 +477,26 @@ public sealed class OfertaCursoEndpointTests
         return (curso.Id, local.Id);
     }
 
+    private async Task<(Guid CursoId, Guid LocalOfertaId)> SemearCursoELocalParaBuscaAsync(
+        string nomeCurso)
+    {
+        Curso curso = Curso.Criar(
+            CodigoUnico(), nomeCurso, "Bacharelado", "Graduação", null).Value!;
+        LocalOferta local = LocalOferta.Criar(
+            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        ConfiguracaoDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+
+        dbContext.Cursos.Add(curso);
+        dbContext.LocaisOferta.Add(local);
+        await dbContext.SaveChangesAsync(CancellationToken.None);
+
+        return (curso.Id, local.Id);
+    }
+
     // Cada caso de um Theory semeia a própria unidade, e sigla e código são
     // únicos entre unidades vivas — daí os identificadores sorteados.
     private static string NovoSlug(string prefixo) => $"{prefixo}-{Sufixo()}";
@@ -824,6 +845,173 @@ public sealed class OfertaCursoEndpointTests
         doc.RootElement.GetProperty("type").GetString()
             .Should().EndWith("uniplus.configuracao.oferta_curso.turnos_obrigatorios",
                 "nenhum formato pedagógico abre exceção ao turno");
+    }
+
+    [Fact(DisplayName = "O total é o da consulta inteira, não o da página: 105 ofertas sob limit 100")]
+    public async Task Listar_ComIncludeTotal_ContaAlemDaPagina()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        Unidade unidade = await SemearUnidadeAsync(NovoSlug("total-count"), NovaSigla(), NovoCodigo());
+        await SemearOfertasAsync(cursoId, localId, unidade.Id, quantidade: 105);
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri(
+                $"/api/configuracao/ofertas-curso?cursoId={cursoId}&include_total=true&limit=100",
+                UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType
+            .Should().Be("application/vnd.uniplus.oferta-curso.v1+json");
+
+        // 100 é o teto de página (CursorPaginationOptions.LimitMax), e o volume semeado o
+        // ultrapassa de propósito: os dois headers lado a lado é que provam a distinção —
+        // com um total menor que o limite, a afirmação passaria mesmo se a contagem fosse
+        // a da página. As 105 pertencem ao mesmo curso, que também é o CA-04 da #1511.
+        response.Headers.GetValues("x-total-count").Single().Should().Be("105");
+        response.Headers.GetValues("x-page-size").Single().Should().Be("100");
+    }
+
+    [Fact(DisplayName = "Com busca, o total é o do filtro — nunca o da tabela inteira")]
+    public async Task Listar_ComBuscaEIncludeTotal_ContaSomenteOFiltro()
+    {
+        string nomeCursoEngenhariaCivil = $"Engenharia Civil {Sufixo()}";
+        (Guid cursoEngenhariaCivil, Guid localId) =
+            await SemearCursoELocalParaBuscaAsync(nomeCursoEngenhariaCivil);
+        Guid cursoDireito = await SemearCursoAsync($"Direito {Sufixo()}");
+        Guid cursoSistemasInformacao = await SemearCursoAsync($"Sistemas de Informação {Sufixo()}");
+        Unidade unidade = await SemearUnidadeAsync(
+            NovoSlug("total-count-busca"), NovaSigla(), NovoCodigo());
+
+        foreach (Guid cursoId in new[] { cursoEngenhariaCivil, cursoDireito, cursoSistemasInformacao })
+        {
+            await SemearOfertasAsync(cursoId, localId, unidade.Id, quantidade: 10);
+        }
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri(
+                $"/api/configuracao/ofertas-curso?q={Uri.EscapeDataString(nomeCursoEngenhariaCivil)}&include_total=true",
+                UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.GetValues("x-total-count").Single().Should().Be("10",
+            "o total é contado sobre a mesma consulta que produziu a página, busca inclusive");
+    }
+
+    [Fact(DisplayName = "Consulta sem nenhum registro devolve X-Total-Count zero, não header ausente")]
+    public async Task Listar_ComIncludeTotalSemRegistros_DevolveZero()
+    {
+        Guid cursoSemOfertas = await SemearCursoAsync($"Curso sem oferta {Sufixo()}");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri(
+                $"/api/configuracao/ofertas-curso?cursoId={cursoSemOfertas}&include_total=true",
+                UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Zero é resposta, não ausência: o header omitido significaria "não perguntei",
+        // e quem perguntou precisa distinguir a coleção vazia da contagem não pedida.
+        response.Headers.GetValues("x-total-count").Single().Should().Be("0");
+    }
+
+    [Fact(DisplayName = "O total acompanha criação e remoção, e a edição não o move")]
+    public async Task Listar_TotalAcompanhaCriacaoEdicaoERemocao()
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        Unidade unidade = await SemearUnidadeAsync(NovoSlug("total-ciclo"), NovaSigla(), NovoCodigo());
+        await SemearOfertasAsync(cursoId, localId, unidade.Id, quantidade: 3);
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        (await TotalDeOfertasDoCursoAsync(client, cursoId)).Should().Be("3");
+
+        HttpResponseMessage criar = await EnviarPostAdmin(
+            client, CorpoOferta(cursoId, localId, unidade.Id));
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid criada = await criar.Content.ReadFromJsonAsync<Guid>();
+        (await TotalDeOfertasDoCursoAsync(client, cursoId)).Should().Be("4",
+            "a oferta recém-criada entra na contagem seguinte");
+
+        HttpResponseMessage atualizar = await EnviarPutAdmin(client, criada, new
+        {
+            id = criada,
+            programaDeOferta = "REGULAR",
+            regimeDeFuncionamento = "EXTENSIVO",
+            regimeDeTurno = "INTEGRAL",
+            turnos = new[] { "MATUTINO", "VESPERTINO" },
+        });
+        atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await TotalDeOfertasDoCursoAsync(client, cursoId)).Should().Be("4",
+            "editar uma oferta não cria nem remove registro");
+
+        HttpResponseMessage remover = await EnviarDeleteAdmin(client, criada);
+        remover.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // A remoção é lógica: a linha continua na tabela. O total só volta a 3 porque a
+        // contagem roda sobre a consulta que já carrega o filtro global de exclusão —
+        // um COUNT sobre a tabela devolveria 4 e o contador da tela passaria a mentir.
+        (await TotalDeOfertasDoCursoAsync(client, cursoId)).Should().Be("3",
+            "a oferta removida sai da contagem");
+    }
+
+    [Theory(DisplayName = "Sem pedir o total, nenhum header de contagem é emitido")]
+    [InlineData("")]
+    [InlineData("&include_total=false")]
+    public async Task Listar_SemPedirOTotal_NaoEmiteHeader(string parametroDoTotal)
+    {
+        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        Unidade unidade = await SemearUnidadeAsync(NovoSlug("sem-total"), NovaSigla(), NovoCodigo());
+        await SemearOfertasAsync(cursoId, localId, unidade.Id, quantidade: 1);
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri(
+                $"/api/configuracao/ofertas-curso?cursoId={cursoId}{parametroDoTotal}",
+                UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType
+            .Should().Be("application/vnd.uniplus.oferta-curso.v1+json");
+
+        // O opt-in vale para a omissão tanto quanto para o false explícito (ADR-0026):
+        // quem não pede não paga a contagem nem recebe o header.
+        response.Headers.Contains("x-total-count").Should().BeFalse();
+    }
+
+    private static async Task<string> TotalDeOfertasDoCursoAsync(HttpClient client, Guid cursoId)
+    {
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri(
+                $"/api/configuracao/ofertas-curso?cursoId={cursoId}&include_total=true",
+                UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        return resposta.Headers.GetValues("x-total-count").Single();
+    }
+
+    // Semeia direto no contexto: os casos de total precisam de volume acima do teto de
+    // página, e criar essa quantidade pelo endpoint mediria o custo do pipeline HTTP em
+    // vez da contagem. O snapshot da unidade ofertante é congelado na criação e nenhum
+    // destes casos o inspeciona — só a origem precisa ser a unidade real semeada.
+    private async Task SemearOfertasAsync(Guid cursoId, Guid localId, Guid unidadeOrigemId, int quantidade)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        ConfiguracaoDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+
+        for (int i = 0; i < quantidade; i++)
+        {
+            UnidadeOfertante snapshot = UnidadeOfertante.Criar(
+                unidadeOrigemId, "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").Value!;
+            OfertaCurso oferta = OfertaCurso.Criar(
+                cursoId, localId, snapshot, "REGULAR", "PRESENCIAL",
+                "EXTENSIVO", "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
+            dbContext.OfertasCurso.Add(oferta);
+        }
+
+        await dbContext.SaveChangesAsync(CancellationToken.None);
     }
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)

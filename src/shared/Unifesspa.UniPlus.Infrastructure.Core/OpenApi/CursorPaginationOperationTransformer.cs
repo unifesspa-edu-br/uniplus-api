@@ -24,6 +24,7 @@ using Pagination;
 ///   <item><description>Remove os parâmetros vazados <c>AfterId</c> e <c>Limit</c>.</description></item>
 ///   <item><description>Adiciona <c>cursor</c> (string, opcional, opaca) e <c>limit</c> (int, opcional) como query params.</description></item>
 ///   <item><description>Declara os headers <c>Link</c> (RFC 5988/8288) e <c>X-Page-Size</c> em respostas 200 — espelha o que <c>PaginationControllerExtensions.OkPaginatedAsync</c> de fato emite.</description></item>
+///   <item><description>Declara <c>X-Total-Count</c> na resposta 200 das operações que aceitam <c>include_total</c> — o total é opt-in por endpoint, e só quem o oferece anuncia o header.</description></item>
 ///   <item><description>Marca a operação com a extension <c>x-uniplus-paginated: true</c> para clientes detectarem o pattern.</description></item>
 /// </list>
 /// </summary>
@@ -34,6 +35,8 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
     private const string DirectionParam = "direction";
     private const string LinkHeader = "Link";
     private const string PageSizeHeader = "X-Page-Size";
+    private const string TotalCountHeader = "X-Total-Count";
+    private const string IncludeTotalParam = "include_total";
     private const string PaginatedExtension = "x-uniplus-paginated";
     private const string OkStatus = "200";
 
@@ -177,7 +180,30 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
                 Format = "int32",
             },
         };
+
+        if (!AcceptsIncludeTotal(operation))
+            return;
+
+        okResponse.Headers[TotalCountHeader] = new OpenApiHeader
+        {
+            Description = "Total de registros que atendem à consulta — filtros e busca inclusive, "
+                + "nunca a tabela inteira. Presente apenas na resposta de quem pediu "
+                + "`include_total=true`; ausente nas demais (ADR-0026).",
+            Schema = new OpenApiSchema
+            {
+                Type = JsonSchemaType.Integer,
+                Format = "int32",
+            },
+        };
     }
+
+    // A contagem exata é opt-in por endpoint, não capacidade automática de toda listagem
+    // paginada (ADR-0026). O header só é declarado onde o parâmetro que o liga existe —
+    // do contrário o contrato prometeria a contagem em operação que nunca a emite.
+    private static bool AcceptsIncludeTotal(OpenApiOperation operation) =>
+        operation.Parameters?.Any(parametro =>
+            parametro.In == ParameterLocation.Query
+            && string.Equals(parametro.Name, IncludeTotalParam, StringComparison.Ordinal)) == true;
 
     private static void MarkAsPaginated(OpenApiOperation operation)
     {

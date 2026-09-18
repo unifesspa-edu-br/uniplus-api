@@ -4656,6 +4656,15 @@
             }
           },
           {
+            "name": "include_total",
+            "in": "query",
+            "description": "Inclui o total de registros no header X-Total-Count. O total \u00E9 contado sobre a mesma consulta que produziu a p\u00E1gina \u2014 filtros e busca inclusive \u2014, nunca sobre a tabela inteira. Ausente ou false, nenhum header de total \u00E9 emitido.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "description": "Cursor opaco AES-GCM emitido pelo servidor no header Link da p\u00E1gina anterior. Ausente na primeira p\u00E1gina. Cliente trata como string opaca \u2014 n\u00E3o decodificar (ADR-0026, ADR-0031).",
@@ -4698,6 +4707,13 @@
               },
               "X-Page-Size": {
                 "description": "Quantidade de itens retornados na p\u00E1gina atual (sempre menor ou igual ao limit efetivo).",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "X-Total-Count": {
+                "description": "Total de registros que atendem \u00E0 consulta \u2014 filtros e busca inclusive, nunca a tabela inteira. Presente apenas na resposta de quem pediu \u0060include_total=true\u0060; ausente nas demais (ADR-0026).",
                 "schema": {
                   "type": "integer",
                   "format": "int32"

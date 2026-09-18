@@ -14,7 +14,9 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// Extensões de <see cref="ControllerBase"/> para responder coleções
 /// paginadas com cursor (ADR-0026): encoda o cursor da próxima página,
 /// monta o header <c>Link</c> (RFC 5988/8288) e o header <c>X-Page-Size</c>,
-/// e devolve o body como array JSON puro (ADR-0025).
+/// e devolve o body como array JSON puro (ADR-0025). Quem informa o total da
+/// consulta ganha também <c>X-Total-Count</c>, que só aparece na resposta de
+/// quem o pediu.
 /// </summary>
 public static class PaginationControllerExtensions
 {
@@ -45,6 +47,11 @@ public static class PaginationControllerExtensions
     /// chave de ordenação <strong>e</strong> o <c>Id</c> de desempate, serializados no
     /// payload opaco. A camada de cursor (AES-GCM, TTL, user-binding, Link) é a mesma.
     /// </summary>
+    /// <param name="total">
+    /// Total de registros da consulta que produziu a página, quando o endpoint oferece
+    /// a contagem e o cliente a pediu. Responde em <c>X-Total-Count</c>; <c>null</c>
+    /// não emite o header (ADR-0026).
+    /// </param>
     public static Task<IActionResult> OkPaginatedOrdenadoAsync<T>(
         this ControllerBase controller,
         IReadOnlyList<T> items,
@@ -52,11 +59,15 @@ public static class PaginationControllerExtensions
         (string SortKey, Guid Id)? next,
         PageRequest page,
         string resource,
+        int? total = null,
         bool requireUserBinding = false,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(controller);
         CursorAncora? prevAncora = prev is { } p ? new CursorAncora(p.Id.ToString(), p.SortKey) : null;
         CursorAncora? nextAncora = next is { } n ? new CursorAncora(n.Id.ToString(), n.SortKey) : null;
+        if (total is { } contagem)
+            controller.Response.Headers["X-Total-Count"] = contagem.ToString(CultureInfo.InvariantCulture);
         return OkPaginatedCoreAsync(controller, items, prevAncora, nextAncora, page, resource, requireUserBinding, cancellationToken);
     }
 
