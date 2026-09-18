@@ -41,11 +41,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Property(e => e.FaseCodigo)
             .HasColumnName("fase_codigo")
             .HasMaxLength(60)
-            .HasComment("Código canônico da fase declarada pelo cliente; a raiz o resolve para fase_cronograma_id.");
-        builder.Property(e => e.FaseCronogramaId)
-            .HasColumnName("fase_cronograma_id")
-            .HasComment("Fase do cronograma a que a etapa pertence, resolvida a partir de fase_codigo.");
-        builder.HasIndex(e => e.FaseCronogramaId);
+            .HasComment("Código canônico da fase em que a etapa acontece; é por ele que a raiz a resolve no cronograma.");
 
         // Produtos da etapa em cascata: a configuração em rascunho é substituída por
         // inteiro, e nada fora do agregado referencia o produto por FK.

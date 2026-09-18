@@ -34,18 +34,13 @@ public sealed class EtapaProcesso : EntityBase
 
     public Guid ProcessoSeletivoId { get; private set; }
 
-    /// <summary>
-    /// A fase do cronograma a que esta etapa pertence. É o vínculo que substitui a
-    /// bicondicional por sinalizador: qualquer fase pode subdividir-se em etapas, e é a
-    /// posição na fase — não um booleano do cadastro — que diz quais são as dela.
-    /// </summary>
-    public Guid FaseCronogramaId { get; private set; }
 
     /// <summary>
-    /// Código canônico da fase declarada pelo cliente (ex.: <c>"AVALIACAO"</c>). A raiz o
-    /// resolve contra o cronograma para preencher <see cref="FaseCronogramaId"/>. É por
-    /// código, e não por id, porque o id da fase não sobrevive à reconciliação da
-    /// restauração — mesmo motivo de <c>FaseCronograma.FaseConcluinteCodigo</c>.
+    /// Código canônico da fase declarada pelo cliente (ex.: <c>"AVALIACAO"</c>), e a única
+    /// forma de a etapa dizer onde acontece. É por código, e não por id, porque o id da fase
+    /// não sobrevive à reconciliação da restauração — mesmo motivo de
+    /// <c>FaseCronograma.FaseConcluinteCodigo</c>. A raiz resolve o código contra o cronograma
+    /// sempre que precisa da fase; nada guarda o resultado dessa resolução.
     /// </summary>
     public string? FaseCodigo { get; private set; }
 
@@ -587,12 +582,6 @@ public sealed class EtapaProcesso : EntityBase
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
-    /// <summary>
-    /// Prende a etapa à fase que a contém. Chamado pela raiz, que é quem enxerga o
-    /// cronograma inteiro e pode conferir que a fase existe nele.
-    /// </summary>
-    internal void VincularFase(Guid faseCronogramaId) =>
-        FaseCronogramaId = faseCronogramaId;
 
     /// <summary>Declara a janela própria da etapa, normalizada para UTC, e o parecer individual.</summary>
     public Result DefinirJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)

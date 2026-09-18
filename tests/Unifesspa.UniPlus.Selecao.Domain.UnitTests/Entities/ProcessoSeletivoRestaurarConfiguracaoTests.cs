@@ -270,9 +270,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         Result restauracaoDaSessao = processo.RestaurarConfiguracaoCongelada(versao, daSessao);
         restauracaoDaSessao.IsSuccess.Should().BeTrue(restauracaoDaSessao.Error?.Message);
-        processo.Etapas.Single().FaseCronogramaId
-            .Should().Be(processo.CronogramaFases.Single(f => f.Codigo == "AVALIACAO").Id,
-                "pré-condição: a etapa está presa à fase que o descarte vai desfazer");
+        processo.EtapasDaFase("AVALIACAO").Should().ContainSingle(
+            "pré-condição: a etapa está na fase que o descarte vai desfazer");
 
         GrafoConfiguracao grafo = Grafo(
             etapas: [
@@ -287,9 +286,13 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         EtapaProcesso reposta = processo.Etapas.Single();
         reposta.FaseCodigo.Should().Be("RESULTADO_FINAL");
-        reposta.FaseCronogramaId.Should().Be(
-            processo.CronogramaFases.Single(f => f.Codigo == "RESULTADO_FINAL").Id,
-            "o vínculo que o banco usa tem de apontar para a fase restaurada, não para a que a sessão criou");
+
+        // O descarte tem de devolver a etapa à fase do envelope, e não deixá-la na que a sessão
+        // criou. Com uma representação só da relação isso é consequência de repor o código —
+        // não há segundo apontamento que pudesse sobreviver ao descarte apontando para a fase
+        // errada, que é justamente a inconsistência que a remoção da coluna eliminou.
+        processo.EtapasDaFase("RESULTADO_FINAL").Should().ContainSingle();
+        processo.EtapasDaFase("AVALIACAO").Should().BeEmpty();
     }
 
     /// <summary>

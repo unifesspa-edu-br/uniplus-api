@@ -391,11 +391,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         foreach (EtapaProcesso etapa in etapas)
         {
             etapa.VincularProcesso(Id);
-            if (etapa.FaseCodigo is { } cod)
-            {
-                etapa.VincularFase(fasesPorCodigo[cod].Id);
-            }
-
             _etapas.Add(etapa);
         }
 
@@ -4690,20 +4685,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // retificação moveu de fase volta com o código da fase de origem e o id da fase de
         // destino: a linha fica dizendo duas coisas diferentes depois de um descarte que
         // relatou sucesso. A fase é achada pelo código, que é o que o envelope congela.
-        foreach (EtapaProcesso etapa in _etapas)
-        {
-            if (etapa.FaseCodigo is not { } codigoDaFase)
-            {
-                continue;
-            }
-
-            FaseCronograma? faseDaEtapa = _cronogramaFases
-                .FirstOrDefault(f => string.Equals(f.Codigo, codigoDaFase, StringComparison.Ordinal));
-            if (faseDaEtapa is not null)
-            {
-                etapa.VincularFase(faseDaEtapa.Id);
-            }
-        }
 
         // Documentos exigidos (Story #554, PR #903): o bloco `documentosExigidos.exigencias`
         // do envelope agora é real (CA-09) — reconciliação por `exigenciaId` (o
