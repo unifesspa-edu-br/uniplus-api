@@ -116,14 +116,9 @@ public static class InvalidRequestProblemFactory
     private static HashSet<string> BodyKeys(ActionContext context)
     {
         HashSet<string> chaves = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
-
-        foreach (ParameterDescriptor parametro in context.ActionDescriptor.Parameters)
-        {
-            if (parametro.BindingInfo?.BindingSource == BindingSource.Body)
-            {
-                chaves.Add(parametro.Name);
-            }
-        }
+        chaves.UnionWith(context.ActionDescriptor.Parameters
+            .Where(static p => p.BindingInfo?.BindingSource == BindingSource.Body)
+            .Select(static p => p.Name));
 
         return chaves;
     }
@@ -143,15 +138,9 @@ public static class InvalidRequestProblemFactory
     private static HashSet<string> BinderKeys(ActionContext context)
     {
         HashSet<string> chaves = new(StringComparer.OrdinalIgnoreCase);
-
-        foreach (ParameterDescriptor parametro in context.ActionDescriptor.Parameters)
-        {
-            BindingSource? fonte = parametro.BindingInfo?.BindingSource;
-            if (fonte is not null && fonte != BindingSource.Body)
-            {
-                chaves.Add(parametro.Name);
-            }
-        }
+        chaves.UnionWith(context.ActionDescriptor.Parameters
+            .Where(static p => p.BindingInfo?.BindingSource is { } fonte && fonte != BindingSource.Body)
+            .Select(static p => p.Name));
 
         return chaves;
     }
