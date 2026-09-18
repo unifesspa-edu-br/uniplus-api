@@ -163,6 +163,65 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     }
 
     /// <summary>
+    /// Um SHA-256 em hexadecimal minúsculo tem 64 caracteres — é o que o value object valida
+    /// ao construir a referência, e é o que a coluna tem de guardar.
+    /// </summary>
+    private const int HashSha256Length = 64;
+
+    /// <summary>
+    /// Toda referência de regra embutida no modelo — <b>descobertas</b>, não listadas — tem as
+    /// larguras que o decodificador do envelope pressupõe.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A lista à mão era o problema. Quando esta conferência nomeava dono por dono, quatro dos
+    /// nove ficavam de fora sem que nada dissesse isso, e foi assim que uma divergência real
+    /// passou: um dono ficou com larguras próprias e nenhuma linha o confrontava. Descobrir as
+    /// navegações pelo modelo faz o dono novo nascer coberto, em vez de depender de alguém
+    /// lembrar de acrescentá-lo aqui.
+    /// </para>
+    /// <para>
+    /// A configuração compartilhada já torna a divergência inexprimível para quem usa a
+    /// extensão; este gate é a rede para quem não usar — configurar a navegação à mão continua
+    /// sendo possível, e é exatamente o caminho que produziria o defeito de novo.
+    /// </para>
+    /// </remarks>
+    [Fact(DisplayName = "Toda ReferenciaRegra embutida no modelo tem as larguras do decodificador — descobertas, não listadas")]
+    public void Toda_ReferenciaRegra_Embutida_TemAsLargurasDoDecodificador()
+    {
+        using SelecaoDbContext contexto = ContextoSoParaOModelo();
+
+        (string Dono, string Navegacao, IEntityType Alvo)[] referencias = contexto.Model
+            .GetEntityTypes()
+            .SelectMany(e => e.GetNavigations()
+                .Where(n => n.TargetEntityType.ClrType == typeof(ReferenciaRegra))
+                .Select(n => (Dono: e.ClrType.Name, Navegacao: n.Name, Alvo: n.TargetEntityType)))
+            .ToArray();
+
+        referencias.Should().NotBeEmpty(
+            "se a descoberta parar de achar navegações, o gate passa a aprovar por vacuidade — e é "
+            + "justamente esse silêncio que ele existe para não ter");
+
+        foreach ((string dono, string navegacao, IEntityType alvo) in referencias)
+        {
+            alvo.FindProperty(nameof(ReferenciaRegra.Codigo))!.GetMaxLength()
+                .Should().Be(LimitesDoEnvelope.RegraCodigo,
+                    $"o código da regra em {dono}.{navegacao} tem de caber o que o decodificador aceita");
+
+            alvo.FindProperty(nameof(ReferenciaRegra.Versao))!.GetMaxLength()
+                .Should().Be(LimitesDoEnvelope.RegraVersao,
+                    $"a versão da regra em {dono}.{navegacao} tem de caber o que o decodificador aceita");
+
+            IProperty hash = alvo.FindProperty(nameof(ReferenciaRegra.Hash))!;
+            hash.GetMaxLength().Should().Be(HashSha256Length,
+                $"o hash em {dono}.{navegacao} é um SHA-256 hexadecimal minúsculo");
+            hash.IsFixedLength().Should().BeTrue(
+                $"o hash em {dono}.{navegacao} tem sempre 64 caracteres — coluna de comprimento variável "
+                + "aceitaria um hash truncado, que é o que prova que a definição da regra não mudou");
+        }
+    }
+
+    /// <summary>
     /// Os limites dos <b>owned types</b> — <c>ReferenciaRegra</c> (6 usos no envelope) e o
     /// snapshot da referência demográfica. Eles não têm entidade própria no modelo: são
     /// colunas do dono, e é por elas que se chega ao <c>HasMaxLength</c>/<c>HasPrecision</c>.
@@ -171,17 +230,6 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     public void OwnedTypes_BatemComOSchema()
     {
         using SelecaoDbContext contexto = ContextoSoParaOModelo();
-
-        IEntityType regra = contexto.Model
-            .FindEntityType(typeof(ConfiguracaoBonusRegional))!
-            .GetNavigations()
-            .Single(n => n.Name == nameof(ConfiguracaoBonusRegional.Regra))
-            .TargetEntityType;
-
-        regra.FindProperty(nameof(ReferenciaRegra.Codigo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.RegraCodigo, "LimitesDoEnvelope.RegraCodigo espelha a coluna do código da regra");
-        regra.FindProperty(nameof(ReferenciaRegra.Versao))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.RegraVersao, "LimitesDoEnvelope.RegraVersao espelha a coluna da versão da regra");
 
         IEntityType demografica = contexto.Model
             .FindEntityType(typeof(ConfiguracaoDistribuicaoVagas))!
@@ -223,22 +271,10 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             coluna.GetScale().Should().Be(EscalaDoPrazo);
         }
 
-        // A janela recursal da ETAPA guarda a mesma referência de regra e os mesmos prazos que a
-        // da fase, e as colunas dela precisam das mesmas larguras: o decodificador do envelope
-        // usa uma constante só para os dois lados, então uma coluna mais estreita aqui produz
-        // envelope que ele aprova e o INSERT recusa. Confrontar só o lado da fase deixava essa
-        // metade sem gate.
+        // Os prazos da janela recursal da ETAPA precisam das mesmas precisões que os da fase: o
+        // decodificador do envelope usa uma constante só para os dois lados, então uma coluna
+        // mais estreita aqui produz envelope que ele aprova e o INSERT recusa.
         IEntityType recursoDaEtapa = contexto.Model.FindEntityType(typeof(RecursoDaEtapa))!;
-
-        IEntityType regraDoRecursoDaEtapa = recursoDaEtapa
-            .GetNavigations()
-            .Single(n => n.Name == nameof(RecursoDaEtapa.Regra))
-            .TargetEntityType;
-
-        regraDoRecursoDaEtapa.FindProperty(nameof(ReferenciaRegra.Codigo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.RegraCodigo, "LimitesDoEnvelope.RegraCodigo espelha regra_codigo de recursos_da_etapa");
-        regraDoRecursoDaEtapa.FindProperty(nameof(ReferenciaRegra.Versao))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.RegraVersao, "LimitesDoEnvelope.RegraVersao espelha regra_versao de recursos_da_etapa");
 
         IEntityType argsDoRecursoDaEtapa = recursoDaEtapa
             .GetNavigations()
