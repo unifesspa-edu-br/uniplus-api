@@ -23,7 +23,7 @@ public sealed class InvalidRequestProblemFactoryTests
     private const string BaseDoCatalogo = "https://exemplo.invalid/erros/";
 
     [Fact(DisplayName = "Parâmetro que a requisição não traz é ausência: o code diz isso e o detail o nomeia")]
-    public void CampoNaoFornecido_EhAusencia()
+    public void TryBuild_CampoNaoFornecido_EhAusencia()
     {
         ActionContext contexto = Contexto(ParametroDeQuery("etapas"));
         // Nada fornecido: nem valor tentado, nem valor cru — não houve o que converter.
@@ -59,7 +59,7 @@ public sealed class InvalidRequestProblemFactoryTests
     /// heurística que este factory recusa. Entre afirmar por palpite e não afirmar, não afirma.
     /// </remarks>
     [Fact(DisplayName = "Valor declarado que não converte segue pela cadeia — separá-lo de validação não é demonstrável")]
-    public void ValorPresenteQueNaoConverte_Delega()
+    public void TryBuild_ValorPresenteQueNaoConverte_Delega()
     {
         ActionContext contexto = Contexto(ParametroDeQuery("vigentes"));
         // É o que o pipeline real produz: a exceção do binder já virou mensagem, e a entrada
@@ -71,7 +71,7 @@ public sealed class InvalidRequestProblemFactoryTests
     }
 
     [Fact(DisplayName = "Validação que roda depois do binding não é capturada — a mensagem dela sobrevive")]
-    public void ValidacaoAposBinding_Delega()
+    public void TryBuild_ValidacaoAposBinding_Delega()
     {
         ActionContext contexto = Contexto();
         // É o caso de um [RegularExpression] em parâmetro de rota: o valor casou com o tipo, e
@@ -87,7 +87,7 @@ public sealed class InvalidRequestProblemFactoryTests
     }
 
     [Fact(DisplayName = "Parâmetro que casou não entra na recusa, mesmo quando outro falhou")]
-    public void CampoValido_NaoEntraNaLista()
+    public void TryBuild_CampoValido_NaoEntraNaLista()
     {
         ActionContext contexto = Contexto(ParametroDeQuery("limite"), ParametroDeQuery("etapas"));
         // O ModelState traz TODAS as propriedades da requisição, não só as reprovadas.
@@ -103,7 +103,7 @@ public sealed class InvalidRequestProblemFactoryTests
     }
 
     [Fact(DisplayName = "A recusa do desserializador nomeia os campos e NÃO o tipo que os declara")]
-    public void RecusaDoDesserializador_NomeiaCamposSemOTipo()
+    public void TryBuild_RecusaDoDesserializador_NomeiaCamposSemOTipo()
     {
         ActionContext contexto = Contexto();
         contexto.ModelState.AddModelError(
@@ -133,7 +133,7 @@ public sealed class InvalidRequestProblemFactoryTests
     /// nada distinguir os dois casos.
     /// </remarks>
     [Fact(DisplayName = "Corpo ausente tem code próprio, e não é anunciado como campo faltando")]
-    public void CorpoAusente_TemCodeProprio()
+    public void TryBuild_CorpoAusente_TemCodeProprio()
     {
         ActionContext contexto = Contexto();
         // Comprimento zero declarado: sem o sinal do servidor, é o único caso em que a ausência
@@ -152,7 +152,7 @@ public sealed class InvalidRequestProblemFactoryTests
     /// — então a pergunta "faltou corpo?" tem de vir depois de "o corpo é ilegível?".
     /// </summary>
     [Fact(DisplayName = "Corpo presente e ilegível não é confundido com corpo ausente")]
-    public void CorpoIlegivel_NaoEhCorpoAusente()
+    public void TryBuild_CorpoIlegivel_NaoEhCorpoAusente()
     {
         ActionContext contexto = Contexto();
         // As duas entradas que o MVC produz nesse caso: a do parâmetro e a da posição no
@@ -176,7 +176,7 @@ public sealed class InvalidRequestProblemFactoryTests
     /// deixa passar de propósito.
     /// </remarks>
     [Fact(DisplayName = "Propriedade do corpo reprovada após a desserialização não vira campo ausente")]
-    public void PropriedadeDoCorpoReprovadaAposDesserializar_Delega()
+    public void TryBuild_PropriedadeDoCorpoReprovadaAposDesserializar_Delega()
     {
         ActionContext contexto = Contexto();
         // É o que o MVC produz para `"orgao": null` num campo declarado não-anulável: entrada
@@ -197,7 +197,7 @@ public sealed class InvalidRequestProblemFactoryTests
     /// leva a lugar nenhum. Aqui a recusa correta é de conteúdo, não de ausência.
     /// </remarks>
     [Fact(DisplayName = "Corpo JSON null não é corpo ausente — o cliente enviou documento")]
-    public void CorpoJsonNull_NaoEhCorpoAusente()
+    public void TryBuild_CorpoJsonNull_NaoEhCorpoAusente()
     {
         ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
         contexto.HttpContext.Request.ContentLength = 4;
@@ -223,7 +223,7 @@ public sealed class InvalidRequestProblemFactoryTests
     /// comprimento declarado.
     /// </summary>
     [Fact(DisplayName = "Requisição que PODE ter corpo não é tratada como ausente, mesmo sem comprimento")]
-    public void RequisicaoQuePodeTerCorpo_NaoEhAusente()
+    public void TryBuild_RequisicaoQuePodeTerCorpo_NaoEhAusente()
     {
         ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
         contexto.HttpContext.Request.ContentLength = null;
@@ -235,7 +235,7 @@ public sealed class InvalidRequestProblemFactoryTests
     }
 
     [Fact(DisplayName = "Requisição que não pode ter corpo é ausência demonstrada")]
-    public void RequisicaoQueNaoPodeTerCorpo_EhAusencia()
+    public void TryBuild_RequisicaoQueNaoPodeTerCorpo_EhAusencia()
     {
         ActionContext contexto = Contexto(ParametroDeCorpo("comando"));
         contexto.HttpContext.Request.ContentLength = null;
@@ -257,7 +257,7 @@ public sealed class InvalidRequestProblemFactoryTests
     /// no caso em que dá para dizer o que falta.
     /// </remarks>
     [Fact(DisplayName = "Os campos são nomeados mesmo quando a lista vem pela exceção do formatter")]
-    public void ListaNaExcecaoDoFormatter_TambemNomeiaOsCampos()
+    public void TryBuild_ListaNaExcecaoDoFormatter_TambemNomeiaOsCampos()
     {
         ActionContext contexto = Contexto();
         contexto.ModelState.TryAddModelException(

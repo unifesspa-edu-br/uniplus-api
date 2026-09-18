@@ -241,10 +241,9 @@ public static class InvalidRequestProblemFactory
                         continue;
                     }
 
-                    foreach (Match name in SingleQuoted.Matches(list.Groups["list"].Value))
-                    {
-                        names.Add(name.Groups["name"].Value);
-                    }
+                    names.UnionWith(SingleQuoted
+                        .Matches(list.Groups["list"].Value)
+                        .Select(static match => match.Groups["name"].Value));
                 }
 
                 continue;
