@@ -87,6 +87,37 @@ public sealed class SessaoEditorialEndpointTests
         semColecoes.StatusCode.Should().Be(HttpStatusCode.BadRequest,
             "a carga sem as chaves é malformada para este contrato — antes ela era aceita e "
             + "apagava o que a etapa declarava, devolvendo 204");
+
+        // O status sozinho não distingue esta recusa de um If-Match malformado, que é 400 no
+        // mesmo endpoint: sem checar o corpo, o teste continuaria verde se a causa mudasse. A
+        // resposta tem de nomear o campo que o cliente omitiu — é a única informação que o
+        // deixa corrigir a carga sem adivinhar.
+        string corpo = await semColecoes.Content.ReadAsStringAsync();
+        corpo.Should().ContainEquivalentOf("produtos");
+    }
+
+    [Fact(DisplayName = "PUT /etapas com as três coleções presentes e NULAS é recusado com 422, não com o 400 da carga que as omite")]
+    public async Task Definir_ComColecoesNulas_Recusa()
+    {
+        Contexto ctx = await PublicarAsync(nameof(Definir_ComColecoesNulas_Recusa));
+
+        HttpResponseMessage abertura = await ctx.AbrirAsync("Correção do prazo");
+        abertura.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage nulas = await ctx.PutEtapasComColecoesNulasAsync(LerETag(abertura));
+
+        // Chave presente e nula é carga OUTRA que a que omite a chave, e o servidor as separa:
+        // a omissão nem desserializa (400 na borda), enquanto o nulo explícito atravessa o
+        // binding — o tipo não-anulável não o barra — e é recusado pela regra `NotNull` do
+        // validador, com 422 e o campo nomeado.
+        //
+        // Sem este teste a distinção fica só na intenção: as duas cargas são vizinhas, o
+        // validator é exercitado em unidade, e nada prova que o nulo chega até ele em vez de
+        // morrer antes. É também o que impede um cliente de ramificar por um status errado.
+        nulas.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        string corpo = await nulas.Content.ReadAsStringAsync();
+        corpo.Should().ContainEquivalentOf("produtos");
     }
 
     [Fact(DisplayName = "CA-03: com sessão aberta, PUT /etapas SEM If-Match devolve 428; com If-Match DEFASADO devolve 412")]
@@ -545,6 +576,34 @@ public sealed class SessaoEditorialEndpointTests
                         nome = "Prova Objetiva", carater = 1,
                         tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId,
                         peso = 1.0m, notaMinima = (decimal?)null, ordem = 1,
+                    },
+                }),
+            };
+            AppendTestAuth(request);
+            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+            return await Client.SendAsync(request).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Corpo de etapa com as três chaves <b>presentes e nulas</b>. É carga diferente da
+        /// que as omite: aqui o cliente conhece o contrato e afirma o nulo, então a
+        /// desserialização a aceita e quem a recusa é o validador.
+        /// </summary>
+        public async Task<HttpResponseMessage> PutEtapasComColecoesNulasAsync(string ifMatch)
+        {
+            using HttpRequestMessage request = new(
+                HttpMethod.Put,
+                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/etapas", UriKind.Relative))
+            {
+                Content = JsonContent.Create(new[]
+                {
+                    new
+                    {
+                        nome = "Prova Objetiva", carater = 1,
+                        tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId,
+                        peso = 1.0m, notaMinima = (decimal?)null, ordem = 1,
+                        produtos = (object?)null, bancas = (object?)null, recursos = (object?)null,
                     },
                 }),
             };

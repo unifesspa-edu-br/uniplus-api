@@ -42,7 +42,15 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <c>Fim</c> e <c>EmiteParecerIndividual</c> já têm valor padrão, e parâmetro sem default não
 /// pode vir depois de um que tem — nem aqui, nem se as três coleções fossem para o fim da
 /// lista. Esse default nunca é usado pela desserialização, porque <c>[JsonRequired]</c> recusa
-/// a carga sem a chave; o <c>null</c> explícito é recusado pelo validador.
+/// a carga sem a chave.
+/// </para>
+/// <para>
+/// As duas formas de ausência têm respostas diferentes, e é de propósito. A chave OMITIDA não
+/// desserializa: 400 na borda, antes de existir comando. A chave PRESENTE com <c>null</c>
+/// desserializa normalmente — o tipo não-anulável não impede, porque o host não liga
+/// <c>RespectNullableAnnotations</c> nem a exigência implícita alcança propriedade de item de
+/// coleção no corpo — e quem a recusa é a regra <c>NotNull</c> do validador, com 422 e o campo
+/// nomeado. Comportamento verificado ponta a ponta, não deduzido.
 /// </para>
 /// <para>
 /// O que ele NÃO cobre é a construção em C#: o default deixa o compilador aceitar, em
