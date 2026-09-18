@@ -63,8 +63,10 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
                 .WithMessage("Nota mínima deve ter no máximo 4 casas decimais.");
 
             // A COLEÇÃO em si não pode ser nula. `[JsonRequired]` recusa a carga que omite a
-            // chave, mas `"produtos": null` atravessa a desserialização — e, como a gravação
-            // substitui a coleção inteira, um nulo apagaria em silêncio o que a etapa declara.
+            // chave, mas `"produtos": null` atravessa a desserialização e chega até aqui — o
+            // tipo não-anulável não a barra, e a exigência implícita do `[ApiController]` não
+            // alcança propriedade de item de coleção no corpo. Como a gravação substitui a
+            // coleção inteira, um nulo apagaria em silêncio o que a etapa declara.
             // A lista vazia continua válida: é a declaração explícita de que não há nenhum.
             etapa.RuleFor(e => e.Produtos)
                 .NotNull()

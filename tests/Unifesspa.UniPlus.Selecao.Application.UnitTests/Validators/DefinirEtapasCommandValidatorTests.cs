@@ -27,20 +27,17 @@ public sealed class DefinirEtapasCommandValidatorTests
     }
 
     /// <summary>
-    /// A guarda de argumento de <c>ProdutoDaEtapa.Criar</c> LANÇA com código vazio. Sem a
-    /// regra de forma aqui, o corpo malformado chegaria lá e viraria falha de servidor, em vez
-    /// da recusa de validação que nomeia o campo — como já acontece nos produtos da fase.
-    /// </summary>
-    /// <summary>
-    /// Item nulo dentro das coleções aninhadas passa incólume pelo `ChildRules`, e o handler o
-    /// desreferencia — o papel do produto, o tipo da banca, a âncora do recurso. É a mesma
-    /// proteção que o array de etapas já tinha, um nível abaixo.
-    /// </summary>
-    /// <summary>
-    /// <c>[JsonRequired]</c> recusa a carga que OMITE a chave, mas <c>"produtos": null</c>
-    /// atravessa a desserialização — e, como a gravação substitui a coleção inteira, o nulo
-    /// apagaria em silêncio o que a etapa declara. É esta regra que o transforma em recusa
-    /// nomeada, em vez de deixá-lo virar lista vazia no handler.
+    /// <para>
+    /// A gravação substitui a coleção inteira, então um nulo que chegasse ao handler apagaria
+    /// em silêncio o que a etapa declara. Esta regra o transforma em recusa nomeada, em vez de
+    /// deixá-lo virar lista vazia.
+    /// </para>
+    /// <para>
+    /// A carga com <c>"produtos": null</c> chega mesmo até aqui vindo do HTTP — o tipo
+    /// não-anulável não a barra no binding. Quem prova o caminho inteiro, e que a resposta é
+    /// 422 nomeando o campo, é o teste de integração do <c>PUT /etapas</c> com as três
+    /// coleções nulas; este isola a regra.
+    /// </para>
     /// </summary>
     [Theory(DisplayName = "Validator recusa coleção nula na etapa — o nulo não vira lista vazia")]
     [InlineData("produtos", "Etapas[0].Produtos")]
@@ -75,6 +72,11 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Item nulo dentro das coleções aninhadas passa incólume pelo `ChildRules`, e o handler o
+    /// desreferencia — o papel do produto, o tipo da banca, a âncora do recurso. É a mesma
+    /// proteção que o array de etapas já tinha, um nível abaixo.
+    /// </summary>
     [Theory(DisplayName = "Validator recusa item nulo nas coleções da etapa")]
     [InlineData("produtos")]
     [InlineData("bancas")]
@@ -95,6 +97,11 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.Errors.Should().Contain(e => e.ErrorMessage.Contains("não pode ser nulo", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// A guarda de argumento de <c>ProdutoDaEtapa.Criar</c> LANÇA com código vazio. Sem a
+    /// regra de forma aqui, o corpo malformado chegaria lá e viraria falha de servidor, em vez
+    /// da recusa de validação que nomeia o campo — como já acontece nos produtos da fase.
+    /// </summary>
     [Fact(DisplayName = "Validator recusa produto da etapa sem código de ato")]
     public void Rejeita_ProdutoSemAtoCodigo()
     {
