@@ -4,6 +4,7 @@ using JasperFx;
 using JasperFx.CodeGeneration;
 
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Wolverine.Configuration;
 using Wolverine.ErrorHandling;
@@ -49,6 +50,20 @@ internal sealed class ReentregaDaDivulgacaoDoCertame : IHandlerPolicy
                 continue;
             }
 
+            // Envelope que este processo ainda não sabe ler não melhora em segundos: a causa
+            // esperada é a janela de um deploy em fases, em que um processo já atualizado congela
+            // numa versão que este só conhecerá ao ser substituído. Reentrega imediata esgotaria as
+            // tentativas antes de a janela fechar, e o certame ficaria invisível com o ato
+            // registrado. O reagendamento devolve a mensagem à fila e libera o consumidor, em
+            // escala de minutos — e quem processar depois pode ser outro processo, já novo.
+            //
+            // Declarada ANTES da regra geral: a primeira política que casa é a que vale.
+            chain.OnException<EnvelopeAindaNaoLegivelException>()
+                .ScheduleRetry(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15))
+                .Then.MoveToErrorQueue();
+
+            // Falha transiente — indisponibilidade momentânea, deadlock, conflito entre duas
+            // entregas do mesmo ato — é o caso em que insistir resolve em segundos.
             chain.OnException<Exception>()
                 .RetryWithCooldown(TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5))
                 .Then.MoveToErrorQueue();
