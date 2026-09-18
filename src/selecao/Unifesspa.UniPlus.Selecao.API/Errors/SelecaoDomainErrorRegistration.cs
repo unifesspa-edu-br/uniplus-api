@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
-using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
@@ -447,14 +446,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // que a projeção espera. É falha de leitura, não ausência: não colapsa no não encontrado,
         // pelo mesmo motivo da versão de envelope desconhecida — um certame publicado e visível
         // que some da consulta pública é defeito, e defeito tem de aflorar.
-        // ── Parâmetros de consulta das listagens ──────────────────────────
-        // Recusa do CLIENTE, não do domínio: pedir campo que a listagem não ordena, ou texto
-        // pesquisado além do teto, é erro de quem chama. Sem registro, cairia no não mapeado e o
-        // integrador receberia 400 genérico em vez da mensagem que nomeia o campo e os aceitos.
-        new(ConsultaErrorCodes.CampoDeOrdenacaoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.consulta.campo_de_ordenacao_invalido", "Campo de ordenação não aceito por esta listagem")),
-        new(ConsultaErrorCodes.OrdenacaoMalFormada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.consulta.ordenacao_mal_formada", "Expressão de ordenação inválida")),
-        new(ConsultaErrorCodes.BuscaMuitoLonga, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.consulta.busca_muito_longa", "Texto pesquisado excede o comprimento aceito")),
         new("CertamePublicado.EnvelopeInesperado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.certame_publicado.envelope_inesperado", "A configuração congelada não tem a forma que a projeção pública espera")),
+        // Os códigos de recusa dos parâmetros de consulta (ConsultaErrorCodes) NÃO se registram
+        // aqui: são compartilhados com as listagens de Configuração e vivem uma única vez em
+        // KernelDomainErrorRegistration, com taxonomia sem prefixo de módulo. Registrá-los por
+        // módulo faria o último da ordem de DI sobrescrever o code do outro no registry global.
         // Reposição da configuração congelada (Story #859, ADR-0110 D2). Todos 422: são
         // regras de negócio, e o operador que dispara um descarte precisa saber por que ele
         // foi recusado — reidratar mal é pior do que não reidratar.

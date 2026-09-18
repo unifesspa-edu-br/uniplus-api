@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
-using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
@@ -1128,23 +1127,10 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.tipo_etapa.ja_desativado", "Tipo de etapa já está desativado")),
         // ── Parâmetros de consulta das listagens ──────────────────────────
-        new(ConsultaErrorCodes.CampoDeOrdenacaoInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.consulta.campo_de_ordenacao_invalido",
-                "Campo de ordenação não aceito por esta listagem")),
-
-        new(ConsultaErrorCodes.OrdenacaoMalFormada,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.consulta.ordenacao_mal_formada",
-                "Expressão de ordenação inválida")),
-
-        new(ConsultaErrorCodes.BuscaMuitoLonga,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.consulta.busca_muito_longa",
-                "Texto pesquisado excede o comprimento aceito")),
+        // Registrados uma única vez em KernelDomainErrorRegistration, com taxonomia sem prefixo de
+        // módulo: ConsultaErrorCodes é compartilhado com a vitrine de Seleção, e o registry agrega
+        // todas as IDomainErrorRegistration num dicionário único por código — um registro por
+        // módulo faria o último da ordem de DI sobrescrever o code do outro.
 
         // ── Curso (UNI-REQ-0010) ──────────────────────────────────────────
         new(CursoErrorCodes.CodigoObrigatorio,
