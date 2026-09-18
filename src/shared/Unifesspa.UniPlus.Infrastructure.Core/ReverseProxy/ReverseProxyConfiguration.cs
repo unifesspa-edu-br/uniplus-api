@@ -71,13 +71,20 @@ public static class ReverseProxyConfiguration
         ForwardedHeadersOptions forwardedOptions,
         ReverseProxyOptions options)
     {
-        forwardedOptions.ForwardedHeaders = HonoredHeaders;
-
         // O default do framework confia em loopback. Aqui a lista é inteiramente declarada:
-        // o que não está configurado não fala pelo cliente, e a configuração ausente resulta
-        // em nenhuma confiança — nunca em confiança implícita.
+        // o que não está configurado não fala pelo cliente.
         forwardedOptions.KnownIPNetworks.Clear();
         forwardedOptions.KnownProxies.Clear();
+
+        // Sem rede declarada, o processamento é DESLIGADO em vez de ficar sem filtro. As duas
+        // coleções vazias não significam "não confie em ninguém" para o middleware: significam
+        // "não filtre por endereço", e ele passa a honrar o header de qualquer origem. Como
+        // Development é o único ambiente que pode chegar aqui sem lista — fora dele a validação
+        // derruba o boot —, seria justamente onde qualquer cliente decidiria o scheme das URLs
+        // que a aplicação emite.
+        forwardedOptions.ForwardedHeaders = options.TrustedNetworks.Count == 0
+            ? ForwardedHeaders.None
+            : HonoredHeaders;
 
         // Parse direto, sem filtrar: a validação das options já recusou notação inválida
         // antes daqui, e acessar ReverseProxyOptions.Value é o que a dispara. Descartar em
