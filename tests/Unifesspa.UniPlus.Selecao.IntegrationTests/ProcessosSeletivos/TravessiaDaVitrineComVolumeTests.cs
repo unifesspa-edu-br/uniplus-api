@@ -258,10 +258,10 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        (IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
+        PaginaDaVitrine pagina =
             await repository.ListarVitrineAsync(
                 Agora, new RecorteDaVitrine(), ordenacao, Limiar, cursor?.SortKey, cursor?.Id,
-                TamanhoDaPagina, direcao, CancellationToken.None);
+                TamanhoDaPagina, direcao, incluirContadores: false, CancellationToken.None);
 
         return (pagina.Itens, pagina.Anterior, pagina.Proximo);
     }

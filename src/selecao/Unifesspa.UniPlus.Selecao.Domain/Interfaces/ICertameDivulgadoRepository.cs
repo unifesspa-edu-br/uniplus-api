@@ -24,6 +24,22 @@ public sealed record RecorteDaVitrine(
     string? Busca = null);
 
 /// <summary>
+/// Uma página da vitrine e, quando pedidos, os contadores por situação.
+/// </summary>
+/// <remarks>
+/// Os dois saem juntos porque descrevem o mesmo conjunto: o número ao lado do filtro promete
+/// quantos itens aquele filtro traz, e lê-lo de um estado do banco diferente do que produziu a
+/// página é como a promessa passa a contradizer a tela.
+/// </remarks>
+/// <param name="Contadores">Nulo quando a consulta não os pediu — contar é percurso a mais.</param>
+public sealed record PaginaDaVitrine(
+    IReadOnlyList<CertameDivulgado> Itens,
+    DateTimeOffset InstanteEfetivo,
+    (string SortKey, Guid Id)? Anterior,
+    (string SortKey, Guid Id)? Proximo,
+    ContadoresDaVitrine? Contadores);
+
+/// <summary>
 /// Leitura e escrita da projeção pública do certame — a tabela cuja existência de linha é a
 /// publicidade.
 /// </summary>
@@ -47,26 +63,20 @@ public interface ICertameDivulgadoRepository
     /// recorte e a ordenação entram na assinatura do cursor, e uma continuação só vale para a
     /// consulta que a emitiu.
     /// </remarks>
-    Task<(IReadOnlyList<CertameDivulgado> Itens, DateTimeOffset InstanteEfetivo, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
-        ListarVitrineAsync(
-            DateTimeOffset instanteSeForAPrimeiraPagina,
-            RecorteDaVitrine recorte,
-            IReadOnlyList<SortField> ordenacao,
-            TimeSpan limiarDosUltimosDias,
-            string? afterSortKey,
-            Guid? afterId,
-            int limit,
-            PaginationDirection direction,
-            CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Contagem por situação, num único percurso, sobre o mesmo recorte da listagem <b>exceto</b>
-    /// pela situação: são estes números que alimentam o filtro de situação, e aplicá-lo a eles
-    /// deixaria todos zerados menos um.
-    /// </summary>
-    Task<ContadoresDaVitrine> ContarPorSituacaoAsync(
-        DateTimeOffset instante,
+    /// <param name="incluirContadores">
+    /// Pede a contagem por situação junto da página. Ela corre sobre o mesmo recorte <b>exceto</b>
+    /// pela situação — são estes números que alimentam aquele filtro, e aplicá-lo a eles deixaria
+    /// todos zerados menos um.
+    /// </param>
+    Task<PaginaDaVitrine> ListarVitrineAsync(
+        DateTimeOffset instanteSeForAPrimeiraPagina,
         RecorteDaVitrine recorte,
+        IReadOnlyList<SortField> ordenacao,
         TimeSpan limiarDosUltimosDias,
+        string? afterSortKey,
+        Guid? afterId,
+        int limit,
+        PaginationDirection direction,
+        bool incluirContadores,
         CancellationToken cancellationToken = default);
 }
