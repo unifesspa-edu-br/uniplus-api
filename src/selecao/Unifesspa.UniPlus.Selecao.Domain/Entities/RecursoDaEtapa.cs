@@ -113,8 +113,27 @@ public sealed class RecursoDaEtapa : EntityBase
         _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
     };
 
-    /// <summary>Reidrata a regra preservando o <see cref="EntityBase.Id"/> congelado.</summary>
-    public static RecursoDaEtapa Reidratar(
+    /// <summary>
+    /// Reidrata a janela preservando o <see cref="EntityBase.Id"/> congelado, sob as mesmas
+    /// invariantes de <see cref="Criar"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Reidratar não é caminho de confiança. O argumento de que "o envelope já provou a forma
+    /// quando foi congelado" vale para envelope que este código gerou, e é exatamente o que não
+    /// se pode supor de um envelope truncado, corrompido ou editado — e o descarte de uma
+    /// retificação repõe a configuração a partir dele. Sem estas conferências, quem controlasse
+    /// os bytes reporia um certame com prazo recursal zero: uma janela que abre e nunca fecha.
+    /// </para>
+    /// <para>
+    /// A validação é <b>delegada a <see cref="Criar"/></b> em vez de repetida aqui, para que
+    /// não exista a chance de as duas divergirem — é o que a irmã da fase já faz. A instância
+    /// que ele devolve é descartada porque o <see cref="EntityBase.Id"/> é <c>init</c>, e o
+    /// congelado tem de entrar na construção; o custo é um objeto, e a alternativa seria manter
+    /// duas listas de invariantes em sincronia à mão.
+    /// </para>
+    /// </remarks>
+    public static Result<RecursoDaEtapa> Reidratar(
         Guid id, AncoraDoRecurso ancora, ReferenciaRegra regra, ArgsRegraPrazoRecurso args, Guid produtoAncoraId)
     {
         ArgumentNullException.ThrowIfNull(regra);
@@ -124,14 +143,20 @@ public sealed class RecursoDaEtapa : EntityBase
             throw new ArgumentException("O recurso reidratado deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        return new RecursoDaEtapa
+        Result<RecursoDaEtapa> validada = Criar(ancora, regra, args, produtoAncoraId);
+        if (validada.IsFailure)
+        {
+            return validada;
+        }
+
+        return Result<RecursoDaEtapa>.Success(new RecursoDaEtapa
         {
             Id = id,
             Ancora = ancora,
             Regra = regra,
             Args = args,
             ProdutoAncoraId = produtoAncoraId,
-        };
+        });
     }
 
     /// <summary>

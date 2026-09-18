@@ -832,6 +832,43 @@ public sealed class EnvelopeCodecRecusaTests
         AssertIncoerencia(resultado);
     }
 
+    /// <summary>
+    /// A janela recursal da ETAPA restaurada com prazo zero é recusada — uma janela que abre e
+    /// nunca fecha não é configuração, é dado corrompido.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A irmã da FASE já recusa: <c>RegraRecursoFase.Reidratar</c> delega a <c>Criar</c>, e o
+    /// doc dela enuncia o porquê — o envelope é caminho de construção que não passa pela porta
+    /// HTTP, e uma regra restaurada com prazo não positivo é tão inutilizável quanto uma escrita
+    /// assim pela primeira vez.
+    /// </para>
+    /// <para>
+    /// O decodificador confere forma e precisão dos args, não as invariantes deles. Sem a
+    /// validação na reidratação, quem controla os bytes controla o prazo — e o descarte de uma
+    /// retificação reporia um certame cujo prazo recursal é zero.
+    /// </para>
+    /// </remarks>
+    [Fact(DisplayName = "Janela recursal da etapa com prazo zero é recusada na reidratação")]
+    public void RecursoDaEtapaComPrazoZero_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ArgsDoRecursoDaEtapa(envelope)["prazoValor"] = "0.0000");
+
+        resultado.IsFailure.Should().BeTrue(
+            "prazo não positivo é invariante do domínio, e vale igual em quem escreve e em quem repõe");
+        resultado.Error!.Message.Should().NotContain("esperado um texto",
+            "a recusa tem de ser do prazo, e não da FORMA do prazo — decimal viaja como texto no "
+            + "envelope, e escrever um número aqui recusaria por tipo, provando outra coisa");
+    }
+
+    private static JsonObject ArgsDoRecursoDaEtapa(JsonObject envelope) =>
+        envelope["etapas"]!.AsArray()
+            .Select(e => e!.AsObject())
+            .SelectMany(e => e["recursos"]!.AsArray().Select(r => r!.AsObject()))
+            .First(r => r["ancora"]!.GetValue<string>() == "AtoPublicado")["args"]!
+            .AsObject();
+
     private static void AssertIncoerencia(Result<EnvelopeReidratado> resultado)
     {
         resultado.IsFailure.Should().BeTrue(

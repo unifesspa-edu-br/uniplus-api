@@ -557,7 +557,7 @@ public sealed class EnvelopeCodecRoundTripTests
         originais.Should().NotBeEmpty("pré-condição: a etapa do corpus abre janela recursal");
 
         objetiva.DefinirRecursos([.. originais.Select(r => RecursoDaEtapa.Reidratar(
-            Guid.CreateVersion7(), r.Ancora, r.Regra, r.Args, r.ProdutoAncoraId))])
+            Guid.CreateVersion7(), r.Ancora, r.Regra, r.Args, r.ProdutoAncoraId).Value!)])
             .IsSuccess.Should().BeTrue();
         objetiva.Recursos.Select(r => r.Id)
             .Should().NotIntersectWith(originais.Select(r => r.Id),
