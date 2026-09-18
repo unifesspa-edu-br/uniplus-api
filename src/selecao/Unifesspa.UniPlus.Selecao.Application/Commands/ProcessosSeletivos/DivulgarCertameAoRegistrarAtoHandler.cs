@@ -68,12 +68,15 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         if (!registroCodecs.SabeLer(versao.SchemaVersion)
             || !TentarLerEnvelope(versao.ConfiguracaoCongelada, out JsonObject? envelope))
         {
-            // O documento congelado existe mas não é legível pelo codec vivo. Divulgar meia
+            // O documento congelado existe mas não é legível por ESTE processo. Divulgar meia
             // projeção seria pior que não divulgar — a ausência é visível e reprojetável, a
-            // projeção parcial mente. Lançar deixa o envelope na fila para nova tentativa e, se
-            // persistir, na fila morta, onde alguém olha.
-            throw new InvalidOperationException(
-                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não pôde ser lida para divulgação.");
+            // projeção parcial mente.
+            //
+            // O tipo próprio é o que permite à política de reentrega separar este caso da falha
+            // transiente: aqui a causa esperada é a janela de um deploy em fases, que dura minutos,
+            // e não os segundos de um blip.
+            throw new EnvelopeAindaNaoLegivelException(
+                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não pôde ser lida para divulgação (schema {versao.SchemaVersion}).");
         }
 
         // O título é atributo do processo, não da configuração congelada: lê-lo aqui é o que o
