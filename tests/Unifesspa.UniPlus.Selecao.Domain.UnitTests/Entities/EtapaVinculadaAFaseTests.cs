@@ -313,8 +313,8 @@ public sealed class EtapaVinculadaAFaseTests
             .Which.Ok.Should().BeTrue("o processo conforme não tem etapa pendurada fora da fase");
     }
 
-    [Fact(DisplayName = "Etapa que declara fase presente no cronograma é vinculada ao Id daquela fase")]
-    public void EtapaComFaseDeclarada_VinculaAoIdDaFase()
+    [Fact(DisplayName = "Etapa que declara fase presente no cronograma passa a ser encontrada por aquela fase")]
+    public void EtapaComFaseDeclarada_EhEncontradaPelaFase()
     {
         ProcessoSeletivo processo = Processo();
         FaseCronograma habilitacao = Fase(1, "HABILITACAO");
@@ -325,7 +325,12 @@ public sealed class EtapaVinculadaAFaseTests
             [Etapa("Envio dos documentos pessoais", "HABILITACAO")], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue();
-        processo.Etapas.Single().FaseCronogramaId.Should().Be(habilitacao.Id);
+
+        // A relação tem uma representação só — o código —, e o que se afirma dela é o que se
+        // lê dela: a etapa aparece sob a fase que declarou, e não sob nenhuma outra.
+        processo.EtapasDaFase("HABILITACAO").Should().ContainSingle()
+            .Which.Nome.Should().Be("Envio dos documentos pessoais");
+        processo.Etapas.Single().FaseCodigo.Should().Be(habilitacao.Codigo);
     }
 
     [Fact(DisplayName = "Etapa que declara fase fora do cronograma é recusada, nomeando a fase")]
@@ -414,6 +419,11 @@ public sealed class EtapaVinculadaAFaseTests
             [Etapa("Prova objetiva", faseCodigo: null)], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue();
-        processo.Etapas.Single().FaseCronogramaId.Should().Be(Guid.Empty);
+
+        // Sem fase declarada não há relação, e é assim que se diz isso agora: o código fica
+        // nulo e a etapa não aparece sob fase nenhuma. Antes havia um id zerado convivendo com
+        // o código nulo, e "sem fase" e "fase que não existe" tinham a mesma aparência.
+        processo.Etapas.Single().FaseCodigo.Should().BeNull();
+        processo.EtapasDaFase("AVALIACAO").Should().BeEmpty();
     }
 }
