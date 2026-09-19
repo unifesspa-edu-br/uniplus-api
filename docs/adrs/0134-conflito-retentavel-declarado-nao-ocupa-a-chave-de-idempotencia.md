@@ -32,7 +32,14 @@ Descartar toda resposta 409 foi tentado e revertido. O contraexemplo é concreto
 
 A chave de idempotência teria autorizado a mutação que o cliente acredita não ter feito, que é precisamente o que ela existe para impedir.
 
-## Decisão
+## Opções consideradas
+
+- **Guardar todo 409, como hoje.** Preserva a regra da ADR-0027 sem exceção, e mantém o cliente legítimo preso a uma corrida que durou milissegundos.
+- **Descartar todo 409.** Tentada e revertida: libera o replay tardio a executar a mutação que o cliente acredita não ter feito.
+- **Deduzir do código público por índice reverso.** Exigiria membro novo na porta do mapeador — que tem implementação escrita à mão em teste — e uma garantia de unicidade do código público que não existe hoje.
+- **Declarar na classificação do erro e carimbar no envelope.** A informação fica onde a classificação já vive, e chega ao cliente na própria resposta.
+
+## Resultado da decisão
 
 **O descarte da reserva passa a alcançar o 409 que a própria resposta declara retentável, e só ele.**
 
