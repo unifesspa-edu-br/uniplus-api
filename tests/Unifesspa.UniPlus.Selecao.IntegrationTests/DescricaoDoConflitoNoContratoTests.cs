@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -35,10 +34,6 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 /// </remarks>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class DescricaoDoConflitoNoContratoTests
 {
     private const string Base = "/api/selecao/processos-seletivos/{id}";
