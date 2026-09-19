@@ -36,7 +36,7 @@ public static class ResultExtensions
     {
         // Fail-fast: a primeira violação determina status/type/title/code da raiz —
         // mesma semântica que o domínio já tinha antes de acumular (ADR-0125).
-        (int status, string type, string title, string code, bool conflitoRetentavel) =
+        (int status, string type, string title, string code, bool retryableConflict) =
             DomainErrorProblemDetailsFactory.Resolve(errors[0].Error, mapper);
 
         ProblemDetails problem = new()
@@ -56,7 +56,7 @@ public static class ResultExtensions
         // ausência já diz "não conte com repetir". Declarado aqui, e não deduzido pelo cliente a
         // partir do status, porque 409 sozinho não separa a corrida que já passou do estado que
         // permanece — e é o produtor do erro, não quem o recebe, que sabe qual dos dois é.
-        if (conflitoRetentavel)
+        if (retryableConflict)
         {
             problem.Extensions["retryable"] = true;
         }

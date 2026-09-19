@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Errors;
 /// A classificação pública de um erro de domínio: o status HTTP, o código do catálogo, o título,
 /// e — para os conflitos — se repetir a mesma requisição pode agora dar certo.
 /// </summary>
-/// <param name="ConflitoRetentavel">
+/// <param name="RetryableConflict">
 /// Verdadeiro só quando a requisição <b>idêntica</b>, repetida, poderia agora ter outro desfecho:
 /// o conflito descreve uma corrida que já passou, não um estado que permanece.
 /// <para>
@@ -19,4 +19,4 @@ public sealed record DomainErrorMapping(
     int Status,
     string Code,
     string Title,
-    bool ConflitoRetentavel = false);
+    bool RetryableConflict = false);

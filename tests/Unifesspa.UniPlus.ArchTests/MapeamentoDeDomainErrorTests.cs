@@ -346,12 +346,12 @@ public sealed partial class MapeamentoDeDomainErrorTests
     /// </remarks>
     [Theory(DisplayName = "só um conflito pode declarar-se retentável")]
     [MemberData(nameof(Modulos))]
-    public void ConflitoRetentavel_SoEhDeclaradoEmStatusDeConflito(string modulo)
+    public void RetryableConflict_SoEhDeclaradoEmStatusDeConflito(string modulo)
     {
         Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados(modulo);
 
         IEnumerable<KeyValuePair<string, DomainErrorMapping>> retentaveis = mapeamentos
-            .Where(m => m.Value.ConflitoRetentavel);
+            .Where(m => m.Value.RetryableConflict);
 
         retentaveis.Should().OnlyContain(
             m => m.Value.Status == 409,
