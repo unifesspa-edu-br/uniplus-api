@@ -12,7 +12,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class DomainErrorProblemDetailsFactory
 {
-    public static (int Status, string Type, string Title, string Code) Resolve(DomainError error, IDomainErrorMapper mapper)
+    public static (int Status, string Type, string Title, string Code, bool RetryableConflict) Resolve(
+        DomainError error, IDomainErrorMapper mapper)
     {
         ArgumentNullException.ThrowIfNull(error);
         ArgumentNullException.ThrowIfNull(mapper);
@@ -23,6 +24,10 @@ public static class DomainErrorProblemDetailsFactory
         string code = found ? mapping!.Code : "uniplus.erro_nao_mapeado";
         string title = found ? mapping!.Title : "Erro de domínio";
 
-        return (status, mapper.GetProblemTypeUri(code), title, code);
+        // Erro não mapeado nunca é retentável: não se afirma sobre um código que o catálogo não
+        // conhece, e o lado seguro é o que preserva a resposta guardada.
+        bool retryable = found && mapping!.RetryableConflict;
+
+        return (status, mapper.GetProblemTypeUri(code), title, code, retryable);
     }
 }

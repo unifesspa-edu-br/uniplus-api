@@ -333,6 +333,33 @@ public sealed partial class MapeamentoDeDomainErrorTests
                 + "esconde qual invariante da cadeia de versões foi violada");
     }
 
+    /// <summary>
+    /// A marca de conflito retentável só faz sentido sobre um conflito. O envelope a publica
+    /// para qualquer status, mas o filtro de idempotência só a honra em 409: numa recusa de
+    /// conteúdo ela prometeria ao cliente uma repetição que nada vai liberar.
+    /// </summary>
+    /// <remarks>
+    /// O gate é aqui e não na leitura porque a direção do erro é assimétrica: declarar um
+    /// conflito durável como retentável libera a chave de idempotência para um replay tardio
+    /// que aplica a mutação que a chave existe para impedir. Uma declaração fora de lugar é o
+    /// primeiro sintoma de que o critério foi aplicado sem o cenário de corrida na mão.
+    /// </remarks>
+    [Theory(DisplayName = "só um conflito pode declarar-se retentável")]
+    [MemberData(nameof(Modulos))]
+    public void RetryableConflict_SoEhDeclaradoEmStatusDeConflito(string modulo)
+    {
+        Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados(modulo);
+
+        IEnumerable<KeyValuePair<string, DomainErrorMapping>> retentaveis = mapeamentos
+            .Where(m => m.Value.RetryableConflict);
+
+        retentaveis.Should().OnlyContain(
+            m => m.Value.Status == 409,
+            "o campo `retryable` do envelope responde \"repetir a mesma requisição pode agora dar "
+                + "certo?\", e só o 409 nomeia a corrida que o torna verdadeiro — num 422 ou num 404 "
+                + "ele promete ao cliente uma saída que o filtro de idempotência não vai abrir");
+    }
+
     private static Dictionary<string, DomainErrorMapping> LerMapeamentosRegistrados(string modulo)
     {
         Regex assemblyDeProducao = new(

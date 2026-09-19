@@ -36,7 +36,8 @@ public static class ResultExtensions
     {
         // Fail-fast: a primeira violação determina status/type/title/code da raiz —
         // mesma semântica que o domínio já tinha antes de acumular (ADR-0125).
-        (int status, string type, string title, string code) = DomainErrorProblemDetailsFactory.Resolve(errors[0].Error, mapper);
+        (int status, string type, string title, string code, bool retryableConflict) =
+            DomainErrorProblemDetailsFactory.Resolve(errors[0].Error, mapper);
 
         ProblemDetails problem = new()
         {
@@ -50,6 +51,16 @@ public static class ResultExtensions
         };
 
         problem.Extensions["code"] = code;
+
+        // Só quando verdadeiro: um campo presente em toda resposta de erro seria ruído, e a
+        // ausência já diz "não conte com repetir". Declarado aqui, e não deduzido pelo cliente a
+        // partir do status, porque 409 sozinho não separa a corrida que já passou do estado que
+        // permanece — e é o produtor do erro, não quem o recebe, que sabe qual dos dois é.
+        if (retryableConflict)
+        {
+            problem.Extensions["retryable"] = true;
+        }
+
         problem.Extensions["traceId"] = Activity.Current?.TraceId.ToHexString()
             ?? Guid.CreateVersion7().ToString("N");
 
@@ -66,7 +77,7 @@ public static class ResultExtensions
             problem.Extensions["errors"] = errors
                 .Select(fieldError =>
                 {
-                    (int _, string _, string _, string fieldCode) = DomainErrorProblemDetailsFactory.Resolve(fieldError.Error, mapper);
+                    (int _, string _, string _, string fieldCode, bool _) = DomainErrorProblemDetailsFactory.Resolve(fieldError.Error, mapper);
                     return new { field = fieldError.Field, code = fieldCode, message = fieldError.Error.Message };
                 })
                 .ToArray();

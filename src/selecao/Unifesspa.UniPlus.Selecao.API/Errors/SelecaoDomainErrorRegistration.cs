@@ -25,7 +25,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(MotivoDecisaoIsencaoErrorCodes.JaAtivo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_ativo", "O motivo já está ativo")),
         new(MotivoDecisaoIsencaoErrorCodes.JaInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_inativo", "O motivo já está inativo")),
         new(MotivoDecisaoIsencaoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.motivo_decisao_isencao.nao_encontrado", "Motivo de decisão de isenção não encontrado")),
-        new(MotivoDecisaoIsencaoErrorCodes.SituacaoAlteradaConcorrentemente, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.motivo_decisao_isencao.situacao_alterada_concorrentemente", "A situação do motivo foi alterada por outra operação")),
+        new(MotivoDecisaoIsencaoErrorCodes.SituacaoAlteradaConcorrentemente, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.motivo_decisao_isencao.situacao_alterada_concorrentemente", "A situação do motivo foi alterada por outra operação", RetryableConflict: true)),
         // ObrigatoriedadeLegal forma plena (Story #460, ADR-0058). Códigos do
         // placeholder #459 preservados; novos códigos refletem invariantes da
         // forma plena (vigência, governance, hash UNIQUE, regra duplicada).
@@ -356,7 +356,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("VersaoConfiguracao.CadeiaQuebrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.cadeia_quebrada", "O ato criador da versão não retifica o ato criador da versão anterior")),
         new("VersaoConfiguracao.AtoCriadorRepetido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.ato_criador_repetido", "Um ato congela a configuração no máximo uma vez")),
         new("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.versao_anterior_de_outro_processo", "A cadeia de versões não atravessa certames")),
-        new("VersaoConfiguracao.NumeroDuplicado", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.versao_configuracao.numero_duplicado", "Outra publicação concorrente já criou esta versão da configuração")),
+        new("VersaoConfiguracao.NumeroDuplicado", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.versao_configuracao.numero_duplicado", "Outra publicação concorrente já criou esta versão da configuração", RetryableConflict: true)),
         new("VersaoConfiguracao.AtoCriadorJaCriouVersao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.ato_criador_ja_criou_versao", "O ato informado já criou uma versão da configuração")),
         new("VersaoConfiguracao.NumeracaoComBuraco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.numeracao_com_buraco", "A numeração das versões da configuração é contígua")),
         new("VersaoConfiguracao.ContratoAberturaInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.contrato_abertura_invalido", "A versão 1 não retifica ato algum; toda versão seguinte retifica")),
@@ -609,7 +609,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Conflito transitório entre duas gravações do mesmo operador, e não corpo inválido:
         // 409, como a ADR-0119 fixa para concorrência. A segunda tentativa encontra a linha
         // que a primeira criou e a substitui.
-        new("RascunhoDaPublicacao.GravacaoConcorrente", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.rascunho_publicacao.gravacao_concorrente", "Outra gravação do mesmo rascunho chegou primeiro")),
+        new("RascunhoDaPublicacao.GravacaoConcorrente", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.rascunho_publicacao.gravacao_concorrente", "Outra gravação do mesmo rascunho chegou primeiro", RetryableConflict: true)),
         new("RascunhoDePublicacao.SemUsuarioAutenticado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.rascunho_publicacao.sem_usuario_autenticado", "O rascunho da publicação pertence a quem o escreve")),
         new("RascunhoRetificacao.JaAberta", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.retificacao_ja_aberta", "Já existe uma retificação em curso neste processo")),
         new("RascunhoRetificacao.NaoAberta", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.retificacao_nao_aberta", "Não há retificação em curso neste processo")),

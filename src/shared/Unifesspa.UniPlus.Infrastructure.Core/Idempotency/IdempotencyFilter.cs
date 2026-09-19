@@ -244,7 +244,13 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             // None no DeleteAsync porque RequestAborted já está disparado quando
             // o request foi cancelado pelo cliente.
             //
-            if (status >= 500 || RespostaDePrecondicao(status, httpContext.Request) || executed.Canceled)
+            // O conflito que a resposta declara retentável entra na mesma regra, pelo mesmo
+            // motivo: guardá-lo prenderia por 24 h um cliente que a própria mensagem manda
+            // retentar.
+            if (status >= 500
+                || RespostaDePrecondicao(status, httpContext.Request)
+                || executed.Canceled
+                || ResponseDeclaresRetryableConflict(status, captureStream))
             {
                 await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                     .ConfigureAwait(false);
@@ -254,6 +260,8 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
                 return;
             }
 
+            // Só o caminho que de fato grava materializa o corpo: quem libera a reserva devolve
+            // os bytes direto do stream de captura, sem uma cópia intermediária.
             byte[] responseBytes = captureStream.ToArray();
 
             // Cifra response body at-rest (ADR-0027 §"Cifragem at-rest").
@@ -498,6 +506,57 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         // e, junto, a precondição de que precisa para a próxima mutação.
         if (headers is not null && headers.TryGetValue("ETag", out string? etag))
             context.HttpContext.Response.Headers.ETag = etag;
+    }
+
+    /// <summary>
+    /// O conflito que a própria resposta declara retentável — exceção formal à ADR-0027, que
+    /// guarda toda resposta abaixo de 500.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 409 sozinho não separa a corrida que já passou do estado que permanece, e guardar os dois
+    /// por 24 h nega ao transitório a única saída que ele oferece: o cliente que preserva a
+    /// chave — que é o que a semântica de idempotência manda fazer — recebe em replay o conflito
+    /// de ontem. Descartar todo 409, porém, é pior: um replay tardio de "código já existe",
+    /// depois que alguém liberou o código, criaria o registro que o cliente acredita não ter
+    /// criado. A chave teria autorizado justamente a mutação que ela existe para impedir.
+    /// </para>
+    /// <para>
+    /// Quem sabe qual dos dois é não é o filtro: é quem produziu o erro. A declaração vive na
+    /// classificação do erro e viaja no envelope, e aqui só se lê o que ela disse. O gatilho é o
+    /// <b>status</b>, nunca o media type. O que o filtro precisa saber é o desfecho, e o
+    /// desfecho está no status; amarrar a decisão ao <c>Content-Type</c> acrescentaria uma
+    /// dependência de negociação de conteúdo — que varia com o <c>Accept</c> do cliente e com o
+    /// que cada atributo de resposta impõe — a uma pergunta que não tem nada a ver com ela.
+    /// </para>
+    /// <para>
+    /// Qualquer coisa que não seja um <c>true</c> explícito — corpo vazio, JSON inválido, campo
+    /// ausente — <b>guarda a resposta</b>. É o lado que preserva o comportamento anterior, e
+    /// errar para ele custa um retry recusado; errar para o outro custa uma mutação indevida.
+    /// </para>
+    /// </remarks>
+    private static bool ResponseDeclaresRetryableConflict(int status, MemoryStream capturedBody)
+    {
+        if (status != StatusCodes.Status409Conflict || capturedBody.Length == 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            // Lê o buffer interno em vez de copiá-lo: o stream nasce aqui neste filtro, e o
+            // corpo só precisa ser inspecionado, não guardado.
+            using JsonDocument documento = JsonDocument.Parse(
+                capturedBody.GetBuffer().AsMemory(0, (int)capturedBody.Length));
+
+            return documento.RootElement.ValueKind == JsonValueKind.Object
+                && documento.RootElement.TryGetProperty("retryable", out JsonElement retryable)
+                && retryable.ValueKind == JsonValueKind.True;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     /// <summary>

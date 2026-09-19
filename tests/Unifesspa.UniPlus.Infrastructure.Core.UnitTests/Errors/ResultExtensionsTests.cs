@@ -172,6 +172,63 @@ public sealed class ResultExtensionsTests
         problem.Extensions.Should().NotContainKey("errors");
     }
 
+    // ─── Conflito retentável (ADR-0134) ────────────────────────────────────
+
+    [Fact]
+    public void ToActionResult_ComConflitoDeclaradoRetentavel_DeveTrazerRetryableNaRaizDoEnvelope()
+    {
+        // O nome do campo e a posição dele (raiz do corpo) são contrato: o filtro de
+        // idempotência lê exatamente "retryable" na raiz da resposta para decidir se a
+        // reserva da chave é liberada. Uma renomeação silenciosa faria o conflito de
+        // corrida voltar a ocupar a chave por 24 h sem quebrar nenhum outro teste.
+        IDomainErrorMapper mapper = CriarMapper((
+            "TermoConsentimento.ConflitoDeConcorrencia",
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
+                "O rascunho foi modificado concorrentemente",
+                RetryableConflict: true)));
+        Result resultado = Result.Failure(new DomainError(
+            "TermoConsentimento.ConflitoDeConcorrencia", "O rascunho foi modificado concorrentemente."));
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        problem.Status.Should().Be(StatusCodes.Status409Conflict);
+        problem.Extensions.Should().ContainKey("retryable");
+        problem.Extensions["retryable"].Should().Be(true);
+    }
+
+    [Fact]
+    public void ToActionResult_ComConflitoDuravel_NaoDeveTrazerRetryable()
+    {
+        // A ausência é o sinal de "não conte com repetir": um campo presente em toda
+        // resposta de erro seria ruído, e marcar um conflito durável como retentável
+        // liberaria a chave para um replay tardio que criaria o registro.
+        IDomainErrorMapper mapper = CriarMapper((
+            "Campus.SiglaJaExiste",
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict, "uniplus.configuracao.campus.sigla_ja_existe", "Sigla já existe")));
+        Result resultado = Result.Failure(
+            new DomainError("Campus.SiglaJaExiste", "Já existe um Campus vivo com essa sigla."));
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        problem.Extensions.Should().NotContainKey("retryable");
+    }
+
+    [Fact]
+    public void ToActionResult_ComCodigoNaoMapeado_NaoDeveTrazerRetryable()
+    {
+        // Não se afirma sobre um código que o catálogo não conhece, e o lado seguro é o
+        // que preserva a resposta guardada.
+        IDomainErrorMapper mapper = CriarMapper();
+        Result resultado = Result.Failure(new DomainError("Codigo.Desconhecido", "Erro desconhecido."));
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        problem.Extensions.Should().NotContainKey("retryable");
+    }
+
     [Fact]
     public void ToActionResult_ComFailureDeRegraDeNegocioMapeadoPara422_NaoDeveConterExtensionErrors()
     {
