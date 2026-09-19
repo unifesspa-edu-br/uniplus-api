@@ -367,27 +367,15 @@ public sealed partial class EnvelopeCodec
             return null;
         }
 
+        // O fechamento das chaves é daqui porque esta forma tem uma chave a mais que a tripla: a
+        // de presença. É só por isso que o bloco lia a referência por conta própria — e ler por
+        // conta própria era o que o deixava sem a conferência do rol que todas as outras têm.
         leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente", "codigo", "versao", "hash");
 
-        // Os mesmos tetos que o leitor de referência de regra aplica em toda tripla do
-        // envelope. Esta é a única lida fora dele — a forma do bloco carrega `presente` ao
-        // lado da tripla, e aquele leitor exige exatamente codigo/versao/hash —, e sem os
-        // tetos aqui um código largo demais atravessa a leitura, recanonicaliza nos mesmos
-        // bytes e só é recusado pelo INSERT, como 22001 traduzido em 500 no meio do descarte.
-        string codigo = leitor.TextoNaoVazio(bloco, "codigo", "algoritmoContagemPrazo", LimitesDoEnvelope.RegraCodigo);
-        string versao = leitor.TextoNaoVazio(bloco, "versao", "algoritmoContagemPrazo", LimitesDoEnvelope.RegraVersao);
-        string hash = leitor.TextoNaoVazio(bloco, "hash", "algoritmoContagemPrazo");
-        if (leitor.Falhou)
-        {
-            return null;
-        }
+        ReferenciaRegra referencia = leitor.RegraDeObjetoJaFechado(
+            bloco, "algoritmoContagemPrazo", [.. AlgoritmoContagemPrazoCodigo.Todos]);
 
-        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(codigo, versao, hash);
-        return referencia.IsFailure
-            ? leitor.Propagar<ReferenciaRegra?>(new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                $"'algoritmoContagemPrazo' congelado não é uma referência de regra válida: {referencia.Error!.Message}"))
-            : referencia.Value;
+        return leitor.Falhou ? null : referencia;
     }
 
     /// <summary>

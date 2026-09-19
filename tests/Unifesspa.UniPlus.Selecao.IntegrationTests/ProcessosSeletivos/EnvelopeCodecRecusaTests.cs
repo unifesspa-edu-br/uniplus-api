@@ -234,6 +234,12 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("identidadesUnidade")]
     [InlineData("identidadesUnidade.administradora")]
     [InlineData("divulgacao")]
+    // Os dois objetos de regra OPCIONAIS e o bloco da convenção de contagem. Os obrigatórios
+    // acima já cobriam o leitor compartilhado; estes três não passavam por caso nenhum, e um
+    // fechamento de chaves esquecido neles não acusaria em lugar algum da suíte.
+    [InlineData("classificacao.regraArredondamento")]
+    [InlineData("distribuicao.0.regraAjuste")]
+    [InlineData("algoritmoContagemPrazo")]
     public void ChaveDesconhecida_Recusa(string caminho)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -1655,6 +1661,59 @@ public sealed class EnvelopeCodecRecusaTests
 
     private static JsonObject PrimeiraExigencia(JsonObject envelope) =>
         envelope["documentosExigidos"]!["exigencias"]!.AsArray()[0]!.AsObject();
+
+    /// <summary>
+    /// O código da convenção de contagem pertence ao rol que o decodificador conhece.
+    /// </summary>
+    /// <remarks>
+    /// Toda outra referência de regra do envelope é conferida contra um rol fechado; esta era a
+    /// única que não. Um código fora do rol atravessava a leitura, persistia — a coluna o
+    /// comporta — e devolvia ao certame restaurado uma convenção de contagem que motor nenhum
+    /// implementa, sem nada acusar.
+    /// </remarks>
+    [Fact(DisplayName = "Convenção de contagem com código fora do rol é recusada na reidratação")]
+    public void AlgoritmoContagemPrazoForaDoRol_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["algoritmoContagemPrazo"]!.AsObject()["codigo"] = "CONTAGEM-PRAZO-INEXISTENTE");
+
+        resultado.IsFailure.Should().BeTrue(
+            "um código que o sistema não reconhece não descreve convenção nenhuma, e restaurá-lo daria ao certame " +
+            "um prazo que ninguém sabe contar");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.RegraDesconhecida);
+    }
+
+    /// <summary>
+    /// O erro oposto, e o mais caro: rol estreito demais torna irreidratável um certame
+    /// legitimamente publicado.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Já aconteceu neste codec — um envelope publicado sob PSIQ ou sob a regra que hoje é
+    /// COM-PCD-PURO era irreidratável porque o rol do decodificador estava fechado em dois
+    /// literais. A configuração congelada é a evidência jurídica do certame; recusá-la deixa o
+    /// descarte da retificação sem como repor o estado anterior.
+    /// </para>
+    /// <para>
+    /// A asserção é de <b>sucesso</b>, e não de "falhou por outro motivo": nada no decodificador
+    /// nem no domínio consome o código desta convenção — a referência é opaca —, então trocá-lo
+    /// por outro do rol reidrata inteiro. O código que o corpus já usa fica fora da teoria
+    /// porque escrevê-lo de novo não mudaria byte nenhum, e o helper exige que a adulteração
+    /// mude os bytes.
+    /// </para>
+    /// </remarks>
+    [Theory(DisplayName = "Toda convenção de contagem do rol atravessa a reidratação")]
+    [InlineData(AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora)]
+    [InlineData(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)]
+    public void AlgoritmoContagemPrazoDoRol_Reidrata(string codigo)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["algoritmoContagemPrazo"]!.AsObject()["codigo"] = codigo);
+
+        resultado.IsSuccess.Should().BeTrue(
+            $"'{codigo}' pertence a AlgoritmoContagemPrazoCodigo.Todos — recusá-lo tornaria irreidratável um " +
+            $"certame publicado sob ele. Recusado com: {resultado.Error?.Code} / {resultado.Error?.Message}");
+    }
 
     /// <summary>
     /// O código e a versão da convenção de contagem cabem nas colunas que vão recebê-los.

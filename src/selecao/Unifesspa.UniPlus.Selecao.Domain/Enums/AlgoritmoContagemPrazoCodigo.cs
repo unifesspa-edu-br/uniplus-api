@@ -35,6 +35,28 @@ public static class AlgoritmoContagemPrazoCodigo
     public const string AvancaDataUtil = "CONTAGEM-PRAZO-AVANCA-DATA-UTIL";
 
     /// <summary>
+    /// As três convenções reconhecidas — e só elas.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// É daqui que o decodificador do envelope tira o rol que aceita, em vez de repetir os
+    /// literais no call site. Rol repetido à mão envelhece calado: um envelope publicado sob uma
+    /// convenção que o decodificador não lista fica <b>irreidratável</b>, e a configuração
+    /// congelada, que é a evidência jurídica do certame, torna-se inalcançável.
+    /// </para>
+    /// <para>
+    /// Lista explícita, nunca reflexão sobre os campos da classe: <see cref="BaseLegalDeclaradaPeloEdital"/>
+    /// também é uma constante daqui e <b>não é um código</b> — é o texto do fundamento. Montada
+    /// por reflexão, ela entraria no rol e o decodificador passaria a aceitar um parágrafo de
+    /// fundamentação como código de regra.
+    /// </para>
+    /// </remarks>
+    public static readonly IReadOnlyList<string> Todos =
+    [
+        ExcluiDiaInicial, HorasUteisDesdeAncora, AvancaDataUtil,
+    ];
+
+    /// <summary>
     /// Fundamento das entradas de contagem: a convenção aplicável é a que o edital
     /// declara. Substituiu o placeholder de pendência quando a decisão institucional
     /// sobre o prazo recursal foi registrada (UNI-REQ-0095).

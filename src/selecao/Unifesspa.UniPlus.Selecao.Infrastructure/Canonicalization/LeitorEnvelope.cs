@@ -691,7 +691,10 @@ internal sealed class LeitorEnvelope
             return default!;
         }
 
-        return RegraDoObjeto(objeto, $"{path}.{chave}", rol);
+        string caminho = $"{path}.{chave}";
+        ExigirChaves(objeto, caminho, "codigo", "versao", "hash");
+
+        return RegraDeObjetoJaFechado(objeto, caminho, rol);
     }
 
     public ReferenciaRegra? RegraOpcional(JsonObject pai, string chave, string path, params string[] rol)
@@ -707,13 +710,25 @@ internal sealed class LeitorEnvelope
             return null;
         }
 
-        return RegraDoObjeto(objeto, $"{path}.{chave}", rol);
+        string caminho = $"{path}.{chave}";
+        ExigirChaves(objeto, caminho, "codigo", "versao", "hash");
+
+        return RegraDeObjetoJaFechado(objeto, caminho, rol);
     }
 
-    private ReferenciaRegra RegraDoObjeto(JsonObject objeto, string path, string[] rol)
+    /// <summary>
+    /// A tripla de um objeto <b>cujas chaves o chamador já fechou</b> — os tetos das colunas, o
+    /// rol conhecido e a identidade do value object, sem tocar no conjunto de chaves.
+    /// </summary>
+    /// <remarks>
+    /// Fechar as chaves fica com o chamador porque nem todo bloco que carrega uma referência de
+    /// regra a carrega sozinha: a convenção de contagem do prazo declara a tripla ao lado da
+    /// chave de presença, e um fechamento embutido aqui recusaria a forma legítima dela. Quem
+    /// chamar este método sem ter fechado as chaves deixa passar chave desconhecida em silêncio,
+    /// que é como se perde configuração sem ninguém ver — o nome existe para lembrar disso.
+    /// </remarks>
+    public ReferenciaRegra RegraDeObjetoJaFechado(JsonObject objeto, string path, params string[] rol)
     {
-        ExigirChaves(objeto, path, "codigo", "versao", "hash");
-
         string codigo = TextoNaoVazio(objeto, "codigo", path, LimitesDoEnvelope.RegraCodigo);
         string versao = TextoNaoVazio(objeto, "versao", path, LimitesDoEnvelope.RegraVersao);
         string hash = Texto(objeto, "hash", path);
