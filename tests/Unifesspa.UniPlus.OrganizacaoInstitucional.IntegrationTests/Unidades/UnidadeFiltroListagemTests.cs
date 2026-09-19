@@ -208,6 +208,9 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         // delas serve de referência.
         List<Guid> ordenados = [.. (await ListarAsync(filtro, TakeAlto)).Select(u => u.Id)];
         ordenados.Should().BeEquivalentTo(ids);
+        ordenados.Should().BeInAscendingOrder(
+            "a referência sai do mesmo método que as páginas, e sem esta asserção uma listagem que " +
+            "devolvesse o conjunto fora de ordem casaria com páginas igualmente fora de ordem");
 
         // Página 1 (forward, limit 2): [0,1]; sem anterior; com próximo.
         (IReadOnlyList<Unidade> p1, Guid? p1Ant, Guid? p1Prox) =
