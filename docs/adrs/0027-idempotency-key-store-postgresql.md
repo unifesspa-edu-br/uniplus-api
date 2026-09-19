@@ -89,6 +89,8 @@ Tanto **2xx** quanto **4xx** são cacheados. A motivação é a convenção Stri
 >
 > Efeito no filtro: `412` e `428` **liberam a reserva** (como as `>= 500`), em vez de completar a entrada. E o header **`ETag` passa a ser persistido** junto de `Content-Type` e `Location` — sem ele, o replay de uma abertura não devolveria a precondição da chamada seguinte.
 
+A segunda exceção tem a mesma forma da primeira — um status abaixo de 500 cuja resposta, guardada, prende quem deveria poder repetir — e alcança parte do `409`:
+
 > **Emenda ([ADR-0134](0134-conflito-retentavel-declarado-nao-ocupa-a-chave-de-idempotencia.md)) — o `409` que a resposta declara retentável também não é armazenável.**
 >
 > O status 409 nomeia duas coisas. O conflito que descreve um **estado que permanece** — o código já está ocupado, a sigla já existe — é guardado com razão: repetir não muda nada, e um replay tardio depois que o obstáculo saiu criaria o registro que o cliente acredita não ter criado.
