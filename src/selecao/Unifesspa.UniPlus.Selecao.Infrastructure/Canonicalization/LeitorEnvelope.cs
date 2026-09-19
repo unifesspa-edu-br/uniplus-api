@@ -691,10 +691,7 @@ internal sealed class LeitorEnvelope
             return default!;
         }
 
-        string caminho = $"{path}.{chave}";
-        ExigirChaves(objeto, caminho, "codigo", "versao", "hash");
-
-        return RegraDeObjetoJaFechado(objeto, caminho, rol);
+        return RegraDoObjeto(objeto, $"{path}.{chave}", rol);
     }
 
     public ReferenciaRegra? RegraOpcional(JsonObject pai, string chave, string path, params string[] rol)
@@ -710,25 +707,30 @@ internal sealed class LeitorEnvelope
             return null;
         }
 
-        string caminho = $"{path}.{chave}";
-        ExigirChaves(objeto, caminho, "codigo", "versao", "hash");
-
-        return RegraDeObjetoJaFechado(objeto, caminho, rol);
+        return RegraDoObjeto(objeto, $"{path}.{chave}", rol);
     }
 
     /// <summary>
-    /// A tripla de um objeto <b>cujas chaves o chamador já fechou</b> — os tetos das colunas, o
-    /// rol conhecido e a identidade do value object, sem tocar no conjunto de chaves.
+    /// A tripla de um objeto que já <b>é</b> a referência — fecha a gramática do objeto, mede
+    /// código e versão contra os tetos das colunas, confere o código contra o
+    /// <paramref name="rol"/> conhecido e reconstrói a identidade do value object.
     /// </summary>
     /// <remarks>
-    /// Fechar as chaves fica com o chamador porque nem todo bloco que carrega uma referência de
-    /// regra a carrega sozinha: a convenção de contagem do prazo declara a tripla ao lado da
-    /// chave de presença, e um fechamento embutido aqui recusaria a forma legítima dela. Quem
-    /// chamar este método sem ter fechado as chaves deixa passar chave desconhecida em silêncio,
-    /// que é como se perde configuração sem ninguém ver — o nome existe para lembrar disso.
+    /// Nem todo bloco que carrega uma referência de regra a carrega sozinha: a convenção de
+    /// contagem do prazo declara a tripla ao lado da chave de presença. É para essa forma que
+    /// existe <paramref name="chavesAlemDaTripla"/> — o chamador declara o que o bloco tem a mais,
+    /// e o fechamento continua acontecendo aqui. Deixá-lo a cargo do chamador tornaria a gramática
+    /// fechada opcional, e um chamador que esquecesse de fechá-la deixaria passar chave
+    /// desconhecida em silêncio, que é como se perde configuração sem ninguém ver.
     /// </remarks>
-    public ReferenciaRegra RegraDeObjetoJaFechado(JsonObject objeto, string path, params string[] rol)
+    public ReferenciaRegra RegraDoObjeto(
+        JsonObject objeto,
+        string path,
+        string[] rol,
+        params string[] chavesAlemDaTripla)
     {
+        ExigirChaves(objeto, path, [.. chavesAlemDaTripla, "codigo", "versao", "hash"]);
+
         string codigo = TextoNaoVazio(objeto, "codigo", path, LimitesDoEnvelope.RegraCodigo);
         string versao = TextoNaoVazio(objeto, "versao", path, LimitesDoEnvelope.RegraVersao);
         string hash = Texto(objeto, "hash", path);

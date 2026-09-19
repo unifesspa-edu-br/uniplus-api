@@ -5452,7 +5452,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Outra publica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta. Reler o processo e resubmeter. Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -5583,7 +5583,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "H\u00E1 uma retifica\u00E7\u00E3o em curso neste processo: enquanto a sess\u00E3o editorial existir, o atalho em um ato s\u00F3 recusa \u2014 fech\u00E1-la ou descart\u00E1-la libera esta rota. Tamb\u00E9m responde 409 quando outra publica\u00E7\u00E3o ou retifica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e resubmeter), e quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -5739,7 +5739,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "J\u00E1 existe retifica\u00E7\u00E3o em curso para este processo \u2014 s\u00F3 uma por vez. Fechar ou descartar a atual antes de abrir outra. Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -5966,7 +5966,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "N\u00E3o h\u00E1 retifica\u00E7\u00E3o em curso para ter o motivo alterado. Abrir a retifica\u00E7\u00E3o antes. Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6104,7 +6104,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "N\u00E3o h\u00E1 retifica\u00E7\u00E3o em curso para descartar, ou a base dela ficou para tr\u00E1s da vers\u00E3o vigente. Reler o estado da retifica\u00E7\u00E3o antes de repetir. Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6264,7 +6264,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "A retifica\u00E7\u00E3o n\u00E3o est\u00E1 aberta, a base dela ficou para tr\u00E1s da vers\u00E3o vigente, ou outra publica\u00E7\u00E3o concorrente congelou uma vers\u00E3o entre a leitura e a grava\u00E7\u00E3o desta. Reler a retifica\u00E7\u00E3o em curso antes de repetir. Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
