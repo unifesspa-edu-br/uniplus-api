@@ -347,6 +347,12 @@ public sealed partial class EnvelopeCodec
         && (municipioNome is null
             || string.Equals(HashCanonicalComputer.NormalizeNfc(municipioNome), municipioNome, StringComparison.Ordinal));
 
+    /// <summary>
+    /// O rol declarado, materializado uma vez. O leitor recebe <c>string[]</c>, e montar a
+    /// cópia dentro da leitura a refaria a cada reidratação.
+    /// </summary>
+    private static readonly string[] RolDaConvencaoDeContagem = [.. AlgoritmoContagemPrazoCodigo.Todos];
+
     private static ReferenciaRegra? LerAlgoritmoContagemPrazo(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "algoritmoContagemPrazo", "$");
@@ -373,7 +379,7 @@ public sealed partial class EnvelopeCodec
         leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente", "codigo", "versao", "hash");
 
         ReferenciaRegra referencia = leitor.RegraDeObjetoJaFechado(
-            bloco, "algoritmoContagemPrazo", [.. AlgoritmoContagemPrazoCodigo.Todos]);
+            bloco, "algoritmoContagemPrazo", RolDaConvencaoDeContagem);
 
         return leitor.Falhou ? null : referencia;
     }

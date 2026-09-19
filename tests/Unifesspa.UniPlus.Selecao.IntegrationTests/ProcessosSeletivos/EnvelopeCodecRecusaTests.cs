@@ -1720,10 +1720,12 @@ public sealed class EnvelopeCodecRecusaTests
     /// </summary>
     /// <remarks>
     /// Toda referência de regra do envelope é lida pelo leitor compartilhado, que mede
-    /// código e versão contra a largura da coluna. A convenção de contagem é a única lida
-    /// fora dele — a forma dela carrega <c>presente</c> ao lado da tripla, e o leitor
-    /// compartilhado exige exatamente <c>codigo</c>, <c>versao</c> e <c>hash</c> —, e por
-    /// isso é a única que podia atravessar a leitura com um código largo demais. O valor
+    /// código e versão contra a largura da coluna. A convenção de contagem foi durante um
+    /// tempo a única lida fora dele — a forma dela carrega <c>presente</c> ao lado da tripla,
+    /// e o fechamento de chaves embutido no leitor exigia exatamente <c>codigo</c>,
+    /// <c>versao</c> e <c>hash</c> —, e por isso era a única que podia atravessar a leitura
+    /// com um código largo demais. Hoje ela passa pelo mesmo leitor, com o fechamento de
+    /// chaves a cargo do chamador, e este teste guarda o teto contra uma volta atrás. O valor
     /// recanonicaliza nos mesmos bytes, então a prova de round-trip aprova; a recusa só
     /// chegaria no <c>INSERT</c>, como <c>22001</c> traduzido em 500 no meio do descarte.
     /// </remarks>

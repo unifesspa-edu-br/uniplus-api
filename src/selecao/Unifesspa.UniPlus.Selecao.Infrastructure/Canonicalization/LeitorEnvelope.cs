@@ -691,10 +691,7 @@ internal sealed class LeitorEnvelope
             return default!;
         }
 
-        string caminho = $"{path}.{chave}";
-        ExigirChaves(objeto, caminho, "codigo", "versao", "hash");
-
-        return RegraDeObjetoJaFechado(objeto, caminho, rol);
+        return RegraDoObjeto(objeto, $"{path}.{chave}", rol);
     }
 
     public ReferenciaRegra? RegraOpcional(JsonObject pai, string chave, string path, params string[] rol)
@@ -710,10 +707,18 @@ internal sealed class LeitorEnvelope
             return null;
         }
 
-        string caminho = $"{path}.{chave}";
-        ExigirChaves(objeto, caminho, "codigo", "versao", "hash");
+        return RegraDoObjeto(objeto, $"{path}.{chave}", rol);
+    }
 
-        return RegraDeObjetoJaFechado(objeto, caminho, rol);
+    /// <summary>
+    /// A tripla de um objeto que <b>só</b> carrega a tripla: fecha as chaves em
+    /// <c>codigo</c>/<c>versao</c>/<c>hash</c> e delega o resto da leitura.
+    /// </summary>
+    private ReferenciaRegra RegraDoObjeto(JsonObject objeto, string path, string[] rol)
+    {
+        ExigirChaves(objeto, path, "codigo", "versao", "hash");
+
+        return RegraDeObjetoJaFechado(objeto, path, rol);
     }
 
     /// <summary>
