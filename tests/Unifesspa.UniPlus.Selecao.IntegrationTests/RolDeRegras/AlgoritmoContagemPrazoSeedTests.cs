@@ -75,6 +75,35 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         [AlgoritmoContagemPrazoCodigo.AvancaDataUtil] = HashAvancaDataUtil,
     };
 
+    /// <summary>
+    /// Cada código do rol como caso de teoria — semear uma quarta convenção passa a cobri-la
+    /// aqui sozinha, em vez de deixar a teoria calada sobre o código novo.
+    /// </summary>
+    public static TheoryData<string> RolDeContagem()
+    {
+        TheoryData<string> dados = new();
+        foreach (string codigo in AlgoritmoContagemPrazoCodigo.Todos)
+        {
+            dados.Add(codigo);
+        }
+
+        return dados;
+    }
+
+    /// <summary>
+    /// O hash dourado de <paramref name="codigo"/>, com a falta declarada como asserção — a
+    /// indexação crua morreria com <c>KeyNotFoundException</c>, que não diz a quem semeou uma
+    /// convenção nova que falta congelar o hash dela aqui.
+    /// </summary>
+    private static string HashDouradoDe(string codigo)
+    {
+        HashesDourados.Should().ContainKey(
+            codigo,
+            $"{codigo} está no rol e precisa do hash congelado da migration que o semeia");
+
+        return HashesDourados[codigo];
+    }
+
     [Fact(DisplayName = "O reader devolve as três convenções de contagem, cada uma com código, versão e hash")]
     public async Task Reader_ListarPorTipo_DevolveAsConvencoes()
     {
@@ -90,7 +119,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
 
         foreach (RegraCatalogo algoritmo in algoritmos)
         {
-            algoritmo.Hash.Should().Be(HashesDourados[algoritmo.Codigo]);
+            algoritmo.Hash.Should().Be(HashDouradoDe(algoritmo.Codigo));
         }
     }
 
@@ -100,7 +129,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         foreach (string codigo in CodigosDeContagem)
         {
             Item(codigo).ComputarHash().Should().Be(
-                HashesDourados[codigo],
+                HashDouradoDe(codigo),
                 $"editar a definição de {codigo} sem regenerar a migration dessincroniza seed e banco");
         }
 
@@ -229,9 +258,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     }
 
     [Theory(DisplayName = "Nenhuma configuração congelada referencia a entrada de contagem (fronteira da ADR-0112)")]
-    [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial)]
-    [InlineData(AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora)]
-    [InlineData(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)]
+    [MemberData(nameof(RolDeContagem))]
     public async Task NenhumaConfiguracaoCongelada_ReferenciaEntradaDeContagem(string codigo)
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
