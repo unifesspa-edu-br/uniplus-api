@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class DomainErrorProblemDetailsFactory
 {
-    public static (int Status, string Type, string Title, string Code, bool ConflitoRetentavel) Resolve(
+    public static (int Status, string Type, string Title, string Code, bool RetryableConflict) Resolve(
         DomainError error, IDomainErrorMapper mapper)
     {
         ArgumentNullException.ThrowIfNull(error);
@@ -26,8 +26,8 @@ public static class DomainErrorProblemDetailsFactory
 
         // Erro não mapeado nunca é retentável: não se afirma sobre um código que o catálogo não
         // conhece, e o lado seguro é o que preserva a resposta guardada.
-        bool retentavel = found && mapping!.ConflitoRetentavel;
+        bool retryable = found && mapping!.RetryableConflict;
 
-        return (status, mapper.GetProblemTypeUri(code), title, code, retentavel);
+        return (status, mapper.GetProblemTypeUri(code), title, code, retryable);
     }
 }

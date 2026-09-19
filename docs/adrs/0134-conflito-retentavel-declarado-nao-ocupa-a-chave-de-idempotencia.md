@@ -52,6 +52,12 @@ A declaração vive na classificação do erro, ao lado do status, do código p�
 - Conflito de concorrência otimista: sim — o outro escritor terminou, e a mesma requisição se aplica.
 - Conflito de unicidade de catálogo: não. Se a repetição idêntica desse certo, seria porque o obstáculo foi removido — e aí estaríamos no contraexemplo acima.
 
+**A pergunta tem uma segunda metade, e ela não é redundante: dar certo tem de significar o efeito que o cliente pediu.** Há operação cujo sentido depende do estado que o cliente acabou de observar, e para ela "a mesma requisição, repetida, se aplica" é falso mesmo quando ela passa.
+
+O caso concreto é a marcação de revisado de um termo de consentimento. A requisição não tem corpo: ela significa *"aprovo o texto que acabei de ler"*. Editar o rascunho **limpa a revisão anterior**, porque a aprovação vale para o texto exato que foi lido. Se a marcação perde a corrida para uma edição concorrente e a reserva for liberada, um retry automático da mesma requisição aprova o texto **novo** — que ninguém revisou.
+
+Por isso a classificação **não é do código de erro sozinho, é do código no contexto das operações que o emitem**: um código compartilhado por várias operações só pode ser declarado retentável se a repetição preservar o efeito pedido em **todas** elas.
+
 ### O default é durável
 
 Declarar é ato explícito, e a assimetria é deliberada: classificar um durável como retentável libera uma mutação indevida; classificar um transitório como durável apenas preserva o comportamento anterior. A direção perigosa exige alguém escrever a declaração.

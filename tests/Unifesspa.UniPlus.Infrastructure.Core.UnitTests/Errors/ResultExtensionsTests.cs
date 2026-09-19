@@ -187,7 +187,7 @@ public sealed class ResultExtensionsTests
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
                 "O rascunho foi modificado concorrentemente",
-                ConflitoRetentavel: true)));
+                RetryableConflict: true)));
         Result resultado = Result.Failure(new DomainError(
             "TermoConsentimento.ConflitoDeConcorrencia", "O rascunho foi modificado concorrentemente."));
 

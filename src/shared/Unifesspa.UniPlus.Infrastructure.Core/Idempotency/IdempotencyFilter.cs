@@ -250,7 +250,7 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             if (status >= 500
                 || RespostaDePrecondicao(status, httpContext.Request)
                 || executed.Canceled
-                || RespostaDeclaraConflitoRetentavel(status, captureStream))
+                || ResponseDeclaresRetryableConflict(status, captureStream))
             {
                 await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                     .ConfigureAwait(false);
@@ -535,9 +535,9 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
     /// errar para ele custa um retry recusado; errar para o outro custa uma mutação indevida.
     /// </para>
     /// </remarks>
-    private static bool RespostaDeclaraConflitoRetentavel(int status, MemoryStream corpoCapturado)
+    private static bool ResponseDeclaresRetryableConflict(int status, MemoryStream capturedBody)
     {
-        if (status != StatusCodes.Status409Conflict || corpoCapturado.Length == 0)
+        if (status != StatusCodes.Status409Conflict || capturedBody.Length == 0)
         {
             return false;
         }
@@ -547,11 +547,11 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             // Lê o buffer interno em vez de copiá-lo: o stream nasce aqui neste filtro, e o
             // corpo só precisa ser inspecionado, não guardado.
             using JsonDocument documento = JsonDocument.Parse(
-                corpoCapturado.GetBuffer().AsMemory(0, (int)corpoCapturado.Length));
+                capturedBody.GetBuffer().AsMemory(0, (int)capturedBody.Length));
 
             return documento.RootElement.ValueKind == JsonValueKind.Object
-                && documento.RootElement.TryGetProperty("retryable", out JsonElement retentavel)
-                && retentavel.ValueKind == JsonValueKind.True;
+                && documento.RootElement.TryGetProperty("retryable", out JsonElement retryable)
+                && retryable.ValueKind == JsonValueKind.True;
         }
         catch (JsonException)
         {

@@ -1079,7 +1079,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         new(TipoProcessoErrorCodes.ConflitoDeConcorrencia,
             new DomainErrorMapping(StatusCodes.Status409Conflict,
                 "uniplus.configuracao.tipo_processo.conflito_de_concorrencia",
-                "Tipo de processo seletivo alterado concorrentemente", ConflitoRetentavel: true)),
+                "Tipo de processo seletivo alterado concorrentemente", RetryableConflict: true)),
         // ── Tipo de etapa (UNI-REQ-0015, UNI-REQ-0087) ────────────────────
         new(TipoEtapaErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
@@ -1476,7 +1476,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia",
                 "Outra alteração concorrente modificou o mesmo dataset ou o dataset vigente",
-                ConflitoRetentavel: true)),
+                RetryableConflict: true)),
 
         // ── Termo de consentimento (UNI-REQ-0086/RN-COL-05) ───────────────
         new(TermoConsentimentoErrorCodes.NomeObrigatorio,
@@ -1543,8 +1543,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
-                "O rascunho foi modificado concorrentemente",
-                ConflitoRetentavel: true)),
+                // NÃO retentável, apesar de ser corrida: este código é compartilhado pelas
+                // operações do termo, e uma delas é a marcação de revisado. Editar o rascunho
+                // LIMPA a revisão anterior, porque a aprovação vale para o texto exato que foi
+                // lido. Liberar a reserva deixaria um retry automático da mesma requisição — que
+                // não tem corpo — aprovar o texto NOVO, sem ninguém o ter revisado.
+                "O rascunho foi modificado concorrentemente")),
 
         // ── Base legal de bônus regional ──────────────────────────────────
         new(BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido,
