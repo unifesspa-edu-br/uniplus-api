@@ -189,7 +189,10 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
     public async Task Navegacao_Bidirecional_PrevVoltaPaginaAnterior_ComFlagsExatas()
     {
         string iso = NovoToken();
-        // 5 unidades em ordem de criação (Guid v7 monotônico) → ASC por Id.
+        // Cinco unidades. A ordem de criação NÃO é a ordem da página: o Id é um Guid v7, e v7 só
+        // ordena por tempo quando o carimbo difere — semeadas no mesmo milissegundo, elas ficam na
+        // ordem dos bits aleatórios, diferente a cada execução. A referência vem do banco, como no
+        // teste de travessia logo acima.
         Guid[] ids =
         [
             await SeedAsync(nome: $"BiDir {iso} 0", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug()),
@@ -200,33 +203,39 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         ];
         FiltroListagemUnidades filtro = FiltroDeBusca(iso);
 
+        // O conjunto filtrado na ordem em que a paginação o percorre. A pertinência é afirmada à
+        // parte: o filtro tem de trazer exatamente as cinco semeadas, e só depois disso a ordem
+        // delas serve de referência.
+        List<Guid> ordenados = [.. (await ListarAsync(filtro, TakeAlto)).Select(u => u.Id)];
+        ordenados.Should().BeEquivalentTo(ids);
+
         // Página 1 (forward, limit 2): [0,1]; sem anterior; com próximo.
         (IReadOnlyList<Unidade> p1, Guid? p1Ant, Guid? p1Prox) =
             await PaginarAsync(filtro, limit: 2, afterId: null, PaginationDirection.Next);
-        p1.Select(u => u.Id).Should().Equal(ids[0], ids[1]);
+        p1.Select(u => u.Id).Should().Equal(ordenados[0], ordenados[1]);
         p1Ant.Should().BeNull();
-        p1Prox.Should().Be(ids[1]);
+        p1Prox.Should().Be(ordenados[1]);
 
         // Página 2 (forward a partir do próximo da p1): [2,3]; com anterior e próximo.
         (IReadOnlyList<Unidade> p2, Guid? p2Ant, Guid? p2Prox) =
             await PaginarAsync(filtro, limit: 2, afterId: p1Prox, PaginationDirection.Next);
-        p2.Select(u => u.Id).Should().Equal(ids[2], ids[3]);
-        p2Ant.Should().Be(ids[2]);
-        p2Prox.Should().Be(ids[3]);
+        p2.Select(u => u.Id).Should().Equal(ordenados[2], ordenados[3]);
+        p2Ant.Should().Be(ordenados[2]);
+        p2Prox.Should().Be(ordenados[3]);
 
-        // Backward a partir do anterior da p2 (ids[2]): volta à página 1 [0,1] em ASC.
+        // Backward a partir do anterior da p2 (ordenados[2]): volta à página 1 [0,1] em ASC.
         (IReadOnlyList<Unidade> volta, Guid? voltaAnt, Guid? voltaProx) =
             await PaginarAsync(filtro, limit: 2, afterId: p2Ant, PaginationDirection.Prev);
-        volta.Select(u => u.Id).Should().Equal(ids[0], ids[1]);
-        voltaAnt.Should().BeNull();   // ids[0] é o início → sem anterior
-        voltaProx.Should().Be(ids[1]); // há próximo (ids[2..])
+        volta.Select(u => u.Id).Should().Equal(ordenados[0], ordenados[1]);
+        voltaAnt.Should().BeNull();   // ordenados[0] é o início → sem anterior
+        voltaProx.Should().Be(ordenados[1]); // há próximo (ordenados[2..])
 
-        // Última página (forward a partir de ids[3]): [4]; sem próximo, com anterior.
+        // Última página (forward a partir de ordenados[3]): [4]; sem próximo, com anterior.
         (IReadOnlyList<Unidade> ultima, Guid? ultAnt, Guid? ultProx) =
             await PaginarAsync(filtro, limit: 2, afterId: p2Prox, PaginationDirection.Next);
-        ultima.Select(u => u.Id).Should().Equal(ids[4]);
+        ultima.Select(u => u.Id).Should().Equal(ordenados[4]);
         ultProx.Should().BeNull();
-        ultAnt.Should().Be(ids[4]);
+        ultAnt.Should().Be(ordenados[4]);
     }
 
     private async Task<(IReadOnlyList<Unidade> Itens, Guid? Anterior, Guid? Proximo)> PaginarAsync(
