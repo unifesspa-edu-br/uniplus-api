@@ -1079,7 +1079,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         new(TipoProcessoErrorCodes.ConflitoDeConcorrencia,
             new DomainErrorMapping(StatusCodes.Status409Conflict,
                 "uniplus.configuracao.tipo_processo.conflito_de_concorrencia",
-                "Tipo de processo seletivo alterado concorrentemente")),
+                "Tipo de processo seletivo alterado concorrentemente", ConflitoRetentavel: true)),
         // ── Tipo de etapa (UNI-REQ-0015, UNI-REQ-0087) ────────────────────
         new(TipoEtapaErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
@@ -1475,7 +1475,8 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia",
-                "Outra alteração concorrente modificou o mesmo dataset ou o dataset vigente")),
+                "Outra alteração concorrente modificou o mesmo dataset ou o dataset vigente",
+                ConflitoRetentavel: true)),
 
         // ── Termo de consentimento (UNI-REQ-0086/RN-COL-05) ───────────────
         new(TermoConsentimentoErrorCodes.NomeObrigatorio,
@@ -1542,7 +1543,8 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
-                "O rascunho foi modificado concorrentemente")),
+                "O rascunho foi modificado concorrentemente",
+                ConflitoRetentavel: true)),
 
         // ── Base legal de bônus regional ──────────────────────────────────
         new(BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido,

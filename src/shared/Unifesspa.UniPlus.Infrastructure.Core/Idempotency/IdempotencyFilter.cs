@@ -244,7 +244,12 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             // None no DeleteAsync porque RequestAborted já está disparado quando
             // o request foi cancelado pelo cliente.
             //
-            if (status >= 500 || RespostaDePrecondicao(status, httpContext.Request) || executed.Canceled)
+            byte[] responseBytes = captureStream.ToArray();
+
+            if (status >= 500
+                || RespostaDePrecondicao(status, httpContext.Request)
+                || executed.Canceled
+                || ConflitoRetentavel(status, responseBytes))
             {
                 await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                     .ConfigureAwait(false);
@@ -253,8 +258,6 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
                 await captureStream.CopyToAsync(originalBody, httpContext.RequestAborted).ConfigureAwait(false);
                 return;
             }
-
-            byte[] responseBytes = captureStream.ToArray();
 
             // Cifra response body at-rest (ADR-0027 §"Cifragem at-rest").
             byte[] cipher = await _encryption.EncryptAsync(
@@ -498,6 +501,53 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         // e, junto, a precondição de que precisa para a próxima mutação.
         if (headers is not null && headers.TryGetValue("ETag", out string? etag))
             context.HttpContext.Response.Headers.ETag = etag;
+    }
+
+    /// <summary>
+    /// O conflito que a própria resposta declara retentável — exceção formal à ADR-0027, que
+    /// guarda toda resposta abaixo de 500.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 409 sozinho não separa a corrida que já passou do estado que permanece, e guardar os dois
+    /// por 24 h nega ao transitório a única saída que ele oferece: o cliente que preserva a
+    /// chave — que é o que a semântica de idempotência manda fazer — recebe em replay o conflito
+    /// de ontem. Descartar todo 409, porém, é pior: um replay tardio de "código já existe",
+    /// depois que alguém liberou o código, criaria o registro que o cliente acredita não ter
+    /// criado. A chave teria autorizado justamente a mutação que ela existe para impedir.
+    /// </para>
+    /// <para>
+    /// Quem sabe qual dos dois é não é o filtro: é quem produziu o erro. A declaração vive na
+    /// classificação do erro e viaja no envelope, e aqui só se lê o que ela disse. O gatilho é o
+    /// <b>status</b>, nunca o media type: as respostas de erro saem por negociação de conteúdo, e
+    /// uma requisição com <c>Accept</c> de vendor media type não recebe
+    /// <c>application/problem+json</c>.
+    /// </para>
+    /// <para>
+    /// Qualquer coisa que não seja um <c>true</c> explícito — corpo vazio, JSON inválido, campo
+    /// ausente — <b>guarda a resposta</b>. É o lado que preserva o comportamento anterior, e
+    /// errar para ele custa um retry recusado; errar para o outro custa uma mutação indevida.
+    /// </para>
+    /// </remarks>
+    private static bool ConflitoRetentavel(int status, byte[] responseBytes)
+    {
+        if (status != StatusCodes.Status409Conflict || responseBytes.Length == 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            using JsonDocument documento = JsonDocument.Parse(responseBytes);
+
+            return documento.RootElement.ValueKind == JsonValueKind.Object
+                && documento.RootElement.TryGetProperty("retryable", out JsonElement retentavel)
+                && retentavel.ValueKind == JsonValueKind.True;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
