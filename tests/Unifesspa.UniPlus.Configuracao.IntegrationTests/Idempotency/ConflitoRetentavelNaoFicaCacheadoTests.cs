@@ -48,6 +48,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </para>
 /// </remarks>
 [Collection(ConfiguracaoEndpointCollection.Name)]
+[Trait("Category", "Integration")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

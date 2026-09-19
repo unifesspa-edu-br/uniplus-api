@@ -244,12 +244,13 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             // None no DeleteAsync porque RequestAborted já está disparado quando
             // o request foi cancelado pelo cliente.
             //
-            byte[] responseBytes = captureStream.ToArray();
-
+            // O conflito que a resposta declara retentável entra na mesma regra, pelo mesmo
+            // motivo: guardá-lo prenderia por 24 h um cliente que a própria mensagem manda
+            // retentar.
             if (status >= 500
                 || RespostaDePrecondicao(status, httpContext.Request)
                 || executed.Canceled
-                || ConflitoRetentavel(status, responseBytes))
+                || RespostaDeclaraConflitoRetentavel(status, captureStream))
             {
                 await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                     .ConfigureAwait(false);
@@ -258,6 +259,10 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
                 await captureStream.CopyToAsync(originalBody, httpContext.RequestAborted).ConfigureAwait(false);
                 return;
             }
+
+            // Só o caminho que de fato grava materializa o corpo: quem libera a reserva devolve
+            // os bytes direto do stream de captura, sem uma cópia intermediária.
+            byte[] responseBytes = captureStream.ToArray();
 
             // Cifra response body at-rest (ADR-0027 §"Cifragem at-rest").
             byte[] cipher = await _encryption.EncryptAsync(
@@ -519,9 +524,10 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
     /// <para>
     /// Quem sabe qual dos dois é não é o filtro: é quem produziu o erro. A declaração vive na
     /// classificação do erro e viaja no envelope, e aqui só se lê o que ela disse. O gatilho é o
-    /// <b>status</b>, nunca o media type: as respostas de erro saem por negociação de conteúdo, e
-    /// uma requisição com <c>Accept</c> de vendor media type não recebe
-    /// <c>application/problem+json</c>.
+    /// <b>status</b>, nunca o media type. O que o filtro precisa saber é o desfecho, e o
+    /// desfecho está no status; amarrar a decisão ao <c>Content-Type</c> acrescentaria uma
+    /// dependência de negociação de conteúdo — que varia com o <c>Accept</c> do cliente e com o
+    /// que cada atributo de resposta impõe — a uma pergunta que não tem nada a ver com ela.
     /// </para>
     /// <para>
     /// Qualquer coisa que não seja um <c>true</c> explícito — corpo vazio, JSON inválido, campo
@@ -529,16 +535,19 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
     /// errar para ele custa um retry recusado; errar para o outro custa uma mutação indevida.
     /// </para>
     /// </remarks>
-    private static bool ConflitoRetentavel(int status, byte[] responseBytes)
+    private static bool RespostaDeclaraConflitoRetentavel(int status, MemoryStream corpoCapturado)
     {
-        if (status != StatusCodes.Status409Conflict || responseBytes.Length == 0)
+        if (status != StatusCodes.Status409Conflict || corpoCapturado.Length == 0)
         {
             return false;
         }
 
         try
         {
-            using JsonDocument documento = JsonDocument.Parse(responseBytes);
+            // Lê o buffer interno em vez de copiá-lo: o stream nasce aqui neste filtro, e o
+            // corpo só precisa ser inspecionado, não guardado.
+            using JsonDocument documento = JsonDocument.Parse(
+                corpoCapturado.GetBuffer().AsMemory(0, (int)corpoCapturado.Length));
 
             return documento.RootElement.ValueKind == JsonValueKind.Object
                 && documento.RootElement.TryGetProperty("retryable", out JsonElement retentavel)
