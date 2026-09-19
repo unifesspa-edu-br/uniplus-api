@@ -70,8 +70,12 @@ public sealed class ConflitoRetentavelNaoFicaCacheadoTests
     [Fact(DisplayName = "409 declarado retentável libera a reserva — o retry com a mesma chave alcança a action")]
     public async Task Conflito_QuandoRespostaDeclaraRetentavel_DeveLiberarAReserva()
     {
+        // O calendário, e não o termo de consentimento: o código do termo é compartilhado com a
+        // marcação de revisado, cuja repetição aprovaria texto que ninguém leu, e por isso ele
+        // NÃO é retentável. Trocar de exemplo aqui é o teste seguindo a classificação viva, que
+        // é o que ele existe para fazer.
         IdempotencyOutcome desfecho = await ExecutarComErroDeDominioAsync(
-            TermoConsentimentoErrorCodes.ConflitoDeConcorrencia);
+            CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
 
         desfecho.Should().Be(
             IdempotencyOutcome.Miss,
