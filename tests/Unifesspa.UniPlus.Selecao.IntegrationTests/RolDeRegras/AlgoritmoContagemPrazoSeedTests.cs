@@ -55,12 +55,18 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         return [.. documento.RootElement.EnumerateArray().Select(e => e.GetString()!)];
     }
 
-    private static readonly string[] CodigosDeContagem =
-    [
-        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial,
-        AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora,
-        AlgoritmoContagemPrazoCodigo.AvancaDataUtil,
-    ];
+    /// <summary>
+    /// O rol declarado, e não uma cópia dele. É o mesmo que o decodificador do envelope aceita.
+    /// </summary>
+    /// <remarks>
+    /// Duplicar a lista aqui deixava o seed amarrado a uma lista privada de teste: semear uma
+    /// quarta convenção deixava este arquivo vermelho, e consertá-lo acrescentando o código
+    /// <b>só aqui</b> publicava um certame que o decodificador recusaria depois — envelope
+    /// irreidratável, com a configuração congelada inalcançável no descarte da retificação.
+    /// Apontando para o rol, o mesmo vermelho só apaga quando o código é declarado onde os dois
+    /// lados o leem.
+    /// </remarks>
+    private static readonly IReadOnlyList<string> CodigosDeContagem = AlgoritmoContagemPrazoCodigo.Todos;
 
     private static readonly Dictionary<string, string> HashesDourados = new(StringComparer.Ordinal)
     {
