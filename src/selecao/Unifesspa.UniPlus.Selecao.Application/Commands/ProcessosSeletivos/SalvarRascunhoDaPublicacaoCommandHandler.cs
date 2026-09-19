@@ -112,10 +112,12 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
             // diz exatamente o que fazer: a linha existe agora, então basta reler e substituir,
             // que é o caminho que a leitura teria tomado se tivesse chegado um instante depois.
             //
-            // Recusar aqui seria pior que inútil. O endpoint exige chave de idempotência, e o
-            // filtro guarda a resposta de qualquer status abaixo de 500: a recusa ficaria
-            // cacheada pelo prazo inteiro, e a retentativa sob a mesma chave receberia o
-            // conflito de volta mesmo depois de a gravação ter passado a ser possível.
+            // Recusar aqui seria pior que inútil: o servidor já tem o conteúdo em mãos e já
+            // sabe o que fazer com ele, e devolver o conflito custaria ao operador reenviar o
+            // que acabou de chegar. A recusa de última instância deste caminho — quando nem a
+            // releitura encontra a linha — é classificada como conflito retentável, então ela
+            // não prende a chave de idempotência pelo prazo inteiro (ADR-0134); não precisar
+            // dela continua sendo melhor que precisar.
             //
             // Descarta o rastreamento antes de tentar de novo: sem isso o flush repetiria as
             // mesmas entradas em conflito (ADR-0119).

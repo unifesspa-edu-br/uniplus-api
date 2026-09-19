@@ -89,6 +89,16 @@ Tanto **2xx** quanto **4xx** são cacheados. A motivação é a convenção Stri
 >
 > Efeito no filtro: `412` e `428` **liberam a reserva** (como as `>= 500`), em vez de completar a entrada. E o header **`ETag` passa a ser persistido** junto de `Content-Type` e `Location` — sem ele, o replay de uma abertura não devolveria a precondição da chamada seguinte.
 
+> **Emenda ([ADR-0134](0134-conflito-retentavel-declarado-nao-ocupa-a-chave-de-idempotencia.md)) — o `409` que a resposta declara retentável também não é armazenável.**
+>
+> O status 409 nomeia duas coisas. O conflito que descreve um **estado que permanece** — o código já está ocupado, a sigla já existe — é guardado com razão: repetir não muda nada, e um replay tardio depois que o obstáculo saiu criaria o registro que o cliente acredita não ter criado.
+>
+> O conflito que descreve uma **corrida que já passou** — duas escritas concorrentes sobre o mesmo agregado — é o oposto: a mensagem manda recarregar e tentar de novo, e guardá-la por 24 h nega ao cliente a única saída que o status oferece.
+>
+> Quem distingue os dois não é o filtro, é quem produziu o erro: a declaração vive no mapeamento do código (`DomainErrorMapping.ConflitoRetentavel`) e viaja no envelope como `retryable: true`. O default é durável, e qualquer dúvida na leitura da resposta — corpo vazio, JSON inválido, campo ausente — resolve guardando.
+>
+> Efeito no filtro: um `409` cujo corpo traz `retryable: true` na raiz **libera a reserva** (como `412`/`428` e as `>= 500`). O gatilho é o **status**, nunca o media type.
+
 ### Cifragem at-rest
 
 O payload do cache (request body + response body) pode conter PII (CPF, nome social, email do candidato). Cifragem AES-GCM com chave gerenciada externamente (HashiCorp Vault transit em produção; fixture local em CI), mesma infraestrutura usada pelo cursor de paginação ([ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)). Chave nunca sai do gerenciador. Rotação de chave não invalida entradas existentes — TTL de 24 horas as expira naturalmente.

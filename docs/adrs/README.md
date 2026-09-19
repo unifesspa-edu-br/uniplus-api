@@ -164,7 +164,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) | A divulgação do certame é materializada quando o ato normativo se registra — a existência da linha é a publicidade | proposed | 2026-09-17 |
 | [0134](0134-conflito-retentavel-declarado-nao-ocupa-a-chave-de-idempotencia.md) | O conflito declarado retentável não ocupa a chave de idempotência — 409 de corrida não é 409 de estado | proposed | 2026-09-19 |
 
-> **Nota de numeração:** a sequência de `0001` a `0133` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0134+`.
+> **Nota de numeração:** a sequência de `0001` a `0134` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0135+`.
 
 ## Como adicionar um novo ADR
 
