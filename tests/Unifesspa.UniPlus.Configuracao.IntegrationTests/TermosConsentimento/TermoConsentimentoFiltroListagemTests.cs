@@ -168,6 +168,9 @@ public sealed class TermoConsentimentoFiltroListagemTests
         // serve de referência.
         IReadOnlyList<Guid> ordenados = await ListarIdsAsync(iso);
         ordenados.Should().BeEquivalentTo(ids);
+        ordenados.Should().BeInAscendingOrder(
+            "a referência sai do mesmo método que as páginas, e sem esta asserção uma listagem que " +
+            "devolvesse o conjunto fora de ordem casaria com páginas igualmente fora de ordem");
 
         (IReadOnlyList<TermoConsentimento> p1, Guid? p1Ant, Guid? p1Prox) =
             await PaginarAsync(iso, take: 2, afterId: null, PaginationDirection.Next);
