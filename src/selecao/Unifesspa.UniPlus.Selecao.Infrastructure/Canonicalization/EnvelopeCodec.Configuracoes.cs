@@ -347,12 +347,6 @@ public sealed partial class EnvelopeCodec
         && (municipioNome is null
             || string.Equals(HashCanonicalComputer.NormalizeNfc(municipioNome), municipioNome, StringComparison.Ordinal));
 
-    /// <summary>
-    /// O rol declarado, materializado uma vez. O leitor recebe <c>string[]</c>, e montar a
-    /// cópia dentro da leitura a refaria a cada reidratação.
-    /// </summary>
-    private static readonly string[] RolDaConvencaoDeContagem = [.. AlgoritmoContagemPrazoCodigo.Todos];
-
     private static ReferenciaRegra? LerAlgoritmoContagemPrazo(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "algoritmoContagemPrazo", "$");
@@ -373,13 +367,12 @@ public sealed partial class EnvelopeCodec
             return null;
         }
 
-        // O fechamento das chaves é daqui porque esta forma tem uma chave a mais que a tripla: a
-        // de presença. É só por isso que o bloco lia a referência por conta própria — e ler por
-        // conta própria era o que o deixava sem a conferência do rol que todas as outras têm.
-        leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente", "codigo", "versao", "hash");
-
-        ReferenciaRegra referencia = leitor.RegraDeObjetoJaFechado(
-            bloco, "algoritmoContagemPrazo", RolDaConvencaoDeContagem);
+        // Esta forma tem uma chave a mais que a tripla — a de presença —, e é só por isso que o
+        // bloco lia a referência por conta própria; ler por conta própria era o que o deixava sem
+        // a conferência do rol que todas as outras têm. Declarada a chave extra, fechamento e
+        // leitura voltam para o leitor compartilhado.
+        ReferenciaRegra referencia = leitor.RegraDoObjeto(
+            bloco, "algoritmoContagemPrazo", [.. AlgoritmoContagemPrazoCodigo.Todos], "presente");
 
         return leitor.Falhou ? null : referencia;
     }
