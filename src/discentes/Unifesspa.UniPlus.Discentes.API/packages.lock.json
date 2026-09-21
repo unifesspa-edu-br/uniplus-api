@@ -1115,7 +1115,6 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.EntityFrameworkCore": "[10.0.12, )",
-          "Microsoft.EntityFrameworkCore.Design": "[10.0.12, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.12, )",
           "Microsoft.Extensions.Http.Resilience": "[10.9.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
@@ -1146,7 +1145,7 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.11, )",
           "Microsoft.EntityFrameworkCore": "[10.0.12, )",
-          "Microsoft.EntityFrameworkCore.Design": "[10.0.11, )",
+          "Microsoft.EntityFrameworkCore.Design": "[10.0.12, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.12, )",
           "Microsoft.OpenApi": "[2.12.2, )",
           "Minio": "[7.0.0, )",

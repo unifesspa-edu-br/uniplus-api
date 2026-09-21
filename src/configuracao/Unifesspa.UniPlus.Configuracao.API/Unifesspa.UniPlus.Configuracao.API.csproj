@@ -8,7 +8,6 @@
     Core (controllers, OpenAPI, DI) numa library.
   -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
