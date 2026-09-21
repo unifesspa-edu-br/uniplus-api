@@ -97,7 +97,7 @@ A segunda exceção tem a mesma forma da primeira — um status abaixo de 500 cu
 >
 > O conflito que descreve uma **corrida que já passou** — duas escritas concorrentes sobre o mesmo agregado — é o oposto: a mensagem manda recarregar e tentar de novo, e guardá-la por 24 h nega ao cliente a única saída que o status oferece.
 >
-> Quem distingue os dois não é o filtro, é quem produziu o erro: a declaração vive no mapeamento do código (`DomainErrorMapping.ConflitoRetentavel`) e viaja no envelope como `retryable: true`. O default é durável, e qualquer dúvida na leitura da resposta — corpo vazio, JSON inválido, campo ausente — resolve guardando.
+> Quem distingue os dois não é o filtro, é quem produziu o erro: a declaração vive no mapeamento do código (`DomainErrorMapping.RetryableConflict`) e viaja no envelope como `retryable: true`. O default é durável, e qualquer dúvida na leitura da resposta — corpo vazio, JSON inválido, campo ausente — resolve guardando.
 >
 > Efeito no filtro: um `409` cujo corpo traz `retryable: true` na raiz **libera a reserva** (como `412`/`428` e as `>= 500`). O gatilho é o **status**, nunca o media type.
 
