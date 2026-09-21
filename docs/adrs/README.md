@@ -168,7 +168,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0133`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1**. **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1. O número não é repetido aqui de propósito: uma cópia dele envelhece a cada ADR nova, e quem seguir a cópia colide com a última que entrou.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
