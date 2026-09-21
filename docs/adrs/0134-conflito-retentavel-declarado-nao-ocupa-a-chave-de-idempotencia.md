@@ -13,7 +13,7 @@ informed:
 
 ## Contexto e enunciado do problema
 
-A [ADR-0027](0027-idempotencia-de-requisicoes.md) fixa que a resposta de uma requisição idempotente é guardada e reproduzida em replay, e é explícita quanto ao alcance: **tanto 2xx quanto 4xx são cacheados**. A justificativa é anti-abuso — se a recusa não fosse guardada, repetir a mesma requisição inválida custaria ao servidor a execução inteira a cada tentativa.
+A [ADR-0027](0027-idempotency-key-store-postgresql.md) fixa que a resposta de uma requisição idempotente é guardada e reproduzida em replay, e é explícita quanto ao alcance: **tanto 2xx quanto 4xx são cacheados**. A justificativa é anti-abuso — se a recusa não fosse guardada, repetir a mesma requisição inválida custaria ao servidor a execução inteira a cada tentativa.
 
 O status 409 cabe nessa regra e não deveria caber inteiro, porque ele nomeia **duas coisas diferentes**:
 
@@ -75,6 +75,6 @@ Guardar a recusa nunca impediu abuso: quem quer repetir a requisição inválida
 ## Consequências
 
 - O cliente que recebe um conflito de corrida pode repetir com a mesma chave, que é o que a mensagem de erro já lhe dizia para fazer.
-- A distinção fica **pública**: o campo aparece na própria resposta, e o cliente não precisa consultar documentação para saber se pode repetir.
+- A distinção fica **pública na resposta**: o campo chega ao cliente sem que ele precise consultar documentação. Declará-lo no schema publicado, para que cliente gerado o enxergue como propriedade tipada, é trabalho à parte e ainda não feito — enquanto não estiver, quem gera cliente a partir do contrato precisa lê-lo como campo extra.
 - Duas das rotas com conflito retentável são `PUT` com corpo e sem `If-Match`. Uma entrega duplicada tardia pode sobrescrever em silêncio a edição de um concorrente. É consequência aceita — é o que o cliente pediu e o que a mensagem manda fazer —, não efeito despercebido.
 - Um código mal classificado como retentável reintroduz o contraexemplo. É por isso que a classificação é declaração explícita, e não dedução do status.
