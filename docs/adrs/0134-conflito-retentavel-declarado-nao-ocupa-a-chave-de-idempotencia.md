@@ -58,6 +58,10 @@ O caso concreto é a marcação de revisado de um termo de consentimento. A requ
 
 Por isso a classificação **não é do código de erro sozinho, é do código no contexto das operações que o emitem**: um código compartilhado por várias operações só pode ser declarado retentável se a repetição preservar o efeito pedido em **todas** elas.
 
+O segundo caso mostra que isto não é uma exceção isolada. O atalho atômico de retificação relê a versão corrente a cada execução: perdida a corrida para outra publicação, repetir a mesma requisição retificaria a versão do **vencedor**, criando um ato normativo a mais — publicado no Diário Oficial — que ninguém pediu. O conflito de número de versão duplicado, que é corrida legítima nos outros dois caminhos que o emitem, fica durável por causa deste.
+
+Os dois casos têm a mesma forma, e ela dá o teste prático: **é seguro repetir a operação cujo alvo a requisição nomeia; é perigoso repetir aquela cujo alvo sai do estado corrente.** Marcar vigente um dataset, ativar um motivo, gravar um rascunho — todos nomeiam o que tocam, e repetir faz a mesma coisa. Aprovar "o texto que está lá" e retificar "a versão que está valendo" não nomeiam nada: o que elas tocam pode ter mudado exatamente por causa da corrida que as recusou.
+
 ### O default é durável
 
 Declarar é ato explícito, e a assimetria é deliberada: classificar um durável como retentável libera uma mutação indevida; classificar um transitório como durável apenas preserva o comportamento anterior. A direção perigosa exige alguém escrever a declaração.
