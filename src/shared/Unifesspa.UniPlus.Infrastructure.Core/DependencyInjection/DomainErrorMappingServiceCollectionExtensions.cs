@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Errors;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -77,6 +78,22 @@ public static class DomainErrorMappingServiceCollectionExtensions
             {
                 options.ModelBinderProviders[i] =
                     new ValueConversionTrackingModelBinderProvider(options.ModelBinderProviders[i]);
+            }
+
+            // A única recusa de leitura do corpo que ainda escapava como 5xx: a união polimórfica
+            // cujo documento não declara o discriminador de tipo. O formatter do framework trata
+            // JsonException e deixa NotSupportedException passar, e é só essa que falta — errar o
+            // `$` do discriminator devolvia "erro interno do servidor" para um defeito do cliente
+            // que a API sabe descrever (issue #1410).
+            //
+            // Envolve o formatter existente em vez de acrescentar um: um formatter novo teria de
+            // disputar precedência com o que já lê JSON, e quem ganha depende da ordem da lista.
+            for (int i = 0; i < options.InputFormatters.Count; i++)
+            {
+                if (options.InputFormatters[i] is SystemTextJsonInputFormatter json)
+                {
+                    options.InputFormatters[i] = new PolymorphicDeserializationInputFormatter(json);
+                }
             }
         });
 
