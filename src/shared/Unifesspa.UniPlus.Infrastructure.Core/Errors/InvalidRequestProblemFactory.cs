@@ -117,11 +117,39 @@ public static class InvalidRequestProblemFactory
         // procurar campo nenhum.
         (string code, string detail) =
             missing.Count > 0 ? (InvalidRequestErrorCodes.MissingRequiredField, $"A requisição não declara {Enumerate(missing)}.")
-            : unreadable ? (InvalidRequestErrorCodes.Malformed, "A requisição não pôde ser lida: o corpo não está no formato que o contrato declara.")
+            : unreadable ? (InvalidRequestErrorCodes.Malformed, DetalheDeLeitura(context.HttpContext))
             : naoConvertidos.Count > 0 ? (InvalidRequestErrorCodes.InvalidValue, $"A requisição traz {EnumerateParameters(naoConvertidos)} com valor que não corresponde ao tipo declarado.")
             : (InvalidRequestErrorCodes.MissingBody, "A requisição não traz corpo, e este recurso exige um.");
 
         return Result.Failure(new DomainError(code, detail)).ToActionResult(mapper);
+    }
+
+    /// <summary>
+    /// A frase da recusa de leitura do corpo: a que nomeia o campo, quando se sabe qual não
+    /// declarou o discriminador de tipo, e a genérica quando a causa é o documento em si.
+    /// </summary>
+    /// <remarks>
+    /// União polimórfica sem discriminador é documento <b>bem formado</b>, e dizer a quem a
+    /// mandou que "o corpo não está no formato que o contrato declara" manda reler um JSON que
+    /// está certo. O que falta ali é uma propriedade nomeável, e o discriminador do projeto é
+    /// <c>$tipo</c> — errar o <c>$</c> é o modo de falha esperado de quem integra pela primeira
+    /// vez, porque a convenção da maioria das bibliotecas é <c>type</c>. O que a resposta sabe
+    /// dizer foi anotado na leitura por <see cref="PolymorphicDeserializationFailures"/>, e não
+    /// lido do texto do framework.
+    /// </remarks>
+    private static string DetalheDeLeitura(HttpContext httpContext)
+    {
+        const string Generico = "A requisição não pôde ser lida: o corpo não está no formato que o contrato declara.";
+
+        if (PolymorphicDeserializationFailures.Of(httpContext) is not { } falha)
+        {
+            return Generico;
+        }
+
+        string onde = falha.Campo.Length == 0 ? "o corpo" : $"o campo '{falha.Campo}'";
+
+        return $"A requisição não pôde ser lida: {onde} não declara '{falha.Discriminador}', "
+            + "a propriedade que identifica qual variante do contrato o objeto representa.";
     }
 
     /// <summary>

@@ -275,6 +275,54 @@ public sealed class InvalidRequestProblemFactoryTests
             + "duas origens da mensagem");
     }
 
+    /// <summary>
+    /// União polimórfica sem discriminador é documento BEM FORMADO, e a recusa genérica de
+    /// corpo ilegível manda o cliente reler um JSON que está certo.
+    /// </summary>
+    /// <remarks>
+    /// O discriminador do projeto é <c>$tipo</c> (ADR-0058), e não o <c>type</c> que a maioria
+    /// das bibliotecas usa por convenção: errar o <c>$</c> é o modo de falha esperado de quem
+    /// integra pela primeira vez, e é o caso em que dizer o que falta vale mais.
+    /// </remarks>
+    [Fact(DisplayName = "União sem discriminador nomeia o campo e a propriedade que falta")]
+    public void TryBuild_UniaoSemDiscriminador_NomeiaOCampoEAPropriedade()
+    {
+        ActionContext contexto = Contexto();
+        contexto.ModelState.AddModelError("$.predicado", string.Empty);
+        PolymorphicDeserializationFailures.Record(contexto.HttpContext, "predicado", "$tipo");
+
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Status.Should().Be(StatusCodes.Status400BadRequest);
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
+        problema.Detail.Should().Contain("'predicado'").And.Contain("'$tipo'");
+    }
+
+    [Fact(DisplayName = "União que é o corpo inteiro fala do corpo, e não de um campo que não existe")]
+    public void TryBuild_UniaoNaRaiz_FalaDoCorpo()
+    {
+        ActionContext contexto = Contexto();
+        contexto.ModelState.AddModelError("$", string.Empty);
+        PolymorphicDeserializationFailures.Record(contexto.HttpContext, string.Empty, "$tipo");
+
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Detail.Should().Contain("o corpo não declara '$tipo'");
+    }
+
+    [Fact(DisplayName = "Recusa de leitura sem união anotada continua genérica")]
+    public void TryBuild_LeituraSemUniaoAnotada_ContinuaGenerica()
+    {
+        ActionContext contexto = Contexto();
+        contexto.ModelState.AddModelError("$", "Unexpected end when reading JSON.");
+
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.malformada");
+        problema.Detail.Should().Be(
+            "A requisição não pôde ser lida: o corpo não está no formato que o contrato declara.");
+    }
+
     private static ProblemDetails Executar(ActionContext contexto)
     {
         IActionResult resultado = InvalidRequestProblemFactory.TryBuild(contexto)
