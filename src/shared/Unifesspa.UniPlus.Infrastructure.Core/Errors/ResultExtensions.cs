@@ -14,6 +14,15 @@ using Microsoft.AspNetCore.Mvc;
     Justification = "Extension method class precisa ser public para ser acessível nos projetos API que referenciam Infrastructure.Core.")]
 public static class ResultExtensions
 {
+    /// <summary>
+    /// Nome, no envelope RFC 9457, da extensão que declara o conflito cuja repetição pode ser
+    /// aceita. Quem a escreve é este tipo; quem a lê para decidir se a chave de idempotência
+    /// fica ocupada é o filtro de idempotência; e o schema `ProblemDetails` dos contratos
+    /// publicados a declara. Um nome só para os três, porque uma renomeação que alcançasse
+    /// apenas um deles quebraria em silêncio (ADR-0134).
+    /// </summary>
+    public const string RetryableExtensionName = "retryable";
+
     public static IActionResult ToActionResult<T>(this Result<T> result, IDomainErrorMapper mapper)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -58,7 +67,7 @@ public static class ResultExtensions
         // permanece — e é o produtor do erro, não quem o recebe, que sabe qual dos dois é.
         if (retryableConflict)
         {
-            problem.Extensions["retryable"] = true;
+            problem.Extensions[RetryableExtensionName] = true;
         }
 
         problem.Extensions["traceId"] = Activity.Current?.TraceId.ToHexString()

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
+using Errors;
+
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -23,7 +25,7 @@ using Microsoft.OpenApi;
 public sealed class ProblemDetailsExtensionsDocumentTransformer : IOpenApiDocumentTransformer
 {
     private const string ProblemDetailsSchemaName = "ProblemDetails";
-    private const string RetryablePropertyName = "retryable";
+    private const string RetryablePropertyName = ResultExtensions.RetryableExtensionName;
 
     private const string RetryableDescription =
         "Presente e `true` quando o conflito descreve uma corrida que já passou: a mesma "

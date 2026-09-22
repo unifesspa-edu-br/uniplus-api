@@ -250,7 +250,7 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             if (status >= 500
                 || RespostaDePrecondicao(status, httpContext.Request)
                 || executed.Canceled
-                || ResponseDeclaresRetryableConflict(status, captureStream))
+                || DeclaresRetryableConflict(status, executed.Result, captureStream))
             {
                 await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                     .ConfigureAwait(false);
@@ -535,9 +535,44 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
     /// errar para ele custa um retry recusado; errar para o outro custa uma mutação indevida.
     /// </para>
     /// </remarks>
-    private static bool ResponseDeclaresRetryableConflict(int status, MemoryStream capturedBody)
+    private static bool DeclaresRetryableConflict(
+        int status,
+        IActionResult? result,
+        MemoryStream capturedBody)
     {
-        if (status != StatusCodes.Status409Conflict || capturedBody.Length == 0)
+        if (status != StatusCodes.Status409Conflict)
+        {
+            return false;
+        }
+
+        return ResultDeclaresRetryableConflict(result) || ResponseDeclaresRetryableConflict(capturedBody);
+    }
+
+    /// <summary>
+    /// Lê a declaração no <see cref="ProblemDetails"/> que a action devolveu, antes de qualquer
+    /// serialização.
+    /// </summary>
+    /// <remarks>
+    /// É o caminho preferido porque não depende do formato de fio. O corpo serializado atravessa
+    /// formatters e opções de <c>JsonSerializerOptions</c>: um <c>camelCase</c> aplicado à raiz,
+    /// um invólucro novo ou uma renomeação da extensão fazem a leitura por texto não achar nada,
+    /// e o conflito de corrida passa a ocupar a chave por 24 h. O objeto que a action devolveu
+    /// não atravessa nenhuma dessas etapas.
+    /// </remarks>
+    private static bool ResultDeclaresRetryableConflict(IActionResult? result) =>
+        result is ObjectResult { Value: ProblemDetails problem }
+        && problem.Extensions.TryGetValue(ResultExtensions.RetryableExtensionName, out object? declarado)
+        && declarado is true;
+
+    /// <summary>
+    /// Releitura do corpo serializado, para a resposta que não veio de um
+    /// <see cref="ObjectResult"/> tipado — escrita direto no <c>Response.Body</c> por um filtro
+    /// mais interno, ou devolvida num resultado que não carrega o <see cref="ProblemDetails"/>
+    /// como valor.
+    /// </summary>
+    private static bool ResponseDeclaresRetryableConflict(MemoryStream capturedBody)
+    {
+        if (capturedBody.Length == 0)
         {
             return false;
         }
@@ -550,7 +585,8 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
                 capturedBody.GetBuffer().AsMemory(0, (int)capturedBody.Length));
 
             return documento.RootElement.ValueKind == JsonValueKind.Object
-                && documento.RootElement.TryGetProperty("retryable", out JsonElement retryable)
+                && documento.RootElement.TryGetProperty(
+                    ResultExtensions.RetryableExtensionName, out JsonElement retryable)
                 && retryable.ValueKind == JsonValueKind.True;
         }
         catch (JsonException)

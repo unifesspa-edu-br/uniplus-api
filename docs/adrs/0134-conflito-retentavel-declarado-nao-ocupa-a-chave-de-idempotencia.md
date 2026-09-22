@@ -66,7 +66,7 @@ Os dois casos têm a mesma forma, e ela dá o teste prático: **é seguro repeti
 
 Declarar é ato explícito, e a assimetria é deliberada: classificar um durável como retentável libera uma mutação indevida; classificar um transitório como durável apenas preserva o comportamento anterior. A direção perigosa exige alguém escrever a declaração.
 
-Pelo mesmo motivo, qualquer dúvida na leitura da resposta — corpo vazio, JSON inválido, campo ausente — resolve guardando.
+Pelo mesmo motivo, na ausência de declaração a resposta é guardada.
 
 ## Por que isto não reabre o abuso que a ADR-0027 fecha
 
