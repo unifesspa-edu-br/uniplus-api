@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- O mesmo arquivo que o bootstrap aplica nos ambientes, embutido para que o
+         diagnóstico do catálogo confira contra a declaração e não contra uma cópia. -->
+    <EmbeddedResource Include="..\..\..\seeds\seed-tipos-ato.json" LogicalName="Unifesspa.UniPlus.Publicacoes.Infrastructure.seed-tipos-ato.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />

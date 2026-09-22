@@ -11,6 +11,10 @@ WORKDIR /src
 # vivem nele — sem ele o build no container reverte às severidades default.
 COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .editorconfig ./
 
+# O catálogo declarado de tipos de ato entra no assembly de Publicações como
+# EmbeddedResource — sem esta árvore no contexto, o publish falha em CS1566.
+COPY seeds/ seeds/
+
 # Apenas as árvores que o host referencia (shared + 6 módulos internos + host).
 COPY src/shared/ src/shared/
 COPY src/selecao/ src/selecao/
