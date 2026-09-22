@@ -28,6 +28,25 @@ BOOTSTRAP_CLIENT_SECRET=*** ENV=standalone bash tools/seeds/run.sh
 
 Sem ele, o script para antes de chamar o Newman e nomeia a causa — em vez de deixar o token endpoint devolver 401 e a falha aparecer no primeiro request.
 
+**Os endereços saem do `uniplus-infra`, e não deste repositório.** Cada ambiente declara o host da
+API em `ingress.host` e o issuer do OIDC em `oidc.issuerUri`, no `values.yaml` da sua pasta em
+`environments/` — a pasta não tem o nome do `ENV`: `hml` é `hml-standalone-single/`, `standalone` é
+`standalone-compact/`.
+
+Os dois campos são derivados, não copiados:
+
+- `base_url` é `https://` mais o `ingress.host` da API.
+- `keycloak_token_url` é o `issuerUri` **mais** `/protocol/openid-connect/token`. O issuer sozinho
+  não é endpoint de token, e é ele que carrega o prefixo de path do Keycloak (`/auth` em HML e em
+  standalone, ausente no dev local) — prefixo perdido é a forma mais comum de errar este campo.
+
+Conferir os dois ao mexer: host que não resolve não produz erro nomeado — é o Newman morrer na
+resolução de DNS, que parece indisponibilidade do ambiente.
+
+Atenção ao realm, que **não é o mesmo em todo ambiente**: `unifesspa` em HML, `uniplus` em
+standalone, `unifesspa-dev-local` no dev local. Na dúvida, o realm é o último segmento do
+`issuerUri` do ambiente.
+
 Um ambiente inteiro pode vir de fora do repositório, montado pelo pipeline:
 
 ```bash
@@ -56,11 +75,23 @@ Por isso a chave é `{{$guid}}`, gerada por execução, e o request assere que a
 
 Em `dev`, o client e o secret vivem no realm export versionado (`docker/keycloak/realm-export-dev-local.json`) — são credenciais de desenvolvimento, sem valor fora da máquina local. Em **standalone, HML e PROD** o client é precondição de deploy e o secret vem do `uniplus-infra`, por `BOOTSTRAP_CLIENT_SECRET`: **nunca** versionado neste repositório.
 
+Em homologação o client **ainda não existe**: o realm importado pelo `uniplus-infra` declara os
+quatro clients de serviço da API, o do portal, o do Apicurio, o do Kafka UI e o do Grafana — e
+nenhum `uniplus-api-bootstrap`. Enquanto for assim, o seed para no token endpoint por mais correto
+que esteja o resto.
+
+Conferir que o client existe **antes** de culpar o secret: um `client_id` desconhecido e um secret
+errado devolvem o mesmo 401 `invalid_client`, e ler esse 401 como "falta o segredo" manda quem
+investiga para o lado errado. Existir também não basta — o service account precisa da realm role
+`plataforma-admin`, que os endpoints admin exigem, e de token cujo `aud` bata com o `Auth:Audience`
+da API; sem isso o 401 do Keycloak vira 401 ou 403 no primeiro request.
+
 ## Estrutura
 
 ```
 seeds/
   seed-tipos-ato.json                     ← dados: array flat, camelCase, um objeto por linha
+  seed-calendario-dias-uteis.json         ← idem, um objeto por calendário
 tools/seeds/
   seed-catalogos.postman_collection.json  ← um folder por catálogo (preflight + POST + releitura)
   envs/dev.postman_environment.json        ← secret de desenvolvimento, sem valor fora da máquina local
