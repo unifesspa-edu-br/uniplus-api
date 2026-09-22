@@ -75,6 +75,6 @@ Guardar a recusa nunca impediu abuso: quem quer repetir a requisição inválida
 ## Consequências
 
 - O cliente que recebe um conflito de corrida pode repetir com a mesma chave, que é o que a mensagem de erro já lhe dizia para fazer.
-- A distinção fica **pública na resposta**: o campo chega ao cliente sem que ele precise consultar documentação. Declará-lo no schema publicado, para que cliente gerado o enxergue como propriedade tipada, é trabalho à parte e ainda não feito — enquanto não estiver, quem gera cliente a partir do contrato precisa lê-lo como campo extra.
+- A distinção fica **pública na resposta e no contrato**: o campo chega ao cliente sem que ele precise consultar documentação, e o schema `ProblemDetails` dos contratos publicados o declara, para que cliente gerado o enxergue como propriedade tipada. A declaração é **opcional**: o campo só viaja quando é `true`, e exigi-lo presente faria um cliente correto ler a ausência — que é o caso comum — como violação de contrato.
 - Duas das rotas com conflito retentável são `PUT` com corpo e sem `If-Match`. Uma entrega duplicada tardia pode sobrescrever em silêncio a edição de um concorrente. É consequência aceita — é o que o cliente pediu e o que a mensagem manda fazer —, não efeito despercebido.
 - Um código mal classificado como retentável reintroduz o contraexemplo. É por isso que a classificação é declaração explícita, e não dedução do status.
