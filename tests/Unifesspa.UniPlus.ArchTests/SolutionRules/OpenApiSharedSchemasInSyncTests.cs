@@ -32,17 +32,6 @@ using TestSupport;
 /// </remarks>
 public sealed class OpenApiSharedSchemasInSyncTests
 {
-    private const string ContractsDir = "contracts";
-
-    private static readonly string[] BaselineFileNames =
-    [
-        "openapi.selecao.json",
-        "openapi.ingresso.json",
-        "openapi.organizacao.json",
-        "openapi.configuracao.json",
-        "openapi.publicacoes.json",
-    ];
-
     private static readonly JsonSerializerOptions CanonicalOptions = new()
     {
         WriteIndented = true,
@@ -51,9 +40,8 @@ public sealed class OpenApiSharedSchemasInSyncTests
     [Fact(DisplayName = "ADR-0035: schemas com mesmo nome em baselines diferentes são byte-equivalentes")]
     public void Schemas_Compartilhados_Devem_Ser_ByteEquivalentes()
     {
-        string solutionRoot = SolutionRootLocator.Locate();
         Dictionary<string, JsonElement>[] schemasByModule =
-            [.. BaselineFileNames.Select(f => LoadSchemas(Path.Combine(solutionRoot, ContractsDir, f)))];
+            [.. OpenApiBaselines.Paths().Select(LoadSchemas)];
 
         // Pairwise, NÃO interseção de todos: um schema compartilhado por
         // QUALQUER par de módulos deve ser byte-equivalente, mesmo que ausente

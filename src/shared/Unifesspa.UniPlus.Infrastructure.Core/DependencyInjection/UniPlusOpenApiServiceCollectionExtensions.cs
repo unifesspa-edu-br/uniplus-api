@@ -49,6 +49,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         services.TryAddSingleton<VendorMediaTypeOperationTransformer>();
         services.TryAddSingleton<BearerSecuritySchemeDocumentTransformer>();
         services.TryAddSingleton<PaginationOrphanSchemaDocumentTransformer>();
+        services.TryAddSingleton<ProblemDetailsExtensionsDocumentTransformer>();
         services.TryAddSingleton<UniPlusSchemaTransformer>();
 
         services.AddOpenApi(documentName, options =>
@@ -66,6 +67,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
             options.AddOperationTransformer<VendorMediaTypeOperationTransformer>();
             options.AddDocumentTransformer<BearerSecuritySchemeDocumentTransformer>();
             options.AddDocumentTransformer<PaginationOrphanSchemaDocumentTransformer>();
+            options.AddDocumentTransformer<ProblemDetailsExtensionsDocumentTransformer>();
             options.AddSchemaTransformer<UniPlusSchemaTransformer>();
         });
 

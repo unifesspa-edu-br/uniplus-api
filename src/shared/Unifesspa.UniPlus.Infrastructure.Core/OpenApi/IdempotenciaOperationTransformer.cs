@@ -46,8 +46,10 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
             + "uniplus.idempotency.key_malformada), ou corpo JSON inválido."),
         ("409",
             "Requisição concorrente com a mesma Idempotency-Key ainda em processamento "
-            + "(uniplus.idempotency.processing_conflict). Repetir depois — a operação anterior "
-            + "ainda não concluiu."),
+            + "(uniplus.idempotency.processing_conflict). Repetir depois, com a MESMA chave. "
+            + "Concluída a operação anterior, a repetição recebe em replay o resultado dela "
+            + "quando ele é guardável; não sendo (5xx, cancelamento, ou conflito que a própria "
+            + "resposta declara retentável), a reserva é liberada e a repetição executa de novo."),
         ("413",
             "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). "
             + "O limite é do filtro, não do servidor."),

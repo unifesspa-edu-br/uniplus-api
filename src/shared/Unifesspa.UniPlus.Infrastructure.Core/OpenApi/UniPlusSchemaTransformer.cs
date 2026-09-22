@@ -13,9 +13,9 @@ using Microsoft.OpenApi;
 /// <para>
 /// O <c>code</c> de ProblemDetails NÃO é coberto aqui: o campo vive em
 /// <c>ProblemDetails.Extensions["code"]</c> (<c>[JsonExtensionData]</c>) e
-/// não recebe um <c>JsonPropertyInfo</c> nomeado — o pattern
-/// <c>^[a-z]+(\.[a-z_]+)+$</c> da taxonomia (ADR-0023) é validado a partir
-/// do spec gerado pela rule Spectral <c>uniplus-error-code-format</c>.
+/// não recebe um <c>JsonPropertyInfo</c> nomeado. Propriedade que chega por
+/// extensão se declara sobre o documento já emitido, em
+/// <see cref="ProblemDetailsExtensionsDocumentTransformer"/>.
 /// </para>
 /// </summary>
 public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
