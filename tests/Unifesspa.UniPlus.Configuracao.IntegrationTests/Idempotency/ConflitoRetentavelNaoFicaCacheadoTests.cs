@@ -46,6 +46,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// existe; e o que está sendo afirmado é o estado da reserva, que é o que decide o desfecho da
 /// requisição seguinte. Montar a corrida de verdade produziria intermitência sem provar mais.
 /// </para>
+/// <para>
+/// O filtro lê a declaração em dois lugares: o <see cref="ProblemDetails"/> que a action devolveu
+/// e o corpo já serializado. Por isso o harness recebe os dois separadamente, e há teste para
+/// cada combinação — inclusive a em que eles <b>discordam</b>, que é onde um dos dois caminhos
+/// pode quebrar sem o outro notar.
+/// </para>
 /// </remarks>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 [Trait("Category", "Integration")]
@@ -59,6 +65,11 @@ public sealed class ConflitoRetentavelNaoFicaCacheadoTests
         "/api/configuracao/admin/termos-consentimento/00000000-0000-0000-0000-000000000001/revisar";
 
     private const string Endpoint = "POST " + Rota;
+
+    private const string CorpoSemADeclaracao = """{"status":409,"code":"uniplus.qualquer"}""";
+
+    private const string CorpoComADeclaracao =
+        """{"status":409,"code":"uniplus.qualquer","retryable":true}""";
 
     private readonly ConfiguracaoEndpointFixture _fixture;
 
@@ -120,6 +131,90 @@ public sealed class ConflitoRetentavelNaoFicaCacheadoTests
         desfecho.Should().Be(IdempotencyOutcome.HitMatch);
     }
 
+    [Fact(DisplayName = "A declaração é lida do resultado tipado, e não depende do formato de fio")]
+    public async Task Conflito_QuandoOCorpoSerializadoPerdeOCampo_DeveLerDoResultadoTipado()
+    {
+        // Um formatter novo, um invólucro, ou um JsonSerializerOptions que aplicasse camelCase à
+        // raiz fazem a leitura por texto não achar nada, e o conflito de corrida passa a ocupar a
+        // chave por 24 h. Aqui o corpo é escrito SEM o campo, de propósito: o que sobra para
+        // decidir é o ProblemDetails que a action devolveu.
+        ObjectResult resposta = await RespostaDeDominioAsync(
+            CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+
+        ((ProblemDetails)resposta.Value!).Extensions.Should().ContainKey(
+            "retryable",
+            "este teste só diz algo se a classificação viva ainda declarar este código");
+
+        IdempotencyOutcome desfecho = await ExecutarComRespostaAsync(
+            resposta.StatusCode!.Value,
+            CorpoSemADeclaracao,
+            resposta);
+
+        desfecho.Should().Be(
+            IdempotencyOutcome.Miss,
+            "a declaração vive no ProblemDetails que a action devolveu, e a leitura do corpo é só a rede de segurança");
+    }
+
+    [Fact(DisplayName = "Sem resultado tipado, a leitura do corpo continua decidindo")]
+    public async Task Conflito_SemResultadoTipado_DeveDecidirPeloCorpo()
+    {
+        // Resposta escrita direto no Response.Body por um filtro mais interno não chega como
+        // ObjectResult. A releitura do corpo é o que cobre esse caminho, e precisa continuar
+        // cobrindo.
+        IdempotencyOutcome desfecho = await ExecutarComRespostaAsync(
+            StatusCodes.Status409Conflict,
+            CorpoComADeclaracao);
+
+        desfecho.Should().Be(
+            IdempotencyOutcome.Miss,
+            "sem ProblemDetails tipado para consultar, o corpo é a única declaração que existe");
+    }
+
+    [Fact(DisplayName = "Resultado tipado calado não anula a declaração que está no corpo")]
+    public async Task Conflito_QuandoSoOCorpoDeclara_DeveLiberarAReserva()
+    {
+        // O quadrante em que os dois caminhos discordam na direção oposta. Se a leitura do
+        // resultado tipado passasse a decidir sozinha sempre que houvesse um ProblemDetails, a
+        // declaração escrita por um filtro mais interno sumiria sem nada ficar vermelho.
+        ObjectResult semDeclaracao = await RespostaDeDominioAsync(CampusErrorCodes.SiglaJaExiste);
+
+        ((ProblemDetails)semDeclaracao.Value!).Extensions.Should().NotContainKey(
+            "retryable",
+            "este teste depende de a classificação viva continuar tratando este código como durável");
+
+        IdempotencyOutcome desfecho = await ExecutarComRespostaAsync(
+            semDeclaracao.StatusCode!.Value,
+            CorpoComADeclaracao,
+            semDeclaracao);
+
+        desfecho.Should().Be(IdempotencyOutcome.Miss);
+    }
+
+    [Fact(DisplayName = "A declaração sobrevive à serialização que o host configura")]
+    public async Task Declaracao_AoSerializarComAsOpcoesDoHost_DeveSairNaRaizDoCorpo()
+    {
+        // O filtro deixou de depender do formato de fio, mas o cliente não: a declaração é
+        // contrato público, e a página do catálogo manda tratar a ausência como "não conte com
+        // repetir". Uma política de nome aplicada às chaves do dicionário de extensões, ou um
+        // invólucro novo, renomeariam o campo no corpo sem que nada mais notasse — o filtro
+        // continuaria certo pelo caminho tipado, e o cliente deixaria de retentar.
+        ObjectResult resposta = await RespostaDeDominioAsync(
+            CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        JsonSerializerOptions opcoesDoHost = scope.ServiceProvider
+            .GetRequiredService<IOptions<JsonOptions>>().Value.JsonSerializerOptions;
+
+        using JsonDocument corpo = JsonDocument.Parse(
+            JsonSerializer.Serialize(resposta.Value, opcoesDoHost));
+
+        corpo.RootElement.TryGetProperty(ResultExtensions.RetryableExtensionName, out JsonElement declarado)
+            .Should().BeTrue("é por este nome, na raiz, que o cliente lê a declaração");
+        declarado.ValueKind.Should().Be(
+            JsonValueKind.True,
+            "o cliente confere um booleano verdadeiro, não a mera presença da chave");
+    }
+
     /// <summary>
     /// Roda o filtro com a resposta que o código de domínio <b>realmente</b> produz.
     /// </summary>
@@ -130,6 +225,24 @@ public sealed class ConflitoRetentavelNaoFicaCacheadoTests
     /// dois testes medem lados opostos da mesma decisão.
     /// </remarks>
     private async Task<IdempotencyOutcome> ExecutarComErroDeDominioAsync(string codigoDeDominio)
+    {
+        ObjectResult resposta = await RespostaDeDominioAsync(codigoDeDominio);
+
+        // Os dois caminhos de leitura juntos e concordando, que é como a requisição real chega ao
+        // filtro: o resultado tipado que a action devolveu e o corpo que a serialização dele
+        // produz. Sem o resultado, a metade nova da decisão nunca seria exercitada por estes dois
+        // testes — justamente os que seguem a classificação viva de cada código.
+        return await ExecutarComRespostaAsync(
+            resposta.StatusCode!.Value,
+            JsonSerializer.Serialize(resposta.Value),
+            resposta);
+    }
+
+    /// <summary>
+    /// Monta a resposta que o código de domínio realmente produz para um código de erro, e
+    /// confirma que ele continua sendo um conflito.
+    /// </summary>
+    private async Task<ObjectResult> RespostaDeDominioAsync(string codigoDeDominio)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         IDomainErrorMapper mapper = scope.ServiceProvider.GetRequiredService<IDomainErrorMapper>();
@@ -142,16 +255,17 @@ public sealed class ConflitoRetentavelNaoFicaCacheadoTests
             StatusCodes.Status409Conflict,
             $"'{codigoDeDominio}' precisa continuar sendo um conflito para este teste dizer algo");
 
-        return await ExecutarComRespostaAsync(
-            resposta.StatusCode!.Value,
-            JsonSerializer.Serialize(resposta.Value));
+        return resposta;
     }
 
     /// <summary>
     /// Roda o filtro com um <c>next()</c> que escreve a resposta dada e devolve o desfecho do
     /// lookup seguinte, com a mesma chave e o mesmo corpo.
     /// </summary>
-    private async Task<IdempotencyOutcome> ExecutarComRespostaAsync(int status, string corpoDaResposta)
+    private async Task<IdempotencyOutcome> ExecutarComRespostaAsync(
+        int status,
+        string corpoDaResposta,
+        IActionResult? resultadoTipado = null)
     {
         MonolitoApiFactory api = _fixture.Factory;
         string idempotencyKey = Guid.NewGuid().ToString();
@@ -204,7 +318,9 @@ public sealed class ConflitoRetentavelNaoFicaCacheadoTests
             await httpContext.Response.Body
                 .WriteAsync(Encoding.UTF8.GetBytes(corpoDaResposta), CancellationToken.None);
 
-            return new ResourceExecutedContext(actionContext, filters);
+            // O pipeline real popula o Result com o IActionResult que a action devolveu; o
+            // harness o reproduz quando o teste quer exercitar esse caminho.
+            return new ResourceExecutedContext(actionContext, filters) { Result = resultadoTipado };
         });
 
         IdempotencyLookupResult lookup = await store.LookupAsync(
