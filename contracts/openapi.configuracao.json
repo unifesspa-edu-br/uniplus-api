@@ -5254,6 +5254,38 @@
         "x-uniplus-paginated": true
       }
     },
+    "/api/configuracao/pesos-area-enem/areas": {
+      "get": {
+        "tags": [
+          "PesosAreaEnem"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.area-peso-area-enem.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaPesoAreaEnemDto"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/configuracao/pesos-area-enem/{id}": {
       "get": {
         "tags": [
@@ -10610,6 +10642,21 @@
   },
   "components": {
     "schemas": {
+      "AreaPesoAreaEnemDto": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
       "AtualizarBaseLegalBonusRegionalCommand": {
         "required": [
           "id",
@@ -11124,12 +11171,7 @@
       "AtualizarPesoAreaEnemCommand": {
         "required": [
           "id",
-          "pesoRedacao",
-          "pesoCienciasNatureza",
-          "pesoCienciasHumanas",
-          "pesoLinguagens",
-          "pesoMatematica",
-          "corteRedacao",
+          "areas",
           "baseLegal"
         ],
         "type": "object",
@@ -11138,53 +11180,14 @@
             "type": "string",
             "format": "uuid"
           },
-          "pesoRedacao": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+          "areas": {
             "type": [
-              "number",
-              "string"
+              "null",
+              "array"
             ],
-            "format": "double"
-          },
-          "pesoCienciasNatureza": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoCienciasHumanas": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoLinguagens": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoMatematica": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "corteRedacao": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
+            "items": {
+              "$ref": "#/components/schemas/PesoAreaEnemAreaCommand"
+            }
           },
           "baseLegal": {
             "type": [
@@ -12418,11 +12421,7 @@
         "required": [
           "resolucao",
           "grupoCurso",
-          "pesoRedacao",
-          "pesoCienciasNatureza",
-          "pesoCienciasHumanas",
-          "pesoLinguagens",
-          "pesoMatematica",
+          "areas",
           "baseLegal"
         ],
         "type": "object",
@@ -12439,60 +12438,20 @@
               "string"
             ]
           },
-          "pesoRedacao": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+          "areas": {
             "type": [
-              "number",
-              "string"
+              "null",
+              "array"
             ],
-            "format": "double"
-          },
-          "pesoCienciasNatureza": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoCienciasHumanas": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoLinguagens": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoMatematica": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
+            "items": {
+              "$ref": "#/components/schemas/PesoAreaEnemAreaCommand"
+            }
           },
           "baseLegal": {
             "type": [
               "null",
               "string"
             ]
-          },
-          "corteRedacao": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
           }
         }
       },
@@ -13628,17 +13587,78 @@
           }
         }
       },
+      "PesoAreaEnemAreaCommand": {
+        "required": [
+          "codigo",
+          "peso"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "peso": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "corte": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "PesoAreaEnemAreaDto": {
+        "required": [
+          "codigo",
+          "rotulo",
+          "peso",
+          "corte"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "peso": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "corte": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "PesoAreaEnemDto": {
         "required": [
           "id",
           "resolucao",
           "grupoCurso",
-          "pesoRedacao",
-          "pesoCienciasNatureza",
-          "pesoCienciasHumanas",
-          "pesoLinguagens",
-          "pesoMatematica",
-          "corteRedacao",
+          "areas",
           "baseLegal",
           "criadoEm"
         ],
@@ -13654,53 +13674,11 @@
           "grupoCurso": {
             "type": "string"
           },
-          "pesoRedacao": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoCienciasNatureza": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoCienciasHumanas": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoLinguagens": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "pesoMatematica": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "corteRedacao": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PesoAreaEnemAreaDto"
+            }
           },
           "baseLegal": {
             "type": "string"

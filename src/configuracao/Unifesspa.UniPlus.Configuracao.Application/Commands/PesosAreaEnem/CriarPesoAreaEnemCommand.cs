@@ -1,32 +1,21 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
 
-using System.Text.Json.Serialization;
-
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Cria uma linha de pesos do ENEM por grupo de área: a resolução, o grupo de
-/// área, os cinco pesos das áreas de conhecimento, o corte de redação (assume
-/// 400 quando omitido) e a base legal. Os atores de auditoria (<c>created_by</c>)
-/// são carimbados server-side via <c>IUserContext</c>, não no payload.
+/// Cria uma linha de Pesos por Área: a resolução, o grupo de área, o peso e o corte
+/// opcional de cada uma das cinco áreas e a base legal. Os atores de auditoria
+/// (<c>created_by</c>) são carimbados server-side via <c>IUserContext</c>, não no payload.
 /// </summary>
 /// <remarks>
-/// Os cinco pesos são <c>[JsonRequired]</c>: como são <c>decimal</c> não-anuláveis,
-/// omiti-los no JSON faria o System.Text.Json construir o record com <c>0m</c> — um
-/// peso válido — em vez de rejeitar o campo ausente. O <c>CorteRedacao</c> é o único
-/// genuinamente opcional (assume 400 quando omitido). <c>Resolucao</c>, <c>GrupoCurso</c>
-/// e <c>BaseLegal</c> são <c>string?</c> (ADR-0125): nulo para o campo ausente escapar
-/// do <c>[ApiController]</c> e chegar à validação de domínio; sem default, para o
-/// schema OpenAPI continuar listando-os como obrigatórios.
+/// <c>Resolucao</c>, <c>GrupoCurso</c>, <c>Areas</c> e <c>BaseLegal</c> são anuláveis
+/// (ADR-0125): nulo para o campo ausente escapar do <c>[ApiController]</c> e chegar à
+/// validação de domínio; sem default, para o schema OpenAPI continuar listando-os como
+/// obrigatórios.
 /// </remarks>
 public sealed record CriarPesoAreaEnemCommand(
     string? Resolucao,
     string? GrupoCurso,
-    [property: JsonRequired] decimal PesoRedacao,
-    [property: JsonRequired] decimal PesoCienciasNatureza,
-    [property: JsonRequired] decimal PesoCienciasHumanas,
-    [property: JsonRequired] decimal PesoLinguagens,
-    [property: JsonRequired] decimal PesoMatematica,
-    string? BaseLegal,
-    decimal? CorteRedacao = null) : ICommand<Result<Guid>>;
+    IReadOnlyList<PesoAreaEnemAreaCommand>? Areas,
+    string? BaseLegal) : ICommand<Result<Guid>>;

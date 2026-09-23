@@ -161,7 +161,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.referencia_reserva_demografica.nao_encontrada",
                 "Referência de reserva demográfica não encontrada")),
 
-        // ── Pesos do ENEM por grupo de área (UNI-REQ-0066) ────────────────
+        // ── Pesos por Área do ENEM, por grupo de área ─────────────────────
         new(PesoAreaEnemErrorCodes.ResolucaoObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -204,17 +204,47 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.peso_area_enem.peso_excede_maximo",
                 "Peso de área excede o teto persistível")),
 
-        new(PesoAreaEnemErrorCodes.CorteRedacaoNegativo,
+        new(PesoAreaEnemErrorCodes.AreaForaDoDominio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.peso_area_enem.corte_redacao_negativo",
-                "Corte de redação não pode ser negativo")),
+                "uniplus.configuracao.peso_area_enem.area_fora_do_dominio",
+                "Área fora das áreas do Peso por Área")),
 
-        new(PesoAreaEnemErrorCodes.CorteRedacaoExcedeMaximo,
+        new(PesoAreaEnemErrorCodes.AreaRepetida,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.peso_area_enem.corte_redacao_excede_maximo",
-                "Corte de redação excede a nota máxima da redação do ENEM")),
+                "uniplus.configuracao.peso_area_enem.area_repetida",
+                "Área informada mais de uma vez")),
+
+        new(PesoAreaEnemErrorCodes.AreaFaltando,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.area_faltando",
+                "Falta o peso de alguma das cinco áreas")),
+
+        new(PesoAreaEnemErrorCodes.AreasEmExcesso,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.areas_em_excesso",
+                "Lista de áreas com itens demais")),
+
+        new(PesoAreaEnemErrorCodes.CorteNegativo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.corte_negativo",
+                "Corte de área não pode ser negativo")),
+
+        new(PesoAreaEnemErrorCodes.CorteExcedeMaximo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.corte_excede_maximo",
+                "Corte de área excede a nota máxima de uma área do ENEM")),
+
+        new(PesoAreaEnemErrorCodes.CorteForaDaRedacao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.corte_fora_da_redacao",
+                "Só a Redação aceita corte por enquanto")),
 
         new(PesoAreaEnemErrorCodes.BaseLegalObrigatoria,
             new DomainErrorMapping(
