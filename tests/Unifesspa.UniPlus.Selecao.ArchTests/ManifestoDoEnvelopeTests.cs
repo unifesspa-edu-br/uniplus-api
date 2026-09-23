@@ -59,6 +59,8 @@ public sealed class ManifestoDoEnvelopeTests
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("ProduzResultado", "Derivada de Produtos — congelá-la duplicaria a fonte de verdade."),
                 ("ComponeNota", "Derivada de Carater + Peso — congelá-la duplicaria a fonte de verdade."),
+                ("DeclaraNotaDoEnem", "Derivada de TipoEtapa.Codigo — o código congelado já é a declaração."),
+                ("PreveLancamentoDeNota", "Derivada de Bancas + EmiteParecerIndividual — congelá-la duplicaria a fonte de verdade."),
                 ("TipoEtapaOrigemId", "Derivada de TipoEtapa.OrigemId (issue #1071) — congelá-la duplicaria a fonte de verdade."),
             ]),
 
