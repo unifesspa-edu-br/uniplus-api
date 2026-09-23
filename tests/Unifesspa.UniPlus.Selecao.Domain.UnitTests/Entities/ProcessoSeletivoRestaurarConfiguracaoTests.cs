@@ -62,6 +62,60 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             "ficaria numa configuração que nunca existiu.");
     }
 
+    [Fact(DisplayName = "Restaurar etapa de nota do ENEM sob classificação que não é ENEM é recusado, como na gravação")]
+    public void Restaurar_EtapaNotaEnemSemClassificacaoEnem_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(etapas: [EtapaNotaEnemCongelada(EtapaCongelada, 1)]));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
+    }
+
+    [Fact(DisplayName = "Restaurar duas etapas de nota do ENEM é recusado, como na gravação")]
+    public void Restaurar_DuasEtapasNotaEnem_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(
+                etapas: [EtapaNotaEnemCongelada(EtapaCongelada, 1), EtapaNotaEnemCongelada(EtapaOriginal, 2)],
+                classificacao: ClassificacaoEnemMediaPonderada()));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
+    }
+
+    [Fact(DisplayName = "Restaurar etapa de nota do ENEM com banca é recusado, como na gravação")]
+    public void Restaurar_EtapaNotaEnemComBanca_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        EtapaProcesso etapa = EtapaNotaEnemCongelada(EtapaCongelada, 1);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(etapas: [etapa], classificacao: ClassificacaoEnemMediaPonderada()));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComLancamento");
+    }
+
+    [Fact(DisplayName = "Restaurar etapa de nota do ENEM sob classificação ENEM pela média ponderada é aceito")]
+    public void Restaurar_EtapaNotaEnemSobClassificacaoEnemMediaPonderada_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(etapas: [EtapaNotaEnemCongelada(EtapaCongelada, 1)], classificacao: ClassificacaoEnemMediaPonderada()));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.Etapas.Should().ContainSingle().Which.DeclaraNotaDoEnem.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "RestaurarConfiguracaoCongelada produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
     public void RestaurarConfiguracaoCongelada_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
     {
@@ -997,6 +1051,9 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
     // ── Fábrica de cenários ──
 
+    private static EtapaProcesso EtapaNotaEnemCongelada(Guid id, int ordem) =>
+        EtapaProcesso.Reidratar(id, "Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), TipoEtapaCodigo.NotaEnem, "Nota do ENEM").Value!, 1m, null, ordem);
+
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
 
@@ -1057,13 +1114,14 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         IReadOnlyList<CriterioDesempate>? criterios = null,
         IReadOnlyList<RegraEliminacao>? eliminacoes = null,
         IReadOnlyList<FaseCronograma>? cronogramaFases = null,
-        ConfiguracaoDivulgacao? configuracaoDivulgacao = null) => new(
+        ConfiguracaoDivulgacao? configuracaoDivulgacao = null,
+        ConfiguracaoClassificacao? classificacao = null) => new(
             etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
             criteriosDesempate: criterios ?? [],
-            classificacao: Classificacao(eliminacoes ?? []),
+            classificacao: classificacao ?? Classificacao(eliminacoes ?? []),
             cronogramaFases: cronogramaFases ?? [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
@@ -1136,6 +1194,16 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             nOpcoesAlocacao: 1,
             regrasEliminacao: eliminacoes,
             baseadoEmEnem: false).Value!;
+
+    private static ConfiguracaoClassificacao ClassificacaoEnemMediaPonderada() =>
+        ConfiguracaoClassificacao.Criar(
+            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
+            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
+            casasArredondamento: 2,
+            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'd'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: [],
+            baseadoEmEnem: true).Value!;
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         "001/2026",
