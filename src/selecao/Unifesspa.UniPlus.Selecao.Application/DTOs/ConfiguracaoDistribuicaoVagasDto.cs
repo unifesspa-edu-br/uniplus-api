@@ -42,6 +42,8 @@ public sealed record VagaOfertadaDto(Guid Id, Guid ModalidadeOrigemId, string Mo
 /// O quadro de vagas (issue #848/ADR-0115) é output derivado, sempre
 /// materializado junto da configuração — <see cref="Quadro"/> e os derivados
 /// (<see cref="VrNominal"/> etc.) refletem exatamente o que foi congelado.
+/// <see cref="GrupoAreaEnem"/> é o grupo de área do ENEM do curso da oferta, congelado
+/// na definição; <see langword="null"/> quando o curso não o declara.
 /// </summary>
 public sealed record ConfiguracaoDistribuicaoVagasDto(
     Guid Id,
@@ -51,6 +53,7 @@ public sealed record ConfiguracaoDistribuicaoVagasDto(
     ReferenciaRegraDto RegraDistribuicao,
     ReferenciaRegraDto? RegraAjuste,
     ReferenciaReservaDemograficaSnapshotDto? ReferenciaDemografica,
+    string? GrupoAreaEnem,
     IReadOnlyList<ModalidadeSelecionadaDto> Modalidades,
     IReadOnlyList<VagaOfertadaDto> Quadro,
     int VrNominal,

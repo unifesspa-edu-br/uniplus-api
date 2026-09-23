@@ -64,7 +64,8 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
 
         Guid ofertaCursoId = Guid.CreateVersion7();
         Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, voBase: 50, pr: 0.5m, regra, regraAjuste, demografica, modalidades);
+            ofertaCursoId, voBase: 50, pr: 0.5m, regra, regraAjuste, demografica, modalidades,
+            grupoAreaEnem: "Humanística I");
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([configResult.Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -84,6 +85,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         recarregado.Should().NotBeNull();
         ConfiguracaoDistribuicaoVagas distribuicao = recarregado!.DistribuicaoVagas.Single();
         distribuicao.OfertaCursoOrigemId.Should().Be(ofertaCursoId);
+        distribuicao.GrupoAreaEnem.Should().Be("Humanística I");
         distribuicao.VoBase.Should().Be(50);
         distribuicao.Pr.Should().Be(0.5m);
         distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDistribuicaoVagasCodigo.Lei12711);
@@ -138,6 +140,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         ConfiguracaoDistribuicaoVagas distribuicao = recarregado!.DistribuicaoVagas.Single();
         distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDistribuicaoVagasCodigo.Institucional);
         distribuicao.ReferenciaDemografica.Should().BeNull();
+        distribuicao.GrupoAreaEnem.Should().BeNull("curso sem grupo declarado é aceito no rascunho e persiste sem grupo");
     }
 
     [Fact(DisplayName = "Reconfigurar distribuição sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]

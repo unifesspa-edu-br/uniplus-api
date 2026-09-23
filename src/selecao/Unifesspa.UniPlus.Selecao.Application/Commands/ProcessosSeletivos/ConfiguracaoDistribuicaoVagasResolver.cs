@@ -177,7 +177,8 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
             modalidades,
             oferta.VagasAnuaisAutorizadas,
             ModalidadesAdmitidasDoEsquemaArgs.Extrair(regra),
-            input.ArgsAjuste);
+            input.ArgsAjuste,
+            oferta.GrupoAreaEnem);
     }
 
     /// <summary>

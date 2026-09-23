@@ -8307,6 +8307,7 @@
           "regraDistribuicao",
           "regraAjuste",
           "referenciaDemografica",
+          "grupoAreaEnem",
           "modalidades",
           "quadro",
           "vrNominal",
@@ -8362,6 +8363,12 @@
               {
                 "$ref": "#/components/schemas/ReferenciaReservaDemograficaSnapshotDto"
               }
+            ]
+          },
+          "grupoAreaEnem": {
+            "type": [
+              "null",
+              "string"
             ]
           },
           "modalidades": {

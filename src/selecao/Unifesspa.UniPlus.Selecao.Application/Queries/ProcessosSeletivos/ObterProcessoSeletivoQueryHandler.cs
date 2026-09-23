@@ -185,6 +185,7 @@ public static class ObterProcessoSeletivoQueryHandler
             ? new ReferenciaReservaDemograficaSnapshotDto(
                 demografica.OrigemId, demografica.CensoReferencia, demografica.PpiPercentual, demografica.QuilombolaPercentual, demografica.PcdPercentual, demografica.BaseLegal)
             : null,
+        configuracao.GrupoAreaEnem,
         [.. configuracao.Modalidades.Select(m => new ModalidadeSelecionadaDto(
             m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, m.NaturezaLegal.ToCodigo(), m.ComposicaoVagas.ToCodigo(),
             m.ComposicaoOrigemCodigo, m.RegraRemanejamento.ToCodigo(), m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,

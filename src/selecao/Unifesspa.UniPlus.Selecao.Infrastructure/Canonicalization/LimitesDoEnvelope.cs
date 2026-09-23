@@ -47,6 +47,12 @@ public static class LimitesDoEnvelope
     public const int TipoDeficienciaCodigo = 50;
     public const int NomeDeCadastro = 300;
     public const int CensoReferencia = 20;
+
+    /// <summary>
+    /// Grupo de área do ENEM congelado na distribuição de vagas — mesmo teto da coluna de
+    /// origem no cadastro de cursos.
+    /// </summary>
+    public const int GrupoAreaEnem = 30;
     public const int RegraCodigo = 128;
     public const int RegraVersao = 16;
 

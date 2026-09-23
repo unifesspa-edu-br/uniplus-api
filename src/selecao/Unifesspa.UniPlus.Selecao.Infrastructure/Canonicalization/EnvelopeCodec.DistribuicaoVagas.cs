@@ -137,12 +137,12 @@ public sealed partial class EnvelopeCodec
         }
 
         List<Guid> ofertasEmDistribuicao = [];
-        List<(Guid Oferta, int VoBase, decimal Pr, ReferenciaRegra Regra, ReferenciaRegra? RegraAjuste, ReferenciaReservaDemograficaSnapshot? Demografica)> inputs = [];
+        List<(Guid Oferta, int VoBase, decimal Pr, ReferenciaRegra Regra, ReferenciaRegra? RegraAjuste, ReferenciaReservaDemograficaSnapshot? Demografica, string? GrupoAreaEnem)> inputs = [];
         for (int i = 0; i < arrayDistribuicao.Count; i++)
         {
             string path = $"distribuicao[{i}]";
             JsonObject item = leitor.ItemObjeto(arrayDistribuicao, i, "distribuicao");
-            leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "voBase", "pr", "regraDistribuicao", "regraAjuste", "referenciaDemografica");
+            leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "voBase", "pr", "regraDistribuicao", "regraAjuste", "referenciaDemografica", "grupoAreaEnem");
 
             Guid ofertaId = leitor.Identificador(item, "ofertaCursoOrigemId", path);
             int voBase = leitor.Inteiro(item, "voBase", path);
@@ -162,6 +162,7 @@ public sealed partial class EnvelopeCodec
                 path,
                 RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico);
             ReferenciaReservaDemograficaSnapshot? demografica = LerReferenciaDemografica(leitor, item, path);
+            string? grupoAreaEnem = leitor.TextoOpcional(item, "grupoAreaEnem", path, LimitesDoEnvelope.GrupoAreaEnem);
 
             if (leitor.Falhou)
             {
@@ -169,7 +170,7 @@ public sealed partial class EnvelopeCodec
             }
 
             ofertasEmDistribuicao.Add(ofertaId);
-            inputs.Add((ofertaId, voBase, pr, regra, regraAjuste, demografica));
+            inputs.Add((ofertaId, voBase, pr, regra, regraAjuste, demografica, grupoAreaEnem));
         }
 
         if (VerificarBlocosDerivados(ofertasEmDistribuicao, ofertasEmModalidades, ofertasEmVagas, ofertasDeclaradas) is { } incoerencia)
@@ -178,11 +179,12 @@ public sealed partial class EnvelopeCodec
         }
 
         List<ConfiguracaoDistribuicaoVagas> distribuicao = [];
-        foreach ((Guid oferta, int voBase, decimal pr, ReferenciaRegra regra, ReferenciaRegra? regraAjuste, ReferenciaReservaDemograficaSnapshot? demografica) in inputs)
+        foreach ((Guid oferta, int voBase, decimal pr, ReferenciaRegra regra, ReferenciaRegra? regraAjuste, ReferenciaReservaDemograficaSnapshot? demografica, string? grupoAreaEnem) in inputs)
         {
             Result<ConfiguracaoDistribuicaoVagas> configuracao = ConfiguracaoDistribuicaoVagas.Criar(
                 oferta, voBase, pr, regra, regraAjuste, demografica, modalidadesPorOferta[oferta],
-                modalidadesAdmitidas: RegraDistribuicaoVagasCodigo.RolFechado(regra.Codigo));
+                modalidadesAdmitidas: RegraDistribuicaoVagasCodigo.RolFechado(regra.Codigo),
+                grupoAreaEnem: grupoAreaEnem);
             if (configuracao.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>(configuracao.Error!) ?? [];

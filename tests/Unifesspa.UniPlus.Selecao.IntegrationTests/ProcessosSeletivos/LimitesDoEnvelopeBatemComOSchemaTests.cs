@@ -61,6 +61,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("MunicipioBonusRegionalNome", LimitesDoEnvelope.MunicipioBonusRegionalNome, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.Nome)),
         ("MunicipioBonusRegionalUf", LimitesDoEnvelope.MunicipioBonusRegionalUf, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.Uf)),
 
+        ("GrupoAreaEnem", LimitesDoEnvelope.GrupoAreaEnem, typeof(ConfiguracaoDistribuicaoVagas), nameof(ConfiguracaoDistribuicaoVagas.GrupoAreaEnem)),
+
         // Story #851 — cronograma de fases.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.Codigo)),
         ("DonoInstitucional", LimitesDoEnvelope.DonoInstitucional, typeof(FaseCronograma), nameof(FaseCronograma.DonoInstitucional)),
