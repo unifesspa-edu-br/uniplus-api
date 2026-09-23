@@ -75,7 +75,7 @@ public sealed class EtapaProcessoTests
     }
 
     private static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!;
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
 
     [Fact(DisplayName = "Criar com dados válidos tem sucesso")]
     public void Criar_DadosValidos_Sucesso()
@@ -232,7 +232,7 @@ public sealed class EtapaProcessoTests
     [InlineData(CaraterEtapa.Ambas, false, false, 2)]
     [InlineData(CaraterEtapa.Ambas, true, true, 0)]
     [InlineData(CaraterEtapa.Eliminatoria, false, true, 0)]
-    public void ValidarCaraterAdmitido_ConfereContraOCadastro(
+    public void ValidarCaraterAdmitido_ConfereContraOQueOTipoAdmite(
         CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, int violacoesEsperadas)
     {
         List<FieldError> erros = EtapaProcesso.ValidarCaraterAdmitido(

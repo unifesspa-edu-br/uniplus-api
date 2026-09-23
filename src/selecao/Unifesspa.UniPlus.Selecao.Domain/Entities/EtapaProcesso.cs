@@ -438,21 +438,23 @@ public sealed class EtapaProcesso : EntityBase
     }
 
     /// <summary>
-    /// Confere o caráter declarado contra o que o tipo de etapa admite no cadastro de
-    /// Configuração, acumulando as duas violações possíveis (ADR-0125).
+    /// Confere o caráter declarado contra o que o tipo de etapa admite, acumulando as duas
+    /// violações possíveis (ADR-0125).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Fora de <see cref="ValidarFormaBasica"/> de propósito: aquela checagem é de forma e não
-    /// depende de cadastro nenhum, enquanto esta precisa dos sinalizadores que só a Application
-    /// consegue resolver contra o catálogo vivo — é o mesmo arranjo do
-    /// <see cref="TipoEtapaSnapshot"/>, resolvido por quem chama e entregue pronto ao domínio
+    /// Fora de <see cref="ValidarFormaBasica"/> de propósito: aquela checagem é de forma, e esta
+    /// depende de onde vêm os sinalizadores — do cadastro vivo quando a gravação lê o tipo
+    /// (etapa nova, vínculo novo ou caráter alterado), do <see cref="TipoEtapaSnapshot"/> quando
+    /// o tipo foi desativado e a etapa mantém o vínculo. Quem escolhe a fonte é quem chama
     /// (ADR-0129).
     /// </para>
     /// <para>
-    /// Não entra em <see cref="Criar"/> nem em <see cref="AtualizarDados"/> pelo mesmo motivo:
-    /// a restauração de uma versão congelada reaplica dados que foram válidos quando o catálogo
-    /// era outro, e ela não tem como reconsultar o cadastro.
+    /// Não entra em <see cref="Criar"/> nem em <see cref="AtualizarDados"/>: quem chama confere
+    /// numa passada própria, antes de qualquer mutação, para devolver de uma vez a recusa de
+    /// todas as etapas do payload (ADR-0125). A restauração de uma versão congelada, que repõe
+    /// por <see cref="Reidratar"/> e <see cref="ReporDadosCongelados"/>, também não confere:
+    /// repor não é declarar, e o par caráter e sinalizadores volta como foi conferido ao congelar.
     /// </para>
     /// </remarks>
     public static List<FieldError> ValidarCaraterAdmitido(

@@ -32,6 +32,8 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
                 .HasComment("Id de origem do tipo de etapa em Configuração, sem FK cross-schema; congelado na definição.");
             tipo.Property(x => x.Codigo).HasColumnName("tipo_etapa_codigo").HasMaxLength(64).IsRequired();
             tipo.Property(x => x.Nome).HasColumnName("tipo_etapa_nome").HasMaxLength(200).IsRequired();
+            tipo.Property(x => x.AdmitePontuacao).HasColumnName("tipo_etapa_admite_pontuacao").IsRequired();
+            tipo.Property(x => x.AdmiteEliminacao).HasColumnName("tipo_etapa_admite_eliminacao").IsRequired();
         });
         builder.Navigation(e => e.TipoEtapa).IsRequired();
 

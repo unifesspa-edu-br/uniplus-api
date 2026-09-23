@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class EtapaVinculadaAFaseTests
 {
     private static TipoEtapaSnapshot Tipo() =>
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise Documental").Value!;
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise Documental", admitePontuacao: true, admiteEliminacao: true).Value!;
 
     private static ProcessoSeletivo Processo() => ProcessoSeletivo.Criar(
         "PS", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),

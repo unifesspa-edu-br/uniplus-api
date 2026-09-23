@@ -124,6 +124,42 @@ temporal do ruleset da ADR-0114.
 - Fitness function trava a recriação do enum e o retorno da comparação por nome.
 - Round-trip do envelope `0.0.8` exige e preserva o bloco `etapas[].tipoEtapa`.
 
+## Emenda 1 (2026-09-23) — sinalizadores do tipo congelados no snapshot
+
+O snapshot deixa de ser `{origemId, codigo, nome}`: passa a congelar também
+`admitePontuacao` e `admiteEliminacao`, os sinalizadores com que o cadastro de
+tipos declara que caráter de etapa cada tipo admite. Até aqui eles eram lidos
+do cadastro vivo a cada gravação que mexesse no caráter, a única exceção ao
+snapshot-copy (ADR-0061) nesta configuração. Não havia decisão registrada a
+favor da leitura ao vivo — só comentários de código, corrigidos junto.
+
+**Quando os sinalizadores mudam.** A identidade do tipo congelado (origem,
+código, nome) continua mudando só quando o vínculo muda. Os sinalizadores são
+regravados também quando o caráter **desta** etapa muda, que é quando a
+gravação já lê o tipo para conferir o caráter — com o valor lido, e com
+código e nome copiados do snapshot anterior, nunca do cadastro. A regravação é
+decidida por etapa, nunca pelo cache de tipos da gravação, que é compartilhado:
+editar uma etapa não refresca o snapshot de outra do mesmo tipo. Vínculo e
+caráter inalterados continuam sem leitura do cadastro.
+
+**Tipo desativado.** Com o vínculo inalterado e o tipo desde então desativado,
+a troca de caráter passa a ser conferida contra o snapshot, em vez de seguir
+sem conferência; a recusa por tipo inativo continua dispensada nesse caso.
+
+**Sem espelho na restauração.** A reposição de uma configuração congelada não
+confere o caráter: o envelope devolve o par caráter e sinalizadores tal como
+foi conferido ao congelar, e conferi-lo contra o cadastro de hoje, que pode
+ter estreitado o tipo desde então, recusaria o descarte de uma retificação.
+
+**Efeito colateral aceito.** Duas etapas do mesmo tipo, definidas em momentos
+diferentes, podem congelar sinalizadores distintos. Nada compara os
+sinalizadores entre etapas, então nenhuma invariante quebra.
+
+**Envelope e leitura.** `etapas[].tipoEtapa` ganha `admitePontuacao` e
+`admiteEliminacao` sob a mesma versão `0.0.21`, como trem de mudanças. O DTO
+de leitura não os expõe; o contrato OpenAPI não muda. O round-trip do bloco,
+exigido na Confirmação, passa a cobrir os cinco campos do snapshot.
+
 ## Mais informações
 
 - UNI-REQ-0015, UNI-REQ-0087 — requisitos de produto relacionados.

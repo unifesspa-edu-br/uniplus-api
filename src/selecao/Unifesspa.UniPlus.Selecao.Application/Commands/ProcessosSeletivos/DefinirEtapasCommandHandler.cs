@@ -123,13 +123,16 @@ public static class DefinirEtapasCommandHandler
         // novo e invalidaria essas referências por construção.
         Dictionary<Guid, EtapaProcesso> existentes = processo.Etapas.ToDictionary(e => e.Id);
 
-        // Resolvido contra o cadastro corrente SÓ quando o vínculo é novo ou muda de tipo —
-        // nunca para uma etapa existente cujo TipoEtapaOrigemId não mudou. Sem essa distinção,
+        // O snapshot inteiro é resolvido contra o cadastro corrente SÓ quando o vínculo é novo
+        // ou muda de tipo — nunca para uma etapa existente cujo TipoEtapaOrigemId não mudou,
+        // que no máximo tem os sinalizadores regravados (abaixo). Sem essa distinção,
         // (a) desativar um tipo já vinculado bloquearia QUALQUER PUT subsequente da coleção
         // inteira, mesmo editando só o Peso de uma etapa não relacionada; e (b) renomear um
         // tipo ainda ativo reescreveria silenciosamente o snapshot já congelado de uma etapa
         // que o cliente nem tocou — violando o próprio propósito do snapshot-copy (ADR-0061):
-        // a cópia só muda quando o vínculo muda, não quando o cadastro de origem muda.
+        // a identidade congelada só muda quando o vínculo muda, não quando o cadastro de origem
+        // muda. Os sinalizadores do tipo mudam também quando o caráter DESTA etapa muda, porque
+        // é quando a gravação já relê o tipo para conferi-lo (passada abaixo).
         //
         // O cache guarda o TipoEtapaView (dado bruto do catálogo, evita reconsultar o reader
         // quando duas etapas NOVAS ou realinhadas compartilham o mesmo tipo), NUNCA a instância
@@ -138,15 +141,21 @@ public static class DefinirEtapasCommandHandler
         // etapas com o mesmo tipo, cada uma com sua própria instância, é caso legítimo e comum.
         Dictionary<Guid, TipoEtapaView> tiposEmCache = [];
 
-        // O caráter declarado é conferido contra o que o tipo admite no cadastro — e numa passada
-        // própria, ANTES de qualquer mutação: assim um payload com duas etapas incoerentes
-        // devolve as duas (ADR-0125), e nenhuma instância tracked precisa ser descartada.
+        // O caráter declarado é conferido contra o que o tipo admite — e numa passada própria,
+        // ANTES de qualquer mutação: assim um payload com duas etapas incoerentes devolve as
+        // duas (ADR-0125), e nenhuma instância tracked precisa ser descartada.
         //
         // A passada só lê o cadastro quando há o que conferir: etapa existente que mantém o
         // vínculo E o caráter não é reavaliada. Sem esse recorte, estreitar um tipo ainda ATIVO
         // — marcar que ele deixou de compor a nota final, que é justamente a operação que este
         // cadastro existe para permitir — passaria a recusar todo PUT posterior de qualquer
         // certame que já tivesse uma etapa daquele tipo, mesmo editando só o nome de outra.
+        //
+        // Quando a etapa existente muda de caráter e o cadastro é lido, o que foi lido é também
+        // o que ela passa a congelar: os sinalizadores são regravados no snapshot DESTA etapa.
+        // O registro é por posição no payload, nunca por tipo — o cache é compartilhado, e
+        // editar uma etapa não pode refrescar o snapshot de outra do mesmo tipo.
+        Dictionary<int, TipoEtapaView> sinalizadoresRelidos = [];
         List<FieldError> caraterErros = [];
         for (int indice = 0; indice < command.Etapas.Count; indice++)
         {
@@ -167,12 +176,15 @@ public static class DefinirEtapasCommandHandler
                     .ConfigureAwait(false);
                 if (tipoParaConferir is null)
                 {
-                    // Vínculo inalterado e tipo desde então desativado: não há de onde ler o que
-                    // ele admite, e recusar puniria quem só quer corrigir o caráter de uma etapa
-                    // que já existia. Segue sem conferir — é o mesmo tratamento que o snapshot
-                    // já congelado recebe logo abaixo.
+                    // Vínculo inalterado e tipo desde então desativado: recusar puniria quem só
+                    // quer corrigir o caráter de uma etapa que já existia, mas o que o tipo
+                    // admitia continua conhecido — está congelado no snapshot da etapa, e é
+                    // contra ele que o caráter novo é conferido.
                     if (vinculoInalterado)
                     {
+                        TipoEtapaSnapshot congelado = jaExistente!.TipoEtapa;
+                        caraterErros.AddRange(ErrosDeCarater(
+                            itemCarater.Carater, congelado.AdmitePontuacao, congelado.AdmiteEliminacao, congelado.Nome, indice));
                         continue;
                     }
 
@@ -188,13 +200,13 @@ public static class DefinirEtapasCommandHandler
                 tiposEmCache[itemCarater.TipoEtapaOrigemId] = tipoParaConferir;
             }
 
-            caraterErros.AddRange(EtapaProcesso
-                .ValidarCaraterAdmitido(
-                    itemCarater.Carater,
-                    tipoParaConferir.AdmitePontuacao,
-                    tipoParaConferir.AdmiteEliminacao,
-                    tipoParaConferir.Nome)
-                .Select(erro => erro with { Field = $"etapas[{indice}].{erro.Field}" }));
+            caraterErros.AddRange(ErrosDeCarater(
+                itemCarater.Carater, tipoParaConferir.AdmitePontuacao, tipoParaConferir.AdmiteEliminacao, tipoParaConferir.Nome, indice));
+
+            if (vinculoInalterado)
+            {
+                sinalizadoresRelidos[indice] = tipoParaConferir;
+            }
         }
 
         if (caraterErros.Count > 0)
@@ -203,8 +215,9 @@ public static class DefinirEtapasCommandHandler
         }
 
         List<EtapaProcesso> etapas = [];
-        foreach (EtapaProcessoInput input in command.Etapas)
+        for (int indice = 0; indice < command.Etapas.Count; indice++)
         {
+            EtapaProcessoInput input = command.Etapas[indice];
             EtapaProcesso? etapaExistente = input.Id is { } id && existentes.TryGetValue(id, out EtapaProcesso? candidata)
                 ? candidata
                 : null;
@@ -212,7 +225,9 @@ public static class DefinirEtapasCommandHandler
             TipoEtapaSnapshot tipoEtapa;
             if (etapaExistente is not null && etapaExistente.TipoEtapaOrigemId == input.TipoEtapaOrigemId)
             {
-                tipoEtapa = etapaExistente.TipoEtapa;
+                tipoEtapa = sinalizadoresRelidos.TryGetValue(indice, out TipoEtapaView? relido)
+                    ? etapaExistente.TipoEtapa.ComSinalizadores(relido.AdmitePontuacao, relido.AdmiteEliminacao)
+                    : etapaExistente.TipoEtapa;
             }
             else
             {
@@ -220,7 +235,8 @@ public static class DefinirEtapasCommandHandler
                 // o caráter, e é lá que o tipo inativo é recusado — antes de qualquer mutação.
                 TipoEtapaView tipo = tiposEmCache[input.TipoEtapaOrigemId];
 
-                Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
+                Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(
+                    tipo.Id, tipo.Codigo, tipo.Nome, tipo.AdmitePontuacao, tipo.AdmiteEliminacao);
                 if (snapshotResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
@@ -550,4 +566,10 @@ public static class DefinirEtapasCommandHandler
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
+
+    private static IEnumerable<FieldError> ErrosDeCarater(
+        CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, string nomeDoTipo, int indice) =>
+        EtapaProcesso
+            .ValidarCaraterAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo)
+            .Select(erro => erro with { Field = $"etapas[{indice}].{erro.Field}" });
 }
