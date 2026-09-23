@@ -43,8 +43,9 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     // isto não recria a segunda fonte de verdade que a ADR-0113 desfez ao tirar "produz
     // resultado" e "é definitivo" do cadastro de fases canônicas: lá o cadastro afirmava sobre
     // a fase de um certame que ele não conhece, aqui ele afirma sobre a natureza do próprio
-    // tipo. Por isso também nada disto é congelado no snapshot da etapa: restrição do cadastro
-    // corrente não é identidade do tipo (ADR-0061).
+    // tipo. O Seleção congela o par no snapshot da etapa (ADR-0061), como congela o resto do
+    // que traz daqui: estreitar o tipo depois não alcança a etapa já gravada, só quem mudar o
+    // caráter ou o vínculo dela.
     public bool AdmitePontuacao { get; private set; }
     public bool AdmiteEliminacao { get; private set; }
 

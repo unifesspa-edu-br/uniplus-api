@@ -12,7 +12,7 @@ public sealed class TipoEtapaSnapshotTests
     [Fact(DisplayName = "Criar com dados válidos tem sucesso")]
     public void Criar_Valida_Sucesso()
     {
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", "Prova Objetiva");
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.OrigemId.Should().Be(OrigemId);
@@ -24,7 +24,7 @@ public sealed class TipoEtapaSnapshotTests
     [InlineData(" PROVA_OBJETIVA ", "PROVA_OBJETIVA")]
     public void Criar_ComEspacos_Trima(string entrada, string esperado)
     {
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, entrada, "Prova Objetiva");
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, entrada, "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Codigo.Should().Be(esperado);
@@ -46,7 +46,7 @@ public sealed class TipoEtapaSnapshotTests
         string codigoDecomposto = codigoComposto.Normalize(System.Text.NormalizationForm.FormD);
         codigoDecomposto.Should().NotBe(codigoComposto, "pré-condição do teste: as duas formas têm bytes diferentes");
 
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoDecomposto, "Banca");
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoDecomposto, "Banca", admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Codigo.Should().Be(codigoComposto);
@@ -55,7 +55,7 @@ public sealed class TipoEtapaSnapshotTests
     [Fact(DisplayName = "Criar com OrigemId vazio falha")]
     public void Criar_OrigemIdVazio_Falha()
     {
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(Guid.Empty, "PROVA_OBJETIVA", "Prova Objetiva");
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(Guid.Empty, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.OrigemIdObrigatorio");
@@ -64,7 +64,7 @@ public sealed class TipoEtapaSnapshotTests
     [Fact(DisplayName = "Criar com código vazio falha")]
     public void Criar_CodigoVazio_Falha()
     {
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "", "Prova Objetiva");
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CodigoObrigatorio");
@@ -73,7 +73,7 @@ public sealed class TipoEtapaSnapshotTests
     [Fact(DisplayName = "Criar com nome vazio falha")]
     public void Criar_NomeVazio_Falha()
     {
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", "");
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", "", admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.NomeObrigatorio");
@@ -84,7 +84,7 @@ public sealed class TipoEtapaSnapshotTests
     {
         string codigoComNulo = "PROVA" + '\0' + "OBJETIVA";
 
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoComNulo, "Prova Objetiva");
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoComNulo, "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CaractereNulo");
@@ -95,7 +95,7 @@ public sealed class TipoEtapaSnapshotTests
     {
         string nomeComNulo = "Prova" + '\0' + "Objetiva";
 
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", nomeComNulo);
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", nomeComNulo, admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CaractereNulo");
@@ -106,7 +106,7 @@ public sealed class TipoEtapaSnapshotTests
     {
         string codigoLongo = new('A', 65);
 
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoLongo, "Prova Objetiva");
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoLongo, "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.TamanhoInvalido");
@@ -117,7 +117,7 @@ public sealed class TipoEtapaSnapshotTests
     {
         string nomeLongo = new('A', 201);
 
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", nomeLongo);
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", nomeLongo, admitePontuacao: true, admiteEliminacao: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.TamanhoInvalido");
@@ -126,8 +126,57 @@ public sealed class TipoEtapaSnapshotTests
     [Fact(DisplayName = "ToString devolve o codigo")]
     public void ToString_DevolveCodigo()
     {
-        TipoEtapaSnapshot snapshot = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", "Prova Objetiva").Value!;
+        TipoEtapaSnapshot snapshot = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
 
         snapshot.ToString().Should().Be("PROVA_OBJETIVA");
+    }
+
+    [Theory(DisplayName = "Criar congela cada sinalizador no próprio campo")]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void Criar_CongelaOsSinalizadores(bool admitePontuacao, bool admiteEliminacao)
+    {
+        TipoEtapaSnapshot snapshot = TipoEtapaSnapshot.Criar(
+            OrigemId, "ENTREVISTA", "Entrevista", admitePontuacao, admiteEliminacao).Value!;
+
+        snapshot.AdmitePontuacao.Should().Be(admitePontuacao);
+        snapshot.AdmiteEliminacao.Should().Be(admiteEliminacao);
+    }
+
+    [Fact(DisplayName = "Criar com tipo que não pontua nem elimina falha, como no cadastro")]
+    public void Criar_SemCaraterAdmitido_Falha()
+    {
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(
+            OrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: false, admiteEliminacao: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.SemCaraterAdmitido");
+    }
+
+    [Fact(DisplayName = "ComSinalizadores troca só os sinalizadores e mantém a identidade congelada")]
+    public void ComSinalizadores_MantemIdentidade()
+    {
+        TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
+            OrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: false, admiteEliminacao: true).Value!;
+
+        TipoEtapaSnapshot relido = congelado.ComSinalizadores(admitePontuacao: true, admiteEliminacao: false);
+
+        relido.Should().NotBeSameAs(congelado, "o snapshot é owned type: cada etapa precisa da própria instância");
+        relido.OrigemId.Should().Be(congelado.OrigemId);
+        relido.Codigo.Should().Be(congelado.Codigo);
+        relido.Nome.Should().Be(congelado.Nome);
+        relido.AdmitePontuacao.Should().BeTrue();
+        relido.AdmiteEliminacao.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "ComSinalizadores sem caráter admitido lança, porque a vista do cadastro nunca o traz")]
+    public void ComSinalizadores_SemCaraterAdmitido_Lanca()
+    {
+        TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
+            OrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
+
+        Action refrescar = () => congelado.ComSinalizadores(admitePontuacao: false, admiteEliminacao: false);
+
+        refrescar.Should().Throw<ArgumentException>();
     }
 }

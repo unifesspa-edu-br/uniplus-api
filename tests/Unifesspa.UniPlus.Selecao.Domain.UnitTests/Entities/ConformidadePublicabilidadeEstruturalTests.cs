@@ -122,7 +122,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // o gate de publicação (LAZY) pega — é exatamente o defeito que o docblock de
         // PendenciaDoCronograma descreve como "defesa em profundidade".
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Curinga)
+            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
@@ -148,7 +148,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Curinga)
+            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         // Fase permanece sem agrupar etapas (herdada de ProcessoConforme).
 

@@ -18,10 +18,10 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ProcessoSeletivo.Criar("PSVR 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
     private static EtapaProcesso EtapaNotaEnem(decimal peso = 1m, int ordem = 1) =>
-        EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), TipoEtapaCodigo.NotaEnem, "Nota do ENEM").Value!, peso: peso, ordem: ordem).Value!;
+        EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), TipoEtapaCodigo.NotaEnem, "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true).Value!, peso: peso, ordem: ordem).Value!;
 
     private static EtapaProcesso EtapaRedacao(decimal peso = 1m, int ordem = 2) =>
-        EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação").Value!, peso: peso, ordem: ordem).Value!;
+        EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true).Value!, peso: peso, ordem: ordem).Value!;
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
@@ -155,8 +155,8 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirEtapas_DuasEtapasNotaEnem_MensagemNomeiaAsEtapas()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso primeira = EtapaProcesso.Criar("ENEM 2024", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), TipoEtapaCodigo.NotaEnem, "Nota do ENEM").Value!, peso: 1m, ordem: 1).Value!;
-        EtapaProcesso segunda = EtapaProcesso.Criar("ENEM 2025", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), TipoEtapaCodigo.NotaEnem, "Nota do ENEM").Value!, peso: 1m, ordem: 2).Value!;
+        EtapaProcesso primeira = EtapaProcesso.Criar("ENEM 2024", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), TipoEtapaCodigo.NotaEnem, "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!;
+        EtapaProcesso segunda = EtapaProcesso.Criar("ENEM 2025", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), TipoEtapaCodigo.NotaEnem, "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 2).Value!;
 
         Result result = processo.DefinirEtapas([primeira, segunda], PrecondicaoIfMatch.Ausente);
 

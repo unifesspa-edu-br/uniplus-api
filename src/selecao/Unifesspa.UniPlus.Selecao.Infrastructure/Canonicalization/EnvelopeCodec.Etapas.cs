@@ -235,16 +235,18 @@ public sealed partial class EnvelopeCodec
         }
 
         string tipoPath = $"{path}.tipoEtapa";
-        leitor.ExigirChaves(tipo, tipoPath, "origemId", "codigo", "nome");
+        leitor.ExigirChaves(tipo, tipoPath, "origemId", "codigo", "nome", "admitePontuacao", "admiteEliminacao");
         Guid origemId = leitor.Identificador(tipo, "origemId", tipoPath);
         string codigo = leitor.TextoNaoVazio(tipo, "codigo", tipoPath, LimitesDoEnvelope.TipoEtapaCodigo);
         string nome = leitor.TextoNaoVazio(tipo, "nome", tipoPath, LimitesDoEnvelope.TipoEtapaNome);
+        bool admitePontuacao = leitor.Booleano(tipo, "admitePontuacao", tipoPath);
+        bool admiteEliminacao = leitor.Booleano(tipo, "admiteEliminacao", tipoPath);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(origemId, codigo, nome);
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(origemId, codigo, nome, admitePontuacao, admiteEliminacao);
         return resultado.IsFailure ? leitor.Propagar<TipoEtapaSnapshot>(resultado.Error!) : resultado.Value;
     }
 }

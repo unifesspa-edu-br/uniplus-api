@@ -33,7 +33,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     }
 
     private static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
-        TipoEtapaSnapshot.Criar(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva").Value!;
+        TipoEtapaSnapshot.Criar(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
 
     /// <summary>
     /// A fase confere o ato contra o catálogo de Publicações; a etapa não conferia. O código
@@ -781,8 +781,8 @@ public sealed class DefinirEtapasCommandHandlerTests
     /// reconsultado por reconciliação — o vínculo não mudou —, e por onde um caráter que o
     /// cadastro deixou de admitir entraria sem ninguém conferir.
     /// </summary>
-    [Fact(DisplayName = "Handle que só troca o caráter confere contra o que o tipo admite")]
-    public async Task Handle_TrocaApenasOCarater_ConfereContraOCadastro()
+    [Fact(DisplayName = "Handle que só troca o caráter confere contra o que o tipo ativo admite hoje")]
+    public async Task Handle_TrocaApenasOCarater_ConfereContraOTipoAtivo()
     {
         // A etapa nasceu acumulando os dois papéis, quando o tipo ainda compunha a nota final.
         ProcessoSeletivo processo = ProcessoComEtapa(out EtapaProcesso etapaOriginal, CaraterEtapa.Ambas);
@@ -803,6 +803,161 @@ public sealed class DefinirEtapasCommandHandlerTests
         result.Errors[0].Error.Code.Should().Be(EtapaProcesso.CaraterNaoAdmitidoPeloTipo);
         processo.Etapas.Single().Carater.Should().Be(CaraterEtapa.Ambas, "a recusa não muta o agregado");
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// O tipo passou a admitir pontuação depois de a etapa existir, e o operador torna a
+    /// etapa classificatória. A gravação é aceita e o snapshot passa a
+    /// declarar o que o tipo admite agora — com a identidade do snapshot antigo, nunca a do
+    /// cadastro.
+    /// </summary>
+    [Fact(DisplayName = "Alargar o tipo alcança quem muda o caráter, e o snapshot regrava só os sinalizadores")]
+    public async Task Handle_TipoAlargadoECaraterAlterado_RegravaSinalizadoresComIdentidadeAntiga()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        TipoEtapaSnapshot semPontuacao = TipoEtapaSnapshot.Criar(
+            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: false, admiteEliminacao: true).Value!;
+        EtapaProcesso eliminatoria = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Eliminatoria, semPontuacao, null, notaMinima: 5m, ordem: 1).Value!;
+        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
+            TipoRedacaoOrigemId, "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true).Value!, 1m, ordem: 2).Value!;
+        processo.DefinirEtapas([eliminatoria, redacao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        // O cadastro, hoje: admite pontuação — e foi renomeado depois do congelamento.
+        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
+        reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, AdmitePontuacao: true, AdmiteEliminacao: false));
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 1, eliminatoria.Id, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2, redacao.Id, Produtos: [], Bancas: [], Recursos: []),
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        TipoEtapaSnapshot regravado = processo.Etapas.Single(e => e.Id == eliminatoria.Id).TipoEtapa;
+        regravado.AdmitePontuacao.Should().BeTrue();
+        regravado.AdmiteEliminacao.Should().BeFalse();
+        regravado.Nome.Should().Be("Prova Objetiva", "a identidade vem do snapshot antigo, não do cadastro renomeado");
+        regravado.OrigemId.Should().Be(TipoProvaObjetivaOrigemId);
+    }
+
+    /// <summary>
+    /// Etapa nova congela o que o tipo admite no cadastro no momento da gravação. Os dois tipos
+    /// declaram pares opostos, então trocar um sinalizador pelo outro no congelamento não passa.
+    /// </summary>
+    [Fact(DisplayName = "Etapa nova congela no snapshot os sinalizadores lidos do cadastro")]
+    public async Task Handle_EtapaNova_CongelaSinalizadoresDoCadastro()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
+        reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: false));
+        reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, AdmitePontuacao: false, AdmiteEliminacao: true));
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Eliminatoria, TipoProvaObjetivaOrigemId, null, 5m, 2, Produtos: [], Bancas: [], Recursos: []),
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        TipoEtapaSnapshot redacao = processo.Etapas.Single(e => e.TipoEtapaOrigemId == TipoRedacaoOrigemId).TipoEtapa;
+        redacao.AdmitePontuacao.Should().BeTrue();
+        redacao.AdmiteEliminacao.Should().BeFalse();
+        TipoEtapaSnapshot prova = processo.Etapas.Single(e => e.TipoEtapaOrigemId == TipoProvaObjetivaOrigemId).TipoEtapa;
+        prova.AdmitePontuacao.Should().BeFalse();
+        prova.AdmiteEliminacao.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// O cache de tipos é compartilhado entre as etapas do payload. Mudar o caráter de uma etapa
+    /// lê o tipo e regrava o snapshot DELA — a outra etapa do mesmo tipo, que não mudou nada,
+    /// mantém o que congelou.
+    /// </summary>
+    [Fact(DisplayName = "Mudar o caráter de uma etapa não refresca o snapshot de outra do mesmo tipo")]
+    public async Task Handle_DuasEtapasDoMesmoTipo_SoARegravadaMudaDeSinalizadores()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
+            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
+        EtapaProcesso primeira = EtapaProcesso.Criar("Objetiva I", CaraterEtapa.Classificatoria, congelado, 1m, ordem: 1).Value!;
+        EtapaProcesso segunda = EtapaProcesso.Criar("Objetiva II", CaraterEtapa.Classificatoria, congelado.ComSinalizadores(true, true), 1m, ordem: 2).Value!;
+        processo.DefinirEtapas([primeira, segunda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput("Objetiva I", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, primeira.Id, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Objetiva II", CaraterEtapa.Eliminatoria, TipoProvaObjetivaOrigemId, null, 5m, 2, segunda.Id, Produtos: [], Bancas: [], Recursos: []),
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        // O cadastro deixou de admitir pontuação; a eliminação continua admitida.
+        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, ReaderComTipoQueNaoPontua());
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Etapas.Single(e => e.Id == segunda.Id).TipoEtapa.AdmitePontuacao.Should().BeFalse("o caráter dela mudou e o tipo foi relido");
+        processo.Etapas.Single(e => e.Id == primeira.Id).TipoEtapa.AdmitePontuacao.Should().BeTrue("ela não mudou nada, e o cache compartilhado não a alcança");
+    }
+
+    /// <summary>
+    /// Tipo desativado e vínculo inalterado: não há o que ler no cadastro, mas o que o tipo
+    /// admitia está congelado na etapa — o caráter novo é conferido contra o snapshot.
+    /// </summary>
+    [Theory(DisplayName = "Com o tipo desativado, trocar o caráter confere contra o snapshot, sem recusar pelo tipo inativo")]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public async Task Handle_TipoDesativadoECaraterAlterado_ConfereContraOSnapshot(bool snapshotAdmiteEliminacao, bool aceito)
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
+            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: snapshotAdmiteEliminacao).Value!, 1m, ordem: 1).Value!;
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
+        reader.ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((TipoEtapaView?)null);
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Ambas, TipoProvaObjetivaOrigemId, 1m, 5m, 1, etapa.Id, Produtos: [], Bancas: [], Recursos: [])],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+
+        if (aceito)
+        {
+            result.IsSuccess.Should().BeTrue(result.Error?.Message);
+            processo.Etapas.Single().Carater.Should().Be(CaraterEtapa.Ambas);
+        }
+        else
+        {
+            result.IsFailure.Should().BeTrue();
+            result.Errors.Should().ContainSingle();
+            result.Errors[0].Field.Should().Be("etapas[0].carater");
+            result.Errors[0].Error.Code.Should().Be(EtapaProcesso.CaraterNaoAdmitidoPeloTipo);
+        }
+
+        result.Errors.Should().NotContain(e => e.Error.Code == "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo");
     }
 
     /// <summary>

@@ -898,7 +898,7 @@ public sealed class EnvelopeCodecRecusaTests
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
+                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!,
                 peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOfertaAtendimento(
@@ -1158,6 +1158,8 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("origemId")]
     [InlineData("codigo")]
     [InlineData("nome")]
+    [InlineData("admitePontuacao")]
+    [InlineData("admiteEliminacao")]
     public void TipoEtapa_ChaveAusente_Recusa(string chave)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -1176,6 +1178,34 @@ public sealed class EnvelopeCodecRecusaTests
 
         resultado.IsFailure.Should().BeTrue("a gramática de tipoEtapa é fechada — igual a qualquer outro bloco do envelope");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Theory(DisplayName = "etapas[].tipoEtapa com sinalizador que não é booleano é recusado")]
+    [InlineData("admitePontuacao")]
+    [InlineData("admiteEliminacao")]
+    public void TipoEtapa_SinalizadorNaoBooleano_Recusa(string chave)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]![chave] = "true");
+
+        resultado.IsFailure.Should().BeTrue(
+            $"'{chave}' é booleano no encoder; o texto \"true\" não é o mesmo documento");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "etapas[].tipoEtapa que não pontua nem elimina é recusado")]
+    public void TipoEtapa_SemCaraterAdmitido_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonNode tipoEtapa = envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!;
+            tipoEtapa["admitePontuacao"] = false;
+            tipoEtapa["admiteEliminacao"] = false;
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "um tipo sem caráter admitido não existe no cadastro — a factory do snapshot o recusa");
+        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.SemCaraterAdmitido");
     }
 
     [Fact(DisplayName = "etapas[].tipoEtapa.origemId vazio (Guid.Empty) é recusado")]

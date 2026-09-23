@@ -4,10 +4,10 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <remarks>
 /// <paramref name="AdmitePontuacao"/> e <paramref name="AdmiteEliminacao"/> dizem quais
 /// caracteres de etapa o tipo admite — é o que permite ao módulo Seleção recusar uma etapa
-/// classificatória de um tipo que não compõe a nota final. Vêm na vista, e não no snapshot
-/// congelado da etapa, porque são restrição do cadastro corrente, não identidade do tipo:
-/// certame em rascunho segue o catálogo de hoje, e certame publicado já está congelado pelo
-/// próprio envelope.
+/// classificatória de um tipo que não compõe a nota final. O Seleção os copia para o snapshot
+/// da etapa quando ela é criada ou muda de caráter ou de vínculo — as gravações em que ele já
+/// consulta esta vista —, e a partir daí a etapa confere contra o que congelou, como faz com
+/// o resto do que traz do cadastro.
 /// </remarks>
 public sealed record TipoEtapaView(
     Guid Id,

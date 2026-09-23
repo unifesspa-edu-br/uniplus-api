@@ -172,7 +172,7 @@ public sealed class ManifestoDoEnvelopeTests
         // Issue #1071 — snapshot de tipo de etapa, mesmo padrão de cópia por valor de
         // ReferenciaRegra acima.
         [typeof(TipoEtapaSnapshot)] = (
-            ["OrigemId", "Codigo", "Nome"],
+            ["OrigemId", "Codigo", "Nome", "AdmitePontuacao", "AdmiteEliminacao"],
             []),
 
         [typeof(ReferenciaReservaDemograficaSnapshot)] = (

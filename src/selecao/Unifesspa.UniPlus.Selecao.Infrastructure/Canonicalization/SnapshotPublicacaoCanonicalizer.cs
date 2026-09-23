@@ -205,6 +205,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// definição da distribuição, nulo quando o curso não o declara. É o que diz qual linha de
     /// pesos por área se aplica à oferta. Sem novo bloco de topo. Sem produção em ambiente
     /// nenhum: fixture nova, <c>0.0.20</c> deixa de ser reconhecida.
+    /// Sob a MESMA <c>0.0.21</c>, como trem de mudanças (o precedente de #1059, #1067 e #1068
+    /// sob a <c>0.0.5</c>), <c>etapas[].tipoEtapa</c> ganha <c>admitePontuacao</c> e
+    /// <c>admiteEliminacao</c> — o que o tipo admitia como caráter da etapa quando foi
+    /// congelado, que deixa de ser lido ao vivo do cadastro.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -453,8 +457,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// Tipo de etapa escolhido, como cópia de valor autocontida (issue #1071) — mesmo shape de
-    /// <see cref="SerializarTipoProcesso"/>. Não há leitura da configuração atual ao interpretar
+    /// Tipo de etapa escolhido, como cópia de valor autocontida (issue #1071) — a identidade no
+    /// mesmo shape de <see cref="SerializarTipoProcesso"/>, mais o que o tipo admitia como
+    /// caráter da etapa quando foi congelado. Não há leitura da configuração atual ao interpretar
     /// uma publicação: desativação ou alteração posterior do cadastro não pode alterar a prova
     /// emitida, nem o resultado da avaliação de <c>EtapaObrigatoria</c> já congelada.
     /// </summary>
@@ -463,6 +468,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["origemId"] = etapa.TipoEtapaOrigemId,
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(etapa.TipoEtapa.Codigo),
         ["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.TipoEtapa.Nome),
+        ["admitePontuacao"] = etapa.TipoEtapa.AdmitePontuacao,
+        ["admiteEliminacao"] = etapa.TipoEtapa.AdmiteEliminacao,
     };
 
     private static JsonArray SerializarDistribuicao(ProcessoSeletivo processo)
