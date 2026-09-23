@@ -178,7 +178,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.grupo_curso.fora_do_dominio",
-                "Grupo de curso fora do vocabulário da Resolução INEP/ENEM 805/2024")),
+                "Grupo de área do ENEM fora dos quatro grupos da Resolução nº 805/2024/Consepe")),
 
         new(PesoAreaEnemErrorCodes.GrupoCursoInvalido,
             new DomainErrorMapping(

@@ -87,10 +87,10 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Value!.TotalPublicado.Should().Be(60);
     }
 
-    [Theory(DisplayName = "Criar guarda o grupo de área do ENEM informado, inclusive a ausência dele")]
-    [InlineData("Saúde e Biológicas")]
-    [InlineData(null)]
-    public void Criar_GrupoAreaEnem_Guarda(string? grupoAreaEnem)
+    [Theory(DisplayName = "Criar guarda código e rótulo do grupo de área do ENEM, inclusive a ausência dele")]
+    [InlineData("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas")]
+    [InlineData(null, null)]
+    public void Criar_GrupoAreaEnem_Guarda(string? codigo, string? rotulo)
     {
         List<ModalidadeSelecionada> modalidades =
         [
@@ -99,16 +99,25 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades,
-            grupoAreaEnem: grupoAreaEnem);
+            grupoAreaEnem: codigo is null ? null : (codigo, rotulo));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.GrupoAreaEnem.Should().Be(grupoAreaEnem);
+        if (codigo is null)
+        {
+            resultado.Value!.GrupoAreaEnem.Should().BeNull();
+        }
+        else
+        {
+            resultado.Value!.GrupoAreaEnem!.Codigo.Should().Be(codigo);
+            resultado.Value.GrupoAreaEnem.Rotulo.Should().Be(rotulo);
+        }
     }
 
-    [Theory(DisplayName = "Criar recusa grupo de área do ENEM em branco, acumulado com as demais checagens de forma")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Criar_GrupoAreaEnemEmBranco_Recusa(string grupoAreaEnem)
+    [Theory(DisplayName = "Criar recusa grupo de área do ENEM inválido no campo grupoAreaEnem, acumulado com as demais checagens de forma")]
+    [InlineData("", "Tecnológica", "GrupoAreaEnemSnapshot.CodigoObrigatorio")]
+    [InlineData("TECNOLOGICA", "   ", "GrupoAreaEnemSnapshot.RotuloObrigatorio")]
+    [InlineData("CODIGO_LONGO_DEMAIS_PARA_A_COLUNA", "Tecnológica", "GrupoAreaEnemSnapshot.TamanhoInvalido")]
+    public void Criar_GrupoAreaEnemInvalido_RecusaNoCampoAcumulado(string codigo, string rotulo, string codigoDeErro)
     {
         List<ModalidadeSelecionada> modalidades =
         [
@@ -117,11 +126,12 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 0, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades,
-            grupoAreaEnem: grupoAreaEnem);
+            grupoAreaEnem: (codigo, rotulo));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Select(e => e.Error.Code).Should().Contain(
-            ["ConfiguracaoDistribuicaoVagas.GrupoAreaEnemEmBranco", "ConfiguracaoDistribuicaoVagas.VoBaseInvalido"]);
+        resultado.Errors.Should().Contain(e => e.Field == "grupoAreaEnem" && e.Error.Code == codigoDeErro);
+        resultado.Errors.Select(e => e.Error.Code).Should().Contain("ConfiguracaoDistribuicaoVagas.VoBaseInvalido",
+            "a recusa do grupo se acumula com as demais checagens de forma (ADR-0125)");
     }
 
     [Fact(DisplayName = "Quadro institucional que soma acima do VO_base é recusado")]

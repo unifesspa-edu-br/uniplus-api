@@ -209,6 +209,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// sob a <c>0.0.5</c>), <c>etapas[].tipoEtapa</c> ganha <c>admitePontuacao</c> e
     /// <c>admiteEliminacao</c> — o que o tipo admitia como caráter da etapa quando foi
     /// congelado, que deixa de ser lido ao vivo do cadastro.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>distribuicao[].grupoAreaEnem</c>
+    /// deixa de ser o rótulo acentuado do grupo e passa a objeto <c>{codigo, rotulo}</c>: o código
+    /// (sem abreviação e sem acento) é a identidade que casa a oferta com a linha de pesos por
+    /// área, e o rótulo é o que o edital mostra. O decodificador recusa o texto solto da forma
+    /// anterior como envelope malformado.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -487,7 +492,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["referenciaDemografica"] = configuracao.ReferenciaDemografica is { } referencia
                     ? SerializarReferenciaDemografica(referencia)
                     : null,
-                ["grupoAreaEnem"] = configuracao.GrupoAreaEnem is { } grupo ? HashCanonicalComputer.NormalizeNfc(grupo) : null,
+                ["grupoAreaEnem"] = configuracao.GrupoAreaEnem is { } grupo ? SerializarGrupoAreaEnem(grupo) : null,
             });
         }
 
@@ -529,6 +534,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
         return array;
     }
+
+    private static JsonObject SerializarGrupoAreaEnem(GrupoAreaEnemSnapshot grupo) => new()
+    {
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(grupo.Codigo),
+        ["rotulo"] = HashCanonicalComputer.NormalizeNfc(grupo.Rotulo),
+    };
 
     private static JsonObject SerializarReferenciaDemografica(ReferenciaReservaDemograficaSnapshot referencia) => new()
     {

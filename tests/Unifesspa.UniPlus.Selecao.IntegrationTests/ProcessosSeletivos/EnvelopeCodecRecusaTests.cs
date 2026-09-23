@@ -1273,17 +1273,45 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error.Message.Should().Contain("etapas[0].faseCodigo").And.Contain("60");
     }
 
-    [Fact(DisplayName = "distribuicao[].grupoAreaEnem acima do limite da coluna (30) é recusado")]
-    public void Distribuicao_GrupoAreaEnemAcimaDoLimite_Recusa()
+    [Theory(DisplayName = "distribuicao[].grupoAreaEnem com código ou rótulo acima do limite da coluna é recusado")]
+    [InlineData("codigo", 31, "30")]
+    [InlineData("rotulo", 61, "60")]
+    public void Distribuicao_GrupoAreaEnemAcimaDoLimite_Recusa(string campo, int tamanho, string limite)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["distribuicao"]!.AsArray()[0]!["grupoAreaEnem"] = new string('A', 31));
+        {
+            JsonObject grupo = new() { ["codigo"] = "TECNOLOGICA", ["rotulo"] = "Tecnológica" };
+            grupo[campo] = new string('A', tamanho);
+            envelope["distribuicao"]!.AsArray()[0]!["grupoAreaEnem"] = grupo;
+        });
 
         resultado.IsFailure.Should().BeTrue(
-            "um grupo de 31 caracteres não cabe na coluna grupo_area_enem (varchar 30) — recusar aqui evita " +
+            $"um {campo} de {tamanho} caracteres não cabe na coluna (varchar {limite}) — recusar aqui evita " +
             "DbUpdateException (500) no meio do descarte");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("distribuicao[0].grupoAreaEnem").And.Contain("30");
+        resultado.Error.Message.Should().Contain($"distribuicao[0].grupoAreaEnem.{campo}").And.Contain(limite);
+    }
+
+    [Fact(DisplayName = "distribuicao[].grupoAreaEnem sem o rótulo é recusado")]
+    public void Distribuicao_GrupoAreaEnemSemRotulo_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["distribuicao"]!.AsArray()[0]!["grupoAreaEnem"] = new JsonObject { ["codigo"] = "TECNOLOGICA" });
+
+        resultado.IsFailure.Should().BeTrue("o grupo congelado carrega código e rótulo, os dois");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("distribuicao[0].grupoAreaEnem");
+    }
+
+    [Fact(DisplayName = "distribuicao[].grupoAreaEnem como texto solto, no formato anterior, é recusado")]
+    public void Distribuicao_GrupoAreaEnemComoTexto_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["distribuicao"]!.AsArray()[0]!["grupoAreaEnem"] = "Tecnológica");
+
+        resultado.IsFailure.Should().BeTrue("o grupo congelado é um objeto com código e rótulo");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("distribuicao[0].grupoAreaEnem");
     }
 
     [Fact(DisplayName = "etapas[].produtos[].atoCodigo acima do limite da coluna (60) é recusado")]

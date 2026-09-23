@@ -49,7 +49,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             Substitute.For<ISelecaoUnitOfWork>());
     }
 
-    private static OfertaCursoView NovaOferta(Guid id, string? grupoAreaEnem = null) => new(
+    private static OfertaCursoView NovaOferta(Guid id, GrupoAreaEnemView? grupoAreaEnem = null) => new(
         id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
         "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
         "REGULAR", ["MATUTINO"], null, null, 100, null, null, grupoAreaEnem);
@@ -134,11 +134,12 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         dto.TotalPublicado.Should().Be(60);
     }
 
-    [Theory(DisplayName = "Handle congela o grupo de área do curso da oferta, inclusive a ausência dele")]
-    [InlineData("Humanística I")]
-    [InlineData(null)]
-    public async Task Handle_CongelaGrupoAreaEnemDaOferta(string? grupoAreaEnem)
+    [Theory(DisplayName = "Handle congela código e rótulo do grupo de área do curso da oferta, inclusive a ausência dele")]
+    [InlineData("HUMANISTICA_I", "Humanística I")]
+    [InlineData(null, null)]
+    public async Task Handle_CongelaGrupoAreaEnemDaOferta(string? codigo, string? rotulo)
     {
+        GrupoAreaEnemView? grupoAreaEnem = codigo is null ? null : new GrupoAreaEnemView(codigo, rotulo!);
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         Guid ofertaCursoId = Guid.CreateVersion7();
         Guid modalidadeId = Guid.CreateVersion7();
@@ -160,8 +161,50 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             mocks.ReferenciaReservaDemograficaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        processo.DistribuicaoVagas.Single().GrupoAreaEnem.Should().Be(grupoAreaEnem);
-        result.Value!.DistribuicaoVagas.Single().GrupoAreaEnem.Should().Be(grupoAreaEnem);
+        GrupoAreaEnemSnapshot? congelado = processo.DistribuicaoVagas.Single().GrupoAreaEnem;
+        GrupoAreaEnemSnapshotDto? devolvido = result.Value!.DistribuicaoVagas.Single().GrupoAreaEnem;
+        if (codigo is null)
+        {
+            congelado.Should().BeNull();
+            devolvido.Should().BeNull();
+        }
+        else
+        {
+            (congelado!.Codigo, congelado.Rotulo).Should().Be((codigo, rotulo!));
+            devolvido.Should().Be(new GrupoAreaEnemSnapshotDto(codigo, rotulo!));
+        }
+    }
+
+    [Fact(DisplayName = "Grupo da oferta que não forma um grupo válido é recusado no campo grupoAreaEnem da distribuição, acumulado com as demais checagens")]
+    public async Task Handle_GrupoDaOfertaInvalido_RecusaNoCampoAcumulado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        Guid ofertaCursoId = Guid.CreateVersion7();
+        Guid modalidadeId = Guid.CreateVersion7();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>())
+            .Returns(NovaOferta(ofertaCursoId, new GrupoAreaEnemView(new string('X', 31), "Tecnológica")));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
+
+        DefinirDistribuicaoVagasCommand command = new(
+            processo.Id,
+            [new ConfiguracaoDistribuicaoVagasInput(
+                ofertaCursoId, 101, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 101)])], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
+            mocks.ReferenciaReservaDemograficaReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().Contain(e => e.Field == "distribuicaoVagas[0].grupoAreaEnem"
+            && e.Error.Code == "GrupoAreaEnemSnapshot.TamanhoInvalido");
+        result.Errors.Should().Contain(e => e.Field == "distribuicaoVagas[0].voBase"
+            && e.Error.Code == "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas",
+            "o grupo inválido não interrompe as demais checagens da distribuição (ADR-0125): a oferta autoriza 100 vagas");
     }
 
     [Fact(DisplayName = "Grupo alterado no cadastro depois da definição não alcança o processo")]
@@ -172,7 +215,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         Guid modalidadeId = Guid.CreateVersion7();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId, "Humanística I"));
+        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId, new GrupoAreaEnemView("HUMANISTICA_I", "Humanística I")));
         mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
             .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
         mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
@@ -189,7 +232,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
 
         // O administrador troca o grupo do curso no cadastro.
-        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId, "Tecnológica"));
+        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId, new GrupoAreaEnemView("TECNOLOGICA", "Tecnológica")));
 
         // A leitura do processo passa pela mesma rota do GET, que não recebe o reader de
         // ofertas: o que ela devolve só pode vir do que foi congelado na definição.
@@ -197,7 +240,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         ProcessoSeletivoDto? lido = await ObterProcessoSeletivoQueryHandler.Handle(
             new ObterProcessoSeletivoQuery(processo.Id), mocks.Repository, CancellationToken.None);
 
-        lido!.DistribuicaoVagas.Single().GrupoAreaEnem.Should().Be("Humanística I",
+        lido!.DistribuicaoVagas.Single().GrupoAreaEnem.Should().Be(new GrupoAreaEnemSnapshotDto("HUMANISTICA_I", "Humanística I"),
             "o grupo é copiado por valor na definição; o processo não relê o cadastro");
         await mocks.OfertaCursoReader.Received(1).ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>());
     }

@@ -71,7 +71,7 @@ public sealed class PesoAreaEnemCommandJsonRequiredTests
     {
         const string json = """
         {
-          "resolucao": "Res. 805/2024", "grupoCurso": "Tecnológica",
+          "resolucao": "Res. 805/2024", "grupoCurso": "TECNOLOGICA",
           "areas": [ { "codigo": "REDACAO", "corte": 400 } ],
           "baseLegal": "Res. 805/2024 Anexo I"
         }
@@ -86,7 +86,7 @@ public sealed class PesoAreaEnemCommandJsonRequiredTests
     public void Criar_SemAreas_DesserializaComNulo()
     {
         const string json = """
-        { "resolucao": "Res. 805/2024", "grupoCurso": "Tecnológica", "baseLegal": "Res. 805/2024 Anexo I" }
+        { "resolucao": "Res. 805/2024", "grupoCurso": "TECNOLOGICA", "baseLegal": "Res. 805/2024 Anexo I" }
         """;
 
         CriarPesoAreaEnemCommand? cmd = JsonSerializer.Deserialize<CriarPesoAreaEnemCommand>(json, Options);

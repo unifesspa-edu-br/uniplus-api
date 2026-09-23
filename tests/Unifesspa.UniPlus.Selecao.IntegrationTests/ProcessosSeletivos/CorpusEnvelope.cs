@@ -704,7 +704,7 @@ internal static class CorpusEnvelope
                 pcdPercentual: 8.40m,
                 baseLegal: "Lei 12.711/2012 art. 3º").Value!,
             modalidades: modalidades,
-            grupoAreaEnem: "Saúde e Biológicas").Value!;
+            grupoAreaEnem: ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas")).Value!;
     }
 
     /// <summary>

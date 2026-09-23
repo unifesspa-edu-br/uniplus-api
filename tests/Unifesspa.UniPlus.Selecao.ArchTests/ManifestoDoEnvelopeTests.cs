@@ -179,6 +179,11 @@ public sealed class ManifestoDoEnvelopeTests
             ["OrigemId", "CensoReferencia", "PpiPercentual", "QuilombolaPercentual", "PcdPercentual", "BaseLegal"],
             []),
 
+        // Grupo de área do ENEM da oferta: código e rótulo congelados por valor.
+        [typeof(GrupoAreaEnemSnapshot)] = (
+            ["Codigo", "Rotulo"],
+            []),
+
         // As variantes polimórficas. Elas são persistidas INTEIRAS como JSON, e o codec as
         // lê e escreve em dois `switch` sobre o código da regra — duas listas manuais, num
         // ponto em que o envelope nem sequer carrega discriminador (MAIOR-IDADE e

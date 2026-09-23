@@ -56,7 +56,7 @@ internal sealed class PesoAreaEnemReader : IPesoAreaEnemReader
         new(
             p.Id,
             p.Resolucao,
-            p.GrupoCurso.Valor,
+            new GrupoAreaEnemView(p.GrupoCurso.Codigo, p.GrupoCurso.Rotulo),
             [.. p.AreasDaLinha.Select(static area =>
                 new PesoAreaEnemAreaView(area.Codigo, area.Rotulo, area.Peso, area.Corte))],
             p.BaseLegal);

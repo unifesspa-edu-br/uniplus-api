@@ -20,10 +20,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (ADR-0061): editar o código vivo não altera o rótulo já congelado num edital de
 /// Seleção. A unicidade é checada pelo handler (com proteção de corrida via índice).</para>
 /// <para>O <c>GrupoAreaEnem</c> é opcional: nem todo curso classifica por área do
-/// ENEM. Quando informado, valida contra o domínio fechado de quatro grupos
-/// (<see cref="GrupoCurso"/>, Res. INEP/ENEM 805/2024) — o pareamento
-/// <c>curso.grupo_area_enem ↔ peso_area_enem.grupo_curso</c> é por valor sobre o
-/// vocabulário compartilhado, sem FK.</para>
+/// ENEM. Quando informado, é um dos quatro grupos da Resolução nº 805/2024/Consepe
+/// (<see cref="GrupoCurso"/>), gravado com código e rótulo — o pareamento
+/// <c>curso.grupo_area_enem ↔ peso_area_enem.grupo_curso</c> é pelo código, sem FK.</para>
 /// <para>Dado institucional sem PII (LGPD inaplicável). A remoção é soft-delete e
 /// só é bloqueada quando o curso é referenciado por oferta de curso viva (#749).</para>
 /// </remarks>
@@ -43,6 +42,11 @@ public sealed class Curso : SoftDeletableEntity, IAuditableEntity
     public string Grau { get; private set; } = string.Empty;
     public string NivelEnsino { get; private set; } = string.Empty;
     public GrupoCurso? GrupoAreaEnem { get; private set; }
+
+    // Rótulo do grupo, gravado ao lado do código sempre que o grupo é atribuído. O
+    // domínio lê o rótulo do próprio GrupoCurso; a coluna existe para o dado
+    // persistido carregar código e rótulo.
+    private string? _grupoAreaEnemRotulo;
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -209,5 +213,6 @@ public sealed class Curso : SoftDeletableEntity, IAuditableEntity
         Grau = grau;
         NivelEnsino = nivelEnsino;
         GrupoAreaEnem = grupoAreaEnem;
+        _grupoAreaEnemRotulo = grupoAreaEnem?.Rotulo;
     }
 }

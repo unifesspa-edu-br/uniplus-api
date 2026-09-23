@@ -110,7 +110,7 @@ public sealed class CursoEndpointTests
             nome = "Engenharia Civil",
             grau = "Bacharelado",
             nivelEnsino = "Graduação",
-            grupoAreaEnem = "Tecnológica",
+            grupoAreaEnem = "TECNOLOGICA",
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -130,7 +130,8 @@ public sealed class CursoEndpointTests
         root.GetProperty("nome").GetString().Should().Be("Engenharia Civil");
         root.GetProperty("grau").GetString().Should().Be("Bacharelado");
         root.GetProperty("nivelEnsino").GetString().Should().Be("Graduação");
-        root.GetProperty("grupoAreaEnem").GetString().Should().Be("Tecnológica");
+        root.GetProperty("grupoAreaEnem").GetProperty("codigo").GetString().Should().Be("TECNOLOGICA");
+        root.GetProperty("grupoAreaEnem").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
@@ -176,8 +177,10 @@ public sealed class CursoEndpointTests
         }
     }
 
-    [Fact(DisplayName = "POST com grupo de área do ENEM fora do domínio fechado retorna 422")]
-    public async Task Criar_GrupoAreaEnemInvalido_Retorna422()
+    [Theory(DisplayName = "POST com grupo de área do ENEM fora dos quatro códigos retorna 422 no campo do grupo, inclusive o rótulo")]
+    [InlineData("Exatas")]
+    [InlineData("Tecnológica")]
+    public async Task Criar_GrupoAreaEnemInvalido_Retorna422(string grupoAreaEnem)
     {
         var body = new
         {
@@ -185,13 +188,18 @@ public sealed class CursoEndpointTests
             nome = "Grupo inválido",
             grau = "Bacharelado",
             nivelEnsino = "Graduação",
-            grupoAreaEnem = "Exatas",
+            grupoAreaEnem,
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erro = doc.RootElement.GetProperty("errors").EnumerateArray().Single();
+        erro.GetProperty("field").GetString().Should().Be("grupoAreaEnem");
+        erro.GetProperty("code").GetString().Should().Be("uniplus.configuracao.curso.grupo_area_enem_invalido");
+        erro.GetProperty("message").GetString().Should().Contain("TECNOLOGICA (Tecnológica)").And.NotContain("INEP");
     }
 
     [Fact(DisplayName = "POST com código e grau ausentes ao mesmo tempo acumula as duas violações em errors[]")]
@@ -237,7 +245,7 @@ public sealed class CursoEndpointTests
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        // PUT: código é editável; grupo de área do ENEM passa a Tecnológica.
+        // PUT: código é editável; grupo de área do ENEM passa a TECNOLOGICA (rótulo "Tecnológica").
         string codigoNovo = CodigoUnico();
         var bodyPut = new
         {
@@ -246,7 +254,7 @@ public sealed class CursoEndpointTests
             nome = "Engenharia Civil Integral",
             grau = "Licenciatura",
             nivelEnsino = "Mestrado",
-            grupoAreaEnem = "Tecnológica",
+            grupoAreaEnem = "TECNOLOGICA",
         };
         HttpResponseMessage atualizar = await EnviarPutAdmin(client, id, bodyPut);
         atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -261,7 +269,8 @@ public sealed class CursoEndpointTests
             root.GetProperty("nome").GetString().Should().Be("Engenharia Civil Integral");
             root.GetProperty("grau").GetString().Should().Be("Licenciatura");
             root.GetProperty("nivelEnsino").GetString().Should().Be("Mestrado");
-            root.GetProperty("grupoAreaEnem").GetString().Should().Be("Tecnológica");
+            root.GetProperty("grupoAreaEnem").GetProperty("codigo").GetString().Should().Be("TECNOLOGICA");
+            root.GetProperty("grupoAreaEnem").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
         }
 
         // DELETE: soft-delete — sem oferta de curso viva (#749), a remoção não bloqueia.

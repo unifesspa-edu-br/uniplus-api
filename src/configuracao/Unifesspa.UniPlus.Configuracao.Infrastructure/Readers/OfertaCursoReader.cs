@@ -100,6 +100,6 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             o.VagasAnuaisAutorizadas,
             o.BaseLegal,
             o.AtoAutorizacaoMec,
-            grupoAreaEnem?.Valor);
+            grupoAreaEnem is null ? null : new GrupoAreaEnemView(grupoAreaEnem.Codigo, grupoAreaEnem.Rotulo));
     }
 }

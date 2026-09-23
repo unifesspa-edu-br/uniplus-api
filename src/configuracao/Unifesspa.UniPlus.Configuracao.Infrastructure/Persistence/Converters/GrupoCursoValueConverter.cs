@@ -5,8 +5,9 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
-// Mapeia GrupoCurso ↔ string (varchar). O comprimento da coluna é definido na
-// própria propriedade via HasMaxLength no IEntityTypeConfiguration. A reidratação
+// Mapeia GrupoCurso ↔ código do grupo (varchar); o rótulo volta da lista do domínio.
+// O comprimento da coluna é definido na própria propriedade via HasMaxLength no
+// IEntityTypeConfiguration. A reidratação
 // falha explicitamente (com contexto) caso a coluna seja corrompida fora do fluxo
 // da aplicação, em vez do NullReferenceException tardio de `GrupoCurso.Criar(v).Value!`.
 // O fail-fast é inlinado porque o helper compartilhado ValueObjectMaterialization é
@@ -16,10 +17,17 @@ public sealed class GrupoCursoValueConverter : ValueConverter<GrupoCurso, string
 {
     public GrupoCursoValueConverter()
         : base(
-            grupo => grupo.Valor,
+            grupo => grupo.Codigo,
             valor => Reidratar(valor))
     {
     }
+
+    /// <summary>
+    /// Os códigos dos quatro grupos como lista SQL (<c>'A', 'B', …</c>), para o CHECK das
+    /// colunas que este converter grava — curso e Pesos por Área usam a mesma lista.
+    /// </summary>
+    internal static string CodigosEmSql() =>
+        string.Join(", ", GrupoCurso.Todos.Select(static grupo => $"'{grupo.Codigo}'"));
 
     private static GrupoCurso Reidratar(string valor)
     {

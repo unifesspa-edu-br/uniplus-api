@@ -5,8 +5,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Cria um curso — matriz curricular pura: código (chave natural), nome, grau e
-/// nível de ensino (texto livre obrigatório) e grupo de área do ENEM opcional
-/// (domínio fechado de quatro grupos, Res. 805/2024). Código e-MEC, local e
+/// nível de ensino (texto livre obrigatório) e o código do grupo de área do ENEM,
+/// opcional (um dos quatro grupos da Resolução nº 805/2024/Consepe; o rótulo é posto
+/// pelo sistema). Código e-MEC, local e
 /// unidade pertencem à <c>OfertaCurso</c> (#749), não aqui. O ator de auditoria
 /// (<c>created_by</c>) é carimbado server-side via <c>IUserContext</c>, não no payload.
 /// </summary>

@@ -137,7 +137,7 @@ public sealed partial class EnvelopeCodec
         }
 
         List<Guid> ofertasEmDistribuicao = [];
-        List<(Guid Oferta, int VoBase, decimal Pr, ReferenciaRegra Regra, ReferenciaRegra? RegraAjuste, ReferenciaReservaDemograficaSnapshot? Demografica, string? GrupoAreaEnem)> inputs = [];
+        List<(Guid Oferta, int VoBase, decimal Pr, ReferenciaRegra Regra, ReferenciaRegra? RegraAjuste, ReferenciaReservaDemograficaSnapshot? Demografica, (string? Codigo, string? Rotulo)? GrupoAreaEnem)> inputs = [];
         for (int i = 0; i < arrayDistribuicao.Count; i++)
         {
             string path = $"distribuicao[{i}]";
@@ -162,7 +162,7 @@ public sealed partial class EnvelopeCodec
                 path,
                 RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico);
             ReferenciaReservaDemograficaSnapshot? demografica = LerReferenciaDemografica(leitor, item, path);
-            string? grupoAreaEnem = leitor.TextoOpcional(item, "grupoAreaEnem", path, LimitesDoEnvelope.GrupoAreaEnem);
+            (string? Codigo, string? Rotulo)? grupoAreaEnem = LerGrupoAreaEnem(leitor, item, path);
 
             if (leitor.Falhou)
             {
@@ -179,7 +179,7 @@ public sealed partial class EnvelopeCodec
         }
 
         List<ConfiguracaoDistribuicaoVagas> distribuicao = [];
-        foreach ((Guid oferta, int voBase, decimal pr, ReferenciaRegra regra, ReferenciaRegra? regraAjuste, ReferenciaReservaDemograficaSnapshot? demografica, string? grupoAreaEnem) in inputs)
+        foreach ((Guid oferta, int voBase, decimal pr, ReferenciaRegra regra, ReferenciaRegra? regraAjuste, ReferenciaReservaDemograficaSnapshot? demografica, (string? Codigo, string? Rotulo)? grupoAreaEnem) in inputs)
         {
             Result<ConfiguracaoDistribuicaoVagas> configuracao = ConfiguracaoDistribuicaoVagas.Criar(
                 oferta, voBase, pr, regra, regraAjuste, demografica, modalidadesPorOferta[oferta],
@@ -295,6 +295,30 @@ public sealed partial class EnvelopeCodec
         return referencia.IsFailure
             ? leitor.Propagar<ReferenciaReservaDemograficaSnapshot>(referencia.Error!)
             : referencia.Value;
+    }
+
+    /// <summary>
+    /// O grupo de área do ENEM congelado na distribuição: <see langword="null"/> quando o
+    /// curso da oferta não o declara, senão código e rótulo, os dois obrigatórios e dentro
+    /// do limite das colunas. As invariantes do grupo são da factory da distribuição, que
+    /// recebe o par cru.
+    /// </summary>
+    private static (string? Codigo, string? Rotulo)? LerGrupoAreaEnem(
+        LeitorEnvelope leitor,
+        JsonObject distribuicao,
+        string pathPai)
+    {
+        JsonObject? item = leitor.ObjetoOpcional(distribuicao, "grupoAreaEnem", pathPai);
+        if (leitor.Falhou || item is null)
+        {
+            return null;
+        }
+
+        string path = $"{pathPai}.grupoAreaEnem";
+        leitor.ExigirChaves(item, path, "codigo", "rotulo");
+        string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.GrupoAreaEnemCodigo);
+        string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.GrupoAreaEnemRotulo);
+        return leitor.Falhou ? null : (codigo, rotulo);
     }
 
     private static ModalidadeSelecionada? LerModalidade(LeitorEnvelope leitor, JsonObject item, string path)

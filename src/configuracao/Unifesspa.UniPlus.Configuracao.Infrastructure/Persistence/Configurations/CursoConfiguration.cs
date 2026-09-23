@@ -32,6 +32,7 @@ internal sealed class CursoConfiguration
     private const int GrauMaxLength = 60;
     private const int NivelEnsinoMaxLength = 60;
     private const int GrupoAreaEnemMaxLength = 30;
+    private const int GrupoAreaEnemRotuloMaxLength = 60;
 
     public void Configure(EntityTypeBuilder<Curso> builder)
     {
@@ -41,12 +42,13 @@ internal sealed class CursoConfiguration
             "curso",
             t =>
             {
-                // Domínio fechado do grupo de área do ENEM (Res. 805/2024, Anexo I) —
-                // espelha o CHECK de peso_area_enem, mas null-safe: a coluna é opcional
-                // (nem todo curso classifica por área do ENEM).
+                // Domínio fechado do código do grupo de área do ENEM (Resolução nº
+                // 805/2024/Consepe, Anexo I), montado da lista do domínio — espelha o
+                // CHECK de peso_area_enem, mas null-safe: a coluna é opcional (nem todo
+                // curso classifica por área do ENEM).
                 t.HasCheckConstraint(
                     "ck_curso_grupo_area_enem",
-                    "grupo_area_enem IS NULL OR grupo_area_enem IN ('Tecnológica', 'Humanística I', 'Humanística II', 'Saúde e Biológicas')");
+                    $"grupo_area_enem IS NULL OR grupo_area_enem IN ({GrupoCursoValueConverter.CodigosEmSql()})");
             });
 
         builder.HasKey(c => c.Id);
@@ -56,13 +58,21 @@ internal sealed class CursoConfiguration
         builder.Property(c => c.Grau).HasMaxLength(GrauMaxLength).IsRequired();
         builder.Property(c => c.NivelEnsino).HasMaxLength(NivelEnsinoMaxLength).IsRequired();
 
-        // GrupoAreaEnem é value object opcional — persistido por valor como varchar
-        // via GrupoCursoValueConverter (reidratação fail-fast; o converter só é
-        // aplicado a valores não-nulos). O CHECK acima restringe a coluna ao
-        // domínio fechado. O nome de coluna snake_case vem da convenção global.
+        // GrupoAreaEnem é value object opcional — persistido pelo código via
+        // GrupoCursoValueConverter (reidratação fail-fast; o converter só é aplicado a
+        // valores não-nulos). O CHECK acima restringe a coluna ao domínio fechado. O
+        // nome de coluna snake_case vem da convenção global.
         builder.Property(c => c.GrupoAreaEnem)
             .HasConversion<GrupoCursoValueConverter>()
-            .HasMaxLength(GrupoAreaEnemMaxLength);
+            .HasMaxLength(GrupoAreaEnemMaxLength)
+            .HasComment("Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_curso_grupo_area_enem. O rótulo fica em grupo_area_enem_rotulo. Nulo quando o curso não declara grupo.");
+
+        // Rótulo do grupo, gravado pelo sistema ao lado do código (campo privado do
+        // agregado); nulo quando o curso não declara grupo.
+        builder.Property<string?>("_grupoAreaEnemRotulo")
+            .HasColumnName("grupo_area_enem_rotulo")
+            .HasMaxLength(GrupoAreaEnemRotuloMaxLength)
+            .HasComment("Rótulo do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), posto pelo sistema a partir do código em grupo_area_enem. Nulo quando o curso não declara grupo.");
 
         // Auditoria (IAuditableEntity)
         builder.Property(c => c.CreatedBy).HasMaxLength(255);

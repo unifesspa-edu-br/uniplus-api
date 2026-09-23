@@ -12,8 +12,9 @@ using Unifesspa.UniPlus.Configuracao.Application.Queries.Vocabularios;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 
 /// <summary>
-/// Vocabulários fechados de <c>TipoBanca</c> e <c>FaseCanonica</c> (UNI-REQ-0139), e de
-/// <c>TipoInstrumentoNormativo</c>, usado pela Base Legal de Bônus Regional.
+/// Vocabulários fechados de <c>TipoBanca</c> e <c>FaseCanonica</c> (UNI-REQ-0139), de
+/// <c>TipoInstrumentoNormativo</c>, usado pela Base Legal de Bônus Regional, e dos grupos
+/// de área do ENEM, usados pelos cadastros de cursos e de Pesos por Área.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,13 +24,13 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 /// formulário corretamente.
 /// </para>
 /// <para>
-/// <b>Somente leitura, e não por falta de tempo.</b> Os dois conjuntos são governados por
+/// <b>Somente leitura, e não por falta de tempo.</b> Os conjuntos são governados por
 /// código: mudam por versão da API, e não por cadastro administrativo. Um CRUD aqui
 /// permitiria acrescentar um código que nenhuma guarda de domínio sabe validar.
 /// </para>
 /// <para>
-/// <b>Sem paginação e sem <c>_links</c>.</b> As duas coleções são pequenas e fechadas (seis
-/// e dezesseis itens); paginar ou linkar um vocabulário fixo não ajudaria o cliente, só
+/// <b>Sem paginação e sem <c>_links</c>.</b> As coleções são pequenas e fechadas (de quatro
+/// a dezesseis itens); paginar ou linkar um vocabulário fixo não ajudaria o cliente, só
 /// custaria uma navegação a mais.
 /// </para>
 /// <para>
@@ -104,5 +105,24 @@ public sealed class VocabulariosController : ControllerBase
             .ConfigureAwait(false);
 
         return Ok(codigos);
+    }
+
+    /// <summary>
+    /// Lista os quatro grupos de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe),
+    /// com código e rótulo, na ordem de exibição — para os formulários de cursos e de
+    /// Pesos por Área montarem o `select` sem cópia própria dos grupos.
+    /// </summary>
+    [HttpGet("vocabularios/grupos-area-enem")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-grupo-area-enem", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<GrupoAreaEnemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarGruposAreaEnem(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<GrupoAreaEnemDto> grupos = await _queryBus
+            .Send(new ListarGruposAreaEnemQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(grupos);
     }
 }

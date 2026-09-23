@@ -11,7 +11,7 @@ public static class PesoAreaEnemMapping
         return new PesoAreaEnemDto(
             peso.Id,
             peso.Resolucao,
-            peso.GrupoCurso.Valor,
+            new GrupoAreaEnemDto(peso.GrupoCurso.Codigo, peso.GrupoCurso.Rotulo),
             [.. peso.AreasDaLinha.Select(static area =>
                 new PesoAreaEnemAreaDto(area.Codigo, area.Rotulo, area.Peso, area.Corte))],
             peso.BaseLegal,
