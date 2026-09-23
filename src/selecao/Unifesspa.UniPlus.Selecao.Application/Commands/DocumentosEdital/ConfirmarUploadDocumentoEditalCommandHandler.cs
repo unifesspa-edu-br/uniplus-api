@@ -124,10 +124,17 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
                 "Somente um documento pendente pode ser confirmado."));
         }
 
+        // A reivindicação condicional garante exclusão mútua no banco, mas a guarda do
+        // agregado continua como defesa contra uma entidade rastreada que esteja fora de
+        // sincronia com a reivindicação. Se essa defesa falhar depois do UPDATE, não há
+        // resposta de negócio segura: lançar é necessário para reverter a transação.
         Result confirmacao = documento.Confirmar(conteudo.LongLength, hashSha256, clock);
         if (confirmacao.IsFailure)
         {
-            return Result<DocumentoEditalDto>.Failure(confirmacao.Error!);
+            throw new InvalidOperationException(
+                $"A confirmação do documento {documento.Id} falhou após a reivindicação atômica já ter "
+                + $"avançado o status ({confirmacao.Error!.Code}) — estado inconsistente após a reivindicação, "
+                + "revertendo a transação.");
         }
 
         // A cópia selada é o que torna o documento confirmado imutável de
