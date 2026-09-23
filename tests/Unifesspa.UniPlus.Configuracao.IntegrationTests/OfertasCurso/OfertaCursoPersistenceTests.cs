@@ -565,11 +565,11 @@ public sealed class OfertaCursoPersistenceTests
         await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new OfertaCursoReader(readCtx);
 
-        (await reader.ObterPorIdAsync(ofertaComGrupo.Id))!.GrupoAreaEnem.Should().Be(GrupoCurso.SaudeEBiologicas);
+        (await reader.ObterPorIdAsync(ofertaComGrupo.Id))!.GrupoAreaEnem.Should().Be(new GrupoAreaEnemView("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
         (await reader.ObterPorIdAsync(ofertaSemGrupo.Id))!.GrupoAreaEnem.Should().BeNull();
 
         IReadOnlyList<OfertaCursoView> vivas = await reader.ListarVivasAsync();
-        vivas.Single(v => v.Id == ofertaComGrupo.Id).GrupoAreaEnem.Should().Be(GrupoCurso.SaudeEBiologicas);
+        vivas.Single(v => v.Id == ofertaComGrupo.Id).GrupoAreaEnem.Should().Be(new GrupoAreaEnemView("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
         vivas.Single(v => v.Id == ofertaSemGrupo.Id).GrupoAreaEnem.Should().BeNull();
     }
 

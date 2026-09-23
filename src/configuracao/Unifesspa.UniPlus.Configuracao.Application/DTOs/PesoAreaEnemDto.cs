@@ -4,14 +4,13 @@ using System.Text.Json.Serialization;
 
 /// <summary>
 /// DTO de resposta HTTP para <c>PesoAreaEnem</c>. Suporta HATEOAS Level 1 via
-/// <c>_links</c> (ADR-0029). O grupo de área é exposto como <c>string</c> (valor do value
-/// object <c>GrupoCurso</c>); as áreas, na ordem canônica, com código e rótulo oficial
-/// postos pelo sistema.
+/// <c>_links</c> (ADR-0029). O grupo de área vem com código e rótulo; as áreas, na ordem
+/// canônica, com código e rótulo oficial postos pelo sistema.
 /// </summary>
 public sealed record PesoAreaEnemDto(
     Guid Id,
     string Resolucao,
-    string GrupoCurso,
+    GrupoAreaEnemDto GrupoCurso,
     IReadOnlyList<PesoAreaEnemAreaDto> Areas,
     string BaseLegal,
     DateTimeOffset CriadoEm)

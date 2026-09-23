@@ -8366,9 +8366,13 @@
             ]
           },
           "grupoAreaEnem": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GrupoAreaEnemSnapshotDto"
+              }
             ]
           },
           "modalidades": {
@@ -10264,6 +10268,21 @@
             "type": "string"
           },
           "descricao": {
+            "type": "string"
+          }
+        }
+      },
+      "GrupoAreaEnemSnapshotDto": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "rotulo": {
             "type": "string"
           }
         }

@@ -32,7 +32,8 @@ public sealed class CursoTests
         curso.Nome.Should().Be(Nome);
         curso.Grau.Should().Be(Grau);
         curso.NivelEnsino.Should().Be(NivelEnsino);
-        curso.GrupoAreaEnem!.Valor.Should().Be(GrupoCurso.Tecnologica);
+        curso.GrupoAreaEnem!.Codigo.Should().Be(GrupoCurso.Tecnologica);
+        curso.GrupoAreaEnem.Rotulo.Should().Be("Tecnológica", "o rótulo é posto pelo sistema a partir do código");
         curso.IsDeleted.Should().BeFalse();
     }
 
@@ -49,7 +50,8 @@ public sealed class CursoTests
 
     [Theory(DisplayName = "Grupo de área do ENEM fora do domínio fechado é rejeitado")]
     [InlineData("Exatas")]
-    [InlineData("Tecnologica")]
+    [InlineData("Tecnológica")]
+    [InlineData("tecnologica")]
     [InlineData("HUMANÍSTICA I")]
     public void Criar_GrupoAreaEnemInvalido_Falha(string grupoAreaEnem)
     {
@@ -153,7 +155,7 @@ public sealed class CursoTests
         curso.Nome.Should().Be("Engenharia Civil");
         curso.Grau.Should().Be("Bacharelado");
         curso.NivelEnsino.Should().Be("Graduação");
-        curso.GrupoAreaEnem!.Valor.Should().Be(GrupoCurso.Tecnologica);
+        curso.GrupoAreaEnem!.Codigo.Should().Be(GrupoCurso.Tecnologica);
     }
 
     [Fact(DisplayName = "Atualizar troca os atributos editáveis, inclusive o código (editável)")]
@@ -170,7 +172,7 @@ public sealed class CursoTests
         curso.Nome.Should().Be("Engenharia Civil Integral");
         curso.Grau.Should().Be("Licenciatura");
         curso.NivelEnsino.Should().Be("Mestrado");
-        curso.GrupoAreaEnem!.Valor.Should().Be(GrupoCurso.SaudeEBiologicas);
+        curso.GrupoAreaEnem!.Codigo.Should().Be(GrupoCurso.SaudeEBiologicas);
         curso.Id.Should().Be(idOriginal, "o Id é imutável mesmo com o código editável");
     }
 
@@ -194,7 +196,7 @@ public sealed class CursoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CursoErrorCodes.GrupoAreaEnemInvalido);
-        curso.GrupoAreaEnem!.Valor.Should().Be(GrupoCurso.HumanisticaII, "a falha de validação não muta o agregado");
+        curso.GrupoAreaEnem!.Codigo.Should().Be(GrupoCurso.HumanisticaII, "a falha de validação não muta o agregado");
     }
 
     // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────

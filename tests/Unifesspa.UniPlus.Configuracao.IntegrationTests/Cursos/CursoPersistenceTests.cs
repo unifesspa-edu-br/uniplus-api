@@ -56,7 +56,10 @@ public sealed class CursoPersistenceTests
         persistido.Nome.Should().Be("Engenharia Civil");
         persistido.Grau.Should().Be("Bacharelado");
         persistido.NivelEnsino.Should().Be("Graduação");
-        persistido.GrupoAreaEnem!.Valor.Should().Be(GrupoCurso.Tecnologica);
+        persistido.GrupoAreaEnem!.Codigo.Should().Be(GrupoCurso.Tecnologica);
+        persistido.GrupoAreaEnem.Rotulo.Should().Be("Tecnológica");
+        (await GrupoGravadoAsync(readCtx, curso.Id)).Should().Be(new GrupoGravado("TECNOLOGICA", "Tecnológica"),
+            "a linha grava o código do grupo e, ao lado, o rótulo posto pelo sistema");
         persistido.CreatedBy.Should().Be(AdminA);
         persistido.IsDeleted.Should().BeFalse();
     }
@@ -146,16 +149,40 @@ public sealed class CursoPersistenceTests
         await act.Should().NotThrowAsync("o slot do código foi liberado pelo soft-delete");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita grupo de área do ENEM fora do domínio via SQL cru")]
-    public async Task Check_RejeitaGrupoForaDoDominioViaSqlCru()
+    [Theory(DisplayName = "CHECK de banco rejeita grupo de área do ENEM fora dos quatro códigos via SQL cru, inclusive o rótulo")]
+    [InlineData("Exatas")]
+    [InlineData("Tecnológica")]
+    public async Task Check_RejeitaGrupoForaDoDominioViaSqlCru(string grupo)
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.curso (id, codigo, nome, grau, nivel_ensino, grupo_area_enem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"Bacharelado"}, {"Graduação"}, {"Exatas"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.curso (id, codigo, nome, grau, nivel_ensino, grupo_area_enem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"Bacharelado"}, {"Graduação"}, {grupo}, {DateTimeOffset.UtcNow}, {false})");
 
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de domínio do grupo de área do ENEM impede o INSERT direto");
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        pg.ConstraintName.Should().Be("ck_curso_grupo_area_enem");
+    }
+
+    [Fact(DisplayName = "Tirar o grupo do curso zera código e rótulo gravados")]
+    public async Task Atualizar_SemGrupo_ZeraCodigoERotulo()
+    {
+        Curso curso = Novo(CodigoUnico(), grupoAreaEnem: GrupoCurso.SaudeEBiologicas);
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Cursos.Add(curso);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            Curso tracked = await ctx.Cursos.SingleAsync(c => c.Id == curso.Id);
+            tracked.Atualizar(tracked.Codigo, tracked.Nome, tracked.Grau, tracked.NivelEnsino, grupoAreaEnem: null)
+                .IsSuccess.Should().BeTrue();
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        (await GrupoGravadoAsync(readCtx, curso.Id)).Should().Be(new GrupoGravado(null, null));
     }
 
     [Fact(DisplayName = "CHECK de banco aceita grupo de área do ENEM nulo via SQL cru (null-safe)")]
@@ -285,4 +312,11 @@ public sealed class CursoPersistenceTests
         Curso.Criar(codigo, nome, "Bacharelado", "Graduação", grupoAreaEnem).Value!;
 
     private static string CodigoUnico() => $"CUR_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+
+    private static Task<GrupoGravado> GrupoGravadoAsync(ConfiguracaoDbContext ctx, Guid cursoId) =>
+        ctx.Database
+            .SqlQuery<GrupoGravado>($"SELECT grupo_area_enem AS codigo, grupo_area_enem_rotulo AS rotulo FROM configuracao.curso WHERE id = {cursoId}")
+            .SingleAsync();
+
+    private sealed record GrupoGravado(string? Codigo, string? Rotulo);
 }

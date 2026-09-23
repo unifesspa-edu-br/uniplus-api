@@ -48,7 +48,7 @@ public sealed class AtualizarPesoAreaEnemCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         existente.Resolucao.Should().Be("Res. 805/2024");
-        existente.GrupoCurso.Valor.Should().Be(GrupoCurso.Tecnologica);
+        existente.GrupoCurso.Codigo.Should().Be(GrupoCurso.Tecnologica);
         existente.AreasDaLinha.Single(a => a.Codigo == PesoAreaEnem.CodigoMatematica).Peso.Should().Be(3.00m);
         _repository.Received(1).RegistrarAtualizacao(existente);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());

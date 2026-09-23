@@ -37,7 +37,7 @@ public static class CriarPesoAreaEnemCommandHandler
 
         PesoAreaEnem peso = pesoResult.Value!;
 
-        if (await repository.ParExisteEntreVivosAsync(peso.Resolucao, peso.GrupoCurso.Valor, null, cancellationToken).ConfigureAwait(false))
+        if (await repository.ParExisteEntreVivosAsync(peso.Resolucao, peso.GrupoCurso.Codigo, null, cancellationToken).ConfigureAwait(false))
         {
             return Result<Guid>.Failure(ParJaExisteErro());
         }

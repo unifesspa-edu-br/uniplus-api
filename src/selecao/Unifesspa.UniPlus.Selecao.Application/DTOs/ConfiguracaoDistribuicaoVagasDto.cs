@@ -34,6 +34,9 @@ public sealed record ReferenciaReservaDemograficaSnapshotDto(
     decimal PcdPercentual,
     string BaseLegal);
 
+/// <summary>Grupo de área do ENEM congelado na distribuição de vagas, com código e rótulo.</summary>
+public sealed record GrupoAreaEnemSnapshotDto(string Codigo, string Rotulo);
+
 /// <summary>Projeção de leitura de uma linha do quadro de vagas (issue #848/ADR-0115).</summary>
 public sealed record VagaOfertadaDto(Guid Id, Guid ModalidadeOrigemId, string ModalidadeCodigo, int Quantidade);
 
@@ -42,8 +45,8 @@ public sealed record VagaOfertadaDto(Guid Id, Guid ModalidadeOrigemId, string Mo
 /// O quadro de vagas (issue #848/ADR-0115) é output derivado, sempre
 /// materializado junto da configuração — <see cref="Quadro"/> e os derivados
 /// (<see cref="VrNominal"/> etc.) refletem exatamente o que foi congelado.
-/// <see cref="GrupoAreaEnem"/> é o grupo de área do ENEM do curso da oferta, congelado
-/// na definição; <see langword="null"/> quando o curso não o declara.
+/// <see cref="GrupoAreaEnem"/> é o grupo de área do ENEM do curso da oferta, com código e
+/// rótulo, congelado na definição; <see langword="null"/> quando o curso não o declara.
 /// </summary>
 public sealed record ConfiguracaoDistribuicaoVagasDto(
     Guid Id,
@@ -53,7 +56,7 @@ public sealed record ConfiguracaoDistribuicaoVagasDto(
     ReferenciaRegraDto RegraDistribuicao,
     ReferenciaRegraDto? RegraAjuste,
     ReferenciaReservaDemograficaSnapshotDto? ReferenciaDemografica,
-    string? GrupoAreaEnem,
+    GrupoAreaEnemSnapshotDto? GrupoAreaEnem,
     IReadOnlyList<ModalidadeSelecionadaDto> Modalidades,
     IReadOnlyList<VagaOfertadaDto> Quadro,
     int VrNominal,

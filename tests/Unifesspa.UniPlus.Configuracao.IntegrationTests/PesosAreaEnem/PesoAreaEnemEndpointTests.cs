@@ -125,7 +125,8 @@ public sealed class PesoAreaEnemEndpointTests
 
         using JsonDocument doc = await ObterAsync(client, id);
         JsonElement root = doc.RootElement;
-        root.GetProperty("grupoCurso").GetString().Should().Be(GrupoCurso.Tecnologica);
+        root.GetProperty("grupoCurso").GetProperty("codigo").GetString().Should().Be(GrupoCurso.Tecnologica);
+        root.GetProperty("grupoCurso").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
         root.GetProperty("baseLegal").GetString().Should().Be(BaseLegal);
         root.TryGetProperty("pesoRedacao", out _).Should().BeFalse("os cinco pesos fixos saíram do contrato");
         root.TryGetProperty("corteRedacao", out _).Should().BeFalse("o corte passou a ser de cada área");
@@ -253,15 +254,14 @@ public sealed class PesoAreaEnemEndpointTests
         await AssertRecusaNoCampo(body, "areas", "uniplus.configuracao.peso_area_enem.area_faltando");
     }
 
-    [Fact(DisplayName = "POST admin com grupo fora do domínio retorna 422")]
-    public async Task Criar_GrupoInvalido_Retorna422()
+    [Theory(DisplayName = "POST admin com grupo fora dos quatro códigos retorna 422 no campo do grupo, inclusive o rótulo")]
+    [InlineData("Engenharias")]
+    [InlineData("Tecnológica")]
+    public async Task Criar_GrupoInvalido_Retorna422(string grupoCurso)
     {
-        var body = new { resolucao = ResolucaoUnica(), grupoCurso = "Engenharias", areas = AreasValidas(), baseLegal = BaseLegal };
+        var body = new { resolucao = ResolucaoUnica(), grupoCurso, areas = AreasValidas(), baseLegal = BaseLegal };
 
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarAdmin(client, HttpMethod.Post, AdminPath, body);
-
-        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        await AssertRecusaNoCampo(body, "grupoCurso", "uniplus.configuracao.peso_area_enem.grupo_curso_invalido");
     }
 
     private static object[] AreasValidas() =>

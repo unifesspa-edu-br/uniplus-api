@@ -9,13 +9,13 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// </summary>
 /// <param name="Id">Identificador único (Guid v7 — ADR-0032).</param>
 /// <param name="Resolucao">Resolução que fundamenta os pesos (parte 1 da chave de negócio, ex.: "Res. 805/2024").</param>
-/// <param name="GrupoCurso">Grupo de área do ENEM (parte 2 da chave de negócio).</param>
+/// <param name="GrupoCurso">Grupo de área do ENEM, com código e rótulo (o código é a parte 2 da chave de negócio).</param>
 /// <param name="Areas">As cinco áreas, na ordem canônica, com código, rótulo oficial, peso e corte.</param>
 /// <param name="BaseLegal">Dispositivo legal que fundamenta a linha de pesos.</param>
 public sealed record PesoAreaEnemView(
     Guid Id,
     string Resolucao,
-    string GrupoCurso,
+    GrupoAreaEnemView GrupoCurso,
     IReadOnlyList<PesoAreaEnemAreaView> Areas,
     string BaseLegal);
 

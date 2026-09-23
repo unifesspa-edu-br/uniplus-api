@@ -61,8 +61,6 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("MunicipioBonusRegionalNome", LimitesDoEnvelope.MunicipioBonusRegionalNome, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.Nome)),
         ("MunicipioBonusRegionalUf", LimitesDoEnvelope.MunicipioBonusRegionalUf, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.Uf)),
 
-        ("GrupoAreaEnem", LimitesDoEnvelope.GrupoAreaEnem, typeof(ConfiguracaoDistribuicaoVagas), nameof(ConfiguracaoDistribuicaoVagas.GrupoAreaEnem)),
-
         // Story #851 — cronograma de fases.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.Codigo)),
         ("DonoInstitucional", LimitesDoEnvelope.DonoInstitucional, typeof(FaseCronograma), nameof(FaseCronograma.DonoInstitucional)),
@@ -242,6 +240,17 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         demografica.FindProperty(nameof(ReferenciaReservaDemograficaSnapshot.CensoReferencia))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.CensoReferencia);
 
+        IEntityType grupoAreaEnem = contexto.Model
+            .FindEntityType(typeof(ConfiguracaoDistribuicaoVagas))!
+            .GetNavigations()
+            .Single(n => n.Name == nameof(ConfiguracaoDistribuicaoVagas.GrupoAreaEnem))
+            .TargetEntityType;
+
+        grupoAreaEnem.FindProperty(nameof(GrupoAreaEnemSnapshot.Codigo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.GrupoAreaEnemCodigo);
+        grupoAreaEnem.FindProperty(nameof(GrupoAreaEnemSnapshot.Rotulo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.GrupoAreaEnemRotulo);
+
         foreach (string percentual in new[]
         {
             nameof(ReferenciaReservaDemograficaSnapshot.PpiPercentual),
@@ -359,6 +368,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             "UnidadeAdministradoraSigla", "UnidadeAdministradoraSlug", "UnidadeAdministradoraNome", "UnidadeAdministradoraTipo",
             "UnidadeAdministradoraCidadeCodigoIbge", "UnidadeAdministradoraCidadeNome", "UnidadeAdministradoraCidadeUf",
             "TipoEtapaCodigo", "TipoEtapaNome",
+            "GrupoAreaEnemCodigo", "GrupoAreaEnemRotulo",
 
             // NumeroDoAto não é coluna do agregado — os DadosEdital são do ato, não da
             // configuração. O limite vem dos validators de publicar e de retificar (60), e é

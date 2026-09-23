@@ -55,7 +55,7 @@ public sealed class PesoAreaEnemTests
 
         peso.Id.Should().NotBe(Guid.Empty);
         peso.Resolucao.Should().Be(Resolucao);
-        peso.GrupoCurso.Valor.Should().Be(Grupo);
+        peso.GrupoCurso.Codigo.Should().Be(Grupo);
         peso.BaseLegal.Should().Be(BaseLegal);
         peso.IsDeleted.Should().BeFalse();
         peso.AreasDaLinha.Select(a => (a.Codigo, a.Rotulo, a.Peso, a.Corte)).Should().Equal(
@@ -301,7 +301,7 @@ public sealed class PesoAreaEnemTests
         resultado.IsSuccess.Should().BeTrue();
         peso.Id.Should().Be(id);
         peso.Resolucao.Should().Be(Resolucao);
-        peso.GrupoCurso.Valor.Should().Be(Grupo);
+        peso.GrupoCurso.Codigo.Should().Be(Grupo);
         peso.BaseLegal.Should().Be("Nova base");
         peso.AreasDaLinha[0].Peso.Should().Be(3m);
         peso.AreasDaLinha[0].Corte.Should().BeNull();

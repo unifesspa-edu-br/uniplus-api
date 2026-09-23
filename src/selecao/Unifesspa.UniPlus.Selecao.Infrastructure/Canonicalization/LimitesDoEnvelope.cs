@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Os limites das <b>colunas</b> que vão receber a configuração reidratada.
@@ -49,10 +50,11 @@ public static class LimitesDoEnvelope
     public const int CensoReferencia = 20;
 
     /// <summary>
-    /// Grupo de área do ENEM congelado na distribuição de vagas — mesmo teto da coluna de
-    /// origem no cadastro de cursos.
+    /// Código e rótulo do grupo de área do ENEM congelado na distribuição de vagas — mesmo
+    /// teto das colunas de origem no cadastro de cursos.
     /// </summary>
-    public const int GrupoAreaEnem = 30;
+    public const int GrupoAreaEnemCodigo = GrupoAreaEnemSnapshot.CodigoMaxLength;
+    public const int GrupoAreaEnemRotulo = GrupoAreaEnemSnapshot.RotuloMaxLength;
     public const int RegraCodigo = 128;
     public const int RegraVersao = 16;
 

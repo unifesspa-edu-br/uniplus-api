@@ -58,9 +58,20 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         });
         builder.Navigation(c => c.ReferenciaDemografica).IsRequired(false);
 
-        // Grupo de área do ENEM do curso da oferta, congelado por valor (ADR-0061).
-        // Nulo quando o curso não o declara.
-        builder.Property(c => c.GrupoAreaEnem).HasMaxLength(LimitesDoEnvelope.GrupoAreaEnem);
+        // Grupo de área do ENEM do curso da oferta, com código e rótulo, congelado por
+        // valor (ADR-0061). Colunas nulas quando o curso não o declara.
+        builder.OwnsOne(c => c.GrupoAreaEnem, grupo =>
+        {
+            grupo.Property(g => g.Codigo)
+                .HasColumnName("grupo_area_enem_codigo")
+                .HasMaxLength(LimitesDoEnvelope.GrupoAreaEnemCodigo)
+                .HasComment("Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, congelado por valor do cadastro de cursos na definição da distribuição; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo.");
+            grupo.Property(g => g.Rotulo)
+                .HasColumnName("grupo_area_enem_rotulo")
+                .HasMaxLength(LimitesDoEnvelope.GrupoAreaEnemRotulo)
+                .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo.");
+        });
+        builder.Navigation(c => c.GrupoAreaEnem).IsRequired(false);
 
         // RegraAjuste (issue #848/ADR-0115) — obrigatória no ramo federal, opcional
         // no institucional (quadro fixo não reconcilia).

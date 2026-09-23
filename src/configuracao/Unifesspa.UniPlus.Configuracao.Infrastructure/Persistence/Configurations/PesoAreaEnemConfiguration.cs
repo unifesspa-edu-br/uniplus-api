@@ -17,6 +17,7 @@ internal sealed class PesoAreaEnemConfiguration
 {
     private const int ResolucaoMaxLength = 40;
     private const int GrupoCursoMaxLength = 30;
+    private const int GrupoCursoRotuloMaxLength = 60;
     private const int BaseLegalMaxLength = 500;
     private const int AreaCodigoMaxLength = 30;
     private const int AreaRotuloMaxLength = 100;
@@ -29,10 +30,11 @@ internal sealed class PesoAreaEnemConfiguration
             "peso_area_enem",
             t =>
             {
-                // Domínio fechado do grupo de área (Res. nº 805/2024/Consepe, Anexo I).
+                // Domínio fechado do código do grupo de área (Resolução nº
+                // 805/2024/Consepe, Anexo I), montado da lista do domínio.
                 t.HasCheckConstraint(
                     "ck_peso_area_enem_grupo_curso",
-                    "grupo_curso IN ('Tecnológica', 'Humanística I', 'Humanística II', 'Saúde e Biológicas')");
+                    $"grupo_curso IN ({GrupoCursoValueConverter.CodigosEmSql()})");
             });
 
         builder.HasKey(p => p.Id);
@@ -41,13 +43,23 @@ internal sealed class PesoAreaEnemConfiguration
             .HasMaxLength(ResolucaoMaxLength)
             .IsRequired();
 
-        // GrupoCurso é value object — persistido por valor como varchar via
+        // GrupoCurso é value object — persistido pelo código via
         // GrupoCursoValueConverter (reidratação fail-fast). O nome de coluna
-        // snake_case vem da convenção global.
+        // snake_case vem da convenção global. A chave de negócio (resolução +
+        // código do grupo) e o índice único parcial ficam sobre esta coluna.
         builder.Property(p => p.GrupoCurso)
             .HasConversion<GrupoCursoValueConverter>()
             .HasMaxLength(GrupoCursoMaxLength)
-            .IsRequired();
+            .IsRequired()
+            .HasComment("Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_peso_area_enem_grupo_curso; com a resolução, forma a chave de negócio da linha. O rótulo fica em grupo_curso_rotulo.");
+
+        // Rótulo do grupo, gravado pelo sistema ao lado do código (campo privado do
+        // agregado).
+        builder.Property<string>("_grupoCursoRotulo")
+            .HasColumnName("grupo_curso_rotulo")
+            .HasMaxLength(GrupoCursoRotuloMaxLength)
+            .IsRequired()
+            .HasComment("Rótulo do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), posto pelo sistema a partir do código em grupo_curso.");
 
         // As cinco áreas numa tabela filha, uma linha por área. A chave (pai, código)
         // garante cada área uma vez por linha de pesos; código e rótulo são postos pelo

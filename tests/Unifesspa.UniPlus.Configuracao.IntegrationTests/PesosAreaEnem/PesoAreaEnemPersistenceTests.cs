@@ -54,7 +54,7 @@ public sealed class PesoAreaEnemPersistenceTests
         PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
 
         persistida.Resolucao.Should().Be(resolucao);
-        persistida.GrupoCurso.Valor.Should().Be(GrupoCurso.Tecnologica);
+        persistida.GrupoCurso.Codigo.Should().Be(GrupoCurso.Tecnologica);
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
         persistida.AreasDaLinha.Select(a => (a.Codigo, a.Rotulo, a.Peso, a.Corte)).Should().Equal(
@@ -64,12 +64,14 @@ public sealed class PesoAreaEnemPersistenceTests
             ("LINGUAGENS", "Linguagens e suas Tecnologias", 2.50m, (decimal?)null),
             ("MATEMATICA", "Matemática e suas Tecnologias", 1.50m, (decimal?)null));
         (await ContarAreasAsync(readCtx, peso.Id)).Should().Be(5);
+        (await GrupoPersistidoAsync(readCtx, peso.Id)).Should().Be(("TECNOLOGICA", "Tecnológica"),
+            "a linha grava o código do grupo e, ao lado, o rótulo posto pelo sistema");
 
         var reader = new PesoAreaEnemReader(readCtx);
         PesoAreaEnemView? view = await reader.ObterPorIdAsync(peso.Id);
         view.Should().NotBeNull();
         view!.Resolucao.Should().Be(resolucao);
-        view.GrupoCurso.Should().Be(GrupoCurso.Tecnologica);
+        view.GrupoCurso.Should().Be(new GrupoAreaEnemView(GrupoCurso.Tecnologica, "Tecnológica"));
         view.Areas.Select(a => (a.Codigo, a.Rotulo, a.Peso, a.Corte)).Should().Equal(
             persistida.AreasDaLinha.Select(a => (a.Codigo, a.Rotulo, a.Peso, a.Corte)));
     }
@@ -156,6 +158,30 @@ public sealed class PesoAreaEnemPersistenceTests
         await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
         persistida.AreasDaLinha[3].Rotulo.Should().Be("Linguagens e suas Tecnologias");
+    }
+
+    [Fact(DisplayName = "Atualizar regrava o rótulo do grupo a partir do domínio")]
+    public async Task Atualizar_RegravaORotuloDoGrupo()
+    {
+        PesoAreaEnem peso = Nova(ResolucaoUnica());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+            await ctx.Database.ExecuteSqlAsync(
+                $"UPDATE configuracao.peso_area_enem SET grupo_curso_rotulo = {"Rótulo antigo"} WHERE id = {peso.Id}");
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+            tracked.Atualizar(Areas(), BaseLegal).IsSuccess.Should().BeTrue();
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        (await GrupoPersistidoAsync(readCtx, peso.Id)).Should().Be(("TECNOLOGICA", "Tecnológica"),
+            "o rótulo do grupo é regravado a partir do código na edição, como o das áreas");
     }
 
     [Fact(DisplayName = "Edição só dos pesos concorrente com remoção lógica não desfaz a remoção")]
@@ -287,16 +313,18 @@ public sealed class PesoAreaEnemPersistenceTests
         await act.Should().NotThrowAsync("o slot do par foi liberado pelo soft-delete");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita grupo fora do domínio via SQL cru")]
-    public async Task Check_RejeitaGrupoForaDoDominioViaSqlCru()
+    [Theory(DisplayName = "CHECK de banco rejeita grupo fora dos quatro códigos via SQL cru, inclusive o rótulo")]
+    [InlineData("Engenharias")]
+    [InlineData("Tecnológica")]
+    public async Task Check_RejeitaGrupoForaDoDominioViaSqlCru(string grupo)
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {"Engenharias"}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, grupo_curso_rotulo, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {grupo}, {"Rótulo"}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
 
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de domínio de grupo_curso impede o INSERT direto");
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        pg.ConstraintName.Should().Be("ck_peso_area_enem_grupo_curso");
     }
 
     [Theory(DisplayName = "CHECKs da tabela de áreas rejeitam código fora das cinco, peso negativo e corte fora da faixa via SQL cru")]
@@ -420,9 +448,19 @@ public sealed class PesoAreaEnemPersistenceTests
         DateTimeOffset agora = DateTimeOffset.UtcNow;
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, base_legal, created_at, is_deleted, deleted_at) VALUES ({id}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {BaseLegal}, {agora}, {true}, {agora})");
+            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, grupo_curso_rotulo, base_legal, created_at, is_deleted, deleted_at) VALUES ({id}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {"Tecnológica"}, {BaseLegal}, {agora}, {true}, {agora})");
         return id;
     }
+
+    private static async Task<(string Codigo, string Rotulo)> GrupoPersistidoAsync(ConfiguracaoDbContext ctx, Guid pesoId)
+    {
+        GrupoGravado grupo = await ctx.Database
+            .SqlQuery<GrupoGravado>($"SELECT grupo_curso AS codigo, grupo_curso_rotulo AS rotulo FROM configuracao.peso_area_enem WHERE id = {pesoId}")
+            .SingleAsync();
+        return (grupo.Codigo, grupo.Rotulo);
+    }
+
+    private sealed record GrupoGravado(string Codigo, string Rotulo);
 
     private static string ResolucaoUnica() => $"Res. {Guid.NewGuid().ToString("N")[..12]}";
 }

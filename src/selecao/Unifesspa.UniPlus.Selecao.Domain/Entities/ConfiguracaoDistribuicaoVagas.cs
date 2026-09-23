@@ -60,17 +60,17 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     public ReferenciaRegra? RegraAjuste { get; private set; }
 
     /// <summary>
-    /// Grupo de área do ENEM do curso desta oferta, copiado por valor do cadastro de
-    /// cursos no momento da definição (snapshot-copy, ADR-0061) — é ele que diz qual
-    /// linha de pesos por área se aplica à oferta. Editar o curso depois não alcança o
-    /// processo; quem quiser o valor novo redefine a distribuição.
+    /// Grupo de área do ENEM do curso desta oferta, com código e rótulo, copiado por valor
+    /// do cadastro de cursos no momento da definição (snapshot-copy, ADR-0061) — o código
+    /// diz qual linha de pesos por área se aplica à oferta. Editar o curso depois não
+    /// alcança o processo; quem quiser o valor novo redefine a distribuição.
     /// </summary>
     /// <remarks>
     /// <see langword="null"/> quando o curso não declara grupo: o cadastro o trata como
     /// opcional, e a gravação do rascunho não o exige. A exigência, quando houver, é de
     /// publicação de processo que classifica por nota do ENEM.
     /// </remarks>
-    public string? GrupoAreaEnem { get; private set; }
+    public GrupoAreaEnemSnapshot? GrupoAreaEnem { get; private set; }
 
     public int VrNominal { get; private set; }
     public int VrFinal { get; private set; }
@@ -155,8 +155,10 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// permissão nem proibição, e nenhum teto é imposto.
     /// </param>
     /// <param name="grupoAreaEnem">
-    /// Grupo de área do ENEM do curso da oferta, já no valor canônico do cadastro.
-    /// <see langword="null"/> quando o curso não o declara; texto em branco é recusado.
+    /// Código e rótulo do grupo de área do ENEM do curso da oferta, como o cadastro os
+    /// entrega. <see langword="null"/> quando o curso não o declara; um par que não forma
+    /// um grupo válido (em branco, longo demais) é recusado no campo
+    /// <c>grupoAreaEnem</c>, acumulado com as demais checagens de forma.
     /// </param>
     public static Result<ConfiguracaoDistribuicaoVagas> Criar(
         Guid ofertaCursoOrigemId,
@@ -169,7 +171,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         int? vagasAnuaisAutorizadas = null,
         IReadOnlyCollection<string>? modalidadesAdmitidas = null,
         ArgsRegraAjusteDistribuicao? argsAjuste = null,
-        string? grupoAreaEnem = null)
+        (string? Codigo, string? Rotulo)? grupoAreaEnem = null)
     {
         ArgumentNullException.ThrowIfNull(regraDistribuicao);
         ArgumentNullException.ThrowIfNull(modalidades);
@@ -195,13 +197,20 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
                 $"O VO_base ({voBase}) excede as {teto} vagas anuais autorizadas para a oferta.")));
         }
 
-        // Ausente é legítimo (curso sem grupo declarado); presente e em branco não
-        // designa grupo nenhum e deixaria a resolução de pesos com uma chave vazia.
-        if (grupoAreaEnem is not null && string.IsNullOrWhiteSpace(grupoAreaEnem))
+        // Ausente é legítimo (curso sem grupo declarado); presente e inválido não designa
+        // grupo nenhum e deixaria a resolução de pesos sem chave.
+        GrupoAreaEnemSnapshot? grupo = null;
+        if (grupoAreaEnem is { } informado)
         {
-            erros.Add(new("grupoAreaEnem", new DomainError(
-                "ConfiguracaoDistribuicaoVagas.GrupoAreaEnemEmBranco",
-                "O grupo de área do ENEM da oferta, quando informado, não pode ser vazio.")));
+            Result<GrupoAreaEnemSnapshot> grupoResult = GrupoAreaEnemSnapshot.Criar(informado.Codigo, informado.Rotulo);
+            if (grupoResult.IsFailure)
+            {
+                erros.Add(new("grupoAreaEnem", grupoResult.Error!));
+            }
+            else
+            {
+                grupo = grupoResult.Value;
+            }
         }
 
         List<string> codigosInformados = [.. modalidades.Select(m => m.Codigo)];
@@ -365,7 +374,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
             RegraDistribuicao = regraDistribuicao,
             RegraAjuste = regraAjuste,
             ReferenciaDemografica = referenciaDemografica,
-            GrupoAreaEnem = grupoAreaEnem,
+            GrupoAreaEnem = grupo,
             VrNominal = montado.VrNominal,
             VrFinal = montado.VrFinal,
             Estouro = montado.Estouro,

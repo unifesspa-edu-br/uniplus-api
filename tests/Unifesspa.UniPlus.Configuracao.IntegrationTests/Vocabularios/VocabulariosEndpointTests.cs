@@ -31,6 +31,28 @@ public sealed class VocabulariosEndpointTests
         _fixture = fixture;
     }
 
+    [Fact(DisplayName = "GET /vocabularios/grupos-area-enem devolve os quatro grupos com código e rótulo, na ordem, sem exigir autenticação")]
+    public async Task ListarGruposAreaEnem_DevolveOsQuatroGrupos()
+    {
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri("/api/configuracao/vocabularios/grupos-area-enem", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should()
+            .Be("application/vnd.uniplus.codigo-grupo-area-enem.v1+json");
+
+        GrupoAreaEnemDto[] grupos = (await response.Content.ReadFromJsonAsync<GrupoAreaEnemDto[]>())!;
+
+        // Afirmado por extenso: é o contrato publicado que está sob teste, não a lista do domínio.
+        grupos.Should().Equal(
+            new GrupoAreaEnemDto("TECNOLOGICA", "Tecnológica"),
+            new GrupoAreaEnemDto("HUMANISTICA_I", "Humanística I"),
+            new GrupoAreaEnemDto("HUMANISTICA_II", "Humanística II"),
+            new GrupoAreaEnemDto("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
+    }
+
     [Fact(DisplayName = "GET /vocabularios/tipos-banca devolve os seis códigos com nome, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosTipoBanca_DevolveVocabularioCompleto()
     {
@@ -130,6 +152,7 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/configuracao/vocabularios/tipos-banca")]
     [InlineData("/api/configuracao/vocabularios/fases-canonicas")]
     [InlineData("/api/configuracao/vocabularios/tipos-instrumento-normativo")]
+    [InlineData("/api/configuracao/vocabularios/grupos-area-enem")]
     public async Task Vocabularios_NaoTemRotaDeEscrita(string rota)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -150,6 +173,7 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/configuracao/vocabularios/tipos-banca", "codigo-tipo-banca")]
     [InlineData("/api/configuracao/vocabularios/fases-canonicas", "codigo-fase-canonica")]
     [InlineData("/api/configuracao/vocabularios/tipos-instrumento-normativo", "codigo-tipo-instrumento-normativo")]
+    [InlineData("/api/configuracao/vocabularios/grupos-area-enem", "codigo-grupo-area-enem")]
     public async Task Vocabularios_VersaoDesconhecidaDaVendorMime_Recusa(string rota, string resource)
     {
         using HttpClient client = _fixture.Factory.CreateClient();

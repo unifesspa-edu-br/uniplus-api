@@ -65,7 +65,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         Guid ofertaCursoId = Guid.CreateVersion7();
         Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoId, voBase: 50, pr: 0.5m, regra, regraAjuste, demografica, modalidades,
-            grupoAreaEnem: "Humanística I");
+            grupoAreaEnem: ("HUMANISTICA_I", "Humanística I"));
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([configResult.Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -85,7 +85,9 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         recarregado.Should().NotBeNull();
         ConfiguracaoDistribuicaoVagas distribuicao = recarregado!.DistribuicaoVagas.Single();
         distribuicao.OfertaCursoOrigemId.Should().Be(ofertaCursoId);
-        distribuicao.GrupoAreaEnem.Should().Be("Humanística I");
+        distribuicao.GrupoAreaEnem.Should().NotBeNull();
+        distribuicao.GrupoAreaEnem!.Codigo.Should().Be("HUMANISTICA_I");
+        distribuicao.GrupoAreaEnem.Rotulo.Should().Be("Humanística I");
         distribuicao.VoBase.Should().Be(50);
         distribuicao.Pr.Should().Be(0.5m);
         distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDistribuicaoVagasCodigo.Lei12711);

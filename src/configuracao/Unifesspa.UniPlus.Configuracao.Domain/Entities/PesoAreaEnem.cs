@@ -91,6 +91,10 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
     public string Resolucao { get; private set; } = string.Empty;
     public GrupoCurso GrupoCurso { get; private set; } = null!;
 
+    // Rótulo do grupo, gravado ao lado do código. O domínio lê o rótulo do próprio
+    // GrupoCurso; a coluna existe para o dado persistido carregar código e rótulo.
+    private string _grupoCursoRotulo = string.Empty;
+
     /// <summary>O peso e o corte de cada uma das cinco áreas, sempre na ordem canônica.</summary>
     /// <remarks>
     /// Um código que não esteja em <see cref="Areas"/> (linha gravada fora do agregado)
@@ -164,6 +168,7 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         {
             Resolucao = resolucaoNorm!,
             GrupoCurso = grupo.Value!,
+            _grupoCursoRotulo = grupo.Value!.Rotulo,
             BaseLegal = (baseLegal ?? string.Empty).Trim(),
         };
         peso._areas.AddRange(valores.Value!.Select(static area =>
@@ -200,6 +205,10 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
             existente.AplicarValores(area.Descrita.Rotulo, area.Peso, area.Corte);
         }
 
+        // O grupo não muda (é chave de negócio), mas o rótulo gravado ao lado do código é
+        // regravado a partir do domínio pelo mesmo motivo do rótulo das áreas: uma correção
+        // no rótulo do grupo chega às linhas já gravadas na próxima edição.
+        _grupoCursoRotulo = GrupoCurso.Rotulo;
         BaseLegal = (baseLegal ?? string.Empty).Trim();
         return Result.Success();
     }
@@ -360,7 +369,6 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
                 PesoAreaEnemErrorCodes.CorteExcedeMaximo,
                 $"O corte informado para {nomeDaArea} não pode exceder {CorteMaximo} (nota máxima de uma área do ENEM).")));
         }
-
     }
 
     // O código recusado volta na mensagem para o operador achar o erro, mas limitado:

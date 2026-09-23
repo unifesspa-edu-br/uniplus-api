@@ -14,7 +14,7 @@ public static class CursoMapping
             curso.Nome,
             curso.Grau,
             curso.NivelEnsino,
-            curso.GrupoAreaEnem?.Valor,
+            curso.GrupoAreaEnem is { } grupo ? new GrupoAreaEnemDto(grupo.Codigo, grupo.Rotulo) : null,
             curso.CreatedAt);
     }
 }
