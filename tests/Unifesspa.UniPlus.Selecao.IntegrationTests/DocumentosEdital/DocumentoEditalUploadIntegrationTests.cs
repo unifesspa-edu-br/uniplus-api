@@ -382,4 +382,86 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
             .FirstAsync(d => d.Id == documento.Id);
         documentoAposRollback.Status.Should().Be(StatusDocumentoEdital.Pendente);
     }
+
+    [Fact(DisplayName = "Falha após reivindicação reverte para pendente e retry converge na mesma cópia selada")]
+    public async Task Confirmar_FalhaAoSalvarCopiaSelada_ReverteEPermiteRetrySemOrfaos()
+    {
+        (SelecaoDbContext contextoInicial, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoEditalRepository repositorioInicial = new(contextoInicial);
+        ProcessoSeletivoRepository processoRepository = new(contextoInicial, TimeProvider.System);
+
+        Result<IniciarUploadDocumentoEditalDto> iniciar = await IniciarUploadDocumentoEditalCommandHandler.Handle(
+            new IniciarUploadDocumentoEditalCommand(processo.Id),
+            processoRepository, repositorioInicial, _storage, contextoInicial, TimeProvider.System, CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue();
+
+        using HttpClient http = new();
+        using ByteArrayContent conteudo = new(ConteudoPdfValido);
+        conteudo.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        (await http.PutAsync(iniciar.Value!.UrlUpload, conteudo)).EnsureSuccessStatusCode();
+
+        FailingSealedStorage storageFalho = new(_storage);
+        await using (IDbContextTransaction transacao = await contextoInicial.Database.BeginTransactionAsync())
+        {
+            Func<Task> act = () => ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+                new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciar.Value.DocumentoEditalId),
+                repositorioInicial, storageFalho, contextoInicial, TimeProvider.System, CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+            await transacao.RollbackAsync();
+        }
+
+        await using SelecaoDbContext contextoAposFalha = _dbFixture.CreateDbContext();
+        DocumentoEdital documentoAposFalha = await contextoAposFalha.DocumentosEdital
+            .FirstAsync(d => d.Id == iniciar.Value.DocumentoEditalId);
+        documentoAposFalha.Status.Should().Be(StatusDocumentoEdital.Pendente);
+        documentoAposFalha.HashSha256.Should().BeNull();
+        documentoAposFalha.ObjectKeyConfirmado.Should().BeNull();
+
+        string objectKeySeladoEsperado =
+            $"selecao/documentos-edital/{processo.Id:D}/{documentoAposFalha.Id:D}/confirmado.pdf";
+        (await _storage.ObterInfoAsync(objectKeySeladoEsperado, CancellationToken.None))
+            .Should().NotBeNull();
+
+        DocumentoEditalRepository repositorioRetry = new(contextoAposFalha);
+        Result<DocumentoEditalDto> retry = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciar.Value.DocumentoEditalId),
+            repositorioRetry, _storage, contextoAposFalha, TimeProvider.System, CancellationToken.None);
+
+        retry.IsSuccess.Should().BeTrue();
+        retry.Value!.Status.Should().Be("Confirmado");
+        retry.Value.TamanhoBytes.Should().Be(ConteudoPdfValido.Length);
+
+        DocumentoEdital documentoConfirmado = await contextoAposFalha.DocumentosEdital
+            .AsNoTracking()
+            .FirstAsync(d => d.Id == iniciar.Value.DocumentoEditalId);
+        documentoConfirmado.ObjectKeyConfirmado.Should().Be(objectKeySeladoEsperado);
+
+        await using Stream streamSelado = await _storage.AbrirLeituraAsync(
+            documentoConfirmado.ObjectKeyConfirmado!, DocumentoEdital.TamanhoMaximoBytes + 1, CancellationToken.None);
+        using MemoryStream buffer = new();
+        await streamSelado.CopyToAsync(buffer, CancellationToken.None);
+        buffer.ToArray().Should().Equal(ConteudoPdfValido);
+    }
+
+    private sealed class FailingSealedStorage(IDocumentoEditalStorage inner) : IDocumentoEditalStorage
+    {
+        public Task<string> GerarUrlUploadAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
+            inner.GerarUrlUploadAsync(objectKey, expiracao, cancellationToken);
+
+        public Task<string> GerarUrlLeituraAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
+            inner.GerarUrlLeituraAsync(objectKey, expiracao, cancellationToken);
+
+        public Task<InfoObjetoArmazenado?> ObterInfoAsync(string objectKey, CancellationToken cancellationToken = default) =>
+            inner.ObterInfoAsync(objectKey, cancellationToken);
+
+        public Task<Stream> AbrirLeituraAsync(string objectKey, long limiteBytes, CancellationToken cancellationToken = default) =>
+            inner.AbrirLeituraAsync(objectKey, limiteBytes, cancellationToken);
+
+        public async Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, CancellationToken cancellationToken = default)
+        {
+            await inner.SalvarConteudoSeladoAsync(objectKey, conteudo, cancellationToken);
+            throw new InvalidOperationException("Falha simulada depois de salvar a cópia selada.");
+        }
+    }
 }

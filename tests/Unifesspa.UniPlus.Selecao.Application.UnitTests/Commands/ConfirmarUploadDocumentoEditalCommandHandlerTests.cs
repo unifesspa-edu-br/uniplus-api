@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Security.Cryptography;
 
 using AwesomeAssertions;
@@ -12,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
@@ -193,6 +195,45 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         resultado.Error!.Code.Should().Be("DocumentoEdital.StatusInvalidoParaConfirmacao");
         await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>());
         repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
+    }
+
+    [Fact(DisplayName = "Handle lança se a entidade já não estiver pendente após reivindicação")]
+    [SuppressMessage(
+        "Reliability",
+        "CA2025:Object MemoryStream can be disposed of before operation completes",
+        Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
+    public async Task Handle_EntidadeSincronizadaAposReivindicacao_LancaParaForcarRollback()
+    {
+        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+        repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                // Simula o contexto sendo sincronizado após o ExecuteUpdateAsync.
+                typeof(DocumentoEdital)
+                    .GetProperty(nameof(DocumentoEdital.Status), BindingFlags.Public | BindingFlags.Instance)!
+                    .SetValue(documento, StatusDocumentoEdital.Confirmado);
+                return true;
+            });
+        storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+            .Returns(new InfoObjetoArmazenado(ConteudoPdfValido.Length, "application/pdf"));
+        using MemoryStream streamConteudoValido = new(ConteudoPdfValido);
+        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Stream>(streamConteudoValido));
+
+        Func<Task> act = () => ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+            repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage($"*{documento.Id}*DocumentoEdital.StatusInvalidoParaConfirmacao*");
+        await storage.DidNotReceive()
+            .SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>());
+        repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle recusa por tamanho quando o conteúdo real excede o limite mesmo com stat menor (TOCTOU)")]
