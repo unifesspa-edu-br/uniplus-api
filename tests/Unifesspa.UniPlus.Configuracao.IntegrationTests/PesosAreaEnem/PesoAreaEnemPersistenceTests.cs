@@ -10,14 +10,15 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Integração ponta-a-ponta dos Pesos do ENEM por grupo de área contra Postgres
-/// real (UNI-REQ-0066): persistência dos pesos, UNIQUE parcial do par
-/// (resolução, grupo), liberação do slot por soft-delete, CHECKs de domínio/não-
-/// negatividade, DEFAULT 400 do corte quando omitido e leitura cross-módulo.
+/// Integração ponta-a-ponta de Pesos por Área contra Postgres real: as cinco áreas na
+/// tabela filha, UNIQUE parcial do par (resolução, grupo), liberação do slot por
+/// soft-delete sem perder as áreas, atualização no lugar, CHECKs de domínio e de faixa, e
+/// leitura cross-módulo na ordem canônica.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -54,18 +55,165 @@ public sealed class PesoAreaEnemPersistenceTests
 
         persistida.Resolucao.Should().Be(resolucao);
         persistida.GrupoCurso.Valor.Should().Be(GrupoCurso.Tecnologica);
-        persistida.PesoRedacao.Should().Be(1.50m);
-        persistida.PesoMatematica.Should().Be(2.00m);
-        persistida.CorteRedacao.Should().Be(400m);
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
+        persistida.AreasDaLinha.Select(a => (a.Codigo, a.Rotulo, a.Peso, a.Corte)).Should().Equal(
+            ("REDACAO", "Redação", 2.00m, (decimal?)400.000m),
+            ("CIENCIAS_DA_NATUREZA", "Ciências da Natureza e suas Tecnologias", 1.50m, (decimal?)null),
+            ("CIENCIAS_HUMANAS", "Ciências Humanas e suas Tecnologias", 2.50m, (decimal?)null),
+            ("LINGUAGENS", "Linguagens e suas Tecnologias", 2.50m, (decimal?)null),
+            ("MATEMATICA", "Matemática e suas Tecnologias", 1.50m, (decimal?)null));
+        (await ContarAreasAsync(readCtx, peso.Id)).Should().Be(5);
 
         var reader = new PesoAreaEnemReader(readCtx);
         PesoAreaEnemView? view = await reader.ObterPorIdAsync(peso.Id);
         view.Should().NotBeNull();
         view!.Resolucao.Should().Be(resolucao);
         view.GrupoCurso.Should().Be(GrupoCurso.Tecnologica);
-        view.PesoRedacao.Should().Be(1.50m);
+        view.Areas.Select(a => (a.Codigo, a.Rotulo, a.Peso, a.Corte)).Should().Equal(
+            persistida.AreasDaLinha.Select(a => (a.Codigo, a.Rotulo, a.Peso, a.Corte)));
+    }
+
+    [Fact(DisplayName = "Atualizar muda os valores no lugar: continuam cinco linhas filhas, com os valores novos")]
+    public async Task Atualizar_MudaNoLugar()
+    {
+        PesoAreaEnem peso = Nova(ResolucaoUnica());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+            List<AreaInformada> novas = Areas();
+            novas[0] = new(PesoAreaEnem.CodigoRedacao, 3.00m, null);
+            novas[4] = new(PesoAreaEnem.CodigoMatematica, 4.25m, null);
+            tracked.Atualizar(novas, "Nova base").IsSuccess.Should().BeTrue();
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+        persistida.AreasDaLinha[0].Peso.Should().Be(3.00m);
+        persistida.AreasDaLinha[0].Corte.Should().BeNull();
+        persistida.AreasDaLinha[4].Peso.Should().Be(4.25m);
+        persistida.BaseLegal.Should().Be("Nova base");
+        persistida.UpdatedBy.Should().Be(AdminB);
+        (await ContarAreasAsync(readCtx, peso.Id)).Should().Be(5);
+    }
+
+    [Fact(DisplayName = "Atualizar só o peso de uma área, com a mesma base legal, carimba UpdatedAt/UpdatedBy da linha de pesos")]
+    public async Task Atualizar_SoAsAreas_CarimbaAuditoriaDaLinha()
+    {
+        PesoAreaEnem peso = Nova(ResolucaoUnica());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            var repository = new PesoAreaEnemRepository(ctx);
+            PesoAreaEnem tracked = (await repository.ObterPorIdAsync(peso.Id, CancellationToken.None))!;
+            List<AreaInformada> novas = Areas();
+            novas[4] = new(PesoAreaEnem.CodigoMatematica, 4.25m, null);
+            tracked.Atualizar(novas, BaseLegal).IsSuccess.Should().BeTrue();
+            repository.RegistrarAtualizacao(tracked);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+        persistida.AreasDaLinha[4].Peso.Should().Be(4.25m);
+        persistida.BaseLegal.Should().Be(BaseLegal);
+        persistida.UpdatedBy.Should().Be(AdminB, "mudar só o peso de uma área também é edição da linha de pesos");
+        persistida.UpdatedAt.Should().NotBeNull();
+    }
+
+    [Fact(DisplayName = "Atualizar regrava o rótulo da área a partir do domínio")]
+    public async Task Atualizar_RegravaORotulo()
+    {
+        PesoAreaEnem peso = Nova(ResolucaoUnica());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+            await ctx.Database.ExecuteSqlAsync(
+                $"UPDATE configuracao.peso_area_enem_area SET rotulo = {"Rótulo antigo"} WHERE peso_area_enem_id = {peso.Id} AND codigo = {PesoAreaEnem.CodigoLinguagens}");
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+            tracked.AreasDaLinha[3].Rotulo.Should().Be("Rótulo antigo");
+            tracked.Atualizar(Areas(), BaseLegal).IsSuccess.Should().BeTrue();
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+        persistida.AreasDaLinha[3].Rotulo.Should().Be("Linguagens e suas Tecnologias");
+    }
+
+    [Fact(DisplayName = "Edição só dos pesos concorrente com remoção lógica não desfaz a remoção")]
+    public async Task AtualizarConcorrenteComRemocao_NaoRessuscitaALinha()
+    {
+        PesoAreaEnem peso = Nova(ResolucaoUnica());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+        }
+
+        // A edição carrega a linha viva; a remoção lógica é confirmada antes de a edição salvar.
+        await using ConfiguracaoDbContext ctxEdicao = _fixture.CreateDbContext(AdminA);
+        PesoAreaEnem emEdicao = await ctxEdicao.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+
+        await using (ConfiguracaoDbContext ctxRemocao = _fixture.CreateDbContext(AdminB))
+        {
+            PesoAreaEnem aRemover = await ctxRemocao.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+            ctxRemocao.PesosAreaEnem.Remove(aRemover);
+            await ctxRemocao.SaveChangesAsync();
+        }
+
+        List<AreaInformada> novas = Areas();
+        novas[4] = new(PesoAreaEnem.CodigoMatematica, 4.25m, null);
+        emEdicao.Atualizar(novas, BaseLegal).IsSuccess.Should().BeTrue();
+        new PesoAreaEnemRepository(ctxEdicao).RegistrarAtualizacao(emEdicao);
+        await ctxEdicao.SaveChangesAsync();
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        PesoAreaEnem final = await readCtx.PesosAreaEnem.IgnoreQueryFilters().SingleAsync(p => p.Id == peso.Id);
+        final.IsDeleted.Should().BeTrue("a edição regrava só as colunas de auditoria, não as de remoção lógica");
+        final.DeletedBy.Should().Be(AdminB);
+        final.UpdatedBy.Should().Be(AdminA);
+    }
+
+    [Fact(DisplayName = "Edição idêntica ao estado gravado não carimba a auditoria")]
+    public async Task AtualizarSemMudanca_NaoCarimbaAuditoria()
+    {
+        PesoAreaEnem peso = Nova(ResolucaoUnica());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+            tracked.Atualizar(Areas(), BaseLegal).IsSuccess.Should().BeTrue();
+            new PesoAreaEnemRepository(ctx).RegistrarAtualizacao(tracked);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+        persistida.UpdatedBy.Should().BeNull("nada mudou, então não houve edição a registrar");
+        persistida.UpdatedAt.Should().BeNull();
     }
 
     [Fact(DisplayName = "UNIQUE parcial (resolução, grupo) rejeita segundo par vivo idêntico")]
@@ -128,6 +276,8 @@ public sealed class PesoAreaEnemPersistenceTests
                 .IgnoreQueryFilters().SingleAsync(p => p.Id == peso.Id);
             excluida.IsDeleted.Should().BeTrue();
             excluida.DeletedBy.Should().Be(AdminB);
+            excluida.AreasDaLinha.Should().HaveCount(5, "o soft-delete preserva as áreas junto com a linha");
+            (await ContarAreasAsync(ctx, peso.Id)).Should().Be(5);
         }
 
         await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
@@ -137,91 +287,71 @@ public sealed class PesoAreaEnemPersistenceTests
         await act.Should().NotThrowAsync("o slot do par foi liberado pelo soft-delete");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita peso negativo via SQL cru")]
-    public async Task Check_RejeitaPesoNegativoViaSqlCru()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {-1.0m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {400.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK peso_redacao >= 0 impede o INSERT direto");
-    }
-
     [Fact(DisplayName = "CHECK de banco rejeita grupo fora do domínio via SQL cru")]
     public async Task Check_RejeitaGrupoForaDoDominioViaSqlCru()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {"Engenharias"}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {400.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {"Engenharias"}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de domínio de grupo_curso impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "DEFAULT 400 do banco aplica quando o corte é omitido no INSERT cru")]
-    public async Task Default_CorteRedacao_AplicaQuandoOmitido()
+    [Theory(DisplayName = "CHECKs da tabela de áreas rejeitam código fora das cinco, peso negativo e corte fora da faixa via SQL cru")]
+    [InlineData("FISICA", 1.0, null, "ck_peso_area_enem_area_codigo")]
+    [InlineData("REDACAO", -1.0, null, "ck_peso_area_enem_area_peso")]
+    [InlineData("REDACAO", 1.0, 1000.001, "ck_peso_area_enem_area_corte")]
+    [InlineData("REDACAO", 1.0, -0.5, "ck_peso_area_enem_area_corte")]
+    public async Task Check_TabelaDeAreas_RejeitaForaDaFaixa(string codigo, double peso, double? corte, string constraint)
     {
-        Guid id = Guid.CreateVersion7();
-        string resolucao = ResolucaoUnica();
-
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            await ctx.Database.ExecuteSqlAsync(
-                $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, base_legal, created_at, is_deleted) VALUES ({id}, {resolucao}, {GrupoCurso.Tecnologica}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
-        }
-
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == id);
-        persistida.CorteRedacao.Should().Be(400m);
-    }
-
-    [Fact(DisplayName = "Corte de redação no máximo (1000) persiste — numeric(7,3) acomoda a nota máxima do ENEM")]
-    public async Task CorteRedacaoMaximo_Persiste()
-    {
-        string resolucao = ResolucaoUnica();
-        PesoAreaEnem peso = Nova(resolucao, corte: PesoAreaEnem.CorteRedacaoMaximo);
-
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.PesosAreaEnem.Add(peso);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
-        persistida.CorteRedacao.Should().Be(1000m);
-    }
-
-    [Fact(DisplayName = "Corte de redação 0 explícito via EF persiste 0 — o DEFAULT 400 do banco não sobrescreve")]
-    public async Task CorteRedacaoZero_ViaEf_NaoEhSobrescritoPeloDefault()
-    {
-        string resolucao = ResolucaoUnica();
-        PesoAreaEnem peso = Nova(resolucao, corte: 0m);
-
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.PesosAreaEnem.Add(peso);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
-        persistida.CorteRedacao.Should().Be(0m);
-    }
-
-    [Fact(DisplayName = "CHECK de banco rejeita corte de redação acima de 1000 via SQL cru")]
-    public async Task Check_RejeitaCorteAcimaDoMaximoViaSqlCru()
-    {
+        Guid paiId = await CriarPaiSemAreasAsync();
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        decimal? corteDecimal = corte is null ? null : (decimal)corte.Value;
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {1000.001m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.peso_area_enem_area (peso_area_enem_id, codigo, rotulo, peso, corte) VALUES ({paiId}, {codigo}, {"Rótulo"}, {(decimal)peso}, {corteDecimal})");
 
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK corte_redacao <= 1000 impede o INSERT direto");
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        pg.ConstraintName.Should().Be(constraint);
+    }
+
+    [Fact(DisplayName = "A chave (linha, código) rejeita a mesma área duas vezes na mesma linha via SQL cru")]
+    public async Task Pk_RejeitaAreaRepetidaNaLinha()
+    {
+        Guid paiId = await CriarPaiSemAreasAsync();
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.peso_area_enem_area (peso_area_enem_id, codigo, rotulo, peso) VALUES ({paiId}, {"REDACAO"}, {"Redação"}, {1.0m})");
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.peso_area_enem_area (peso_area_enem_id, codigo, rotulo, peso) VALUES ({paiId}, {"REDACAO"}, {"Redação"}, {2.0m})");
+
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        pg.SqlState.Should().Be("23505");
+    }
+
+    [Theory(DisplayName = "Corte da Redação nos limites e sem corte persistem como gravados")]
+    [InlineData(null)]
+    [InlineData(0.0)]
+    [InlineData(1000.0)]
+    public async Task CorteDaRedacao_PersisteComoGravado(double? corte)
+    {
+        decimal? esperado = corte is null ? null : (decimal)corte.Value;
+        List<AreaInformada> areas = Areas();
+        areas[0] = new(PesoAreaEnem.CodigoRedacao, 2.00m, esperado);
+        PesoAreaEnem peso = PesoAreaEnem.Criar(ResolucaoUnica(), GrupoCurso.Tecnologica, areas, BaseLegal).Value!;
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+        persistida.AreasDaLinha[0].Corte.Should().Be(esperado);
     }
 
     [Fact(DisplayName = "Reader.ListarVivasAsync ordena por resolução e exclui soft-deleted")]
@@ -263,8 +393,36 @@ public sealed class PesoAreaEnemPersistenceTests
         meus.Should().Equal([resA, resB]);
     }
 
-    private static PesoAreaEnem Nova(string resolucao, string grupo = GrupoCurso.Tecnologica, decimal? corte = 400m) =>
-        PesoAreaEnem.Criar(resolucao, grupo, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, corte, BaseLegal).Value!;
+    private static List<AreaInformada> Areas() =>
+    [
+        new(PesoAreaEnem.CodigoRedacao, 2.00m, 400m),
+        new(PesoAreaEnem.CodigoCienciasDaNatureza, 1.50m, null),
+        new(PesoAreaEnem.CodigoCienciasHumanas, 2.50m, null),
+        new(PesoAreaEnem.CodigoLinguagens, 2.50m, null),
+        new(PesoAreaEnem.CodigoMatematica, 1.50m, null),
+    ];
+
+    private static PesoAreaEnem Nova(string resolucao, string grupo = GrupoCurso.Tecnologica) =>
+        PesoAreaEnem.Criar(resolucao, grupo, Areas(), BaseLegal).Value!;
+
+    private static Task<int> ContarAreasAsync(ConfiguracaoDbContext ctx, Guid pesoId) =>
+        ctx.Database
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM configuracao.peso_area_enem_area WHERE peso_area_enem_id = {pesoId}")
+            .SingleAsync();
+
+    // Linha de pesos sem áreas, direto no banco: base para exercitar os CHECKs da tabela
+    // filha sem a validação do agregado no caminho. Nasce removida logicamente — o banco é
+    // compartilhado pela coleção, e uma linha viva incompleta apareceria para os testes
+    // que listam ou editam os pesos vivos.
+    private async Task<Guid> CriarPaiSemAreasAsync()
+    {
+        Guid id = Guid.CreateVersion7();
+        DateTimeOffset agora = DateTimeOffset.UtcNow;
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, base_legal, created_at, is_deleted, deleted_at) VALUES ({id}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {BaseLegal}, {agora}, {true}, {agora})");
+        return id;
+    }
 
     private static string ResolucaoUnica() => $"Res. {Guid.NewGuid().ToString("N")[..12]}";
 }

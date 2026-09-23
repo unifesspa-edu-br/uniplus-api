@@ -14,16 +14,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class AtualizarPesoAreaEnemCommandHandlerTests
 {
-    private const string BaseLegal = "Res. 805/2024 Anexo I";
-
     private readonly IPesoAreaEnemRepository _repository = Substitute.For<IPesoAreaEnemRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
-    private static PesoAreaEnem Existente() =>
-        PesoAreaEnem.Criar("Res. 805/2024", GrupoCurso.Tecnologica, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, 400m, BaseLegal).Value!;
+    private static PesoAreaEnem Existente() => PesoAreaEnemDados.Existente();
 
-    private static AtualizarPesoAreaEnemCommand Comando(Guid id, decimal mt = 3.00m, decimal corte = 450.000m) =>
-        new(id, 2.00m, 1.50m, 1.50m, 1.50m, mt, corte, BaseLegal);
+    private static AtualizarPesoAreaEnemCommand Comando(Guid id, decimal mt = 3.00m) =>
+        new(id, PesoAreaEnemDados.AreasDoPayloadCom(4, new(PesoAreaEnem.CodigoMatematica, mt)), PesoAreaEnemDados.BaseLegal);
 
     [Fact(DisplayName = "Linha inexistente retorna NaoEncontrado")]
     public async Task Handle_NaoEncontrado_RetornaErro()
@@ -52,7 +49,8 @@ public sealed class AtualizarPesoAreaEnemCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         existente.Resolucao.Should().Be("Res. 805/2024");
         existente.GrupoCurso.Valor.Should().Be(GrupoCurso.Tecnologica);
-        existente.PesoMatematica.Should().Be(3.00m);
+        existente.AreasDaLinha.Single(a => a.Codigo == PesoAreaEnem.CodigoMatematica).Peso.Should().Be(3.00m);
+        _repository.Received(1).RegistrarAtualizacao(existente);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -67,6 +65,7 @@ public sealed class AtualizarPesoAreaEnemCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.PesoNegativo);
+        _repository.DidNotReceive().RegistrarAtualizacao(Arg.Any<PesoAreaEnem>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

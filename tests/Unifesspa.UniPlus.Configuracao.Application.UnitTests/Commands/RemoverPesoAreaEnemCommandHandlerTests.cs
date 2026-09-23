@@ -35,9 +35,7 @@ public sealed class RemoverPesoAreaEnemCommandHandlerTests
     [Fact(DisplayName = "Sem FK de entrada: remoção é soft-delete e nunca é bloqueada")]
     public async Task Handle_Existente_RemoveESoftDelete()
     {
-        PesoAreaEnem existente = PesoAreaEnem
-            .Criar("Res. 805/2024", GrupoCurso.Tecnologica, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, 400m, "Res. 805/2024 Anexo I")
-            .Value!;
+        PesoAreaEnem existente = PesoAreaEnemDados.Existente();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await RemoverPesoAreaEnemCommandHandler.Handle(

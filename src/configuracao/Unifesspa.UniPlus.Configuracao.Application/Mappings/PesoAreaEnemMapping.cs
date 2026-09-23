@@ -12,12 +12,8 @@ public static class PesoAreaEnemMapping
             peso.Id,
             peso.Resolucao,
             peso.GrupoCurso.Valor,
-            peso.PesoRedacao,
-            peso.PesoCienciasNatureza,
-            peso.PesoCienciasHumanas,
-            peso.PesoLinguagens,
-            peso.PesoMatematica,
-            peso.CorteRedacao,
+            [.. peso.AreasDaLinha.Select(static area =>
+                new PesoAreaEnemAreaDto(area.Codigo, area.Rotulo, area.Peso, area.Corte))],
             peso.BaseLegal,
             peso.CreatedAt);
     }

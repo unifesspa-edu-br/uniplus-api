@@ -18,9 +18,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/pesos-area-enem</c>,
-/// <c>GET /api/configuracao/pesos-area-enem/{id}</c>) e endpoints admin
+/// <c>GET /api/configuracao/pesos-area-enem/{id}</c>, <c>GET
+/// /api/configuracao/pesos-area-enem/areas</c>) e endpoints admin
 /// (<c>POST/PUT/DELETE /api/configuracao/admin/pesos-area-enem</c>) restritos a
-/// <c>plataforma-admin</c> (UNI-REQ-0066).
+/// <c>plataforma-admin</c>.
 /// </summary>
 [ApiController]
 [SuppressMessage(
@@ -77,6 +78,25 @@ public sealed class PesosAreaEnemController : ControllerBase
         return await this.OkPaginatedAsync(
             comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Lista as cinco áreas do cadastro de Pesos por Área, com código e rótulo oficial, na
+    /// ordem canônica — para o formulário montar as colunas mesmo com o cadastro vazio.
+    /// Sem paginação e sem <c>_links</c>: a coleção é fechada e definida pelo domínio.
+    /// </summary>
+    [HttpGet("pesos-area-enem/areas")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "area-peso-area-enem", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<AreaPesoAreaEnemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarAreas(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<AreaPesoAreaEnemDto> areas = await _queryBus
+            .Send(new ListarAreasPesoAreaEnemQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(areas);
     }
 
     /// <summary>Obtém uma linha de pesos pelo Id. Retorna 404 quando inexistente.</summary>

@@ -27,12 +27,7 @@ public static class CriarPesoAreaEnemCommandHandler
         Result<PesoAreaEnem> pesoResult = PesoAreaEnem.Criar(
             command.Resolucao,
             command.GrupoCurso,
-            command.PesoRedacao,
-            command.PesoCienciasNatureza,
-            command.PesoCienciasHumanas,
-            command.PesoLinguagens,
-            command.PesoMatematica,
-            command.CorteRedacao,
+            AreasDoComando.ParaDominio(command.Areas),
             command.BaseLegal);
 
         if (pesoResult.IsFailure)

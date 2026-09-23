@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -54,6 +55,34 @@ public sealed class PesoAreaEnemRepository : IPesoAreaEnemRepository
     {
         ArgumentNullException.ThrowIfNull(peso);
         await _dbContext.PesosAreaEnem.AddAsync(peso, cancellationToken).ConfigureAwait(false);
+    }
+
+    public void RegistrarAtualizacao(PesoAreaEnem peso)
+    {
+        ArgumentNullException.ThrowIfNull(peso);
+
+        // Entry() detecta as mudanças da própria linha, e Entries<>() as das áreas: não é
+        // preciso varrer o ChangeTracker de novo à mão.
+        EntityEntry<PesoAreaEnem> linha = _dbContext.Entry(peso);
+        if (linha.State != EntityState.Unchanged)
+        {
+            // A própria linha mudou (ex.: base legal): o interceptor já carimba.
+            return;
+        }
+
+        bool areasMudaram = _dbContext.ChangeTracker.Entries<PesoAreaEnemArea>()
+            .Any(area => area.State is EntityState.Added or EntityState.Modified or EntityState.Deleted
+                && area.Property<Guid>("PesoAreaEnemId").CurrentValue == peso.Id);
+        if (!areasMudaram)
+        {
+            // Nada mudou: um PUT idêntico ao estado atual não é registrado como edição.
+            return;
+        }
+
+        // Marca só o UpdatedAt: a linha vira Modified e o AuditableInterceptor carimba
+        // UpdatedAt/UpdatedBy, sem regravar as demais colunas. Marcar a entrada inteira
+        // regravaria is_deleted/deleted_* e desfaria uma remoção lógica concorrente.
+        linha.Property(p => p.UpdatedAt).IsModified = true;
     }
 
     public void Remover(PesoAreaEnem peso)

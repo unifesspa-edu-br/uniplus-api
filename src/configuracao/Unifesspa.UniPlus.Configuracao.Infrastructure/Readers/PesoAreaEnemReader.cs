@@ -57,11 +57,7 @@ internal sealed class PesoAreaEnemReader : IPesoAreaEnemReader
             p.Id,
             p.Resolucao,
             p.GrupoCurso.Valor,
-            p.PesoRedacao,
-            p.PesoCienciasNatureza,
-            p.PesoCienciasHumanas,
-            p.PesoLinguagens,
-            p.PesoMatematica,
-            p.CorteRedacao,
+            [.. p.AreasDaLinha.Select(static area =>
+                new PesoAreaEnemAreaView(area.Codigo, area.Rotulo, area.Peso, area.Corte))],
             p.BaseLegal);
 }
