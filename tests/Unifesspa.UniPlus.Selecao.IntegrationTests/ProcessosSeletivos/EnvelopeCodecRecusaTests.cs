@@ -1243,6 +1243,19 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error.Message.Should().Contain("etapas[0].faseCodigo").And.Contain("60");
     }
 
+    [Fact(DisplayName = "distribuicao[].grupoAreaEnem acima do limite da coluna (30) é recusado")]
+    public void Distribuicao_GrupoAreaEnemAcimaDoLimite_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["distribuicao"]!.AsArray()[0]!["grupoAreaEnem"] = new string('A', 31));
+
+        resultado.IsFailure.Should().BeTrue(
+            "um grupo de 31 caracteres não cabe na coluna grupo_area_enem (varchar 30) — recusar aqui evita " +
+            "DbUpdateException (500) no meio do descarte");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("distribuicao[0].grupoAreaEnem").And.Contain("30");
+    }
+
     [Fact(DisplayName = "etapas[].produtos[].atoCodigo acima do limite da coluna (60) é recusado")]
     public void Etapa_ProdutoAtoCodigoAcimaDoLimite_Recusa()
     {

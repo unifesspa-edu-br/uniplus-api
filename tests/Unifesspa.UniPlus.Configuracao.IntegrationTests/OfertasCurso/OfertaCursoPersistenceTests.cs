@@ -543,6 +543,36 @@ public sealed class OfertaCursoPersistenceTests
         vazio.Itens.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "O reader acompanha a oferta do grupo de área do ENEM do curso, ou de nulo quando o curso não o declara")]
+    public async Task Reader_ExpoeGrupoAreaEnemDoCurso()
+    {
+        Curso comGrupo = Curso.Criar(CodigoUnico(), "Medicina", "Bacharelado", "Graduação", GrupoCurso.SaudeEBiologicas).Value!;
+        Curso semGrupo = Curso.Criar(CodigoUnico(), "Pedagogia", "Licenciatura", "Graduação", null).Value!;
+        LocalOferta local = LocalOferta.Criar(
+            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+        OfertaCurso ofertaComGrupo = NovaOferta(comGrupo.Id, local.Id, NovaUnidade());
+        OfertaCurso ofertaSemGrupo = NovaOferta(semGrupo.Id, local.Id, NovaUnidade());
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Cursos.AddRange(comGrupo, semGrupo);
+            ctx.LocaisOferta.Add(local);
+            ctx.OfertasCurso.AddRange(ofertaComGrupo, ofertaSemGrupo);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var reader = new OfertaCursoReader(readCtx);
+
+        (await reader.ObterPorIdAsync(ofertaComGrupo.Id))!.GrupoAreaEnem.Should().Be(GrupoCurso.SaudeEBiologicas);
+        (await reader.ObterPorIdAsync(ofertaSemGrupo.Id))!.GrupoAreaEnem.Should().BeNull();
+
+        IReadOnlyList<OfertaCursoView> vivas = await reader.ListarVivasAsync();
+        vivas.Single(v => v.Id == ofertaComGrupo.Id).GrupoAreaEnem.Should().Be(GrupoCurso.SaudeEBiologicas);
+        vivas.Single(v => v.Id == ofertaSemGrupo.Id).GrupoAreaEnem.Should().BeNull();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     /// <summary>A ordem que a listagem usa quando a consulta não pede outra.</summary>

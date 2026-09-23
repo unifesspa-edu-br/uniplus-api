@@ -80,7 +80,7 @@ public sealed class ManifestoDoEnvelopeTests
 
         [typeof(ConfiguracaoDistribuicaoVagas)] = (
             [
-                "OfertaCursoOrigemId", "VoBase", "Pr", "RegraDistribuicao", "RegraAjuste", "ReferenciaDemografica",
+                "OfertaCursoOrigemId", "VoBase", "Pr", "RegraDistribuicao", "RegraAjuste", "ReferenciaDemografica", "GrupoAreaEnem",
                 "Modalidades", "VrNominal", "VrFinal", "Estouro", "CapadoEmVo", "TotalPublicado", "VagasOfertadas",
             ],
             [("ProcessoSeletivoId", "FK interna.")]),

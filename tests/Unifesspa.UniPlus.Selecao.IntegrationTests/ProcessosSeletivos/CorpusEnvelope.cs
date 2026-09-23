@@ -699,7 +699,8 @@ internal static class CorpusEnvelope
                 quilombolaPercentual: 1.20m,
                 pcdPercentual: 8.40m,
                 baseLegal: "Lei 12.711/2012 art. 3º").Value!,
-            modalidades: modalidades).Value!;
+            modalidades: modalidades,
+            grupoAreaEnem: "Saúde e Biológicas").Value!;
     }
 
     /// <summary>

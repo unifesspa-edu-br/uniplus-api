@@ -87,6 +87,43 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Value!.TotalPublicado.Should().Be(60);
     }
 
+    [Theory(DisplayName = "Criar guarda o grupo de área do ENEM informado, inclusive a ausência dele")]
+    [InlineData("Saúde e Biológicas")]
+    [InlineData(null)]
+    public void Criar_GrupoAreaEnem_Guarda(string? grupoAreaEnem)
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades,
+            grupoAreaEnem: grupoAreaEnem);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.GrupoAreaEnem.Should().Be(grupoAreaEnem);
+    }
+
+    [Theory(DisplayName = "Criar recusa grupo de área do ENEM em branco, acumulado com as demais checagens de forma")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Criar_GrupoAreaEnemEmBranco_Recusa(string grupoAreaEnem)
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 0, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades,
+            grupoAreaEnem: grupoAreaEnem);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().Contain(
+            ["ConfiguracaoDistribuicaoVagas.GrupoAreaEnemEmBranco", "ConfiguracaoDistribuicaoVagas.VoBaseInvalido"]);
+    }
+
     [Fact(DisplayName = "Quadro institucional que soma acima do VO_base é recusado")]
     public void Criar_Institucional_QuadroAcimaDoVoBase_Falha()
     {

@@ -26,6 +26,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="VagasAnuaisAutorizadas">Teto de vagas autorizadas no e-MEC (não são vagas de certame), ou null.</param>
 /// <param name="BaseLegal">Base legal (obrigatória quando o programa não é Regular), ou null.</param>
 /// <param name="AtoAutorizacaoMec">Ato de autorização específico da oferta, ou null.</param>
+/// <param name="GrupoAreaEnem">Grupo de área do ENEM do curso da oferta, no valor canônico do cadastro de cursos, ou null quando o curso não o declara.</param>
 public sealed record OfertaCursoView(
     Guid Id,
     Guid CursoId,
@@ -43,4 +44,5 @@ public sealed record OfertaCursoView(
     string? CodigoSga,
     int? VagasAnuaisAutorizadas,
     string? BaseLegal,
-    string? AtoAutorizacaoMec);
+    string? AtoAutorizacaoMec,
+    string? GrupoAreaEnem);

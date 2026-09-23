@@ -190,7 +190,6 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>documentosExigidos.exigencias</c> — a etapa daquela fase que coleta o documento,
     /// nula quando a exigência é da fase inteira. Sem novo bloco de topo. Sem produção em
     /// ambiente nenhum: fixture nova, <c>0.0.17</c> deixa de ser reconhecida.
-    /// </remarks>
     /// Issue #1524: o bump para <c>0.0.20</c> muda a POLÍTICA de ordenação de
     /// <c>etapas[].recursos</c>, que passa a ordenar pelo conteúdo da âncora — ato e papel do
     /// produto — em vez do id dele, e normaliza para NFC o <c>atoCodigo</c> do produto e o
@@ -201,7 +200,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// recanonicalizasse o mais antigo veria divergência sem nada que distinguisse perfil novo
     /// de documento adulterado. Sem produção em ambiente nenhum: fixture nova, <c>0.0.19</c>
     /// deixa de ser reconhecida.
-    internal const string SchemaVersionAtual = "0.0.20";
+    /// O bump para <c>0.0.21</c> acrescenta <c>grupoAreaEnem</c> a cada item de
+    /// <c>distribuicao</c> — o grupo de área do ENEM do curso da oferta, congelado por valor na
+    /// definição da distribuição, nulo quando o curso não o declara. É o que diz qual linha de
+    /// pesos por área se aplica à oferta. Sem novo bloco de topo. Sem produção em ambiente
+    /// nenhum: fixture nova, <c>0.0.20</c> deixa de ser reconhecida.
+    /// </remarks>
+    internal const string SchemaVersionAtual = "0.0.21";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -475,6 +480,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["referenciaDemografica"] = configuracao.ReferenciaDemografica is { } referencia
                     ? SerializarReferenciaDemografica(referencia)
                     : null,
+                ["grupoAreaEnem"] = configuracao.GrupoAreaEnem is { } grupo ? HashCanonicalComputer.NormalizeNfc(grupo) : null,
             });
         }
 

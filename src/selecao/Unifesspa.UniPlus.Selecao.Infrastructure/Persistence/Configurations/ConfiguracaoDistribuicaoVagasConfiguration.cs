@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
 /// Configuração EF Core de <see cref="ConfiguracaoDistribuicaoVagas"/> (Story
@@ -56,6 +57,10 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
             demografica.Property(d => d.BaseLegal).HasColumnName("referencia_demografica_base_legal").HasMaxLength(BaseLegalMaxLength);
         });
         builder.Navigation(c => c.ReferenciaDemografica).IsRequired(false);
+
+        // Grupo de área do ENEM do curso da oferta, congelado por valor (ADR-0061).
+        // Nulo quando o curso não o declara.
+        builder.Property(c => c.GrupoAreaEnem).HasMaxLength(LimitesDoEnvelope.GrupoAreaEnem);
 
         // RegraAjuste (issue #848/ADR-0115) — obrigatória no ramo federal, opcional
         // no institucional (quadro fixo não reconcilia).

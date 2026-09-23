@@ -38,7 +38,10 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. entidades.Select(ParaView)];
+        Dictionary<Guid, GrupoCurso?> gruposPorCurso = await ObterGruposDosCursosAsync(
+            [.. entidades.Select(o => o.CursoId).Distinct()], cancellationToken).ConfigureAwait(false);
+
+        return [.. entidades.Select(o => ParaView(o, gruposPorCurso.GetValueOrDefault(o.CursoId)))];
     }
 
     public async Task<OfertaCursoView?> ObterPorIdAsync(
@@ -50,10 +53,32 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken)
             .ConfigureAwait(false);
 
-        return entidade is null ? null : ParaView(entidade);
+        if (entidade is null)
+        {
+            return null;
+        }
+
+        Dictionary<Guid, GrupoCurso?> gruposPorCurso = await ObterGruposDosCursosAsync(
+            [entidade.CursoId], cancellationToken).ConfigureAwait(false);
+
+        return ParaView(entidade, gruposPorCurso.GetValueOrDefault(entidade.CursoId));
     }
 
-    private static OfertaCursoView ParaView(OfertaCurso o)
+    /// <summary>
+    /// O grupo de área do ENEM de cada curso pedido. A oferta não navega até o curso, e
+    /// o consumidor precisa do grupo para congelá-lo junto da oferta; curso ausente da
+    /// leitura deixa a oferta sem grupo, nunca fora da resposta.
+    /// </summary>
+    private Task<Dictionary<Guid, GrupoCurso?>> ObterGruposDosCursosAsync(
+        List<Guid> cursoIds,
+        CancellationToken cancellationToken) =>
+        _dbContext.Cursos
+            .AsNoTracking()
+            .Where(c => cursoIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.GrupoAreaEnem })
+            .ToDictionaryAsync(c => c.Id, c => c.GrupoAreaEnem, cancellationToken);
+
+    private static OfertaCursoView ParaView(OfertaCurso o, GrupoCurso? grupoAreaEnem)
     {
         UnidadeOfertante unidade = o.UnidadeOfertante;
 
@@ -74,6 +99,7 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             o.CodigoSga,
             o.VagasAnuaisAutorizadas,
             o.BaseLegal,
-            o.AtoAutorizacaoMec);
+            o.AtoAutorizacaoMec,
+            grupoAreaEnem?.Valor);
     }
 }
