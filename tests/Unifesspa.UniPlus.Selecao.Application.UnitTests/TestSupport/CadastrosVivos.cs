@@ -131,7 +131,7 @@ internal static class CadastrosVivos
     /// outro assunto. Quem testa o recorte de caráter declara os sinalizadores explicitamente.
     /// </summary>
     public static TipoEtapaView TipoEtapa(string codigo) =>
-        new(IdentidadeDe(codigo), codigo, "Etapa", null, AdmitePontuacao: true, AdmiteEliminacao: true);
+        new(IdentidadeDe(codigo), codigo, "Etapa", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false);
 
     /// <summary>
     /// Identidade que o cadastro atribui a um código, estável por código dentro da suíte.

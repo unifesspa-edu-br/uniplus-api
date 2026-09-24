@@ -228,6 +228,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>classificacao.regrasEliminacao[]</c>
     /// admite a regra <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>, sem args (<c>{}</c>): elimina quem
     /// faltou a pelo menos um dia de prova da edição do ENEM usada no processo.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>etapas[].tipoEtapa</c> ganha
+    /// <c>notaDeOrigemNoEnem</c> — se a nota das etapas do tipo vem do ENEM, congelado junto com a
+    /// identidade do tipo. É ele, e não o código do tipo, que diz qual etapa compõe a nota do ENEM.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -477,10 +480,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     /// <summary>
     /// Tipo de etapa escolhido, como cópia de valor autocontida (issue #1071) — a identidade no
-    /// mesmo shape de <see cref="SerializarTipoProcesso"/>, mais o que o tipo admitia como
-    /// caráter da etapa quando foi congelado. Não há leitura da configuração atual ao interpretar
-    /// uma publicação: desativação ou alteração posterior do cadastro não pode alterar a prova
-    /// emitida, nem o resultado da avaliação de <c>EtapaObrigatoria</c> já congelada.
+    /// mesmo shape de <see cref="SerializarTipoProcesso"/>, mais a origem da nota no ENEM e o que
+    /// o tipo admitia como caráter da etapa quando foi congelado. Não há leitura da configuração
+    /// atual ao interpretar uma publicação: desativação ou alteração posterior do cadastro não
+    /// pode alterar a prova emitida, nem o resultado da avaliação de <c>EtapaObrigatoria</c> já
+    /// congelada.
     /// </summary>
     private static JsonObject SerializarTipoEtapa(EtapaProcesso etapa) => new()
     {
@@ -489,6 +493,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.TipoEtapa.Nome),
         ["admitePontuacao"] = etapa.TipoEtapa.AdmitePontuacao,
         ["admiteEliminacao"] = etapa.TipoEtapa.AdmiteEliminacao,
+        ["notaDeOrigemNoEnem"] = etapa.TipoEtapa.NotaDeOrigemNoEnem,
     };
 
     private static JsonArray SerializarDistribuicao(ProcessoSeletivo processo)

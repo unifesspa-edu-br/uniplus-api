@@ -7,9 +7,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Valida nome e descrição (sem I/O) antes de buscar a entidade: sem o validator
-/// removido, um payload mal formado não pode chegar a <c>ObterPorIdAsync</c>
-/// primeiro — validação sempre vence sobre "não encontrado".
+/// Valida os campos sem I/O antes de buscar o tipo: a violação de campo vence o "não
+/// encontrado", e um payload mal formado não consulta o repositório (ADR-0125, item 5). Por
+/// isso a recusa que depende do tipo só aparece quando os campos estão válidos.
 /// </summary>
 public static class AtualizarTipoEtapaCommandHandler
 {
@@ -23,12 +23,12 @@ public static class AtualizarTipoEtapaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> validacao =
+        Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> campos =
             TipoEtapa.ValidarCamposEditaveis(
                 command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
-        if (validacao.IsFailure)
+        if (campos.IsFailure)
         {
-            return Result.ValidationFailure(validacao.Errors);
+            return Result.ValidationFailure(campos.Errors);
         }
 
         TipoEtapa? tipo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
@@ -37,10 +37,13 @@ public static class AtualizarTipoEtapaCommandHandler
             return Result.Failure(new DomainError(TipoEtapaErrorCodes.NaoEncontrado, "Tipo de etapa não encontrado."));
         }
 
-        // Revalida por dentro (barato, sem I/O) com exatamente os mesmos argumentos
-        // já confirmados acima, então sempre terá sucesso aqui; esta chamada só
-        // serve para aplicar a mutação.
-        tipo.Atualizar(command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
+        // Com os campos já confirmados, só a regra que depende do próprio tipo pode recusar
+        // aqui, e o tipo recusa antes de mutar.
+        Result atualizar = tipo.Atualizar(command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
+        if (atualizar.IsFailure)
+        {
+            return atualizar;
+        }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();

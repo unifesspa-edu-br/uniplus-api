@@ -8,6 +8,10 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// da etapa quando ela é criada ou muda de caráter ou de vínculo — as gravações em que ele já
 /// consulta esta vista —, e a partir daí a etapa confere contra o que congelou, como faz com
 /// o resto do que traz do cadastro.
+/// <para>
+/// <paramref name="NotaDeOrigemNoEnem"/> diz que a nota das etapas do tipo vem do ENEM. O Seleção
+/// o congela junto com a identidade, quando o vínculo da etapa é criado ou trocado.
+/// </para>
 /// </remarks>
 public sealed record TipoEtapaView(
     Guid Id,
@@ -15,4 +19,5 @@ public sealed record TipoEtapaView(
     string Nome,
     string? Descricao,
     bool AdmitePontuacao,
-    bool AdmiteEliminacao);
+    bool AdmiteEliminacao,
+    bool NotaDeOrigemNoEnem);

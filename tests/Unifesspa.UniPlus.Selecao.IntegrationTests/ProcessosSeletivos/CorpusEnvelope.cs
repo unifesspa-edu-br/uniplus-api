@@ -145,17 +145,17 @@ internal static class CorpusEnvelope
     /// decoder/round-trip nunca consulta o cadastro, então a coincidência não é requisito.
     /// </summary>
     internal static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
-        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
+        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     internal static TipoEtapaSnapshot TipoEtapaRedacao() =>
-        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000002"), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true).Value!;
+        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000002"), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     /// <summary>
     /// Tipo que só elimina: congela <c>admitePontuacao = false</c>, para que o envelope rico
     /// carregue os dois valores do sinalizador e o round-trip prove ambos.
     /// </summary>
     internal static TipoEtapaSnapshot TipoEtapaEntrevista() =>
-        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000003"), "ENTREVISTA", "Entrevista", admitePontuacao: false, admiteEliminacao: true).Value!;
+        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000003"), "ENTREVISTA", "Entrevista", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     /// <summary>
     /// Permuta a ORDEM DE ENTRADA de uma coleção não ordenada, sem mudar o conteúdo (Story

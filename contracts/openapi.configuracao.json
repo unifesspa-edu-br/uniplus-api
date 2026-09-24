@@ -14251,6 +14251,7 @@
           "ativo",
           "admitePontuacao",
           "admiteEliminacao",
+          "notaDeOrigemNoEnem",
           "criadoEm"
         ],
         "type": "object",
@@ -14278,6 +14279,9 @@
             "type": "boolean"
           },
           "admiteEliminacao": {
+            "type": "boolean"
+          },
+          "notaDeOrigemNoEnem": {
             "type": "boolean"
           },
           "criadoEm": {

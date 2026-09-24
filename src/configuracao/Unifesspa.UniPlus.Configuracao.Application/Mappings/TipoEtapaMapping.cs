@@ -10,6 +10,6 @@ public static class TipoEtapaMapping
         ArgumentNullException.ThrowIfNull(tipo);
         return new TipoEtapaDto(
             tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao, tipo.Ativo,
-            tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.CreatedAt);
+            tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem, tipo.CreatedAt);
     }
 }

@@ -66,7 +66,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
             [EtapaProcesso.Criar(
                 "Prova objetiva",
                 CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova objetiva", admitePontuacao: true, admiteEliminacao: true).Value!,
+                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 peso: 1m,
                 ordem: 1).Value!],
             PrecondicaoIfMatch.Curinga);

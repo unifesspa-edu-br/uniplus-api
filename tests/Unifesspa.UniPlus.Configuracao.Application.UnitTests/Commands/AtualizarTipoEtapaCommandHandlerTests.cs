@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class AtualizarTipoEtapaCommandHandlerTests
 {
@@ -50,9 +51,8 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
     }
 
     /// <summary>
-    /// Antes do validator removido, um payload mal formado nunca chegava a
-    /// ObterPorIdAsync — validação sempre vencia sobre "não encontrado". Sem o
-    /// validator, o handler precisa preservar essa prioridade explicitamente.
+    /// A validação de campo vence o "não encontrado", e um payload mal formado não chega a
+    /// ObterPorIdAsync (ADR-0125, item 5).
     /// </summary>
     [Fact(DisplayName = "Id inexistente com Nome vazio devolve a violação de campo, não NaoEncontrado, sem consultar o repositório")]
     public async Task Handle_IdInexistenteComNomeVazio_RetornaViolacaoDeCampoSemConsultarRepositorio()
@@ -76,5 +76,41 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
         resultado.Errors.Should().HaveCount(2);
         resultado.Errors[0].Field.Should().Be("nome");
         resultado.Errors[1].Field.Should().Be("descricao");
+    }
+
+    [Fact(DisplayName = "Desligar a pontuação do tipo de nota do ENEM devolve a recusa do tipo e não persiste")]
+    public async Task Handle_NotaDeOrigemNoEnemSemPontuacao_RecusaSemPersistir()
+    {
+        TipoEtapa existente = TipoEtapaDeTeste.NotaDoEnem();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
+            new AtualizarTipoEtapaCommand(existente.Id, "Nome novo", false, true), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(TipoEtapaErrorCodes.NotaDeOrigemNoEnemExigePontuacao);
+        existente.AdmitePontuacao.Should().BeTrue();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// A recusa que depende do tipo só aparece com os campos válidos: com campo inválido o
+    /// handler não busca o tipo (ADR-0125, item 5).
+    /// </summary>
+    [Fact(DisplayName = "Campo inválido e pontuação desligada no tipo do ENEM devolvem só a violação de campo, sem buscar o tipo")]
+    public async Task Handle_CampoInvalidoESemPontuacaoNoTipoDoEnem_DevolveSoOCampo()
+    {
+        TipoEtapa existente = TipoEtapaDeTeste.NotaDoEnem();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
+            new AtualizarTipoEtapaCommand(existente.Id, "", false, true), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(("nome", TipoEtapaErrorCodes.NomeObrigatorio));
+        existente.Nome.Should().Be("Nota do ENEM");
+        existente.AdmitePontuacao.Should().BeTrue();
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

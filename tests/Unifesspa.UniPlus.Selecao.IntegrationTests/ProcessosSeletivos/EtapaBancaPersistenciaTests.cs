@@ -46,7 +46,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
             EtapaProcesso etapa = EtapaProcesso.Criar(
                 "Prova de títulos",
                 CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_TITULOS", "Prova de títulos", admitePontuacao: true, admiteEliminacao: true).Value!,
+                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_TITULOS", "Prova de títulos", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 peso: 1m,
                 ordem: 1).Value!;
             etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBanca, "BANCA_TITULOS")]).IsSuccess.Should().BeTrue();
@@ -112,7 +112,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
             EtapaProcesso etapa = EtapaProcesso.Criar(
                 "Prova de títulos",
                 CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_TITULOS", "Prova de títulos", admitePontuacao: true, admiteEliminacao: true).Value!,
+                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_TITULOS", "Prova de títulos", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 peso: 1m,
                 ordem: 1).Value!;
             etapa.DefinirBancas([

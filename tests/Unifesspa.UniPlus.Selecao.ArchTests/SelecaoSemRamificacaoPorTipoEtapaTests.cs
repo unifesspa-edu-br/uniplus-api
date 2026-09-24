@@ -12,6 +12,10 @@ using AwesomeAssertions;
 /// <c>EtapaProcesso.Nome</c>, texto livre editável, em vez do código congelado do tipo) — (a)
 /// o enum órfão <c>TipoEtapa</c> voltar a existir como fonte de verdade em
 /// <c>Selecao.Domain/Enums</c>, e (b) o corpo do método voltar a acessar <c>.Nome</c>.
+/// Trava também a volta da classe <c>TipoEtapaCodigo</c> e do literal <c>"NOTA_ENEM"</c> em
+/// <c>src/selecao</c>: a etapa de nota do ENEM é reconhecida pelo atributo congelado no
+/// snapshot da etapa (ADR-0123, Emenda 2). Outro código de tipo escrito como literal escapa
+/// da varredura, e é revisão que o pega.
 /// Mesma filosofia regex-sobre-texto de <c>SelecaoSemRamificacaoPorTipoProcessoTests</c>
 /// (ADR-0103) — sem ArchUnitNET nem Roslyn.
 /// </summary>
@@ -37,6 +41,51 @@ public sealed partial class SelecaoSemRamificacaoPorTipoEtapaTests
 
     [GeneratedRegex("""TipoEtapa\.OrigemId\b""")]
     private static partial Regex AcessoAIdentidadeCongelada();
+
+    [GeneratedRegex("\\bclass\\s+TipoEtapaCodigo\\b|\"NOTA_ENEM\"")]
+    private static partial Regex CodigoDeTipoDeEtapaNoFonte();
+
+    [Theory(DisplayName = "O detector acusa a classe TipoEtapaCodigo e o literal NOTA_ENEM — canários positivos")]
+    [InlineData("public static class TipoEtapaCodigo\n{\n    public const string NotaEnem = \"NOTA_ENEM\";\n}")]
+    [InlineData("internal static class TipoEtapaCodigo { }")]
+    [InlineData("public bool DeclaraNotaDoEnem => string.Equals(TipoEtapa.Codigo, \"NOTA_ENEM\", StringComparison.Ordinal);")]
+    public void Detector_AcusaCodigoDeTipoDeEtapaNoFonte(string canario)
+    {
+        ArgumentNullException.ThrowIfNull(canario);
+
+        CodigoDeTipoDeEtapaNoFonte().IsMatch(SemComentarios(canario)).Should().BeTrue(
+            "cada canário volta a reconhecer a etapa de nota do ENEM pelo código do tipo");
+    }
+
+    [Theory(DisplayName = "O detector não acusa a comparação com o código do predicado nem o limite do envelope")]
+    [InlineData("bool aprovada = string.Equals(e.TipoEtapa.Codigo, predicado.TipoEtapaCodigo, StringComparison.Ordinal);")]
+    [InlineData("string codigo = leitor.TextoNaoVazio(tipo, \"codigo\", tipoPath, LimitesDoEnvelope.TipoEtapaCodigo);")]
+    [InlineData("public bool DeclaraNotaDoEnem => TipoEtapa.NotaDeOrigemNoEnem;")]
+    [InlineData("// antes o tipo era reconhecido pelo código \"NOTA_ENEM\"")]
+    public void Detector_NaoAcusaUsoLegitimo(string codigo)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        CodigoDeTipoDeEtapaNoFonte().IsMatch(SemComentarios(codigo)).Should().BeFalse(
+            "o código que o predicado de obrigatoriedade guarda e o limite de tamanho do envelope não são " +
+            "comportamento chaveado por um tipo de etapa específico");
+    }
+
+    [Fact(DisplayName = "Selecao não declara TipoEtapaCodigo nem o literal NOTA_ENEM — a etapa do ENEM vem do atributo congelado")]
+    public void Selecao_NaoDeclaraCodigoDeTipoDeEtapa()
+    {
+        string raizSelecao = Path.Join(RaizDoRepo(), "src", "selecao");
+
+        Directory.Exists(raizSelecao).Should().BeTrue($"a pasta '{raizSelecao}' precisa existir para ser varrida");
+
+        List<string> violacoes = [.. ArquivosFonte(raizSelecao)
+            .Where(static arquivo => CodigoDeTipoDeEtapaNoFonte().IsMatch(SemComentarios(File.ReadAllText(arquivo))))
+            .Select(static arquivo => Path.GetFileName(arquivo))];
+
+        violacoes.Should().BeEmpty(
+            "a etapa de nota do ENEM é reconhecida pelo atributo do cadastro congelado no snapshot " +
+            "da etapa (ADR-0123, Emenda 2), não pelo código do tipo");
+    }
 
     [Theory(DisplayName = "O detector acusa o corpo do método acessando .Nome, mesmo refatorado — canários positivos")]
     [InlineData(

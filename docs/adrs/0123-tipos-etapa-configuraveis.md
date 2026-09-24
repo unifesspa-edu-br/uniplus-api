@@ -160,6 +160,38 @@ sinalizadores entre etapas, então nenhuma invariante quebra.
 de leitura não os expõe; o contrato OpenAPI não muda. O round-trip do bloco,
 exigido na Confirmação, passa a cobrir os cinco campos do snapshot.
 
+## Emenda 2 (2026-09-24) — origem da nota no ENEM como atributo do tipo
+
+O Seleção reconhecia a etapa de nota do ENEM pelo código `NOTA_ENEM`, escrito no próprio
+módulo: era o único comportamento chaveado por código de tipo de etapa, e contrariava a
+decisão original de que o vocabulário de tipos vive no cadastro, sem código-fonte a
+acompanhar cada tipo. O tipo de etapa passa a declarar no cadastro que a nota das suas
+etapas vem do ENEM, e é esse atributo, congelado no snapshot, que o Seleção consulta. O
+Seleção deixa de nomear qualquer código de tipo de etapa, e a fitness function trava a
+volta da classe `TipoEtapaCodigo` e do literal `NOTA_ENEM`; outro código de tipo escrito
+no Seleção fica a cargo da revisão.
+
+**Identidade, não sinalizador.** O atributo segue a regra da identidade (origem, código,
+nome), não a dos sinalizadores da Emenda 1: vem só da carga do cadastro, nenhuma escrita
+da API o define ou altera, e o snapshot o congela junto com a identidade. Muda só quando o
+vínculo da etapa muda; a regravação dos sinalizadores por troca de caráter o preserva.
+Diferente dos sinalizadores, ele não restringe o que pode ser declarado: diz o que o tipo
+é, como o código.
+
+**Coerência com a pontuação.** A etapa de nota do ENEM compõe a média, então o tipo com
+esse atributo precisa admitir pontuação. O cadastro recusa tirar a pontuação desse tipo, e
+o banco carrega essa garantia num CHECK. O cadastro também recusa desativá-lo, o que
+deixaria a etapa inconfigurável; essa recusa é só do domínio. Isso emenda a consequência
+neutra de que os tipos semeados não têm proteção especial contra desativação: o tipo com
+nota do ENEM passa a ter. O snapshot recusa o atributo sem pontuação, e o decodificador do envelope, por
+consequência, recusa o envelope incoerente.
+
+**Envelope, leitura e dado existente.** `etapas[].tipoEtapa` ganha o atributo sob a mesma
+versão `0.0.21`, no trem de mudanças. A leitura do cadastro o expõe, para o wizard poder
+tratar a etapa de nota do ENEM sem conhecer o código. As etapas congeladas antes desta
+emenda ficam sem o atributo e deixam de declarar nota do ENEM: sem produção, nada a
+preservar.
+
 ## Mais informações
 
 - UNI-REQ-0015, UNI-REQ-0087 — requisitos de produto relacionados.

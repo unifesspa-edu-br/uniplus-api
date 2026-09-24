@@ -11,6 +11,7 @@ public sealed record TipoEtapaDto(
     bool Ativo,
     bool AdmitePontuacao,
     bool AdmiteEliminacao,
+    bool NotaDeOrigemNoEnem,
     DateTimeOffset CriadoEm)
 {
     [JsonPropertyName("_links")]

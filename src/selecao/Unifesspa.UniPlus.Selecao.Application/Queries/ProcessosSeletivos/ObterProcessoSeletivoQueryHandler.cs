@@ -54,7 +54,7 @@ public static class ObterProcessoSeletivoQueryHandler
                 e.Id,
                 e.Nome,
                 e.Carater,
-                new TipoEtapaSnapshotDto(e.TipoEtapa.OrigemId, e.TipoEtapa.Codigo, e.TipoEtapa.Nome),
+                new TipoEtapaSnapshotDto(e.TipoEtapa.OrigemId, e.TipoEtapa.Codigo, e.TipoEtapa.Nome, e.TipoEtapa.NotaDeOrigemNoEnem),
                 e.Peso,
                 e.NotaMinima,
                 e.Ordem,

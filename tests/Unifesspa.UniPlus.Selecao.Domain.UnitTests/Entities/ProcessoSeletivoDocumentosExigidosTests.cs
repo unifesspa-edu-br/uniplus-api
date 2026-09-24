@@ -67,7 +67,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         EtapaProcesso.Criar(
             nome,
             CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: true, admiteEliminacao: true).Value!,
+            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
             peso: 1m,
             ordem: ordem,
             faseCodigo: faseCodigo).Value!;

@@ -49,6 +49,12 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     public bool AdmitePontuacao { get; private set; }
     public bool AdmiteEliminacao { get; private set; }
 
+    // Diz que a nota das etapas deste tipo vem do ENEM, e não de banca: é o que o Seleção
+    // consulta para compor essa nota, em vez de reconhecer o tipo por um código escrito no
+    // código-fonte. Faz parte da identidade do tipo, como o código: vem só da carga do
+    // cadastro, e nenhuma escrita da API o altera.
+    public bool NotaDeOrigemNoEnem { get; private set; }
+
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
 
@@ -219,14 +225,28 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
         });
     }
 
-    /// <summary>Atualiza apenas os campos editáveis; o código permanece imutável.</summary>
+    /// <summary>
+    /// Atualiza apenas os campos editáveis; o código e a origem da nota permanecem imutáveis.
+    /// Acumula as violações dos campos com a que depende do próprio tipo.
+    /// </summary>
     public Result Atualizar(string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
     {
         Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> campos =
             ValidarCamposEditaveis(nome, descricao, admitePontuacao, admiteEliminacao);
-        if (campos.IsFailure)
+        List<FieldError> erros = campos.IsFailure ? [.. campos.Errors] : [];
+
+        // A etapa de nota do ENEM compõe a média; sem pontuação, nenhuma etapa deste tipo
+        // poderia ser configurada.
+        if (NotaDeOrigemNoEnem && admitePontuacao == false)
         {
-            return Result.ValidationFailure(campos.Errors);
+            erros.Add(new("admitePontuacao", new DomainError(
+                TipoEtapaErrorCodes.NotaDeOrigemNoEnemExigePontuacao,
+                "O tipo de etapa com nota de origem no ENEM deve admitir compor a nota final.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
         }
 
         Nome = campos.Value.Nome;
@@ -243,6 +263,15 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
             return Result.Failure(new DomainError(
                 TipoEtapaErrorCodes.JaDesativado,
                 "Tipo de etapa já está desativado."));
+        }
+
+        // Desativado, o tipo sai da leitura cross-módulo, e nenhuma etapa de nota do ENEM
+        // poderia ser configurada.
+        if (NotaDeOrigemNoEnem)
+        {
+            return Result.Failure(new DomainError(
+                TipoEtapaErrorCodes.NotaDeOrigemNoEnemNaoDesativa,
+                "O tipo de etapa com nota de origem no ENEM não pode ser desativado."));
         }
 
         Ativo = false;

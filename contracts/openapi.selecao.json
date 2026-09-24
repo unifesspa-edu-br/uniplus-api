@@ -12637,7 +12637,8 @@
         "required": [
           "origemId",
           "codigo",
-          "nome"
+          "nome",
+          "notaDeOrigemNoEnem"
         ],
         "type": "object",
         "properties": {
@@ -12650,6 +12651,9 @@
           },
           "nome": {
             "type": "string"
+          },
+          "notaDeOrigemNoEnem": {
+            "type": "boolean"
           }
         }
       },

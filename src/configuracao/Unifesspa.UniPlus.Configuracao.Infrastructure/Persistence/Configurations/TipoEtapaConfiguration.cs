@@ -17,9 +17,18 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
 
         // Um tipo que não compõe nota nem elimina não configura etapa nenhuma — toda etapa
         // declara um caráter, e nenhum sobraria para escolher.
-        builder.ToTable("tipos_etapa", t => t.HasCheckConstraint(
-            "ck_tipos_etapa_carater_admitido",
-            "admite_pontuacao OR admite_eliminacao"));
+        builder.ToTable("tipos_etapa", t =>
+        {
+            t.HasCheckConstraint(
+                "ck_tipos_etapa_carater_admitido",
+                "admite_pontuacao OR admite_eliminacao");
+
+            // A etapa de nota do ENEM compõe a média: um tipo com essa origem que não
+            // pontuasse não configuraria etapa nenhuma.
+            t.HasCheckConstraint(
+                "ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao",
+                "NOT nota_de_origem_no_enem OR admite_pontuacao");
+        });
         builder.HasKey(tipo => tipo.Id);
         builder.Property(tipo => tipo.Id).ValueGeneratedNever();
         builder.Property(tipo => tipo.Codigo).HasMaxLength(64).IsRequired();
@@ -28,6 +37,9 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
         builder.Property(tipo => tipo.Ativo).IsRequired();
         builder.Property(tipo => tipo.AdmitePontuacao).IsRequired();
         builder.Property(tipo => tipo.AdmiteEliminacao).IsRequired();
+        builder.Property(tipo => tipo.NotaDeOrigemNoEnem)
+            .IsRequired()
+            .HasComment("Nota das etapas deste tipo vem do ENEM; definido só pela carga do cadastro, nunca pela API.");
         builder.Property(tipo => tipo.CreatedBy).HasMaxLength(255);
         builder.Property(tipo => tipo.UpdatedBy).HasMaxLength(255);
 

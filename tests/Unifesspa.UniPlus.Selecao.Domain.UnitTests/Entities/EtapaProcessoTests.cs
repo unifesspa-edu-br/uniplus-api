@@ -75,7 +75,7 @@ public sealed class EtapaProcessoTests
     }
 
     private static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     [Fact(DisplayName = "Criar com dados válidos tem sucesso")]
     public void Criar_DadosValidos_Sucesso()
