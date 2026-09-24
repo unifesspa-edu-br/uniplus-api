@@ -55,6 +55,22 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int GrupoAreaEnemCodigo = GrupoAreaEnemSnapshot.CodigoMaxLength;
     public const int GrupoAreaEnemRotulo = GrupoAreaEnemSnapshot.RotuloMaxLength;
+
+    /// <summary>
+    /// Resolução de Pesos por Área declarada na classificação — mesmo teto da coluna de origem
+    /// no cadastro de Pesos por Área.
+    /// </summary>
+    public const int ResolucaoPesoAreaEnem = ConfiguracaoClassificacao.ResolucaoPesoAreaEnemMaxLength;
+
+    /// <summary>Base legal de cada grupo do quadro de pesos por área congelado na classificação.</summary>
+    public const int BaseLegalPesoAreaEnem = GrupoPesoAreaEnemCongelado.BaseLegalMaxLength;
+
+    /// <summary>Código de cada área do quadro de pesos por área congelado na classificação.</summary>
+    public const int AreaPesoAreaEnemCodigo = GrupoPesoAreaEnemCongelado.AreaCodigoMaxLength;
+
+    /// <summary>Rótulo de cada área do quadro de pesos por área congelado na classificação.</summary>
+    public const int AreaPesoAreaEnemRotulo = GrupoPesoAreaEnemCongelado.AreaRotuloMaxLength;
+
     public const int RegraCodigo = 128;
     public const int RegraVersao = 16;
 
@@ -114,6 +130,18 @@ public static class LimitesDoEnvelope
     public const int PrecisaoBonus = 6;
     public const int PrecisaoPr = 5;
     public const int PrecisaoPercentual = 5;
+
+    /// <summary>
+    /// Peso de uma área no quadro de pesos por área congelado — <c>numeric(6,4)</c>: cabe o
+    /// teto do cadastro de origem (99,99) na escala com que o envelope grava todo decimal.
+    /// </summary>
+    public const int PrecisaoPesoAreaEnem = 6;
+
+    /// <summary>
+    /// Corte de uma área no quadro de pesos por área congelado — <c>numeric(8,4)</c>: cabe a
+    /// nota máxima de uma área do ENEM (1000) na escala com que o envelope grava todo decimal.
+    /// </summary>
+    public const int PrecisaoCorteAreaEnem = 8;
 
     /// <summary>Precisão de <c>ArgsRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
     public const int PrecisaoPrazo = 18;

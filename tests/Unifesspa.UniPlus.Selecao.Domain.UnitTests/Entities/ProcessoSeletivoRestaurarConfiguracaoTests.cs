@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -134,7 +135,9 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'd'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [EliminacaoEnem()],
-            baseadoEmEnem: true).Value!;
+            baseadoEmEnem: true,
+            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!;
 
         GrafoConfiguracao GrafoComClassificacaoEnem() => new(
             etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, 1m, null, 1)],
@@ -1193,7 +1196,9 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'd'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: eliminacoes,
-            baseadoEmEnem: false).Value!;
+            baseadoEmEnem: false,
+            resolucaoPesoAreaEnem: null,
+            quadroPesoAreaEnem: []).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoEnemMediaPonderada() =>
         ConfiguracaoClassificacao.Criar(
@@ -1203,7 +1208,9 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'd'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [],
-            baseadoEmEnem: true).Value!;
+            baseadoEmEnem: true,
+            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!;
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         "001/2026",

@@ -23,4 +23,15 @@ public interface IPesoAreaEnemReader
     Task<PesoAreaEnemView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Obtém as linhas vivas de uma <paramref name="resolucao"/>, uma por grupo de área,
+    /// com os grupos que faltam para ela estar completa, ou <see langword="null"/> quando a
+    /// resolução não tem nenhuma linha viva. A comparação é exata sobre a forma em que o
+    /// cadastro grava a resolução — aparada e em NFC —, e o texto que não pode ser uma
+    /// resolução gravada (com caractere invisível ou maior que a coluna) não tem linha.
+    /// </summary>
+    Task<ResolucaoPesoAreaEnemView?> ObterPorResolucaoAsync(
+        string resolucao,
+        CancellationToken cancellationToken = default);
 }

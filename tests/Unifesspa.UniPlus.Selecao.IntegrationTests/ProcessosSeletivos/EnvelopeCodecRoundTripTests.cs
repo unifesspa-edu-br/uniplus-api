@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -805,7 +806,7 @@ public sealed class EnvelopeCodecRoundTripTests
             casasArredondamento: null,
             regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1,
@@ -981,7 +982,7 @@ public sealed class EnvelopeCodecRoundTripTests
             casasArredondamento: null,
             regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1,
@@ -1195,9 +1196,11 @@ public sealed class EnvelopeCodecRoundTripTests
     /// mutar o campo para <c>false</c> sobre esse corpus faria o decoder CORRETAMENTE recusar a
     /// reidratação (a invariante ENEM×eliminação é validada dentro de
     /// <see cref="ConfiguracaoClassificacao.Criar"/>), o que quebraria a prova de round-trip em
-    /// vez de exercitá-la. Aqui o corpus não tem eliminação ENEM nenhuma, então os dois valores
-    /// continuam válidos nos dois sentidos — e cada caso do <see cref="Theory"/> muta para o
-    /// valor OPOSTO ao do corpus-base, garantindo bytes diferentes nos dois <see cref="InlineData"/>.
+    /// vez de exercitá-la. Aqui o corpus não tem eliminação ENEM nenhuma e a classificação é
+    /// importada — com cálculo local, <c>baseadoEmEnem</c> exigiria a resolução de Pesos por
+    /// Área num sentido e a recusaria no outro —, então os dois valores continuam válidos nos
+    /// dois sentidos, e cada caso do <see cref="Theory"/> muta para o valor OPOSTO ao do
+    /// corpus-base, garantindo bytes diferentes nos dois <see cref="InlineData"/>.
     /// </summary>
     [Theory(DisplayName = "O decoder não perde baseadoEmEnem — corpus sem eliminação ENEM, mutação booleano-consciente")]
     [InlineData(false, true)]
@@ -1240,8 +1243,51 @@ public sealed class EnvelopeCodecRoundTripTests
             "baseadoEmEnem não é chave de ordenação — o resto do envelope reidratado reproduz o mutado inteiro");
     }
 
+    [Fact(DisplayName = "A resolução de Pesos por Área congelada em NFC volta igual depois de publicar e restaurar")]
+    public void ResolucaoPesoAreaEnem_CongelarPublicarRestaurar_ContinuaAMesma()
+    {
+        // O cadastro grava a resolução em NFC; o operador pode enviá-la decomposta.
+        string doCadastro = "Resolução 805/2024".Normalize(System.Text.NormalizationForm.FormC);
+        string enviada = doCadastro.Normalize(System.Text.NormalizationForm.FormD);
+        ProcessoSeletivo processo = ProcessoMinimo(ConfiguracaoClassificacao.Criar(
+            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
+            regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
+            casasArredondamento: 2,
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '4'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: [],
+            baseadoEmEnem: true,
+            resolucaoPesoAreaEnem: enviada,
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!);
+        processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(doCadastro, "congelada na forma do cadastro");
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+        processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
+
+        processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(doCadastro,
+            "depois da restauração a resolução continua igual à do cadastro: o vínculo é pelo valor");
+        processo.Classificacao.QuadroPesoAreaEnem.Should().HaveCount(4);
+    }
+
     /// <summary>Corpus mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
-    private static ProcessoSeletivo ProcessoSemEliminacaoEnem(bool baseadoEmEnem)
+    private static ProcessoSeletivo ProcessoSemEliminacaoEnem(bool baseadoEmEnem) =>
+        ProcessoMinimo(ConfiguracaoClassificacao.Criar(
+            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, '2'),
+            regraArredondamento: null,
+            casasArredondamento: null,
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '4'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: [],
+            baseadoEmEnem: baseadoEmEnem,
+            resolucaoPesoAreaEnem: null,
+            quadroPesoAreaEnem: []).Value!);
+
+    /// <summary>O menor processo publicável, com a classificação informada.</summary>
+    private static ProcessoSeletivo ProcessoMinimo(ConfiguracaoClassificacao classificacao)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS BaseadoEmEnem", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -1272,14 +1318,7 @@ public sealed class EnvelopeCodecRoundTripTests
             ]).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
-            regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '4'),
-            nOpcoesAlocacao: 1,
-            regrasEliminacao: [],
-            baseadoEmEnem: baseadoEmEnem).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases([
             FaseCronograma.Criar(

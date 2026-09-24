@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -149,8 +150,12 @@ public sealed class PerfilCanonicoV1 : IPerfilCanonico
         {
             case JsonValueKind.String when valor.TryGetValue(out string? texto):
                 // NFC de toda string de negócio — fecha o furo do valor copiado por texto cru
-                // (ex.: valor de condição DNF) que não passou por normalização na projeção.
-                return JsonValue.Create(HashCanonicalComputer.NormalizeNfc(texto));
+                // (ex.: valor de condição DNF) que não passou por normalização na projeção. Um
+                // não-caractere ou surrogate sem par não tem forma NFC: bytes adulterados que o
+                // tragam são recusados como fora do perfil, e não como erro não tratado.
+                return TextoNormalizavel.TentarNormalizar(texto, out string normalizado)
+                    ? JsonValue.Create(normalizado)
+                    : throw new PayloadForaDoPerfilCanonicoException("uma string traz caractere que não tem forma NFC.");
 
             case JsonValueKind.String:
                 // String-kind com backing não-textual (Guid, data): já é ASCII canônico, sem

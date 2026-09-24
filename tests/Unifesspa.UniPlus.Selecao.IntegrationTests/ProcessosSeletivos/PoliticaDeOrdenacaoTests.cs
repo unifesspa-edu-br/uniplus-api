@@ -176,7 +176,9 @@ public sealed class PoliticaDeOrdenacaoTests
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [],
-            baseadoEmEnem: false).Value!,
+            baseadoEmEnem: false,
+            resolucaoPesoAreaEnem: null,
+            quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases(

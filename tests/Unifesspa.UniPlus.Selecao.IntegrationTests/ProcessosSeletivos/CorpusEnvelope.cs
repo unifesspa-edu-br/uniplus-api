@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Corpus da reidratação — agregados <b>ricos</b>, com ids fixos e valores
@@ -341,7 +342,9 @@ internal static class CorpusEnvelope
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteRedacao, '5'), new ArgsElimCorteRedacao(400.0000m)).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ArgsElimZeroEmArea()).Value!,
             ],
-            baseadoEmEnem: true).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            baseadoEmEnem: true,
+            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases(
             Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
@@ -917,7 +920,7 @@ internal static class CorpusEnvelope
                 casasArredondamento: null,
                 regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
                 nOpcoesAlocacao: 1,
-                regrasEliminacao: [], baseadoEmEnem: false).Value!,
+                regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             cronogramaFases: [FaseCronogramaConforme(variante)],
             documentosExigidos: [],
             nosExigencia: [],
@@ -939,7 +942,7 @@ internal static class CorpusEnvelope
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: [], baseadoEmEnem: false).Value!,
+            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
         cronogramaFases: [FaseCronogramaConforme(variante)],
         documentosExigidos: [],
         nosExigencia: [],

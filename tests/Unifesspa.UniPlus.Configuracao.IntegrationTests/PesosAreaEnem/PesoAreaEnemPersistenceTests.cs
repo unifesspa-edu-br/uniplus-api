@@ -421,6 +421,118 @@ public sealed class PesoAreaEnemPersistenceTests
         meus.Should().Equal([resA, resB]);
     }
 
+    [Fact(DisplayName = "Leitura por resolução completa devolve as quatro linhas ordenadas pelo código do grupo, sem grupo ausente")]
+    public async Task ObterPorResolucao_Completa_DevolveLinhasOrdenadasPorCodigo()
+    {
+        string resolucao = ResolucaoUnica();
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            // Inseridos fora da ordem do código para a ordenação não sair de graça.
+            ctx.PesosAreaEnem.AddRange(
+                Nova(resolucao, GrupoCurso.Tecnologica),
+                Nova(resolucao, GrupoCurso.SaudeEBiologicas),
+                Nova(resolucao, GrupoCurso.HumanisticaII),
+                Nova(resolucao, GrupoCurso.HumanisticaI));
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync($"  {resolucao} ");
+
+        view.Should().NotBeNull();
+        view!.Resolucao.Should().Be(resolucao);
+        view.Completa.Should().BeTrue();
+        view.GruposAusentes.Should().BeEmpty();
+        view.Linhas.Select(l => l.GrupoCurso.Codigo).Should().Equal(
+            GrupoCurso.HumanisticaI, GrupoCurso.HumanisticaII, GrupoCurso.SaudeEBiologicas, GrupoCurso.Tecnologica);
+        view.Linhas.Should().OnlyContain(l => l.Resolucao == resolucao && l.Areas.Count == 5 && l.BaseLegal == BaseLegal);
+    }
+
+    [Fact(DisplayName = "Leitura por resolução aponta como ausente o grupo sem linha viva, inclusive o removido logicamente")]
+    public async Task ObterPorResolucao_Incompleta_ApontaGruposAusentes()
+    {
+        string resolucao = ResolucaoUnica();
+        PesoAreaEnem removida = Nova(resolucao, GrupoCurso.HumanisticaII);
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.AddRange(
+                Nova(resolucao, GrupoCurso.Tecnologica),
+                Nova(resolucao, GrupoCurso.HumanisticaI),
+                removida);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            PesoAreaEnem aExcluir = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == removida.Id);
+            ctx.PesosAreaEnem.Remove(aExcluir);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync(resolucao);
+
+        view.Should().NotBeNull();
+        view!.Completa.Should().BeFalse();
+        view.Linhas.Select(l => l.GrupoCurso.Codigo).Should().Equal(GrupoCurso.HumanisticaI, GrupoCurso.Tecnologica);
+        view.GruposAusentes.Should().Equal(
+            new GrupoAreaEnemView(GrupoCurso.HumanisticaII, "Humanística II"),
+            new GrupoAreaEnemView(GrupoCurso.SaudeEBiologicas, "Saúde e Biológicas"));
+    }
+
+    [Fact(DisplayName = "Leitura por resolução casa a entrada decomposta com a resolução gravada em NFC")]
+    public async Task ObterPorResolucao_EntradaDecomposta_CasaComAGravadaEmNfc()
+    {
+        string sufixo = Guid.NewGuid().ToString("N")[..8];
+        string composta = $"Resolução {sufixo}".Normalize(System.Text.NormalizationForm.FormC);
+        string decomposta = composta.Normalize(System.Text.NormalizationForm.FormD);
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(Nova(decomposta));
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync(decomposta);
+
+        view.Should().NotBeNull("o cadastro grava em NFC e a busca normaliza a entrada do mesmo jeito");
+        view!.Resolucao.Should().Be(composta);
+        view.Linhas.Should().ContainSingle().Which.Resolucao.Should().Be(composta);
+    }
+
+    [Theory(DisplayName = "Leitura por resolução com texto que não cabe na coluna devolve null, sem ir ao banco")]
+    [InlineData("805\u0000")]
+    [InlineData("Res.\n805")]
+    [InlineData("Resolução com quarenta e um caracteres ..")]
+    public async Task ObterPorResolucao_TextoInvalidoParaAColuna_DevolveNull(string resolucao)
+    {
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+
+        ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync(resolucao);
+
+        view.Should().BeNull("o Postgres recusaria o caractere nulo com erro de banco, e nenhuma linha gravada tem esse texto");
+    }
+
+    [Fact(DisplayName = "Leitura por resolução com não-caractere devolve null, sem exceção")]
+    public async Task ObterPorResolucao_NaoCaractere_DevolveNull()
+    {
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+
+        ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync("Res. 805" + (char)0xFFFE);
+
+        view.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Leitura por resolução sem nenhuma linha viva devolve null")]
+    public async Task ObterPorResolucao_Inexistente_DevolveNull()
+    {
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+
+        ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync(ResolucaoUnica());
+
+        view.Should().BeNull();
+    }
+
     private static List<AreaInformada> Areas() =>
     [
         new(PesoAreaEnem.CodigoRedacao, 2.00m, 400m),

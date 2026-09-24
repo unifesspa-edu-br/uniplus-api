@@ -87,7 +87,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             casasArredondamento: null,
             regraOrdemAlocacao: regraOrdemAlocacao,
             nOpcoesAlocacao: 1,
-            regrasEliminacao: [], baseadoEmEnem: false);
+            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
         Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Ausente);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);

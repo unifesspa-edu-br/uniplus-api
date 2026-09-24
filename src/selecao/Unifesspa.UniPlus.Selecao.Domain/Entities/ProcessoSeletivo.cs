@@ -4084,7 +4084,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // existir no processo: recusar antes pela duplicidade ou pela banca levaria o operador
         // a corrigir uma etapa que, sob esta classificação, ele teria de remover de todo modo.
         bool classificacaoAdmiteNotaDoEnem = classificacao is null
-            or { BaseadoEmEnem: true, RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada };
+            || ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, classificacao.BaseadoEmEnem);
         if (!classificacaoAdmiteNotaDoEnem)
         {
             return new DomainError(

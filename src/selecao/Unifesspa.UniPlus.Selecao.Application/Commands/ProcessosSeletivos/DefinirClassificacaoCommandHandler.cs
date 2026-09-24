@@ -9,6 +9,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
+
 /// <summary>
 /// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775), em duas passadas. A
 /// primeira confirma o número de opções de alocação
@@ -22,18 +24,28 @@ using Kernel.Results;
 /// depende de OUTRA dimensão do agregado (INV-B4) é garantida pela raiz
 /// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
 /// </summary>
+/// <remarks>
+/// Na classificação baseada em ENEM com cálculo local, a resolução de Pesos por Área
+/// declarada é resolvida no cadastro da Configuração (<see cref="IPesoAreaEnemReader"/>) e
+/// congelada por cópia, grupo a grupo. Quem diz se a resolução está completa é a
+/// Configuração, a única que conhece os grupos de área. O reader cross-módulo é resolvido
+/// por service location (<c>SelecaoCodegenRegistration</c>, ADR-0098), o mesmo arranjo de
+/// <see cref="DefinirBonusRegionalCommandHandler"/>, sem desligar a transação ambiente.
+/// </remarks>
 public static class DefinirClassificacaoCommandHandler
 {
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirClassificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
+        IPesoAreaEnemReader pesoAreaEnemReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
+        ArgumentNullException.ThrowIfNull(pesoAreaEnemReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -124,6 +136,34 @@ public static class DefinirClassificacaoCommandHandler
             regrasEliminacao.Add(resultado.Value!);
         }
 
+        // Só a combinação que aceita a resolução consulta o cadastro, e só com a resolução em
+        // forma válida: o texto vira parâmetro da busca, e o Postgres recusaria o caractere nulo
+        // com erro de banco. Nas demais combinações, quem responde é ConfiguracaoClassificacao.Criar
+        // (resolução indevida ou obrigatória), sem uma leitura que não mudaria a resposta.
+        string? resolucaoPesoAreaEnem = command.ResolucaoPesoAreaEnem;
+        IReadOnlyList<GrupoPesoAreaEnemCongelado> quadroPesoAreaEnem = [];
+        IReadOnlyList<FieldError> errosDaResolucao = [];
+        if (ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(regraCalculoResult.Value!, command.BaseadoEmEnem)
+            && !string.IsNullOrWhiteSpace(command.ResolucaoPesoAreaEnem))
+        {
+            errosDaResolucao = ConfiguracaoClassificacao.ValidarResolucaoPesoAreaEnem(command.ResolucaoPesoAreaEnem);
+            if (errosDaResolucao.Count == 0)
+            {
+                Result<(string Resolucao, IReadOnlyList<GrupoPesoAreaEnemCongelado> Quadro)> congelada =
+                    await CongelarQuadroPesoAreaEnemAsync(command.ResolucaoPesoAreaEnem, pesoAreaEnemReader, cancellationToken)
+                        .ConfigureAwait(false);
+                if (congelada.IsFailure)
+                {
+                    errosDaResolucao = congelada.Errors;
+                }
+                else
+                {
+                    // A forma canônica é a que o cadastro devolveu, não o texto do comando.
+                    (resolucaoPesoAreaEnem, quadroPesoAreaEnem) = congelada.Value;
+                }
+            }
+        }
+
         Result<ConfiguracaoClassificacao> configuracaoResult = ConfiguracaoClassificacao.Criar(
             regraCalculoResult.Value!,
             regraArredondamento,
@@ -131,10 +171,23 @@ public static class DefinirClassificacaoCommandHandler
             regraOrdemAlocacaoResult.Value!,
             command.NOpcoesAlocacao,
             regrasEliminacao,
-            command.BaseadoEmEnem);
+            command.BaseadoEmEnem,
+            resolucaoPesoAreaEnem,
+            quadroPesoAreaEnem);
+
+        // A recusa da resolução — forma inválida ou cadastro que não a resolve — sai junto com
+        // as do domínio (ADR-0125), sem as que são só consequência dela.
+        List<FieldError> erros = [.. errosDaResolucao];
         if (configuracaoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(configuracaoResult.Errors);
+            erros.AddRange(errosDaResolucao.Count == 0
+                ? configuracaoResult.Errors
+                : ConfiguracaoClassificacao.SemConsequenciasDaResolucaoRecusada(configuracaoResult.Errors));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(erros);
         }
 
         Result result = processo.DefinirClassificacao(configuracaoResult.Value!, command.Precondicao);
@@ -148,6 +201,64 @@ public static class DefinirClassificacaoCommandHandler
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+    }
+
+    /// <summary>
+    /// Resolve a resolução no cadastro de Pesos por Área e copia cada linha por valor. A
+    /// resolução sem linha vigente e a resolução sem algum grupo são recusadas no campo da
+    /// resolução; a segunda nomeia os grupos que faltam, que é o que o operador precisa
+    /// cadastrar.
+    /// </summary>
+    private static async Task<Result<(string Resolucao, IReadOnlyList<GrupoPesoAreaEnemCongelado> Quadro)>> CongelarQuadroPesoAreaEnemAsync(
+        string resolucaoInformada,
+        IPesoAreaEnemReader pesoAreaEnemReader,
+        CancellationToken cancellationToken)
+    {
+        ResolucaoPesoAreaEnemView? resolucao = await pesoAreaEnemReader
+            .ObterPorResolucaoAsync(resolucaoInformada, cancellationToken)
+            .ConfigureAwait(false);
+        if (resolucao is null)
+        {
+            return Result<(string Resolucao, IReadOnlyList<GrupoPesoAreaEnemCongelado> Quadro)>.ValidationFailure(
+            [
+                new(ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem, new DomainError(
+                    "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada",
+                    "A resolução de Pesos por Área informada não tem pesos cadastrados.")),
+            ]);
+        }
+
+        if (!resolucao.Completa)
+        {
+            return Result<(string Resolucao, IReadOnlyList<GrupoPesoAreaEnemCongelado> Quadro)>.ValidationFailure(
+            [
+                new(ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem, new DomainError(
+                    "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIncompleta",
+                    $"A resolução de Pesos por Área {resolucao.Resolucao} não tem pesos cadastrados para: "
+                    + $"{string.Join(", ", resolucao.GruposAusentes.Select(static grupo => grupo.Rotulo))}.")),
+            ]);
+        }
+
+        List<GrupoPesoAreaEnemCongelado> quadro = [];
+        List<FieldError> erros = [];
+        foreach (PesoAreaEnemView linha in resolucao.Linhas)
+        {
+            Result<GrupoPesoAreaEnemCongelado> grupo = GrupoPesoAreaEnemCongelado.Criar(
+                linha.GrupoCurso.Codigo,
+                linha.GrupoCurso.Rotulo,
+                linha.BaseLegal,
+                linha.Areas.Select(static area => ((string?)area.Codigo, (string?)area.Rotulo, area.Peso, area.Corte)));
+            if (grupo.IsFailure)
+            {
+                erros.AddRange(grupo.Errors.Select(static erro => new FieldError(ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem, erro.Error)));
+                continue;
+            }
+
+            quadro.Add(grupo.Value!);
+        }
+
+        return erros.Count > 0
+            ? Result<(string Resolucao, IReadOnlyList<GrupoPesoAreaEnemCongelado> Quadro)>.ValidationFailure(erros)
+            : Result<(string Resolucao, IReadOnlyList<GrupoPesoAreaEnemCongelado> Quadro)>.Success((resolucao.Resolucao, quadro));
     }
 
     private static async Task<Result<ReferenciaRegra>> ResolverRegraAsync(

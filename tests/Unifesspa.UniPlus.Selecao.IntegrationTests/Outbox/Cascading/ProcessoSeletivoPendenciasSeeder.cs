@@ -222,7 +222,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!;
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(
             regraCalculo: regraCalculo, regraArredondamento: null, casasArredondamento: null,
-            regraOrdemAlocacao: regraOrdemAlocacao, nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false);
+            regraOrdemAlocacao: regraOrdemAlocacao, nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
         Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Ausente);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);

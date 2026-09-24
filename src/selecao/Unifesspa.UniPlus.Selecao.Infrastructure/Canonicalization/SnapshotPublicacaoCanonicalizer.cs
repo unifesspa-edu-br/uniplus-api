@@ -214,6 +214,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// (sem abreviação e sem acento) é a identidade que casa a oferta com a linha de pesos por
     /// área, e o rótulo é o que o edital mostra. O decodificador recusa o texto solto da forma
     /// anterior como envelope malformado.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>classificacao</c> ganha
+    /// <c>resolucaoPesoAreaEnem</c> — a resolução de Pesos por Área que a classificação baseada
+    /// em ENEM com cálculo local declara, nula nas demais — e <c>quadroPesoAreaEnem</c>, a cópia
+    /// por valor dessa resolução: um item por grupo de área, com código e rótulo do grupo, base
+    /// legal e código, rótulo, peso e corte de cada área, ordenado pelo código do grupo e, dentro
+    /// dele, pelo código da área. Vazio quando não há resolução.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -961,8 +967,36 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                     ["regra"] = SerializarReferenciaRegra(r.Regra),
                     ["args"] = SerializarArgsRegraEliminacao(r.Args),
                 })),
+            ["resolucaoPesoAreaEnem"] = classificacao.ResolucaoPesoAreaEnem is { } resolucao
+                ? HashCanonicalComputer.NormalizeNfc(resolucao)
+                : null,
+            ["quadroPesoAreaEnem"] = SerializarQuadroPesoAreaEnem(classificacao.QuadroPesoAreaEnem),
         };
     }
+
+    /// <summary>
+    /// O quadro de pesos por área congelado, ordenado pelo código do grupo e, dentro do
+    /// grupo, pelo código da área — ordinal, sobre a forma NFC que o próprio envelope grava.
+    /// O código é a identidade de grupo e de área: nenhum dos dois se repete no quadro, então
+    /// a ordem não depende de desempate nem da ordem em que o banco devolve as linhas.
+    /// </summary>
+    private static JsonArray SerializarQuadroPesoAreaEnem(IEnumerable<GrupoPesoAreaEnemCongelado> quadro) =>
+        new([.. quadro
+            .OrderBy(static g => HashCanonicalComputer.NormalizeNfc(g.GrupoAreaEnem.Codigo), StringComparer.Ordinal)
+            .Select(static g => (JsonNode)new JsonObject
+            {
+                ["grupoAreaEnem"] = SerializarGrupoAreaEnem(g.GrupoAreaEnem),
+                ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(g.BaseLegal),
+                ["areas"] = new JsonArray([.. g.Areas
+                    .OrderBy(static a => HashCanonicalComputer.NormalizeNfc(a.Codigo), StringComparer.Ordinal)
+                    .Select(static a => (JsonNode)new JsonObject
+                    {
+                        ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
+                        ["rotulo"] = HashCanonicalComputer.NormalizeNfc(a.Rotulo),
+                        ["peso"] = HashCanonicalComputer.SerializeDecimalCanonical(a.Peso, EscalaPadrao),
+                        ["corte"] = a.Corte is { } corte ? HashCanonicalComputer.SerializeDecimalCanonical(corte, EscalaPadrao) : null,
+                    })]),
+            })]);
 
     private static JsonObject SerializarArgsRegraEliminacao(ArgsRegraEliminacao args) => args switch
     {

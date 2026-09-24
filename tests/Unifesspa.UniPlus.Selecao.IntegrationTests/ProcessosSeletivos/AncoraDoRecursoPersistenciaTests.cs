@@ -174,7 +174,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
                 Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false).Value!,
+                Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirAlgoritmoContagemPrazo(

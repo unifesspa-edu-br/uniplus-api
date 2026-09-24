@@ -70,7 +70,7 @@ internal static class ProcessoSeletivoConformeBuilder
                 casasArredondamento: null,
                 regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
                 nOpcoesAlocacao: 1,
-                regrasEliminacao: [], baseadoEmEnem: false).Value!,
+                regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(

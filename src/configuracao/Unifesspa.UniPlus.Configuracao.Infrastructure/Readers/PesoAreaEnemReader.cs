@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
 /// <summary>
@@ -50,6 +51,45 @@ internal sealed class PesoAreaEnemReader : IPesoAreaEnemReader
             .ConfigureAwait(false);
 
         return entidade is null ? null : ParaView(entidade);
+    }
+
+    public async Task<ResolucaoPesoAreaEnemView?> ObterPorResolucaoAsync(
+        string resolucao,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(resolucao);
+
+        // A busca compara com a forma em que o cadastro grava a resolução. Texto que não pode
+        // ser uma resolução gravada — com caractere invisível, o nulo inclusive, ou maior que a
+        // coluna — não tem linha, e não vai ao banco: o Postgres recusaria o caractere nulo com
+        // erro de banco.
+        string? procurada = PesoAreaEnem.NormalizarResolucao(resolucao);
+        if (procurada is null)
+        {
+            return null;
+        }
+
+        List<PesoAreaEnem> entidades = await _dbContext.PesosAreaEnem
+            .AsNoTracking()
+            .Where(p => p.Resolucao == procurada)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (entidades.Count == 0)
+        {
+            return null;
+        }
+
+        HashSet<string> presentes = entidades.Select(static p => p.GrupoCurso.Codigo).ToHashSet(StringComparer.Ordinal);
+
+        return new ResolucaoPesoAreaEnemView(
+            procurada,
+            [.. entidades
+                .OrderBy(static p => p.GrupoCurso.Codigo, StringComparer.Ordinal)
+                .Select(ParaView)],
+            [.. GrupoCurso.Todos
+                .Where(grupo => !presentes.Contains(grupo.Codigo))
+                .Select(static grupo => new GrupoAreaEnemView(grupo.Codigo, grupo.Rotulo))]);
     }
 
     private static PesoAreaEnemView ParaView(PesoAreaEnem p) =>

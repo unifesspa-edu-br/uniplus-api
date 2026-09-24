@@ -276,7 +276,9 @@ public sealed partial class EnvelopeCodec
             "regraOrdemAlocacao",
             "nOpcoesAlocacao",
             "regrasEliminacao",
-            "baseadoEmEnem");
+            "baseadoEmEnem",
+            "resolucaoPesoAreaEnem",
+            "quadroPesoAreaEnem");
 
         ReferenciaRegra regraCalculo = leitor.Regra(
             bloco,
@@ -340,12 +342,82 @@ public sealed partial class EnvelopeCodec
             eliminacoes.Add(eliminacao.Value!);
         }
 
+        string? resolucaoPesoAreaEnem = leitor.TextoOpcional(
+            bloco, "resolucaoPesoAreaEnem", "classificacao", LimitesDoEnvelope.ResolucaoPesoAreaEnem);
+        IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro = LerQuadroPesoAreaEnem(leitor, bloco);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
         Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo, regraArredondamento, casas, regraOrdem, nOpcoes, eliminacoes, baseadoEmEnem);
+            regraCalculo, regraArredondamento, casas, regraOrdem, nOpcoes, eliminacoes, baseadoEmEnem,
+            resolucaoPesoAreaEnem, quadro!);
 
         return classificacao.IsFailure
             ? leitor.Propagar<ConfiguracaoClassificacao>(classificacao.Error!)
             : classificacao.Value;
+    }
+
+    /// <summary>
+    /// O quadro de pesos por área congelado. Coerência entre o quadro e a resolução
+    /// declarada, e a presença dos dois só na classificação baseada em ENEM com cálculo
+    /// local, ficam com <see cref="ConfiguracaoClassificacao.Criar"/>; os limites de cada
+    /// valor, com <see cref="GrupoPesoAreaEnemCongelado.Criar"/> e com as colunas que o
+    /// recebem (<see cref="LimitesDoEnvelope"/>).
+    /// </summary>
+    private static IReadOnlyList<GrupoPesoAreaEnemCongelado>? LerQuadroPesoAreaEnem(LeitorEnvelope leitor, JsonObject bloco)
+    {
+        JsonArray array = leitor.Array(bloco, "quadroPesoAreaEnem", "classificacao");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        List<GrupoPesoAreaEnemCongelado> quadro = [];
+        for (int i = 0; i < array.Count; i++)
+        {
+            string path = $"classificacao.quadroPesoAreaEnem[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, "classificacao.quadroPesoAreaEnem");
+            leitor.ExigirChaves(item, path, "grupoAreaEnem", "baseLegal", "areas");
+
+            (string Codigo, string Rotulo)? grupo = LerGrupoAreaEnemObrigatorio(leitor, item, path);
+            string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegalPesoAreaEnem);
+            JsonArray arrayAreas = leitor.Array(item, "areas", path);
+            if (leitor.Falhou || grupo is not { } grupoLido)
+            {
+                return null;
+            }
+
+            List<(string? Codigo, string? Rotulo, decimal Peso, decimal? Corte)> areas = [];
+            for (int j = 0; j < arrayAreas.Count; j++)
+            {
+                string pathArea = $"{path}.areas[{j}]";
+                JsonObject area = leitor.ItemObjeto(arrayAreas, j, $"{path}.areas");
+                leitor.ExigirChaves(area, pathArea, "codigo", "rotulo", "peso", "corte");
+
+                string codigo = leitor.TextoNaoVazio(area, "codigo", pathArea, LimitesDoEnvelope.AreaPesoAreaEnemCodigo);
+                string rotulo = leitor.TextoNaoVazio(area, "rotulo", pathArea, LimitesDoEnvelope.AreaPesoAreaEnemRotulo);
+                decimal peso = leitor.Decimal(area, "peso", EscalaPadrao, pathArea, LimitesDoEnvelope.PrecisaoPesoAreaEnem);
+                decimal? corte = leitor.DecimalOpcional(area, "corte", EscalaPadrao, pathArea, LimitesDoEnvelope.PrecisaoCorteAreaEnem);
+                if (leitor.Falhou)
+                {
+                    return null;
+                }
+
+                areas.Add((codigo, rotulo, peso, corte));
+            }
+
+            Result<GrupoPesoAreaEnemCongelado> congelado = GrupoPesoAreaEnemCongelado.Criar(grupoLido.Codigo, grupoLido.Rotulo, baseLegal, areas);
+            if (congelado.IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<GrupoPesoAreaEnemCongelado>>(congelado.Error!);
+            }
+
+            quadro.Add(congelado.Value!);
+        }
+
+        return quadro;
     }
 
     private static ArgsRegraEliminacao? LerArgsEliminacao(

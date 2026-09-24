@@ -92,6 +92,71 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("idempotency_cache", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AreaPesoAreaEnemCongelada", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasComment("Identificador interno (UUIDv7) da área congelada.");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("codigo")
+                        .HasComment("Código da área do ENEM, sem abreviação e sem acento, copiado da resolução de Pesos por Área.");
+
+                    b.Property<decimal?>("Corte")
+                        .HasPrecision(8, 4)
+                        .HasColumnType("numeric(8,4)")
+                        .HasColumnName("corte")
+                        .HasComment("Nota mínima da área (0 a 1000), copiada da resolução de Pesos por Área; nulo quando a área não tem corte.");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
+
+                    b.Property<Guid>("GrupoPesoAreaEnemCongeladoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("grupo_peso_area_enem_congelado_id")
+                        .HasComment("Id do grupo congelado dono da área (FK, cascade delete).");
+
+                    b.Property<decimal>("Peso")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("peso")
+                        .HasComment("Peso da área na média do grupo, copiado da resolução de Pesos por Área.");
+
+                    b.Property<string>("Rotulo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("rotulo")
+                        .HasComment("Rótulo oficial da área do ENEM, copiado junto do código.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
+
+                    b.HasKey("Id")
+                        .HasName("pk_areas_peso_area_enem_congeladas");
+
+                    b.HasIndex("GrupoPesoAreaEnemCongeladoId", "Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_areas_peso_area_enem_congeladas_grupo_peso_area_enem_congel");
+
+                    b.ToTable("areas_peso_area_enem_congeladas", "selecao", t =>
+                        {
+                            t.HasComment("Peso e corte de cada área do ENEM num grupo do quadro de pesos por área congelado na classificação, copiados por valor da resolução de Pesos por Área declarada.");
+
+                            t.HasCheckConstraint("ck_areas_peso_area_enem_congeladas_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
+
+                            t.HasCheckConstraint("ck_areas_peso_area_enem_congeladas_peso", "peso >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaDaEtapa", b =>
                 {
                     b.Property<Guid>("Id")
@@ -613,6 +678,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
+
+                    b.Property<string>("ResolucaoPesoAreaEnem")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("resolucao_peso_area_enem")
+                        .HasComment("Resolução de Pesos por Área declarada pela classificação baseada em ENEM com cálculo local; o vínculo com o cadastro é pelo valor, e o quadro fica congelado em grupos_peso_area_enem_congelados. Nulo nas demais classificações.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1311,6 +1382,47 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_fatos_coletados_processo_ordem");
 
                     b.ToTable("fatos_coletados", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasComment("Identificador interno (UUIDv7) do grupo congelado.");
+
+                    b.Property<string>("BaseLegal")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("base_legal")
+                        .HasComment("Dispositivo legal que fundamenta os pesos do grupo, copiado da resolução de Pesos por Área.");
+
+                    b.Property<Guid>("ConfiguracaoClassificacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("configuracao_classificacao_id")
+                        .HasComment("Id da configuração de classificação dona do quadro (FK, cascade delete).");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
+
+                    b.HasKey("Id")
+                        .HasName("pk_grupos_peso_area_enem_congelados");
+
+                    b.HasIndex("ConfiguracaoClassificacaoId")
+                        .HasDatabaseName("ix_grupos_peso_area_enem_congelados_configuracao_classificacao");
+
+                    b.ToTable("grupos_peso_area_enem_congelados", "selecao", t =>
+                        {
+                            t.HasComment("Quadro de pesos por área do ENEM congelado na classificação do processo seletivo: uma linha por grupo de área, copiada por valor da resolução de Pesos por Área declarada. Substituída por inteiro quando a classificação é redefinida.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModalidadeSelecionada", b =>
@@ -2836,6 +2948,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AreaPesoAreaEnemCongelada", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", null)
+                        .WithMany("Areas")
+                        .HasForeignKey("GrupoPesoAreaEnemCongeladoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_areas_peso_area_enem_congeladas_grupos_peso_area_enem_conge");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaDaEtapa", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", null)
@@ -3139,6 +3261,35 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_configuracoes_distribuicao_vagas_processos_seletivos_proces");
 
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.GrupoAreaEnemSnapshot", "GrupoAreaEnem", b1 =>
+                        {
+                            b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("grupo_area_enem_codigo")
+                                .HasComment("Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, congelado por valor do cadastro de cursos na definição da distribuição; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo.");
+
+                            b1.Property<string>("Rotulo")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("grupo_area_enem_rotulo")
+                                .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo.");
+
+                            b1.HasKey("ConfiguracaoDistribuicaoVagasId");
+
+                            b1.ToTable("configuracoes_distribuicao_vagas", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
+                                .HasConstraintName("fk_configuracoes_distribuicao_vagas_configuracoes_distribuicao");
+                        });
+
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraAjuste", b1 =>
                         {
                             b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
@@ -3197,35 +3348,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .HasMaxLength(16)
                                 .HasColumnType("character varying(16)")
                                 .HasColumnName("regra_distribuicao_versao");
-
-                            b1.HasKey("ConfiguracaoDistribuicaoVagasId");
-
-                            b1.ToTable("configuracoes_distribuicao_vagas", "selecao");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
-                                .HasConstraintName("fk_configuracoes_distribuicao_vagas_configuracoes_distribuicao");
-                        });
-
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.GrupoAreaEnemSnapshot", "GrupoAreaEnem", b1 =>
-                        {
-                            b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("Codigo")
-                                .IsRequired()
-                                .HasMaxLength(30)
-                                .HasColumnType("character varying(30)")
-                                .HasColumnName("grupo_area_enem_codigo")
-                                .HasComment("Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, congelado por valor do cadastro de cursos na definição da distribuição; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo.");
-
-                            b1.Property<string>("Rotulo")
-                                .IsRequired()
-                                .HasMaxLength(60)
-                                .HasColumnType("character varying(60)")
-                                .HasColumnName("grupo_area_enem_rotulo")
-                                .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo.");
 
                             b1.HasKey("ConfiguracaoDistribuicaoVagasId");
 
@@ -3550,6 +3672,48 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_fatos_coletados_processos_seletivos_processo_seletivo_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", null)
+                        .WithMany("QuadroPesoAreaEnem")
+                        .HasForeignKey("ConfiguracaoClassificacaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_grupos_peso_area_enem_congelados_configuracoes_classificaca");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.GrupoAreaEnemSnapshot", "GrupoAreaEnem", b1 =>
+                        {
+                            b1.Property<Guid>("GrupoPesoAreaEnemCongeladoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("grupo_area_enem_codigo")
+                                .HasComment("Código do grupo de área do ENEM, sem abreviação e sem acento, copiado da resolução de Pesos por Área; casa a oferta com a linha do quadro.");
+
+                            b1.Property<string>("Rotulo")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("grupo_area_enem_rotulo")
+                                .HasComment("Rótulo do grupo de área do ENEM, copiado junto do código.");
+
+                            b1.HasKey("GrupoPesoAreaEnemCongeladoId");
+
+                            b1.ToTable("grupos_peso_area_enem_congelados", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("GrupoPesoAreaEnemCongeladoId")
+                                .HasConstraintName("fk_grupos_peso_area_enem_congelados_grupos_peso_area_enem_cong");
+                        });
+
+                    b.Navigation("GrupoAreaEnem")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModalidadeSelecionada", b =>
@@ -4179,6 +4343,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", b =>
                 {
+                    b.Navigation("QuadroPesoAreaEnem");
+
                     b.Navigation("RegrasEliminacao");
                 });
 
@@ -4222,6 +4388,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FatoColetado", b =>
                 {
                     b.Navigation("Precondicoes");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
+                {
+                    b.Navigation("Areas");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>

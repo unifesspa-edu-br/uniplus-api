@@ -72,7 +72,7 @@ internal static class CorpusFitness
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente);
+            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente);
 
         DadosEdital dados = DadosEdital.Criar(
             numero: "001/2026",

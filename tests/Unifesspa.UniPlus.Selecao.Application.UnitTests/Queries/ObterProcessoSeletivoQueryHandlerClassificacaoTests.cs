@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="ObterProcessoSeletivoQueryHandler"/> para o bloco de
@@ -28,6 +29,35 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
 
         dto.Should().NotBeNull();
         dto!.BaseadoEmEnem.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Handle projeta a resolução de Pesos por Área e o quadro congelado, ordenados pelo código do grupo e da área")]
+    public async Task Handle_ProjetaResolucaoEQuadroCongelado()
+    {
+        ConfiguracaoClassificacaoDto? dto = await ObterDtoComClassificacaoAsync(baseadoEmEnem: true);
+
+        dto!.ResolucaoPesoAreaEnem.Should().Be(QuadroPesoAreaEnemDeTeste.Resolucao);
+        dto.QuadroPesoAreaEnem.Select(g => g.GrupoAreaEnem.Codigo).Should().Equal(
+            "HUMANISTICA_I", "HUMANISTICA_II", "SAUDE_E_BIOLOGICAS", "TECNOLOGICA");
+
+        GrupoPesoAreaEnemCongeladoDto saude = dto.QuadroPesoAreaEnem[2];
+        saude.GrupoAreaEnem.Rotulo.Should().Be("Saúde e Biológicas");
+        saude.BaseLegal.Should().Be("Resolução nº 805/2024/Consepe – Anexo I");
+        saude.Areas.Should().Equal(
+            new AreaPesoAreaEnemCongeladaDto("CIENCIAS_DA_NATUREZA", "Ciências da Natureza e suas Tecnologias", 1.50m, null),
+            new AreaPesoAreaEnemCongeladaDto("CIENCIAS_HUMANAS", "Ciências Humanas e suas Tecnologias", 2.50m, null),
+            new AreaPesoAreaEnemCongeladaDto("LINGUAGENS", "Linguagens e suas Tecnologias", 1.50m, null),
+            new AreaPesoAreaEnemCongeladaDto("MATEMATICA", "Matemática e suas Tecnologias", 1.50m, null),
+            new AreaPesoAreaEnemCongeladaDto("REDACAO", "Redação", 2.00m, 400m));
+    }
+
+    [Fact(DisplayName = "Handle projeta classificação sem resolução com quadro vazio")]
+    public async Task Handle_SemResolucao_ProjetaQuadroVazio()
+    {
+        ConfiguracaoClassificacaoDto? dto = await ObterDtoComClassificacaoAsync(baseadoEmEnem: false);
+
+        dto!.ResolucaoPesoAreaEnem.Should().BeNull();
+        dto.QuadroPesoAreaEnem.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Handle projeta BaseadoEmEnem=false da classificação para o DTO de leitura")]
@@ -51,7 +81,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo, regraArredondamento, casasArredondamento: 2, regraOrdemAlocacao, nOpcoesAlocacao: 1, [],
-            baseadoEmEnem).Value!;
+            baseadoEmEnem,
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
 
         Result resultado = processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
         resultado.IsSuccess.Should().BeTrue();

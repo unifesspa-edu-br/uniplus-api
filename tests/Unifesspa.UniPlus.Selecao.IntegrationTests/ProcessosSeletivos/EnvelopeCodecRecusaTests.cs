@@ -223,6 +223,9 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("classificacao.regrasEliminacao.0.args")]
     [InlineData("classificacao.regrasEliminacao.0.regra")]
     [InlineData("classificacao.regraCalculo")]
+    [InlineData("classificacao.quadroPesoAreaEnem.0")]
+    [InlineData("classificacao.quadroPesoAreaEnem.0.grupoAreaEnem")]
+    [InlineData("classificacao.quadroPesoAreaEnem.0.areas.0")]
     [InlineData("atendimento.condicoes.0")]
     [InlineData("atendimento.recursos.0")]
     [InlineData("atendimento.tiposDeficiencia.0")]
@@ -920,7 +923,7 @@ public sealed class EnvelopeCodecRecusaTests
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
             regraArredondamento: null, casasArredondamento: null,
             regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!,
-            nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Propria,
@@ -1312,6 +1315,129 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.IsFailure.Should().BeTrue("o grupo congelado é um objeto com código e rótulo");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         resultado.Error.Message.Should().Contain("distribuicao[0].grupoAreaEnem");
+    }
+
+    [Fact(DisplayName = "classificacao com resolução de Pesos por Área e quadro vazio é recusada")]
+    public void Classificacao_ResolucaoComQuadroVazio_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["classificacao"]!["quadroPesoAreaEnem"] = new JsonArray());
+
+        resultado.IsFailure.Should().BeTrue("a resolução declarada sem grupo congelado não teria pesos para a nota");
+        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.QuadroPesoAreaEnemVazio");
+    }
+
+    [Fact(DisplayName = "classificacao baseada em ENEM com cálculo local sem a resolução de Pesos por Área é recusada")]
+    public void Classificacao_EnemLocalSemResolucao_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["classificacao"]!["resolucaoPesoAreaEnem"] = null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.ResolucaoPesoAreaEnemObrigatoria");
+    }
+
+    [Fact(DisplayName = "classificacao.quadroPesoAreaEnem com grupo repetido é recusado")]
+    public void Classificacao_QuadroComGrupoRepetido_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray quadro = envelope["classificacao"]!["quadroPesoAreaEnem"]!.AsArray();
+            quadro.Add(quadro[0]!.DeepClone());
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.QuadroPesoAreaEnemGrupoRepetido");
+    }
+
+    [Fact(DisplayName = "classificacao.quadroPesoAreaEnem com área repetida no mesmo grupo é recusado")]
+    public void Classificacao_QuadroComAreaRepetida_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray areas = envelope["classificacao"]!["quadroPesoAreaEnem"]!.AsArray()[0]!["areas"]!.AsArray();
+            areas.Add(areas[0]!.DeepClone());
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("GrupoPesoAreaEnemCongelado.AreaRepetida");
+    }
+
+    [Fact(DisplayName = "classificacao.quadroPesoAreaEnem com corte acima da nota máxima é recusado")]
+    public void Classificacao_QuadroComCorteAcimaDaNotaMaxima_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["classificacao"]!["quadroPesoAreaEnem"]!.AsArray()[0]!["areas"]!.AsArray()[0]!["corte"] = "1000.0001");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("GrupoPesoAreaEnemCongelado.CorteForaDaFaixa");
+    }
+
+    [Theory(DisplayName = "classificacao.quadroPesoAreaEnem com texto acima da coluna é recusado")]
+    [InlineData("codigo", 31, "30")]
+    [InlineData("rotulo", 101, "100")]
+    public void Classificacao_QuadroComTextoDeAreaAcimaDaColuna_Recusa(string campo, int tamanho, string limite)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["classificacao"]!["quadroPesoAreaEnem"]!.AsArray()[0]!["areas"]!.AsArray()[0]![campo] = new string('A', tamanho));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain($"classificacao.quadroPesoAreaEnem[0].areas[0].{campo}").And.Contain(limite);
+    }
+
+    [Fact(DisplayName = "classificacao.quadroPesoAreaEnem com peso de mais dígitos que a coluna é recusado")]
+    public void Classificacao_QuadroComPesoAcimaDaPrecisao_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["classificacao"]!["quadroPesoAreaEnem"]!.AsArray()[0]!["areas"]!.AsArray()[0]!["peso"] = "100.0000");
+
+        resultado.IsFailure.Should().BeTrue("numeric(6,4) comporta até 99,9999 — o excesso só estouraria no SaveChanges");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("numeric(6,4)");
+    }
+
+    [Theory(DisplayName = "classificacao com não-caractere na resolução, no grupo, na base legal ou na área é recusada como malformada, sem exceção")]
+    [InlineData("resolucao")]
+    [InlineData("grupo")]
+    [InlineData("baseLegal")]
+    [InlineData("area")]
+    public void Classificacao_NaoCaractere_RecusaComoMalformada(string onde)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComNaoCaractere(onde switch
+        {
+            "resolucao" => static (envelope, texto) => envelope["classificacao"]!["resolucaoPesoAreaEnem"] = texto,
+            "grupo" => static (envelope, texto) => Quadro(envelope)[0]!["grupoAreaEnem"]!["rotulo"] = texto,
+            "baseLegal" => static (envelope, texto) => Quadro(envelope)[0]!["baseLegal"] = texto,
+            _ => static (envelope, texto) => Quadro(envelope)[0]!["areas"]!.AsArray()[0]!["rotulo"] = texto,
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+
+        static JsonArray Quadro(JsonObject envelope) => envelope["classificacao"]!["quadroPesoAreaEnem"]!.AsArray();
+    }
+
+    /// <summary>
+    /// Como <see cref="ReidratarComEnvelopeAdulterado"/>, mas com um não-caractere (U+FFFE) no
+    /// texto que <paramref name="adulterar"/> grava. O não-caractere entra direto nos bytes:
+    /// o perfil canônico não o serializaria, porque ele não tem forma NFC.
+    /// </summary>
+    private static Result<EnvelopeReidratado> ReidratarComNaoCaractere(Action<JsonObject, string> adulterar)
+    {
+        const string Marcador = "MARCADOR-DO-NAO-CARACTERE";
+        ProcessoSeletivo processo = ProcessoPublicado();
+        byte[] originais = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico())).Bytes;
+
+        JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(originais))!.AsObject();
+        adulterar(envelope, "Texto" + Marcador);
+
+        string comMarcador = Encoding.UTF8.GetString(PerfilCanonicoV1.Instancia.Serializar(envelope));
+        comMarcador.Should().Contain(Marcador, "pré-condição: a adulteração tem de chegar aos bytes");
+        byte[] adulterados = Encoding.UTF8.GetBytes(comMarcador.Replace(Marcador, ((char)0xFFFE).ToString(), StringComparison.Ordinal));
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, adulterados);
+        return CorpusEnvelope.Registro.Reidratar(versao);
     }
 
     [Fact(DisplayName = "etapas[].produtos[].atoCodigo acima do limite da coluna (60) é recusado")]

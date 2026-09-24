@@ -105,6 +105,12 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
 
         // Issue #563 — divulgação pública.
         ("Justificativa", LimitesDoEnvelope.Justificativa, typeof(ConfiguracaoDivulgacao), nameof(ConfiguracaoDivulgacao.Justificativa)),
+
+        // Resolução de Pesos por Área e quadro congelado na classificação.
+        ("ResolucaoPesoAreaEnem", LimitesDoEnvelope.ResolucaoPesoAreaEnem, typeof(ConfiguracaoClassificacao), nameof(ConfiguracaoClassificacao.ResolucaoPesoAreaEnem)),
+        ("BaseLegalPesoAreaEnem", LimitesDoEnvelope.BaseLegalPesoAreaEnem, typeof(GrupoPesoAreaEnemCongelado), nameof(GrupoPesoAreaEnemCongelado.BaseLegal)),
+        ("AreaPesoAreaEnemCodigo", LimitesDoEnvelope.AreaPesoAreaEnemCodigo, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Codigo)),
+        ("AreaPesoAreaEnemRotulo", LimitesDoEnvelope.AreaPesoAreaEnemRotulo, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Rotulo)),
     ];
 
     /// <summary>
@@ -123,6 +129,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("PrecisaoBonus", LimitesDoEnvelope.PrecisaoBonus, 4, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Teto)),
         ("PrecisaoPr", LimitesDoEnvelope.PrecisaoPr, 4, typeof(ConfiguracaoDistribuicaoVagas), nameof(ConfiguracaoDistribuicaoVagas.Pr)),
         ("PrecisaoTaxaInscricao", LimitesDoEnvelope.PrecisaoTaxaInscricao, ConfiguracaoTaxaInscricao.ValorEscala, typeof(ConfiguracaoTaxaInscricao), nameof(ConfiguracaoTaxaInscricao.Valor)),
+        ("PrecisaoPesoAreaEnem", LimitesDoEnvelope.PrecisaoPesoAreaEnem, 4, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Peso)),
+        ("PrecisaoCorteAreaEnem", LimitesDoEnvelope.PrecisaoCorteAreaEnem, 4, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Corte)),
     ];
 
     [Fact(DisplayName = "Todo limite de COMPRIMENTO do decoder é o da coluna que vai receber o valor")]
@@ -249,6 +257,18 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         grupoAreaEnem.FindProperty(nameof(GrupoAreaEnemSnapshot.Codigo))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.GrupoAreaEnemCodigo);
         grupoAreaEnem.FindProperty(nameof(GrupoAreaEnemSnapshot.Rotulo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.GrupoAreaEnemRotulo);
+
+        // O mesmo snapshot do grupo, no quadro de pesos por área congelado na classificação.
+        IEntityType grupoDoQuadro = contexto.Model
+            .FindEntityType(typeof(GrupoPesoAreaEnemCongelado))!
+            .GetNavigations()
+            .Single(n => n.Name == nameof(GrupoPesoAreaEnemCongelado.GrupoAreaEnem))
+            .TargetEntityType;
+
+        grupoDoQuadro.FindProperty(nameof(GrupoAreaEnemSnapshot.Codigo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.GrupoAreaEnemCodigo);
+        grupoDoQuadro.FindProperty(nameof(GrupoAreaEnemSnapshot.Rotulo))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.GrupoAreaEnemRotulo);
 
         foreach (string percentual in new[]

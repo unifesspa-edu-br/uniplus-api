@@ -484,6 +484,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.NOpcoesAlocacao,
                 request.RegrasEliminacao,
                 request.BaseadoEmEnem,
+                request.ResolucaoPesoAreaEnem,
                 precondicao),
             cancellationToken);
         return ResponderMutacao(resultado);

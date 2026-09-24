@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using System.Text;
-
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -17,8 +15,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed record TipoEtapaSnapshot
 {
-    private const char CaractereNulo = (char)0;
-
     private TipoEtapaSnapshot() { }
 
     private TipoEtapaSnapshot(Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao)
@@ -74,14 +70,17 @@ public sealed record TipoEtapaSnapshot
         // congelado muda de representação sem que o dado mude de significado, e
         // AvaliadorConformidadeLegal, que compara por igualdade ordinal, passa a reportar a
         // etapa como ausente mesmo com a regra e a etapa usando o "mesmo" código.
-        string codigoNormalizado = codigo.Trim().Normalize(NormalizationForm.FormC);
-        string nomeNormalizado = nome.Trim().Normalize(NormalizationForm.FormC);
+        string? codigoNormalizado = TextoCongelado.Normalizar(codigo);
+        string? nomeNormalizado = TextoCongelado.Normalizar(nome);
 
         // Defesa de decode: um envelope adulterado não pode injetar U+0000 e só falhar
         // depois, na constraint do Postgres — o VO recusa aqui, na fronteira do domínio.
-        if (codigoNormalizado.Contains(CaractereNulo) || nomeNormalizado.Contains(CaractereNulo))
+        if (codigoNormalizado is null || nomeNormalizado is null
+            || TextoCongelado.ContemCaractereNulo(codigoNormalizado) || TextoCongelado.ContemCaractereNulo(nomeNormalizado))
         {
-            return Falha("TipoEtapaSnapshot.CaractereNulo", "Snapshot do tipo de etapa não pode conter o caractere nulo (U+0000).");
+            return Falha(
+                "TipoEtapaSnapshot.CaractereNulo",
+                "Snapshot do tipo de etapa não pode conter o caractere nulo (U+0000) nem caractere que não seja texto.");
         }
 
         if (codigoNormalizado.Length > 64 || nomeNormalizado.Length > 200)

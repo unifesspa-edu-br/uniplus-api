@@ -163,7 +163,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
             casasArredondamento: null,
             regraOrdemAlocacao: regraOrdemAlocacao,
             nOpcoesAlocacao: 1,
-            regrasEliminacao: [], baseadoEmEnem: false).Value!;
+            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseConforme = FaseCronograma.Criar(

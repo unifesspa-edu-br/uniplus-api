@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A etapa cuja nota vem do ENEM: única por processo, sem lançamento, e só sob
@@ -34,7 +35,9 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             1,
             [],
-            baseadoEmEnem).Value!;
+            baseadoEmEnem,
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
         ConfiguracaoClassificacao.Criar(
@@ -44,7 +47,9 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             1,
             [],
-            baseadoEmEnem: true).Value!;
+            baseadoEmEnem: true,
+            resolucaoPesoAreaEnem: null,
+            quadroPesoAreaEnem: []).Value!;
 
     [Fact(DisplayName = "A etapa declara nota do ENEM pelo código do tipo congelado")]
     public void DeclaraNotaDoEnem_PeloCodigoDoTipo()

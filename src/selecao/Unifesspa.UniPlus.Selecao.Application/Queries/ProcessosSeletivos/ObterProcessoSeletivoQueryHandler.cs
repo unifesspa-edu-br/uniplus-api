@@ -296,7 +296,16 @@ public static class ObterProcessoSeletivoQueryHandler
             classificacao.NOpcoesAlocacao,
             [.. classificacao.RegrasEliminacao.Select(ProjectRegraEliminacao)],
             processo.ConcorrenciaDuplaAplicavel(),
-            classificacao.BaseadoEmEnem);
+            classificacao.BaseadoEmEnem,
+            classificacao.ResolucaoPesoAreaEnem,
+            [.. classificacao.QuadroPesoAreaEnem
+                .OrderBy(static g => g.GrupoAreaEnem.Codigo, StringComparer.Ordinal)
+                .Select(static g => new GrupoPesoAreaEnemCongeladoDto(
+                    new GrupoAreaEnemSnapshotDto(g.GrupoAreaEnem.Codigo, g.GrupoAreaEnem.Rotulo),
+                    g.BaseLegal,
+                    [.. g.Areas
+                        .OrderBy(static a => a.Codigo, StringComparer.Ordinal)
+                        .Select(static a => new AreaPesoAreaEnemCongeladaDto(a.Codigo, a.Rotulo, a.Peso, a.Corte))]))]);
     }
 
     private static RegraEliminacaoDto ProjectRegraEliminacao(RegraEliminacao regra)

@@ -7289,6 +7289,40 @@
         ],
         "type": "string"
       },
+      "AreaPesoAreaEnemCongeladaDto": {
+        "required": [
+          "codigo",
+          "rotulo",
+          "peso",
+          "corte"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "peso": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "corte": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "ArgsRegraAjusteDistribuicao": {
         "required": [
           "$tipo"
@@ -8207,7 +8241,9 @@
           "nOpcoesAlocacao",
           "regrasEliminacao",
           "concorrenciaDuplaAplicavel",
-          "baseadoEmEnem"
+          "baseadoEmEnem",
+          "resolucaoPesoAreaEnem",
+          "quadroPesoAreaEnem"
         ],
         "type": "object",
         "properties": {
@@ -8259,6 +8295,18 @@
           },
           "baseadoEmEnem": {
             "type": "boolean"
+          },
+          "resolucaoPesoAreaEnem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quadroPesoAreaEnem": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoPesoAreaEnemCongeladoDto"
+            }
           }
         }
       },
@@ -9083,6 +9131,12 @@
           },
           "baseadoEmEnem": {
             "type": "boolean"
+          },
+          "resolucaoPesoAreaEnem": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10284,6 +10338,28 @@
           },
           "rotulo": {
             "type": "string"
+          }
+        }
+      },
+      "GrupoPesoAreaEnemCongeladoDto": {
+        "required": [
+          "grupoAreaEnem",
+          "baseLegal",
+          "areas"
+        ],
+        "type": "object",
+        "properties": {
+          "grupoAreaEnem": {
+            "$ref": "#/components/schemas/GrupoAreaEnemSnapshotDto"
+          },
+          "baseLegal": {
+            "type": "string"
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AreaPesoAreaEnemCongeladaDto"
+            }
           }
         }
       },

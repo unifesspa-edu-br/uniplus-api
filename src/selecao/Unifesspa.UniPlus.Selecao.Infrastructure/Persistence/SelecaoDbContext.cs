@@ -65,6 +65,10 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<ConfiguracaoClassificacao> ConfiguracoesClassificacao => Set<ConfiguracaoClassificacao>();
     public DbSet<RegraEliminacao> RegrasEliminacao => Set<RegraEliminacao>();
 
+    /// <summary>Quadro de pesos por área do ENEM congelado na classificação: um item por grupo de área, com as áreas.</summary>
+    public DbSet<GrupoPesoAreaEnemCongelado> GruposPesoAreaEnemCongelados => Set<GrupoPesoAreaEnemCongelado>();
+    public DbSet<AreaPesoAreaEnemCongelada> AreasPesoAreaEnemCongeladas => Set<AreaPesoAreaEnemCongelada>();
+
     /// <summary>
     /// Cronograma de fases do processo (Story #851) — o eixo temporal, distinto das
     /// etapas (eixo de pontuação). Exposta como DbSet para consultas e seeds de teste;

@@ -122,6 +122,12 @@ public static class SelecaoCodegenRegistration
         // motivo dos demais readers cross-módulo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IBaseLegalBonusRegionalReader>();
 
+        // Pesos por Área do ENEM: DefinirClassificacaoCommandHandler resolve a resolução
+        // declarada e congela o quadro na classificação. Mesmo motivo dos demais readers
+        // cross-módulo acima — o concreto PesoAreaEnemReader é internal a
+        // Configuracao.Infrastructure.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IPesoAreaEnemReader>();
+
         // Tipos de etapa (issue #1071): DefinirEtapasCommandHandler e os handlers de
         // ObrigatoriedadeLegal resolvem o cadastro configurável de Configuração para
         // congelar o snapshot-copy — mesmo motivo dos demais readers cross-módulo acima.
