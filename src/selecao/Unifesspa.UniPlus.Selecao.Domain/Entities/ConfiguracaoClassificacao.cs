@@ -252,7 +252,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// demais checagens de <see cref="Criar"/>, que só fazem sentido depois de a regra de
     /// cálculo já ter sido resolvida (é ela que distingue classificação local de importada,
     /// INV-B8). Existe separada para o handler poder confirmá-la ANTES de consultar o
-    /// <c>rol_de_regras</c> (mesmo padrão de <c>CriterioDesempate.ValidarOrdem</c>, PR #1216).
+    /// <c>rol_de_regras</c>.
     /// </summary>
     public static List<FieldError> ValidarNOpcoesAlocacao(int nOpcoesAlocacao)
     {

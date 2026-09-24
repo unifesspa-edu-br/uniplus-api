@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -102,7 +103,7 @@ public static class PredicadoDnfValidador
         return operadorCompativel
             ? Result.Success()
             : Result.Failure(new DomainError(
-                "PredicadoDnf.OperadorIncompativelComDominio",
+                PredicadoDnfErrorCodes.OperadorIncompativelComDominio,
                 $"O operador {condicao.Operador} não é compatível com o domínio {descritor.TipoDominio} do fato '{condicao.Fato}'."));
     }
 
@@ -115,7 +116,7 @@ public static class PredicadoDnfValidador
             TipoDominioFato.Numerico => ValidarValorNumerico(condicao),
             TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(condicao, descritor.ValoresDominio!),
             TipoDominioFato.CategoricoDinamico => ValidarValorCategoricoDinamico(condicao, dominiosDinamicos),
-            _ => Result.Failure(new DomainError("PredicadoDnf.ValorIncompativelComTipo", "Domínio do fato desconhecido.")),
+            _ => Result.Failure(new DomainError(PredicadoDnfErrorCodes.ValorIncompativelComTipo, "Domínio do fato desconhecido.")),
         };
 
     /// <summary>
@@ -142,7 +143,7 @@ public static class PredicadoDnfValidador
         condicao.Valor.ValueKind is JsonValueKind.True or JsonValueKind.False
             ? Result.Success()
             : Result.Failure(new DomainError(
-                "PredicadoDnf.ValorIncompativelComTipo",
+                PredicadoDnfErrorCodes.ValorIncompativelComTipo,
                 $"O valor da condição sobre '{condicao.Fato}' deve ser um booleano JSON."));
 
     private static Result ValidarValorNumerico(CondicaoDnf condicao)
@@ -150,14 +151,14 @@ public static class PredicadoDnfValidador
         if (condicao.Valor.ValueKind != JsonValueKind.Number)
         {
             return Result.Failure(new DomainError(
-                "PredicadoDnf.ValorIncompativelComTipo",
+                PredicadoDnfErrorCodes.ValorIncompativelComTipo,
                 $"O valor da condição sobre '{condicao.Fato}' deve ser um número JSON."));
         }
 
         return condicao.Valor.TryGetInt64(out _)
             ? Result.Success()
             : Result.Failure(new DomainError(
-                "PredicadoDnf.ValorIncompativelComTipo",
+                PredicadoDnfErrorCodes.ValorIncompativelComTipo,
                 $"O valor da condição sobre '{condicao.Fato}' deve ser um número inteiro (decimal é rejeitado)."));
     }
 
@@ -173,14 +174,14 @@ public static class PredicadoDnfValidador
         if (condicao.Valor.ValueKind != JsonValueKind.String)
         {
             return Result.Failure(new DomainError(
-                "PredicadoDnf.ValorIncompativelComTipo",
+                PredicadoDnfErrorCodes.ValorIncompativelComTipo,
                 $"O valor da condição sobre '{condicao.Fato}' deve ser uma string JSON."));
         }
 
         return dominio.Contains(condicao.Valor.GetString(), StringComparer.Ordinal)
             ? Result.Success()
             : Result.Failure(new DomainError(
-                "PredicadoDnf.ValorForaDoDominio",
+                PredicadoDnfErrorCodes.ValorForaDoDominio,
                 $"O valor da condição sobre '{condicao.Fato}' não pertence ao domínio declarado."));
     }
 
@@ -192,7 +193,7 @@ public static class PredicadoDnfValidador
         if (possuiItemNaoString)
         {
             return Result.Failure(new DomainError(
-                "PredicadoDnf.ValorIncompativelComTipo",
+                PredicadoDnfErrorCodes.ValorIncompativelComTipo,
                 $"Os valores da condição EM sobre '{condicao.Fato}' devem ser strings JSON."));
         }
 
@@ -203,7 +204,7 @@ public static class PredicadoDnfValidador
         return foraDoDominio is null
             ? Result.Success()
             : Result.Failure(new DomainError(
-                "PredicadoDnf.ValorForaDoDominio",
+                PredicadoDnfErrorCodes.ValorForaDoDominio,
                 $"O valor '{foraDoDominio}' da condição EM sobre '{condicao.Fato}' não pertence ao domínio declarado."));
     }
 }

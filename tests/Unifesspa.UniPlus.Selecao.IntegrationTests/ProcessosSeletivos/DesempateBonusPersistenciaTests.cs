@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do bônus
 /// regional (RN05) e dos critérios de desempate (Story #774): persiste e
-/// recarrega as 4 variantes de
+/// recarrega as 5 variantes de
 /// <c>ArgsCriterioDesempate</c> (jsonb polimórfico) e o owned type
 /// <c>ReferenciaRegra</c>, e prova a reconfiguração sobre o agregado tracked
 /// (a mesma proteção <c>ValueGeneratedNever</c> dos demais filhos do agregado).
@@ -36,7 +36,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     private static CondicaoDnf CondicaoProfessorRural() =>
         CondicaoDnf.Criar("PROFESSOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
-    [Fact(DisplayName = "Persiste e recarrega os 4 critérios de desempate (args polimórficos) e o bônus regional")]
+    [Fact(DisplayName = "Persiste e recarrega os 5 critérios de desempate (args polimórficos) e o bônus regional")]
     public async Task PersisteERecarrega_DesempateEBonus()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
@@ -51,8 +51,10 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             3, Regra(CriterioDesempateCodigo.MaiorIdade, "c"), new ArgsDesempateMaiorIdade()).Value!;
         CriterioDesempate predicadoFato = CriterioDesempate.Criar(
             4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ArgsDesempatePredicadoFato(CondicaoProfessorRural())).Value!;
+        CriterioDesempate maiorNotaAreaEnem = CriterioDesempate.Criar(
+            5, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, "f"), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!;
 
-        Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato], PrecondicaoIfMatch.Ausente);
+        Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato, maiorNotaAreaEnem], PrecondicaoIfMatch.Ausente);
         desempateResult.IsSuccess.Should().BeTrue();
 
         Guid baseLegalId = Guid.CreateVersion7();
@@ -76,7 +78,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
 
         recarregado.Should().NotBeNull();
-        recarregado!.CriteriosDesempate.Should().HaveCount(4);
+        recarregado!.CriteriosDesempate.Should().HaveCount(5);
 
         CriterioDesempate maiorNotaEtapaRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 1);
         maiorNotaEtapaRecarregado.Regra.Codigo.Should().Be(CriterioDesempateCodigo.MaiorNotaEtapa);
@@ -93,6 +95,10 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         predicadoArgs.Condicao.Fato.Should().Be("PROFESSOR_RURAL");
         predicadoArgs.Condicao.Operador.Should().Be(Operador.Igual);
         predicadoArgs.Condicao.Valor.GetBoolean().Should().BeTrue();
+
+        // A ordem das áreas é a prioridade do desempate e sobrevive ao round-trip do json.
+        CriterioDesempate areaEnemRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 5);
+        ((ArgsDesempateMaiorNotaAreaEnem)areaEnemRecarregado.Args).Areas.Should().Equal("REDACAO", "MATEMATICA", "LINGUAGENS");
 
         recarregado.BonusRegional.Should().NotBeNull();
         recarregado.BonusRegional!.Regra.Codigo.Should().Be(RegraBonusCodigo.Multiplicativo);

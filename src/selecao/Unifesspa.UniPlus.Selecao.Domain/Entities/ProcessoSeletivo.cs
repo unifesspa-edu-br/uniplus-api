@@ -9,6 +9,7 @@ using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -615,6 +616,36 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Teto de critérios de desempate aceitos numa definição: acima dele a lista é recusada
+    /// inteira, sem um erro por critério — uma entrada pequena não pode gerar resposta
+    /// desproporcional. Uma ordem de desempate de edital tem poucos critérios.
+    /// </summary>
+    public const int CriteriosDesempateMaximo = 20;
+
+    /// <summary>
+    /// A quantidade de critérios não depende do catálogo de regras: existe separada para quem
+    /// recebe a lista recusá-la acima do teto antes de consultar o <c>rol_de_regras</c> e
+    /// antes de conferir item a item.
+    /// </summary>
+    public static List<FieldError> ValidarQuantidadeDeCriteriosDesempate(int quantidade)
+    {
+        List<FieldError> erros = [];
+
+        if (quantidade > CriteriosDesempateMaximo)
+        {
+            erros.Add(new("criterios", new DomainError(
+                ProcessoSeletivoErrorCodes.CriteriosDesempateEmExcesso,
+                $"A ordem de desempate admite no máximo {CriteriosDesempateMaximo} critérios; vieram {quantidade}.")));
+        }
+
+        return erros;
+    }
+
+    /// <summary>O campo de um critério de desempate no comando que define a ordem de desempate.</summary>
+    public static string CampoDoCriterioDesempate(int indice, string? campo = null) =>
+        campo is null ? $"criterios[{indice}]" : $"criterios[{indice}].{campo}";
+
+    /// <summary>
     /// Substitui integralmente os critérios de desempate do processo (Story
     /// #774). Dimensão opcional (0..*): lista vazia
     /// remove todos os critérios. INV-B6: todo <c>etapa_ref</c> referenciado
@@ -631,27 +662,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        List<int> ordensInformadas = [.. criterios.Select(c => c.Ordem)];
-        if (ordensInformadas.Distinct().Count() != ordensInformadas.Count)
+        List<FieldError> erros = ValidarCriteriosDesempate([.. criterios.Select(CriterioDesempateInformado.De)]);
+        if (erros.Count > 0)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.OrdemDesempateDuplicada",
-                "Cada critério de desempate deve ter uma ordem única dentro do processo."));
-        }
-
-        foreach (CriterioDesempate criterio in criterios)
-        {
-            if (criterio.Args is not ArgsDesempateMaiorNotaEtapa args)
-            {
-                continue;
-            }
-
-            if (!_etapas.Any(e => e.Id == args.EtapaRef))
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.EtapaRefDesempateInexistente",
-                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe neste processo (INV-B6)."));
-            }
+            return Result.ValidationFailure(AnexarAreasAceitasDoDesempate(erros));
         }
 
         _criteriosDesempate.Clear();
@@ -663,6 +677,66 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         Rascunho?.IncrementarRevisao();
         return Result.Success();
+    }
+
+    /// <summary>
+    /// As invariantes que um critério de desempate só cumpre diante do processo — ordem única,
+    /// <c>etapa_ref</c> existente (INV-B6) e área do ENEM presente no quadro de pesos por área
+    /// da classificação —, acumuladas (ADR-0125), cada uma no campo do item:
+    /// <c>criterios[i].ordem</c>, <c>criterios[i].etapaRef</c>, <c>criterios[i].areas[j]</c> e
+    /// <c>criterios[i].regraCodigo</c> quando a classificação não tem quadro.
+    /// </summary>
+    /// <param name="criterios">
+    /// Na posição que cada critério ocupa no comando, inclusive a do critério que o próprio
+    /// <see cref="CriterioDesempate"/> recusou: a ordem vem sempre do comando, e os args, quando
+    /// foi possível montá-los. Assim a ordem duplicada e a área fora do quadro saem junto com a
+    /// recusa do item, e não só na tentativa seguinte.
+    /// </param>
+    public List<FieldError> ValidarCriteriosDesempate(IReadOnlyList<CriterioDesempateInformado> criterios)
+    {
+        ArgumentNullException.ThrowIfNull(criterios);
+
+        List<FieldError> erros = ValidarQuantidadeDeCriteriosDesempate(criterios.Count);
+        if (erros.Count > 0)
+        {
+            return erros;
+        }
+
+        HashSet<int> ordensVistas = [];
+        for (int indice = 0; indice < criterios.Count; indice++)
+        {
+            CriterioDesempateInformado criterio = criterios[indice];
+            if (!ordensVistas.Add(criterio.Ordem))
+            {
+                erros.Add(new(CampoDoCriterioDesempate(indice, "ordem"), new DomainError(
+                    "ProcessoSeletivo.OrdemDesempateDuplicada",
+                    "Cada critério de desempate deve ter uma ordem única dentro do processo.")));
+            }
+
+            if (criterio.Args is ArgsDesempateMaiorNotaEtapa args && !_etapas.Any(e => e.Id == args.EtapaRef))
+            {
+                erros.Add(new(CampoDoCriterioDesempate(indice, "etapaRef"), new DomainError(
+                    "ProcessoSeletivo.EtapaRefDesempateInexistente",
+                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe neste processo (INV-B6).")));
+            }
+        }
+
+        // O desempate é gravado antes da classificação no fluxo de configuração: num processo
+        // novo ela ainda é nula aqui, e só então a coerência com o quadro de pesos por área
+        // fica para DefinirClassificacao conferir.
+        List<ViolacaoDoDesempatePorArea> contraOQuadro = ValidarDesempatePorAreaDoEnem(criterios, Classificacao);
+
+        // A área citada por outro critério e também fora do quadro recebe só a recusa do
+        // quadro, que traz a lista de aceitas: o mesmo campo não recebe duas.
+        erros.AddRange(AreasCitadasPorOutroCriterio(criterios)
+            .Where(v => !contraOQuadro.Any(q => q.IndiceCriterio == v.IndiceCriterio && q.IndiceArea == v.IndiceArea))
+            .Select(static v => new FieldError(CampoDoCriterioDesempate(v.IndiceCriterio, $"areas[{v.IndiceArea}]"), v.Erro)));
+
+        erros.AddRange(contraOQuadro.Select(static v => new FieldError(
+            CampoDoCriterioDesempate(v.IndiceCriterio, v.IndiceArea is { } indiceArea ? $"areas[{indiceArea}]" : "regraCodigo"),
+            v.Erro)));
+
+        return erros;
     }
 
     /// <summary>
@@ -685,27 +759,99 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        foreach (RegraEliminacao regra in classificacao.RegrasEliminacao)
+        // Acumula as recusas que dependem de outras dimensões do processo (ADR-0125).
+        List<FieldError> erros = [];
+
+        foreach ((RegraEliminacao regra, int indice) in classificacao.RegrasEliminacao.Select(static (regra, indice) => (regra, indice)))
         {
             if (regra.Args is ArgsElimNotaMinimaEtapa notaMinima && !_etapas.Any(e => e.Id == notaMinima.EtapaRef))
             {
-                return Result.Failure(new DomainError(
+                erros.Add(new($"regrasEliminacao[{indice}].etapaRef", new DomainError(
                     "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-                    $"A regra de eliminação referencia a etapa {notaMinima.EtapaRef}, que não existe neste processo (INV-B4)."));
+                    $"A regra de eliminação referencia a etapa {notaMinima.EtapaRef}, que não existe neste processo (INV-B4).")));
             }
         }
 
         // O outro lado da coerência conferida em DefinirEtapas: sem ele, o operador grava a
         // etapa de nota do ENEM primeiro e depois declara uma classificação que não é ENEM.
+        // Com a classificação compatível, o que sobra é problema das etapas já gravadas
+        // (duplicada ou com lançamento), que nenhum campo deste comando corrige: sai como
+        // recusa sem campo, depois das recusas de campo, porque o errors[] da resposta só
+        // carrega erro de campo (ADR-0023).
+        DomainError? erroDasEtapas = null;
+        DomainError? erroSemCalculoLocal = null;
         if (ValidarEtapaDeNotaDoEnem(_etapas, classificacao) is { } erroNotaDoEnem)
         {
-            return Result.Failure(erroNotaDoEnem);
+            if (ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, classificacao.BaseadoEmEnem))
+            {
+                erroDasEtapas = erroNotaDoEnem;
+            }
+            else
+            {
+                erroSemCalculoLocal = erroNotaDoEnem;
+            }
+        }
+
+        // O outro lado da coerência conferida em DefinirCriteriosDesempate: a classificação
+        // nova não pode deixar sem nota de área um critério de desempate que já a cita. Uma
+        // recusa por critério afetado, e não por área: a classificação é a mesma para todas.
+        List<ViolacaoDoDesempatePorArea> violacoesDeArea = ValidarDesempatePorAreaDoEnem(EmOrdem(_criteriosDesempate), classificacao);
+        if (erroSemCalculoLocal is null && violacoesDeArea.FirstOrDefault(static v => v.IndiceArea is null) is { Erro: { } semQuadro })
+        {
+            erroSemCalculoLocal = semQuadro;
+        }
+
+        // A etapa de nota do ENEM e o desempate sem quadro pedem a mesma correção, nos mesmos
+        // campos: cada campo sai uma vez, com a primeira das duas causas.
+        if (erroSemCalculoLocal is not null)
+        {
+            erros.AddRange(CamposSemCalculoLocalDoEnem(classificacao).Select(campo => new FieldError(campo, erroSemCalculoLocal)));
+        }
+
+        erros.AddRange(violacoesDeArea
+            .Where(static v => v.IndiceArea is not null)
+            .GroupBy(static v => v.Ordem)
+            .Select(static criterio => new FieldError(ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem, new DomainError(
+                DesempatePorAreaEnemErrorCodes.ForaDoQuadro,
+                $"O critério de desempate na ordem {criterio.Key} cita área que o quadro de pesos por área desta classificação não tem em todos os grupos: {string.Join(", ", criterio.Select(static v => v.Codigo))}."))));
+
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(AnexarAreasAceitas(erros, classificacao));
+        }
+
+        if (erroDasEtapas is not null)
+        {
+            return Result.Failure(erroDasEtapas);
         }
 
         classificacao.VincularProcesso(Id);
         Classificacao = classificacao;
         Rascunho?.IncrementarRevisao();
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Os campos da classificação que impedem o cálculo local do ENEM — e com ele o quadro de
+    /// pesos por área e a etapa de nota do ENEM: a declaração de ENEM e a fórmula, cada um que
+    /// esteja em desacordo com <see cref="ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem"/>.
+    /// </summary>
+    private static string[] CamposSemCalculoLocalDoEnem(ConfiguracaoClassificacao classificacao)
+    {
+        List<string> campos = [];
+        if (!classificacao.BaseadoEmEnem)
+        {
+            campos.Add("baseadoEmEnem");
+        }
+
+        if (!ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, baseadoEmEnem: true))
+        {
+            campos.Add("regraCalculoCodigo");
+        }
+
+        // Classificação que admite o cálculo local sempre congela o quadro: se ainda assim ele
+        // falta, o que se corrige é a resolução declarada.
+        return campos.Count > 0 ? [.. campos] : [ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem];
     }
 
     /// <summary>
@@ -2079,6 +2225,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
+        new ItemConformidade("criterios_desempate_em_excesso", DimensaoConformidade.Classificacao, $"Critérios de desempate: no máximo {CriteriosDesempateMaximo}", ValidarQuantidadeDeCriteriosDesempate(_criteriosDesempate.Count).Count == 0),
+        new ItemConformidade("desempate_area_enem_areas_mal_formadas", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada critério tem ao menos uma área, sem exceder o teto, com códigos bem formados e sem repetição", DesempatePorAreaDoEnemSem(DesempatePorAreaEnemErrorCodes.AreasObrigatorias, DesempatePorAreaEnemErrorCodes.AreasEmExcesso, DesempatePorAreaEnemErrorCodes.AreaInvalida, DesempatePorAreaEnemErrorCodes.AreaRepetida)),
+        new ItemConformidade("desempate_area_enem_citada_por_dois_criterios", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada área é citada por um critério só", DesempatePorAreaDoEnemSem(DesempatePorAreaEnemErrorCodes.AreaCitadaPorOutroCriterio)),
+        new ItemConformidade("desempate_area_enem_sem_quadro", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: a classificação é baseada em ENEM, calculada pela média ponderada, com quadro de pesos por área", DesempatePorAreaDoEnemSem(DesempatePorAreaEnemErrorCodes.SemQuadro)),
+        new ItemConformidade("desempate_area_enem_fora_do_quadro", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: as áreas citadas estão em todos os grupos do quadro de pesos por área", DesempatePorAreaDoEnemSem(DesempatePorAreaEnemErrorCodes.ForaDoQuadro)),
         ];
     }
 
@@ -2894,7 +3045,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return contribuicaoForaDoDominio;
         }
 
-        return PendenciaDoGrafoConjunto();
+        if (PendenciaDoGrafoConjunto() is { } grafoConjunto)
+        {
+            return grafoConjunto;
+        }
+
+        return PendenciaDosCriteriosDesempate();
     }
 
     /// <summary>
@@ -4111,6 +4267,237 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return null;
     }
 
+    /// <summary>
+    /// Uma violação da coerência entre o desempate por área do ENEM e o quadro de pesos por
+    /// área da classificação. Os índices são posições na lista de critérios e na ordem de
+    /// áreas do critério, para que cada caminho de gravação monte o campo no formato do próprio
+    /// comando.
+    /// </summary>
+    /// <param name="IndiceArea"><see langword="null"/> quando a violação é do critério inteiro.</param>
+    /// <param name="Codigo">O código da área fora do quadro; <see langword="null"/> quando a violação é do critério inteiro.</param>
+    private readonly record struct ViolacaoDoDesempatePorArea(int IndiceCriterio, int Ordem, int? IndiceArea, string? Codigo, DomainError Erro);
+
+    /// <summary>
+    /// O critério de desempate por área do ENEM cita áreas pelo código, e a única fonte de
+    /// área no processo é o quadro de pesos por área congelado na classificação. Por isso ele
+    /// exige classificação baseada em ENEM que tenha congelado esse quadro, e cada área citada
+    /// tem de existir em todos os grupos do quadro, para que nenhum candidato fique sem a nota
+    /// que o desempate compara. Acumula todas as violações, de todos os critérios (ADR-0125).
+    /// </summary>
+    /// <param name="classificacao">
+    /// <see langword="null"/> enquanto a classificação não foi gravada — aí a coerência com
+    /// ela ainda não é conferível, e fica para quando for.
+    /// </param>
+    private static List<ViolacaoDoDesempatePorArea> ValidarDesempatePorAreaDoEnem(
+        IReadOnlyList<CriterioDesempateInformado> criterios,
+        ConfiguracaoClassificacao? classificacao)
+    {
+        List<ViolacaoDoDesempatePorArea> violacoes = [];
+        if (classificacao is null || !criterios.Any(static c => c.Args is ArgsDesempateMaiorNotaAreaEnem))
+        {
+            return violacoes;
+        }
+
+        bool temQuadro = TemQuadroPesoAreaEnem(classificacao);
+        HashSet<string> aceitas = temQuadro ? AreasAceitasNoDesempate(classificacao) : [];
+
+        for (int indice = 0; indice < criterios.Count; indice++)
+        {
+            if (criterios[indice] is not { Args: ArgsDesempateMaiorNotaAreaEnem args } criterio)
+            {
+                continue;
+            }
+
+            if (!temQuadro)
+            {
+                violacoes.Add(new(indice, criterio.Ordem, null, null, new DomainError(
+                    DesempatePorAreaEnemErrorCodes.SemQuadro,
+                    $"O critério de desempate na ordem {criterio.Ordem} compara a nota por área do ENEM e exige classificação baseada em ENEM, calculada pela média ponderada, com o quadro de pesos por área congelado.")));
+                continue;
+            }
+
+            foreach ((int indiceArea, string codigo) in CriterioDesempate.ConferirAreas(args.Areas).BemFormadas.Where(area => !aceitas.Contains(area.Codigo)))
+            {
+                violacoes.Add(new(indice, criterio.Ordem, indiceArea, codigo, new DomainError(
+                    DesempatePorAreaEnemErrorCodes.ForaDoQuadro,
+                    $"A área {codigo}, citada pelo critério de desempate na ordem {criterio.Ordem}, não está em todos os grupos do quadro de pesos por área da classificação.")));
+            }
+        }
+
+        return violacoes;
+    }
+
+    /// <summary>
+    /// Cada área é citada por um critério de desempate só: depois do primeiro que a compara,
+    /// o empate que chega a outro já tem a mesma nota nela, e a segunda citação nunca desempata.
+    /// "Primeiro" é pela ordem do desempate, não pela posição na lista, que o comando não
+    /// garante; o índice na lista continua dando o campo da recusa.
+    /// </summary>
+    private static List<ViolacaoDoDesempatePorArea> AreasCitadasPorOutroCriterio(IReadOnlyList<CriterioDesempateInformado> criterios)
+    {
+        List<ViolacaoDoDesempatePorArea> violacoes = [];
+        Dictionary<string, int> citadas = new(StringComparer.Ordinal);
+        foreach (int indice in Enumerable.Range(0, criterios.Count).OrderBy(i => criterios[i].Ordem))
+        {
+            if (criterios[indice] is not { Args: ArgsDesempateMaiorNotaAreaEnem args } criterio)
+            {
+                continue;
+            }
+
+            foreach ((int indiceArea, string codigo) in CriterioDesempate.ConferirAreas(args.Areas).BemFormadas)
+            {
+                if (citadas.TryGetValue(codigo, out int ordemAnterior))
+                {
+                    violacoes.Add(new(indice, criterio.Ordem, indiceArea, codigo, new DomainError(
+                        DesempatePorAreaEnemErrorCodes.AreaCitadaPorOutroCriterio,
+                        $"A área {codigo} já é comparada pelo critério de desempate na ordem {ordemAnterior}, e cada área é citada por um critério só.")));
+                    continue;
+                }
+
+                citadas.Add(codigo, criterio.Ordem);
+            }
+        }
+
+        return violacoes;
+    }
+
+    /// <summary>
+    /// A ordem de áreas mal formada — vazia, acima do teto, com código fora da forma ou
+    /// repetido —, pela mesma regra de <see cref="CriterioDesempate.Criar"/>. Os critérios
+    /// gravados e os restaurados já passaram por ela; conferi-la aqui serve ao gate, para o
+    /// critério que chega por outro caminho.
+    /// </summary>
+    private static List<ViolacaoDoDesempatePorArea> OrdensDeAreasMalFormadas(List<CriterioDesempateInformado> criterios)
+    {
+        List<ViolacaoDoDesempatePorArea> violacoes = [];
+        for (int indice = 0; indice < criterios.Count; indice++)
+        {
+            if (criterios[indice] is not { Args: ArgsDesempateMaiorNotaAreaEnem args } criterio)
+            {
+                continue;
+            }
+
+            violacoes.AddRange(CriterioDesempate.ConferirAreas(args.Areas).Erros.Select(erro => new ViolacaoDoDesempatePorArea(
+                indice, criterio.Ordem, null, null,
+                erro.Error with { Message = $"{erro.Error.Message} Critério de desempate na ordem {criterio.Ordem}." })));
+        }
+
+        return violacoes;
+    }
+
+    private static bool TemQuadroPesoAreaEnem(ConfiguracaoClassificacao classificacao) =>
+        ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, classificacao.BaseadoEmEnem)
+        && classificacao.QuadroPesoAreaEnem.Count > 0;
+
+    /// <summary>Área aceita é a que todo grupo do quadro tem.</summary>
+    private static HashSet<string> AreasAceitasNoDesempate(ConfiguracaoClassificacao classificacao) =>
+        classificacao.QuadroPesoAreaEnem
+            .Select(static g => g.Areas.Select(static a => a.Codigo).ToHashSet(StringComparer.Ordinal))
+            .Aggregate((comum, doGrupo) =>
+            {
+                comum.IntersectWith(doGrupo);
+                return comum;
+            });
+
+    /// <summary>
+    /// Toda área recusada — pela forma ou por estar fora do quadro — deixa o operador sem saber
+    /// o que pode citar. A lista das aceitas, com o rótulo, vai na primeira dessas recusas, e só
+    /// nela: repeti-la em cada uma faria a resposta crescer com o produto de critérios por
+    /// áreas. Sem quadro não há lista a dar.
+    /// </summary>
+    private static List<FieldError> AnexarAreasAceitas(IEnumerable<FieldError> erros, ConfiguracaoClassificacao? classificacao)
+    {
+        List<FieldError> lista = [.. erros];
+        int primeira = lista.FindIndex(static e =>
+            e.Error.Code is DesempatePorAreaEnemErrorCodes.AreaInvalida or DesempatePorAreaEnemErrorCodes.ForaDoQuadro);
+        if (primeira >= 0)
+        {
+            lista[primeira] = lista[primeira] with { Error = ComAreasAceitas(lista[primeira].Error, classificacao) };
+        }
+
+        return lista;
+    }
+
+    /// <summary>
+    /// Anexa a lista de áreas aceitas às recusas de área do desempate — as da criação de cada
+    /// critério e as da conferência contra o processo — já reunidas por quem as acumulou.
+    /// </summary>
+    public List<FieldError> AnexarAreasAceitasDoDesempate(IEnumerable<FieldError> erros) =>
+        AnexarAreasAceitas(erros, Classificacao);
+
+    private static DomainError ComAreasAceitas(DomainError erro, ConfiguracaoClassificacao? classificacao) =>
+        classificacao is not null && TemQuadroPesoAreaEnem(classificacao)
+            ? erro with { Message = $"{erro.Message} Áreas aceitas: {ListarAreasAceitas(classificacao, AreasAceitasNoDesempate(classificacao))}." }
+            : erro;
+
+    /// <summary>O rótulo sai da primeira ocorrência: o quadro vem de uma resolução só, e cada código tem um rótulo nela.</summary>
+    private static string ListarAreasAceitas(ConfiguracaoClassificacao classificacao, HashSet<string> aceitas)
+    {
+        if (aceitas.Count == 0)
+        {
+            return "nenhuma";
+        }
+
+        Dictionary<string, string> rotulos = new(StringComparer.Ordinal);
+        foreach (AreaPesoAreaEnemCongelada area in classificacao.QuadroPesoAreaEnem.SelectMany(static g => g.Areas))
+        {
+            rotulos.TryAdd(area.Codigo, area.Rotulo);
+        }
+
+        return string.Join("; ", aceitas
+            .Order(StringComparer.Ordinal)
+            .Select(codigo => $"{codigo} ({rotulos[codigo]})"));
+    }
+
+    /// <summary>
+    /// O teto de critérios e as regras do desempate por área do ENEM, como gate de publicação.
+    /// Os caminhos de gravação e a restauração já os conferem; o gate é defesa em profundidade
+    /// para o estado que chega por outro caminho — um rascunho gravado antes do teto, uma
+    /// gravação feita fora do agregado ou uma rota nova que esqueça a conferência. Sem ele o
+    /// processo publicaria, e a restauração daquela versão recusaria depois pela mesma regra.
+    /// </summary>
+    private DomainError? PendenciaDosCriteriosDesempate() =>
+        ValidarQuantidadeDeCriteriosDesempate(_criteriosDesempate.Count) is [var excesso, ..]
+            ? excesso.Error
+            : PrimeiraViolacaoDoDesempatePorArea(EmOrdem(_criteriosDesempate), Classificacao);
+
+    /// <summary>
+    /// A primeira violação das regras do desempate por área do ENEM, para quem recusa com um
+    /// erro só. A lista de áreas aceitas acompanha só a recusa contra o quadro: as demais não
+    /// dependem dele.
+    /// </summary>
+    private static DomainError? PrimeiraViolacaoDoDesempatePorArea(
+        List<CriterioDesempateInformado> criterios,
+        ConfiguracaoClassificacao? classificacao)
+    {
+        if (OrdensDeAreasMalFormadas(criterios) is [var malFormada, ..])
+        {
+            return malFormada.Erro;
+        }
+
+        if (AreasCitadasPorOutroCriterio(criterios) is [var areaRepetida, ..])
+        {
+            return areaRepetida.Erro;
+        }
+
+        return ValidarDesempatePorAreaDoEnem(criterios, classificacao) is [var violacaoDeArea, ..]
+            ? ComAreasAceitas(violacaoDeArea.Erro, classificacao)
+            : null;
+    }
+
+    private List<ViolacaoDoDesempatePorArea> ViolacoesDoDesempatePorAreaDoEnem()
+    {
+        List<CriterioDesempateInformado> criterios = EmOrdem(_criteriosDesempate);
+        return [.. OrdensDeAreasMalFormadas(criterios), .. AreasCitadasPorOutroCriterio(criterios), .. ValidarDesempatePorAreaDoEnem(criterios, Classificacao)];
+    }
+
+    private static List<CriterioDesempateInformado> EmOrdem(IEnumerable<CriterioDesempate> criterios) =>
+        [.. criterios.OrderBy(static c => c.Ordem).Select(CriterioDesempateInformado.De)];
+
+    /// <summary>Sem erro dos códigos dados — os itens do checklist separam o que corrigir.</summary>
+    private bool DesempatePorAreaDoEnemSem(params string[] codigosDoErro) =>
+        !ViolacoesDoDesempatePorAreaDoEnem().Any(v => codigosDoErro.Contains(v.Erro.Code));
+
     private static DomainError? ValidarGrafo(GrafoConfiguracao grafo)
     {
         // Story #851 §3.5: lista de etapas vazia é estado válido (processo sem prova,
@@ -4183,6 +4570,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo.");
         }
 
+        // O mesmo teto da gravação: sem o espelho, a restauração aplicaria uma lista que o PUT
+        // seguinte da mesma lista recusaria.
+        if (ValidarQuantidadeDeCriteriosDesempate(grafo.CriteriosDesempate.Count) is [var excesso, ..])
+        {
+            return excesso.Error;
+        }
+
         List<int> ordensDesempate = [.. grafo.CriteriosDesempate.Select(c => c.Ordem)];
         if (ordensDesempate.Distinct().Count() != ordensDesempate.Count)
         {
@@ -4205,6 +4599,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     "ProcessoSeletivo.EtapaRefDesempateInexistente",
                     $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe na configuração restaurada (INV-B6).");
             }
+        }
+
+        // Mesma regra de DefinirCriteriosDesempate e DefinirClassificacao, contra a
+        // classificação DO GRAFO: sem o espelho, a restauração reintroduziria um desempate
+        // por área que o quadro restaurado não tem.
+        if (PrimeiraViolacaoDoDesempatePorArea(EmOrdem(grafo.CriteriosDesempate), grafo.Classificacao) is { } violacaoDoDesempate)
+        {
+            return violacaoDoDesempate;
         }
 
         // A checagem ENEM×eliminação NÃO se repete aqui: grafo.Classificacao chega

@@ -220,6 +220,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// por valor dessa resolução: um item por grupo de área, com código e rótulo do grupo, base
     /// legal e código, rótulo, peso e corte de cada área, ordenado pelo código do grupo e, dentro
     /// dele, pelo código da área. Vazio quando não há resolução.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>criteriosDesempate[]</c>
+    /// admite a regra <c>DESEMPATE-MAIOR-NOTA-AREA-ENEM</c>, cujos <c>args</c> são
+    /// <c>{areas}</c>: os códigos das áreas do ENEM na ordem de desempate declarada, que é
+    /// conteúdo e não se reordena. O rótulo de cada área não entra no critério; ele está no
+    /// <c>quadroPesoAreaEnem</c> da mesma classificação.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -927,6 +932,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["fato"] = HashCanonicalComputer.NormalizeNfc(predicadoFato.Condicao.Fato),
             ["operador"] = predicadoFato.Condicao.Operador.ToCodigo(),
             ["valor"] = SerializarValorDeAtomo(predicadoFato.Condicao.Operador, predicadoFato.Condicao.Valor),
+        },
+        // A ordem das áreas é a prioridade do desempate: é conteúdo, e não pode ser reordenada.
+        ArgsDesempateMaiorNotaAreaEnem maiorNotaAreaEnem => new JsonObject
+        {
+            ["areas"] = new JsonArray([.. maiorNotaAreaEnem.Areas.Select(static area => (JsonNode?)JsonValue.Create(HashCanonicalComputer.NormalizeNfc(area)))]),
         },
         _ => throw new InvalidOperationException($"Variante de {nameof(ArgsCriterioDesempate)} não reconhecida: {args.GetType()}."),
     };

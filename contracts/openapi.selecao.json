@@ -8804,7 +8804,8 @@
           "idadeMinima",
           "fato",
           "operador",
-          "valor"
+          "valor",
+          "areas"
         ],
         "type": "object",
         "properties": {
@@ -8856,6 +8857,15 @@
               "null",
               "string"
             ]
+          },
+          "areas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -8919,6 +8929,15 @@
               "null",
               "string"
             ]
+          },
+          "areas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

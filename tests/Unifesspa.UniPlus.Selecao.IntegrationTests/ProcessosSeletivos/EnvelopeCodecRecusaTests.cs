@@ -219,6 +219,7 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("criteriosDesempate.0")]
     [InlineData("criteriosDesempate.0.args")]
     [InlineData("criteriosDesempate.0.regra")]
+    [InlineData("criteriosDesempate.5.args")]
     [InlineData("classificacao.regrasEliminacao.0")]
     [InlineData("classificacao.regrasEliminacao.0.args")]
     [InlineData("classificacao.regrasEliminacao.0.regra")]
@@ -1438,6 +1439,73 @@ public sealed class EnvelopeCodecRecusaTests
 
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, adulterados);
         return CorpusEnvelope.Registro.Reidratar(versao);
+    }
+
+    /// <summary>
+    /// O critério de desempate por área do ENEM é o sexto da ordem no processo rico: é o
+    /// índice 5 do array canônico, ordenado pela ordem do critério.
+    /// </summary>
+    private static JsonObject ArgsDoDesempatePorArea(JsonObject envelope)
+    {
+        JsonObject criterio = envelope["criteriosDesempate"]!.AsArray()[5]!.AsObject();
+        criterio["regra"]!["codigo"]!.GetValue<string>().Should().Be(
+            CriterioDesempateCodigo.MaiorNotaAreaEnem, "pré-condição: o índice 5 é o desempate por área do ENEM");
+        return criterio["args"]!.AsObject();
+    }
+
+    [Fact(DisplayName = "criteriosDesempate[].args.areas que não é lista é recusado")]
+    public void DesempatePorArea_AreasForaDeLista_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ArgsDoDesempatePorArea(envelope)["areas"] = "REDACAO");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("criteriosDesempate[5].args");
+    }
+
+    [Fact(DisplayName = "criteriosDesempate[].args.areas com item que não é texto é recusado")]
+    public void DesempatePorArea_AreaQueNaoETexto_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ArgsDoDesempatePorArea(envelope)["areas"]!.AsArray().Add(7));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("criteriosDesempate[5].args.areas[3]");
+    }
+
+    [Fact(DisplayName = "criteriosDesempate[].args.areas vazia é recusada pela mesma regra da gravação")]
+    public void DesempatePorArea_SemAreas_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ArgsDoDesempatePorArea(envelope)["areas"] = new JsonArray());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("CriterioDesempate.AreasObrigatorias");
+    }
+
+    [Fact(DisplayName = "criteriosDesempate[].args.areas com área repetida é recusada pela mesma regra da gravação")]
+    public void DesempatePorArea_AreaRepetida_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray areas = ArgsDoDesempatePorArea(envelope)["areas"]!.AsArray();
+            areas.Add(areas[0]!.DeepClone());
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("CriterioDesempate.AreaRepetida");
+    }
+
+    [Fact(DisplayName = "criteriosDesempate[].args.areas com código fora da forma do cadastro é recusado")]
+    public void DesempatePorArea_CodigoForaDaForma_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ArgsDoDesempatePorArea(envelope)["areas"]!.AsArray()[0] = "redacao");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("CriterioDesempate.AreaInvalida");
     }
 
     [Fact(DisplayName = "etapas[].produtos[].atoCodigo acima do limite da coluna (60) é recusado")]

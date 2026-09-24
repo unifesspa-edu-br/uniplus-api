@@ -18,4 +18,11 @@ public static class CriterioDesempateCodigo
 
     /// <summary>Prioriza quem satisfaz um predicado tipado sobre um fato do candidato (args: <c>fato</c>/<c>operador</c>/<c>valor</c>).</summary>
     public const string PredicadoFato = "DESEMPATE-PREDICADO-FATO";
+
+    /// <summary>
+    /// Ordena pela maior nota numa área do ENEM, percorrendo as áreas na ordem declarada
+    /// (args: <c>areas</c>, os códigos das áreas do quadro de pesos por área congelado na
+    /// classificação).
+    /// </summary>
+    public const string MaiorNotaAreaEnem = "DESEMPATE-MAIOR-NOTA-AREA-ENEM";
 }

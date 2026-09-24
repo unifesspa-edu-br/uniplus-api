@@ -251,15 +251,18 @@ public static class ObterProcessoSeletivoQueryHandler
         return criterio.Args switch
         {
             ArgsDesempateMaiorNotaEtapa args => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, args.EtapaRef, null, null, null, null),
+                criterio.Id, criterio.Ordem, regra, args.EtapaRef, null, null, null, null, null),
             ArgsDesempateIdoso args => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, null, args.IdadeMinima, null, null, null),
+                criterio.Id, criterio.Ordem, regra, null, args.IdadeMinima, null, null, null, null),
             ArgsDesempatePredicadoFato args => new CriterioDesempateDto(
                 criterio.Id, criterio.Ordem, regra, null, null,
                 args.Condicao.Fato,
                 args.Condicao.Operador.ToCodigo(),
-                ProjetarValorCondicao(args.Condicao.Valor)),
-            _ => new CriterioDesempateDto(criterio.Id, criterio.Ordem, regra, null, null, null, null, null),
+                ProjetarValorCondicao(args.Condicao.Valor),
+                null),
+            ArgsDesempateMaiorNotaAreaEnem args => new CriterioDesempateDto(
+                criterio.Id, criterio.Ordem, regra, null, null, null, null, null, [.. args.Areas]),
+            _ => new CriterioDesempateDto(criterio.Id, criterio.Ordem, regra, null, null, null, null, null, null),
         };
     }
 

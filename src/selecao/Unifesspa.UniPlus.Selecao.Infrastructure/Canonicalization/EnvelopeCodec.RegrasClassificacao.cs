@@ -182,7 +182,8 @@ public sealed partial class EnvelopeCodec
                 CriterioDesempateCodigo.MaiorNotaEtapa,
                 CriterioDesempateCodigo.MaiorIdade,
                 CriterioDesempateCodigo.Idoso,
-                CriterioDesempateCodigo.PredicadoFato);
+                CriterioDesempateCodigo.PredicadoFato,
+                CriterioDesempateCodigo.MaiorNotaAreaEnem);
             JsonObject args = leitor.Objeto(item, "args", path);
             if (leitor.Falhou)
             {
@@ -256,6 +257,14 @@ public sealed partial class EnvelopeCodec
                 return condicaoResult.IsFailure
                     ? leitor.Propagar<ArgsCriterioDesempate>(condicaoResult.Error!)
                     : new ArgsDesempatePredicadoFato(condicaoResult.Value!);
+
+            case CriterioDesempateCodigo.MaiorNotaAreaEnem:
+                // A forma (ao menos uma área, código válido, sem repetição) é conferida por
+                // CriterioDesempate.Criar; a existência de cada área no quadro congelado, pela
+                // restauração do grafo, que conhece a classificação decodificada.
+                leitor.ExigirChaves(args, path, "areas");
+                IReadOnlyList<string> areas = leitor.Textos(args, "areas", path);
+                return leitor.Falhou ? null : new ArgsDesempateMaiorNotaAreaEnem(areas);
 
             default:
                 return leitor.Propagar<ArgsCriterioDesempate>(new DomainError(

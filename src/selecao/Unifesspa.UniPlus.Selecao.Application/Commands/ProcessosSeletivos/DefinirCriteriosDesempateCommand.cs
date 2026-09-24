@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 ///   <item><description><c>DESEMPATE-MAIOR-NOTA-ETAPA</c>: <see cref="EtapaRef"/> (deve existir no processo, INV-B6).</description></item>
 ///   <item><description><c>DESEMPATE-IDOSO</c>: <see cref="IdadeMinima"/>.</description></item>
 ///   <item><description><c>DESEMPATE-PREDICADO-FATO</c>: <see cref="Fato"/>/<see cref="Operador"/>/<see cref="Valor"/>.</description></item>
+///   <item><description><c>DESEMPATE-MAIOR-NOTA-AREA-ENEM</c>: <see cref="Areas"/>, os códigos das áreas do ENEM na ordem de desempate (devem existir no quadro de pesos por área congelado na classificação).</description></item>
 ///   <item><description><c>DESEMPATE-MAIOR-IDADE</c>: nenhum.</description></item>
 /// </list>
 /// </summary>
@@ -27,7 +28,8 @@ public sealed record CriterioDesempateInput(
     int? IdadeMinima,
     string? Fato,
     string? Operador,
-    string? Valor);
+    string? Valor,
+    IReadOnlyList<string>? Areas = null);
 
 /// <summary>
 /// Substitui integralmente os critérios de desempate do processo (Story

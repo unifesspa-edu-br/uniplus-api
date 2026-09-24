@@ -11,11 +11,11 @@ using System.Text.Json.Serialization;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Forma fechada por design: as 4 variantes espelham as 4 regras semeadas em
-/// <c>rol_de_regras</c> (Story #772) — <c>DESEMPATE-MAIOR-NOTA-ETAPA</c>,
+/// Forma fechada por design: as 5 variantes espelham as 5 regras semeadas em
+/// <c>rol_de_regras</c> — <c>DESEMPATE-MAIOR-NOTA-ETAPA</c>,
 /// <c>DESEMPATE-MAIOR-IDADE</c>, <c>DESEMPATE-IDOSO</c>,
-/// <c>DESEMPATE-PREDICADO-FATO</c>. Uma 5ª regra de desempate exige nova
-/// variante tipada explícita.
+/// <c>DESEMPATE-PREDICADO-FATO</c> e <c>DESEMPATE-MAIOR-NOTA-AREA-ENEM</c>. Uma
+/// regra de desempate nova exige nova variante tipada explícita.
 /// </para>
 /// <para>
 /// <see cref="ArgsDesempatePredicadoFato"/> reusa literalmente
@@ -32,6 +32,7 @@ using System.Text.Json.Serialization;
 [JsonDerivedType(typeof(ArgsDesempateMaiorIdade), "maiorIdade")]
 [JsonDerivedType(typeof(ArgsDesempateIdoso), "idoso")]
 [JsonDerivedType(typeof(ArgsDesempatePredicadoFato), "predicadoFato")]
+[JsonDerivedType(typeof(ArgsDesempateMaiorNotaAreaEnem), "maiorNotaAreaEnem")]
 public abstract record ArgsCriterioDesempate;
 
 /// <summary>Ordena o subgrupo pela nota da etapa referenciada (deve existir no mesmo processo — INV-B6).</summary>
@@ -45,3 +46,43 @@ public sealed record ArgsDesempateIdoso(int IdadeMinima) : ArgsCriterioDesempate
 
 /// <summary>Prioriza quem satisfaz a <see cref="CondicaoDnf"/> sobre um fato do candidato (ADR-0111).</summary>
 public sealed record ArgsDesempatePredicadoFato(CondicaoDnf Condicao) : ArgsCriterioDesempate;
+
+/// <summary>
+/// Ordena pela maior nota numa área do ENEM, percorrendo <see cref="Areas"/> na ordem
+/// declarada: o empate que resta numa área passa à seguinte.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Guarda só o código de cada área. O rótulo vem da cópia do Peso por Área congelada na
+/// classificação do processo, a única fonte de área no Seleção.
+/// </para>
+/// <para>
+/// A lista é copiada na construção: validada a ordem, quem a entregou não pode mais mudá-la
+/// por baixo do critério. A igualdade é pelo conteúdo, na ordem, como a das variantes de
+/// valor escalar.
+/// </para>
+/// </remarks>
+public sealed record ArgsDesempateMaiorNotaAreaEnem : ArgsCriterioDesempate
+{
+    public ArgsDesempateMaiorNotaAreaEnem(IReadOnlyList<string> areas)
+    {
+        ArgumentNullException.ThrowIfNull(areas);
+        Areas = Array.AsReadOnly([.. areas]);
+    }
+
+    public IReadOnlyList<string> Areas { get; }
+
+    public bool Equals(ArgsDesempateMaiorNotaAreaEnem? other) =>
+        other is not null && Areas.SequenceEqual(other.Areas, StringComparer.Ordinal);
+
+    public override int GetHashCode()
+    {
+        HashCode hash = default;
+        foreach (string area in Areas)
+        {
+            hash.Add(area, StringComparer.Ordinal);
+        }
+
+        return hash.ToHashCode();
+    }
+}

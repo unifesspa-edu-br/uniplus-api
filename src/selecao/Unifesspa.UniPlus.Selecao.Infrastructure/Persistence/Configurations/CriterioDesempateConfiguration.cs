@@ -35,7 +35,7 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
         builder.OwnsOne(c => c.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(c => c.Regra).IsRequired();
 
-        // Args polimórficos (união fechada de 4 variantes, ADR-0058 §"Discriminated
+        // Args polimórficos (união fechada de 5 variantes, ADR-0058 §"Discriminated
         // union" — mesmo molde de PredicadoObrigatoriedade): serializados via
         // System.Text.Json com o discriminador "$tipo".
         //

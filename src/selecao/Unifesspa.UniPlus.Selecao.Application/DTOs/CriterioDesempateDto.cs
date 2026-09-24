@@ -12,6 +12,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// leituras carregam a mesma tripla (fato, operador, valor), e uma segunda convenção para o
 /// mesmo campo obrigaria o cliente a saber de qual das duas ela veio. Round-tripável direto de
 /// volta pelo mesmo PUT.
+/// <para>
+/// <see cref="Areas"/> traz só os códigos das áreas do ENEM, na ordem de desempate, como o
+/// PUT os recebe. O rótulo de cada área está no quadro de pesos por área da classificação
+/// (<see cref="ConfiguracaoClassificacaoDto.QuadroPesoAreaEnem"/>), a única fonte de área no
+/// processo.
+/// </para>
 /// </remarks>
 public sealed record CriterioDesempateDto(
     Guid Id,
@@ -21,7 +27,8 @@ public sealed record CriterioDesempateDto(
     int? IdadeMinima,
     string? Fato,
     string? Operador,
-    string? Valor);
+    string? Valor,
+    IReadOnlyList<string>? Areas);
 
 /// <summary>Projeção de leitura do bônus regional (RN05, Story #774), com o snapshot congelado da Base Legal (Story #1466).</summary>
 public sealed record ConfiguracaoBonusRegionalDto(
