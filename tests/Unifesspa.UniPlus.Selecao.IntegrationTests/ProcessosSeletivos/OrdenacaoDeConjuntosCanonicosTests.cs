@@ -118,7 +118,9 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [],
-            baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            baseadoEmEnem: false,
+            resolucaoPesoAreaEnem: null,
+            quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1,

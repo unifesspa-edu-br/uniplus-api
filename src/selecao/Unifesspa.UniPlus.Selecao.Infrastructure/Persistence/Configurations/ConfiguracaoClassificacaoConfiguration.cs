@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
 /// Configuração EF Core de <see cref="ConfiguracaoClassificacao"/> (Story
@@ -56,6 +57,22 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.RegrasEliminacao)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Property(c => c.ResolucaoPesoAreaEnem)
+            .HasColumnName("resolucao_peso_area_enem")
+            .HasMaxLength(LimitesDoEnvelope.ResolucaoPesoAreaEnem)
+            .HasComment(
+                "Resolução de Pesos por Área declarada pela classificação baseada em ENEM com cálculo local; " +
+                "o vínculo com o cadastro é pelo valor, e o quadro fica congelado em grupos_peso_area_enem_congelados. " +
+                "Nulo nas demais classificações.");
+
+        builder.HasMany(c => c.QuadroPesoAreaEnem)
+            .WithOne()
+            .HasForeignKey(g => g.ConfiguracaoClassificacaoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(c => c.QuadroPesoAreaEnem)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

@@ -135,7 +135,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
                 Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false).Value!,
+                Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)

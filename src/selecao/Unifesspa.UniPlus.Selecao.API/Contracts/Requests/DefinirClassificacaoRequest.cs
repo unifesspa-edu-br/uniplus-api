@@ -18,6 +18,11 @@ using Controllers;
 /// (<see langword="false"/>) — indistinguível de um <see langword="false"/>
 /// explícito. Omitir o campo não pode equivaler silenciosamente a "não é
 /// baseado em ENEM".
+/// <para>
+/// <c>ResolucaoPesoAreaEnem</c> é opcional no corpo: ausente vale nulo, e é o domínio que
+/// decide se ela era obrigatória (classificação baseada em ENEM com cálculo local) ou
+/// indevida (as demais).
+/// </para>
 /// </remarks>
 public sealed record DefinirClassificacaoRequest(
     string RegraCalculoCodigo,
@@ -29,4 +34,5 @@ public sealed record DefinirClassificacaoRequest(
     string RegraOrdemAlocacaoVersao,
     int NOpcoesAlocacao,
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
-    [property: JsonRequired] bool BaseadoEmEnem);
+    [property: JsonRequired] bool BaseadoEmEnem,
+    string? ResolucaoPesoAreaEnem = null);

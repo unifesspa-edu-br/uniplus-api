@@ -100,16 +100,21 @@ public sealed class PesoAreaEnemRepository : IPesoAreaEnemRepository
         ArgumentNullException.ThrowIfNull(resolucao);
         ArgumentNullException.ThrowIfNull(grupoCurso);
 
-        // Um grupo fora do domínio nunca tem linha viva — evita query desnecessária
-        // e garante que a comparação use o valor canônico normalizado (Trim).
+        // Um grupo fora do domínio nunca tem linha viva — evita query desnecessária.
         Result<GrupoCurso> grupoResult = GrupoCurso.Criar(grupoCurso);
         if (grupoResult.IsFailure)
         {
             return Task.FromResult(false);
         }
 
-        // Espelha a normalização do agregado (Trim) para casar com o valor persistido.
-        string resolucaoNorm = resolucao.Trim();
+        // Espelha a normalização do agregado (aparar e NFC) para casar com o valor persistido;
+        // texto que o agregado não gravaria não tem linha.
+        string? resolucaoNorm = PesoAreaEnem.NormalizarResolucao(resolucao);
+        if (resolucaoNorm is null)
+        {
+            return Task.FromResult(false);
+        }
+
         GrupoCurso grupo = grupoResult.Value!;
 
         return _dbContext.PesosAreaEnem

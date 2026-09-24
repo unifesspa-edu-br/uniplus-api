@@ -76,7 +76,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
             null, null,
             ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('d', 64)).Value!,
-            1, [], baseadoEmEnem: false).Value!;
+            1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Fase que PRODUZ RESULTADO (satisfaz "vagas ofertadas"), mas NÃO agrupa etapas (não
@@ -139,7 +139,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             2,
             ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('d', 64)).Value!,
             1,
-            [], baseadoEmEnem: false).Value!;
+            [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
 
         FaseCronograma faseConforme = FaseCronograma.Criar(

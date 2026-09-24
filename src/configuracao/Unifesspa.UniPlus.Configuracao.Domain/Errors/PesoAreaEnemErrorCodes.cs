@@ -4,6 +4,7 @@ public static class PesoAreaEnemErrorCodes
 {
     public const string ResolucaoObrigatoria = "PesoAreaEnem.ResolucaoObrigatoria";
     public const string ResolucaoTamanho = "PesoAreaEnem.ResolucaoTamanho";
+    public const string ResolucaoCaractereInvalido = "PesoAreaEnem.ResolucaoCaractereInvalido";
     public const string GrupoCursoInvalido = "PesoAreaEnem.GrupoCursoInvalido";
     public const string ParJaExiste = "PesoAreaEnem.ParJaExiste";
     public const string AreaForaDoDominio = "PesoAreaEnem.AreaForaDoDominio";
@@ -17,5 +18,6 @@ public static class PesoAreaEnemErrorCodes
     public const string CorteForaDaRedacao = "PesoAreaEnem.CorteForaDaRedacao";
     public const string BaseLegalObrigatoria = "PesoAreaEnem.BaseLegalObrigatoria";
     public const string BaseLegalTamanho = "PesoAreaEnem.BaseLegalTamanho";
+    public const string BaseLegalCaractereInvalido = "PesoAreaEnem.BaseLegalCaractereInvalido";
     public const string NaoEncontrado = "PesoAreaEnem.NaoEncontrado";
 }

@@ -116,6 +116,10 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.ConfiguracaoTaxaInscricao)
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
+            // Quadro de pesos por área congelado: sem os dois ThenInclude, o GET mostraria a
+            // resolução declarada com o quadro vazio, e o envelope congelaria a classificação
+            // sem os pesos que a nota do candidato vai usar.
+            .Include(p => p.Classificacao!).ThenInclude(c => c.QuadroPesoAreaEnem).ThenInclude(g => g.Areas)
             // Cronograma de fases (Story #851) — 3 coleções novas (produtos publicados,
             // bancas requeridas, regra de recurso 1:1) somadas às já existentes. Sem o
             // Include dos produtos, ProduzResultado — que deriva deles — nasce falso em todo

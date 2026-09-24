@@ -154,12 +154,23 @@ public sealed class ManifestoDoEnvelopeTests
             [
                 "RegraCalculo", "RegraArredondamento", "CasasArredondamento",
                 "RegraOrdemAlocacao", "NOpcoesAlocacao", "RegrasEliminacao", "BaseadoEmEnem",
+                "ResolucaoPesoAreaEnem", "QuadroPesoAreaEnem",
             ],
             [("ProcessoSeletivoId", "FK interna.")]),
 
         [typeof(RegraEliminacao)] = (
             ["Regra", "Args"],
             [("ConfiguracaoClassificacaoId", "FK interna.")]),
+
+        // Quadro de pesos por área do ENEM congelado na classificação: a cópia por valor da
+        // resolução declarada, que a nota do candidato vai usar.
+        [typeof(GrupoPesoAreaEnemCongelado)] = (
+            ["GrupoAreaEnem", "BaseLegal", "Areas"],
+            [("ConfiguracaoClassificacaoId", "FK interna.")]),
+
+        [typeof(AreaPesoAreaEnemCongelada)] = (
+            ["Codigo", "Rotulo", "Peso", "Corte"],
+            [("GrupoPesoAreaEnemCongeladoId", "FK interna.")]),
 
         [typeof(DadosEdital)] = (
             ["Numero", "PeriodoInscricaoInicio", "PeriodoInscricaoFim", "DocumentoEditalId"],

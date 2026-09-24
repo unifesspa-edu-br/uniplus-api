@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -36,11 +37,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// dessincronizar se a distribuição de vagas mudar depois).
 /// </para>
 /// <para>
-/// <strong>Pesos ENEM (<c>peso_area_enem</c>) são deferidos</strong> desta
-/// fatia — estrutura própria (Res. 805, decisão TL) fora do escopo desta
-/// entrega; processos baseados em ENEM (PSVR, SiSU) ainda podem ser
-/// configurados com <see cref="RegraCalculo"/>/eliminação, apenas sem o
-/// quadro de pesos por grupo de curso congelado.
+/// <strong>Quadro de pesos por área do ENEM.</strong> A classificação baseada em ENEM
+/// com cálculo local declara a resolução de Pesos por Área que usa
+/// (<see cref="ResolucaoPesoAreaEnem"/>) e congela por cópia, para cada grupo de área, o
+/// peso e o corte de cada área e a base legal (<see cref="QuadroPesoAreaEnem"/>). O vínculo
+/// com o cadastro é pelo valor da resolução, nunca pelo Id das linhas, e nada no processo
+/// consulta área fora dessa cópia.
 /// </para>
 /// </remarks>
 public sealed class ConfiguracaoClassificacao : EntityBase
@@ -79,6 +81,31 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     private readonly List<RegraEliminacao> _regrasEliminacao = [];
     public IReadOnlyCollection<RegraEliminacao> RegrasEliminacao => _regrasEliminacao.AsReadOnly();
 
+    /// <summary>Tamanho máximo da resolução declarada — o mesmo da coluna do cadastro de Pesos por Área.</summary>
+    public const int ResolucaoPesoAreaEnemMaxLength = 40;
+
+    /// <summary>Campo das recusas que dizem respeito à resolução de Pesos por Área e ao quadro congelado dela.</summary>
+    public const string CampoResolucaoPesoAreaEnem = "resolucaoPesoAreaEnem";
+
+    private const int TamanhoMaximoDoRotuloEcoado = 40;
+
+    private const string ErroResolucaoPesoAreaEnemInvalida = "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida";
+    private const string ErroQuadroPesoAreaEnemVazio = "ConfiguracaoClassificacao.QuadroPesoAreaEnemVazio";
+
+    /// <summary>
+    /// Resolução de Pesos por Área que a classificação usa — presente se e somente se a
+    /// classificação é baseada em ENEM com cálculo local (<c>FORMULA-MEDIA-PONDERADA</c>).
+    /// </summary>
+    public string? ResolucaoPesoAreaEnem { get; private set; }
+
+    private readonly List<GrupoPesoAreaEnemCongelado> _quadroPesoAreaEnem = [];
+
+    /// <summary>
+    /// Cópia por valor da resolução declarada, um item por grupo de área. Vazio quando não
+    /// há resolução.
+    /// </summary>
+    public IReadOnlyCollection<GrupoPesoAreaEnemCongelado> QuadroPesoAreaEnem => _quadroPesoAreaEnem.AsReadOnly();
+
     private ConfiguracaoClassificacao() { }
 
     /// <summary>
@@ -105,11 +132,14 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         ReferenciaRegra regraOrdemAlocacao,
         int nOpcoesAlocacao,
         IReadOnlyList<RegraEliminacao> regrasEliminacao,
-        bool baseadoEmEnem)
+        bool baseadoEmEnem,
+        string? resolucaoPesoAreaEnem,
+        IReadOnlyList<GrupoPesoAreaEnemCongelado> quadroPesoAreaEnem)
     {
         ArgumentNullException.ThrowIfNull(regraCalculo);
         ArgumentNullException.ThrowIfNull(regraOrdemAlocacao);
         ArgumentNullException.ThrowIfNull(regrasEliminacao);
+        ArgumentNullException.ThrowIfNull(quadroPesoAreaEnem);
 
         List<FieldError> erros = ValidarNOpcoesAlocacao(nOpcoesAlocacao);
 
@@ -179,6 +209,10 @@ public sealed class ConfiguracaoClassificacao : EntityBase
                 "Uma ou mais regras de eliminação só se aplicam quando a classificação está configurada como baseada em ENEM.")));
         }
 
+        string? resolucao = string.IsNullOrWhiteSpace(resolucaoPesoAreaEnem) ? null : resolucaoPesoAreaEnem.Trim();
+        erros.AddRange(ValidarQuadroPesoAreaEnem(
+            ExigeQuadroPesoAreaEnem(regraCalculo, baseadoEmEnem), resolucao, quadroPesoAreaEnem));
+
         if (erros.Count > 0)
         {
             return Result<ConfiguracaoClassificacao>.ValidationFailure(erros);
@@ -192,12 +226,22 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             RegraOrdemAlocacao = regraOrdemAlocacao,
             NOpcoesAlocacao = nOpcoesAlocacao,
             BaseadoEmEnem = baseadoEmEnem,
+            // NFC, como o cadastro de Pesos por Área a grava e o envelope canônico a emite: o
+            // vínculo com o cadastro é pelo valor, e a forma não muda num ciclo de retificação.
+            // A normalização vem depois da validação, que recusa o que ela não conseguiria tratar.
+            ResolucaoPesoAreaEnem = resolucao is null ? null : TextoCongelado.Normalizar(resolucao)!,
         };
 
         foreach (RegraEliminacao regra in regrasEliminacao)
         {
             regra.VincularConfiguracao(configuracao.Id);
             configuracao._regrasEliminacao.Add(regra);
+        }
+
+        foreach (GrupoPesoAreaEnemCongelado grupo in quadroPesoAreaEnem)
+        {
+            grupo.VincularConfiguracao(configuracao.Id);
+            configuracao._quadroPesoAreaEnem.Add(grupo);
         }
 
         return Result<ConfiguracaoClassificacao>.Success(configuracao);
@@ -218,6 +262,113 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         {
             erros.Add(new("nOpcoesAlocacao", new DomainError(
                 "ConfiguracaoClassificacao.NOpcoesInvalido", "O número de opções de curso deve ser 1 ou 2 (RN04).")));
+        }
+
+        return erros;
+    }
+
+    /// <summary>
+    /// A classificação calcula a nota pela média ponderada das áreas do ENEM: é a única que usa
+    /// o quadro de pesos por área, e por isso a única que exige a resolução de Pesos por Área —
+    /// e a única em que cabe uma etapa com a nota vinda do ENEM.
+    /// </summary>
+    public static bool ExigeQuadroPesoAreaEnem(ReferenciaRegra regraCalculo, bool baseadoEmEnem)
+    {
+        ArgumentNullException.ThrowIfNull(regraCalculo);
+
+        return baseadoEmEnem && regraCalculo.Codigo == RegraCalculoCodigo.FormulaMediaPonderada;
+    }
+
+    /// <summary>
+    /// Forma da resolução de Pesos por Área informada: cabe na coluna em NFC, não traz caractere
+    /// invisível, o nulo inclusive, e pode ser normalizada (<see cref="TextoNormalizavel.TentarNfc"/>). Não depende do catálogo de regras nem do cadastro, e existe separada para o handler
+    /// confirmá-la antes de qualquer consulta: o texto vira parâmetro da busca no cadastro, e o
+    /// Postgres recusa o caractere nulo com erro de banco. Resolução ausente não é assunto daqui:
+    /// se ela é obrigatória ou indevida depende da classificação (<see cref="Criar"/>).
+    /// </summary>
+    public static List<FieldError> ValidarResolucaoPesoAreaEnem(string? resolucaoPesoAreaEnem)
+    {
+        List<FieldError> erros = [];
+        if (string.IsNullOrWhiteSpace(resolucaoPesoAreaEnem))
+        {
+            return erros;
+        }
+
+        // A resolução volta nas mensagens de recusa e nos logs: além de caber na coluna, não pode
+        // trazer quebra de linha nem inversão de direção de leitura.
+        if (TextoNormalizavel.TentarNfc(resolucaoPesoAreaEnem.Trim(), ResolucaoPesoAreaEnemMaxLength, out _)
+            != SituacaoDoTexto.Valido)
+        {
+            erros.Add(new(CampoResolucaoPesoAreaEnem, new DomainError(
+                ErroResolucaoPesoAreaEnemInvalida,
+                $"A resolução de Pesos por Área deve ter até {ResolucaoPesoAreaEnemMaxLength} caracteres, sem caracteres de controle, de formatação ou de quebra de linha.")));
+        }
+
+        return erros;
+    }
+
+    /// <summary>
+    /// As recusas de <see cref="Criar"/> que restam quando a resolução já foi recusada antes,
+    /// pela forma ou pelo cadastro. A forma inválida repetida e a falta de quadro congelado são
+    /// consequência dessa recusa; qualquer outra violação, inclusive no mesmo campo, continua.
+    /// </summary>
+    public static IEnumerable<FieldError> SemConsequenciasDaResolucaoRecusada(IEnumerable<FieldError> erros)
+    {
+        ArgumentNullException.ThrowIfNull(erros);
+
+        return erros.Where(static erro =>
+            erro.Error.Code is not (ErroResolucaoPesoAreaEnemInvalida or ErroQuadroPesoAreaEnemVazio));
+    }
+
+    /// <summary>
+    /// A resolução de Pesos por Área acompanha a classificação baseada em ENEM com cálculo
+    /// local, e só ela. A completude dos grupos é conferida por quem resolve a resolução no
+    /// cadastro, que conhece os grupos; aqui fica o que a própria cópia consegue provar: há
+    /// grupo congelado, e nenhum se repete.
+    /// </summary>
+    private static List<FieldError> ValidarQuadroPesoAreaEnem(
+        bool exigeQuadro,
+        string? resolucao,
+        IReadOnlyList<GrupoPesoAreaEnemCongelado> quadro)
+    {
+        List<FieldError> erros = [];
+
+        if (!exigeQuadro)
+        {
+            if (resolucao is not null || quadro.Count > 0)
+            {
+                erros.Add(new(CampoResolucaoPesoAreaEnem, new DomainError(
+                    "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIndevida",
+                    "A resolução de Pesos por Área só se aplica à classificação baseada em ENEM com cálculo local da nota.")));
+            }
+
+            return erros;
+        }
+
+        if (resolucao is null)
+        {
+            erros.Add(new(CampoResolucaoPesoAreaEnem, new DomainError(
+                "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemObrigatoria",
+                "A classificação baseada em ENEM com cálculo local da nota exige a resolução de Pesos por Área.")));
+            return erros;
+        }
+
+        erros.AddRange(ValidarResolucaoPesoAreaEnem(resolucao));
+
+        if (quadro.Count == 0)
+        {
+            erros.Add(new(CampoResolucaoPesoAreaEnem, new DomainError(
+                ErroQuadroPesoAreaEnemVazio,
+                "A resolução de Pesos por Área declarada não tem nenhum grupo de área congelado.")));
+        }
+
+        foreach (IGrouping<string, GrupoPesoAreaEnemCongelado> repetido in quadro
+            .GroupBy(static grupo => grupo.GrupoAreaEnem.Codigo, StringComparer.Ordinal)
+            .Where(static grupos => grupos.Count() > 1))
+        {
+            erros.Add(new(CampoResolucaoPesoAreaEnem, new DomainError(
+                "ConfiguracaoClassificacao.QuadroPesoAreaEnemGrupoRepetido",
+                $"O quadro de pesos por área repete o grupo {CaracteresInvisiveis.ParaEco(repetido.First().GrupoAreaEnem.Rotulo, TamanhoMaximoDoRotuloEcoado)}.")));
         }
 
         return erros;

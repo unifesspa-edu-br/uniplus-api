@@ -114,6 +114,96 @@ public sealed class PesoAreaEnemTests
         resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.ResolucaoObrigatoria);
     }
 
+    [Theory(DisplayName = "Criar recusa resolução com caractere de controle, de formatação ou de quebra de linha")]
+    [InlineData("805\u0000")]
+    [InlineData("Res.\n805/2024")]
+    [InlineData("Res. \u202E4202/508")]
+    [InlineData("Res.\u2029805")]
+    public void Criar_ResolucaoComCaractereInvisivel_Falha(string resolucao)
+    {
+        Result<PesoAreaEnem> resultado = Criar(resolucao: resolucao);
+
+        resultado.Errors.Should().ContainSingle(e =>
+            e.Field == "resolucao" && e.Error.Code == PesoAreaEnemErrorCodes.ResolucaoCaractereInvalido);
+    }
+
+    [Fact(DisplayName = "Criar recusa resolução com surrogate sem par, sem exceção da normalização")]
+    public void Criar_ResolucaoComSurrogateSemPar_Falha()
+    {
+        Result<PesoAreaEnem> resultado = Criar(resolucao: "Res." + (char)0xD800);
+
+        resultado.Errors.Should().ContainSingle(e => e.Error.Code == PesoAreaEnemErrorCodes.ResolucaoCaractereInvalido);
+    }
+
+    [Fact(DisplayName = "Criar grava a resolução aparada e em NFC")]
+    public void Criar_GravaAResolucaoEmNfc()
+    {
+        string decomposta = "Resolução 805/2024".Normalize(System.Text.NormalizationForm.FormD);
+
+        PesoAreaEnem peso = Criar(resolucao: $" {decomposta} ").Value!;
+
+        peso.Resolucao.Should().Be("Resolução 805/2024".Normalize(System.Text.NormalizationForm.FormC),
+            "o processo seletivo congela a resolução pelo valor, e o envelope canônico a emite em NFC");
+    }
+
+    [Fact(DisplayName = "Criar mede a base legal depois do NFC, que pode alongar o texto")]
+    public void Criar_BaseLegalQueOnfcAlonga_Falha()
+    {
+        // U+0344 vira dois caracteres em NFC, e 'b' não se compõe com eles: 500 digitados, 501 gravados.
+        string baseLegal = new string('b', 499) + "\u0344";
+        baseLegal.Length.Should().Be(500, "pré-condição: o texto digitado cabe no limite");
+
+        Result<PesoAreaEnem> resultado = Criar(baseLegal: baseLegal);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "baseLegal" && e.Error.Code == PesoAreaEnemErrorCodes.BaseLegalTamanho);
+    }
+
+    [Fact(DisplayName = "Criar e Atualizar gravam a base legal aparada e em NFC")]
+    public void CriarEAtualizar_GravamABaseLegalEmNfc()
+    {
+        string composta = "Resolução nº 805/2024/Consepe".Normalize(System.Text.NormalizationForm.FormC);
+        string decomposta = composta.Normalize(System.Text.NormalizationForm.FormD);
+
+        PesoAreaEnem peso = Criar(baseLegal: $" {decomposta} ").Value!;
+        peso.BaseLegal.Should().Be(composta);
+
+        peso.Atualizar(AreasValidas(), $"{decomposta} – Anexo I").IsSuccess.Should().BeTrue();
+        peso.BaseLegal.Should().Be($"{composta} – Anexo I");
+    }
+
+    [Fact(DisplayName = "Criar recusa pelo tamanho, antes de varrer o texto, a resolução maior que o teto")]
+    public void Criar_ResolucaoMuitoGrande_RecusaPeloTamanhoAntesDeVarrer()
+    {
+        // A quebra de linha no fim daria recusa por caractere inválido se o texto fosse varrido.
+        string enorme = new string('R', 1_000_000) + "\n1";
+
+        Result<PesoAreaEnem> resultado = Criar(resolucao: enorme);
+
+        resultado.Errors.Should().ContainSingle(e => e.Error.Code == PesoAreaEnemErrorCodes.ResolucaoTamanho);
+        PesoAreaEnem.NormalizarResolucao(enorme).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Criar aceita a resolução decomposta que, em NFC, cabe na coluna")]
+    public void Criar_ResolucaoDecompostaQueCabeEmNfc_Aceita()
+    {
+        // U+1F86 decompõe em quatro caracteres: 160 digitados, 40 gravados.
+        string decomposta = string.Concat(Enumerable.Repeat("\u03B1\u0313\u0342\u0345", 40));
+
+        PesoAreaEnem peso = Criar(resolucao: decomposta).Value!;
+
+        peso.Resolucao.Should().Be(new string('\u1F86', 40));
+    }
+
+    [Theory(DisplayName = "NormalizarResolucao devolve a forma gravada, ou nulo para o que não pode ser resolução gravada")]
+    [InlineData(" Res. 805/2024 ", "Res. 805/2024")]
+    [InlineData(null, null)]
+    [InlineData("   ", null)]
+    [InlineData("805\u0000", null)]
+    [InlineData("Res.\n805", null)]
+    [InlineData("Resolução com quarenta e um caracteres ..", null)]
+    public void NormalizarResolucao_DevolveAFormaGravada(string? resolucao, string? esperada) =>
+        PesoAreaEnem.NormalizarResolucao(resolucao).Should().Be(esperada);
+
     [Theory(DisplayName = "Criar com grupo fora do domínio falha")]
     [InlineData("Engenharias")]
     [InlineData("Humanística III")]
@@ -481,4 +571,49 @@ public sealed class PesoAreaEnemTests
         mensagem.Should().Contain("\"AB?CD?EF?GH?IJ\"");
         mensagem.Should().NotContain("\n").And.NotContain("\u202E").And.NotContain("\u2028").And.NotContain("\u2029");
     }
+
+    [Fact(DisplayName = "Código recusado não volta com caractere de formatação fora do plano básico")]
+    public void Criar_CodigoComTagForaDoPlanoBasico_NaoEcoaATag()
+    {
+        // U+E0041 é um caractere de formatação (tag) representado por um par substituto: a
+        // classificação por unidade UTF-16 veria só as duas metades e o deixaria passar.
+        Result<PesoAreaEnem> resultado = Criar(ComArea(2, new("AB\U000E0041CD", 1m, null)));
+
+        string mensagem = resultado.Errors.Single(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaForaDoDominio).Error.Message;
+        mensagem.Should().Contain("\"AB?CD\"");
+        mensagem.Should().NotContain("\U000E0041");
+    }
+
+    [Fact(DisplayName = "Não-caractere na resolução ou na base legal é recusado como caractere inválido, sem exceção da normalização")]
+    public void Criar_NaoCaractere_RecusaSemExcecao()
+    {
+        string comNaoCaractere = "Res. 805" + (char)0xFFFE;
+
+        Criar(resolucao: comNaoCaractere).Errors.Should().ContainSingle(e =>
+            e.Field == "resolucao" && e.Error.Code == PesoAreaEnemErrorCodes.ResolucaoCaractereInvalido);
+        Criar(baseLegal: comNaoCaractere).Errors.Should().ContainSingle(e =>
+            e.Field == "baseLegal" && e.Error.Code == PesoAreaEnemErrorCodes.BaseLegalCaractereInvalido);
+        PesoAreaEnem.NormalizarResolucao(comNaoCaractere).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Base legal maior que o teto é recusada pelo tamanho, antes de ser varrida")]
+    public void Criar_BaseLegalMuitoGrande_RecusaPeloTamanho() =>
+        Criar(baseLegal: new string('B', 1_000_000) + "\n1").Errors.Should().ContainSingle(e =>
+            e.Field == "baseLegal" && e.Error.Code == PesoAreaEnemErrorCodes.BaseLegalTamanho,
+            "a quebra de linha no fim daria caractere inválido se o texto fosse varrido");
+
+    [Fact(DisplayName = "Base legal aceita tabulação, quebra de linha e hífen condicional, comuns em texto jurídico colado")]
+    public void Criar_BaseLegalComCaracteresDeTextoColado_Aceita()
+    {
+        string colada = "Resolução nº 805/2024,\tAnexo I\nart. 5º, inci\u00ADso II";
+
+        PesoAreaEnem peso = Criar(baseLegal: colada).Value!;
+
+        peso.BaseLegal.Should().Be(colada);
+    }
+
+    [Fact(DisplayName = "Base legal com o caractere nulo é recusada, embora aceite os demais invisíveis")]
+    public void Criar_BaseLegalComCaractereNulo_Recusa() =>
+        Criar(baseLegal: "Resolução nº 805\u0000/2024").Errors.Should().ContainSingle(e =>
+            e.Field == "baseLegal" && e.Error.Code == PesoAreaEnemErrorCodes.BaseLegalCaractereInvalido);
 }

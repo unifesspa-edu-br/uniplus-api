@@ -30,6 +30,11 @@ public sealed record RegraEliminacaoInput(
 /// de alocação. Bônus e desempate não são parâmetros aqui: já são dimensões
 /// do próprio agregado (Story #774).
 /// </summary>
+/// <param name="ResolucaoPesoAreaEnem">
+/// Resolução de Pesos por Área que a classificação usa — obrigatória na classificação
+/// baseada em ENEM com cálculo local, recusada nas demais. O handler a resolve no cadastro
+/// e congela o quadro por cópia.
+/// </param>
 public sealed record DefinirClassificacaoCommand(
     Guid ProcessoSeletivoId,
     string RegraCalculoCodigo,
@@ -42,4 +47,5 @@ public sealed record DefinirClassificacaoCommand(
     int NOpcoesAlocacao,
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
     bool BaseadoEmEnem,
+    string? ResolucaoPesoAreaEnem,
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

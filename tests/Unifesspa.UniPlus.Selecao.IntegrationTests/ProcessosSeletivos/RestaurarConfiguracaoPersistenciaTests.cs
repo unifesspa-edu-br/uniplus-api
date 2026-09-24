@@ -375,6 +375,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .Include(p => p.Cascata!).ThenInclude(c => c.Destinos)
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
+            .Include(p => p.Classificacao!).ThenInclude(c => c.QuadroPesoAreaEnem).ThenInclude(g => g.Areas)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)

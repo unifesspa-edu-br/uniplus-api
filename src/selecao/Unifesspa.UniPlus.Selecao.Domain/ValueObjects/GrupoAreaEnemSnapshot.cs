@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using System.Text;
-
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -21,8 +19,6 @@ public sealed record GrupoAreaEnemSnapshot
 
     /// <summary>Tamanho máximo do rótulo congelado — o mesmo da coluna do cadastro de cursos.</summary>
     public const int RotuloMaxLength = 60;
-
-    private const char CaractereNulo = (char)0;
 
     // EF Core materialization
     private GrupoAreaEnemSnapshot() { }
@@ -53,16 +49,17 @@ public sealed record GrupoAreaEnemSnapshot
         // congelamento evita que o mesmo texto, em forma decomposta, vire outro valor depois
         // de um ciclo de retificação. O código vindo do cadastro é ASCII, mas este tipo também
         // recebe o que o decodificador leu do envelope, e ali nada garante a forma.
-        string codigoNormalizado = codigo.Trim().Normalize(NormalizationForm.FormC);
-        string rotuloNormalizado = rotulo.Trim().Normalize(NormalizationForm.FormC);
+        string? codigoNormalizado = TextoCongelado.Normalizar(codigo);
+        string? rotuloNormalizado = TextoCongelado.Normalizar(rotulo);
 
         // Defesa de decode: um envelope adulterado não pode injetar U+0000 e só falhar
         // depois, na constraint do Postgres.
-        if (codigoNormalizado.Contains(CaractereNulo) || rotuloNormalizado.Contains(CaractereNulo))
+        if (codigoNormalizado is null || rotuloNormalizado is null
+            || TextoCongelado.ContemCaractereNulo(codigoNormalizado) || TextoCongelado.ContemCaractereNulo(rotuloNormalizado))
         {
             return Falha(
                 "GrupoAreaEnemSnapshot.CaractereNulo",
-                "Grupo de área do ENEM não pode conter o caractere nulo (U+0000).");
+                "Grupo de área do ENEM não pode conter o caractere nulo (U+0000) nem caractere que não seja texto.");
         }
 
         if (codigoNormalizado.Length > CodigoMaxLength || rotuloNormalizado.Length > RotuloMaxLength)

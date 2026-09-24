@@ -40,6 +40,13 @@ public sealed class BackfillBaseadoEmEnemTests : IAsyncLifetime
 {
     private const string MigrationAnterior = "20260804012509_AddUnidadeAdministradoraProcessoSeletivo";
 
+    /// <summary>
+    /// A migration sob prova. O teste para nela, e não no fim da cadeia: uma migration
+    /// posterior devolve a "não definida" a classificação baseada em ENEM com cálculo local
+    /// gravada sem a resolução de Pesos por Área, e apagaria as linhas que este teste lê.
+    /// </summary>
+    private const string MigrationSobProva = "20260804035257_DefineBaseadoEmEnem";
+
     private static readonly Guid ProcessoSiSUId = new("77777777-7777-7777-8777-777777777771");
     private static readonly Guid ConfiguracaoSiSUId = new("77777777-7777-7777-8777-777777777772");
     private static readonly Guid RegraEliminacaoSiSUId = new("77777777-7777-7777-8777-777777777773");
@@ -84,30 +91,20 @@ public sealed class BackfillBaseadoEmEnemTests : IAsyncLifetime
 
         await using (SelecaoDbContext contextoNovo = CriarContexto())
         {
-            await contextoNovo.Database.MigrateAsync();
+            await contextoNovo.GetService<IMigrator>().MigrateAsync(MigrationSobProva);
         }
 
-        await using SelecaoDbContext leitura = CriarContexto();
-
-        ConfiguracaoClassificacao configuracaoSiSU = await leitura.Set<ConfiguracaoClassificacao>()
-            .AsNoTracking()
-            .SingleAsync(c => c.Id == ConfiguracaoSiSUId, CancellationToken.None);
-        configuracaoSiSU.BaseadoEmEnem.Should().BeTrue(
+        // Leitura em SQL: o modelo de hoje tem colunas que o schema dessa migration ainda não tem.
+        (await BaseadoEmEnemAsync(ConfiguracaoSiSUId)).Should().BeTrue(
             "o processo é SiSU (Tipo=1) — o backfill preserva o sinal que antes vinha do rótulo do processo, " +
             "sem o que a configuração legada (que já tem ELIM-CORTE-REDACAO persistida) ficaria num estado " +
             "que ConfiguracaoClassificacao.Criar nunca mais aceitaria construir");
 
-        ConfiguracaoClassificacao configuracaoPSVR = await leitura.Set<ConfiguracaoClassificacao>()
-            .AsNoTracking()
-            .SingleAsync(c => c.Id == ConfiguracaoPSVRId, CancellationToken.None);
-        configuracaoPSVR.BaseadoEmEnem.Should().BeTrue(
+        (await BaseadoEmEnemAsync(ConfiguracaoPSVRId)).Should().BeTrue(
             "o processo é PSVR (Tipo=4) — o segundo membro do predicado do backfill, provado à parte para não " +
             "deixar passar uma migration que só promovesse SiSU");
 
-        ConfiguracaoClassificacao configuracaoNaoEnem = await leitura.Set<ConfiguracaoClassificacao>()
-            .AsNoTracking()
-            .SingleAsync(c => c.Id == ConfiguracaoNaoEnemId, CancellationToken.None);
-        configuracaoNaoEnem.BaseadoEmEnem.Should().BeFalse(
+        (await BaseadoEmEnemAsync(ConfiguracaoNaoEnemId)).Should().BeFalse(
             "o processo é PSIQ (Tipo=2) — o backfill não promove configurações de processos fora de SiSU/PSVR");
     }
 
@@ -161,6 +158,16 @@ public sealed class BackfillBaseadoEmEnemTests : IAsyncLifetime
                     '{"$tipo":"corteRedacao","minimo":400}', now());
                 """);
         }
+    }
+
+    private async Task<bool> BaseadoEmEnemAsync(Guid configuracaoId)
+    {
+        await using NpgsqlConnection conexao = new(_postgres.GetConnectionString());
+        await conexao.OpenAsync();
+        await using NpgsqlCommand comando = new(
+            "SELECT baseado_em_enem FROM selecao.configuracoes_classificacao WHERE id = @id", conexao);
+        comando.Parameters.AddWithValue("id", configuracaoId);
+        return (bool)(await comando.ExecuteScalarAsync())!;
     }
 
     private static async Task ExecutarAsync(NpgsqlConnection conexao, string sql)

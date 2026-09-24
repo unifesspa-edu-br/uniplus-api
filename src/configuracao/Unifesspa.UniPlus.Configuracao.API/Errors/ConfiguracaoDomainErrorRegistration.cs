@@ -174,6 +174,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.peso_area_enem.resolucao_tamanho",
                 "Tamanho da resolução inválido")),
 
+        new(PesoAreaEnemErrorCodes.ResolucaoCaractereInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.resolucao_caractere_invalido",
+                "A resolução contém caractere de controle, de formatação, de quebra de linha ou que não é texto")),
+
         new(GrupoCursoErrorCodes.ForaDoDominio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -257,6 +263,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.peso_area_enem.base_legal_tamanho",
                 "Tamanho da base legal inválido")),
+
+        new(PesoAreaEnemErrorCodes.BaseLegalCaractereInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.base_legal_caractere_invalido",
+                "A base legal contém o caractere nulo ou caractere que não é texto")),
 
         new(PesoAreaEnemErrorCodes.NaoEncontrado,
             new DomainErrorMapping(

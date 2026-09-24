@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -26,13 +27,17 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal").Value!;
 
     private sealed record Mocks(
-        IProcessoSeletivoRepository Repository, IRegraCatalogoReader RegraCatalogoReader, ISelecaoUnitOfWork UnitOfWork);
+        IProcessoSeletivoRepository Repository,
+        IRegraCatalogoReader RegraCatalogoReader,
+        IPesoAreaEnemReader PesoAreaEnemReader,
+        ISelecaoUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
-        return new Mocks(repository, Substitute.For<IRegraCatalogoReader>(), Substitute.For<ISelecaoUnitOfWork>());
+        return new Mocks(
+            repository, Substitute.For<IRegraCatalogoReader>(), Substitute.For<IPesoAreaEnemReader>(), Substitute.For<ISelecaoUnitOfWork>());
     }
 
     private static void MockRegrasBasicas(Mocks mocks)
@@ -50,10 +55,10 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
         DefinirClassificacaoCommand command = new(
-            Guid.CreateVersion7(), "X", "v1", null, null, null, "Y", "v1", 1, [], false, PrecondicaoIfMatch.Ausente);
+            Guid.CreateVersion7(), "X", "v1", null, null, null, "Y", "v1", 1, [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -71,10 +76,10 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
-            [], false, PrecondicaoIfMatch.Ausente);
+            [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.Classificacao.Should().NotBeNull();
@@ -91,15 +96,20 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         MockRegrasBasicas(mocks);
 
+        // Classificação baseada em ENEM com cálculo local exige a resolução de Pesos por Área.
+        string? resolucao = baseadoEmEnem ? ResolucaoDePesos : null;
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(ResolucaoDePesos, Arg.Any<CancellationToken>())
+            .Returns(ResolucaoCom(GruposDoAnexoI));
+
         DefinirClassificacaoCommand command = new(
             processo.Id,
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
-            [], baseadoEmEnem, PrecondicaoIfMatch.Ausente);
+            [], baseadoEmEnem, resolucao, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Classificacao!.BaseadoEmEnem.Should().Be(baseadoEmEnem,
@@ -121,10 +131,10 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraCalculoCodigo.ClassificacaoImportada, "v1",
             null, null, null,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 2,
-            [], false, PrecondicaoIfMatch.Ausente);
+            [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.Classificacao!.RegraArredondamento.Should().BeNull();
@@ -147,10 +157,10 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
-            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", etapa.Id, 4m, null)], false, PrecondicaoIfMatch.Ausente);
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", etapa.Id, 4m, null)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         RegraEliminacao eliminacao = processo.Classificacao!.RegrasEliminacao.Single();
@@ -171,10 +181,10 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
-            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", null, null, null)], false, PrecondicaoIfMatch.Ausente);
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", null, null, null)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.EtapaRefENotaMinimaObrigatorios");
@@ -194,10 +204,10 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
-            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", null, null, 400m)], false, PrecondicaoIfMatch.Ausente);
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", null, null, 400m)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.ArgsIncompativeisComRegra");
@@ -212,10 +222,10 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             .Returns((RegraCatalogo?)null);
 
         DefinirClassificacaoCommand command = new(
-            processo.Id, "INEXISTENTE", "v1", null, null, null, RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1, [], false, PrecondicaoIfMatch.Ausente);
+            processo.Id, "INEXISTENTE", "v1", null, null, null, RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1, [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoClassificacao.RegraNaoEncontrada");
@@ -231,12 +241,276 @@ public sealed class DefinirClassificacaoCommandHandlerTests
 
         DefinirClassificacaoCommand command = new(
             processo.Id, RegraCalculoCodigo.FormulaMediaPonderada, "v1", null, null, null,
-            RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1, [], false, PrecondicaoIfMatch.Ausente);
+            RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1, [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoClassificacao.RegraTipoInvalido");
+    }
+
+    private const string ResolucaoDePesos = "Res. 805/2024";
+
+    private static readonly (string Codigo, string Rotulo)[] GruposDoAnexoI =
+    [
+        ("HUMANISTICA_I", "Humanística I"),
+        ("HUMANISTICA_II", "Humanística II"),
+        ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"),
+        ("TECNOLOGICA", "Tecnológica"),
+    ];
+
+    private static PesoAreaEnemView LinhaDoGrupo((string Codigo, string Rotulo) grupo) =>
+        new(
+            Guid.CreateVersion7(),
+            ResolucaoDePesos,
+            new GrupoAreaEnemView(grupo.Codigo, grupo.Rotulo),
+            [
+                new PesoAreaEnemAreaView("REDACAO", "Redação", 2.00m, 400m),
+                new PesoAreaEnemAreaView("CIENCIAS_DA_NATUREZA", "Ciências da Natureza e suas Tecnologias", 1.50m, null),
+                new PesoAreaEnemAreaView("CIENCIAS_HUMANAS", "Ciências Humanas e suas Tecnologias", 2.50m, null),
+                new PesoAreaEnemAreaView("LINGUAGENS", "Linguagens e suas Tecnologias", 2.50m, null),
+                new PesoAreaEnemAreaView("MATEMATICA", "Matemática e suas Tecnologias", 1.50m, null),
+            ],
+            $"Resolução nº 805/2024/Consepe – Anexo I ({grupo.Rotulo})");
+
+    private static ResolucaoPesoAreaEnemView ResolucaoCom(
+        IEnumerable<(string Codigo, string Rotulo)> presentes,
+        params (string Codigo, string Rotulo)[] ausentes) =>
+        new(
+            ResolucaoDePesos,
+            [.. presentes.Select(LinhaDoGrupo)],
+            [.. ausentes.Select(static g => new GrupoAreaEnemView(g.Codigo, g.Rotulo))]);
+
+    private static DefinirClassificacaoCommand ComandoEnemLocal(
+        Guid processoId, string? resolucao, bool baseadoEmEnem = true, string regraCalculo = RegraCalculoCodigo.FormulaMediaPonderada) =>
+        regraCalculo == RegraCalculoCodigo.ClassificacaoImportada
+            ? new(processoId, regraCalculo, "v1", null, null, null,
+                RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1, [], baseadoEmEnem, resolucao, PrecondicaoIfMatch.Ausente)
+            : new(processoId, regraCalculo, "v1", RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
+                RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1, [], baseadoEmEnem, resolucao, PrecondicaoIfMatch.Ausente);
+
+    private static ProcessoSeletivo NovoProcessoEnem() =>
+        ProcessoSeletivo.Criar("PS Medicina 2027", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+
+    [Fact(DisplayName = "Resolução completa é congelada por cópia: grupo, base legal e peso e corte de cada área")]
+    public async Task Handle_ResolucaoCompleta_CongelaOQuadro()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(ResolucaoDePesos, Arg.Any<CancellationToken>())
+            .Returns(ResolucaoCom(GruposDoAnexoI));
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, ResolucaoDePesos), mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        ConfiguracaoClassificacao classificacao = processo.Classificacao!;
+        classificacao.ResolucaoPesoAreaEnem.Should().Be(ResolucaoDePesos);
+        classificacao.QuadroPesoAreaEnem.Select(g => (g.GrupoAreaEnem.Codigo, g.GrupoAreaEnem.Rotulo))
+            .Should().BeEquivalentTo(GruposDoAnexoI);
+
+        GrupoPesoAreaEnemCongelado saude = classificacao.QuadroPesoAreaEnem.Single(g => g.GrupoAreaEnem.Codigo == "SAUDE_E_BIOLOGICAS");
+        saude.BaseLegal.Should().Be("Resolução nº 805/2024/Consepe – Anexo I (Saúde e Biológicas)");
+        saude.Areas.Select(a => (a.Codigo, a.Rotulo, a.Peso, a.Corte)).Should().BeEquivalentTo(
+        [
+            ("REDACAO", "Redação", 2.00m, (decimal?)400m),
+            ("CIENCIAS_DA_NATUREZA", "Ciências da Natureza e suas Tecnologias", 1.50m, (decimal?)null),
+            ("CIENCIAS_HUMANAS", "Ciências Humanas e suas Tecnologias", 2.50m, (decimal?)null),
+            ("LINGUAGENS", "Linguagens e suas Tecnologias", 2.50m, (decimal?)null),
+            ("MATEMATICA", "Matemática e suas Tecnologias", 1.50m, (decimal?)null),
+        ]);
+        await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Resolução sem algum grupo vivo é recusada no campo da resolução, nomeando o grupo ausente")]
+    public async Task Handle_ResolucaoIncompleta_RecusaNomeandoOGrupoAusente()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(ResolucaoDePesos, Arg.Any<CancellationToken>())
+            .Returns(ResolucaoCom(GruposDoAnexoI.Where(g => g.Codigo != "SAUDE_E_BIOLOGICAS"), ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas")));
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, ResolucaoDePesos), mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        FieldError erro = result.Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("resolucaoPesoAreaEnem");
+        erro.Error.Code.Should().Be("ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIncompleta");
+        erro.Error.Message.Should().Contain("Saúde e Biológicas");
+        processo.Classificacao.Should().BeNull();
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Resolução sem nenhuma linha viva é recusada no campo da resolução")]
+    public async Task Handle_ResolucaoInexistente_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((ResolucaoPesoAreaEnemView?)null);
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, "Res. inexistente"), mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        FieldError erro = result.Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("resolucaoPesoAreaEnem");
+        erro.Error.Code.Should().Be("ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada");
+        processo.Classificacao.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Classificação baseada em ENEM com cálculo local sem resolução é recusada sem consultar o cadastro")]
+    public async Task Handle_EnemLocalSemResolucao_RecusaSemConsultarOCadastro()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, resolucao: "   "), mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().ContainSingle(e =>
+            e.Field == "resolucaoPesoAreaEnem" && e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemObrigatoria");
+        await mocks.PesoAreaEnemReader.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
+    }
+
+    [Theory(DisplayName = "Resolução com caractere invisível ou acima da coluna é recusada como inválida sem consultar o cadastro")]
+    [InlineData("805\u0000")]
+    [InlineData("Res.\n805/2024")]
+    [InlineData("Res. \u202E4202/508")]
+    [InlineData("Resolução com quarenta e um caracteres ..")]
+    public async Task Handle_ResolucaoMalformada_RecusaSemConsultarOCadastro(string resolucao)
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, resolucao), mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().ContainSingle(e =>
+            e.Field == ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem
+            && e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida");
+        await mocks.PesoAreaEnemReader.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Resolução com não-caractere é recusada como inválida sem consultar o cadastro, sem exceção")]
+    public async Task Handle_ResolucaoComNaoCaractere_RecusaSemConsultarOCadastro()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, "Res. 805" + (char)0xFFFE), mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida");
+        await mocks.PesoAreaEnemReader.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "ADR-0125: a forma inválida da resolução sai junto com as demais violações, uma vez só")]
+    public async Task Handle_ResolucaoMalformadaECasasInvalidas_AcumulaSemDuplicar()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        DefinirClassificacaoCommand command = ComandoEnemLocal(processo.Id, "805\u0000") with { CasasArredondamento = 0 };
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ((string?)ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem, "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida"),
+            ((string?)"casasArredondamento", "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio"),
+        ]);
+        await mocks.PesoAreaEnemReader.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Resolução acima da coluna em classificação importada é recusada só como indevida")]
+    public async Task Handle_ResolucaoLongaEmImportada_RecusaSoComoIndevida()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.RegraCatalogoReader.ObterAsync(RegraCalculoCodigo.ClassificacaoImportada, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo));
+        mocks.RegraCatalogoReader.ObterAsync(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, TipoRegra.RegraOrdemAlocacao));
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, "Resolução com quarenta e um caracteres ..", baseadoEmEnem: true, RegraCalculoCodigo.ClassificacaoImportada),
+            mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.Errors.Select(e => e.Error.Code).Should().Equal(
+            ["ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIndevida"],
+            "a classificação importada não admite resolução nenhuma, e é isso que o operador precisa saber");
+        await mocks.PesoAreaEnemReader.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "A resolução gravada é a forma que o cadastro devolveu, não o texto do comando")]
+    public async Task Handle_GravaAResolucaoQueOCadastroDevolveu()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(ResolucaoCom(GruposDoAnexoI) with { Resolucao = "Resolução canônica" });
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, "texto do comando"), mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be("Resolução canônica");
+    }
+
+    [Fact(DisplayName = "ADR-0125: a recusa do cadastro sai junto com as demais violações da classificação")]
+    public async Task Handle_ResolucaoInexistenteECasasInvalidas_AcumulaAsDuas()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((ResolucaoPesoAreaEnemView?)null);
+        DefinirClassificacaoCommand command = ComandoEnemLocal(processo.Id, "Res. inexistente") with { CasasArredondamento = 0 };
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ((string?)"resolucaoPesoAreaEnem", "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada"),
+            ((string?)"casasArredondamento", "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio"),
+        ], "o quadro vazio é consequência da recusa do cadastro, e não sai como violação à parte");
+        processo.Classificacao.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Resolução informada fora da classificação baseada em ENEM com cálculo local é recusada sem consultar o cadastro")]
+    [InlineData(false, RegraCalculoCodigo.FormulaMediaPonderada)]
+    [InlineData(true, RegraCalculoCodigo.ClassificacaoImportada)]
+    [InlineData(false, RegraCalculoCodigo.ClassificacaoImportada)]
+    public async Task Handle_ResolucaoForaDeEnemLocal_RecusaComoIndevida(bool baseadoEmEnem, string regraCalculo)
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.RegraCatalogoReader.ObterAsync(RegraCalculoCodigo.ClassificacaoImportada, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo));
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, ResolucaoDePesos, baseadoEmEnem, regraCalculo),
+            mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().ContainSingle(e =>
+            e.Field == "resolucaoPesoAreaEnem" && e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIndevida");
+        await mocks.PesoAreaEnemReader.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
     }
 }

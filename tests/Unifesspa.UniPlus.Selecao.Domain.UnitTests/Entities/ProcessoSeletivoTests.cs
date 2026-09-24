@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura das invariantes do agregado-raiz <see cref="ProcessoSeletivo"/>
@@ -471,7 +472,9 @@ public sealed class ProcessoSeletivoTests
             ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!,
             1,
             regrasEliminacao ?? [],
-            baseadoEmEnem).Value!;
+            baseadoEmEnem,
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
 
     [Fact(DisplayName = "DefinirClassificacao vincula a configuração à raiz")]
     public void DefinirClassificacao_Vincula()

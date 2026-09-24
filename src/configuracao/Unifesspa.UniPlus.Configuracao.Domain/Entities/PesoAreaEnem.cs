@@ -1,11 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using System.Globalization;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -48,6 +47,7 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
 
     private const int ResolucaoMinLength = 1;
     private const int ResolucaoMaxLength = 40;
+
     private const int BaseLegalMaxLength = 500;
 
     /// <summary>Escala persistida dos pesos (<c>numeric(4,2)</c>).</summary>
@@ -128,22 +128,10 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
     {
         List<FieldError> erros = [];
 
-        string? resolucaoNorm = null;
-        if (string.IsNullOrWhiteSpace(resolucao))
+        (string? resolucaoNorm, DomainError? erroDaResolucao) = ValidarResolucao(resolucao);
+        if (erroDaResolucao is not null)
         {
-            erros.Add(new("resolucao", new DomainError(
-                PesoAreaEnemErrorCodes.ResolucaoObrigatoria, "Resolução é obrigatória.")));
-        }
-        else
-        {
-            resolucaoNorm = resolucao.Trim();
-            if (resolucaoNorm.Length is < ResolucaoMinLength or > ResolucaoMaxLength)
-            {
-                erros.Add(new("resolucao", new DomainError(
-                    PesoAreaEnemErrorCodes.ResolucaoTamanho,
-                    $"Resolução deve ter entre {ResolucaoMinLength} e {ResolucaoMaxLength} caracteres.")));
-                resolucaoNorm = null;
-            }
+            erros.Add(new("resolucao", erroDaResolucao));
         }
 
         Result<GrupoCurso> grupo = GrupoCurso.Criar(grupoCurso);
@@ -153,7 +141,7 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
                 PesoAreaEnemErrorCodes.GrupoCursoInvalido, grupo.Error!.Message)));
         }
 
-        Result<IReadOnlyList<AreaValidada>> valores = ValidarAreasEBaseLegal(areas, baseLegal);
+        Result<CamposEditaveis> valores = ValidarAreasEBaseLegal(areas, baseLegal);
         if (valores.IsFailure)
         {
             erros.AddRange(valores.Errors);
@@ -169,9 +157,9 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
             Resolucao = resolucaoNorm!,
             GrupoCurso = grupo.Value!,
             _grupoCursoRotulo = grupo.Value!.Rotulo,
-            BaseLegal = (baseLegal ?? string.Empty).Trim(),
+            BaseLegal = valores.Value!.BaseLegal,
         };
-        peso._areas.AddRange(valores.Value!.Select(static area =>
+        peso._areas.AddRange(valores.Value.Areas.Select(static area =>
             PesoAreaEnemArea.Criar(area.Descrita.Codigo, area.Descrita.Rotulo, area.Peso, area.Corte)));
 
         return Result<PesoAreaEnem>.Success(peso);
@@ -186,7 +174,7 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         IReadOnlyList<AreaInformada>? areas,
         string? baseLegal)
     {
-        Result<IReadOnlyList<AreaValidada>> valores = ValidarAreasEBaseLegal(areas, baseLegal);
+        Result<CamposEditaveis> valores = ValidarAreasEBaseLegal(areas, baseLegal);
         if (valores.IsFailure)
         {
             return Result.ValidationFailure(valores.Errors);
@@ -197,7 +185,7 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         // rótulo corrigido no domínio chega às linhas já gravadas na próxima edição. Toda
         // linha nasce com as cinco áreas pelo Criar, e a migration excluiu as antigas: só
         // SQL escrito fora do agregado deixa uma linha incompleta, e aí a edição falha.
-        foreach (AreaValidada area in valores.Value!)
+        foreach (AreaValidada area in valores.Value!.Areas)
         {
             PesoAreaEnemArea existente = _areas.Find(a => a.Codigo == area.Descrita.Codigo)
                 ?? throw new InvalidOperationException(
@@ -209,7 +197,7 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         // regravado a partir do domínio pelo mesmo motivo do rótulo das áreas: uma correção
         // no rótulo do grupo chega às linhas já gravadas na próxima edição.
         _grupoCursoRotulo = GrupoCurso.Rotulo;
-        BaseLegal = (baseLegal ?? string.Empty).Trim();
+        BaseLegal = valores.Value.BaseLegal;
         return Result.Success();
     }
 
@@ -222,14 +210,14 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         IReadOnlyList<AreaInformada>? areas,
         string? baseLegal)
     {
-        Result<IReadOnlyList<AreaValidada>> resultado = ValidarAreasEBaseLegal(areas, baseLegal);
+        Result<CamposEditaveis> resultado = ValidarAreasEBaseLegal(areas, baseLegal);
         return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
     }
 
     // Cada área informada precisa ser uma das cinco, uma vez só; nenhuma pode faltar. O
     // erro vai no campo da área (`areas[i].codigo`, `.peso`, `.corte`), e a falta, em
     // `areas`, nomeando os códigos ausentes. Toda violação independente se acumula.
-    private static Result<IReadOnlyList<AreaValidada>> ValidarAreasEBaseLegal(
+    private static Result<CamposEditaveis> ValidarAreasEBaseLegal(
         IReadOnlyList<AreaInformada>? areas,
         string? baseLegal)
     {
@@ -242,8 +230,8 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
             erros.Add(new("areas", new DomainError(
                 PesoAreaEnemErrorCodes.AreasEmExcesso,
                 $"Informe as cinco áreas, uma vez cada; vieram {areas.Count} itens.")));
-            AdicionarErrosDeBaseLegal(erros, baseLegal);
-            return Result<IReadOnlyList<AreaValidada>>.ValidationFailure(erros);
+            ValidarBaseLegal(erros, baseLegal);
+            return Result<CamposEditaveis>.ValidationFailure(erros);
         }
 
         for (int i = 0; i < (areas?.Count ?? 0); i++)
@@ -299,25 +287,39 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
                 $"Informe o peso das cinco áreas; faltam: {string.Join(", ", faltando)}.")));
         }
 
-        AdicionarErrosDeBaseLegal(erros, baseLegal);
+        string? baseLegalNormalizada = ValidarBaseLegal(erros, baseLegal);
 
         return erros.Count == 0
-            ? Result<IReadOnlyList<AreaValidada>>.Success(validas)
-            : Result<IReadOnlyList<AreaValidada>>.ValidationFailure(erros);
+            ? Result<CamposEditaveis>.Success(new CamposEditaveis(validas, baseLegalNormalizada!))
+            : Result<CamposEditaveis>.ValidationFailure(erros);
     }
 
-    private static void AdicionarErrosDeBaseLegal(List<FieldError> erros, string? baseLegal)
+    // A base legal é gravada em NFC, a forma em que o processo seletivo a congela: o limite vale
+    // para o texto normalizado, que pode ser mais longo que o digitado. Sem isso, uma base legal
+    // aceita aqui passaria do limite da cópia congelada.
+    private static string? ValidarBaseLegal(List<FieldError> erros, string? baseLegal)
     {
         if (string.IsNullOrWhiteSpace(baseLegal))
         {
             erros.Add(new("baseLegal", new DomainError(
                 PesoAreaEnemErrorCodes.BaseLegalObrigatoria, "Base legal é obrigatória.")));
+            return null;
         }
-        else if (baseLegal.Trim().Length > BaseLegalMaxLength)
+
+        switch (TextoNormalizavel.TentarNfcDeTextoLivre(baseLegal.Trim(), BaseLegalMaxLength, out string normalizada))
         {
-            erros.Add(new("baseLegal", new DomainError(
-                PesoAreaEnemErrorCodes.BaseLegalTamanho,
-                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
+            case SituacaoDoTexto.Valido:
+                return normalizada;
+            case SituacaoDoTexto.CaractereInvalido:
+                erros.Add(new("baseLegal", new DomainError(
+                    PesoAreaEnemErrorCodes.BaseLegalCaractereInvalido,
+                    "Base legal não pode conter o caractere nulo nem caractere que não seja texto.")));
+                return null;
+            default:
+                erros.Add(new("baseLegal", new DomainError(
+                    PesoAreaEnemErrorCodes.BaseLegalTamanho,
+                    $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
+                return null;
         }
     }
 
@@ -371,32 +373,48 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         }
     }
 
+    /// <summary>
+    /// A resolução na forma em que o cadastro a grava — aparada e em NFC —, ou
+    /// <see langword="null"/> quando o texto não pode ser uma resolução gravada: em branco,
+    /// com caractere invisível ou fora do tamanho da coluna. É por esse valor que o processo
+    /// seletivo congela a resolução e que a busca por resolução compara.
+    /// </summary>
+    public static string? NormalizarResolucao(string? resolucao) => ValidarResolucao(resolucao).Normalizada;
+
+    // A resolução volta nas mensagens de recusa e nos logs: além de caber na coluna, não pode
+    // trazer quebra de linha nem inversão de direção de leitura.
+    private static (string? Normalizada, DomainError? Erro) ValidarResolucao(string? resolucao)
+    {
+        if (string.IsNullOrWhiteSpace(resolucao))
+        {
+            return (null, new DomainError(PesoAreaEnemErrorCodes.ResolucaoObrigatoria, "Resolução é obrigatória."));
+        }
+
+        return TextoNormalizavel.TentarNfc(resolucao.Trim(), ResolucaoMaxLength, out string normalizada) switch
+        {
+            SituacaoDoTexto.Valido => (normalizada, null),
+            SituacaoDoTexto.CaractereInvalido => (null, new DomainError(
+                PesoAreaEnemErrorCodes.ResolucaoCaractereInvalido,
+                "Resolução não pode conter caractere de controle, de formatação, de quebra de linha ou que não seja texto.")),
+            _ => (null, new DomainError(
+                PesoAreaEnemErrorCodes.ResolucaoTamanho,
+                $"Resolução deve ter entre {ResolucaoMinLength} e {ResolucaoMaxLength} caracteres.")),
+        };
+    }
+
     // O código recusado volta na mensagem para o operador achar o erro, mas limitado:
     // um valor arbitrariamente longo não é ecoado inteiro na resposta nem nos logs.
     // O corte nunca parte um par substituto: um emoji na fronteira sai inteiro ou não sai.
     // Caracteres de controle, de formatação e separadores de linha e parágrafo (quebra de
     // linha, controles bidi, U+2028/U+2029) viram "?":
     // o texto volta na resposta e nos logs, e não pode reescrever a linha em que cai.
-    private static string Resumir(string texto)
-    {
-        string parte = texto;
-        string reticencias = string.Empty;
-        if (texto.Length > TamanhoMaximoDoCodigoEcoado)
-        {
-            int corte = char.IsHighSurrogate(texto[TamanhoMaximoDoCodigoEcoado - 1])
-                ? TamanhoMaximoDoCodigoEcoado - 1
-                : TamanhoMaximoDoCodigoEcoado;
-            parte = texto[..corte];
-            reticencias = "…";
-        }
-
-        return string.Concat(parte.Select(static c =>
-            char.IsControl(c) || CharUnicodeInfo.GetUnicodeCategory(c) is UnicodeCategory.Format
-                or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator ? '?' : c)) + reticencias;
-    }
+    private static string Resumir(string texto) =>
+        CaracteresInvisiveis.ParaEco(texto, TamanhoMaximoDoCodigoEcoado);
 
     private static decimal Arredondar(decimal valor, int escala) =>
         Math.Round(valor, escala, MidpointRounding.ToEven);
 
     private sealed record AreaValidada(AreaEnemDescrita Descrita, decimal Peso, decimal? Corte);
+
+    private sealed record CamposEditaveis(IReadOnlyList<AreaValidada> Areas, string BaseLegal);
 }

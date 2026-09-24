@@ -299,9 +299,8 @@ public sealed partial class EnvelopeCodec
 
     /// <summary>
     /// O grupo de área do ENEM congelado na distribuição: <see langword="null"/> quando o
-    /// curso da oferta não o declara, senão código e rótulo, os dois obrigatórios e dentro
-    /// do limite das colunas. As invariantes do grupo são da factory da distribuição, que
-    /// recebe o par cru.
+    /// curso da oferta não o declara, senão o objeto que <see cref="LerCodigoERotuloDoGrupoAreaEnem"/>
+    /// lê. As invariantes do grupo são da factory da distribuição, que recebe o par cru.
     /// </summary>
     private static (string? Codigo, string? Rotulo)? LerGrupoAreaEnem(
         LeitorEnvelope leitor,
@@ -309,12 +308,31 @@ public sealed partial class EnvelopeCodec
         string pathPai)
     {
         JsonObject? item = leitor.ObjetoOpcional(distribuicao, "grupoAreaEnem", pathPai);
-        if (leitor.Falhou || item is null)
-        {
-            return null;
-        }
+        return leitor.Falhou || item is null
+            ? null
+            : LerCodigoERotuloDoGrupoAreaEnem(leitor, item, $"{pathPai}.grupoAreaEnem");
+    }
 
-        string path = $"{pathPai}.grupoAreaEnem";
+    /// <summary>O grupo de área do ENEM obrigatório, como no quadro de pesos por área da classificação.</summary>
+    private static (string Codigo, string Rotulo)? LerGrupoAreaEnemObrigatorio(
+        LeitorEnvelope leitor,
+        JsonObject pai,
+        string pathPai)
+    {
+        JsonObject item = leitor.Objeto(pai, "grupoAreaEnem", pathPai);
+        return leitor.Falhou ? null : LerCodigoERotuloDoGrupoAreaEnem(leitor, item, $"{pathPai}.grupoAreaEnem");
+    }
+
+    /// <summary>
+    /// O objeto <c>grupoAreaEnem</c> já obtido — <c>{codigo, rotulo}</c>, os dois obrigatórios e
+    /// dentro do limite das colunas —, a mesma forma na distribuição de vagas e no quadro de
+    /// pesos por área da classificação.
+    /// </summary>
+    private static (string Codigo, string Rotulo)? LerCodigoERotuloDoGrupoAreaEnem(
+        LeitorEnvelope leitor,
+        JsonObject item,
+        string path)
+    {
         leitor.ExigirChaves(item, path, "codigo", "rotulo");
         string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.GrupoAreaEnemCodigo);
         string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.GrupoAreaEnemRotulo);

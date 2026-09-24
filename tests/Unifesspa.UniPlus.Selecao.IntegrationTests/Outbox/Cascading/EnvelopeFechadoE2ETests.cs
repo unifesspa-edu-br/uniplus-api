@@ -182,8 +182,10 @@ public sealed class EnvelopeFechadoE2ETests
         // Passo 7 — classificação (regras de eliminação referenciam a mesma etapa Objetiva)
         // ══════════════════════════════════════════════════════════════════════════════
 
+        string resolucaoPesoAreaEnem = await PesosAreaEnemSeeder.SemearResolucaoAsync(api);
+
         await ExecutarPassoAsync(
-            () => ctx.PutClassificacaoAsync(objetivaId),
+            () => ctx.PutClassificacaoAsync(objetivaId, resolucaoPesoAreaEnem),
             HttpStatusCode.NoContent, "PUT classificacao", "/classificacao");
 
         // ══════════════════════════════════════════════════════════════════════════════
@@ -428,6 +430,14 @@ public sealed class EnvelopeFechadoE2ETests
             "4.0000", "V2 congela a configuração EDITADA sob a sessão — o peso da Prova Objetiva enviado no passo 19");
         snapshotVigente.HashConfiguracao.Should().NotBe(hashV1, "V2 é uma versão congelada distinta de V1 — consequência de qualquer retificação, provada aqui só como reforço da asserção de peso acima");
 
+        // O quadro de pesos por área chega ao envelope publicado: a resolução declarada e um
+        // item por grupo, ordenado pelo código do grupo.
+        JsonNode classificacaoCongelada = snapshotVigente.Configuracao["classificacao"]!;
+        classificacaoCongelada["resolucaoPesoAreaEnem"]!.GetValue<string>().Should().Be(resolucaoPesoAreaEnem);
+        classificacaoCongelada["quadroPesoAreaEnem"]!.AsArray()
+            .Select(static grupo => grupo!["grupoAreaEnem"]!["codigo"]!.GetValue<string>())
+            .Should().Equal("HUMANISTICA_I", "HUMANISTICA_II", "SAUDE_E_BIOLOGICAS", "TECNOLOGICA");
+
         await using AsyncServiceScope scopeFinal = api.Services.CreateAsyncScope();
         SelecaoDbContext dbFinal = scopeFinal.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         int totalDeVersoes = await dbFinal.VersoesConfiguracao.AsNoTracking()
@@ -589,7 +599,7 @@ public sealed class EnvelopeFechadoE2ETests
             return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/criterios-desempate", criterios, ifMatch: null);
         }
 
-        public Task<HttpResponseMessage> PutClassificacaoAsync(Guid objetivaId)
+        public Task<HttpResponseMessage> PutClassificacaoAsync(Guid objetivaId, string resolucaoPesoAreaEnem)
         {
             object[] regrasEliminacao =
             [
@@ -612,6 +622,7 @@ public sealed class EnvelopeFechadoE2ETests
                     nOpcoesAlocacao = 2,
                     regrasEliminacao,
                     baseadoEmEnem = true,
+                    resolucaoPesoAreaEnem,
                 },
                 ifMatch: null);
         }
