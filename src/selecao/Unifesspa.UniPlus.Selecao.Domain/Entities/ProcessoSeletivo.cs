@@ -745,10 +745,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// OUTRA dimensão do agregado: INV-B4 (todo <c>etapa_ref</c> de uma
     /// <c>ELIM-NOTA-MINIMA-ETAPA</c> deve existir entre as etapas do
     /// processo). As invariantes internas da própria configuração (INV-B8,
-    /// limites de <c>NOpcoesAlocacao</c>, e a restrição de que
-    /// <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c> exigem
-    /// <see cref="ConfiguracaoClassificacao.BaseadoEmEnem"/>) já foram
-    /// validadas em <see cref="ConfiguracaoClassificacao.Criar"/>.
+    /// limites de <c>NOpcoesAlocacao</c>, a exigência de
+    /// <see cref="ConfiguracaoClassificacao.BaseadoEmEnem"/> pelas eliminações do ENEM e a
+    /// falta em dia de prova do ENEM declarada no máximo uma vez) já foram validadas em
+    /// <see cref="ConfiguracaoClassificacao.Criar"/>. Valem também na restauração, porque o
+    /// grafo restaurado traz a classificação construída pelo mesmo <c>Criar</c>.
     /// </summary>
     public Result DefinirClassificacao(ConfiguracaoClassificacao classificacao, PrecondicaoIfMatch precondicao)
     {
@@ -4609,10 +4610,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return violacaoDoDesempate;
         }
 
-        // A checagem ENEM×eliminação NÃO se repete aqui: grafo.Classificacao chega
-        // já construído por ConfiguracaoClassificacao.Criar (via
-        // EnvelopeCodec.LerClassificacao) — se o envelope violasse a invariante,
-        // a decodificação já teria falhado antes de ValidarGrafo ser chamado.
+        // A checagem ENEM×eliminação e a da falta em dia de prova do ENEM declarada no
+        // máximo uma vez NÃO se repetem aqui: grafo.Classificacao chega já construído por
+        // ConfiguracaoClassificacao.Criar (via EnvelopeCodec.LerClassificacao) — se o
+        // envelope violasse uma delas, a decodificação já teria falhado antes de
+        // ValidarGrafo ser chamado.
         foreach (RegraEliminacao regra in grafo.Classificacao.RegrasEliminacao)
         {
             // INV-B4 — mesma proteção do INV-B6, para a eliminação por nota mínima.

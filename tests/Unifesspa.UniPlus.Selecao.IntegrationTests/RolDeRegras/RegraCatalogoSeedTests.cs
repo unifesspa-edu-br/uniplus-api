@@ -157,6 +157,22 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         desempates.Should().Contain(r => r.Codigo == CriterioDesempateCodigo.MaiorNotaAreaEnem && r.Versao == "v1");
     }
 
+    [Fact(DisplayName = "A eliminação por falta em dia de prova do ENEM é semeada sem args, com as duas invariantes")]
+    public async Task Seed_EliminacaoPorFaltaEmDiaDeProvaEnem()
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", CancellationToken.None);
+
+        regra.Should().NotBeNull();
+        regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
+        regra.EsquemaArgs.EnumerateObject().Should().BeEmpty("a regra não tem parâmetro: o edital só a declara ou não");
+        regra.Invariantes.EnumerateArray().Select(i => i.GetString()).Should().Equal(
+            "falta em pelo menos um dia de prova da edição do ENEM usada no processo → elimina",
+            "sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta");
+    }
+
     [Theory(DisplayName = "Código ou versão com o caractere nulo não é encontrado, sem erro do banco")]
     [InlineData("FORMULA-MEDIA-PONDERADA\0", "v1")]
     [InlineData("FORMULA-MEDIA-PONDERADA", "v\01")]

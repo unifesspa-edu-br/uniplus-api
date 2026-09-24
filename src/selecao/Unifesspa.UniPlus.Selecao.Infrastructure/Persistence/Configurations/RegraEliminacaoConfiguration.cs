@@ -34,7 +34,7 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
         builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
-        // Args polimórficos (união fechada de 3 variantes) — mesmo padrão de
+        // Args polimórficos (união fechada, uma variante por regra de eliminação) — mesmo padrão de
         // CriterioDesempateConfiguration (Story #774): coluna "json" (NÃO
         // "jsonb"), porque o desserializador polimórfico do System.Text.Json
         // exige o discriminador "$tipo" como primeira propriedade, e o

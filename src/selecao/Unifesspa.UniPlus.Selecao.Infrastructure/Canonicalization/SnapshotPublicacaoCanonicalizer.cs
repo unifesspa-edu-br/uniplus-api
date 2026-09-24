@@ -225,6 +225,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>{areas}</c>: os códigos das áreas do ENEM na ordem de desempate declarada, que é
     /// conteúdo e não se reordena. O rótulo de cada área não entra no critério; ele está no
     /// <c>quadroPesoAreaEnem</c> da mesma classificação.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>classificacao.regrasEliminacao[]</c>
+    /// admite a regra <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>, sem args (<c>{}</c>): elimina quem
+    /// faltou a pelo menos um dia de prova da edição do ENEM usada no processo.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -1019,7 +1022,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         {
             ["minimo"] = HashCanonicalComputer.SerializeDecimalCanonical(corteRedacao.Minimo, EscalaPadrao),
         },
-        ArgsElimZeroEmArea => [],
+        ArgsElimZeroEmArea or ArgsElimFaltaEmDiaDeProvaEnem => [],
         _ => throw new InvalidOperationException($"Variante de {nameof(ArgsRegraEliminacao)} não reconhecida: {args.GetType()}."),
     };
 

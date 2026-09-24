@@ -71,9 +71,9 @@ public sealed class ConfiguracaoClassificacao : EntityBase
 
     /// <summary>
     /// A classificação usa a estrutura de pontuação por área do ENEM — o
-    /// sinal explícito (Story #850) do qual <c>ELIM-CORTE-REDACAO</c> e
-    /// <c>ELIM-ZERO-EM-AREA</c> dependem. Deixou de ser calculado a partir de
-    /// <see cref="ProcessoSeletivo.TipoProcesso"/>: o rótulo do processo não decide
+    /// sinal explícito (Story #850) do qual as eliminações do ENEM (<c>ELIM-CORTE-REDACAO</c>,
+    /// <c>ELIM-ZERO-EM-AREA</c> e <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>) dependem. Deixou de
+    /// ser calculado a partir de <see cref="ProcessoSeletivo.TipoProcesso"/>: o rótulo do processo não decide
     /// comportamento, só a configuração declarada decide.
     /// </summary>
     public bool BaseadoEmEnem { get; private set; }
@@ -111,11 +111,14 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// <summary>
     /// Cria a configuração de classificação, validando INV-B8 (coerência
     /// entre <see cref="RegraCalculo"/> e <see cref="RegraArredondamento"/>),
-    /// os limites de <see cref="NOpcoesAlocacao"/> e que
-    /// <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c> só entrem quando
-    /// <paramref name="baseadoEmEnem"/> é <see langword="true"/> — a única
-    /// dependência da estrutura de pontuação por área do ENEM, e por isso a
-    /// única invariante que precisa do sinal. A invariante que depende de
+    /// os limites de <see cref="NOpcoesAlocacao"/>, que as eliminações que só têm sentido
+    /// sobre os dados do ENEM do candidato (<see cref="ArgsRegraEliminacao.ExigeEnem"/>) só
+    /// entrem quando <paramref name="baseadoEmEnem"/> é <see langword="true"/>, que a falta em
+    /// dia de prova do ENEM seja declarada no máximo uma vez, cada repetição recusada no
+    /// próprio item (salvo na classificação importada, que já recusa toda eliminação), e o
+    /// quadro de Pesos por Área, que o mesmo sinal também exige ou recusa.
+    /// Por ser a mesma construção que o decoder do envelope usa, essas recusas valem também
+    /// na restauração. A invariante que depende de
     /// OUTRA dimensão do agregado (INV-B4: <c>etapa_ref</c> de eliminação
     /// existe no processo) continua validada pela raiz, que tem acesso a ela
     /// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
@@ -197,16 +200,40 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             }
         }
 
-        // A única dependência real da estrutura de pontuação por área do ENEM —
-        // eixo ortogonal a RegraCalculo (que só distingue cálculo local de
-        // classificação importada, INV-B8). Quando a classificação é importada, o
-        // gate acima já recusou qualquer regrasEliminacao não-vazia, então esta
-        // checagem só encontra itens no caminho de cálculo local.
-        if (regrasEliminacao.Any(static regra => regra.Args is ArgsElimCorteRedacao or ArgsElimZeroEmArea) && !baseadoEmEnem)
+        // Eixo ortogonal a RegraCalculo (que só distingue cálculo local de classificação
+        // importada, INV-B8): a regra que só tem sentido sobre os dados do ENEM do candidato
+        // exige a classificação baseada em ENEM.
+        if (regrasEliminacao.Any(static regra => regra.Args.ExigeEnem()) && !baseadoEmEnem)
         {
             erros.Add(new("regrasEliminacao", new DomainError(
                 "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
                 "Uma ou mais regras de eliminação só se aplicam quando a classificação está configurada como baseada em ENEM.")));
+        }
+
+        // Sem args, uma segunda declaração da falta em dia de prova repete a primeira e não
+        // elimina ninguém a mais: cada repetição é recusada no próprio item. Na classificação
+        // importada toda eliminação tem de sair, e a recusa de um item seria só consequência. A
+        // recusa do ENEM desmarcado não suprime: o operador pode corrigi-la marcando o ENEM, e
+        // a repetição continua sendo violação independente (ADR-0125).
+        if (!ehImportada)
+        {
+            bool faltaJaDeclarada = false;
+            for (int indice = 0; indice < regrasEliminacao.Count; indice++)
+            {
+                if (regrasEliminacao[indice].Args is not ArgsElimFaltaEmDiaDeProvaEnem)
+                {
+                    continue;
+                }
+
+                if (faltaJaDeclarada)
+                {
+                    erros.Add(new($"regrasEliminacao[{indice}]", new DomainError(
+                        "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida",
+                        "A eliminação por falta em dia de prova do ENEM só pode ser declarada uma vez.")));
+                }
+
+                faltaJaDeclarada = true;
+            }
         }
 
         string? resolucao = string.IsNullOrWhiteSpace(resolucaoPesoAreaEnem) ? null : resolucaoPesoAreaEnem.Trim();

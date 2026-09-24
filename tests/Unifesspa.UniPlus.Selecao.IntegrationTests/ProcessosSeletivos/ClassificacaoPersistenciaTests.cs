@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <c>ConfiguracaoClassificacao</c> + <c>RegraEliminacao</c>, provando o
 /// mapeamento EF (owned types de <c>ReferenciaRegra</c>, coluna <c>json</c>
 /// — não <c>jsonb</c> — da união polimórfica <c>ArgsRegraEliminacao</c> para
-/// as 3 variantes) contra Postgres real, e a reconfiguração sobre o agregado
+/// as 4 variantes) contra Postgres real, e a reconfiguração sobre o agregado
 /// tracked (mesma regressão de <c>ValueGeneratedNever</c> validada na F0).
 /// </summary>
 public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
@@ -35,8 +35,23 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
     private static ReferenciaRegra Regra(string codigo, string hashChar) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(hashChar[0], 64)).Value!;
 
-    [Fact(DisplayName = "Persiste e recarrega classificação com as 3 variantes de eliminação (prova a coluna json polimórfica)")]
-    public async Task PersisteERecarrega_ComTresVariantesDeEliminacao()
+    [Fact(DisplayName = "O comentário de schema de baseado_em_enem não enumera as regras de eliminação")]
+    public async Task ComentarioDeBaseadoEmEnem_NaoEnumeraAsRegras()
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+
+        string? comentario = await context.Database.SqlQuery<string?>($"""
+            SELECT col_description('selecao.configuracoes_classificacao'::regclass, a.attnum) AS "Value"
+            FROM pg_attribute a
+            WHERE a.attrelid = 'selecao.configuracoes_classificacao'::regclass AND a.attname = 'baseado_em_enem'
+            """).SingleAsync();
+
+        comentario.Should().Contain("regras de eliminação do ENEM").And.NotContain(
+            "ELIM-", "um comentário que lista os códigos exigiria alterar a coluna a cada regra nova do ENEM");
+    }
+
+    [Fact(DisplayName = "Persiste e recarrega classificação com as 4 variantes de eliminação (prova a coluna json polimórfica)")]
+    public async Task PersisteERecarrega_ComQuatroVariantesDeEliminacao()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!;
@@ -51,6 +66,9 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         RegraEliminacao zeroEmArea = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "c"),
             new ArgsElimZeroEmArea()).Value!;
+        RegraEliminacao faltaEmDiaDeProva = RegraEliminacao.Criar(
+            Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "0"),
+            new ArgsElimFaltaEmDiaDeProvaEnem()).Value!;
 
         Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "d"),
@@ -58,7 +76,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "f"),
             1,
-            [notaMinima, corteRedacao, zeroEmArea],
+            [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnemDeTeste.Completo());
@@ -84,7 +102,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         classificacao.CasasArredondamento.Should().Be(2);
         classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04);
         classificacao.NOpcoesAlocacao.Should().Be(1);
-        classificacao.RegrasEliminacao.Should().HaveCount(3);
+        classificacao.RegrasEliminacao.Should().HaveCount(4);
 
         ArgsElimNotaMinimaEtapa argsNotaMinima = (ArgsElimNotaMinimaEtapa)classificacao.RegrasEliminacao
             .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimNotaMinimaEtapa).Args;
@@ -97,6 +115,14 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimZeroEmArea)
             .Args.Should().BeOfType<ArgsElimZeroEmArea>();
+        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)
+            .Args.Should().BeOfType<ArgsElimFaltaEmDiaDeProvaEnem>();
+
+        string argsGravados = await readContext.Database.SqlQuery<string>($"""
+            SELECT args::text AS "Value" FROM selecao.regras_eliminacao WHERE id = {faltaEmDiaDeProva.Id}
+            """).SingleAsync();
+        argsGravados.Should().Contain("\"$tipo\":\"faltaEmDiaDeProvaEnem\"",
+            "o discriminador gravado é o que a leitura usa para voltar à variante certa");
     }
 
     [Fact(DisplayName = "Persiste e recarrega classificação CLASSIFICACAO-IMPORTADA sem arredondamento (INV-B8)")]
