@@ -272,6 +272,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Cada etapa deve ter uma ordem única dentro do processo."));
         }
 
+        // Antes da regra geral de "ao menos uma etapa compõe a nota": quem tem só a etapa do
+        // ENEM, sem peso, recebe a causa real. A classificação é gravada depois das etapas no
+        // fluxo de configuração: num processo novo ela ainda é nula aqui, e só então a
+        // coerência com ela fica para DefinirClassificacao conferir.
+        if (ValidarEtapaDeNotaDoEnem(etapas, Classificacao) is { } erroNotaDoEnem)
+        {
+            return Result.Failure(erroNotaDoEnem);
+        }
+
         // §3.5 (Story #851, bicondicional fase×etapa): uma lista vazia é agora um estado
         // VÁLIDO — o processo sem prova (SiSU, classificação importada) não tem etapa. A
         // guarda "ao menos uma etapa compõe a nota" só vale QUANDO há etapas: sem ao menos
@@ -285,14 +294,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NenhumaEtapaComponeNota",
                 "Ao menos uma etapa deve ter caráter classificatória ou ambas, com peso, para compor a nota final."));
-        }
-
-        // A classificação é gravada depois das etapas no fluxo de configuração: num processo
-        // novo ela ainda é nula aqui, e só então a coerência com ela fica para
-        // DefinirClassificacao conferir.
-        if (ValidarEtapaDeNotaDoEnem(etapas, Classificacao) is { } erroNotaDoEnem)
-        {
-            return Result.Failure(erroNotaDoEnem);
         }
 
         // INV-B6 sobrevive a DefinirEtapas: um critério de desempate
@@ -776,9 +777,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // O outro lado da coerência conferida em DefinirEtapas: sem ele, o operador grava a
         // etapa de nota do ENEM primeiro e depois declara uma classificação que não é ENEM.
         // Com a classificação compatível, o que sobra é problema das etapas já gravadas
-        // (duplicada ou com lançamento), que nenhum campo deste comando corrige: sai como
-        // recusa sem campo, depois das recusas de campo, porque o errors[] da resposta só
-        // carrega erro de campo (ADR-0023).
+        // (duplicada, fora da média, com banca, produto ou recurso em ato), que nenhum campo
+        // deste comando corrige: sai como recusa sem campo, depois das recusas de campo,
+        // porque o errors[] da resposta só carrega erro de campo (ADR-0023).
         DomainError? erroDasEtapas = null;
         DomainError? erroSemCalculoLocal = null;
         if (ValidarEtapaDeNotaDoEnem(_etapas, classificacao) is { } erroNotaDoEnem)
@@ -4303,11 +4304,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// A etapa que declara nota de origem no ENEM (<see cref="EtapaProcesso.DeclaraNotaDoEnem"/>):
-    /// é no máximo uma por processo, porque a nota do ENEM é uma só por candidato; não prevê
-    /// lançamento — nem banca, nem parecer individual —, porque ninguém a atribui; e só
+    /// é no máximo uma por processo, porque a nota do ENEM é uma só por candidato; compõe a
+    /// média, porque é para gerar a nota final que o processo baseado em ENEM a declara; não
+    /// tem banca, porque ninguém atribui a nota e quem julga o recurso é declarado na fase de
+    /// recursos; e não declara produto nem recurso ancorado em ato, porque o resultado é
+    /// publicado pela fase e o recurso coletivo sobre a lista geral é o da regra de recurso da
+    /// fase — uma janela por fato. O parecer individual é admitido, não exigido: nesta etapa
+    /// ele é o espelho do cálculo gerado pelo sistema (notas por área, pesos do grupo
+    /// congelado, média), e é dele que corre o recurso individual ancorado na ciência. Só
     /// convive com classificação baseada em ENEM <b>e</b> calculada pela média ponderada,
-    /// que é a fórmula em que ela entra como componente. Sob classificação importada, o
-    /// processo publicaria uma etapa calculada sem quadro de pesos que a componha.
+    /// que é a fórmula em que ela entra como componente.
     /// </summary>
     /// <param name="classificacao">
     /// <see langword="null"/> enquanto a classificação não foi gravada — aí a coerência
@@ -4324,8 +4330,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         // A coerência com a classificação sai primeiro porque é ela que decide se a etapa pode
-        // existir no processo: recusar antes pela duplicidade ou pela banca levaria o operador
-        // a corrigir uma etapa que, sob esta classificação, ele teria de remover de todo modo.
+        // existir no processo: recusar antes por outra causa levaria o operador a corrigir uma
+        // etapa que, sob esta classificação, ele teria de remover de todo modo.
         bool classificacaoAdmiteNotaDoEnem = classificacao is null
             || classificacao.CalculaPelosPesosPorAreaDoEnem;
         if (!classificacaoAdmiteNotaDoEnem)
@@ -4344,11 +4350,25 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         EtapaProcesso etapaDoEnem = etapasDoEnem[0];
-        if (etapaDoEnem.PreveLancamentoDeNota)
+        if (!etapaDoEnem.ComponeNota)
         {
             return new DomainError(
-                "ProcessoSeletivo.EtapaNotaEnemComLancamento",
-                $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e não admite banca nem parecer individual — a nota não é lançada.");
+                "ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota",
+                $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e precisa compor a média: declare caráter classificatória ou ambas e um peso.");
+        }
+
+        if (etapaDoEnem.Bancas.Count > 0)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.EtapaNotaEnemComBanca",
+                $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e não admite banca: ninguém atribui a nota, e quem julga o recurso é declarado na fase de recursos.");
+        }
+
+        if (etapaDoEnem.Produtos.Count > 0 || etapaDoEnem.Recursos.Any(static r => r.Ancora == AncoraDoRecurso.AtoPublicado))
+        {
+            return new DomainError(
+                "ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto",
+                $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e não declara produto nem recurso ancorado em ato: o resultado é publicado pela fase, e o recurso coletivo sobre a lista geral é o da regra de recurso da fase. Na etapa cabe só o recurso individual, ancorado na ciência do candidato.");
         }
 
         return null;
@@ -4633,18 +4653,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Cada etapa deve ter uma ordem única dentro do processo.");
         }
 
+        // Mesma regra de DefinirEtapas e DefinirClassificacao, na mesma posição de
+        // DefinirEtapas: sem o espelho, um envelope restaurado reintroduziria o estado que os
+        // caminhos de gravação recusam.
+        if (ValidarEtapaDeNotaDoEnem(grafo.Etapas, grafo.Classificacao) is { } erroNotaDoEnem)
+        {
+            return erroNotaDoEnem;
+        }
+
         if (grafo.Etapas.Count > 0 && !grafo.Etapas.Any(e => e.ComponeNota))
         {
             return new DomainError(
                 "ProcessoSeletivo.NenhumaEtapaComponeNota",
                 "Ao menos uma etapa deve ter caráter classificatória ou ambas, com peso, para compor a nota final.");
-        }
-
-        // Mesma regra de DefinirEtapas e DefinirClassificacao: sem o espelho, um envelope
-        // restaurado reintroduziria o estado que os dois caminhos de gravação recusam.
-        if (ValidarEtapaDeNotaDoEnem(grafo.Etapas, grafo.Classificacao) is { } erroNotaDoEnem)
-        {
-            return erroNotaDoEnem;
         }
 
         if (grafo.DistribuicaoVagas.Count == 0)

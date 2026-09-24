@@ -9,7 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A etapa cuja nota vem do ENEM: única por processo, sem lançamento, e só sob
+/// A etapa cuja nota vem do ENEM: única por processo, compõe a média, sem banca, sem produto
+/// nem recurso em ato, e só sob
 /// classificação baseada em ENEM calculada pela média ponderada — conferida dos dois
 /// lados, porque a classificação é gravada depois das etapas no fluxo de configuração.
 /// </summary>
@@ -23,6 +24,23 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
 
     private static EtapaProcesso EtapaRedacao(decimal peso = 1m, int ordem = 2) =>
         EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: peso, ordem: ordem).Value!;
+
+    private static EtapaProcesso EtapaNotaEnemForaDaMedia(CaraterEtapa carater, int ordem = 1) =>
+        EtapaProcesso.Criar("Nota do ENEM", carater, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: null, ordem: ordem).Value!;
+
+    private static ReferenciaRegra RegraDoRecurso =>
+        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+
+    private static ArgsRegraPrazoRecurso PrazoDoRecurso => new(
+        PrazoValor: 48m, PrazoUnidade: UnidadePrazo.Horas,
+        SuspensividadePrimeiraInstanciaValor: null, SuspensividadePrimeiraInstanciaUnidade: null,
+        SuspensividadeSegundaInstanciaValor: null, SuspensividadeSegundaInstanciaUnidade: null);
+
+    private static RecursoDaEtapa RecursoPorCiencia() =>
+        RecursoDaEtapa.Criar(AncoraDoRecurso.CienciaIndividual, RegraDoRecurso, PrazoDoRecurso, Guid.Empty).Value!;
+
+    private static RecursoDaEtapa RecursoEmAto() =>
+        RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoRecurso, PrazoDoRecurso, Guid.CreateVersion7()).Value!;
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
@@ -104,7 +122,33 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
     }
 
-    [Fact(DisplayName = "Etapa de nota do ENEM com banca requerida é recusada — a nota não é lançada")]
+    [Theory(DisplayName = "Etapa de nota do ENEM que não compõe a média é recusada, pedindo caráter e peso")]
+    [InlineData(CaraterEtapa.Eliminatoria)]
+    [InlineData(CaraterEtapa.Classificatoria)]
+    [InlineData(CaraterEtapa.Ambas)]
+    public void DefinirEtapas_NotaEnemForaDaMedia_Recusa(CaraterEtapa carater)
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso redacao = EtapaRedacao();
+
+        Result result = processo.DefinirEtapas([EtapaNotaEnemForaDaMedia(carater), redacao], PrecondicaoIfMatch.Ausente);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
+        result.Error.Message.Should().Contain("caráter").And.Contain("peso");
+    }
+
+    [Fact(DisplayName = "Só com a etapa do ENEM fora da média, a recusa é a dela, não a de nenhuma etapa compor a nota")]
+    public void DefinirEtapas_SoNotaEnemForaDaMedia_RecusaEspecificaAntesDaGeral()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        Result result = processo.DefinirEtapas([EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria)], PrecondicaoIfMatch.Ausente);
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
+    }
+
+    [Fact(DisplayName = "Etapa de nota do ENEM com banca é recusada")]
     public void DefinirEtapas_NotaEnemComBanca_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -114,20 +158,89 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComLancamento");
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
     }
 
-    [Fact(DisplayName = "Etapa de nota do ENEM com parecer individual é recusada — a nota não é lançada")]
-    public void DefinirEtapas_NotaEnemComParecer_Recusa()
+    [Fact(DisplayName = "Etapa de nota do ENEM com parecer individual e recurso ancorado na ciência é aceita")]
+    public void DefinirEtapas_NotaEnemComParecerERecursoPorCiencia_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaNotaEnem();
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
+        etapa.DefinirRecursos([RecursoPorCiencia()]).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComLancamento");
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Etapa de nota do ENEM sem parecer e sem recurso continua válida — os dois são admitidos, não exigidos")]
+    public void DefinirEtapas_NotaEnemSemParecerNemRecurso_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        Result result = processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+    }
+
+    [Theory(DisplayName = "Etapa de nota do ENEM com qualquer produto é recusada, apontando a regra de recurso da fase")]
+    [InlineData(PapelProdutoFase.Preliminar)]
+    [InlineData(PapelProdutoFase.Definitivo)]
+    [InlineData(null)]
+    public void DefinirEtapas_NotaEnemComProduto_Recusa(PapelProdutoFase? papel)
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso etapa = EtapaNotaEnem();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", papel)]).IsSuccess.Should().BeTrue();
+
+        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
+        result.Error.Message.Should().Contain("regra de recurso da fase");
+    }
+
+    [Fact(DisplayName = "Etapa de nota do ENEM com recurso ancorado em ato é recusada pela regra do ENEM, não pela âncora")]
+    public void DefinirEtapas_NotaEnemComRecursoEmAto_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso etapa = EtapaNotaEnem();
+        etapa.DefinirRecursos([RecursoEmAto()]).IsSuccess.Should().BeTrue();
+
+        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
+    }
+
+    [Fact(DisplayName = "Ordem das recusas: duplicidade antes de fora da média, fora da média antes de banca, banca antes de produto")]
+    public void DefinirEtapas_OrdemDasRecusas()
+    {
+        EtapaProcesso comTudo = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
+        comTudo.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+
+        NovoProcesso().DefinirEtapas([comTudo, EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
+        NovoProcesso().DefinirEtapas([comTudo], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
+
+        EtapaProcesso comBancaEProduto = EtapaNotaEnem();
+        comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        NovoProcesso().DefinirEtapas([comBancaEProduto], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
+    }
+
+    [Fact(DisplayName = "Classificação incoerente sai antes de qualquer outra recusa da etapa do ENEM")]
+    public void DefinirEtapas_ClassificacaoIncoerenteAntesDasDemais()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        EtapaProcesso etapa = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+
+        processo.DefinirEtapas([etapa, EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
     }
 
     [Fact(DisplayName = "Banca e parecer continuam valendo para as demais etapas")]
