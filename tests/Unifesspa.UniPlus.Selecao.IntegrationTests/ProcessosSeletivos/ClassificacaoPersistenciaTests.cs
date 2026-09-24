@@ -74,7 +74,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "d"),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "e"),
             2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "f"),
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "f"),
             1,
             [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva],
             baseadoEmEnem: true,
@@ -100,7 +100,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         classificacao.RegraCalculo.Codigo.Should().Be(RegraCalculoCodigo.FormulaMediaPonderada);
         classificacao.RegraArredondamento!.Codigo.Should().Be(RegraArredondamentoCodigo.PrecisaoTruncar);
         classificacao.CasasArredondamento.Should().Be(2);
-        classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04);
+        classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
         classificacao.NOpcoesAlocacao.Should().Be(1);
         classificacao.RegrasEliminacao.Should().HaveCount(4);
 
@@ -136,7 +136,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraCalculoCodigo.ClassificacaoImportada, "1"),
             regraArredondamento: null,
             casasArredondamento: null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "2"),
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "2"),
             2,
             [],
             baseadoEmEnem: false,
@@ -177,7 +177,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
             2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
             1,
             [],
             baseadoEmEnem: false,
@@ -204,7 +204,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
                 Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
                 Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, "e"),
                 4,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
+                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
                 2,
                 [eliminacao],
                 baseadoEmEnem: true,
@@ -289,7 +289,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
                 Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
                 Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
                 2,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
+                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
                 1,
                 [],
                 baseadoEmEnem: false,
@@ -360,7 +360,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
             2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
             1,
             [],
             baseadoEmEnem: true,
@@ -406,7 +406,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
             2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "d"),
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
             1,
             [eliminacao],
             baseadoEmEnem: false,
@@ -467,7 +467,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "1"),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "2"),
             2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "3"),
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "3"),
             1,
             [],
             baseadoEmEnem: baseadoEmEnem,

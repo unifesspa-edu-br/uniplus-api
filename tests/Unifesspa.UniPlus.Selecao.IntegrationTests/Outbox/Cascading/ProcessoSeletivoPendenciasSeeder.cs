@@ -190,7 +190,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo).Value!,
             regraArredondamento: ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo).Value!,
             casasArredondamento: 2,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
             nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo());
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
@@ -251,7 +251,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(
             RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!;
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(
-            RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!;
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!;
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(
             regraCalculo: regraCalculo, regraArredondamento: null, casasArredondamento: null,
             regraOrdemAlocacao: regraOrdemAlocacao, nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);

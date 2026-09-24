@@ -61,7 +61,9 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
     /// que valida esta substituição), não pela troca de RECURSO-MULTI-INSTANCIA
     /// que este arquivo cobre. BONUS-MULTIPLICATIVO reflete o hash pós-correção
     /// do seu texto (issue #1467), aplicada por migration própria, alheia à
-    /// substituição que este arquivo cobre.
+    /// substituição que este arquivo cobre. ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA reflete a
+    /// renomeação da regra de alocação e as invariantes da ordem com remanejamento antes da 2ª
+    /// opção (issue #1623), também por migration própria.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> HashesOriginaisDasDemais =
         new Dictionary<string, string>(StringComparer.Ordinal)
@@ -78,7 +80,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
             ["DESEMPATE-MAIOR-NOTA-ETAPA"] = "1a988e6681b2970dc6c568c7372ceaf2f6e5ec0f7061ac47f656e1366a9ecad8",
             ["DESEMPATE-MAIOR-IDADE"] = "1efa26eaeffc88baf31ce9e2030c05c9976fae125e9845fe0283168050dc1237",
             ["DESEMPATE-PREDICADO-FATO"] = "d832d910826f25b6b50fd324f2f3cae472440c0e81e082be7c8d4fefe3de3f21",
-            ["ALOCACAO-OPCOES-RN04"] = "2bb69f0e34483e635aa0903f8d3ba19a4255e8f542c5f7090ac75cecf200c988",
+            ["ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA"] = "3c3b381dbe84380b1954fdd25512cd34e3881bddccf8e733530ca0593aa8e12f",
             ["RENDA-PER-CAPITA-LEI-12711"] = "5a1ad80627e354c03e4d6ef776a45db695a1203cea574a288dbcdf706ca58899",
             ["RECONCILIACAO-VAGAS-ART11-PU"] = "ad2d8012ddc1f2ea4d763034899d07590c4a49901744b852dca2e70cede8b1e9",
         };

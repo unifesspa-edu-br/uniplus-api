@@ -77,7 +77,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!;
         ReferenciaRegra regraArredondamento = ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!;
-        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!;
+        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!;
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo, regraArredondamento, casasArredondamento: 2, regraOrdemAlocacao, nOpcoesAlocacao: 1, [],

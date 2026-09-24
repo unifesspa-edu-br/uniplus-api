@@ -306,7 +306,7 @@ public sealed partial class EnvelopeCodec
             bloco,
             "regraOrdemAlocacao",
             "classificacao",
-            RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04);
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
         int nOpcoes = leitor.Inteiro(bloco, "nOpcoesAlocacao", "classificacao");
         bool baseadoEmEnem = leitor.Booleano(bloco, "baseadoEmEnem", "classificacao");
 

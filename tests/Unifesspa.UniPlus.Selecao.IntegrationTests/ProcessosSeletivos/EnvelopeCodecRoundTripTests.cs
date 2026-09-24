@@ -806,7 +806,7 @@ public sealed class EnvelopeCodecRoundTripTests
             regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
             regraArredondamento: null,
             casasArredondamento: null,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -982,7 +982,7 @@ public sealed class EnvelopeCodecRoundTripTests
             regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
             regraArredondamento: null,
             casasArredondamento: null,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -1255,7 +1255,7 @@ public sealed class EnvelopeCodecRoundTripTests
             regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
             regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
             casasArredondamento: 2,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '4'),
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: true,
@@ -1286,7 +1286,7 @@ public sealed class EnvelopeCodecRoundTripTests
             regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
             regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
             casasArredondamento: 2,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '4'),
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: true,
@@ -1312,7 +1312,7 @@ public sealed class EnvelopeCodecRoundTripTests
             regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, '2'),
             regraArredondamento: null,
             casasArredondamento: null,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '4'),
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: baseadoEmEnem,

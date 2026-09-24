@@ -282,7 +282,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Classificação (Story #775) — 15º bloco
         // canônico, composição por referência de fórmula/precisão/eliminação/
         // ordem de alocação.
-        new("ConfiguracaoClassificacao.NOpcoesInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.n_opcoes_invalido", "O número de opções de curso deve ser 1 ou 2 (RN04)")),
+        new("ConfiguracaoClassificacao.NOpcoesInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.n_opcoes_invalido", "O número de opções de curso deve ser 1 ou 2")),
         new("ConfiguracaoClassificacao.ArredondamentoIndevido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.arredondamento_indevido", "Arredondamento local não se aplica quando a classificação é importada")),
         new("ConfiguracaoClassificacao.CasasArredondamentoIndevido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.casas_arredondamento_indevido", "Casas de arredondamento não se aplicam quando a classificação é importada")),
         new("ConfiguracaoClassificacao.EliminacaoIndevida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.eliminacao_indevida", "Regras de eliminação não se aplicam quando a classificação é importada")),
