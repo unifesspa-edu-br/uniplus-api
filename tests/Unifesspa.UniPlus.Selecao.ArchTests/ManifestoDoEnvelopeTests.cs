@@ -60,7 +60,6 @@ public sealed class ManifestoDoEnvelopeTests
                 ("ProduzResultado", "Derivada de Produtos — congelá-la duplicaria a fonte de verdade."),
                 ("ComponeNota", "Derivada de Carater + Peso — congelá-la duplicaria a fonte de verdade."),
                 ("DeclaraNotaDoEnem", "Derivada de TipoEtapa.NotaDeOrigemNoEnem — o atributo congelado já é a declaração."),
-                ("PreveLancamentoDeNota", "Derivada de Bancas + EmiteParecerIndividual — congelá-la duplicaria a fonte de verdade."),
                 ("TipoEtapaOrigemId", "Derivada de TipoEtapa.OrigemId (issue #1071) — congelá-la duplicaria a fonte de verdade."),
             ]),
 

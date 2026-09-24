@@ -884,6 +884,45 @@ public sealed class DefinirEtapasCommandHandlerTests
         prova.AdmiteEliminacao.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Etapa de nota do ENEM com recurso em ato é recusada pela regra do ENEM, antes da conferência da âncora")]
+    public async Task Handle_NotaEnemComRecursoEmAto_RecusaPelaRegraDoEnem()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
+        reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true));
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(RegraCatalogo.Criar(
+                "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+                JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
+                "Lei 9.784/1999, art. 59").Value!);
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput(
+                    "Nota do ENEM", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+                    Produtos: [],
+                    Recursos:
+                    [
+                        new RecursoDaEtapaInput(
+                            AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_PRELIMINAR", null, null, null, null),
+                    ], Bancas: []),
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader, regraCatalogoReader: regraCatalogoReader);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
+        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
     [Fact(DisplayName = "Etapa nova congela a nota de origem no ENEM lida do cadastro")]
     public async Task Handle_EtapaNova_CongelaANotaDeOrigemNoEnem()
     {

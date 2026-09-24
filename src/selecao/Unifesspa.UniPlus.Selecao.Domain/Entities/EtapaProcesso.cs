@@ -552,12 +552,6 @@ public sealed class EtapaProcesso : EntityBase
     public bool DeclaraNotaDoEnem => TipoEtapa.NotaDeOrigemNoEnem;
 
     /// <summary>
-    /// A nota desta etapa seria lançada por alguém: há banca requerida ou promessa de
-    /// parecer individual por candidato.
-    /// </summary>
-    public bool PreveLancamentoDeNota => _bancas.Count > 0 || EmiteParecerIndividual;
-
-    /// <summary>
     /// Atualiza os dados da MESMA etapa (mesmo <see cref="EntityBase.Id"/>) em
     /// vez de recriá-la — permite que <c>DefinirEtapasCommandHandler</c>
     /// reconcilie o payload de <c>PUT /etapas</c> com o agregado tracked
@@ -678,7 +672,10 @@ public sealed class EtapaProcesso : EntityBase
 
         foreach (RecursoDaEtapa recurso in recursos)
         {
-            if (recurso.Ancora == AncoraDoRecurso.AtoPublicado && !preliminares.Contains(recurso.ProdutoAncoraId))
+            // Na etapa de nota do ENEM, o recurso em ato não cabe de modo algum, e a regra do
+            // processo diz isso nomeando o caminho certo (a regra de recurso da fase). Pedir
+            // aqui um preliminar que ela depois recusa mandaria o operador na direção errada.
+            if (recurso.Ancora == AncoraDoRecurso.AtoPublicado && !DeclaraNotaDoEnem && !preliminares.Contains(recurso.ProdutoAncoraId))
             {
                 return Result.Failure(new DomainError(
                     "EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa",

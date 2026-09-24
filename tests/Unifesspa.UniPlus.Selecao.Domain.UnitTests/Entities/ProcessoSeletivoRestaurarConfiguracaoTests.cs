@@ -101,8 +101,65 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             Grafo(etapas: [etapa], classificacao: ClassificacaoEnemMediaPonderada()));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComLancamento");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
     }
+
+    [Theory(DisplayName = "Restaurar etapa de nota do ENEM fora da média é recusado, antes da regra geral, como na gravação")]
+    [InlineData(CaraterEtapa.Eliminatoria)]
+    [InlineData(CaraterEtapa.Classificatoria)]
+    [InlineData(CaraterEtapa.Ambas)]
+    public void Restaurar_EtapaNotaEnemForaDaMedia_Recusa(CaraterEtapa carater)
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(EtapaCongelada, "Nota do ENEM", carater, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, null, null, 1);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(etapas: [etapa], classificacao: ClassificacaoEnemMediaPonderada()));
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
+    }
+
+    [Fact(DisplayName = "Restaurar etapa de nota do ENEM com parecer e recurso por ciência é aceito, como na gravação")]
+    public void Restaurar_EtapaNotaEnemComParecerERecursoPorCiencia_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        EtapaProcesso etapa = EtapaNotaEnemCongelada(EtapaCongelada, 1);
+        etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
+        etapa.DefinirRecursos([RecursoDaEtapaDeTeste(AncoraDoRecurso.CienciaIndividual, Guid.Empty)]).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(etapas: [etapa], classificacao: ClassificacaoEnemMediaPonderada()));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Restaurar etapa de nota do ENEM com produto ou recurso em ato é recusado, como na gravação")]
+    public void Restaurar_EtapaNotaEnemComProdutoOuRecursoEmAto_Recusa()
+    {
+        EtapaProcesso comProduto = EtapaNotaEnemCongelada(EtapaCongelada, 1);
+        comProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        EtapaProcesso comRecursoEmAto = EtapaNotaEnemCongelada(EtapaCongelada, 1);
+        comRecursoEmAto.DefinirRecursos([RecursoDaEtapaDeTeste(AncoraDoRecurso.AtoPublicado, Guid.CreateVersion7())]).IsSuccess.Should().BeTrue();
+
+        foreach (EtapaProcesso etapa in new[] { comProduto, comRecursoEmAto })
+        {
+            ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+            Result resultado = processo.RestaurarConfiguracaoCongelada(
+                VersaoDo(processo),
+                Grafo(etapas: [etapa], classificacao: ClassificacaoEnemMediaPonderada()));
+
+            resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
+        }
+    }
+
+    private static RecursoDaEtapa RecursoDaEtapaDeTeste(AncoraDoRecurso ancora, Guid produtoAncoraId) =>
+        RecursoDaEtapa.Criar(
+            ancora,
+            ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
+            new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, null, null),
+            produtoAncoraId).Value!;
 
     [Fact(DisplayName = "Restaurar etapa de nota do ENEM sob classificação ENEM pela média ponderada é aceito")]
     public void Restaurar_EtapaNotaEnemSobClassificacaoEnemMediaPonderada_Aceita()
