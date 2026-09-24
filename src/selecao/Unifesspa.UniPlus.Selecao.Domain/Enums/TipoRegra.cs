@@ -48,7 +48,10 @@ public enum TipoRegra
     /// <summary>Critério de remanejamento entre modalidades (cascata / cruzado PSIQ).</summary>
     CriterioRemanejamento = 6,
 
-    /// <summary>Ordem de alocação 1ª/2ª opção → remanejamento → lista de espera (ex.: <c>ALOCACAO-OPCOES-RN04</c>).</summary>
+    /// <summary>
+    /// Ordem de alocação entre as opções de curso: 1ª opção, remanejamento dentro do curso, 2ª opção
+    /// só com a vaga remanescente, lista de espera (ex.: <c>ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA</c>).
+    /// </summary>
     RegraOrdemAlocacao = 7,
 
     /// <summary>Enquadramento em cota (ex.: <c>RENDA-PER-CAPITA-LEI-12711</c>).</summary>

@@ -36,7 +36,7 @@ public sealed class DetectorDeReferenciaAncoradoNoEnvelopeTests : IClassFixture<
     public static TheoryData<string, string> ReferenciasDoEnvelopeDourado() => new()
     {
         { "CLASSIFICACAO-IMPORTADA", "v1" },
-        { "ALOCACAO-OPCOES-RN04", "v1" },
+        { "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", "v1" },
         { "DISTRIB-VAGAS-INSTITUCIONAL", "v1" },
     };
 

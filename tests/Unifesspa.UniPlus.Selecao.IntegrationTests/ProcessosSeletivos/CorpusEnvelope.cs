@@ -336,7 +336,7 @@ internal static class CorpusEnvelope
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, '2'),
             casasArredondamento: 3,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
+            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
             nOpcoesAlocacao: 2,
             regrasEliminacao: [
                 // DUAS do mesmo código, args distintos — o PS Convênios exige exatamente isso.
@@ -927,7 +927,7 @@ internal static class CorpusEnvelope
                 regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
                 regraArredondamento: null,
                 casasArredondamento: null,
-                regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
+                regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
                 nOpcoesAlocacao: 1,
                 regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             cronogramaFases: [FaseCronogramaConforme(variante)],
@@ -949,7 +949,7 @@ internal static class CorpusEnvelope
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
             regraArredondamento: null,
             casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
+            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
         cronogramaFases: [FaseCronogramaConforme(variante)],

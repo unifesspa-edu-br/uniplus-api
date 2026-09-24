@@ -167,7 +167,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
             regraArredondamento: null,
             casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
+            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
             nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -810,7 +810,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "d"),
             casasArredondamento: 2,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
+            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
             nOpcoesAlocacao: 1,
             regrasEliminacao: eliminacoes, baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,

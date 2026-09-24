@@ -80,7 +80,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(
             RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!;
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(
-            RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!;
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!;
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(
             regraCalculo: regraCalculo,
             regraArredondamento: null,

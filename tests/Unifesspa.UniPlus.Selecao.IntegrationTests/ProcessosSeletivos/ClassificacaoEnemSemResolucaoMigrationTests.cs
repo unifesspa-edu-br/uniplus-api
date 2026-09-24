@@ -39,6 +39,11 @@ public sealed class ClassificacaoEnemSemResolucaoMigrationTests : IAsyncLifetime
 {
     private const string MigrationAnterior = "20260923221757_CongelaCodigoERotuloDoGrupoDeAreaEnem";
 
+    // A descida e a subida passam pela migration que renomeia a regra de alocação, e ela descarta a
+    // classificação em rascunho que cita o código antigo ou o novo. Um código fora do rol deixa as
+    // classificações deste teste intocadas por ela.
+    private const string AlocacaoForaDoRol = "ALOCACAO-FORA-DO-ROL";
+
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("uniplus_classificacao_enem_sem_resolucao_tests")
         .WithUsername("uniplus_test")
@@ -120,7 +125,7 @@ public sealed class ClassificacaoEnemSemResolucaoMigrationTests : IAsyncLifetime
             Regra(regraCalculo, 'a'),
             importada ? null : Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
             importada ? null : 2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
+            Regra(AlocacaoForaDoRol, 'c'),
             1,
             regrasEliminacao,
             baseadoEmEnem,

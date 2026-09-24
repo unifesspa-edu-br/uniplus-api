@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// bloco canônico do snapshot de publicação (Story #775):
 /// COMPÕE POR REFERÊNCIA as regras tipadas que amarram o cálculo do
 /// resultado — fórmula da nota, precisão, eliminação (lista) e ordem de
-/// alocação (RN04).
+/// alocação entre a 1ª e a 2ª opção de curso (UNI-REQ-0045).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -63,10 +63,14 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// <summary>Casas decimais da precisão (par de <see cref="RegraArredondamento"/> — default 2, gaps 1.1).</summary>
     public int? CasasArredondamento { get; private set; }
 
-    /// <summary>Ordem de alocação 1ª/2ª opção → remanejamento → lista de espera (<c>ALOCACAO-OPCOES-RN04</c>, RN04).</summary>
+    /// <summary>
+    /// Ordem de alocação (<c>ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA</c>, UNI-REQ-0045): todas as 1ªs
+    /// opções do curso, depois o remanejamento entre modalidades dentro do curso, e só a vaga que
+    /// sobra vai à 2ª opção; quem não entra em nenhuma opção vai para a lista de espera.
+    /// </summary>
     public ReferenciaRegra RegraOrdemAlocacao { get; private set; } = null!;
 
-    /// <summary>Quantas opções de curso o processo aceita (1 ou 2 — RN04).</summary>
+    /// <summary>Quantas opções de curso o processo aceita (1 ou 2).</summary>
     public int NOpcoesAlocacao { get; private set; }
 
     /// <summary>
@@ -293,7 +297,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         if (nOpcoesAlocacao is not (1 or 2))
         {
             erros.Add(new("nOpcoesAlocacao", new DomainError(
-                "ConfiguracaoClassificacao.NOpcoesInvalido", "O número de opções de curso deve ser 1 ou 2 (RN04).")));
+                "ConfiguracaoClassificacao.NOpcoesInvalido", "O número de opções de curso deve ser 1 ou 2.")));
         }
 
         return erros;

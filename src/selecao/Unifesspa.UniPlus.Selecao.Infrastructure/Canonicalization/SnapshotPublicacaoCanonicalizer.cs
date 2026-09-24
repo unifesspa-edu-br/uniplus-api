@@ -234,6 +234,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>ELIM-CORTE-REDACAO</c> dá lugar
     /// a <c>ELIM-CORTE-EM-AREA</c>, com args <c>{areaCodigo, minimo}</c>: o corte vale para qualquer
     /// área do ENEM do quadro de pesos por área, e não só para a Redação.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>ALOCACAO-OPCOES-RN04</c> dá lugar
+    /// a <c>ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA</c> em <c>classificacao.regraOrdemAlocacao</c>: a 1ª opção
+    /// tem prioridade, e a 2ª só recebe a vaga que sobra depois do remanejamento dentro do curso.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 

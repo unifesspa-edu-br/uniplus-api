@@ -625,7 +625,7 @@ public sealed class EnvelopeFechadoE2ETests
                     regraArredondamentoCodigo = RegraArredondamentoCodigo.PrecisaoArredondarCima,
                     regraArredondamentoVersao = "v1",
                     casasArredondamento = 3,
-                    regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04,
+                    regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
                     regraOrdemAlocacaoVersao = "v1",
                     nOpcoesAlocacao = 2,
                     regrasEliminacao,

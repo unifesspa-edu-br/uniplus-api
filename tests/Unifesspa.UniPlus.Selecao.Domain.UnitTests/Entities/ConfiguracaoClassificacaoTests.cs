@@ -20,7 +20,7 @@ public sealed class ConfiguracaoClassificacaoTests
         ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('c', 64)).Value!;
 
     private static ReferenciaRegra RegraOrdemAlocacao() =>
-        ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('d', 64)).Value!;
+        ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!;
 
     [Fact(DisplayName = "Criar com FORMULA-MEDIA-PONDERADA e arredondamento tem sucesso")]
     public void Criar_MediaPonderadaComArredondamento_Sucesso()

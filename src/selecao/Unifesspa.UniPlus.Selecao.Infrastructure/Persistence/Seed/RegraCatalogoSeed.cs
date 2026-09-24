@@ -145,11 +145,11 @@ public static class RegraCatalogoSeed
             """["ordena por maior nota na primeira área da lista; o empate que resta passa à área seguinte","cada área é citada uma única vez, pelo código, e existe em todos os grupos do quadro de pesos por área congelado na classificação","exige classificação baseada em ENEM, calculada pela média ponderada"]""",
             "Edital (ordem de desempate por nota de área do ENEM)"),
 
-        // regra_ordem_alocacao — 1ª/2ª opção → remanejamento → lista de espera
-        new(SeedId(13), "ALOCACAO-OPCOES-RN04", VersaoV1, TipoRegra.RegraOrdemAlocacao,
+        // regra_ordem_alocacao — a 1ª opção tem prioridade; a 2ª só recebe a vaga que sobra
+        new(SeedId(13), RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, VersaoV1, TipoRegra.RegraOrdemAlocacao,
             """{"n_opcoes":"integer"}""",
-            """["1ª opção → 2ª opção → remanejamento → lista de espera"]""",
-            "RN04 (processamento de 1ª/2ª opção)"),
+            """["processam-se todas as 1ªs opções de cada curso","a vaga de modalidade não preenchida é remanejada dentro do curso, entre candidatos de 1ª opção","só a vaga que sobra depois do remanejamento vai à 2ª opção, em ordem de nota, sem deslocar aprovado de 1ª opção","quem não é classificado em nenhuma opção vai para a lista de espera"]""",
+            "UNI-REQ-0045 — processamento da 1ª opção antes da 2ª"),
 
         // regra_elegibilidade — enquadramento em cota
         new(SeedId(14), "RENDA-PER-CAPITA-LEI-12711", VersaoV1, TipoRegra.RegraElegibilidade,

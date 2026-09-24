@@ -144,7 +144,7 @@ public sealed class BackfillBaseadoEmEnemTests : IAsyncLifetime
                 'FORMULA-MEDIA-PONDERADA', '1', repeat('a', 64),
                 'ARREDONDAMENTO-TRUNCAR', '1', repeat('b', 64),
                 2,
-                'ALOCACAO-OPCOES-RN04', '1', repeat('c', 64),
+                'ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA', '1', repeat('c', 64),
                 1, now());
             """);
 

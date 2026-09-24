@@ -622,6 +622,7 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("classificacao.regraCalculo", "FORMULA-XPTO")]
     [InlineData("classificacao.regraArredondamento", "PRECISAO-XPTO")]
     [InlineData("classificacao.regraOrdemAlocacao", "ALOCACAO-XPTO")]
+    [InlineData("classificacao.regraOrdemAlocacao", "ALOCACAO-OPCOES-RN04")]
     [InlineData("bonusRegional.regra", "BONUS-XPTO")]
     [InlineData("criteriosDesempate.0.regra", "DESEMPATE-XPTO")]
     [InlineData("classificacao.regrasEliminacao.0.regra", "ELIM-XPTO")]
@@ -923,7 +924,7 @@ public sealed class EnvelopeCodecRecusaTests
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
             regraArredondamento: null, casasArredondamento: null,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!,
             nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
