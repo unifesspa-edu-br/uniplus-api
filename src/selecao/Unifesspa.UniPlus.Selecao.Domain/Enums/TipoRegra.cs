@@ -36,7 +36,7 @@ public enum TipoRegra
     /// <summary>Precisão da nota (ex.: <c>PRECISAO-TRUNCAR</c>, <c>PRECISAO-ARREDONDAR-CIMA</c>).</summary>
     RegraArredondamento = 2,
 
-    /// <summary>Eliminação por cálculo (ex.: <c>ELIM-NOTA-MINIMA-ETAPA</c>, <c>ELIM-CORTE-REDACAO</c>, <c>ELIM-ZERO-EM-AREA</c>, <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>).</summary>
+    /// <summary>Eliminação por cálculo (ex.: <c>ELIM-NOTA-MINIMA-ETAPA</c>, <c>ELIM-CORTE-EM-AREA</c>, <c>ELIM-ZERO-EM-AREA</c>, <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>).</summary>
     RegraEliminacao = 3,
 
     /// <summary>Bônus sobre a nota final (ex.: <c>BONUS-MULTIPLICATIVO</c>).</summary>

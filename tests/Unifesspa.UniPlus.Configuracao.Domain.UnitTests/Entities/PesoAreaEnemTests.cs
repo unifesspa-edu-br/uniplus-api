@@ -326,17 +326,14 @@ public sealed class PesoAreaEnemTests
         Criar(ComArea(0, new(PesoAreaEnem.CodigoRedacao, 2m, (decimal)corte))).IsSuccess.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "Corte em área diferente da Redação é recusado enquanto a eliminação só conhece a Redação")]
+    [Theory(DisplayName = "Corte em qualquer área do ENEM é aceito, porque a eliminação aplica corte por área")]
     [InlineData(1, PesoAreaEnem.CodigoCienciasDaNatureza)]
     [InlineData(4, PesoAreaEnem.CodigoMatematica)]
-    public void Criar_CorteForaDaRedacao_Falha(int indice, string codigo)
+    public void Criar_CorteForaDaRedacao_Aceita(int indice, string codigo)
     {
-        Result<PesoAreaEnem> resultado = Criar(ComArea(indice, new(codigo, 1m, 450m)));
+        PesoAreaEnem peso = Criar(ComArea(indice, new(codigo, 1m, 450m))).Value!;
 
-        resultado.IsFailure.Should().BeTrue();
-        FieldError erro = resultado.Errors.Single();
-        erro.Field.Should().Be($"areas[{indice}].corte");
-        erro.Error.Code.Should().Be(PesoAreaEnemErrorCodes.CorteForaDaRedacao);
+        peso.AreasDaLinha[indice].Corte.Should().Be(450m);
     }
 
     [Fact(DisplayName = "Base legal ausente é recusada")]
@@ -432,7 +429,7 @@ public sealed class PesoAreaEnemTests
     public void ValidarCamposDoPayload_Recusa()
     {
         Result resultado = PesoAreaEnem.ValidarCamposDoPayload(
-            ComArea(2, new(PesoAreaEnem.CodigoCienciasHumanas, 1m, 500m)), BaseLegal);
+            ComArea(2, new(PesoAreaEnem.CodigoCienciasHumanas, 1m, 1500m)), BaseLegal);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Single().Field.Should().Be("areas[2].corte");
@@ -452,14 +449,14 @@ public sealed class PesoAreaEnemTests
         peso.AreasDaLinha[4].Codigo.Should().Be(PesoAreaEnem.CodigoMatematica);
     }
 
-    [Fact(DisplayName = "Corte fora da faixa numa área que não é a Redação gera uma recusa só, a de corte fora da Redação")]
-    public void Criar_CorteNegativoForaDaRedacao_UmaRecusaSo()
+    [Fact(DisplayName = "Corte fora da faixa numa área que não é a Redação é recusado pela faixa")]
+    public void Criar_CorteNegativoForaDaRedacao_RecusaPelaFaixa()
     {
         Result<PesoAreaEnem> resultado = Criar(ComArea(3, new(PesoAreaEnem.CodigoLinguagens, 2.50m, -1m)));
 
         FieldError erro = resultado.Errors.Single();
         erro.Field.Should().Be("areas[3].corte");
-        erro.Error.Code.Should().Be(PesoAreaEnemErrorCodes.CorteForaDaRedacao);
+        erro.Error.Code.Should().Be(PesoAreaEnemErrorCodes.CorteNegativo);
     }
 
     [Fact(DisplayName = "Código recusado longo volta na mensagem limitado, não inteiro")]
@@ -557,9 +554,7 @@ public sealed class PesoAreaEnemTests
         Result<PesoAreaEnem> resultado = Criar(ComArea(4, new(PesoAreaEnem.CodigoLinguagens, 1m, 450m)));
 
         resultado.Errors.Should().Contain(e => e.Field == "areas[4].codigo" && e.Error.Code == PesoAreaEnemErrorCodes.AreaRepetida);
-        FieldError corte = resultado.Errors.Single(e => e.Field == "areas[4].corte");
-        corte.Error.Code.Should().Be(PesoAreaEnemErrorCodes.CorteForaDaRedacao);
-        corte.Error.Message.Should().Contain("Linguagens e suas Tecnologias");
+        resultado.Errors.Should().NotContain(e => e.Field == "areas[4].corte", "o corte dentro da faixa vale para qualquer área");
     }
 
     [Fact(DisplayName = "Código recusado não volta com caracteres de controle nem de formatação bidi")]

@@ -787,8 +787,8 @@ public sealed class EnvelopeCanonicoGoldenTests
         List<RegraEliminacao> eliminacoes = [];
 
         RegraEliminacao CriarCorte() => RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimCorteRedacao, "e"),
-            new ArgsElimCorteRedacao(400m)).Value!;
+            Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "e"),
+            new ArgsElimCorteEmArea("REDACAO", 400m)).Value!;
 
         RegraEliminacao CriarZero() => RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "f"),

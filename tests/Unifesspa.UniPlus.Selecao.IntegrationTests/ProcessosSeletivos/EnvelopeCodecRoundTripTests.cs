@@ -460,8 +460,9 @@ public sealed class EnvelopeCodecRoundTripTests
     [Theory(DisplayName = "O decoder lê também os campos que são chave de ordenação")]
     [InlineData("etapas.0.ordem", "9")]
     [InlineData("criteriosDesempate.0.ordem", "9")]
-    [InlineData("classificacao.regrasEliminacao.0.args.notaMinima", "88.7500")]
-    [InlineData("classificacao.regrasEliminacao.2.args.minimo", "555.0000")]
+    [InlineData("classificacao.regrasEliminacao.1.args.notaMinima", "88.7500")]
+    [InlineData("classificacao.regrasEliminacao.0.args.minimo", "555.0000")]
+    [InlineData("classificacao.regrasEliminacao.0.args.areaCodigo", "MATEMATICA")]
     [InlineData("modalidades.1.criteriosCumulativos.0", "renda_per_capita_ate_meio_sm")]
     public void Decoder_NaoPerdeCampoDeOrdenacao(string caminho, string valorNovo)
     {

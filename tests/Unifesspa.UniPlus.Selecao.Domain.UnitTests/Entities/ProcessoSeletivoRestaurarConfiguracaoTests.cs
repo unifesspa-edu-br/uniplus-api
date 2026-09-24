@@ -264,7 +264,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         VersaoConfiguracao versaoSisu = VersaoDo(sisu);
 
         RegraEliminacao EliminacaoEnem() => RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimCorteRedacao, 'a'), new ArgsElimCorteRedacao(400m)).Value!;
+            Regra(RegraEliminacaoCodigo.ElimCorteEmArea, 'a'), new ArgsElimCorteEmArea("REDACAO", 400m)).Value!;
 
         ConfiguracaoClassificacao ClassificacaoEnemValida() => ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),

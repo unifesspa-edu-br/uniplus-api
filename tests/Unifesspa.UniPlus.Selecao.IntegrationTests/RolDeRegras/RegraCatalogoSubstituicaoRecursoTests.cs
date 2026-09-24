@@ -71,7 +71,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
             ["PRECISAO-TRUNCAR"] = "66cbb932e61982f09fdd1d60a0db8411ea02dedc19bb72d1af23004f1e18360b",
             ["PRECISAO-ARREDONDAR-CIMA"] = "efc491bf6a242a870c7bf9969048c198db88116ba39e72a44bcf1d5d5aebc4fb",
             ["ELIM-NOTA-MINIMA-ETAPA"] = "b64f643eba9744efc20bf19221bde85c645da32262a7d2ef616f18bd7c2ed5ac",
-            ["ELIM-CORTE-REDACAO"] = "6a23db02c00878d5bb98a445e8dc72e209a95f2aa4a8bfd91de8fa08ee69c240",
+            ["ELIM-CORTE-EM-AREA"] = "2b664ed9b782ce9e4b47c70063fd2c2f5bc225c74301fcc801600956d856ad4a",
             ["ELIM-ZERO-EM-AREA"] = "75f4929b848138c8ed939a182e3664451ce38cd40a136adda438b62e1b6e3fb8",
             ["BONUS-MULTIPLICATIVO"] = "76a46eef115f27a52873a21eeee988a7d6978993ae535c026fa2c2d250d3acd1",
             ["DESEMPATE-IDOSO"] = "6738b1a9ca4f063f7f215cabb837e055d8abafaf0835f0b3deeed1c97f0becd4",

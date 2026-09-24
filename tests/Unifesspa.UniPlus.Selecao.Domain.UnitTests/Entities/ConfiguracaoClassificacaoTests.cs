@@ -108,7 +108,7 @@ public sealed class ConfiguracaoClassificacaoTests
         // EliminacaoIndevida (INV-B8: importada não aceita NENHUMA eliminação) precede o
         // gate ENEM novo — mesmo com BaseadoEmEnem=true, uma classificação importada com
         // ELIM-CORTE-REDACAO é recusada pelo motivo INV-B8, não pelo motivo ENEM.
-        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimCorteRedacao);
+        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimCorteEmArea);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
@@ -145,7 +145,7 @@ public sealed class ConfiguracaoClassificacaoTests
     }
 
     [Theory(DisplayName = "Criar com eliminação que depende do ENEM e BaseadoEmEnem=false é recusado — independente de TipoProcesso")]
-    [InlineData(RegraEliminacaoCodigo.ElimCorteRedacao)]
+    [InlineData(RegraEliminacaoCodigo.ElimCorteEmArea)]
     [InlineData(RegraEliminacaoCodigo.ElimZeroEmArea)]
     [InlineData(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)]
     public void Criar_EliminacaoEnemForaDeProcessoEnem_Recusa(string codigoRegra)
@@ -160,7 +160,7 @@ public sealed class ConfiguracaoClassificacaoTests
     }
 
     [Theory(DisplayName = "Criar com eliminação que depende do ENEM e BaseadoEmEnem=true tem sucesso — independente de TipoProcesso")]
-    [InlineData(RegraEliminacaoCodigo.ElimCorteRedacao)]
+    [InlineData(RegraEliminacaoCodigo.ElimCorteEmArea)]
     [InlineData(RegraEliminacaoCodigo.ElimZeroEmArea)]
     [InlineData(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)]
     public void Criar_EliminacaoEnemEmProcessoEnem_Sucesso(string codigoRegra)
@@ -181,7 +181,7 @@ public sealed class ConfiguracaoClassificacaoTests
 
     private static ArgsRegraEliminacao ArgsDaRegra(string codigoRegra) => codigoRegra switch
     {
-        RegraEliminacaoCodigo.ElimCorteRedacao => new ArgsElimCorteRedacao(400m),
+        RegraEliminacaoCodigo.ElimCorteEmArea => new ArgsElimCorteEmArea("REDACAO", 400m),
         RegraEliminacaoCodigo.ElimZeroEmArea => new ArgsElimZeroEmArea(),
         RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => new ArgsElimFaltaEmDiaDeProvaEnem(),
         _ => throw new ArgumentOutOfRangeException(nameof(codigoRegra), codigoRegra, "Código de regra ENEM desconhecido no teste."),
@@ -522,5 +522,74 @@ public sealed class ConfiguracaoClassificacaoTests
 
         string mensagem = resultado.Errors.Single(e => e.Error.Code == "ConfiguracaoClassificacao.QuadroPesoAreaEnemGrupoRepetido").Error.Message;
         mensagem.Should().Contain("Tecno?lógica").And.NotContain("\u202E");
+    }
+
+    // ── Corte em área: no máximo um por área, e a área no quadro de pesos por área ──
+
+    private static RegraEliminacao CorteEm(string area, decimal minimo = 400m) =>
+        RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('a', 64)).Value!,
+            new ArgsElimCorteEmArea(area, minimo)).Value!;
+
+    private static Result<ConfiguracaoClassificacao> CriarEnemLocal(params RegraEliminacao[] eliminacoes) =>
+        ConfiguracaoClassificacao.Criar(
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, eliminacoes, baseadoEmEnem: true,
+            QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
+
+    [Fact(DisplayName = "Cortes em áreas diferentes são aceitos")]
+    public void Criar_CortesEmAreasDiferentes_Aceita()
+    {
+        Result<ConfiguracaoClassificacao> resultado = CriarEnemLocal(CorteEm("REDACAO"), CorteEm("MATEMATICA", 450m));
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.RegrasEliminacao.Should().HaveCount(2);
+    }
+
+    [Fact(DisplayName = "Cada corte repetido na mesma área é recusado no próprio item")]
+    public void Criar_CorteRepetidoNaMesmaArea_Recusa()
+    {
+        Result<ConfiguracaoClassificacao> resultado = CriarEnemLocal(
+            CorteEm("REDACAO"), CorteEm("MATEMATICA"), CorteEm("REDACAO", 500m), CorteEm("REDACAO", 300m));
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("regrasEliminacao[2]", "ConfiguracaoClassificacao.CorteEmAreaRepetido"),
+            ("regrasEliminacao[3]", "ConfiguracaoClassificacao.CorteEmAreaRepetido"),
+        ]);
+    }
+
+    [Fact(DisplayName = "Corte em área que o quadro de pesos por área não tem é recusado na área do item, com as áreas aceitas")]
+    public void Criar_CorteForaDoQuadro_Recusa()
+    {
+        Result<ConfiguracaoClassificacao> resultado = CriarEnemLocal(CorteEm("REDACAO"), CorteEm("FISICA"));
+
+        FieldError erro = resultado.Errors.Single();
+        erro.Field.Should().Be("regrasEliminacao[1].areaCodigo");
+        erro.Error.Code.Should().Be("ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro");
+        erro.Error.Message.Should().Contain("FISICA").And.Contain("REDACAO (Redação)");
+    }
+
+    [Fact(DisplayName = "Corte em área que só parte dos grupos tem é recusado")]
+    public void Criar_CorteEmAreaDeParteDosGrupos_Recusa()
+    {
+        GrupoPesoAreaEnemCongelado semMatematica = GrupoPesoAreaEnemCongelado.Criar(
+            "TECNOLOGICA", "Tecnológica", "Resolução nº 805/2024/Consepe – Anexo I",
+            [("REDACAO", "Redação", 2.00m, 400m), ("LINGUAGENS", "Linguagens e suas Tecnologias", 1.00m, null)]).Value!;
+
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [CorteEm("MATEMATICA")], baseadoEmEnem: true,
+            QuadroPesoAreaEnemDeTeste.Resolucao, [QuadroPesoAreaEnemDeTeste.Grupo("HUMANISTICA_I", "Humanística I"), semMatematica]);
+
+        resultado.Errors.Single().Error.Code.Should().Be("ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro");
+    }
+
+    [Fact(DisplayName = "Classificação importada recusa a lista inteira, sem somar a recusa do corte repetido")]
+    public void Criar_ImportadaComCorteRepetido_RecusaSoAListaInteira()
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1,
+            [CorteEm("REDACAO"), CorteEm("REDACAO")], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().Equal("ConfiguracaoClassificacao.EliminacaoIndevida");
     }
 }

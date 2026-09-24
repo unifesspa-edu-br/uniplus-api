@@ -173,6 +173,24 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             "sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta");
     }
 
+    [Fact(DisplayName = "O corte em área é semeado com área e mínimo no lugar do corte de Redação")]
+    public async Task Seed_CorteEmArea_SubstituiOCorteDeRedacao()
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", CancellationToken.None);
+        RegraCatalogo? antiga = await reader.ObterAsync("ELIM-CORTE-REDACAO", "v1", CancellationToken.None);
+
+        regra.Should().NotBeNull();
+        regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
+        regra.EsquemaArgs.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo("area_codigo", "minimo");
+        regra.Invariantes.EnumerateArray().Select(i => i.GetString()).Should().Equal(
+            "nota na área < mínimo → elimina",
+            "no máximo um corte por área");
+        antiga.Should().BeNull("o corte em área substitui o de Redação, sem convivência das duas");
+    }
+
     [Theory(DisplayName = "Código ou versão com o caractere nulo não é encontrado, sem erro do banco")]
     [InlineData("FORMULA-MEDIA-PONDERADA\0", "v1")]
     [InlineData("FORMULA-MEDIA-PONDERADA", "v\01")]

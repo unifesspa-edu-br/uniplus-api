@@ -342,7 +342,7 @@ internal static class CorpusEnvelope
                 // DUAS do mesmo código, args distintos — o PS Convênios exige exatamente isso.
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ArgsElimNotaMinimaEtapa(objetiva, 45.0000m)).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ArgsElimNotaMinimaEtapa(redacao, 30.5000m)).Value!,
-                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteRedacao, '5'), new ArgsElimCorteRedacao(400.0000m)).Value!,
+                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, '5'), new ArgsElimCorteEmArea("REDACAO", 400.0000m)).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ArgsElimZeroEmArea()).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, '0'), new ArgsElimFaltaEmDiaDeProvaEnem()).Value!,
             ],

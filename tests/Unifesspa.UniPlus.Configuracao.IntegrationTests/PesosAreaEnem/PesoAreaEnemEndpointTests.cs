@@ -200,14 +200,16 @@ public sealed class PesoAreaEnemEndpointTests
             "uniplus.configuracao.peso_area_enem.corte_excede_maximo");
     }
 
-    [Fact(DisplayName = "POST admin com corte fora da Redação retorna 422 no campo do corte")]
-    public async Task Criar_CorteForaDaRedacao_Retorna422NoCampo()
+    [Fact(DisplayName = "POST admin com corte em área que não é a Redação cria a linha com o corte")]
+    public async Task Criar_CorteForaDaRedacao_Cria()
     {
         object[] areas = AreasValidas();
         areas[3] = new { codigo = "LINGUAGENS", peso = 2.50m, corte = 450m };
 
-        await AssertRecusaNoCampo(Corpo(ResolucaoUnica(), areas), "areas[3].corte",
-            "uniplus.configuracao.peso_area_enem.corte_fora_da_redacao");
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarAdmin(client, HttpMethod.Post, AdminPath, Corpo(ResolucaoUnica(), areas));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     [Fact(DisplayName = "POST admin com área fora das cinco retorna 422 no campo do código")]

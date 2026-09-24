@@ -4492,15 +4492,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return violacoes;
     }
 
-    /// <summary>Área aceita é a que todo grupo do quadro tem.</summary>
     private static HashSet<string> AreasAceitasNoDesempate(ConfiguracaoClassificacao classificacao) =>
-        classificacao.QuadroPesoAreaEnem
-            .Select(static g => g.Areas.Select(static a => a.Codigo).ToHashSet(StringComparer.Ordinal))
-            .Aggregate((comum, doGrupo) =>
-            {
-                comum.IntersectWith(doGrupo);
-                return comum;
-            });
+        ConfiguracaoClassificacao.AreasEmTodosOsGrupos(classificacao.QuadroPesoAreaEnem);
 
     /// <summary>
     /// Toda área recusada — pela forma ou por estar fora do quadro — deixa o operador sem saber
@@ -4530,27 +4523,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private static DomainError ComAreasAceitas(DomainError erro, ConfiguracaoClassificacao? classificacao) =>
         classificacao is not null && classificacao.TemQuadroPesoAreaEnem
-            ? erro with { Message = $"{erro.Message} Áreas aceitas: {ListarAreasAceitas(classificacao, AreasAceitasNoDesempate(classificacao))}." }
+            ? erro with { Message = $"{erro.Message} Áreas aceitas: {ConfiguracaoClassificacao.ListarAreas(classificacao.QuadroPesoAreaEnem, AreasAceitasNoDesempate(classificacao))}." }
             : erro;
-
-    /// <summary>O rótulo sai da primeira ocorrência: o quadro vem de uma resolução só, e cada código tem um rótulo nela.</summary>
-    private static string ListarAreasAceitas(ConfiguracaoClassificacao classificacao, HashSet<string> aceitas)
-    {
-        if (aceitas.Count == 0)
-        {
-            return "nenhuma";
-        }
-
-        Dictionary<string, string> rotulos = new(StringComparer.Ordinal);
-        foreach (AreaPesoAreaEnemCongelada area in classificacao.QuadroPesoAreaEnem.SelectMany(static g => g.Areas))
-        {
-            rotulos.TryAdd(area.Codigo, area.Rotulo);
-        }
-
-        return string.Join("; ", aceitas
-            .Order(StringComparer.Ordinal)
-            .Select(codigo => $"{codigo} ({rotulos[codigo]})"));
-    }
 
     /// <summary>
     /// O teto de critérios e as regras do desempate por área do ENEM, como gate de publicação.

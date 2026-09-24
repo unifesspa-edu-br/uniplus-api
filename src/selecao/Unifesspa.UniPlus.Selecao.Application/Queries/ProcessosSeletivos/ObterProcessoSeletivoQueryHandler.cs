@@ -317,9 +317,9 @@ public static class ObterProcessoSeletivoQueryHandler
 
         return regra.Args switch
         {
-            ArgsElimNotaMinimaEtapa args => new RegraEliminacaoDto(regra.Id, referenciaRegra, args.EtapaRef, args.NotaMinima, null),
-            ArgsElimCorteRedacao args => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, args.Minimo),
-            _ => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, null),
+            ArgsElimNotaMinimaEtapa args => new RegraEliminacaoDto(regra.Id, referenciaRegra, args.EtapaRef, args.NotaMinima, null, null),
+            ArgsElimCorteEmArea args => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, args.Minimo, args.AreaCodigo),
+            _ => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, null, null),
         };
     }
 

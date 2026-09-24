@@ -6,7 +6,8 @@ public sealed record RegraEliminacaoDto(
     ReferenciaRegraDto Regra,
     Guid? EtapaRef,
     decimal? NotaMinima,
-    decimal? Minimo);
+    decimal? Minimo,
+    string? AreaCodigo);
 
 /// <summary>Peso e corte de uma área no quadro de pesos por área congelado na classificação.</summary>
 /// <param name="Codigo">Código da área, sem abreviação e sem acento.</param>
