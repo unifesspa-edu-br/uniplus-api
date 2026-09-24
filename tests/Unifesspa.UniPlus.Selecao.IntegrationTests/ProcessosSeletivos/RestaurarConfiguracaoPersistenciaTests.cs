@@ -118,7 +118,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         reposto.Etapas.Should().HaveCount(3);
         reposto.DistribuicaoVagas.Should().HaveCount(2);
         reposto.CriteriosDesempate.Should().HaveCount(6);
-        reposto.Classificacao.RegrasEliminacao.Should().HaveCount(4);
+        reposto.Classificacao.RegrasEliminacao.Should().HaveCount(5);
         reposto.OfertaAtendimento.Condicoes.Should().HaveCount(2);
         reposto.OfertaAtendimento.TiposDeficiencia.Should().HaveCount(2);
         reposto.BonusRegional.Fator.Should().Be(1.2000m, "o bônus voltou — com o fator congelado");

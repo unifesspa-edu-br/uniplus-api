@@ -41,6 +41,45 @@ public sealed class RegraEliminacaoTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Criar ELIM-FALTA-EM-DIA-DE-PROVA-ENEM (sem args) tem sucesso")]
+    public void Criar_FaltaEmDiaDeProvaEnem_Sucesso()
+    {
+        Result<RegraEliminacao> resultado = RegraEliminacao.Criar(
+            Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem), new ArgsElimFaltaEmDiaDeProvaEnem());
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "Falta em dia de prova e zero em área não trocam de args entre si")]
+    [InlineData(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, false)]
+    [InlineData(RegraEliminacaoCodigo.ElimZeroEmArea, true)]
+    public void Criar_ArgsSemCamposDeOutraRegra_Falha(string codigo, bool argsDeFalta)
+    {
+        ArgsRegraEliminacao args = argsDeFalta ? new ArgsElimFaltaEmDiaDeProvaEnem() : new ArgsElimZeroEmArea();
+
+        Result<RegraEliminacao> resultado = RegraEliminacao.Criar(Regra(codigo), args);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraEliminacao.ArgsIncompativeisComRegra");
+    }
+
+    public static TheoryData<ArgsRegraEliminacao, bool> ExigenciaDeEnemPorVariante => new()
+    {
+        { new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m), false },
+        { new ArgsElimCorteRedacao(400m), true },
+        { new ArgsElimZeroEmArea(), true },
+        { new ArgsElimFaltaEmDiaDeProvaEnem(), true },
+    };
+
+    [Theory(DisplayName = "Cada variante declara se exige classificação baseada em ENEM")]
+    [MemberData(nameof(ExigenciaDeEnemPorVariante))]
+    public void ExigeEnem_PorVariante(ArgsRegraEliminacao args, bool exigeEnem)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+
+        args.ExigeEnem().Should().Be(exigeEnem);
+    }
+
     [Fact(DisplayName = "Criar com args incompatíveis com a regra falha")]
     public void Criar_ArgsIncompativeis_Falha()
     {

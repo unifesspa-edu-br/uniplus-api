@@ -1508,6 +1508,38 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be("CriterioDesempate.AreaInvalida");
     }
 
+    [Fact(DisplayName = "classificacao.regrasEliminacao[].args da falta em dia de prova do ENEM com chave intrusa é recusado")]
+    public void EliminacaoPorFaltaEmDiaDeProvaEnem_ChaveIntrusaNosArgs_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject falta = Navegar(envelope, "classificacao.regrasEliminacao.3");
+            falta["regra"]!["codigo"]!.GetValue<string>().Should().Be(
+                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 3 é a eliminação por falta em dia de prova");
+            falta["args"]!.AsObject()["chaveIntrusa"] = "x";
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("classificacao.regrasEliminacao[3].args");
+    }
+
+    [Fact(DisplayName = "classificacao.regrasEliminacao[] com a falta em dia de prova do ENEM repetida é recusada pela mesma regra da gravação")]
+    public void EliminacaoPorFaltaEmDiaDeProvaEnem_Repetida_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray regras = Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray();
+            JsonNode falta = regras[3]!;
+            falta["regra"]!["codigo"]!.GetValue<string>().Should().Be(
+                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 3 é a eliminação por falta em dia de prova");
+            regras.Insert(3, falta.DeepClone());
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida");
+    }
+
     [Fact(DisplayName = "etapas[].produtos[].atoCodigo acima do limite da coluna (60) é recusado")]
     public void Etapa_ProdutoAtoCodigoAcimaDoLimite_Recusa()
     {

@@ -101,6 +101,13 @@ public static class RegraCatalogoSeed
             """["nota zero em qualquer área do ENEM → elimina"]""",
             "Res. 805/2024 art. 5º (zero em qualquer área elimina)"),
 
+        // Falta não é nota zero: quem falta fica sem nota nas áreas do dia, e quem tira zero
+        // compareceu. A segunda invariante cobre o ano de referência do ENEM informado errado.
+        new(SeedId(29), RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, VersaoV1, TipoRegra.RegraEliminacao,
+            "{}",
+            """["falta em pelo menos um dia de prova da edição do ENEM usada no processo → elimina","sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta"]""",
+            "Edital (falta em dia de prova do ENEM)"),
+
         // regra_bonus — bônus sobre a nota final
         new(SeedId(8), "BONUS-MULTIPLICATIVO", VersaoV1, TipoRegra.RegraBonus,
             """{"fator":"numeric","teto":"numeric|null"}""",

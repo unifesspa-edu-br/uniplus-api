@@ -93,9 +93,7 @@ public sealed class ConfiguracaoClassificacaoTests
     [Fact(DisplayName = "Criar com CLASSIFICACAO-IMPORTADA e regra de eliminação informada falha (INV-B8)")]
     public void Criar_Importada_ComEliminacao_Falha()
     {
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", new string('f', 64)).Value!,
-            new ArgsElimZeroEmArea()).Value!;
+        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
@@ -110,9 +108,7 @@ public sealed class ConfiguracaoClassificacaoTests
         // EliminacaoIndevida (INV-B8: importada não aceita NENHUMA eliminação) precede o
         // gate ENEM novo — mesmo com BaseadoEmEnem=true, uma classificação importada com
         // ELIM-CORTE-REDACAO é recusada pelo motivo INV-B8, não pelo motivo ENEM.
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('a', 64)).Value!,
-            new ArgsElimCorteRedacao(400m)).Value!;
+        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimCorteRedacao);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
@@ -124,9 +120,7 @@ public sealed class ConfiguracaoClassificacaoTests
     [Fact(DisplayName = "Criar com lista de eliminação vincula os filhos à configuração")]
     public void Criar_ComEliminacao_Vincula()
     {
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", new string('e', 64)).Value!,
-            new ArgsElimZeroEmArea()).Value!;
+        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: true,
@@ -150,14 +144,13 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Value!.BaseadoEmEnem.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "Criar com ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA e BaseadoEmEnem=false é recusado — independente de TipoProcesso")]
+    [Theory(DisplayName = "Criar com eliminação que depende do ENEM e BaseadoEmEnem=false é recusado — independente de TipoProcesso")]
     [InlineData(RegraEliminacaoCodigo.ElimCorteRedacao)]
     [InlineData(RegraEliminacaoCodigo.ElimZeroEmArea)]
+    [InlineData(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)]
     public void Criar_EliminacaoEnemForaDeProcessoEnem_Recusa(string codigoRegra)
     {
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(codigoRegra, "v1", new string('b', 64)).Value!,
-            ArgsDaRegra(codigoRegra)).Value!;
+        RegraEliminacao eliminacao = Eliminacao(codigoRegra);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
@@ -166,14 +159,13 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem");
     }
 
-    [Theory(DisplayName = "Criar com ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA e BaseadoEmEnem=true tem sucesso — independente de TipoProcesso")]
+    [Theory(DisplayName = "Criar com eliminação que depende do ENEM e BaseadoEmEnem=true tem sucesso — independente de TipoProcesso")]
     [InlineData(RegraEliminacaoCodigo.ElimCorteRedacao)]
     [InlineData(RegraEliminacaoCodigo.ElimZeroEmArea)]
+    [InlineData(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)]
     public void Criar_EliminacaoEnemEmProcessoEnem_Sucesso(string codigoRegra)
     {
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(codigoRegra, "v1", new string('c', 64)).Value!,
-            ArgsDaRegra(codigoRegra)).Value!;
+        RegraEliminacao eliminacao = Eliminacao(codigoRegra);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: true,
@@ -182,12 +174,88 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
+    private static RegraEliminacao Eliminacao(string codigoRegra) =>
+        RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(codigoRegra, "v1", new string('a', 64)).Value!,
+            ArgsDaRegra(codigoRegra)).Value!;
+
     private static ArgsRegraEliminacao ArgsDaRegra(string codigoRegra) => codigoRegra switch
     {
         RegraEliminacaoCodigo.ElimCorteRedacao => new ArgsElimCorteRedacao(400m),
         RegraEliminacaoCodigo.ElimZeroEmArea => new ArgsElimZeroEmArea(),
+        RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => new ArgsElimFaltaEmDiaDeProvaEnem(),
         _ => throw new ArgumentOutOfRangeException(nameof(codigoRegra), codigoRegra, "Código de regra ENEM desconhecido no teste."),
     };
+
+    [Fact(DisplayName = "Cada repetição da falta em dia de prova do ENEM é recusada no próprio item, acumulando com as demais violações")]
+    public void Criar_FaltaEmDiaDeProvaEnemRepetida_Recusa()
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 3,
+            [
+                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+                Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea),
+                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+            ], baseadoEmEnem: true,
+            QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors
+            .Where(e => e.Error.Code == "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida")
+            .Select(e => e.Field)
+            .Should().Equal(["regrasEliminacao[2]", "regrasEliminacao[3]"], "a primeira declaração vale; cada repetição é recusada no próprio item");
+        resultado.Errors.Select(e => e.Error.Code).Should().Contain("ConfiguracaoClassificacao.NOpcoesInvalido");
+    }
+
+    [Fact(DisplayName = "Na classificação importada, a falta em dia de prova repetida só leva a recusa da lista inteira")]
+    public void Criar_ImportadaComFaltaEmDiaDeProvaEnemRepetida_RecusaSoAListaInteira()
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1,
+            [
+                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+            ], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            [("regrasEliminacao", "ConfiguracaoClassificacao.EliminacaoIndevida")],
+            "a importada não admite eliminação nenhuma, e é isso que o operador precisa corrigir");
+    }
+
+    [Fact(DisplayName = "Sem ENEM, a falta em dia de prova repetida sai junto com a recusa do ENEM desmarcado")]
+    public void Criar_SemEnemComFaltaEmDiaDeProvaEnemRepetida_AcumulaAsDuas()
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1,
+            [
+                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+            ], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            [
+                ("regrasEliminacao", "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem"),
+                ("regrasEliminacao[1]", "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida"),
+            ],
+            "marcar o ENEM corrige a primeira recusa, e a repetição continua lá: são violações independentes");
+    }
+
+    [Fact(DisplayName = "Falta em dia de prova do ENEM declarada uma vez, junto de outra regra ENEM, é aceita")]
+    public void Criar_FaltaEmDiaDeProvaEnemUnicaComZeroEmArea_Sucesso()
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1,
+            [
+                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+                Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea),
+            ], baseadoEmEnem: true,
+            QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
 
     [Fact(DisplayName = "ADR-0125: NOpcoesInvalido, ArredondamentoObrigatorio e CasasArredondamentoObrigatorio acumulam no mesmo lote")]
     public void Criar_NOpcoesInvalidoESemArredondamento_AcumulaAsTresViolacoes()
@@ -207,9 +275,7 @@ public sealed class ConfiguracaoClassificacaoTests
     [Fact(DisplayName = "ADR-0125: ArredondamentoIndevido, CasasArredondamentoIndevido, EliminacaoIndevida e EliminacaoEnemForaDeProcessoEnem acumulam no mesmo lote")]
     public void Criar_ImportadaComArredondamentoEEliminacaoEnemSemBaseadoEmEnem_AcumulaAsQuatroViolacoes()
     {
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", new string('f', 64)).Value!,
-            new ArgsElimZeroEmArea()).Value!;
+        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
             RegraCalculoImportada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);

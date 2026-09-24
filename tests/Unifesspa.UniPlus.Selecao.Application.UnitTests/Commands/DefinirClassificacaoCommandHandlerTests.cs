@@ -213,6 +213,56 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         result.Error!.Code.Should().Be("RegraEliminacao.ArgsIncompativeisComRegra");
     }
 
+    [Theory(DisplayName = "Handle com ELIM-FALTA-EM-DIA-DE-PROVA-ENEM e qualquer arg recusa: a regra não tem parâmetro")]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task Handle_FaltaEmDiaDeProvaEnemComArgs_Recusa(bool comEtapaRef, bool comNotaMinima, bool comMinimo)
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        MockFaltaEmDiaDeProvaEnem(mocks);
+        RegraEliminacaoInput eliminacao = new(
+            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1",
+            comEtapaRef ? Guid.CreateVersion7() : null,
+            comNotaMinima ? 4m : null,
+            comMinimo ? 400m : null);
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, ResolucaoDePesos) with { RegrasEliminacao = [eliminacao] },
+            mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("RegraEliminacao.ArgsIncompativeisComRegra");
+    }
+
+    [Fact(DisplayName = "Handle com ELIM-FALTA-EM-DIA-DE-PROVA-ENEM sem args em processo ENEM grava a regra")]
+    public async Task Handle_FaltaEmDiaDeProvaEnemSemArgs_GravaARegra()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        MockFaltaEmDiaDeProvaEnem(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(ResolucaoDePesos, Arg.Any<CancellationToken>())
+            .Returns(ResolucaoCom(GruposDoAnexoI));
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, ResolucaoDePesos) with
+            {
+                RegrasEliminacao = [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null)],
+            },
+            mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Classificacao!.RegrasEliminacao.Should().ContainSingle()
+            .Which.Args.Should().BeOfType<ArgsElimFaltaEmDiaDeProvaEnem>();
+    }
+
+    private static void MockFaltaEmDiaDeProvaEnem(Mocks mocks) =>
+        mocks.RegraCatalogoReader.ObterAsync(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, TipoRegra.RegraEliminacao));
+
     [Fact(DisplayName = "Handle com regra de cálculo inexistente recusa")]
     public async Task Handle_RegraCalculoNaoEncontrada_Recusa()
     {
@@ -489,6 +539,30 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             ((string?)"resolucaoPesoAreaEnem", "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada"),
             ((string?)"casasArredondamento", "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio"),
         ], "o quadro vazio é consequência da recusa do cadastro, e não sai como violação à parte");
+        processo.Classificacao.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A falta em dia de prova repetida sai no próprio item, junto com a recusa da resolução")]
+    public async Task Handle_FaltaEmDiaDeProvaEnemRepetidaComResolucaoInexistente_AcumulaAsDuas()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        MockFaltaEmDiaDeProvaEnem(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((ResolucaoPesoAreaEnemView?)null);
+        RegraEliminacaoInput falta = new(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null);
+        DefinirClassificacaoCommand command = ComandoEnemLocal(processo.Id, "Res. inexistente") with { RegrasEliminacao = [falta, falta] };
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ((string?)"resolucaoPesoAreaEnem", "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada"),
+            ((string?)"regrasEliminacao[1]", "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida"),
+        ], "a repetição não é consequência da resolução recusada e chega ao operador no item que a repete");
         processo.Classificacao.Should().BeNull();
     }
 

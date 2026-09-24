@@ -15,4 +15,7 @@ public static class RegraEliminacaoCodigo
 
     /// <summary>Nota zero em qualquer área do ENEM elimina (Res. 805 art. 5º; sem args). Só em processo baseado em ENEM.</summary>
     public const string ElimZeroEmArea = "ELIM-ZERO-EM-AREA";
+
+    /// <summary>Falta em pelo menos um dia de prova da edição do ENEM usada no processo elimina; sem participação registrada na edição indicada equivale a falta (sem args). Só em processo baseado em ENEM.</summary>
+    public const string ElimFaltaEmDiaDeProvaEnem = "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM";
 }

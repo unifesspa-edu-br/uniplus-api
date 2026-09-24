@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 ///   <item><description><c>ELIM-NOTA-MINIMA-ETAPA</c>: <see cref="EtapaRef"/> (deve existir no processo, INV-B4) + <see cref="NotaMinima"/>.</description></item>
 ///   <item><description><c>ELIM-CORTE-REDACAO</c>: <see cref="Minimo"/>.</description></item>
 ///   <item><description><c>ELIM-ZERO-EM-AREA</c>: nenhum.</description></item>
+///   <item><description><c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>: nenhum.</description></item>
 /// </list>
 /// </summary>
 public sealed record RegraEliminacaoInput(

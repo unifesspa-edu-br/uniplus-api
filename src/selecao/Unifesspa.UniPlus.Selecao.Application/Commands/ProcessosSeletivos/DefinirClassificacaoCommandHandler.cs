@@ -338,14 +338,19 @@ public static class DefinirClassificacaoCommandHandler
                     "RegraEliminacao.MinimoObrigatorio",
                     $"Minimo é obrigatório (e EtapaRef/NotaMinima não se aplicam) para a regra {RegraEliminacaoCodigo.ElimCorteRedacao}.")),
 
-            RegraEliminacaoCodigo.ElimZeroEmArea => input.EtapaRef is null && input.NotaMinima is null && input.Minimo is null
-                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimZeroEmArea())
-                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
-                    "RegraEliminacao.ArgsIncompativeisComRegra",
-                    $"A regra {RegraEliminacaoCodigo.ElimZeroEmArea} não aceita args (EtapaRef/NotaMinima/Minimo).")),
+            RegraEliminacaoCodigo.ElimZeroEmArea => SemArgs(input, new ArgsElimZeroEmArea()),
+
+            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => SemArgs(input, new ArgsElimFaltaEmDiaDeProvaEnem()),
 
             _ => Result<ArgsRegraEliminacao>.Failure(new DomainError(
                 "RegraEliminacao.RegraTipoInvalido",
                 $"Código de regra de eliminação desconhecido: {input.RegraCodigo}.")),
         };
+
+    private static Result<ArgsRegraEliminacao> SemArgs(RegraEliminacaoInput input, ArgsRegraEliminacao args) =>
+        input.EtapaRef is null && input.NotaMinima is null && input.Minimo is null
+            ? Result<ArgsRegraEliminacao>.Success(args)
+            : Result<ArgsRegraEliminacao>.Failure(new DomainError(
+                "RegraEliminacao.ArgsIncompativeisComRegra",
+                $"A regra {input.RegraCodigo} não aceita args (EtapaRef/NotaMinima/Minimo)."));
 }
