@@ -15,7 +15,6 @@ public static class PesoAreaEnemErrorCodes
     public const string PesoExcedeMaximo = "PesoAreaEnem.PesoExcedeMaximo";
     public const string CorteNegativo = "PesoAreaEnem.CorteNegativo";
     public const string CorteExcedeMaximo = "PesoAreaEnem.CorteExcedeMaximo";
-    public const string CorteForaDaRedacao = "PesoAreaEnem.CorteForaDaRedacao";
     public const string BaseLegalObrigatoria = "PesoAreaEnem.BaseLegalObrigatoria";
     public const string BaseLegalTamanho = "PesoAreaEnem.BaseLegalTamanho";
     public const string BaseLegalCaractereInvalido = "PesoAreaEnem.BaseLegalCaractereInvalido";

@@ -61,8 +61,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"),
             new ArgsElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
         RegraEliminacao corteRedacao = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimCorteRedacao, "b"),
-            new ArgsElimCorteRedacao(400m)).Value!;
+            Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "b"),
+            new ArgsElimCorteEmArea("REDACAO", 400m)).Value!;
         RegraEliminacao zeroEmArea = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "c"),
             new ArgsElimZeroEmArea()).Value!;
@@ -109,8 +109,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         argsNotaMinima.EtapaRef.Should().Be(etapa.Id);
         argsNotaMinima.NotaMinima.Should().Be(3m);
 
-        ArgsElimCorteRedacao argsCorteRedacao = (ArgsElimCorteRedacao)classificacao.RegrasEliminacao
-            .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimCorteRedacao).Args;
+        ArgsElimCorteEmArea argsCorteRedacao = (ArgsElimCorteEmArea)classificacao.RegrasEliminacao
+            .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimCorteEmArea).Args;
         argsCorteRedacao.Minimo.Should().Be(400m);
 
         classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimZeroEmArea)
@@ -198,8 +198,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             RegraEliminacao eliminacao = RegraEliminacao.Criar(
-                Regra(RegraEliminacaoCodigo.ElimCorteRedacao, "d"),
-                new ArgsElimCorteRedacao(350m)).Value!;
+                Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "d"),
+                new ArgsElimCorteEmArea("REDACAO", 350m)).Value!;
             ConfiguracaoClassificacao nova = ConfiguracaoClassificacao.Criar(
                 Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
                 Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, "e"),

@@ -231,6 +231,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>etapas[].tipoEtapa</c> ganha
     /// <c>notaDeOrigemNoEnem</c> — se a nota das etapas do tipo vem do ENEM, congelado junto com a
     /// identidade do tipo. É ele, e não o código do tipo, que diz qual etapa compõe a nota do ENEM.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>ELIM-CORTE-REDACAO</c> dá lugar
+    /// a <c>ELIM-CORTE-EM-AREA</c>, com args <c>{areaCodigo, minimo}</c>: o corte vale para qualquer
+    /// área do ENEM do quadro de pesos por área, e não só para a Redação.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -1023,9 +1026,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["etapaRef"] = notaMinima.EtapaRef,
             ["notaMinima"] = HashCanonicalComputer.SerializeDecimalCanonical(notaMinima.NotaMinima, EscalaPadrao),
         },
-        ArgsElimCorteRedacao corteRedacao => new JsonObject
+        ArgsElimCorteEmArea corteEmArea => new JsonObject
         {
-            ["minimo"] = HashCanonicalComputer.SerializeDecimalCanonical(corteRedacao.Minimo, EscalaPadrao),
+            ["areaCodigo"] = HashCanonicalComputer.NormalizeNfc(corteEmArea.AreaCodigo),
+            ["minimo"] = HashCanonicalComputer.SerializeDecimalCanonical(corteEmArea.Minimo, EscalaPadrao),
         },
         ArgsElimZeroEmArea or ArgsElimFaltaEmDiaDeProvaEnem => [],
         _ => throw new InvalidOperationException($"Variante de {nameof(ArgsRegraEliminacao)} não reconhecida: {args.GetType()}."),

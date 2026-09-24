@@ -157,7 +157,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
-            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", etapa.Id, 4m, null)], false, null, PrecondicaoIfMatch.Ausente);
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", etapa.Id, 4m, null, null)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
@@ -181,7 +181,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
-            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", null, null, null)], false, null, PrecondicaoIfMatch.Ausente);
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", null, null, null, null)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
@@ -204,7 +204,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
-            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", null, null, 400m)], false, null, PrecondicaoIfMatch.Ausente);
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", null, null, 400m, null)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
@@ -214,10 +214,11 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     }
 
     [Theory(DisplayName = "Handle com ELIM-FALTA-EM-DIA-DE-PROVA-ENEM e qualquer arg recusa: a regra não tem parâmetro")]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(false, false, true)]
-    public async Task Handle_FaltaEmDiaDeProvaEnemComArgs_Recusa(bool comEtapaRef, bool comNotaMinima, bool comMinimo)
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(false, false, false, true)]
+    public async Task Handle_FaltaEmDiaDeProvaEnemComArgs_Recusa(bool comEtapaRef, bool comNotaMinima, bool comMinimo, bool comArea)
     {
         ProcessoSeletivo processo = NovoProcessoEnem();
         Mocks mocks = NovosMocks(processo, processo.Id);
@@ -227,7 +228,8 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1",
             comEtapaRef ? Guid.CreateVersion7() : null,
             comNotaMinima ? 4m : null,
-            comMinimo ? 400m : null);
+            comMinimo ? 400m : null,
+            comArea ? "REDACAO" : null);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
             ComandoEnemLocal(processo.Id, ResolucaoDePesos) with { RegrasEliminacao = [eliminacao] },
@@ -250,13 +252,87 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
             ComandoEnemLocal(processo.Id, ResolucaoDePesos) with
             {
-                RegrasEliminacao = [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null)],
+                RegrasEliminacao = [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null, null)],
             },
             mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Classificacao!.RegrasEliminacao.Should().ContainSingle()
             .Which.Args.Should().BeOfType<ArgsElimFaltaEmDiaDeProvaEnem>();
+    }
+
+    private static void MockCorteEmArea(Mocks mocks) =>
+        mocks.RegraCatalogoReader.ObterAsync(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, TipoRegra.RegraEliminacao));
+
+    [Fact(DisplayName = "Handle com ELIM-CORTE-EM-AREA grava a área e o mínimo")]
+    public async Task Handle_CorteEmArea_GravaAreaEMinimo()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        MockCorteEmArea(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(ResolucaoDePesos, Arg.Any<CancellationToken>())
+            .Returns(ResolucaoCom(GruposDoAnexoI));
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, ResolucaoDePesos) with
+            {
+                RegrasEliminacao = [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", null, null, 450m, "MATEMATICA")],
+            },
+            mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Classificacao!.RegrasEliminacao.Should().ContainSingle()
+            .Which.Args.Should().Be(new ArgsElimCorteEmArea("MATEMATICA", 450m));
+    }
+
+    [Theory(DisplayName = "Handle com ELIM-CORTE-EM-AREA sem área ou sem mínimo, ou com arg de outra regra, recusa")]
+    [InlineData(null, 400.0, false)]
+    [InlineData("REDACAO", null, false)]
+    [InlineData("REDACAO", 400.0, true)]
+    public async Task Handle_CorteEmAreaIncompleto_Recusa(string? area, double? minimo, bool comEtapaRef)
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        MockCorteEmArea(mocks);
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, ResolucaoDePesos) with
+            {
+                RegrasEliminacao =
+                [
+                    new RegraEliminacaoInput(
+                        RegraEliminacaoCodigo.ElimCorteEmArea, "v1", comEtapaRef ? Guid.CreateVersion7() : null, null, (decimal?)minimo, area),
+                ],
+            },
+            mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("RegraEliminacao.AreaEMinimoObrigatorios");
+    }
+
+    [Fact(DisplayName = "Corte em área fora do quadro da resolução sai no campo da área do item")]
+    public async Task Handle_CorteEmAreaForaDoQuadro_RecusaNaArea()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        MockCorteEmArea(mocks);
+        mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(ResolucaoDePesos, Arg.Any<CancellationToken>())
+            .Returns(ResolucaoCom(GruposDoAnexoI));
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            ComandoEnemLocal(processo.Id, ResolucaoDePesos) with
+            {
+                RegrasEliminacao = [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", null, null, 400m, "FISICA")],
+            },
+            mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ((string?)"regrasEliminacao[0].areaCodigo", "ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro"));
+        processo.Classificacao.Should().BeNull();
     }
 
     private static void MockFaltaEmDiaDeProvaEnem(Mocks mocks) =>
@@ -551,7 +627,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         MockFaltaEmDiaDeProvaEnem(mocks);
         mocks.PesoAreaEnemReader.ObterPorResolucaoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((ResolucaoPesoAreaEnemView?)null);
-        RegraEliminacaoInput falta = new(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null);
+        RegraEliminacaoInput falta = new(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null, null);
         DefinirClassificacaoCommand command = ComandoEnemLocal(processo.Id, "Res. inexistente") with { RegrasEliminacao = [falta, falta] };
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(

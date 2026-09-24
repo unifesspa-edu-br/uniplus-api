@@ -71,7 +71,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
 
     /// <summary>
     /// A classificação usa a estrutura de pontuação por área do ENEM — o
-    /// sinal explícito (Story #850) do qual as eliminações do ENEM (<c>ELIM-CORTE-REDACAO</c>,
+    /// sinal explícito (Story #850) do qual as eliminações do ENEM (<c>ELIM-CORTE-EM-AREA</c>,
     /// <c>ELIM-ZERO-EM-AREA</c> e <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>) dependem. Deixou de
     /// ser calculado a partir de <see cref="ProcessoSeletivo.TipoProcesso"/>: o rótulo do processo não decide
     /// comportamento, só a configuração declarada decide.
@@ -112,9 +112,10 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// os limites de <see cref="NOpcoesAlocacao"/>, que as eliminações que só têm sentido
     /// sobre os dados do ENEM do candidato (<see cref="ArgsRegraEliminacao.ExigeEnem"/>) só
     /// entrem quando <paramref name="baseadoEmEnem"/> é <see langword="true"/>, que a falta em
-    /// dia de prova do ENEM seja declarada no máximo uma vez, cada repetição recusada no
-    /// próprio item (salvo na classificação importada, que já recusa toda eliminação), e o
-    /// quadro de Pesos por Área, que o mesmo sinal também exige ou recusa.
+    /// dia de prova do ENEM seja declarada no máximo uma vez e o corte no máximo uma vez por
+    /// área, cada repetição recusada no próprio item (salvo na classificação importada, que já
+    /// recusa toda eliminação), que a área do corte esteja no quadro de Pesos por Área, e o
+    /// próprio quadro, que o mesmo sinal também exige ou recusa.
     /// Por ser a mesma construção que o decoder do envelope usa, essas recusas valem também
     /// na restauração. A invariante que depende de
     /// OUTRA dimensão do agregado (INV-B4: <c>etapa_ref</c> de eliminação
@@ -234,6 +235,12 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             }
         }
 
+        if (!ehImportada)
+        {
+            bool temQuadro = ExigeQuadroPesoAreaEnem(regraCalculo, baseadoEmEnem) && quadroPesoAreaEnem.Count > 0;
+            erros.AddRange(ValidarCortesEmArea(regrasEliminacao, temQuadro ? quadroPesoAreaEnem : null));
+        }
+
         string? resolucao = string.IsNullOrWhiteSpace(resolucaoPesoAreaEnem) ? null : resolucaoPesoAreaEnem.Trim();
         erros.AddRange(ValidarQuadroPesoAreaEnem(
             ExigeQuadroPesoAreaEnem(regraCalculo, baseadoEmEnem), resolucao, quadroPesoAreaEnem));
@@ -346,6 +353,78 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         }
 
         return erros;
+    }
+
+    /// <summary>
+    /// O corte em área cita a área pelo código do quadro de pesos por área. Com dois mínimos na
+    /// mesma área, o menor não eliminaria ninguém que o maior já não eliminasse: cada repetição
+    /// é recusada no próprio item. Com quadro congelado, a área tem de estar em todo
+    /// grupo dele, que é a lista de áreas do processo; a mesma lista vale para o desempate.
+    /// </summary>
+    /// <param name="quadro">
+    /// <see langword="null"/> quando a classificação não congela quadro (fora da média ponderada
+    /// do ENEM, ou com o quadro já recusado): a área não tem contra o que ser conferida.
+    /// </param>
+    private static List<FieldError> ValidarCortesEmArea(
+        IReadOnlyList<RegraEliminacao> regrasEliminacao,
+        IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro)
+    {
+        List<FieldError> erros = [];
+        HashSet<string>? aceitas = quadro is null ? null : AreasEmTodosOsGrupos(quadro);
+        HashSet<string> comCorte = new(StringComparer.Ordinal);
+        for (int indice = 0; indice < regrasEliminacao.Count; indice++)
+        {
+            if (regrasEliminacao[indice].Args is not ArgsElimCorteEmArea corte)
+            {
+                continue;
+            }
+
+            if (!comCorte.Add(corte.AreaCodigo))
+            {
+                erros.Add(new($"regrasEliminacao[{indice}]", new DomainError(
+                    "ConfiguracaoClassificacao.CorteEmAreaRepetido",
+                    $"A área {corte.AreaCodigo} já tem corte; declare no máximo um corte por área.")));
+                continue;
+            }
+
+            if (aceitas is not null && !aceitas.Contains(corte.AreaCodigo))
+            {
+                erros.Add(new($"regrasEliminacao[{indice}].areaCodigo", new DomainError(
+                    "ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro",
+                    $"A área {corte.AreaCodigo} do corte não está em todos os grupos do quadro de pesos por área da classificação. Áreas aceitas: {ListarAreas(quadro!, aceitas)}.")));
+            }
+        }
+
+        return erros;
+    }
+
+    /// <summary>Área do processo é a que todo grupo do quadro de pesos por área tem.</summary>
+    internal static HashSet<string> AreasEmTodosOsGrupos(IEnumerable<GrupoPesoAreaEnemCongelado> quadro) =>
+        quadro
+            .Select(static g => g.Areas.Select(static a => a.Codigo).ToHashSet(StringComparer.Ordinal))
+            .Aggregate((comum, doGrupo) =>
+            {
+                comum.IntersectWith(doGrupo);
+                return comum;
+            });
+
+    /// <summary>O rótulo sai da primeira ocorrência: o quadro vem de uma resolução só, e cada código tem um rótulo nela.</summary>
+    internal static string ListarAreas(IEnumerable<GrupoPesoAreaEnemCongelado> quadro, HashSet<string> areas)
+    {
+        if (areas.Count == 0)
+        {
+            return "nenhuma";
+        }
+
+        Dictionary<string, string> rotulos = new(StringComparer.Ordinal);
+        foreach (AreaPesoAreaEnemCongelada area in quadro.SelectMany(static g => g.Areas))
+        {
+            rotulos.TryAdd(area.Codigo, area.Rotulo);
+        }
+
+        return string.Join("; ", areas
+            .Order(StringComparer.Ordinal)
+            .Select(codigo => $"{codigo} ({rotulos[codigo]})"));
     }
 
     /// <summary>

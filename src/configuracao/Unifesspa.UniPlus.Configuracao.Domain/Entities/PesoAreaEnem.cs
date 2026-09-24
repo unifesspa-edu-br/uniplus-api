@@ -346,18 +346,6 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
             return;
         }
 
-        // Enquanto a eliminação por corte só conhece a Redação, um corte em outra área
-        // seria valor configurado sem efeito nenhum: a recusa sai quando a regra de
-        // eliminação passar a aceitar a área. É a única recusa do campo nesse caso —
-        // a faixa não importa quando o caminho é deixar a área sem corte.
-        if (area is not null && area.Codigo != CodigoRedacao)
-        {
-            erros.Add(new($"{campo}.corte", new DomainError(
-                PesoAreaEnemErrorCodes.CorteForaDaRedacao,
-                $"Por enquanto só a Redação aceita corte; {area.Rotulo} deve ficar sem corte.")));
-            return;
-        }
-
         string nomeDaArea = area?.Rotulo ?? "esta área";
         if (corte < 0)
         {

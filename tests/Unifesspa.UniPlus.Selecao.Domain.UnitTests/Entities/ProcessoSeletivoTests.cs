@@ -570,8 +570,8 @@ public sealed class ProcessoSeletivoTests
         ProcessoSeletivo sisu = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         RegraEliminacao EliminacaoEnem() => RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
-            new ArgsElimCorteRedacao(400m)).Value!;
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('e', 64)).Value!,
+            new ArgsElimCorteEmArea("REDACAO", 400m)).Value!;
 
         Result resultadoPsiq = psiq.DefinirClassificacao(
             NovaClassificacao([EliminacaoEnem()], baseadoEmEnem: true), PrecondicaoIfMatch.Ausente);

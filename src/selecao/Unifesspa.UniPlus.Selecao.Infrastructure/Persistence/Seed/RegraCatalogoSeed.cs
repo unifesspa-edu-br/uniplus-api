@@ -91,10 +91,12 @@ public static class RegraCatalogoSeed
             """["nota < mínima na etapa → elimina"]""",
             "Edital por processo (nota mínima eliminatória)"),
 
-        new(SeedId(6), "ELIM-CORTE-REDACAO", VersaoV1, TipoRegra.RegraEliminacao,
-            """{"minimo":"numeric"}""",
-            """["redação < mínimo → elimina"]""",
-            "Res. 805/2024 Anexo I (corte de Redação = 400)"),
+        // O ponto de corte do art. 5º vale para cada área do ENEM; o Anexo I só preenche a
+        // Redação por enquanto.
+        new(SeedId(6), RegraEliminacaoCodigo.ElimCorteEmArea, VersaoV1, TipoRegra.RegraEliminacao,
+            """{"area_codigo":"text","minimo":"numeric"}""",
+            """["nota na área < mínimo → elimina","no máximo um corte por área"]""",
+            "Res. 805/2024 art. 5º e Anexo I (ponto de corte por área do ENEM; Redação = 400)"),
 
         new(SeedId(7), "ELIM-ZERO-EM-AREA", VersaoV1, TipoRegra.RegraEliminacao,
             "{}",

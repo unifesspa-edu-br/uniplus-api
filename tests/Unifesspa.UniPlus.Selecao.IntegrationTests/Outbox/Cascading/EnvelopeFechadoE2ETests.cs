@@ -612,7 +612,7 @@ public sealed class EnvelopeFechadoE2ETests
             object[] regrasEliminacao =
             [
                 new { regraCodigo = RegraEliminacaoCodigo.ElimNotaMinimaEtapa, regraVersao = "v1", etapaRef = (Guid?)objetivaId, notaMinima = (decimal?)45.0000m, minimo = (decimal?)null },
-                new { regraCodigo = RegraEliminacaoCodigo.ElimCorteRedacao, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)400.0000m },
+                new { regraCodigo = RegraEliminacaoCodigo.ElimCorteEmArea, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)400.0000m, areaCodigo = "REDACAO" },
                 new { regraCodigo = RegraEliminacaoCodigo.ElimZeroEmArea, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)null },
             ];
 

@@ -1558,6 +1558,55 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida");
     }
 
+    [Fact(DisplayName = "classificacao.regrasEliminacao[] com corte em área fora do quadro é recusado pela mesma regra da gravação")]
+    public void CorteEmArea_ForaDoQuadro_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject corte = Navegar(envelope, "classificacao.regrasEliminacao.0");
+            corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
+                RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
+            corte["args"]!["areaCodigo"] = "FISICA";
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro");
+    }
+
+    [Fact(DisplayName = "classificacao.regrasEliminacao[] com dois cortes na mesma área é recusado pela mesma regra da gravação")]
+    public void CorteEmArea_Repetido_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray regras = Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray();
+            JsonNode corte = regras[0]!;
+            corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
+                RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
+            JsonNode outro = corte.DeepClone();
+            outro["args"]!["minimo"] = "500.0000";
+            regras.Insert(1, outro);
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.CorteEmAreaRepetido");
+    }
+
+    [Fact(DisplayName = "classificacao.regrasEliminacao[].args do corte em área sem a área é recusado")]
+    public void CorteEmArea_SemArea_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject corte = Navegar(envelope, "classificacao.regrasEliminacao.0");
+            corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
+                RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
+            corte["args"]!.AsObject().Remove("areaCodigo");
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("classificacao.regrasEliminacao[0].args");
+    }
+
     [Fact(DisplayName = "etapas[].produtos[].atoCodigo acima do limite da coluna (60) é recusado")]
     public void Etapa_ProdutoAtoCodigoAcimaDoLimite_Recusa()
     {

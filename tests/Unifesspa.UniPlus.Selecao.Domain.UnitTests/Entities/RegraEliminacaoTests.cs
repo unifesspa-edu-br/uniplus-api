@@ -23,13 +23,31 @@ public sealed class RegraEliminacaoTests
         ((ArgsElimNotaMinimaEtapa)resultado.Value!.Args).EtapaRef.Should().Be(etapaId);
     }
 
-    [Fact(DisplayName = "Criar ELIM-CORTE-REDACAO com mínimo válido tem sucesso")]
-    public void Criar_CorteRedacao_Sucesso()
+    [Theory(DisplayName = "Criar ELIM-CORTE-EM-AREA com área e mínimo válidos tem sucesso, em qualquer área")]
+    [InlineData("REDACAO")]
+    [InlineData("MATEMATICA")]
+    public void Criar_CorteEmArea_Sucesso(string area)
     {
         Result<RegraEliminacao> resultado = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimCorteRedacao), new ArgsElimCorteRedacao(400m));
+            Regra(RegraEliminacaoCodigo.ElimCorteEmArea), new ArgsElimCorteEmArea(area, 400m));
 
         resultado.IsSuccess.Should().BeTrue();
+        ((ArgsElimCorteEmArea)resultado.Value!.Args).AreaCodigo.Should().Be(area);
+    }
+
+    [Theory(DisplayName = "Criar ELIM-CORTE-EM-AREA com código de área mal formado falha")]
+    [InlineData("")]
+    [InlineData("redacao")]
+    [InlineData("Redação")]
+    [InlineData("AREA COM ESPACO")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")]
+    public void Criar_CorteEmAreaComAreaMalFormada_Falha(string area)
+    {
+        Result<RegraEliminacao> resultado = RegraEliminacao.Criar(
+            Regra(RegraEliminacaoCodigo.ElimCorteEmArea), new ArgsElimCorteEmArea(area, 400m));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraEliminacao.AreaInvalida");
     }
 
     [Fact(DisplayName = "Criar ELIM-ZERO-EM-AREA (sem args) tem sucesso")]
@@ -66,7 +84,7 @@ public sealed class RegraEliminacaoTests
     public static TheoryData<ArgsRegraEliminacao, bool> ExigenciaDeEnemPorVariante => new()
     {
         { new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m), false },
-        { new ArgsElimCorteRedacao(400m), true },
+        { new ArgsElimCorteEmArea("REDACAO", 400m), true },
         { new ArgsElimZeroEmArea(), true },
         { new ArgsElimFaltaEmDiaDeProvaEnem(), true },
     };
@@ -100,11 +118,11 @@ public sealed class RegraEliminacaoTests
         resultado.Error!.Code.Should().Be("RegraEliminacao.NotaMinimaInvalida");
     }
 
-    [Fact(DisplayName = "Criar ELIM-CORTE-REDACAO com mínimo negativo falha")]
+    [Fact(DisplayName = "Criar ELIM-CORTE-EM-AREA com mínimo negativo falha")]
     public void Criar_MinimoNegativo_Falha()
     {
         Result<RegraEliminacao> resultado = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimCorteRedacao), new ArgsElimCorteRedacao(-1m));
+            Regra(RegraEliminacaoCodigo.ElimCorteEmArea), new ArgsElimCorteEmArea("REDACAO", -1m));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraEliminacao.MinimoInvalido");

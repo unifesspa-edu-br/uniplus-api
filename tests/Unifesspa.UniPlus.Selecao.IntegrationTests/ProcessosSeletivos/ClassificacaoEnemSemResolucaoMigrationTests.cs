@@ -55,7 +55,7 @@ public sealed class ClassificacaoEnemSemResolucaoMigrationTests : IAsyncLifetime
         ProcessoSeletivo enemLocal = Processo("PS ENEM local");
         ConfiguracaoClassificacao classificacaoEnemLocal = Classificacao(
             RegraCalculoCodigo.FormulaMediaPonderada, baseadoEmEnem: true,
-            [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteRedacao, 'e'), new ArgsElimCorteRedacao(400m)).Value!]);
+            [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, 'e'), new ArgsElimZeroEmArea()).Value!]);
         enemLocal.DefinirClassificacao(classificacaoEnemLocal, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         Guid regraEliminacaoId = classificacaoEnemLocal.RegrasEliminacao.Single().Id;
 

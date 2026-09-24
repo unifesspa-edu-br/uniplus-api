@@ -328,7 +328,7 @@ public sealed partial class EnvelopeCodec
                 "regra",
                 path,
                 RegraEliminacaoCodigo.ElimNotaMinimaEtapa,
-                RegraEliminacaoCodigo.ElimCorteRedacao,
+                RegraEliminacaoCodigo.ElimCorteEmArea,
                 RegraEliminacaoCodigo.ElimZeroEmArea,
                 RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem);
             JsonObject args = leitor.Objeto(item, "args", path);
@@ -444,10 +444,11 @@ public sealed partial class EnvelopeCodec
                 decimal notaMinima = leitor.Decimal(args, "notaMinima", EscalaPadrao, path);
                 return leitor.Falhou ? null : new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima);
 
-            case RegraEliminacaoCodigo.ElimCorteRedacao:
-                leitor.ExigirChaves(args, path, "minimo");
+            case RegraEliminacaoCodigo.ElimCorteEmArea:
+                leitor.ExigirChaves(args, path, "areaCodigo", "minimo");
+                string areaCodigo = leitor.TextoNaoVazio(args, "areaCodigo", path, LimitesDoEnvelope.AreaPesoAreaEnemCodigo);
                 decimal minimo = leitor.Decimal(args, "minimo", EscalaPadrao, path);
-                return leitor.Falhou ? null : new ArgsElimCorteRedacao(minimo);
+                return leitor.Falhou ? null : new ArgsElimCorteEmArea(areaCodigo, minimo);
 
             case RegraEliminacaoCodigo.ElimZeroEmArea:
                 leitor.ExigirChaves(args, path);

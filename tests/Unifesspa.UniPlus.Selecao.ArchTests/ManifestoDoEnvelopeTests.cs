@@ -210,7 +210,7 @@ public sealed class ManifestoDoEnvelopeTests
         // esquecida se aplica aqui.
         [typeof(CondicaoDnf)] = (["Fato", "Operador", "Valor"], []),
         [typeof(ArgsElimNotaMinimaEtapa)] = (["EtapaRef", "NotaMinima"], []),
-        [typeof(ArgsElimCorteRedacao)] = (["Minimo"], []),
+        [typeof(ArgsElimCorteEmArea)] = (["AreaCodigo", "Minimo"], []),
         [typeof(ArgsElimZeroEmArea)] = ([], []),
         [typeof(ArgsElimFaltaEmDiaDeProvaEnem)] = ([], []),
 

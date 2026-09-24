@@ -41,7 +41,7 @@ public sealed class RegraEliminacao : EntityBase
         bool argsCompativeis = regra.Codigo switch
         {
             RegraEliminacaoCodigo.ElimNotaMinimaEtapa => args is ArgsElimNotaMinimaEtapa,
-            RegraEliminacaoCodigo.ElimCorteRedacao => args is ArgsElimCorteRedacao,
+            RegraEliminacaoCodigo.ElimCorteEmArea => args is ArgsElimCorteEmArea,
             RegraEliminacaoCodigo.ElimZeroEmArea => args is ArgsElimZeroEmArea,
             RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => args is ArgsElimFaltaEmDiaDeProvaEnem,
             _ => false,
@@ -60,10 +60,20 @@ public sealed class RegraEliminacao : EntityBase
                 "RegraEliminacao.NotaMinimaInvalida", "A nota mínima da eliminação deve ser não negativa."));
         }
 
-        if (args is ArgsElimCorteRedacao { Minimo: < 0 })
+        if (args is ArgsElimCorteEmArea corte)
         {
-            return Result<RegraEliminacao>.Failure(new DomainError(
-                "RegraEliminacao.MinimoInvalido", "O mínimo do corte de redação deve ser não negativo."));
+            if (!CriterioDesempate.CodigoDeAreaValido(corte.AreaCodigo))
+            {
+                return Result<RegraEliminacao>.Failure(new DomainError(
+                    "RegraEliminacao.AreaInvalida",
+                    $"A área do corte é um código de até {GrupoPesoAreaEnemCongelado.AreaCodigoMaxLength} caracteres, com letras maiúsculas sem acento, algarismos e sublinhado."));
+            }
+
+            if (corte.Minimo < 0)
+            {
+                return Result<RegraEliminacao>.Failure(new DomainError(
+                    "RegraEliminacao.MinimoInvalido", "O mínimo do corte em área deve ser não negativo."));
+            }
         }
 
         return Result<RegraEliminacao>.Success(new RegraEliminacao { Regra = regra, Args = args });

@@ -246,12 +246,6 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.peso_area_enem.corte_excede_maximo",
                 "Corte de área excede a nota máxima de uma área do ENEM")),
 
-        new(PesoAreaEnemErrorCodes.CorteForaDaRedacao,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.peso_area_enem.corte_fora_da_redacao",
-                "Só a Redação aceita corte por enquanto")),
-
         new(PesoAreaEnemErrorCodes.BaseLegalObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

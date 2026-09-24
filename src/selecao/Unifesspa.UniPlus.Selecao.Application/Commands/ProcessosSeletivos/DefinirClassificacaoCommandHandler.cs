@@ -326,17 +326,17 @@ public static class DefinirClassificacaoCommandHandler
     private static Result<ArgsRegraEliminacao> MontarArgs(RegraEliminacaoInput input) =>
         input.RegraCodigo switch
         {
-            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => input.EtapaRef is { } etapaRef && input.NotaMinima is { } notaMinima && input.Minimo is null
+            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => input.EtapaRef is { } etapaRef && input.NotaMinima is { } notaMinima && input.Minimo is null && input.AreaCodigo is null
                 ? Result<ArgsRegraEliminacao>.Success(new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima))
                 : Result<ArgsRegraEliminacao>.Failure(new DomainError(
                     "RegraEliminacao.EtapaRefENotaMinimaObrigatorios",
-                    $"EtapaRef e NotaMinima são obrigatórios (e Minimo não se aplica) para a regra {RegraEliminacaoCodigo.ElimNotaMinimaEtapa}.")),
+                    $"EtapaRef e NotaMinima são obrigatórios (e Minimo/AreaCodigo não se aplicam) para a regra {RegraEliminacaoCodigo.ElimNotaMinimaEtapa}.")),
 
-            RegraEliminacaoCodigo.ElimCorteRedacao => input.Minimo is { } minimo && input.EtapaRef is null && input.NotaMinima is null
-                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimCorteRedacao(minimo))
+            RegraEliminacaoCodigo.ElimCorteEmArea => input.AreaCodigo is { } areaCodigo && input.Minimo is { } minimo && input.EtapaRef is null && input.NotaMinima is null
+                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimCorteEmArea(areaCodigo, minimo))
                 : Result<ArgsRegraEliminacao>.Failure(new DomainError(
-                    "RegraEliminacao.MinimoObrigatorio",
-                    $"Minimo é obrigatório (e EtapaRef/NotaMinima não se aplicam) para a regra {RegraEliminacaoCodigo.ElimCorteRedacao}.")),
+                    "RegraEliminacao.AreaEMinimoObrigatorios",
+                    $"AreaCodigo e Minimo são obrigatórios (e EtapaRef/NotaMinima não se aplicam) para a regra {RegraEliminacaoCodigo.ElimCorteEmArea}.")),
 
             RegraEliminacaoCodigo.ElimZeroEmArea => SemArgs(input, new ArgsElimZeroEmArea()),
 
@@ -348,9 +348,9 @@ public static class DefinirClassificacaoCommandHandler
         };
 
     private static Result<ArgsRegraEliminacao> SemArgs(RegraEliminacaoInput input, ArgsRegraEliminacao args) =>
-        input.EtapaRef is null && input.NotaMinima is null && input.Minimo is null
+        input.EtapaRef is null && input.NotaMinima is null && input.Minimo is null && input.AreaCodigo is null
             ? Result<ArgsRegraEliminacao>.Success(args)
             : Result<ArgsRegraEliminacao>.Failure(new DomainError(
                 "RegraEliminacao.ArgsIncompativeisComRegra",
-                $"A regra {input.RegraCodigo} não aceita args (EtapaRef/NotaMinima/Minimo)."));
+                $"A regra {input.RegraCodigo} não aceita args (EtapaRef/NotaMinima/Minimo/AreaCodigo)."));
 }

@@ -12,12 +12,12 @@ using System.Text.Json.Serialization;
 /// </summary>
 /// <remarks>
 /// Forma fechada por design: as variantes espelham as regras de eliminação semeadas em
-/// <c>rol_de_regras</c> — <c>ELIM-NOTA-MINIMA-ETAPA</c>, <c>ELIM-CORTE-REDACAO</c>,
+/// <c>rol_de_regras</c> — <c>ELIM-NOTA-MINIMA-ETAPA</c>, <c>ELIM-CORTE-EM-AREA</c>,
 /// <c>ELIM-ZERO-EM-AREA</c> e <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>.
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]
 [JsonDerivedType(typeof(ArgsElimNotaMinimaEtapa), "notaMinimaEtapa")]
-[JsonDerivedType(typeof(ArgsElimCorteRedacao), "corteRedacao")]
+[JsonDerivedType(typeof(ArgsElimCorteEmArea), "corteEmArea")]
 [JsonDerivedType(typeof(ArgsElimZeroEmArea), "zeroEmArea")]
 [JsonDerivedType(typeof(ArgsElimFaltaEmDiaDeProvaEnem), "faltaEmDiaDeProvaEnem")]
 public abstract record ArgsRegraEliminacao
@@ -37,8 +37,12 @@ public sealed record ArgsElimNotaMinimaEtapa(Guid EtapaRef, decimal NotaMinima) 
     public override bool ExigeEnem() => false;
 }
 
-/// <summary>Elimina quando a nota de redação do ENEM é menor que <see cref="Minimo"/> (ex.: 400 — Res. 805 Anexo I).</summary>
-public sealed record ArgsElimCorteRedacao(decimal Minimo) : ArgsRegraEliminacao
+/// <summary>
+/// Elimina quando a nota do candidato na área do ENEM <see cref="AreaCodigo"/> é menor que
+/// <see cref="Minimo"/> (ex.: Redação 400 — Res. 805 Anexo I). A área é citada pelo código do
+/// quadro de pesos por área.
+/// </summary>
+public sealed record ArgsElimCorteEmArea(string AreaCodigo, decimal Minimo) : ArgsRegraEliminacao
 {
     public override bool ExigeEnem() => true;
 }
