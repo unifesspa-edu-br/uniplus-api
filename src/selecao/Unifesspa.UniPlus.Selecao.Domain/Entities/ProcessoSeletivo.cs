@@ -783,7 +783,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         DomainError? erroSemCalculoLocal = null;
         if (ValidarEtapaDeNotaDoEnem(_etapas, classificacao) is { } erroNotaDoEnem)
         {
-            if (ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, classificacao.BaseadoEmEnem))
+            if (classificacao.CalculaPelosPesosPorAreaDoEnem)
             {
                 erroDasEtapas = erroNotaDoEnem;
             }
@@ -836,24 +836,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Os campos da classificação que impedem o cálculo local do ENEM — e com ele o quadro de
     /// pesos por área e a etapa de nota do ENEM: a declaração de ENEM e a fórmula, cada um que
     /// esteja em desacordo com <see cref="ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem"/>.
+    /// Com os dois de acordo, só pode faltar o quadro, que se corrige pela resolução declarada.
+    /// A combinação é exaustiva, e a lista nunca sai vazia.
     /// </summary>
-    private static string[] CamposSemCalculoLocalDoEnem(ConfiguracaoClassificacao classificacao)
-    {
-        List<string> campos = [];
-        if (!classificacao.BaseadoEmEnem)
+    private static string[] CamposSemCalculoLocalDoEnem(ConfiguracaoClassificacao classificacao) =>
+        (classificacao.BaseadoEmEnem, ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, baseadoEmEnem: true)) switch
         {
-            campos.Add("baseadoEmEnem");
-        }
-
-        if (!ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, baseadoEmEnem: true))
-        {
-            campos.Add("regraCalculoCodigo");
-        }
-
-        // Classificação que admite o cálculo local sempre congela o quadro: se ainda assim ele
-        // falta, o que se corrige é a resolução declarada.
-        return campos.Count > 0 ? [.. campos] : [ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem];
-    }
+            (false, false) => ["baseadoEmEnem", "regraCalculoCodigo"],
+            (false, true) => ["baseadoEmEnem"],
+            (true, false) => ["regraCalculoCodigo"],
+            (true, true) => [ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem],
+        };
 
     /// <summary>
     /// Define (ou substitui) o título e o texto do termo de aceite do formulário de inscrição
@@ -2088,6 +2081,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <see cref="RegraCalculoCodigo.ClassificacaoImportada"/>, a classificação dispensa etapa,
     /// fórmula e precisão locais — nenhum item aqui.
     /// <para>
+    /// <b>Média pelos pesos por área do ENEM.</b> Quando a classificação calcula a média assim,
+    /// entram também a resolução com o quadro congelado e o grupo de área de cada oferta
+    /// (<see cref="ItensDaMediaPelosPesosPorAreaDoEnem"/>). Como o divisor da média, esses
+    /// itens existem só quando a exigência existe.
+    /// </para>
+    /// <para>
     /// Fonte que <see cref="PendenciaDeConformidade"/> agrega no <c>DomainError</c> genérico
     /// (Story #575, achado de revisão de plano): a cascata de remanejamento tem erro NOMEADO
     /// próprio (<see cref="PendenciaDaCascata"/>) e não pode entrar nesta lista, senão o
@@ -2132,7 +2131,78 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             itens.Add(new ItemConformidade("classificacao_divisor_media_invalido", DimensaoConformidade.Classificacao, "Divisor da média (fórmula local)", CalcularDivisorMedia() > 0));
         }
 
+        if (Classificacao is { CalculaPelosPesosPorAreaDoEnem: true } classificacaoEnem)
+        {
+            itens.AddRange(ItensDaMediaPelosPesosPorAreaDoEnem(classificacaoEnem));
+        }
+
         return itens;
+    }
+
+    /// <summary>
+    /// A resolução de Pesos por Área, o quadro congelado dela e o grupo de área de cada oferta,
+    /// que escolhe a linha de pesos da média.
+    /// </summary>
+    private List<ItemConformidade> ItensDaMediaPelosPesosPorAreaDoEnem(ConfiguracaoClassificacao classificacao) =>
+    [
+        new ItemConformidade(
+            "classificacao_resolucao_peso_area_enem_ausente",
+            DimensaoConformidade.Classificacao,
+            "Resolução de Pesos por Área com quadro congelado (classificação baseada em ENEM com cálculo local)",
+            classificacao.ResolucaoComQuadroDeclarada),
+        ItemDasOfertas(
+            "distribuicao_vagas_oferta_sem_grupo_area_enem",
+            DimensaoConformidade.DistribuicaoVagas,
+            "Grupo de área do ENEM congelado em toda oferta",
+            [.. _distribuicaoVagas.Where(static oferta => oferta.GrupoAreaEnem is null)],
+            static oferta => $"{oferta.OfertaCursoOrigemId}"),
+        ItemDasOfertas(
+            "classificacao_grupo_area_enem_da_oferta_fora_do_quadro",
+            DimensaoConformidade.Classificacao,
+            "Grupo de área do ENEM de cada oferta presente no quadro de pesos por área",
+            OfertasComGrupoAreaEnemForaDoQuadro(classificacao),
+            static oferta => $"{oferta.OfertaCursoOrigemId} (grupo {DescreverGrupoAreaEnem(oferta.GrupoAreaEnem!)})"),
+    ];
+
+    /// <summary>
+    /// Item que identifica as ofertas pendentes, em ordem estável: sem elas, quem publica não
+    /// sabe qual corrigir. O código do item continua sendo a identidade; a lista é só redação.
+    /// </summary>
+    /// <remarks>
+    /// As ofertas ficam entre parênteses, separadas por ponto e vírgula e sem ponto final: o
+    /// agregador de <see cref="PendenciaDeConformidade"/> separa os itens por vírgula e pontua o
+    /// fim.
+    /// </remarks>
+    private static ItemConformidade ItemDasOfertas(
+        string codigo,
+        string dimensao,
+        string mensagem,
+        List<ConfiguracaoDistribuicaoVagas> pendentes,
+        Func<ConfiguracaoDistribuicaoVagas, string> descrever) =>
+        new(
+            codigo,
+            dimensao,
+            pendentes.Count == 0
+                ? mensagem
+                : $"{mensagem} (ofertas: {string.Join("; ", pendentes.OrderBy(static oferta => oferta.OfertaCursoOrigemId).Select(descrever))})",
+            pendentes.Count == 0);
+
+    private static string DescreverGrupoAreaEnem(GrupoAreaEnemSnapshot grupo) =>
+        $"{CaracteresInvisiveis.ParaEco(grupo.Codigo, TextoCongelado.TamanhoMaximoEcoado)} — {CaracteresInvisiveis.ParaEco(grupo.Rotulo, TextoCongelado.TamanhoMaximoEcoado)}";
+
+    /// <summary>
+    /// Vazio quando não há quadro: a falta dele já é o item da resolução, e dois vermelhos pela
+    /// mesma causa fariam o operador procurar dois problemas.
+    /// </summary>
+    private List<ConfiguracaoDistribuicaoVagas> OfertasComGrupoAreaEnemForaDoQuadro(ConfiguracaoClassificacao classificacao)
+    {
+        if (!classificacao.TemGrupoNoQuadro)
+        {
+            return [];
+        }
+
+        HashSet<string> gruposDoQuadro = [.. classificacao.QuadroPesoAreaEnem.Select(static grupo => grupo.GrupoAreaEnem.Codigo)];
+        return [.. _distribuicaoVagas.Where(oferta => oferta.GrupoAreaEnem is { } grupo && !gruposDoQuadro.Contains(grupo.Codigo))];
     }
 
     /// <summary>
@@ -2173,6 +2243,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public IReadOnlyList<ItemConformidade> AvaliarConformidade(ContextoDeContagemDePrazos contexto)
     {
         ArgumentNullException.ThrowIfNull(contexto);
+
+        List<ViolacaoDoDesempatePorArea> desempate = ViolacoesDoDesempatePorAreaDoEnem();
 
         return
         [
@@ -2227,12 +2299,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
         new ItemConformidade("criterios_desempate_em_excesso", DimensaoConformidade.Classificacao, $"Critérios de desempate: no máximo {CriteriosDesempateMaximo}", ValidarQuantidadeDeCriteriosDesempate(_criteriosDesempate.Count).Count == 0),
-        new ItemConformidade("desempate_area_enem_areas_mal_formadas", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada critério tem ao menos uma área, sem exceder o teto, com códigos bem formados e sem repetição", DesempatePorAreaDoEnemSem(DesempatePorAreaEnemErrorCodes.AreasObrigatorias, DesempatePorAreaEnemErrorCodes.AreasEmExcesso, DesempatePorAreaEnemErrorCodes.AreaInvalida, DesempatePorAreaEnemErrorCodes.AreaRepetida)),
-        new ItemConformidade("desempate_area_enem_citada_por_dois_criterios", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada área é citada por um critério só", DesempatePorAreaDoEnemSem(DesempatePorAreaEnemErrorCodes.AreaCitadaPorOutroCriterio)),
-        new ItemConformidade("desempate_area_enem_sem_quadro", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: a classificação é baseada em ENEM, calculada pela média ponderada, com quadro de pesos por área", DesempatePorAreaDoEnemSem(DesempatePorAreaEnemErrorCodes.SemQuadro)),
-        new ItemConformidade("desempate_area_enem_fora_do_quadro", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: as áreas citadas estão em todos os grupos do quadro de pesos por área", DesempatePorAreaDoEnemSem(DesempatePorAreaEnemErrorCodes.ForaDoQuadro)),
+        new ItemConformidade("desempate_area_enem_areas_mal_formadas", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada critério tem ao menos uma área, sem exceder o teto, com códigos bem formados e sem repetição", Sem(desempate, DesempatePorAreaEnemErrorCodes.AreasObrigatorias, DesempatePorAreaEnemErrorCodes.AreasEmExcesso, DesempatePorAreaEnemErrorCodes.AreaInvalida, DesempatePorAreaEnemErrorCodes.AreaRepetida)),
+        new ItemConformidade("desempate_area_enem_citada_por_dois_criterios", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada área é citada por um critério só", Sem(desempate, DesempatePorAreaEnemErrorCodes.AreaCitadaPorOutroCriterio)),
+        .. ItemDoDesempateSemQuadro(desempate),
+        new ItemConformidade("desempate_area_enem_fora_do_quadro", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: as áreas citadas estão em todos os grupos do quadro de pesos por área", Sem(desempate, DesempatePorAreaEnemErrorCodes.ForaDoQuadro)),
         ];
     }
+
+    /// <summary>
+    /// Omitido quando a classificação calcula pelos pesos por área sem grupo no quadro: a falta
+    /// do quadro já é o item da resolução, e aqui sairia verde com uma descrição que o estado
+    /// desmente.
+    /// </summary>
+    private ItemConformidade[] ItemDoDesempateSemQuadro(List<ViolacaoDoDesempatePorArea> desempate) =>
+        Classificacao is { CalculaPelosPesosPorAreaDoEnem: true, TemGrupoNoQuadro: false }
+            ? []
+            : [new ItemConformidade("desempate_area_enem_sem_quadro", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: a classificação é baseada em ENEM, calculada pela média ponderada, com quadro de pesos por área", Sem(desempate, DesempatePorAreaEnemErrorCodes.SemQuadro))];
+
+    /// <summary>Sem violação dos códigos dados — os itens do checklist separam o que corrigir.</summary>
+    private static bool Sem(List<ViolacaoDoDesempatePorArea> violacoes, params string[] codigosDoErro) =>
+        !violacoes.Any(v => codigosDoErro.Contains(v.Erro.Code));
 
     /// <summary>
     /// Processo que cobra taxa reconhece ao menos um fundamento de isenção (issue #1310).
@@ -4241,7 +4327,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // existir no processo: recusar antes pela duplicidade ou pela banca levaria o operador
         // a corrigir uma etapa que, sob esta classificação, ele teria de remover de todo modo.
         bool classificacaoAdmiteNotaDoEnem = classificacao is null
-            || ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, classificacao.BaseadoEmEnem);
+            || classificacao.CalculaPelosPesosPorAreaDoEnem;
         if (!classificacaoAdmiteNotaDoEnem)
         {
             return new DomainError(
@@ -4299,7 +4385,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return violacoes;
         }
 
-        bool temQuadro = TemQuadroPesoAreaEnem(classificacao);
+        bool temQuadro = classificacao.TemQuadroPesoAreaEnem;
         HashSet<string> aceitas = temQuadro ? AreasAceitasNoDesempate(classificacao) : [];
 
         for (int indice = 0; indice < criterios.Count; indice++)
@@ -4386,10 +4472,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return violacoes;
     }
 
-    private static bool TemQuadroPesoAreaEnem(ConfiguracaoClassificacao classificacao) =>
-        ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(classificacao.RegraCalculo, classificacao.BaseadoEmEnem)
-        && classificacao.QuadroPesoAreaEnem.Count > 0;
-
     /// <summary>Área aceita é a que todo grupo do quadro tem.</summary>
     private static HashSet<string> AreasAceitasNoDesempate(ConfiguracaoClassificacao classificacao) =>
         classificacao.QuadroPesoAreaEnem
@@ -4427,7 +4509,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         AnexarAreasAceitas(erros, Classificacao);
 
     private static DomainError ComAreasAceitas(DomainError erro, ConfiguracaoClassificacao? classificacao) =>
-        classificacao is not null && TemQuadroPesoAreaEnem(classificacao)
+        classificacao is not null && classificacao.TemQuadroPesoAreaEnem
             ? erro with { Message = $"{erro.Message} Áreas aceitas: {ListarAreasAceitas(classificacao, AreasAceitasNoDesempate(classificacao))}." }
             : erro;
 
@@ -4457,10 +4539,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// gravação feita fora do agregado ou uma rota nova que esqueça a conferência. Sem ele o
     /// processo publicaria, e a restauração daquela versão recusaria depois pela mesma regra.
     /// </summary>
-    private DomainError? PendenciaDosCriteriosDesempate() =>
-        ValidarQuantidadeDeCriteriosDesempate(_criteriosDesempate.Count) is [var excesso, ..]
-            ? excesso.Error
-            : PrimeiraViolacaoDoDesempatePorArea(EmOrdem(_criteriosDesempate), Classificacao);
+    private DomainError? PendenciaDosCriteriosDesempate()
+    {
+        if (ValidarQuantidadeDeCriteriosDesempate(_criteriosDesempate.Count) is [var excesso, ..])
+        {
+            return excesso.Error;
+        }
+
+        // A lista vem na precedência de sempre: forma e repetição das áreas antes do quadro. A
+        // lista de áreas aceitas acompanha só a recusa contra o quadro.
+        return ViolacoesDoDesempatePorAreaDoEnem() is [var primeira, ..]
+            ? primeira.Erro.Code == DesempatePorAreaEnemErrorCodes.ForaDoQuadro ? ComAreasAceitas(primeira.Erro, Classificacao) : primeira.Erro
+            : null;
+    }
 
     /// <summary>
     /// A primeira violação das regras do desempate por área do ENEM, para quem recusa com um
@@ -4486,18 +4577,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             : null;
     }
 
+    /// <summary>
+    /// As violações do desempate por área que o checklist e o gate de publicação projetam, na
+    /// precedência do gate. Sob a média pelos pesos por área, a recusa por falta de quadro só
+    /// surge sem quadro, que é pendência da resolução
+    /// (<see cref="ItensDaMediaPelosPesosPorAreaDoEnem"/>): repeti-la aqui daria duas pendências
+    /// pela mesma causa, uma delas longe de onde se corrige. A gravação do desempate e a
+    /// restauração recusam pela regra inteira.
+    /// </summary>
     private List<ViolacaoDoDesempatePorArea> ViolacoesDoDesempatePorAreaDoEnem()
     {
         List<CriterioDesempateInformado> criterios = EmOrdem(_criteriosDesempate);
-        return [.. OrdensDeAreasMalFormadas(criterios), .. AreasCitadasPorOutroCriterio(criterios), .. ValidarDesempatePorAreaDoEnem(criterios, Classificacao)];
+        IEnumerable<ViolacaoDoDesempatePorArea> contraOQuadro = ValidarDesempatePorAreaDoEnem(criterios, Classificacao);
+        if (Classificacao is { CalculaPelosPesosPorAreaDoEnem: true })
+        {
+            contraOQuadro = contraOQuadro.Where(static violacao => violacao.Erro.Code != DesempatePorAreaEnemErrorCodes.SemQuadro);
+        }
+
+        return [.. OrdensDeAreasMalFormadas(criterios), .. AreasCitadasPorOutroCriterio(criterios), .. contraOQuadro];
     }
 
     private static List<CriterioDesempateInformado> EmOrdem(IEnumerable<CriterioDesempate> criterios) =>
         [.. criterios.OrderBy(static c => c.Ordem).Select(CriterioDesempateInformado.De)];
-
-    /// <summary>Sem erro dos códigos dados — os itens do checklist separam o que corrigir.</summary>
-    private bool DesempatePorAreaDoEnemSem(params string[] codigosDoErro) =>
-        !ViolacoesDoDesempatePorAreaDoEnem().Any(v => codigosDoErro.Contains(v.Erro.Code));
 
     private static DomainError? ValidarGrafo(GrafoConfiguracao grafo)
     {

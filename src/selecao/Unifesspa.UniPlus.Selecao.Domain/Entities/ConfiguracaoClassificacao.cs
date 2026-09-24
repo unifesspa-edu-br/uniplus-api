@@ -87,8 +87,6 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// <summary>Campo das recusas que dizem respeito à resolução de Pesos por Área e ao quadro congelado dela.</summary>
     public const string CampoResolucaoPesoAreaEnem = "resolucaoPesoAreaEnem";
 
-    private const int TamanhoMaximoDoRotuloEcoado = 40;
-
     private const string ErroResolucaoPesoAreaEnemInvalida = "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida";
     private const string ErroQuadroPesoAreaEnemVazio = "ConfiguracaoClassificacao.QuadroPesoAreaEnemVazio";
 
@@ -306,6 +304,22 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         return baseadoEmEnem && regraCalculo.Codigo == RegraCalculoCodigo.FormulaMediaPonderada;
     }
 
+    /// <summary><see cref="ExigeQuadroPesoAreaEnem"/> aplicada a esta classificação.</summary>
+    internal bool CalculaPelosPesosPorAreaDoEnem => ExigeQuadroPesoAreaEnem(RegraCalculo, BaseadoEmEnem);
+
+    /// <summary>O quadro congelado tem ao menos um grupo de área.</summary>
+    internal bool TemGrupoNoQuadro => _quadroPesoAreaEnem.Count > 0;
+
+    /// <summary>A classificação calcula pelos pesos por área e congelou o quadro deles.</summary>
+    internal bool TemQuadroPesoAreaEnem => CalculaPelosPesosPorAreaDoEnem && TemGrupoNoQuadro;
+
+    /// <summary>
+    /// Resolução declarada, não em branco, e quadro congelado com ao menos um grupo. A fábrica
+    /// recusa a falta deles, mas o estado é materializável: o EF hidrata a linha sem passar por
+    /// ela.
+    /// </summary>
+    internal bool ResolucaoComQuadroDeclarada => !string.IsNullOrWhiteSpace(ResolucaoPesoAreaEnem) && TemGrupoNoQuadro;
+
     /// <summary>
     /// Forma da resolução de Pesos por Área informada: cabe na coluna em NFC, não traz caractere
     /// invisível, o nulo inclusive, e pode ser normalizada (<see cref="TextoNormalizavel.TentarNfc"/>). Não depende do catálogo de regras nem do cadastro, e existe separada para o handler
@@ -395,7 +409,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         {
             erros.Add(new(CampoResolucaoPesoAreaEnem, new DomainError(
                 "ConfiguracaoClassificacao.QuadroPesoAreaEnemGrupoRepetido",
-                $"O quadro de pesos por área repete o grupo {CaracteresInvisiveis.ParaEco(repetido.First().GrupoAreaEnem.Rotulo, TamanhoMaximoDoRotuloEcoado)}.")));
+                $"O quadro de pesos por área repete o grupo {CaracteresInvisiveis.ParaEco(repetido.First().GrupoAreaEnem.Rotulo, TextoCongelado.TamanhoMaximoEcoado)}.")));
         }
 
         return erros;

@@ -302,7 +302,7 @@ internal static class CorpusEnvelope
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
             ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional()], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional(("HUMANISTICA_I", "Humanística I"))], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirBonusRegional(ConfiguracaoBonusRegional.Criar(
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
@@ -719,7 +719,11 @@ internal static class CorpusEnvelope
     /// variantes de remanejamento que a federal não usa (<c>DESTINO_UNICO</c> e
     /// <c>CRUZADO</c>, com par e fallback) e a composição <c>RETIRA_DE</c>.
     /// </summary>
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoInstitucional() =>
+    /// <param name="grupoAreaEnem">
+    /// O processo rico classifica pelo ENEM com cálculo local e exige grupo em toda oferta; os
+    /// grafos mínimos não, e mantêm a oferta sem grupo.
+    /// </param>
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoInstitucional((string? Codigo, string? Rotulo)? grupoAreaEnem = null) =>
         ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: OfertaDireito,
             voBase: 40,
@@ -748,7 +752,8 @@ internal static class CorpusEnvelope
                     NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
                     ["autodeclaracao"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
-            ]).Value!;
+            ],
+            grupoAreaEnem: grupoAreaEnem).Value!;
 
     /// <summary>
     /// O período espelha a janela da fase que coleta inscrição (<c>INSCRICAO</c>), porque é dela

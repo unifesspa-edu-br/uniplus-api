@@ -279,6 +279,9 @@ public sealed class EnvelopeFechadoE2ETests
                 "taxa_inscricao_sem_fundamento_de_isencao",
                 "exigencias_base_legal_nao_resolvida",
                 "classificacao_divisor_media_invalido",
+                "classificacao_resolucao_peso_area_enem_ausente",
+                "distribuicao_vagas_oferta_sem_grupo_area_enem",
+                "classificacao_grupo_area_enem_da_oferta_fora_do_quadro",
 
                 // ── Gates que a raiz aplica antes do agregador genérico ──
                 "localidade_nao_declarada",
@@ -929,7 +932,7 @@ public sealed class EnvelopeFechadoE2ETests
         {
             ConfiguracaoDbContext config = scopeConfig.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
 
-            Curso curso = Curso.Criar($"MED{sufixo}", "Medicina", "Bacharelado", "Graduação", null).Value!;
+            Curso curso = Curso.Criar($"MED{sufixo}", "Medicina", "Bacharelado", "Graduação", "SAUDE_E_BIOLOGICAS").Value!;
             LocalOferta local = LocalOferta.Criar(
                 TipoLocalOferta.CampusSede,
                 campusResponsavelId: null,

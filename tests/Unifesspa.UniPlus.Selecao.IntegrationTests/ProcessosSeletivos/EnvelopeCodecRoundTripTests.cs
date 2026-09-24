@@ -1315,7 +1315,8 @@ public sealed class EnvelopeCodecRoundTripTests
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
                     ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
                     null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-            ]).Value!;
+            ],
+            grupoAreaEnem: ("TECNOLOGICA", "Tecnológica")).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Variantes de <see cref="ProcessoSeletivoPublicavelSeeder"/> — cada método isola UM defeito
@@ -172,7 +173,38 @@ internal static class ProcessoSeletivoPendenciasSeeder
 
     private delegate FaseCronograma FaseCronogramaBuilder(bool coletaInscricao);
 
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaPadrao()
+    /// <summary>
+    /// Igual à base, com classificação baseada em ENEM que calcula a média pelos pesos por área
+    /// e uma oferta com ou sem grupo de área. Com grupo, o processo é conforme e publica; sem
+    /// ele, fica vermelho só "Grupo de área do ENEM congelado em toda oferta", e
+    /// <c>Publicar</c> recusa com <c>ProcessoSeletivo.ConformidadeInsuficiente</c>.
+    /// </summary>
+    public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearEnemComCalculoLocalAsync(
+        SelecaoDbContext db, string nome, bool ofertaComGrupo)
+    {
+        ProcessoSeletivo processo = ProcessoBaseConforme(
+            nome, out FaseCronogramaBuilder faseBuilder,
+            distribuicao: [DistribuicaoAmplaPadrao(ofertaComGrupo ? ("TECNOLOGICA", "Tecnológica") : null)]);
+
+        Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(
+            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo).Value!,
+            regraArredondamento: ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo).Value!,
+            casasArredondamento: 2,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
+            nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: true,
+            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo());
+        classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
+        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Curinga);
+        classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
+
+        Result cronogramaResult = processo.DefinirCronogramaFases(
+            [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
+        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+
+        return await PersistirComDocumentoConfirmadoAsync(db, processo);
+    }
+
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaPadrao((string? Codigo, string? Rotulo)? grupoAreaEnem = null)
     {
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: "Ampla concorrência",
@@ -184,7 +216,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         return ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(), voBase: 40, pr: 1m,
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            regraAjuste: null, referenciaDemografica: null, modalidades: [modalidade]).Value!;
+            regraAjuste: null, referenciaDemografica: null, modalidades: [modalidade], grupoAreaEnem: grupoAreaEnem).Value!;
     }
 
     private static ProcessoSeletivo ProcessoBaseConforme(
