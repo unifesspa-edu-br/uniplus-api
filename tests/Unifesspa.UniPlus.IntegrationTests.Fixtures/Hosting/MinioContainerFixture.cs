@@ -12,11 +12,12 @@ using DotNet.Testcontainers.Containers;
 /// <remarks>
 /// A imagem é fixada na mesma RELEASE usada pelo <c>docker-compose.yml</c> e pelo bootstrap
 /// standalone — alinhar a tag aqui com produção evita variações de schema/comportamento entre
-/// testes e runtime.
+/// testes e runtime. A imagem vem do espelho no registry da organização, fixada por digest,
+/// porque os registries do MinIO deixaram de servi-la publicamente.
 /// </remarks>
 public sealed class MinioContainerFixture : IAsyncLifetime
 {
-    public const string Image = "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z";
+    public const string Image = "ghcr.io/unifesspa-edu-br/minio:RELEASE.2025-09-07T16-13-09Z@sha256:52dfd5c0bbd38d3219f2058c7af216d9f9a27a994b7b5baad09bbd38866015ff";
     public const string AccessKey = "minioadmin";
     public const string SecretKey = "minioadmin";
     public const string CollectionName = "Minio";

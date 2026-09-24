@@ -59,7 +59,7 @@ services:
       start_period: 30s
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: ghcr.io/unifesspa-edu-br/minio:RELEASE.2025-09-07T16-13-09Z@sha256:52dfd5c0bbd38d3219f2058c7af216d9f9a27a994b7b5baad09bbd38866015ff
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
