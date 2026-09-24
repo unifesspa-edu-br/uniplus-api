@@ -128,6 +128,14 @@ public static class RegraCatalogoSeed
             """["prioriza quem satisfaz predicado sobre FatoCandidato; fato deve estar no vocabulário e ser coletado"]""",
             "Edital (critério adicional via fato do candidato — ex.: professor rural)"),
 
+        // Cita cada área pelo código do quadro de pesos por área congelado na classificação;
+        // o rótulo vem da mesma cópia, e o critério não guarda nenhum. A lista é ordenada: a
+        // posição de cada código é a prioridade dele no desempate, como dizem as invariantes.
+        new(SeedId(28), CriterioDesempateCodigo.MaiorNotaAreaEnem, VersaoV1, TipoRegra.CriterioDesempate,
+            """{"areas":"text[]"}""",
+            """["ordena por maior nota na primeira área da lista; o empate que resta passa à área seguinte","cada área é citada uma única vez, pelo código, e existe em todos os grupos do quadro de pesos por área congelado na classificação","exige classificação baseada em ENEM, calculada pela média ponderada"]""",
+            "Edital (ordem de desempate por nota de área do ENEM)"),
+
         // regra_ordem_alocacao — 1ª/2ª opção → remanejamento → lista de espera
         new(SeedId(13), "ALOCACAO-OPCOES-RN04", VersaoV1, TipoRegra.RegraOrdemAlocacao,
             """{"n_opcoes":"integer"}""",

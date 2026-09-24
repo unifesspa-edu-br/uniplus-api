@@ -78,8 +78,8 @@ public static class DefinirClassificacaoCommandHandler
 
         // Acumula (ADR-0125) o número de opções de alocação — a única checagem de
         // ConfiguracaoClassificacao.Criar que não depende de a regra de cálculo já ter sido
-        // resolvida no catálogo. Mesmo padrão de DefinirCriteriosDesempateCommandHandler
-        // (PR #1216): roda antes de qualquer I/O, ANTES de resolver o rol_de_regras.
+        // resolvida no catálogo — e recusa antes de consultar o rol_de_regras: a forma errada
+        // não depende do catálogo e não precisa esperar por ele.
         List<FieldError> formaErros = ConfiguracaoClassificacao.ValidarNOpcoesAlocacao(command.NOpcoesAlocacao);
         if (formaErros.Count > 0)
         {
@@ -193,7 +193,7 @@ public static class DefinirClassificacaoCommandHandler
         Result result = processo.DefinirClassificacao(configuracaoResult.Value!, command.Precondicao);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(result.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
         }
 
         // Agregado tracked: persistência por change detection (ValueGeneratedNever

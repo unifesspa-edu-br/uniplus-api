@@ -117,7 +117,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         // (b) As filhas da sessão editorial saíram — sem órfãs.
         reposto.Etapas.Should().HaveCount(3);
         reposto.DistribuicaoVagas.Should().HaveCount(2);
-        reposto.CriteriosDesempate.Should().HaveCount(5);
+        reposto.CriteriosDesempate.Should().HaveCount(6);
         reposto.Classificacao.RegrasEliminacao.Should().HaveCount(4);
         reposto.OfertaAtendimento.Condicoes.Should().HaveCount(2);
         reposto.OfertaAtendimento.TiposDeficiencia.Should().HaveCount(2);

@@ -317,6 +317,11 @@ public sealed class EnvelopeFechadoE2ETests
                 "fato_coletavel_sem_valores_ofertados",
                 "derivacao_dominio_de_contribuicao_invalido",
                 "grafo_dependencia_com_ciclo",
+                "criterios_desempate_em_excesso",
+                "desempate_area_enem_areas_mal_formadas",
+                "desempate_area_enem_citada_por_dois_criterios",
+                "desempate_area_enem_sem_quadro",
+                "desempate_area_enem_fora_do_quadro",
             ],
             "o conjunto exato de itens que este corpus produz — remover um item do checklist, ou acrescentar um item indevido marcado ok, muda este conjunto");
 

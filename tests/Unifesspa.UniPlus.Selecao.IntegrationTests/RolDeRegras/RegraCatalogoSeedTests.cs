@@ -152,8 +152,33 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         inexistente.Should().BeNull();
 
         IReadOnlyList<RegraCatalogo> desempates = await reader.ListarPorTipoAsync(TipoRegra.CriterioDesempate, CancellationToken.None);
-        desempates.Should().HaveCount(4);
+        desempates.Should().HaveCount(5);
         desempates.Should().OnlyContain(r => r.Tipo == TipoRegra.CriterioDesempate);
+        desempates.Should().Contain(r => r.Codigo == CriterioDesempateCodigo.MaiorNotaAreaEnem && r.Versao == "v1");
+    }
+
+    [Theory(DisplayName = "Código ou versão com o caractere nulo não é encontrado, sem erro do banco")]
+    [InlineData("FORMULA-MEDIA-PONDERADA\0", "v1")]
+    [InlineData("FORMULA-MEDIA-PONDERADA", "v\01")]
+    public async Task Reader_ObterAsync_CaractereNulo_NaoEncontrado(string codigo, string versao)
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        RegraCatalogo? regra = await reader.ObterAsync(codigo, versao, CancellationToken.None);
+
+        regra.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Versão nula não é encontrada, sem exceção")]
+    public async Task Reader_ObterAsync_VersaoNula_NaoEncontrado()
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        RegraCatalogo? regra = await reader.ObterAsync("FORMULA-MEDIA-PONDERADA", null!, CancellationToken.None);
+
+        regra.Should().BeNull();
     }
 
     [Fact(DisplayName = "CA-07 — o reader resolve a regra nova e não resolve mais a antiga")]

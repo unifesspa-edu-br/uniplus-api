@@ -36,6 +36,14 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
         string versao,
         CancellationToken cancellationToken = default)
     {
+        // Nenhuma regra tem código ou versão nulos, nem com o caractere nulo, que não cabe em
+        // coluna de texto do Postgres e faria o parâmetro ser recusado com erro: a consulta
+        // nem sai. Há chamador que repassa a versão do payload sem exigi-la.
+        if (codigo?.Contains('\0', StringComparison.Ordinal) != false || versao?.Contains('\0', StringComparison.Ordinal) != false)
+        {
+            return null;
+        }
+
         return await _dbContext.RolDeRegras
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Codigo == codigo && r.Versao == versao, cancellationToken)

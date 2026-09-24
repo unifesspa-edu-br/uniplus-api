@@ -117,6 +117,87 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         processo.Etapas.Should().ContainSingle().Which.DeclaraNotaDoEnem.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Restaurar desempate por área do ENEM sob classificação sem quadro de pesos é recusado, como na gravação")]
+    public void Restaurar_DesempatePorAreaSemQuadro_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        Estado antes = Estado.De(processo);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(criterios: [DesempatePorArea("REDACAO")]));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemSemQuadro");
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
+    [Fact(DisplayName = "Restaurar desempate por área que cita área fora do quadro restaurado é recusado, como na gravação")]
+    public void Restaurar_DesempatePorAreaForaDoQuadro_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(criterios: [DesempatePorArea("REDACAO", "FISICA")], classificacao: ClassificacaoEnemMediaPonderada()));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemForaDoQuadro");
+    }
+
+    [Fact(DisplayName = "Restaurar desempate por área com áreas do quadro restaurado é aceito")]
+    public void Restaurar_DesempatePorAreaDoQuadro_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(criterios: [DesempatePorArea("REDACAO", "MATEMATICA")], classificacao: ClassificacaoEnemMediaPonderada()));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.CriteriosDesempate.Should().ContainSingle()
+            .Which.Args.Should().BeOfType<ArgsDesempateMaiorNotaAreaEnem>()
+            .Which.Areas.Should().Equal("REDACAO", "MATEMATICA");
+    }
+
+    [Fact(DisplayName = "Restaurar dois critérios de desempate que citam a mesma área é recusado, como na gravação")]
+    public void Restaurar_AreaCitadaPorDoisCriterios_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        Estado antes = Estado.De(processo);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(
+                criterios: [DesempatePorArea("REDACAO"), DesempatePorArea(2, "MATEMATICA", "REDACAO")],
+                classificacao: ClassificacaoEnemMediaPonderada()));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio");
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
+    [Fact(DisplayName = "Restaurar mais critérios de desempate que o teto é recusado, como na gravação")]
+    public void Restaurar_CriteriosAcimaDoTeto_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        Estado antes = Estado.De(processo);
+        CriterioDesempate[] criterios = [.. Enumerable.Range(1, ProcessoSeletivo.CriteriosDesempateMaximo + 1).Select(static ordem =>
+            CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!)];
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(criterios: criterios));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CriteriosDesempateEmExcesso");
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
+    private static CriterioDesempate DesempatePorArea(params string[] areas) => DesempatePorArea(1, areas);
+
+    private static CriterioDesempate DesempatePorArea(int ordem, params string[] areas) =>
+        CriterioDesempate.Criar(
+            ordem, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(areas)).Value!;
+
     [Fact(DisplayName = "RestaurarConfiguracaoCongelada produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
     public void RestaurarConfiguracaoCongelada_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
     {

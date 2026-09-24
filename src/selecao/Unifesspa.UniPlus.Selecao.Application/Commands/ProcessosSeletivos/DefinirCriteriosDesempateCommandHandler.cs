@@ -14,18 +14,18 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
-/// Handler do <see cref="DefinirCriteriosDesempateCommand"/> (Story #774), em duas passadas. A
-/// primeira confirma a ordem de TODOS os critérios (<see cref="CriterioDesempate.ValidarOrdem"/>)
-/// sem tocar o catálogo, acumulando (ADR-0125) através da lista inteira. Só então a segunda
-/// resolve cada critério no catálogo <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>,
-/// Story #772), monta os args tipados conforme o código da regra e congela a referência — a
+/// Handler do <see cref="DefinirCriteriosDesempateCommand"/> (Story #774). Lê o catálogo de
+/// critérios do <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772) e, quando
+/// preciso, o vocabulário de fatos antes de travar o processo; depois do 404, do If-Match e do
+/// teto, resolve cada critério no catálogo já lido, monta os args tipados conforme o código da
+/// regra e congela a referência — a
 /// existência do <c>etapa_ref</c> no processo (INV-B6) é garantida pela raiz
 /// (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>). Quando algum critério referencia
 /// <c>DESEMPATE-PREDICADO-FATO</c>, resolve também o vocabulário fechado de fatos do candidato
 /// (<see cref="IFatoCandidatoReader"/>, #846, ADR-0111) para que
 /// <see cref="CriterioDesempate.Criar"/> valide a condição contra ele (fecha o INV-B6 do
-/// <c>Fato</c>) — parando no primeiro critério que falhar, granularidade nunca coberta pelo
-/// FluentValidation.
+/// <c>Fato</c>). As recusas de todos os critérios se acumulam, cada uma no campo do item,
+/// granularidade nunca coberta pelo FluentValidation.
 /// </summary>
 public static class DefinirCriteriosDesempateCommandHandler
 {
@@ -42,6 +42,25 @@ public static class DefinirCriteriosDesempateCommandHandler
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        // Acima do teto a lista não é lida item a item: o validator não confere os itens dela,
+        // e a recusa do agregado é a única resposta.
+        List<FieldError> quantidadeErros = ProcessoSeletivo.ValidarQuantidadeDeCriteriosDesempate(command.Criterios.Count);
+        bool resolverCriterios = quantidadeErros.Count == 0 && command.Criterios.Count > 0;
+
+        // As leituras que não dependem do processo rodam antes de travá-lo para a mutação. O
+        // vocabulário só é resolvido (I/O cross-módulo) quando algum critério referencia
+        // DESEMPATE-PREDICADO-FATO, e o catálogo de critérios é lido uma vez, para cada critério
+        // se resolver em memória.
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos =
+            resolverCriterios && command.Criterios.Any(static c => c.RegraCodigo == CriterioDesempateCodigo.PredicadoFato)
+                ? await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false)
+                : null;
+        IReadOnlyList<RegraCatalogo> regrasDesempate = resolverCriterios
+            ? await regraCatalogoReader
+                .ListarPorTipoAsync(TipoRegra.CriterioDesempate, cancellationToken)
+                .ConfigureAwait(false)
+            : [];
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
@@ -71,53 +90,48 @@ public static class DefinirCriteriosDesempateCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
-        // Acumula (ADR-0125) a ordem de TODOS os critérios numa primeira passada — a única
-        // checagem de CriterioDesempate.Criar que não depende de a regra já ter sido resolvida
-        // no catálogo. Mesmo padrão de DefinirFatosColetadosCommandHandler (PR #1214): roda
-        // antes de qualquer I/O, ANTES de resolver o rol_de_regras.
-        List<FieldError> formaErros = [];
-        for (int indice = 0; indice < command.Criterios.Count; indice++)
+        if (quantidadeErros.Count > 0)
         {
-            List<FieldError> itemErros = CriterioDesempate.ValidarOrdem(command.Criterios[indice].Ordem);
-            formaErros.AddRange(itemErros.Select(erro => erro with { Field = $"criterios[{indice}].{erro.Field}" }));
+            return Result<MutacaoAceita>.ValidationFailure(quantidadeErros);
         }
 
-        if (formaErros.Count > 0)
-        {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
-        }
+        Dictionary<(string Codigo, string Versao), RegraCatalogo> catalogo = regrasDesempate
+            .ToDictionary(static r => (r.Codigo, r.Versao));
 
-        // O vocabulário só é resolvido (I/O cross-módulo) quando algum critério de fato
-        // referencia DESEMPATE-PREDICADO-FATO — o caso comum (demais 3 regras) não paga
-        // esse custo.
-        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = command.Criterios
-            .Any(static c => c.RegraCodigo == CriterioDesempateCodigo.PredicadoFato)
-                ? await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false)
-                : null;
-
+        // Acumula (ADR-0125) as recusas de todos os critérios. O que não chega a ser criado
+        // também segue para a conferência contra o processo.
+        List<FieldError> erros = [];
+        List<CriterioDesempateInformado> informados = [];
         List<CriterioDesempate> criterios = [];
         for (int indice = 0; indice < command.Criterios.Count; indice++)
         {
-            Result<CriterioDesempate> resultado = await ResolverCriterioAsync(command.Criterios[indice], regraCatalogoReader, vocabularioFatos, cancellationToken)
+            CriterioDesempateInput input = command.Criterios[indice];
+            (Result<CriterioDesempate> resultado, ArgsCriterioDesempate? args) = await ResolverCriterioAsync(
+                    input, catalogo, regraCatalogoReader, vocabularioFatos, cancellationToken)
                 .ConfigureAwait(false);
+            informados.Add(new CriterioDesempateInformado(input.Ordem, args));
             if (resultado.IsFailure)
             {
-                // Prefixa o índice do item só nos erros com Field preenchido (vindos de
-                // CriterioDesempate.Criar) — os semânticos (RegraNaoEncontrada, EtapaRefObrigatorio,
-                // PredicadoDnf.*) têm Field nulo e não têm o que prefixar (achado de revisão: sem
-                // isso, "idadeMinima" chegava como campo de topo, ambíguo entre vários critérios).
-                IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors.Select(erro =>
-                    erro.Field is null ? erro : erro with { Field = $"criterios[{indice}].{erro.Field}" })];
-                return Result<MutacaoAceita>.ValidationFailure(errosComIndice);
+                erros.AddRange(resultado.Errors.Select(erro => erro with
+                {
+                    Field = ProcessoSeletivo.CampoDoCriterioDesempate(indice, erro.Field),
+                }));
+                continue;
             }
 
             criterios.Add(resultado.Value!);
         }
 
+        if (erros.Count > 0)
+        {
+            erros.AddRange(processo.ValidarCriteriosDesempate(informados));
+            return Result<MutacaoAceita>.ValidationFailure(processo.AnexarAreasAceitasDoDesempate(erros));
+        }
+
         Result result = processo.DefinirCriteriosDesempate(criterios, command.Precondicao);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(result.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
         }
 
         // Agregado tracked: persistência por change detection (ValueGeneratedNever
@@ -169,50 +183,70 @@ public static class DefinirCriteriosDesempateCommandHandler
         return vocabulario;
     }
 
-    private static async Task<Result<CriterioDesempate>> ResolverCriterioAsync(
+    /// <summary>
+    /// Resolve a regra do critério no catálogo já carregado, monta os args e cria o critério.
+    /// Toda recusa sai com o campo relativo ao item (<c>ordem</c>, <c>regraCodigo</c>,
+    /// <c>etapaRef</c>, <c>idadeMinima</c>, <c>fato</c>, <c>operador</c>, <c>valor</c>). Os args
+    /// voltam mesmo quando a criação recusa, para o processo conferi-los contra si mesmo.
+    /// </summary>
+    private static async Task<(Result<CriterioDesempate> Resultado, ArgsCriterioDesempate? Args)> ResolverCriterioAsync(
         CriterioDesempateInput input,
+        Dictionary<(string Codigo, string Versao), RegraCatalogo> catalogo,
         IRegraCatalogoReader regraCatalogoReader,
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
         CancellationToken cancellationToken)
     {
-        RegraCatalogo? regra = await regraCatalogoReader
-            .ObterAsync(input.RegraCodigo, input.RegraVersao, cancellationToken)
-            .ConfigureAwait(false);
-        if (regra is null)
-        {
-            return Result<CriterioDesempate>.Failure(new DomainError(
-                "CriterioDesempate.RegraNaoEncontrada",
-                $"Regra de desempate {input.RegraCodigo}/{input.RegraVersao} não encontrada no rol_de_regras."));
-        }
+        // A recusa que sai antes de CriterioDesempate.Criar acumula a da ordem, que Criar
+        // confere e que não depende da regra.
+        Result<CriterioDesempate> Recusado(IEnumerable<FieldError> erros) =>
+            Result<CriterioDesempate>.ValidationFailure([.. CriterioDesempate.ValidarOrdem(input.Ordem), .. erros]);
 
-        if (regra.Tipo != TipoRegra.CriterioDesempate)
+        if (!catalogo.TryGetValue((input.RegraCodigo, input.RegraVersao), out RegraCatalogo? regra))
         {
-            return Result<CriterioDesempate>.Failure(new DomainError(
-                "CriterioDesempate.RegraTipoInvalido",
-                $"A regra {input.RegraCodigo}/{input.RegraVersao} não é do tipo criterio_desempate."));
+            // Fora do catálogo de critérios de desempate: consulta a regra pelo código, só para
+            // distinguir a que não existe da que existe com outro tipo.
+            regra = await regraCatalogoReader
+                .ObterAsync(input.RegraCodigo, input.RegraVersao, cancellationToken)
+                .ConfigureAwait(false);
+            if (regra is null)
+            {
+                return (Recusado([new("regraCodigo", new DomainError(
+                    "CriterioDesempate.RegraNaoEncontrada",
+                    $"Regra de desempate {input.RegraCodigo}/{input.RegraVersao} não encontrada no rol_de_regras."))]), null);
+            }
+
+            if (regra.Tipo != TipoRegra.CriterioDesempate)
+            {
+                return (Recusado([new("regraCodigo", new DomainError(
+                    "CriterioDesempate.RegraTipoInvalido",
+                    $"A regra {input.RegraCodigo}/{input.RegraVersao} não é do tipo criterio_desempate."))]), null);
+            }
         }
 
         Result<ArgsCriterioDesempate> argsResult = MontarArgs(input, regra.Codigo);
         if (argsResult.IsFailure)
         {
-            return Result<CriterioDesempate>.Failure(argsResult.Error!);
+            return (Recusado(argsResult.Errors), null);
         }
 
         Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
         if (referenciaRegraResult.IsFailure)
         {
-            return Result<CriterioDesempate>.Failure(referenciaRegraResult.Error!);
+            return (Recusado(referenciaRegraResult.Errors.Select(static erro => erro with { Field = "regraCodigo" })), argsResult.Value);
         }
 
-        return CriterioDesempate.Criar(input.Ordem, referenciaRegraResult.Value!, argsResult.Value!, vocabularioFatos);
+        return (CriterioDesempate.Criar(input.Ordem, referenciaRegraResult.Value!, argsResult.Value!, vocabularioFatos), argsResult.Value);
     }
+
+    private static Result<ArgsCriterioDesempate> Recusa(string campo, DomainError erro) =>
+        Result<ArgsCriterioDesempate>.ValidationFailure([new(campo, erro)]);
 
     private static Result<ArgsCriterioDesempate> MontarArgs(CriterioDesempateInput input, string regraCodigo) =>
         regraCodigo switch
         {
             CriterioDesempateCodigo.MaiorNotaEtapa => input.EtapaRef is { } etapaRef
                 ? Result<ArgsCriterioDesempate>.Success(new ArgsDesempateMaiorNotaEtapa(etapaRef))
-                : Result<ArgsCriterioDesempate>.Failure(new DomainError(
+                : Recusa("etapaRef", new DomainError(
                     "CriterioDesempate.EtapaRefObrigatorio",
                     $"O critério na ordem {input.Ordem} exige EtapaRef para a regra {CriterioDesempateCodigo.MaiorNotaEtapa}.")),
 
@@ -221,33 +255,49 @@ public static class DefinirCriteriosDesempateCommandHandler
 
             CriterioDesempateCodigo.Idoso => input.IdadeMinima is { } idadeMinima
                 ? Result<ArgsCriterioDesempate>.Success(new ArgsDesempateIdoso(idadeMinima))
-                : Result<ArgsCriterioDesempate>.Failure(new DomainError(
+                : Recusa("idadeMinima", new DomainError(
                     "CriterioDesempate.IdadeMinimaObrigatoria",
                     $"O critério na ordem {input.Ordem} exige IdadeMinima para a regra {CriterioDesempateCodigo.Idoso}.")),
 
             CriterioDesempateCodigo.PredicadoFato => MontarArgsPredicadoFato(input),
 
-            _ => Result<ArgsCriterioDesempate>.Failure(new DomainError(
+            // A ordem ausente vira lista vazia, e item nulo vira texto vazio: quem recusa, com
+            // o campo de cada item, é CriterioDesempate.Criar, junto com as demais violações.
+            // Um item além do teto basta para a recusa da lista inteira, e o resto nem é lido.
+            CriterioDesempateCodigo.MaiorNotaAreaEnem =>
+                Result<ArgsCriterioDesempate>.Success(new ArgsDesempateMaiorNotaAreaEnem(
+                    [.. (input.Areas ?? []).Take(CriterioDesempate.AreasMaximo + 1).Select(static area => area?.Trim() ?? string.Empty)])),
+
+            _ => Recusa("regraCodigo", new DomainError(
                 "CriterioDesempate.RegraTipoInvalido",
                 $"Código de regra de desempate desconhecido: {regraCodigo}.")),
         };
 
     private static Result<ArgsCriterioDesempate> MontarArgsPredicadoFato(CriterioDesempateInput input)
     {
-        if (string.IsNullOrWhiteSpace(input.Fato) || string.IsNullOrWhiteSpace(input.Operador) || string.IsNullOrWhiteSpace(input.Valor))
-        {
-            return Result<ArgsCriterioDesempate>.Failure(new DomainError(
+        (string Campo, string? Texto)[] informados = [("fato", input.Fato), ("operador", input.Operador), ("valor", input.Valor)];
+        List<FieldError> ausentes = [.. informados
+            .Where(static campo => string.IsNullOrWhiteSpace(campo.Texto))
+            .Select(campo => new FieldError(campo.Campo, new DomainError(
                 "CriterioDesempate.PredicadoFatoIncompleto",
-                $"O critério na ordem {input.Ordem} exige Fato, Operador e Valor para a regra {CriterioDesempateCodigo.PredicadoFato}."));
+                $"O critério na ordem {input.Ordem} exige Fato, Operador e Valor para a regra {CriterioDesempateCodigo.PredicadoFato}.")))];
+        if (ausentes.Count > 0)
+        {
+            return Result<ArgsCriterioDesempate>.ValidationFailure(ausentes);
         }
 
-        Operador operador = OperadorCodigo.FromCodigo(input.Operador);
-        JsonElement valor = InterpretarValor(input.Valor);
+        Operador operador = OperadorCodigo.FromCodigo(input.Operador!);
+        JsonElement valor = InterpretarValor(input.Valor!);
 
-        Result<CondicaoDnf> condicaoResult = CondicaoDnf.Criar(input.Fato, operador, valor);
-        return condicaoResult.IsFailure
-            ? Result<ArgsCriterioDesempate>.Failure(condicaoResult.Error!)
-            : Result<ArgsCriterioDesempate>.Success(new ArgsDesempatePredicadoFato(condicaoResult.Value!));
+        Result<CondicaoDnf> condicaoResult = CondicaoDnf.Criar(input.Fato!, operador, valor);
+        if (condicaoResult.IsFailure)
+        {
+            // Fato e operador presentes: a recusa é do operador desconhecido ou do valor
+            // incoerente com ele.
+            return Recusa(operador == Operador.Nenhuma ? "operador" : "valor", condicaoResult.Error!);
+        }
+
+        return Result<ArgsCriterioDesempate>.Success(new ArgsDesempatePredicadoFato(condicaoResult.Value!));
     }
 
     /// <summary>

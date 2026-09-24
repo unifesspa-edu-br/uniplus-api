@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 
 using Commands.ProcessosSeletivos;
 
+using Domain.Entities;
+
 using FluentValidation;
+
 
 /// <summary>
 /// Três checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
@@ -29,19 +32,24 @@ public sealed class DefinirCriteriosDesempateCommandValidator : AbstractValidato
             .NotNull()
             .WithMessage("Lista de critérios de desempate é obrigatória (pode ser vazia).");
 
-        RuleForEach(x => x.Criterios)
-            .NotNull()
-            .WithMessage("Item de critério de desempate não pode ser nulo.");
-
-        RuleForEach(x => x.Criterios).ChildRules(item =>
+        // Acima do teto os itens não são conferidos aqui: a lista é recusada inteira pelo
+        // agregado, e conferir cada item faria a resposta crescer com a entrada.
+        When(static x => x.Criterios is not null && x.Criterios.Count <= ProcessoSeletivo.CriteriosDesempateMaximo, () =>
         {
-            item.RuleFor(c => c.RegraCodigo)
-                .NotEmpty()
-                .WithMessage("Código da regra de desempate é obrigatório.");
+            RuleForEach(x => x.Criterios)
+                .NotNull()
+                .WithMessage("Item de critério de desempate não pode ser nulo.");
 
-            item.RuleFor(c => c.RegraVersao)
-                .NotEmpty()
-                .WithMessage("Versão da regra de desempate é obrigatória.");
+            RuleForEach(x => x.Criterios).ChildRules(item =>
+            {
+                item.RuleFor(c => c.RegraCodigo)
+                    .NotEmpty()
+                    .WithMessage("Código da regra de desempate é obrigatório.");
+
+                item.RuleFor(c => c.RegraVersao)
+                    .NotEmpty()
+                    .WithMessage("Versão da regra de desempate é obrigatória.");
+            });
         });
     }
 }

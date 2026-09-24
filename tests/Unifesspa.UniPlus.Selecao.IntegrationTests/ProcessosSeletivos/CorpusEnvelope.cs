@@ -318,8 +318,10 @@ internal static class CorpusEnvelope
                 ("1501402", "Belém", "PA"),
             ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        // As QUATRO variantes de args — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
-        // ordens distintas), que um decoder indexado por código colapsaria em uma.
+        // As CINCO variantes de args — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
+        // ordens distintas), que um decoder indexado por código colapsaria em uma. A ordem
+        // das áreas do desempate por área do ENEM não é a alfabética, para que uma
+        // canonicalização que as reordenasse mudasse o envelope.
         processo.DefinirCriteriosDesempate(Ordem([
             CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, 'c'), new ArgsDesempateIdoso(60)).Value!,
             CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ArgsDesempateMaiorNotaEtapa(objetiva)).Value!,
@@ -327,6 +329,7 @@ internal static class CorpusEnvelope
             CriterioDesempate.Criar(4, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), new ArgsDesempatePredicadoFato(
                 CondicaoDnf.Criar("escola_publica", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)).Value!,
             CriterioDesempate.Criar(5, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!,
+            CriterioDesempate.Criar(6, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, '8'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
