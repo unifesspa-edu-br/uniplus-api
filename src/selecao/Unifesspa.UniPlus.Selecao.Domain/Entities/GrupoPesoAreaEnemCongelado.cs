@@ -34,8 +34,6 @@ public sealed class GrupoPesoAreaEnemCongelado : EntityBase
     /// <summary>Tamanho máximo do rótulo de área congelado — o mesmo da coluna do cadastro de origem.</summary>
     public const int AreaRotuloMaxLength = 100;
 
-    private const int TamanhoMaximoDoRotuloEcoado = 40;
-
     /// <summary>Nota máxima de uma área do ENEM, teto do corte.</summary>
     public const decimal CorteMaximo = 1000m;
 
@@ -115,14 +113,14 @@ public sealed class GrupoPesoAreaEnemCongelado : EntityBase
             {
                 erros.Add(new(campo, new DomainError(
                     "GrupoPesoAreaEnemCongelado.AreaRepetida",
-                    $"A área {CaracteresInvisiveis.ParaEco(rotuloNormalizado!, TamanhoMaximoDoRotuloEcoado)} aparece mais de uma vez no mesmo grupo do quadro de pesos por área.")));
+                    $"A área {CaracteresInvisiveis.ParaEco(rotuloNormalizado!, TextoCongelado.TamanhoMaximoEcoado)} aparece mais de uma vez no mesmo grupo do quadro de pesos por área.")));
                 identificada = false;
             }
 
             // O rótulo volta na mensagem só quando não é ele o motivo da recusa, e limitado e sem
             // caractere invisível: o texto volta na resposta e nos logs.
             string daArea = rotuloNormalizado is not null && TextoCongelado.CabeNaColuna(rotuloNormalizado, AreaRotuloMaxLength)
-                ? $"da área {CaracteresInvisiveis.ParaEco(rotuloNormalizado, TamanhoMaximoDoRotuloEcoado)}"
+                ? $"da área {CaracteresInvisiveis.ParaEco(rotuloNormalizado, TextoCongelado.TamanhoMaximoEcoado)}"
                 : "da área";
             if (peso < 0)
             {

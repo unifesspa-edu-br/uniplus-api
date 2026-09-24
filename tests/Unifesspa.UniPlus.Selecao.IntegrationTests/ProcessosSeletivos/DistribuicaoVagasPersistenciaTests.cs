@@ -145,6 +145,39 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         distribuicao.GrupoAreaEnem.Should().BeNull("curso sem grupo declarado é aceito no rascunho e persiste sem grupo");
     }
 
+    [Theory(DisplayName = "Grupo de área com uma das duas colunas nula volta como oferta sem grupo")]
+    [InlineData("grupo_area_enem_codigo")]
+    [InlineData("grupo_area_enem_rotulo")]
+    public async Task GrupoComUmaColunaNula_VoltaSemGrupo(string coluna)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64)).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 60, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
+            [NovaModalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)],
+            grupoAreaEnem: ("TECNOLOGICA", "Tecnológica")).Value!;
+        processo.DefinirDistribuicaoVagas([oferta], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            await new ProcessoSeletivoRepository(writeContext, TimeProvider.System).AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+            // As colunas não têm CHECK de "ambas ou nenhuma": uma correção de dados pode anular
+            // só uma delas.
+            string anular = coluna switch
+            {
+                "grupo_area_enem_codigo" => "UPDATE selecao.configuracoes_distribuicao_vagas SET grupo_area_enem_codigo = NULL WHERE processo_seletivo_id = {0}",
+                _ => "UPDATE selecao.configuracoes_distribuicao_vagas SET grupo_area_enem_rotulo = NULL WHERE processo_seletivo_id = {0}",
+            };
+            await writeContext.Database.ExecuteSqlRawAsync(anular, processo.Id);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo recarregado = (await readContext.ProcessosSeletivos.Include(p => p.DistribuicaoVagas)
+            .FirstAsync(p => p.Id == processo.Id, CancellationToken.None));
+        recarregado.DistribuicaoVagas.Single().GrupoAreaEnem.Should().BeNull(
+            "as duas propriedades do grupo são obrigatórias, e o EF só materializa o grupo com as duas colunas preenchidas");
+    }
+
     [Fact(DisplayName = "Reconfigurar distribuição sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarDistribuicaoSobreAgregadoTracked_InsereFilhos()
     {

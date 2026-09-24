@@ -67,8 +67,10 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// </summary>
     /// <remarks>
     /// <see langword="null"/> quando o curso não declara grupo: o cadastro o trata como
-    /// opcional, e a gravação do rascunho não o exige. A exigência, quando houver, é de
-    /// publicação de processo que classifica por nota do ENEM.
+    /// opcional, e a gravação do rascunho não o exige. A exigência é de publicação: o processo
+    /// que calcula a média pelos pesos por área do ENEM exige, em toda oferta, grupo presente no
+    /// quadro congelado. O EF só materializa o grupo com código e rótulo preenchidos: com
+    /// qualquer das duas colunas nula, a oferta volta sem grupo.
     /// </remarks>
     public GrupoAreaEnemSnapshot? GrupoAreaEnem { get; private set; }
 

@@ -13,6 +13,9 @@ public static class TextoCongelado
 {
     private const char CaractereNulo = (char)0;
 
+    /// <summary>Teto de um texto congelado que volta numa mensagem de recusa (<see cref="CaracteresInvisiveis.ParaEco"/>).</summary>
+    internal const int TamanhoMaximoEcoado = 40;
+
     /// <summary>
     /// O texto aparado e em NFC, ou <see langword="null"/> quando ele não pode ser normalizado —
     /// traz um não-caractere ou um surrogate sem par.
