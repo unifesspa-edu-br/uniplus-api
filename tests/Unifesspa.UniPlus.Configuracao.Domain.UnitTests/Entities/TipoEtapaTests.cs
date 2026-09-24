@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class TipoEtapaTests
 {
@@ -194,5 +195,59 @@ public sealed class TipoEtapaTests
         result.IsSuccess.Should().BeTrue();
         tipo.Ativo.Should().BeFalse();
         tipo.Codigo.Should().Be("PS_TESTE");
+    }
+
+    [Fact(DisplayName = "Tipo criado pela API não declara nota de origem no ENEM")]
+    public void Criar_NaoDeclaraNotaDeOrigemNoEnem()
+    {
+        TipoEtapa.Criar("NOVO_TIPO", "Novo tipo", null, true, true).Value!.NotaDeOrigemNoEnem.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Tipo com nota de origem no ENEM recusa desligar a pontuação, sem mudar nada")]
+    public void Atualizar_NotaDeOrigemNoEnemSemPontuacao_Recusa()
+    {
+        TipoEtapa tipo = TipoEtapaDeTeste.NotaDoEnem();
+
+        Result result = tipo.Atualizar("Nota do ENEM (renomeada)", null, admitePontuacao: false, admiteEliminacao: true);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().ContainSingle().Which.Should().Be(new FieldError("admitePontuacao", new DomainError(
+            TipoEtapaErrorCodes.NotaDeOrigemNoEnemExigePontuacao,
+            "O tipo de etapa com nota de origem no ENEM deve admitir compor a nota final.")));
+        tipo.AdmitePontuacao.Should().BeTrue();
+        tipo.Nome.Should().Be("Nota do ENEM");
+        tipo.NotaDeOrigemNoEnem.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A recusa da pontuação no tipo do ENEM acumula com as violações dos campos")]
+    public void Atualizar_NotaDeOrigemNoEnemSemPontuacaoENomeVazio_AcumulaAsDuas()
+    {
+        Result result = TipoEtapaDeTeste.NotaDoEnem().Atualizar("", null, admitePontuacao: false, admiteEliminacao: true);
+
+        result.Errors.Select(erro => erro.Error.Code).Should().Equal(
+            TipoEtapaErrorCodes.NomeObrigatorio, TipoEtapaErrorCodes.NotaDeOrigemNoEnemExigePontuacao);
+    }
+
+    [Fact(DisplayName = "Tipo com nota de origem no ENEM aceita mudar nome e eliminação mantendo a pontuação")]
+    public void Atualizar_NotaDeOrigemNoEnemComPontuacao_Aceita()
+    {
+        TipoEtapa tipo = TipoEtapaDeTeste.NotaDoEnem();
+
+        tipo.Atualizar("Nota do ENEM (renomeada)", null, admitePontuacao: true, admiteEliminacao: false).IsSuccess.Should().BeTrue();
+
+        tipo.AdmiteEliminacao.Should().BeFalse();
+        tipo.NotaDeOrigemNoEnem.Should().BeTrue("a origem da nota é identidade, e a atualização não a toca");
+    }
+
+    [Fact(DisplayName = "Tipo com nota de origem no ENEM não pode ser desativado")]
+    public void Desativar_NotaDeOrigemNoEnem_Recusa()
+    {
+        TipoEtapa tipo = TipoEtapaDeTeste.NotaDoEnem();
+
+        Result result = tipo.Desativar();
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(TipoEtapaErrorCodes.NotaDeOrigemNoEnemNaoDesativa);
+        tipo.Ativo.Should().BeTrue();
     }
 }

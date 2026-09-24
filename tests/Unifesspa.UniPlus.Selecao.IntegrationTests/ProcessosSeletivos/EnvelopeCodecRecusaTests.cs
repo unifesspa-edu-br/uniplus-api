@@ -902,7 +902,7 @@ public sealed class EnvelopeCodecRecusaTests
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!,
+                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOfertaAtendimento(
@@ -1164,6 +1164,7 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("nome")]
     [InlineData("admitePontuacao")]
     [InlineData("admiteEliminacao")]
+    [InlineData("notaDeOrigemNoEnem")]
     public void TipoEtapa_ChaveAusente_Recusa(string chave)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -1187,6 +1188,7 @@ public sealed class EnvelopeCodecRecusaTests
     [Theory(DisplayName = "etapas[].tipoEtapa com sinalizador que não é booleano é recusado")]
     [InlineData("admitePontuacao")]
     [InlineData("admiteEliminacao")]
+    [InlineData("notaDeOrigemNoEnem")]
     public void TipoEtapa_SinalizadorNaoBooleano_Recusa(string chave)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -1210,6 +1212,22 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.IsFailure.Should().BeTrue(
             "um tipo sem caráter admitido não existe no cadastro — a factory do snapshot o recusa");
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.SemCaraterAdmitido");
+    }
+
+    [Fact(DisplayName = "etapas[].tipoEtapa com nota de origem no ENEM que não pontua é recusado")]
+    public void TipoEtapa_NotaDeOrigemNoEnemSemPontuacao_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonNode tipoEtapa = envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!;
+            tipoEtapa["notaDeOrigemNoEnem"] = true;
+            tipoEtapa["admitePontuacao"] = false;
+            tipoEtapa["admiteEliminacao"] = true;
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "o cadastro não admite tipo com nota do ENEM que não pontue — a factory do snapshot o recusa");
+        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.NotaDeOrigemNoEnemSemPontuacao");
     }
 
     [Fact(DisplayName = "etapas[].tipoEtapa.origemId vazio (Guid.Empty) é recusado")]

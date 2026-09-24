@@ -4,10 +4,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Cópia por valor do tipo de etapa resolvido em Configuração no momento da
-/// definição: a identidade (origem, código, nome) e o que o tipo admite como caráter
-/// da etapa (pontuação, eliminação). A etapa nunca relê a configuração de tipos para
-/// mudar a própria identidade; os sinalizadores são regravados só quando o caráter ou o
-/// vínculo desta etapa muda — que é quando a gravação já confere o tipo no cadastro.
+/// definição: a identidade (origem, código, nome, origem da nota no ENEM) e o que o tipo
+/// admite como caráter da etapa (pontuação, eliminação). A etapa nunca relê a configuração
+/// de tipos para mudar a própria identidade; os sinalizadores são regravados só quando o
+/// caráter ou o vínculo desta etapa muda — que é quando a gravação já confere o tipo no
+/// cadastro.
 /// </summary>
 /// <remarks>
 /// Duas etapas do mesmo tipo, definidas em momentos diferentes, podem congelar
@@ -17,13 +18,15 @@ public sealed record TipoEtapaSnapshot
 {
     private TipoEtapaSnapshot() { }
 
-    private TipoEtapaSnapshot(Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao)
+    private TipoEtapaSnapshot(
+        Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem)
     {
         OrigemId = origemId;
         Codigo = codigo;
         Nome = nome;
         AdmitePontuacao = admitePontuacao;
         AdmiteEliminacao = admiteEliminacao;
+        NotaDeOrigemNoEnem = notaDeOrigemNoEnem;
     }
 
     /// <remarks>Usado apenas na construção; a identidade é persistida no próprio snapshot.</remarks>
@@ -37,8 +40,19 @@ public sealed record TipoEtapaSnapshot
     /// <summary>Se o tipo admitia etapa eliminatória quando foi congelado.</summary>
     public bool AdmiteEliminacao { get; private set; }
 
+    /// <summary>
+    /// Se a nota das etapas do tipo vem do ENEM. Faz parte da identidade: muda só quando o
+    /// vínculo da etapa muda, nunca na regravação dos sinalizadores.
+    /// </summary>
+    public bool NotaDeOrigemNoEnem { get; private set; }
+
     public static Result<TipoEtapaSnapshot> Criar(
-        Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao)
+        Guid origemId,
+        string codigo,
+        string nome,
+        bool admitePontuacao,
+        bool admiteEliminacao,
+        bool notaDeOrigemNoEnem)
     {
         if (origemId == Guid.Empty)
         {
@@ -61,6 +75,15 @@ public sealed record TipoEtapaSnapshot
             return Falha(
                 "TipoEtapaSnapshot.SemCaraterAdmitido",
                 "Snapshot do tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.");
+        }
+
+        // O cadastro não admite tipo com nota do ENEM que não pontue; o envelope que
+        // chegasse assim reporia uma etapa de nota do ENEM que não compõe a média.
+        if (notaDeOrigemNoEnem && !admitePontuacao)
+        {
+            return Falha(
+                "TipoEtapaSnapshot.NotaDeOrigemNoEnemSemPontuacao",
+                "Snapshot do tipo de etapa com nota de origem no ENEM deve admitir compor a nota final.");
         }
 
         // NFC na fronteira de congelamento (mesma normalização do payload canônico,
@@ -89,28 +112,25 @@ public sealed record TipoEtapaSnapshot
         }
 
         return Result<TipoEtapaSnapshot>.Success(new TipoEtapaSnapshot(
-            origemId, codigoNormalizado, nomeNormalizado, admitePontuacao, admiteEliminacao));
+            origemId, codigoNormalizado, nomeNormalizado, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem));
     }
 
     /// <summary>
     /// O mesmo tipo com os sinalizadores relidos do cadastro. Identidade (origem, código,
-    /// nome) vem deste snapshot, nunca do cadastro: mudar o caráter da etapa refresca o que o
-    /// tipo admite, não renomeia o que foi congelado.
+    /// nome, origem da nota no ENEM) vem deste snapshot, nunca do cadastro: mudar o caráter
+    /// da etapa refresca o que o tipo admite, não renomeia o que foi congelado.
     /// </summary>
     /// <remarks>
-    /// Os sinalizadores vêm de uma vista do cadastro, que nunca traz o par todo falso; recebê-lo
-    /// aqui é erro de programação, não dado de entrada, e por isso lança em vez de devolver
-    /// <c>Result</c>.
+    /// Passa pelas mesmas regras de <see cref="Criar"/>. Os sinalizadores vêm de uma vista do
+    /// cadastro, que já as cumpre; uma recusa aqui é erro de programação, não dado de entrada,
+    /// e por isso lança em vez de devolver <c>Result</c>.
     /// </remarks>
     public TipoEtapaSnapshot ComSinalizadores(bool admitePontuacao, bool admiteEliminacao)
     {
-        if (!admitePontuacao && !admiteEliminacao)
-        {
-            throw new ArgumentException(
-                "O tipo de etapa precisa admitir pontuação, eliminação, ou as duas.", nameof(admitePontuacao));
-        }
-
-        return new(OrigemId, Codigo, Nome, admitePontuacao, admiteEliminacao);
+        Result<TipoEtapaSnapshot> relido = Criar(OrigemId, Codigo, Nome, admitePontuacao, admiteEliminacao, NotaDeOrigemNoEnem);
+        return relido.IsSuccess
+            ? relido.Value!
+            : throw new ArgumentException(relido.Error!.Message, nameof(admitePontuacao));
     }
 
     public override string ToString() => Codigo;

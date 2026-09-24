@@ -8,6 +8,8 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Npgsql;
+
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
@@ -47,16 +49,16 @@ public sealed class TipoEtapaEndpointTests
     /// isso o wizard voltaria a oferecer peso em toda etapa, e a decisão de quem opera o cadastro
     /// dependeria da idade do banco em que ela foi feita.
     /// </summary>
-    [Theory(DisplayName = "Carga inicial declara o que cada tipo semeado admite")]
-    [InlineData("ANALISE_DOCUMENTAL", false, true)]
-    [InlineData("BANCA_HETEROIDENTIFICACAO", false, true)]
-    [InlineData("PROVA_OBJETIVA", true, true)]
-    [InlineData("REDACAO", true, true)]
-    [InlineData("ENTREVISTA", true, true)]
-    [InlineData("ANALISE_HISTORICO", true, true)]
-    [InlineData("NOTA_ENEM", true, true)]
+    [Theory(DisplayName = "Carga inicial declara o que cada tipo semeado admite e de onde vem a nota")]
+    [InlineData("ANALISE_DOCUMENTAL", false, true, false)]
+    [InlineData("BANCA_HETEROIDENTIFICACAO", false, true, false)]
+    [InlineData("PROVA_OBJETIVA", true, true, false)]
+    [InlineData("REDACAO", true, true, false)]
+    [InlineData("ENTREVISTA", true, true, false)]
+    [InlineData("ANALISE_HISTORICO", true, true, false)]
+    [InlineData("NOTA_ENEM", true, true, true)]
     public async Task Listar_TiposSemeados_DeclaramOCaraterQueAdmitem(
-        string codigo, bool admitePontuacao, bool admiteEliminacao)
+        string codigo, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem)
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
 
@@ -70,6 +72,7 @@ public sealed class TipoEtapaEndpointTests
 
         tipo.GetProperty("admitePontuacao").GetBoolean().Should().Be(admitePontuacao);
         tipo.GetProperty("admiteEliminacao").GetBoolean().Should().Be(admiteEliminacao);
+        tipo.GetProperty("notaDeOrigemNoEnem").GetBoolean().Should().Be(notaDeOrigemNoEnem);
     }
 
     [Fact(DisplayName = "Carga inicial usa UUIDv7 RFC 9562 nos sete tipos semeados")]
@@ -293,6 +296,118 @@ public sealed class TipoEtapaEndpointTests
         recriar.StatusCode.Should().Be(HttpStatusCode.Conflict, "desativar não libera a identidade regulatória do código");
     }
 
+    [Fact(DisplayName = "POST não define a nota de origem no ENEM: o campo enviado é ignorado")]
+    public async Task Criar_ComNotaDeOrigemNoEnem_Ignora()
+    {
+        string codigo = CodigoUnico();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new
+        {
+            codigo,
+            nome = "Tentativa de nota do ENEM",
+            admitePontuacao = true,
+            admiteEliminacao = true,
+            notaDeOrigemNoEnem = true,
+        });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        using JsonDocument item = await ObterTipo(client, id);
+        item.RootElement.GetProperty("notaDeOrigemNoEnem").GetBoolean().Should().BeFalse(
+            "a origem da nota vem só da carga do cadastro");
+    }
+
+    [Fact(DisplayName = "PUT não muda a nota de origem no ENEM e recusa com 422 tirar a pontuação do tipo NOTA_ENEM")]
+    public async Task Atualizar_TipoDoEnem_MantemAOrigemERecusaSemPontuacao()
+    {
+        await using TipoDoEnemRestauradoNoFim restauracao = await TipoDoEnemRestauradoNoFim.GuardarAsync(_fixture.ConnectionString);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        (Guid id, string nome, string? descricao) = await TipoDoEnem(client);
+
+        HttpResponseMessage semAtributo = await EnviarPutAdmin(client, id, new
+        {
+            id,
+            nome,
+            descricao,
+            admitePontuacao = true,
+            admiteEliminacao = true,
+            notaDeOrigemNoEnem = false,
+        });
+        semAtributo.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        using (JsonDocument item = await ObterTipo(client, id))
+        {
+            item.RootElement.GetProperty("notaDeOrigemNoEnem").GetBoolean().Should().BeTrue(
+                "o PUT não carrega a origem da nota, e o campo enviado é ignorado");
+        }
+
+        HttpResponseMessage semPontuacao = await EnviarPutAdmin(client, id, new
+        {
+            id,
+            nome,
+            descricao,
+            admitePontuacao = false,
+            admiteEliminacao = true,
+        });
+        semPontuacao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await semPontuacao.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.tipo_etapa.nota_de_origem_no_enem_exige_pontuacao");
+        problema.RootElement.GetProperty("errors")[0].GetProperty("field").GetString().Should().Be("admitePontuacao");
+    }
+
+    [Fact(DisplayName = "DELETE recusa com 422 desativar o tipo NOTA_ENEM")]
+    public async Task Desativar_TipoDoEnem_Recusa()
+    {
+        await using TipoDoEnemRestauradoNoFim restauracao = await TipoDoEnemRestauradoNoFim.GuardarAsync(_fixture.ConnectionString);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        (Guid id, _, _) = await TipoDoEnem(client);
+
+        HttpResponseMessage desativar = await EnviarDeleteAdmin(client, id);
+
+        desativar.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await desativar.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.tipo_etapa.nota_de_origem_no_enem_nao_desativa");
+        (await client.GetAsync(new Uri($"/api/configuracao/tipos-etapa/{id}", UriKind.Relative)))
+            .StatusCode.Should().Be(HttpStatusCode.OK, "o tipo continua ativo");
+    }
+
+    [Fact(DisplayName = "A restauração do tipo NOTA_ENEM desfaz o que o teste alterou na linha semeada")]
+    public async Task RestauracaoDoTipoDoEnem_DesfazAAlteracao()
+    {
+        await using (await TipoDoEnemRestauradoNoFim.GuardarAsync(_fixture.ConnectionString))
+        {
+            await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+            await conexao.OpenAsync();
+            await using NpgsqlCommand desativar = new(
+                "UPDATE configuracao.tipos_etapa SET ativo = false, nome = 'Alterado' WHERE codigo = 'NOTA_ENEM'", conexao);
+            await desativar.ExecuteNonQueryAsync();
+        }
+
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
+        (_, string nome, _) = await TipoDoEnem(client);
+        nome.Should().NotBe("Alterado", "a linha volta ativa e com o nome semeado");
+    }
+
+    /// <summary>O tipo semeado, com os campos que um PUT precisa repetir para não alterá-lo.</summary>
+    private static async Task<(Guid Id, string Nome, string? Descricao)> TipoDoEnem(HttpClient client)
+    {
+        HttpResponseMessage listar = await client.GetAsync(new Uri("/api/configuracao/tipos-etapa", UriKind.Relative));
+        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
+        JsonElement tipo = lista.RootElement.EnumerateArray()
+            .Single(item => item.GetProperty("codigo").GetString() == "NOTA_ENEM");
+        string? descricao = tipo.TryGetProperty("descricao", out JsonElement valor) ? valor.GetString() : null;
+        return (tipo.GetProperty("id").GetGuid(), tipo.GetProperty("nome").GetString()!, descricao);
+    }
+
+    private static async Task<JsonDocument> ObterTipo(HttpClient client, Guid id)
+    {
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-etapa/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+        return JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+    }
+
     private static string CodigoUnico() => $"PS_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 
     private static bool EhUuidV7Rfc9562(Guid id)
@@ -330,5 +445,50 @@ public sealed class TipoEtapaEndpointTests
     {
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+    }
+
+    /// <summary>
+    /// A linha semeada NOTA_ENEM é compartilhada pela coleção. Guarda o estado dela antes do
+    /// teste e o repõe no fim, para uma regressão que a altere não contaminar os demais testes.
+    /// </summary>
+    private sealed class TipoDoEnemRestauradoNoFim : IAsyncDisposable
+    {
+        private readonly string _connectionString;
+        private readonly object?[] _estado;
+
+        private TipoDoEnemRestauradoNoFim(string connectionString, object?[] estado)
+        {
+            _connectionString = connectionString;
+            _estado = estado;
+        }
+
+        public static async Task<TipoDoEnemRestauradoNoFim> GuardarAsync(string connectionString)
+        {
+            await using NpgsqlConnection conexao = new(connectionString);
+            await conexao.OpenAsync();
+            await using NpgsqlCommand comando = new(
+                "SELECT nome, descricao, ativo, admite_pontuacao, admite_eliminacao, nota_de_origem_no_enem " +
+                "FROM configuracao.tipos_etapa WHERE codigo = 'NOTA_ENEM'", conexao);
+            await using NpgsqlDataReader leitor = await comando.ExecuteReaderAsync();
+            (await leitor.ReadAsync()).Should().BeTrue("pré-condição: a carga do cadastro semeia NOTA_ENEM");
+            object?[] estado = new object?[leitor.FieldCount];
+            leitor.GetValues(estado!);
+            return new(connectionString, estado);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await using NpgsqlConnection conexao = new(_connectionString);
+            await conexao.OpenAsync();
+            await using NpgsqlCommand comando = new(
+                "UPDATE configuracao.tipos_etapa SET nome = $1, descricao = $2, ativo = $3, admite_pontuacao = $4, " +
+                "admite_eliminacao = $5, nota_de_origem_no_enem = $6 WHERE codigo = 'NOTA_ENEM'", conexao);
+            foreach (object? valor in _estado)
+            {
+                comando.Parameters.Add(new NpgsqlParameter { Value = valor ?? DBNull.Value });
+            }
+
+            await comando.ExecuteNonQueryAsync();
+        }
     }
 }

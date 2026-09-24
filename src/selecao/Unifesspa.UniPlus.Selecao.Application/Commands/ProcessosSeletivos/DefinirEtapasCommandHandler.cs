@@ -236,7 +236,7 @@ public static class DefinirEtapasCommandHandler
                 TipoEtapaView tipo = tiposEmCache[input.TipoEtapaOrigemId];
 
                 Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(
-                    tipo.Id, tipo.Codigo, tipo.Nome, tipo.AdmitePontuacao, tipo.AdmiteEliminacao);
+                    tipo.Id, tipo.Codigo, tipo.Nome, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem);
                 if (snapshotResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();

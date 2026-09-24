@@ -155,7 +155,7 @@ public sealed class PoliticaDeOrdenacaoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         processo.DefinirEtapas(etapas ?? [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
@@ -215,8 +215,8 @@ public sealed class PoliticaDeOrdenacaoTests
         // Id CONTRÁRIO à Ordem também: Zeta (Ordem 1) recebe o Id MAIOR, Alfa (Ordem 2) o MENOR —
         // se o Id decidisse a posição, o resultado seria [Alfa, Zeta], o mesmo "errado" que o
         // conteúdo (nome) daria.
-        EtapaProcesso zeta = EtapaProcesso.Reidratar(IdFixo(2), "Zeta", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, notaMinima: null, ordem: 1);
-        EtapaProcesso alfa = EtapaProcesso.Reidratar(IdFixo(1), "Alfa", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, notaMinima: null, ordem: 2);
+        EtapaProcesso zeta = EtapaProcesso.Reidratar(IdFixo(2), "Zeta", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, notaMinima: null, ordem: 1);
+        EtapaProcesso alfa = EtapaProcesso.Reidratar(IdFixo(1), "Alfa", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, notaMinima: null, ordem: 2);
 
         new[] { zeta, alfa }.OrderBy(static e => e.Nome, StringComparer.Ordinal).Select(static e => e.Nome)
             .Should().Equal(["Alfa", "Zeta"], "pré-condição: ordenar pelo nome (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
@@ -236,8 +236,8 @@ public sealed class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "etapas: sem Ordem, o conteúdo governa sobre o Id — a posição depende do que a etapa diz, não do Guid")]
     public void Etapas_SemOrdem_ConteudoGovernaSobreId()
     {
-        EtapaProcesso zeta = EtapaProcesso.Reidratar(IdFixo(1), "Zeta", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, notaMinima: null, ordem: null);
-        EtapaProcesso alfa = EtapaProcesso.Reidratar(IdFixo(2), "Alfa", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, notaMinima: null, ordem: null);
+        EtapaProcesso zeta = EtapaProcesso.Reidratar(IdFixo(1), "Zeta", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, notaMinima: null, ordem: null);
+        EtapaProcesso alfa = EtapaProcesso.Reidratar(IdFixo(2), "Alfa", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, notaMinima: null, ordem: null);
 
         new[] { zeta, alfa }.OrderBy(static e => e.Id).Select(static e => e.Nome)
             .Should().Equal(["Zeta", "Alfa"], "pré-condição: ordenar pelo Id (a política ANTIGA) dá o oposto do oráculo de conteúdo abaixo");
@@ -254,12 +254,12 @@ public sealed class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "etapas: duplicata verdadeira (mesmo conteúdo, sem Ordem) desempata por Id — o desempate final é alcançável, não código morto")]
     public void Etapas_DuplicataVerdadeira_IdEstabilizaComoDesempateFinal()
     {
-        // O MESMO TipoEtapaSnapshot para as duas etapas — não um TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), ...)
+        // O MESMO TipoEtapaSnapshot para as duas etapas — não um TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), ..., notaDeOrigemNoEnem: false)
         // por etapa (flaky sob CORRIDA, issue #1115): duas chamadas independentes gerariam origemId
         // distintos, e origemId entra em SerializarTipoEtapa/SemId — as etapas deixariam de ser
         // conteudisticamente idênticas, e o ThenBy de CONTEÚDO (não o de Id, que é o objeto real
         // desta prova) desempataria a posição, tornando o teste dependente da ordem de criação dos Guid v7.
-        TipoEtapaSnapshot tipoEtapa = TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
+        TipoEtapaSnapshot tipoEtapa = TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
         EtapaProcesso etapaComIdMenor = EtapaProcesso.Reidratar(IdFixo(1), "Prova Objetiva", CaraterEtapa.Classificatoria, tipoEtapa, peso: 1m, notaMinima: null, ordem: null);
         EtapaProcesso etapaComIdMaior = EtapaProcesso.Reidratar(IdFixo(2), "Prova Objetiva", CaraterEtapa.Classificatoria, tipoEtapa, peso: 1m, notaMinima: null, ordem: null);
 

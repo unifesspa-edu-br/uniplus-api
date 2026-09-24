@@ -59,7 +59,7 @@ public sealed class AvaliadorConformidadeLegalTests
     }
 
     private static TipoEtapaSnapshot NovoTipoEtapa(string codigo, string nome) =>
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), codigo, nome, admitePontuacao: true, admiteEliminacao: true).Value!;
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), codigo, nome, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     [Fact(DisplayName = "issue #1071 — cenário 1: nome editorial não interfere na conformidade")]
     public void EtapaObrigatoria_ComTipoCongeladoCorrespondente_AprovaIndependenteDoNome()
@@ -433,7 +433,7 @@ public sealed class AvaliadorConformidadeLegalTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 "Prova", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(identidadeDoTipo, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!,
+                TipoEtapaSnapshot.Criar(identidadeDoTipo, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 peso: 1m, ordem: 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

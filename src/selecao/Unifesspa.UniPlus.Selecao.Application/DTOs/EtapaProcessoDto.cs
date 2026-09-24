@@ -47,4 +47,8 @@ public sealed record RecursoDaEtapaDto(
 public sealed record ProdutoDaEtapaDto(Guid Id, string AtoCodigo, string? Papel);
 
 /// <summary>Cópia por valor do tipo de etapa, projetada para leitura (ADR-0061).</summary>
-public sealed record TipoEtapaSnapshotDto(Guid OrigemId, string Codigo, string Nome);
+/// <param name="NotaDeOrigemNoEnem">
+/// Se a nota da etapa vem do ENEM, como congelado na etapa: é por ele, e não pelo cadastro
+/// atual nem pelo código, que o cliente reconhece a etapa de nota do ENEM.
+/// </param>
+public sealed record TipoEtapaSnapshotDto(Guid OrigemId, string Codigo, string Nome, bool NotaDeOrigemNoEnem);

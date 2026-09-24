@@ -546,12 +546,10 @@ public sealed class EtapaProcesso : EntityBase
     public bool ComponeNota => Carater is CaraterEtapa.Classificatoria or CaraterEtapa.Ambas && Peso.HasValue;
 
     /// <summary>
-    /// A etapa declara que sua nota vem do ENEM — é o código do tipo congelado que diz
-    /// isso, e é essa declaração que o motor de classificação consome. Comparação ordinal
-    /// direta: <see cref="TipoEtapaSnapshot.Criar"/> já guarda o código em NFC.
+    /// A etapa declara que sua nota vem do ENEM — é o atributo do tipo congelado que diz
+    /// isso, e é essa declaração que o motor de classificação consome.
     /// </summary>
-    public bool DeclaraNotaDoEnem =>
-        string.Equals(TipoEtapa.Codigo, TipoEtapaCodigo.NotaEnem, StringComparison.Ordinal);
+    public bool DeclaraNotaDoEnem => TipoEtapa.NotaDeOrigemNoEnem;
 
     /// <summary>
     /// A nota desta etapa seria lançada por alguém: há banca requerida ou promessa de

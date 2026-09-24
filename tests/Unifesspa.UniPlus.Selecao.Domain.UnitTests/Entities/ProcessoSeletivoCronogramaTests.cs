@@ -120,7 +120,7 @@ public sealed class ProcessoSeletivoCronogramaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!],
+            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!],
             PrecondicaoIfMatch.Ausente);
         FaseCronograma fase = Fase(1, "AVALIACAO", agrupaEtapas: true).Value!;
 

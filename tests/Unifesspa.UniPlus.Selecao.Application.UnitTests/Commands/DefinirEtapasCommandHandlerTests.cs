@@ -26,14 +26,14 @@ public sealed class DefinirEtapasCommandHandlerTests
     {
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, true, true));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, true, true, false));
         reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, true, true));
+            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, true, true, false));
         return reader;
     }
 
     private static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
-        TipoEtapaSnapshot.Criar(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
+        TipoEtapaSnapshot.Criar(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     /// <summary>
     /// A fase confere o ato contra o catálogo de Publicações; a etapa não conferia. O código
@@ -286,7 +286,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
             .Returns(new TipoEtapaView(
                 TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null,
-                AdmitePontuacao: false, AdmiteEliminacao: true));
+                AdmitePontuacao: false, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false));
         return reader;
     }
 
@@ -592,7 +592,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
         tipoEtapaReader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, true, true));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, true, true, false));
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         DefinirEtapasCommand command = new(
@@ -816,10 +816,10 @@ public sealed class DefinirEtapasCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
         TipoEtapaSnapshot semPontuacao = TipoEtapaSnapshot.Criar(
-            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: false, admiteEliminacao: true).Value!;
+            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
         EtapaProcesso eliminatoria = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Eliminatoria, semPontuacao, null, notaMinima: 5m, ordem: 1).Value!;
         EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            TipoRedacaoOrigemId, "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true).Value!, 1m, ordem: 2).Value!;
+            TipoRedacaoOrigemId, "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, ordem: 2).Value!;
         processo.DefinirEtapas([eliminatoria, redacao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -828,7 +828,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         // O cadastro, hoje: admite pontuação — e foi renomeado depois do congelamento.
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, AdmitePontuacao: true, AdmiteEliminacao: false));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, AdmitePontuacao: true, AdmiteEliminacao: false, NotaDeOrigemNoEnem: false));
 
         DefinirEtapasCommand command = new(
             processo.Id,
@@ -861,9 +861,9 @@ public sealed class DefinirEtapasCommandHandlerTests
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: false));
+            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: false, NotaDeOrigemNoEnem: false));
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, AdmitePontuacao: false, AdmiteEliminacao: true));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, AdmitePontuacao: false, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false));
 
         DefinirEtapasCommand command = new(
             processo.Id,
@@ -884,6 +884,66 @@ public sealed class DefinirEtapasCommandHandlerTests
         prova.AdmiteEliminacao.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Etapa nova congela a nota de origem no ENEM lida do cadastro")]
+    public async Task Handle_EtapaNova_CongelaANotaDeOrigemNoEnem()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
+        reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true));
+        reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false));
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput("Nota do ENEM", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Etapas.Single(e => e.TipoEtapaOrigemId == TipoProvaObjetivaOrigemId).DeclaraNotaDoEnem.Should().BeTrue();
+        processo.Etapas.Single(e => e.TipoEtapaOrigemId == TipoRedacaoOrigemId).DeclaraNotaDoEnem.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// A origem da nota é identidade: mudar o caráter da etapa relê o tipo para regravar os
+    /// sinalizadores, e a origem congelada fica como estava, seja o que for que o cadastro diga.
+    /// </summary>
+    [Fact(DisplayName = "Mudar o caráter regrava os sinalizadores e mantém a nota de origem no ENEM congelada")]
+    public async Task Handle_CaraterAlterado_MantemANotaDeOrigemNoEnemCongelada()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        TipoEtapaSnapshot doEnem = TipoEtapaSnapshot.Criar(
+            TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, doEnem, 1m, ordem: 1).Value!;
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
+        reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false));
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [new EtapaProcessoInput("Nota do ENEM", CaraterEtapa.Ambas, TipoProvaObjetivaOrigemId, 1m, 5m, 1, etapa.Id, Produtos: [], Bancas: [], Recursos: [])],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Etapas.Single().TipoEtapa.NotaDeOrigemNoEnem.Should().BeTrue(
+            "a regravação dos sinalizadores não alcança a identidade congelada");
+        await reader.Received().ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>());
+    }
+
     /// <summary>
     /// O cache de tipos é compartilhado entre as etapas do payload. Mudar o caráter de uma etapa
     /// lê o tipo e regrava o snapshot DELA — a outra etapa do mesmo tipo, que não mudou nada,
@@ -894,7 +954,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
         TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
-            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!;
+            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
         EtapaProcesso primeira = EtapaProcesso.Criar("Objetiva I", CaraterEtapa.Classificatoria, congelado, 1m, ordem: 1).Value!;
         EtapaProcesso segunda = EtapaProcesso.Criar("Objetiva II", CaraterEtapa.Classificatoria, congelado.ComSinalizadores(true, true), 1m, ordem: 2).Value!;
         processo.DefinirEtapas([primeira, segunda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -929,7 +989,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: snapshotAdmiteEliminacao).Value!, 1m, ordem: 1).Value!;
+            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: snapshotAdmiteEliminacao, notaDeOrigemNoEnem: false).Value!, 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);

@@ -27,4 +27,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../Shared/TipoEtapaDeTeste.cs" Link="TipoEtapaDeTeste.cs" />
+  </ItemGroup>
+
 </Project>

@@ -91,9 +91,9 @@ public sealed class ProcessoSeletivoTests
 
         Result result = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 3m, ordem: 1).Value!,
-            EtapaProcesso.Criar("Redação", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 2m, notaMinima: 5m, ordem: 2).Value!,
-            EtapaProcesso.Criar("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, ordem: 3).Value!,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1).Value!,
+            EtapaProcesso.Criar("Redação", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, notaMinima: 5m, ordem: 2).Value!,
+            EtapaProcesso.Criar("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, ordem: 3).Value!,
         ], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
@@ -109,8 +109,8 @@ public sealed class ProcessoSeletivoTests
 
         Result result = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 3m, ordem: 1).Value!,
-            EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 2m, ordem: 1).Value!,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1).Value!,
+            EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
@@ -124,7 +124,7 @@ public sealed class ProcessoSeletivoTests
 
         Result result = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, ordem: 1).Value!,
+            EtapaProcesso.Criar("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
@@ -138,7 +138,7 @@ public sealed class ProcessoSeletivoTests
 
         Result result = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Análise de histórico", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: null, ordem: 1).Value!,
+            EtapaProcesso.Criar("Análise de histórico", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: null, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
@@ -149,9 +149,9 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_Substitui()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 3m).Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m).Value!], PrecondicaoIfMatch.Ausente);
 
-        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m).Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m).Value!], PrecondicaoIfMatch.Ausente);
 
         processo.Etapas.Should().HaveCount(1);
         processo.Etapas.Single().Nome.Should().Be("Entrevista");
@@ -393,7 +393,7 @@ public sealed class ProcessoSeletivoTests
     public void DefinirCriteriosDesempate_EtapaRefExistente_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate criterio = CriterioDesempate.Criar(
@@ -408,7 +408,7 @@ public sealed class ProcessoSeletivoTests
     public void DefinirCriteriosDesempate_EtapaRefInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate criterio = CriterioDesempate.Criar(
             1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(Guid.CreateVersion7())).Value!;
@@ -423,7 +423,7 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_RemoverEtapaReferenciadaPorDesempate_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!;
+        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([redacao], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate criterio = CriterioDesempate.Criar(
@@ -433,7 +433,7 @@ public sealed class ProcessoSeletivoTests
         // Troca as etapas por uma completamente nova — a antiga (referenciada
         // pelo desempate) desaparece do conjunto.
         Result result = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
+            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorDesempate");
@@ -445,7 +445,7 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_MesmaEtapaReferenciadaPorDesempate_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!;
+        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([redacao], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate criterio = CriterioDesempate.Criar(
@@ -457,7 +457,7 @@ public sealed class ProcessoSeletivoTests
         Result result = processo.DefinirEtapas(
         [
             redacao,
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 2m, ordem: 2).Value!,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, ordem: 2).Value!,
         ], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
@@ -492,7 +492,7 @@ public sealed class ProcessoSeletivoTests
     public void DefinirClassificacao_EtapaRefEliminacaoExistente_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
@@ -508,7 +508,7 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_RemoverEtapaReferenciadaPorClassificacao_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
@@ -517,7 +517,7 @@ public sealed class ProcessoSeletivoTests
         processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
+            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorClassificacao");
@@ -527,7 +527,7 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_MesmaEtapaReferenciadaPorClassificacao_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
@@ -544,7 +544,7 @@ public sealed class ProcessoSeletivoTests
     public void DefinirClassificacao_EtapaRefEliminacaoInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,

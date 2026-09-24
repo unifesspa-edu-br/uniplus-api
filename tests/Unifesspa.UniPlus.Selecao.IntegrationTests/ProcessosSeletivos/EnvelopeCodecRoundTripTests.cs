@@ -411,6 +411,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("etapas.0.peso", "9.8750")]
     [InlineData("etapas.0.notaMinima", "12.3400")]
     [InlineData("etapas.0.carater", "Classificatoria")]
+    [InlineData("etapas.1.tipoEtapa.notaDeOrigemNoEnem", "true")]
     [InlineData("periodo.numero", "099/2026")]
     [InlineData("periodo.inicio", "2026-03-09T03:00:00Z")]
     [InlineData("periodo.fim", "2026-04-30T02:59:59Z")]
@@ -767,7 +768,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!,
+                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -943,7 +944,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!,
+                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -1175,9 +1176,9 @@ public sealed class EnvelopeCodecRoundTripTests
     }
 
     /// <summary>
-    /// <c>baseadoEmEnem</c> é o único campo booleano mutado por este helper — sem o ramo
-    /// <c>True</c>/<c>False</c>, <c>"true"</c>/<c>"false"</c> virariam string JSON e seriam
-    /// recusadas por <see cref="LeitorEnvelope.Booleano"/>, que só aceita
+    /// Sem o ramo <c>True</c>/<c>False</c>, os campos booleanos mutados por este helper
+    /// (<c>baseadoEmEnem</c>, <c>notaDeOrigemNoEnem</c>) virariam string JSON e seriam
+    /// recusados por <see cref="LeitorEnvelope.Booleano"/>, que só aceita
     /// <c>JsonValueKind.True</c>/<c>False</c>.
     /// </summary>
     private static JsonValue ValorComoNo(JsonNode original, string valor) => original.GetValueKind() switch
@@ -1258,7 +1259,7 @@ public sealed class EnvelopeCodecRoundTripTests
             regrasEliminacao: [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: enviada,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!);
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!, etapaDeNotaDoEnem: false);
         processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(doCadastro, "congelada na forma do cadastro");
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
@@ -1273,6 +1274,37 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.Classificacao.QuadroPesoAreaEnem.Should().HaveCount(4);
     }
 
+    /// <summary>
+    /// Os goldens e o corpus rico só têm etapas cuja nota não vem do ENEM. Aqui o atributo ligado
+    /// sai do encoder, e não é injetado no JSON, e volta na etapa reidratada.
+    /// </summary>
+    [Fact(DisplayName = "A etapa de nota do ENEM congelada no envelope volta declarando a nota do ENEM")]
+    public void EtapaDeNotaDoEnem_CongelarPublicarRestaurar_ContinuaDeclarandoAnotaDoEnem()
+    {
+        ProcessoSeletivo processo = ProcessoMinimo(ConfiguracaoClassificacao.Criar(
+            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
+            regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
+            casasArredondamento: 2,
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '4'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: [],
+            baseadoEmEnem: true,
+            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!, etapaDeNotaDoEnem: true);
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        Envelope(congelado)["etapas"]![0]!["tipoEtapa"]!["notaDeOrigemNoEnem"]!.GetValue<bool>().Should().BeTrue(
+            "o encoder congela o atributo ligado");
+        CorpusEnvelope.Publicar(processo);
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+        processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
+
+        processo.Etapas.Should().ContainSingle().Which.DeclaraNotaDoEnem.Should().BeTrue(
+            "a etapa reidratada declara a nota do ENEM pelo atributo que o envelope congelou");
+    }
+
     /// <summary>Corpus mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
     private static ProcessoSeletivo ProcessoSemEliminacaoEnem(bool baseadoEmEnem) =>
         ProcessoMinimo(ConfiguracaoClassificacao.Criar(
@@ -1284,10 +1316,13 @@ public sealed class EnvelopeCodecRoundTripTests
             regrasEliminacao: [],
             baseadoEmEnem: baseadoEmEnem,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!);
+            quadroPesoAreaEnem: []).Value!, etapaDeNotaDoEnem: false);
 
-    /// <summary>O menor processo publicável, com a classificação informada.</summary>
-    private static ProcessoSeletivo ProcessoMinimo(ConfiguracaoClassificacao classificacao)
+    /// <summary>
+    /// O menor processo publicável, com a classificação informada e uma etapa só, que é a de nota
+    /// do ENEM quando <paramref name="etapaDeNotaDoEnem"/> é verdadeiro.
+    /// </summary>
+    private static ProcessoSeletivo ProcessoMinimo(ConfiguracaoClassificacao classificacao, bool etapaDeNotaDoEnem)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS BaseadoEmEnem", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -1296,7 +1331,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true).Value!,
+                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: etapaDeNotaDoEnem).Value!,
                 peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

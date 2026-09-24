@@ -15,6 +15,8 @@ public static class TipoEtapaErrorCodes
     public const string AdmitePontuacaoObrigatorio = "TipoEtapa.AdmitePontuacaoObrigatorio";
     public const string AdmiteEliminacaoObrigatorio = "TipoEtapa.AdmiteEliminacaoObrigatorio";
     public const string SemCaraterAdmitido = "TipoEtapa.SemCaraterAdmitido";
+    public const string NotaDeOrigemNoEnemExigePontuacao = "TipoEtapa.NotaDeOrigemNoEnemExigePontuacao";
+    public const string NotaDeOrigemNoEnemNaoDesativa = "TipoEtapa.NotaDeOrigemNoEnemNaoDesativa";
     public const string NaoEncontrado = "TipoEtapa.NaoEncontrado";
     public const string JaDesativado = "TipoEtapa.JaDesativado";
 }

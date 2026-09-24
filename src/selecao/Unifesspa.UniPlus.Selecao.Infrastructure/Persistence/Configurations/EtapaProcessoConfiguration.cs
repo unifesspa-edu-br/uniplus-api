@@ -34,6 +34,10 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             tipo.Property(x => x.Nome).HasColumnName("tipo_etapa_nome").HasMaxLength(200).IsRequired();
             tipo.Property(x => x.AdmitePontuacao).HasColumnName("tipo_etapa_admite_pontuacao").IsRequired();
             tipo.Property(x => x.AdmiteEliminacao).HasColumnName("tipo_etapa_admite_eliminacao").IsRequired();
+            tipo.Property(x => x.NotaDeOrigemNoEnem)
+                .HasColumnName("tipo_etapa_nota_de_origem_no_enem")
+                .IsRequired()
+                .HasComment("Nota da etapa vem do ENEM, congelado do tipo junto com a identidade.");
         });
         builder.Navigation(e => e.TipoEtapa).IsRequired();
 
