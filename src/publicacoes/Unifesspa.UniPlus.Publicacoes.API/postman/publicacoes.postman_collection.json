@@ -12,6 +12,21 @@
           "name": "Obter token plataforma-admin",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Modo token pronto: com a variável access_token preenchida (ex.: token copiado",
+                  "// do navegador), a coleção usa esse token e não pede outro ao Keycloak.",
+                  "const pronto = pm.environment.get('access_token');",
+                  "if (pronto) {",
+                  "  pm.environment.set('token', pronto);",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",

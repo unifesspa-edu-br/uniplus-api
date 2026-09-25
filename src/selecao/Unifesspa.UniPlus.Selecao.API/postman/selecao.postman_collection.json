@@ -54,6 +54,27 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sufixo único por execução — evita colisão de código/slug/sigla/identificador",
+                  "// em reexecuções contra o mesmo banco (Campus/Curso/Modalidade/TipoDocumento/",
+                  "// Unidade e o identificador legível do processo não toleram 409 como",
+                  "// Instituição/FaseCanonica/TipoAto toleram). 6 dígitos aleatórios: um módulo",
+                  "// de timestamp repete a cada ~16m40s, e duas execuções nesse intervalo colidiam.",
+                  "pm.environment.set('run_suffix', Math.floor(100000 + Math.random() * 900000));",
+                  "// Modo token pronto: com a variável access_token preenchida (ex.: token copiado",
+                  "// do navegador), a coleção usa esse token e não pede outro ao Keycloak.",
+                  "const pronto = pm.environment.get('access_token');",
+                  "if (pronto) {",
+                  "  pm.environment.set('token', pronto);",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -63,14 +84,7 @@
                   "  const j = pm.response.json();",
                   "  pm.expect(j.access_token).to.be.a('string');",
                   "  pm.environment.set('token', j.access_token);",
-                  "});",
-                  "// Sufixo único por execução — evita colisão de código/slug/sigla em",
-                  "// reexecuções contra o mesmo banco (Campus/Curso/Modalidade/TipoDocumento/",
-                  "// Unidade não toleram 409 como Instituição/FaseCanonica/TipoAto toleram).",
-                  "// 6 dígitos aleatórios (Math.random, não Date.now() % 1e6): um módulo de",
-                  "// timestamp repete a cada ~16m40s (achado de revisão, PR #907) — duas",
-                  "// execuções nesse intervalo colidiam nos códigos gerados.",
-                  "pm.environment.set('run_suffix', Math.floor(100000 + Math.random() * 900000));"
+                  "});"
                 ]
               }
             }
@@ -430,7 +444,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Comissão Especial de Processos Seletivos\",\n  \"alias\": \"CEPS\",\n  \"slug\": \"ceps-smoke-{{run_suffix}}\",\n  \"sigla\": \"CEPS-{{run_suffix}}\",\n  \"codigo\": \"CEPS-SMK-{{run_suffix}}\",\n  \"unidadeSuperiorId\": null,\n  \"tipo\": \"coordenacao\",\n  \"unidadeAcademica\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"origem\": \"criadoNoUniPlus\"\n}",
+              "raw": "{\n  \"nome\": \"Comissão Especial de Processos Seletivos\",\n  \"alias\": \"CEPS\",\n  \"slug\": \"ceps-smoke-{{run_suffix}}\",\n  \"sigla\": \"CEPS-{{run_suffix}}\",\n  \"codigo\": \"CEPS-SMK-{{run_suffix}}\",\n  \"unidadeSuperiorId\": null,\n  \"tipo\": \"coordenacao\",\n  \"unidadeAcademica\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"cidadeCodigoIbge\": \"1504208\",\n  \"cidadeNome\": \"Marabá\",\n  \"cidadeUf\": \"PA\",\n  \"origem\": \"criadoNoUniPlus\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -697,7 +711,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cursoId\": \"{{curso_id}}\",\n  \"localOfertaId\": \"{{local_oferta_id}}\",\n  \"unidadeOfertanteOrigemId\": \"{{unidade_id}}\",\n  \"programaDeOferta\": \"REGULAR\",\n  \"formatoPedagogico\": \"PRESENCIAL\",\n  \"regimeDeTurno\": \"REGULAR\",\n  \"turnos\": [\"MATUTINO\"],\n  \"eMecCodigo\": null,\n  \"codigoSga\": null,\n  \"vagasAnuaisAutorizadas\": null,\n  \"baseLegal\": null,\n  \"atoAutorizacaoMec\": null\n}",
+              "raw": "{\n  \"cursoId\": \"{{curso_id}}\",\n  \"localOfertaId\": \"{{local_oferta_id}}\",\n  \"unidadeOfertanteOrigemId\": \"{{unidade_id}}\",\n  \"programaDeOferta\": \"REGULAR\",\n  \"regimeDeFuncionamento\": \"EXTENSIVO\",\n  \"formatoPedagogico\": \"PRESENCIAL\",\n  \"regimeDeTurno\": \"REGULAR\",\n  \"turnos\": [\n    \"MATUTINO\"\n  ],\n  \"eMecCodigo\": null,\n  \"codigoSga\": null,\n  \"vagasAnuaisAutorizadas\": null,\n  \"baseLegal\": null,\n  \"atoAutorizacaoMec\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -827,7 +841,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"LB_PPI_SMK_{{run_suffix}}\",\n  \"descricao\": \"Baixa renda PPI (smoke)\",\n  \"naturezaLegal\": \"COTA_RESERVADA\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": \"SEGUE_CASCATA\",\n  \"remanejamentoDestino\": null,\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012, art. 3º\"\n}",
+              "raw": "{\n  \"codigo\": \"LB_PPI_SMK_{{run_suffix}}\",\n  \"descricao\": \"Baixa renda PPI (smoke)\",\n  \"naturezaLegal\": \"OUTRA_MODALIDADE\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": \"DESTINO_UNICO\",\n  \"remanejamentoDestino\": \"AC_SMK_{{run_suffix}}\",\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012, art. 3º\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -892,7 +906,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"LB_Q_SMK_{{run_suffix}}\",\n  \"descricao\": \"Baixa renda quilombola (smoke)\",\n  \"naturezaLegal\": \"COTA_RESERVADA\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": \"SEGUE_CASCATA\",\n  \"remanejamentoDestino\": null,\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012, art. 3º\"\n}",
+              "raw": "{\n  \"codigo\": \"LB_Q_SMK_{{run_suffix}}\",\n  \"descricao\": \"Baixa renda quilombola (smoke)\",\n  \"naturezaLegal\": \"OUTRA_MODALIDADE\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": \"DESTINO_UNICO\",\n  \"remanejamentoDestino\": \"AC_SMK_{{run_suffix}}\",\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012, art. 3º\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1274,6 +1288,105 @@
               }
             }
           ]
+        },
+        {
+          "name": "Obter Tipo de Processo (SiSU)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com o tipo SiSU no catálogo', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  const itens = Array.isArray(j) ? j : (j.items || j.data || []);",
+                  "  const sisu = itens.find(t => t.codigo === 'SiSU');",
+                  "  pm.expect(sisu, 'tipo SiSU no catálogo de tipos de processo').to.be.an('object');",
+                  "  pm.environment.set('tipo_processo_id', sisu.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/tipos-processo?limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "tipos-processo"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obter Tipos de Etapa (Prova Objetiva, Entrevista)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com os tipos de etapa usados pela coleção', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  const itens = Array.isArray(j) ? j : (j.items || j.data || []);",
+                  "  const prova = itens.find(t => t.codigo === 'PROVA_OBJETIVA');",
+                  "  const entrevista = itens.find(t => t.codigo === 'ENTREVISTA');",
+                  "  pm.expect(prova, 'tipo PROVA_OBJETIVA no catálogo').to.be.an('object');",
+                  "  pm.expect(entrevista, 'tipo ENTREVISTA no catálogo').to.be.an('object');",
+                  "  pm.environment.set('tipo_etapa_prova_id', prova.id);",
+                  "  pm.environment.set('tipo_etapa_entrevista_id', entrevista.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/tipos-etapa?limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "tipos-etapa"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          }
         }
       ],
       "description": "Árvore mínima Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica exigida pelas dimensões de ProcessoSeletivo. Nenhum destes recursos é pré-seedado (exceto o catálogo interno rol_de_regras, referenciado só por código)."
@@ -1320,7 +1433,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"SiSU 2026.1 (smoke)\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\"\n}",
+              "raw": "{\n  \"nome\": \"SiSU 2026.1 (smoke)\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"smoke-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1390,7 +1503,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_entrevista_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1529,7 +1642,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                  "pm.test('200 com as distribuições gravadas', () => pm.response.to.have.status(200));"
                 ]
               }
             }
@@ -1965,6 +2078,192 @@
           ]
         },
         {
+          "name": "Definir Referência Temporal de Fatos",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/referencia-temporal-fatos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "referencia-temporal-fatos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"DATA_ESPECIFICA\",\n  \"data\": \"2026-01-31\",\n  \"faseId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Fatos Coletados",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/fatos-coletados",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "fatos-coletados"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"fatoCodigo\": \"COR_RACA\",\n    \"ordem\": 0,\n    \"rotulo\": \"Cor ou raça\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": true,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"BAIXA_RENDA\",\n    \"ordem\": 1,\n    \"rotulo\": \"Baixa renda\",\n    \"tipoRenderizacao\": \"BOOLEANO\",\n    \"obrigatorio\": false,\n    \"precondicao\": [\n      [\n        {\n          \"fato\": \"COR_RACA\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PRETA\"\n        }\n      ]\n    ]\n  },\n  {\n    \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n    \"ordem\": 2,\n    \"rotulo\": \"Condição de atendimento especializado\",\n    \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"SEXO\",\n    \"ordem\": 3,\n    \"rotulo\": \"Sexo\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"NACIONALIDADE\",\n    \"ordem\": 4,\n    \"rotulo\": \"Nacionalidade\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Regras de Derivação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/regras-derivacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "regras-derivacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"codigoFato\": \"MODALIDADE\",\n    \"regras\": [\n      {\n        \"ordem\": 0,\n        \"contribui\": \"AC_SMK_{{run_suffix}}\",\n        \"quando\": null\n      },\n      {\n        \"ordem\": 1,\n        \"contribui\": \"AC_SMK_{{run_suffix}}\",\n        \"quando\": [\n          [\n            {\n              \"fato\": \"COR_RACA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"PRETA\"\n            }\n          ]\n        ]\n      }\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "[Borda] MODALIDADE EM valor fora do domínio do processo",
           "request": {
             "method": "PUT",
@@ -2283,192 +2582,6 @@
                   "pm.test('204 No Content — 8 folhas (1 GERAL + 5 CONDICIONAL + 1 cardinalidade qualificada + 1 repetição por entidade) aceitas — Story #920/#921/#922, cada exigência é raiz-folha', () => {",
                   "  pm.response.to.have.status(204);",
                   "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Definir Referência Temporal de Fatos",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Idempotency-Key",
-                "value": "{{$guid}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/referencia-temporal-fatos",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "selecao",
-                "processos-seletivos",
-                "{{processo_id}}",
-                "referencia-temporal-fatos"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"tipo\": \"DATA_ESPECIFICA\",\n  \"data\": \"2026-01-31\",\n  \"faseId\": null\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Definir Fatos Coletados",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Idempotency-Key",
-                "value": "{{$guid}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/fatos-coletados",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "selecao",
-                "processos-seletivos",
-                "{{processo_id}}",
-                "fatos-coletados"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "[\n  {\n    \"fatoCodigo\": \"COR_RACA\",\n    \"ordem\": 0,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"BAIXA_RENDA\",\n    \"ordem\": 1,\n    \"precondicao\": [\n      [\n        {\n          \"fato\": \"COR_RACA\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PRETA\"\n        }\n      ]\n    ]\n  }\n]",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Definir Regras de Derivação",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Idempotency-Key",
-                "value": "{{$guid}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/regras-derivacao",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "selecao",
-                "processos-seletivos",
-                "{{processo_id}}",
-                "regras-derivacao"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "[\n  {\n    \"codigoFato\": \"MODALIDADE\",\n    \"regras\": [\n      {\n        \"ordem\": 0,\n        \"contribui\": \"AC_SMK_{{run_suffix}}\",\n        \"quando\": null\n      },\n      {\n        \"ordem\": 1,\n        \"contribui\": \"AC_SMK_{{run_suffix}}\",\n        \"quando\": [\n          [\n            {\n              \"fato\": \"COR_RACA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"PRETA\"\n            }\n          ]\n        ]\n      }\n    ]\n  }\n]",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
                 ]
               }
             }
@@ -3599,7 +3712,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva (revisada)\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 2.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva (revisada)\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 2.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_entrevista_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3671,7 +3784,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"fatoCodigo\": \"BAIXA_RENDA\",\n    \"ordem\": 0,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"COR_RACA\",\n    \"ordem\": 1,\n    \"precondicao\": null\n  }\n]",
+              "raw": "[\n  {\n    \"fatoCodigo\": \"BAIXA_RENDA\",\n    \"ordem\": 0,\n    \"rotulo\": \"Baixa renda\",\n    \"tipoRenderizacao\": \"BOOLEANO\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"COR_RACA\",\n    \"ordem\": 1,\n    \"rotulo\": \"Cor ou raça\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": true,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n    \"ordem\": 2,\n    \"rotulo\": \"Condição de atendimento especializado\",\n    \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"SEXO\",\n    \"ordem\": 3,\n    \"rotulo\": \"Sexo\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"NACIONALIDADE\",\n    \"ordem\": 4,\n    \"rotulo\": \"Nacionalidade\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4146,7 +4259,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Árvore — Padrão 1: Certificado E Histórico\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\"\n}",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 1: Certificado E Histórico\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"arvore-p1-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4211,7 +4324,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4350,7 +4463,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                  "pm.test('200 com as distribuições gravadas', () => { pm.response.to.have.status(200); });"
                 ]
               }
             }
@@ -4675,7 +4788,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Árvore — Padrão 2: E[OU[RG,CPF], Certidão]\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\"\n}",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 2: E[OU[RG,CPF], Certidão]\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"arvore-p2-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4740,7 +4853,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4879,7 +4992,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                  "pm.test('200 com as distribuições gravadas', () => { pm.response.to.have.status(200); });"
                 ]
               }
             }
@@ -5210,7 +5323,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Árvore — Padrão 3: guarda condicional\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\"\n}",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 3: guarda condicional\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"arvore-p3-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5275,7 +5388,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5414,7 +5527,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                  "pm.test('200 com as distribuições gravadas', () => { pm.response.to.have.status(200); });"
                 ]
               }
             }
@@ -5738,7 +5851,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Árvore — Padrão 4: IRPF/isento por adulto\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\"\n}",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 4: IRPF/isento por adulto\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"arvore-p4-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5803,7 +5916,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5942,7 +6055,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                  "pm.test('200 com as distribuições gravadas', () => { pm.response.to.have.status(200); });"
                 ]
               }
             }
@@ -6270,7 +6383,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Árvore — Padrão 5: PF + PJ vinculada\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\"\n}",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 5: PF + PJ vinculada\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"arvore-p5-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6335,7 +6448,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6474,7 +6587,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                  "pm.test('200 com as distribuições gravadas', () => { pm.response.to.have.status(200); });"
                 ]
               }
             }

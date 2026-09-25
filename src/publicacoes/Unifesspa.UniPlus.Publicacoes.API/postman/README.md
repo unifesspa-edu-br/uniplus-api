@@ -1,19 +1,20 @@
-# Coleção Postman — API de Organização
+# Coleção Postman — API de Publicações
 
-Testes HTTP do módulo **OrganizacaoInstitucional**, versionados junto da própria
-API (convenção: uma coleção por API, não compartilhada). Exercita o ciclo de
-vida completo da **Instituição** singleton (issue #585) e um smoke de **Unidade**.
+Testes HTTP do módulo **Publicações**, versionados junto da própria API (convenção:
+uma coleção por API). Exercita o ciclo de vida do cadastro de tipos de ato:
+autenticação `plataforma-admin`, `Idempotency-Key` no `POST`, vendor MIME por
+recurso, ProblemDetails, HATEOAS, janela de vigência semiaberta e exclusão lógica.
 
 ## Arquivos
 
-- `organizacao.postman_collection.json` — a coleção (Postman v2.1).
-- `organizacao.postman_environment.json` — ambiente local (dev): URL da API, URL de
+- `publicacoes.postman_collection.json` — a coleção (Postman v2.1).
+- `publicacoes.postman_environment.json` — ambiente local (dev): URL da API, URL de
   token do Keycloak, client e credenciais. Valores **dev-only** (os padrões são os do
   realm `unifesspa-dev-local`); todos podem ser sobrescritos por `--env-var`.
 
 ## Pré-condições
 
-O módulo Organização é servido pela **API UniPlus** (monólito modular, serviço
+O módulo Publicações é servido pela **API UniPlus** (monólito modular, serviço
 `uniplus-api`, porta `:5200`). As rotas administrativas exigem o papel
 `plataforma-admin` (usuário `admin`).
 
@@ -52,28 +53,24 @@ Alternativa sem ROPC: preencha a variável `access_token` com um token já emiti
 (por exemplo, copiado do navegador depois do login num app do Uni+). Com ela
 preenchida, a pasta Auth não chama o Keycloak e a coleção usa esse token.
 
-**Efeito sobre a Instituição:** a coleção remove a Instituição singleton no início e
-a que cria ao final. Numa stack compartilhada, isso apaga a Instituição cadastrada
-por outras pessoas enquanto a coleção roda — combine antes de rodar ali.
-
 ## Rodar (Newman)
 
 ```bash
 cd repositories/uniplus-api
-P=src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/postman
+P=src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/postman
 
 # Stack com override padrão (realm unifesspa)
-npx --yes newman@6.2.1 run "$P/organizacao.postman_collection.json" -e "$P/organizacao.postman_environment.json" \
+npx --yes newman@6.2.1 run "$P/publicacoes.postman_collection.json" -e "$P/publicacoes.postman_environment.json" \
   --env-var keycloak_token_url=http://localhost:8080/realms/unifesspa/protocol/openid-connect/token \
   --env-var client_id=admin-cli --env-var 'password=<senha do admin no realm unifesspa>' \
   --reporters cli --reporter-cli-no-banner
 
 # Stack de smoke (realm unifesspa-dev-local): os valores do environment já servem
-npx --yes newman@6.2.1 run "$P/organizacao.postman_collection.json" -e "$P/organizacao.postman_environment.json" \
+npx --yes newman@6.2.1 run "$P/publicacoes.postman_collection.json" -e "$P/publicacoes.postman_environment.json" \
   --reporters cli --reporter-cli-no-banner
 
 # Com token pronto
-npx --yes newman@6.2.1 run "$P/organizacao.postman_collection.json" -e "$P/organizacao.postman_environment.json" \
+npx --yes newman@6.2.1 run "$P/publicacoes.postman_collection.json" -e "$P/publicacoes.postman_environment.json" \
   --env-var "access_token=$TOKEN" --reporters cli --reporter-cli-no-banner
 ```
 
@@ -81,22 +78,10 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente.
 
 ## O que é coberto
 
-| Cenário | Verbo / rota | Esperado |
-|---|---|---|
-| Token plataforma-admin | `POST` token (Keycloak), ou token pronto via `access_token` | 200 + `access_token` |
-| Limpeza (estado conhecido) | `GET /api/organizacao/instituicao` (+ `DELETE` se existir) | 200/404 → limpo |
-| Criar sem auth | `POST /api/organizacao/admin/instituicao` | 401 |
-| Criar sem Idempotency-Key | `POST /api/organizacao/admin/instituicao` | 400 |
-| Criar sem campo obrigatório | `POST /api/organizacao/admin/instituicao` | 400/422 |
-| Criar com unidade raiz inexistente | `POST /api/organizacao/admin/instituicao` | 422 `unidade_raiz_nao_encontrada` |
-| Criar Instituição | `POST /api/organizacao/admin/instituicao` | 201 + Guid v7 |
-| Obter (vendor MIME + HATEOAS) | `GET /api/organizacao/instituicao` | 200 + `_links.self` |
-| Singleton: 2ª criação | `POST /api/organizacao/admin/instituicao` | 409 `ja_existe` |
-| Atualizar | `PUT /api/organizacao/admin/instituicao/{id}` | 204 |
-| Obter após atualização | `GET /api/organizacao/instituicao` | 200 + `situacao` Credenciada |
-| Remover (soft-delete) | `DELETE /api/organizacao/admin/instituicao/{id}` | 204 |
-| Obter pós-remoção (slot liberado) | `GET /api/organizacao/instituicao` | 404 |
-| Smoke Unidade | `GET /api/organizacao/unidades` | 200 + vendor MIME + array |
+| Folder | Cobre |
+|---|---|
+| **Auth** | Password grant contra o Keycloak do realm configurado, ou token pronto via `access_token` |
+| **Tipos de ato** | Criação, leitura, atualização e vigência de um tipo de ato de teste, com as recusas de contrato |
+| **Limpeza** | Remove o tipo de ato criado pela execução |
 
-A coleção é **auto-contida e re-executável**: limpa a Instituição no início e
-remove a que cria ao final, deixando o estado limpo.
+A coleção é **auto-contida e re-executável**: remove ao final o tipo de ato que cria.
