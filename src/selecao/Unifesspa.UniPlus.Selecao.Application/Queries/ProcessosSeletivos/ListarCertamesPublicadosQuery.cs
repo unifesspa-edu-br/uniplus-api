@@ -30,9 +30,11 @@ public sealed record ListarCertamesPublicadosQuery(
     PaginationDirection Direction,
     bool IncluirContadores) : IQuery<Result<ListarCertamesPublicadosResult>>;
 
-/// <summary>Página da vitrine, com as âncoras de continuação.</summary>
+/// <summary>Página da vitrine, com as âncoras de continuação e a revisão do recorte.</summary>
+/// <param name="Revisao">Marcador opaco dos certames do recorte percorrido e do que cada um tem de ordenável e exibível.</param>
 public sealed record ListarCertamesPublicadosResult(
     IReadOnlyList<CertameNaVitrineDto> Items,
     (string SortKey, Guid Id)? Anterior,
     (string SortKey, Guid Id)? Proximo,
-    ContadoresDaVitrine? Contadores);
+    ContadoresDaVitrine? Contadores,
+    string Revisao);

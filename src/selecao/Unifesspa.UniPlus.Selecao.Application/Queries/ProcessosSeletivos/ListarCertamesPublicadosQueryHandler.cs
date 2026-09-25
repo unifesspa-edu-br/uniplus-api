@@ -105,6 +105,7 @@ public static class ListarCertamesPublicadosQueryHandler
         }
 
         return Result<ListarCertamesPublicadosResult>.Success(
-            new ListarCertamesPublicadosResult(itens, pagina.Anterior, pagina.Proximo, pagina.Contadores));
+            new ListarCertamesPublicadosResult(
+                itens, pagina.Anterior, pagina.Proximo, pagina.Contadores, pagina.Revisao));
     }
 }

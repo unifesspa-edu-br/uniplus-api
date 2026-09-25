@@ -32,12 +32,19 @@ public sealed record RecorteDaVitrine(
 /// página é como a promessa passa a contradizer a tela.
 /// </remarks>
 /// <param name="Contadores">Nulo quando a consulta não os pediu — contar é percurso a mais.</param>
+/// <param name="Revisao">
+/// Marcador opaco dos certames do recorte e do que cada um tem de ordenável e exibível (versão
+/// divulgada e situação no instante da travessia): igual em todas as páginas da mesma travessia,
+/// diferente quando uma publicação, uma retificação ou o relógio muda esse conjunto. Não depende da
+/// ordenação pedida, que a assinatura do cursor já fixa.
+/// </param>
 public sealed record PaginaDaVitrine(
     IReadOnlyList<CertameDivulgado> Itens,
     DateTimeOffset InstanteEfetivo,
     (string SortKey, Guid Id)? Anterior,
     (string SortKey, Guid Id)? Proximo,
-    ContadoresDaVitrine? Contadores);
+    ContadoresDaVitrine? Contadores,
+    string Revisao);
 
 /// <summary>
 /// Leitura e escrita da projeção pública do certame — a tabela cuja existência de linha é a

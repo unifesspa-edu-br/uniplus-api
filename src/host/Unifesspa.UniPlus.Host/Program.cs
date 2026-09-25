@@ -77,12 +77,14 @@ builder.Services.AddReverseProxyConfiguration(builder.Configuration, builder.Env
 builder.Services.AddCorsConfiguration(
     builder.Configuration,
     builder.Environment,
-    // Contagem por situação da vitrine pública de certames, que alimenta os filtros da tela. Vive
-    // aqui, e não na lista comum do CORS compartilhado, porque só o Seleção emite estes headers.
+    // Contagem por situação e revisão do recorte da vitrine pública de certames, que alimentam os
+    // filtros da tela e a detecção de coleção alterada entre páginas. Vivem aqui, e não na lista
+    // comum do CORS compartilhado, porque só o Seleção emite estes headers.
     "X-Certames-Em-Breve",
     "X-Certames-Inscricoes-Abertas",
     "X-Certames-Ultimos-Dias",
-    "X-Certames-Encerrados");
+    "X-Certames-Encerrados",
+    "X-Certames-Revisao");
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
 

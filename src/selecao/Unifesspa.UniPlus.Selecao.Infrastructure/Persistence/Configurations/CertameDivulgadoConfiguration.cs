@@ -90,8 +90,9 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
             .IsUnique()
             .HasDatabaseName("ux_certames_divulgados_ato_criador");
 
-        // Revisão da coleção: a assinatura do cursor lê o MAIOR instante de divulgação a cada
-        // página, e sem índice isso varre a tabela numa rota anônima.
+        // Serve à ordenação da vitrine pelo instante de divulgação (campo divulgadoEm do sort):
+        // sem ele, a página ordenada por esse campo varre a tabela numa rota anônima. O nome do
+        // índice é o que está no banco; trocá-lo exigiria migration sem ganho de comportamento.
         builder.HasIndex(c => c.DivulgadoEm)
             .HasDatabaseName("ix_certames_divulgados_revisao");
 

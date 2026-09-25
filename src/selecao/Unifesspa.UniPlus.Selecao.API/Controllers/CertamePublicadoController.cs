@@ -68,6 +68,15 @@ public sealed class CertamePublicadoController : ControllerBase
         "Quantos certames divulgados já encerraram, no instante da consulta. Presente só quando "
         + "incluir_contadores=true.";
 
+    private const string DescricaoDaRevisao =
+        "Revisão do recorte percorrido: marcador opaco dos certames que a consulta seleciona "
+        + "(situação, modalidade e busca) e do que cada um tem de ordenável e exibível — a versão "
+        + "divulgada e a situação da janela de inscrição —, no instante em que a travessia começou. "
+        + "Não depende da ordenação pedida, que o cursor já fixa. É o mesmo em todas as páginas da "
+        + "mesma travessia e muda quando uma publicação, uma retificação ou a passagem do tempo altera "
+        + "esse conjunto. Quem compõe a vitrine compara o valor entre páginas para saber que precisa "
+        + "recomeçar.";
+
     private const string DescricaoDoSeloDoCertame =
         "Selo da representação servida, no formato \"{versaoDaProjecao}:{hashDaConfiguracao}\". "
         + "Devolva-o no If-None-Match da próxima leitura: a resposta é de revalidação obrigatória "
@@ -113,6 +122,7 @@ public sealed class CertamePublicadoController : ControllerBase
     [EmiteHeader("X-Certames-Inscricoes-Abertas", ContagemAbertas, Inteiro = true)]
     [EmiteHeader("X-Certames-Ultimos-Dias", ContagemUltimosDias, Inteiro = true)]
     [EmiteHeader("X-Certames-Encerrados", ContagemEncerrados, Inteiro = true)]
+    [EmiteHeader("X-Certames-Revisao", DescricaoDaRevisao)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
@@ -157,6 +167,10 @@ public sealed class CertamePublicadoController : ControllerBase
         // Revalidação obrigatória: o endereço da página não muda quando um certame entra na
         // vitrine ou se reposiciona nela.
         Response.Headers.CacheControl = "no-cache";
+
+        // Sempre presente, ao contrário dos contadores: é o que permite a quem compõe a vitrine
+        // perceber que a coleção avançou entre duas páginas (ADR-0131).
+        Response.Headers["X-Certames-Revisao"] = resultado.Revisao;
 
         // Metadado de coleção em header, nunca no corpo (ADR-0025). Opt-in: o link de continuação
         // preserva o parâmetro, então quem pede uma vez paga a contagem em toda página — pedir só

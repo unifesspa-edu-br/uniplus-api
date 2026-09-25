@@ -92,7 +92,7 @@ public sealed class LeituraPublicaDoCertameTests
                 Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
                 Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
                 Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(new PaginaDaVitrine([linha], Agora, null, null, null));
+            .Returns(new PaginaDaVitrine([linha], Agora, null, null, null, RevisaoDoRecorte));
 
         ListarCertamesPublicadosResult resultado = (await ListarCertamesPublicadosQueryHandler.Handle(
             Consulta(), repository, CancellationToken.None)).Value!;
@@ -117,6 +117,22 @@ public sealed class LeituraPublicaDoCertameTests
         com.Contadores.Should().Be(new ContadoresDaVitrine(5, 12, 3, 40));
     }
 
+    [Fact(DisplayName = "A revisão do recorte passa do repositório ao resultado sem alteração")]
+    public async Task Handle_DeveRepassarARevisaoDoRecorte()
+    {
+        // O valor é opaco para a aplicação: quem o deriva é a consulta, que enxerga o recorte
+        // inteiro. Recalculá-lo ou omiti-lo aqui faria o cabeçalho da vitrine deixar de avisar que
+        // a coleção avançou.
+        ICertameDivulgadoRepository repository = RepositorioComVitrine(Guid.CreateVersion7());
+
+        ListarCertamesPublicadosResult resultado = (await ListarCertamesPublicadosQueryHandler.Handle(
+            Consulta(), repository, CancellationToken.None)).Value!;
+
+        resultado.Revisao.Should().Be(RevisaoDoRecorte);
+    }
+
+    private const string RevisaoDoRecorte = "revisao-do-recorte";
+
     /// <summary>Posição de <c>incluirContadores</c> na chamada ao repositório.</summary>
     private const int PosicaoDoSinalizadorDeContadores = 8;
 
@@ -136,7 +152,8 @@ public sealed class LeituraPublicaDoCertameTests
                 Agora,
                 null,
                 ("ancora", processoIds[^1]),
-                chamada.ArgAt<bool>(PosicaoDoSinalizadorDeContadores) ? new ContadoresDaVitrine(5, 12, 3, 40) : null));
+                chamada.ArgAt<bool>(PosicaoDoSinalizadorDeContadores) ? new ContadoresDaVitrine(5, 12, 3, 40) : null,
+                RevisaoDoRecorte));
         return repository;
     }
 

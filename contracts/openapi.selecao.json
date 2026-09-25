@@ -218,6 +218,12 @@
                   "type": "integer",
                   "format": "int32"
                 }
+              },
+              "X-Certames-Revisao": {
+                "description": "Revis\u00E3o do recorte percorrido: marcador opaco dos certames que a consulta seleciona (situa\u00E7\u00E3o, modalidade e busca) e do que cada um tem de orden\u00E1vel e exib\u00EDvel \u2014 a vers\u00E3o divulgada e a situa\u00E7\u00E3o da janela de inscri\u00E7\u00E3o \u2014, no instante em que a travessia come\u00E7ou. N\u00E3o depende da ordena\u00E7\u00E3o pedida, que o cursor j\u00E1 fixa. \u00C9 o mesmo em todas as p\u00E1ginas da mesma travessia e muda quando uma publica\u00E7\u00E3o, uma retifica\u00E7\u00E3o ou a passagem do tempo altera esse conjunto. Quem comp\u00F5e a vitrine compara o valor entre p\u00E1ginas para saber que precisa recome\u00E7ar.",
+                "schema": {
+                  "type": "string"
+                }
               }
             },
             "content": {
