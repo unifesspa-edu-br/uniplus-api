@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Portal.Application.Certames;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 
@@ -46,11 +47,21 @@ public sealed class ComposicaoDaPaginaDoCertame
     }
 
     /// <summary>Compõe a página do certame identificado pelo identificador legível.</summary>
+    /// <remarks>
+    /// Um valor fora do formato do identificador legível não identifica certame nenhum: responde
+    /// o mesmo "não encontrado" dos demais casos, sem consultar a origem — o endereço é público, e
+    /// qualquer texto pode chegar até aqui.
+    /// </remarks>
     public async Task<Result<PaginaDoCertame>> ComporPorIdentificadorAsync(
         string identificador,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(identificador);
+        ArgumentNullException.ThrowIfNull(identificador);
+
+        if (!FormatoKebab.TemComprimentoValido(identificador) || !FormatoKebab.TemFormatoValido(identificador))
+        {
+            return NaoEncontrado();
+        }
 
         ConsultaDoCertame consulta = await _contrato
             .ObterPorIdentificadorAsync(identificador, cancellationToken)
@@ -70,9 +81,7 @@ public sealed class ComposicaoDaPaginaDoCertame
                     await ComporEncontradoAsync(encontrado.Certame, cancellationToken).ConfigureAwait(false));
 
             case ConsultaDoCertame.NaoEncontrado:
-                return Result<PaginaDoCertame>.Failure(new DomainError(
-                    PaginaDoCertameErrorCodes.CertameNaoEncontrado,
-                    "Certame não encontrado."));
+                return NaoEncontrado();
 
             default:
                 return Result<PaginaDoCertame>.Failure(new DomainError(
@@ -80,6 +89,11 @@ public sealed class ComposicaoDaPaginaDoCertame
                     "Os dados do certame estão temporariamente indisponíveis."));
         }
     }
+
+    private static Result<PaginaDoCertame> NaoEncontrado() =>
+        Result<PaginaDoCertame>.Failure(new DomainError(
+            PaginaDoCertameErrorCodes.CertameNaoEncontrado,
+            "Certame não encontrado."));
 
     private async Task<PaginaDoCertame> ComporEncontradoAsync(
         CertameDaOrigem certame,

@@ -192,6 +192,23 @@ public sealed class ComposicaoDaPaginaDoCertameTests
         contrato.IdentificadorPedido.Should().Be("medicina-2027");
     }
 
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("Medicina-2027")]
+    [InlineData("medicina 2027")]
+    [InlineData("ab")]
+    public async Task Identificador_fora_do_formato_e_nao_encontrado_sem_consultar_a_origem(string identificador)
+    {
+        ContratoFalso contrato = new(Encontrado());
+        ComposicaoDaPaginaDoCertame composicao = new(contrato, new RegistroFalso(new LeituraDosAtos([], null)));
+
+        Result<PaginaDoCertame> resultado = await composicao.ComporPorIdentificadorAsync(identificador, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(PaginaDoCertameErrorCodes.CertameNaoEncontrado);
+        contrato.IdentificadorPedido.Should().BeNull();
+    }
+
     [Fact]
     public void Nenhum_tipo_da_pagina_carrega_o_assinante_do_ato()
     {

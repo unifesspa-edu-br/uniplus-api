@@ -76,8 +76,13 @@ public sealed class CertamePublicoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     [EmiteHeader("Retry-After", DescricaoDoRetryAfter, Status = "503", Inteiro = true)]
-    public async Task<IActionResult> ObterCertamePublico(string identificador, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterCertamePublico(string? identificador, CancellationToken cancellationToken)
     {
+        // Anulável de propósito: o binder transforma um segmento só de espaços em nulo, e um
+        // parâmetro obrigatório faria essa entrada sair como 400 de validação — o endereço fora do
+        // formato tem de dar o mesmo "não encontrado" dos demais casos.
+        identificador ??= string.Empty;
+
         Result<PaginaDoCertame> resultado = await _composicao
             .ComporPorIdentificadorAsync(identificador, cancellationToken)
             .ConfigureAwait(false);

@@ -109,6 +109,28 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         corpo.RootElement.GetProperty("code").GetString().Should().Be("uniplus.portal.certame.nao_encontrado");
     }
 
+    [Theory(DisplayName = "Identificador fora do formato: o mesmo 404 uniforme, sem consultar a origem")]
+    [InlineData("%20")]
+    [InlineData("Medicina-2027")]
+    [InlineData("medicina--2027")]
+    [InlineData("-medicina")]
+    [InlineData("ab")]
+    public async Task IdentificadorForaDoFormato_404Uniforme(string identificador)
+    {
+        ServirCertame();
+        ContratoDoCertameSimulado contrato = _factory.Contrato;
+        string? antes = contrato.UltimoIdentificador;
+
+        using HttpClient client = _factory.CreateClient();
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri("/api/portal/certames/" + identificador, UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        using JsonDocument corpo = await LerAsync(resposta);
+        corpo.RootElement.GetProperty("code").GetString().Should().Be("uniplus.portal.certame.nao_encontrado");
+        contrato.UltimoIdentificador.Should().Be(antes, "valor fora do formato não chega à origem");
+    }
+
     [Fact(DisplayName = "Seleção indisponível: 503 com Retry-After, sem conteúdo e sem guarda em cache")]
     public async Task SelecaoIndisponivel_503ComRetryAfter()
     {

@@ -77,7 +77,7 @@ builder.Services.AddPortalApplication();
 builder.Services.AddPortalInfrastructure();
 
 // Origens da página pública do certame — contrato público de Seleção e consulta unificada de atos
-// de Publicações (ADR-0131). Registradas só quando há endereço configurado.
+// de Publicações (ADR-0131). Configuração obrigatória, validada na subida.
 builder.Services.AddPortalOrigens(builder.Configuration);
 
 // Migrations EF Core do módulo Portal aplicadas no host StartAsync via IHostedService —

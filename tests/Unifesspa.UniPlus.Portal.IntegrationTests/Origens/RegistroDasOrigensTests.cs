@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Portal.Application.Certames;
 
@@ -15,17 +16,13 @@ using Unifesspa.UniPlus.Portal.Application.Certames;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit IClassFixture<T> exige tipo de teste público.")]
-public sealed class RegistroDasOrigensTests :
-    IClassFixture<PortalComOrigensApiFactory>,
-    IClassFixture<PortalApiFactory>
+public sealed class RegistroDasOrigensTests : IClassFixture<PortalApiFactory>
 {
-    private readonly PortalComOrigensApiFactory _comOrigens;
-    private readonly PortalApiFactory _semOrigens;
+    private readonly PortalApiFactory _comOrigens;
 
-    public RegistroDasOrigensTests(PortalComOrigensApiFactory comOrigens, PortalApiFactory semOrigens)
+    public RegistroDasOrigensTests(PortalApiFactory comOrigens)
     {
         _comOrigens = comOrigens;
-        _semOrigens = semOrigens;
     }
 
     [Fact(DisplayName = "Com as origens configuradas, a Portal sobe e monta a composição da página do certame")]
@@ -36,11 +33,14 @@ public sealed class RegistroDasOrigensTests :
         escopo.ServiceProvider.GetService<ComposicaoDaPaginaDoCertame>().Should().NotBeNull();
     }
 
-    [Fact(DisplayName = "Sem as origens configuradas, a Portal sobe sem a composição")]
-    public void SemOrigens_ComposicaoAusente()
+    [Fact(DisplayName = "Sem os endereços das origens, a Portal recusa subir")]
+    public void SemOrigens_RecusaSubir()
     {
-        using IServiceScope escopo = _semOrigens.Services.CreateScope();
+        using PortalSemOrigensApiFactory semOrigens = new();
 
-        escopo.ServiceProvider.GetService<ComposicaoDaPaginaDoCertame>().Should().BeNull();
+        Action subir = () => semOrigens.CreateClient().Dispose();
+
+        subir.Should().Throw<OptionsValidationException>()
+            .Which.Message.Should().Contain("SelecaoBaseUrl").And.Contain("PublicacoesBaseUrl");
     }
 }

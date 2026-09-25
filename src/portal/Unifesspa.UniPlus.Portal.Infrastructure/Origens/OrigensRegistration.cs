@@ -30,15 +30,12 @@ public static class OrigensRegistration
     private static readonly string[] CabecalhosOcultos = ["Authorization", "Cookie", "Set-Cookie"];
 
     /// <summary>
-    /// Registra as origens quando há endereço configurado.
+    /// Registra as origens e a composição da página pública do certame.
     /// </summary>
     /// <remarks>
-    /// Sem <c>Origens:SelecaoBaseUrl</c>, nada é registrado e a configuração não é validada — o
-    /// mesmo tratamento que o repositório dá às demais integrações por rede: o processo sobe sem
-    /// elas, o que mantém de pé as suítes que levantam a Portal sem as origens. A composição é
-    /// registrada aqui, e não na camada de aplicação, porque não há como construí-la sem as
-    /// origens; registrada incondicionalmente, a validação do contêiner derrubaria a subida.
-    /// Havendo endereço, a configuração inteira é validada na subida.
+    /// A configuração é obrigatória e validada na subida: a página pública é a razão de ser da
+    /// Portal, e sem os endereços das origens ela não tem como responder. Faltando, o processo não
+    /// sobe — em vez de subir pronto e responder erro a cada leitura de candidato.
     /// </remarks>
     public static IServiceCollection AddPortalOrigens(this IServiceCollection services, IConfiguration configuration)
     {
@@ -46,11 +43,6 @@ public static class OrigensRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         IConfigurationSection secao = configuration.GetSection(OrigensOptions.SectionName);
-
-        if (string.IsNullOrWhiteSpace(secao[nameof(OrigensOptions.SelecaoBaseUrl)]))
-        {
-            return services;
-        }
 
         services.AddOptions<OrigensOptions>()
             .Bind(secao)

@@ -38,6 +38,11 @@ public sealed class PortalComOrigensSimuladasApiFactory : ApiFactoryBase<PortalA
         new("Kafka:BootstrapServers", string.Empty),
         new("Auth:Authority", "http://localhost/test-realm"),
         new("Auth:Audience", "uniplus"),
+        new("Origens:SelecaoBaseUrl", "http://uniplus-api.integration-not-real:8080"),
+        new("Origens:PublicacoesBaseUrl", "http://uniplus-api.integration-not-real:8080"),
+        new(
+            "Origens:ReencaminharAposEmSegundos",
+            ReencaminharAposEmSegundos.ToString(System.Globalization.CultureInfo.InvariantCulture)),
     ];
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -45,14 +50,6 @@ public sealed class PortalComOrigensSimuladasApiFactory : ApiFactoryBase<PortalA
         ArgumentNullException.ThrowIfNull(builder);
 
         base.ConfigureWebHost(builder);
-
-        // O Program decide registrar as origens lendo a configuração antes de construir o host;
-        // só a configuração de host chega a tempo.
-        builder.UseSetting("Origens:SelecaoBaseUrl", "http://uniplus-api.integration-not-real:8080");
-        builder.UseSetting("Origens:PublicacoesBaseUrl", "http://uniplus-api.integration-not-real:8080");
-        builder.UseSetting(
-            "Origens:ReencaminharAposEmSegundos",
-            ReencaminharAposEmSegundos.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         builder.ConfigureTestServices(services =>
         {
