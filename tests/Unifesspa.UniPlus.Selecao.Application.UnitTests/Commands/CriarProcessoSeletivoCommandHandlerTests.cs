@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -219,5 +220,77 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CidadeReferencia.UfIncoerente");
+    }
+
+    [Fact(DisplayName = "O identificador legível informado na criação é persistido com o processo")]
+    public async Task Handle_ComIdentificador_Persiste()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA")
+        {
+            IdentificadorLegivel = "psiq-2026",
+        };
+        ProcessoSeletivo? persistido = null;
+        repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
+            .Do(ci => persistido = ci.Arg<ProcessoSeletivo>());
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        persistido!.IdentificadorLegivel!.Value.Valor.Should().Be("psiq-2026");
+    }
+
+    [Fact(DisplayName = "Identificador em formato inválido é recusado antes de qualquer leitura")]
+    public async Task Handle_IdentificadorInvalido_RecusaSemIO()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA")
+        {
+            IdentificadorLegivel = "PSIQ-2026",
+        };
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
+        await unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Identificador já usado por outro processo é recusado e nada é persistido")]
+    public async Task Handle_IdentificadorEmUso_RecusaSemPersistir()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        repository.IdentificadorLegivelEmUsoAsync(
+                IdentificadorLegivel.Criar("psiq-2026").Value, null, Arg.Any<CancellationToken>())
+            .Returns(true);
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA")
+        {
+            IdentificadorLegivel = "psiq-2026",
+        };
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
+        await repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        await unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 }

@@ -7,4 +7,11 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 public static class ProcessoSeletivoErrorCodes
 {
     public const string CriteriosDesempateEmExcesso = "ProcessoSeletivo.CriteriosDesempateEmExcesso";
+
+    public const string IdentificadorLegivelTamanho = "ProcessoSeletivo.IdentificadorLegivelTamanho";
+    public const string IdentificadorLegivelFormatoInvalido = "ProcessoSeletivo.IdentificadorLegivelFormatoInvalido";
+    public const string IdentificadorLegivelComFormatoDeGuid = "ProcessoSeletivo.IdentificadorLegivelComFormatoDeGuid";
+    public const string IdentificadorLegivelAusente = "ProcessoSeletivo.IdentificadorLegivelAusente";
+    public const string IdentificadorLegivelImutavel = "ProcessoSeletivo.IdentificadorLegivelImutavel";
+    public const string IdentificadorLegivelEmUso = "ProcessoSeletivo.IdentificadorLegivelEmUso";
 }

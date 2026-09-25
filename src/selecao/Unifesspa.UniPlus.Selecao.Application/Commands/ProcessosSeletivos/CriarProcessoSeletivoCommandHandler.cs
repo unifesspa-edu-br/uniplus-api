@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Errors;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
@@ -51,6 +52,20 @@ public static class CriarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(unidadeReader);
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        // O formato do identificador legível é conferido antes de qualquer consulta: validação
+        // de campo vence I/O, e quem erra o formato não precisa esperar pelas leituras abaixo.
+        IdentificadorLegivel? identificadorLegivel = null;
+        if (!string.IsNullOrWhiteSpace(command.IdentificadorLegivel))
+        {
+            Result<IdentificadorLegivel> identificadorResult = IdentificadorLegivel.Criar(command.IdentificadorLegivel);
+            if (identificadorResult.IsFailure)
+            {
+                return Result<Guid>.Failure(identificadorResult.Error!);
+            }
+
+            identificadorLegivel = identificadorResult.Value;
+        }
 
         UnidadeView? unidade = await unidadeReader
             .ObterPorIdAsync(command.UnidadeAdministradoraOrigemId, cancellationToken)
@@ -117,13 +132,41 @@ public static class CriarProcessoSeletivoCommandHandler
             return Result<Guid>.Failure(snapshotResult.Error!);
         }
 
+        if (identificadorLegivel is { } identificador
+            && await processoSeletivoRepository
+                .IdentificadorLegivelEmUsoAsync(identificador, excluirId: null, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(IdentificadorLegivelEmUso(identificador));
+        }
+
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             command.Nome, tipoSnapshotResult.Value!, command.OrigemCandidatos, unidade.Id, snapshotResult.Value!,
-            localidadeResult.Value!);
+            localidadeResult.Value!, identificadorLegivel);
 
         await processoSeletivoRepository.AdicionarAsync(processo, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (identificadorLegivel is { } emDisputa && EhConflitoDeIdentificadorLegivel(ex))
+        {
+            // Outro processo gravou o mesmo identificador entre a consulta acima e esta gravação. O
+            // processo recusado sai do contexto: sem isso ele continuaria Added no escopo, e uma
+            // gravação posterior no mesmo contexto tentaria inseri-lo de novo.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<Guid>.Failure(IdentificadorLegivelEmUso(emDisputa));
+        }
 
         return Result<Guid>.Success(processo.Id);
     }
+
+    private const string IndiceDoIdentificadorLegivel = "ix_processos_seletivos_identificador_legivel";
+
+    internal static bool EhConflitoDeIdentificadorLegivel(Exception ex) => string.Equals(
+        UniqueConstraintViolation.GetViolatedConstraint(ex), IndiceDoIdentificadorLegivel, StringComparison.Ordinal);
+
+    internal static DomainError IdentificadorLegivelEmUso(IdentificadorLegivel identificador) => new(
+        ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso,
+        $"O identificador legível '{identificador}' já é usado por outro processo seletivo.");
 }

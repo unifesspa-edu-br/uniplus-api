@@ -51,6 +51,13 @@ public sealed record CriarProcessoSeletivoCommand(
     }
 
     /// <summary>
+    /// Identificador legível do certame (issue #1479), opcional no cadastro e exigido na
+    /// publicação. Propriedade de inicialização, e não parâmetro posicional, porque é opcional:
+    /// quem cria sem ele não precisa informá-lo.
+    /// </summary>
+    public string? IdentificadorLegivel { get; init; }
+
+    /// <summary>
     /// Nenhum dos três campos da localidade foi informado — distinto de trio informado e
     /// incoerente, que o Kernel já nomeia por causa. A separação existe porque as duas
     /// recusas dizem coisas diferentes a quem chamou: uma esqueceu de declarar, a outra

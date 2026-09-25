@@ -30,6 +30,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// A cadeia completa do envelope fechado (issue #1045, story-pai #40): um processo RICO,
@@ -284,6 +285,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "classificacao_grupo_area_enem_da_oferta_fora_do_quadro",
 
                 // ── Gates que a raiz aplica antes do agregador genérico ──
+                "identificador_legivel_nao_declarado",
                 "localidade_nao_declarada",
                 "algoritmo_contagem_prazo_nao_declarado",
                 "calendario_vigente_ausente",
@@ -539,6 +541,7 @@ public sealed class EnvelopeFechadoE2ETests
                 localidadeCodigoIbge = "1504208",
                 localidadeNome = "Marabá",
                 localidadeUf = "PA",
+                identificadorLegivel = IdentificadoresDeTeste.NovoValor(),
             },
             ifMatch: null);
 

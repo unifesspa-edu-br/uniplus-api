@@ -19,6 +19,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public static class DimensaoConformidade
 {
+    public const string Identificacao = "identificacao";
     public const string AtendimentoEspecializado = "atendimento_especializado";
     public const string DistribuicaoVagas = "distribuicao_vagas";
     public const string Classificacao = "classificacao";

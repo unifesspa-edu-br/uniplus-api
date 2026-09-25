@@ -75,6 +75,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
+        Description = "O identificador legível informado já é usado por outro processo seletivo (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso). Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Criar([FromBody] CriarProcessoSeletivoCommand command, CancellationToken cancellationToken)
     {
@@ -553,6 +555,38 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirDocumentosExigidosCommand(id, raizes, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
+    /// Declara, troca ou remove o identificador legível do certame, de onde derivam o endereço
+    /// público e a chave no acervo. Aceito só enquanto o processo nunca foi publicado.
+    /// </summary>
+    [HttpPut("{id:guid}/identificador-legivel")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
+        Description = "O identificador legível informado já é usado por outro processo seletivo (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso). Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirIdentificadorLegivel(
+        Guid id,
+        [FromBody] DefinirIdentificadorLegivelRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirIdentificadorLegivelCommand(id, request.IdentificadorLegivel, precondicao),
+            cancellationToken);
         return ResponderMutacao(resultado);
     }
 

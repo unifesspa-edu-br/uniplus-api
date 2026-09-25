@@ -4,6 +4,7 @@ using Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Repositório único do agregado <see cref="ProcessoSeletivo"/>: carrega e
@@ -149,4 +150,15 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// inexistente) de 422 (sem publicação vigente ≤ o instante).
     /// </summary>
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <see langword="true"/> se outro processo seletivo, excluído logicamente ou não, já usa este
+    /// identificador legível. A unicidade é global porque o endereço público de um certame
+    /// excluído não pode ser herdado por outro.
+    /// </summary>
+    /// <param name="excluirId">O próprio processo, que não conflita consigo mesmo.</param>
+    Task<bool> IdentificadorLegivelEmUsoAsync(
+        IdentificadorLegivel identificador,
+        Guid? excluirId,
+        CancellationToken cancellationToken = default);
 }
