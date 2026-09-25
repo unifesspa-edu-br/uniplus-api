@@ -42,6 +42,7 @@
   </Folder>
   <Folder Name="/src/portal/">
     <Project Path="src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj" />
+    <Project Path="src/portal/Unifesspa.UniPlus.Portal.Application/Unifesspa.UniPlus.Portal.Application.csproj" />
     <Project Path="src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />
     <Project Path="src/portal/Unifesspa.UniPlus.Portal.Infrastructure/Unifesspa.UniPlus.Portal.Infrastructure.csproj" />
   </Folder>
@@ -78,6 +79,7 @@
     <Project Path="tests/Unifesspa.UniPlus.Publicacoes.Domain.UnitTests/Unifesspa.UniPlus.Publicacoes.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Publicacoes.Application.UnitTests/Unifesspa.UniPlus.Publicacoes.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Publicacoes.IntegrationTests/Unifesspa.UniPlus.Publicacoes.IntegrationTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Portal.ArchTests/Unifesspa.UniPlus.Portal.ArchTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Portal.IntegrationTests/Unifesspa.UniPlus.Portal.IntegrationTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Discentes.UnitTests/Unifesspa.UniPlus.Discentes.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Host.IntegrationTests/Unifesspa.UniPlus.Host.IntegrationTests.csproj" />

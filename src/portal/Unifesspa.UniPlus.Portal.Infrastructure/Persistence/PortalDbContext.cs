@@ -1,9 +1,8 @@
 namespace Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
-using Application.Abstractions.Interfaces;
-
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 public sealed class PortalDbContext : DbContext, IUnitOfWork
