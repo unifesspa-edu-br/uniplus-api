@@ -141,6 +141,11 @@ public sealed record AtendimentoCertameDto(
 /// publicações — sem isso, "a linha do tempo está completa" e "a linha do tempo está atrasada"
 /// seriam indistinguíveis para o consumidor.
 /// <para>
+/// <see cref="IdentificadorLegivel"/> é o endereço público do certame, lido da configuração
+/// congelada — nunca do cadastro vivo: o endereço de um certame publicado não muda quando o cadastro
+/// muda, e é por ele que a página pública e o acervo localizam o certame.
+/// </para>
+/// <para>
 /// <see cref="Nome"/> é o título do certame no instante da publicação. Ele não vive na configuração
 /// congelada — é atributo do processo —, e congelá-lo aqui é o que impede a página pública de
 /// exibir um título editado depois, sob uma retificação que ainda não tem publicidade.
@@ -155,6 +160,7 @@ public sealed record AtendimentoCertameDto(
 /// </remarks>
 public sealed record CertamePublicadoDto(
     Guid ProcessoSeletivoId,
+    string IdentificadorLegivel,
     Guid AtoCriadorId,
     string Nome,
     string VersaoProjecao,

@@ -284,10 +284,10 @@
           {
             "name": "id",
             "in": "path",
+            "description": "Guid do processo seletivo ou identificador leg\u00EDvel do certame (kebab-case, congelado na publica\u00E7\u00E3o).",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           },
           {
@@ -7964,6 +7964,7 @@
       "CertameNaVitrineDto": {
         "required": [
           "processoSeletivoId",
+          "identificadorLegivel",
           "numero",
           "nome",
           "tipoProcesso",
@@ -7978,6 +7979,9 @@
           "processoSeletivoId": {
             "type": "string",
             "format": "uuid"
+          },
+          "identificadorLegivel": {
+            "type": "string"
           },
           "numero": {
             "type": [
@@ -8021,6 +8025,7 @@
       "CertamePublicadoDto": {
         "required": [
           "processoSeletivoId",
+          "identificadorLegivel",
           "atoCriadorId",
           "nome",
           "versaoProjecao",
@@ -8046,6 +8051,9 @@
           "processoSeletivoId": {
             "type": "string",
             "format": "uuid"
+          },
+          "identificadorLegivel": {
+            "type": "string"
           },
           "atoCriadorId": {
             "type": "string",

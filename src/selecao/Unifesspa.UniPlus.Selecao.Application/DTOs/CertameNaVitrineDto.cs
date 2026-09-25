@@ -12,6 +12,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// discordam sobre qual versão estão mostrando.
 /// </remarks>
 /// <param name="ProcessoSeletivoId">Identificador do processo, por onde se abre o detalhe.</param>
+/// <param name="IdentificadorLegivel">
+/// Endereço público do certame, congelado na publicação — o mesmo pelo qual o detalhe o localiza.
+/// </param>
 /// <param name="Numero">Identificador legível do edital. Nem toda publicação o declara.</param>
 /// <param name="Nome">Título do certame.</param>
 /// <param name="TipoProcesso">Tipo do processo, como congelado na publicação.</param>
@@ -38,6 +41,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// <param name="TotalDeVagas">Soma das vagas publicadas em todas as ofertas do certame.</param>
 public sealed record CertameNaVitrineDto(
     Guid ProcessoSeletivoId,
+    string IdentificadorLegivel,
     string? Numero,
     string Nome,
     TipoCatalogadoCertameDto TipoProcesso,

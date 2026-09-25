@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 using Xunit;
 
@@ -155,7 +156,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
                 new string('b', 64),
                 versaoProjecao: "1",
                 new FacetasDoCertameDivulgado(
-                    divulgado.Nome, divulgado.Numero, divulgado.ModalidadesOfertadas,
+                    divulgado.IdentificadorLegivel, divulgado.Nome, divulgado.Numero, divulgado.ModalidadesOfertadas,
                     divulgado.InscricoesDe, divulgado.InscricoesAte.AddDays(5)),
                 divulgado.Certame,
                 Agora.AddMinutes(1));
@@ -426,7 +427,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
             Guid.CreateVersion7(),
             new string('a', 64),
             versaoProjecao: "1",
-            new FacetasDoCertameDivulgado(nome, numero, modalidades, Agora.AddDays(-1), inscricoesAte),
+            new FacetasDoCertameDivulgado(IdentificadoresDeTeste.Novo().Valor, nome, numero, modalidades, Agora.AddDays(-1), inscricoesAte),
             """{"nome":"documento"}""",
             divulgadoEm ?? Agora);
 }

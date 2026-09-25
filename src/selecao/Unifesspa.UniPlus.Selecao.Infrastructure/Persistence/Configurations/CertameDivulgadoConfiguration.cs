@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -47,6 +48,10 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         builder.Property(c => c.AtoCriadorId).IsRequired();
         builder.Property(c => c.HashConfiguracao).HasMaxLength(64).IsFixedLength().IsRequired();
         builder.Property(c => c.VersaoProjecao).HasMaxLength(16).IsRequired();
+        builder.Property(c => c.IdentificadorLegivel)
+            .HasMaxLength(FormatoKebab.ComprimentoMaximo)
+            .IsRequired();
+
         // Facetas em coluna: buscar, recortar e ordenar não se fazem sobre documento.
         builder.Property(c => c.Nome).HasMaxLength(NomeMaxLength).IsRequired();
         builder.Property(c => c.Numero).HasMaxLength(NumeroMaxLength);
@@ -73,6 +78,12 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         // parâmetro — não há índice a criar para ele.
         builder.HasIndex(c => new { c.InscricoesAte, c.Id })
             .HasDatabaseName("ix_certames_divulgados_prazo");
+
+        // O endereço público localiza um certame só. O cadastro já garante a unicidade e a
+        // imutabilidade depois de publicado; o índice é a última defesa, e é ele que serve a busca.
+        builder.HasIndex(c => c.IdentificadorLegivel)
+            .IsUnique()
+            .HasDatabaseName("ux_certames_divulgados_identificador_legivel");
 
         // Um ato divulga no máximo um certame: reentrega não produz duas divulgações.
         builder.HasIndex(c => c.AtoCriadorId)

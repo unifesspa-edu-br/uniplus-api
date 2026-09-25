@@ -106,6 +106,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
 
         // Da MESMA projeção que produziu o documento: é o que impede consulta e resposta divergirem.
         FacetasDoCertameDivulgado facetas = new(
+            certame.IdentificadorLegivel,
             certame.Nome,
             certame.Periodo.Numero,
             certame.ModalidadesOfertadas,
@@ -145,7 +146,28 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             return;
         }
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception falha) when (IdentificadorLegivelJaDivulgadoException.EhViolacaoDoIndice(falha))
+        {
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+
+            CertameDivulgado? dono = await certameDivulgadoRepository
+                .ObterParaLeituraPorIdentificadorAsync(certame.IdentificadorLegivel, cancellationToken)
+                .ConfigureAwait(false);
+
+            // Linha do próprio processo (entregas de versões dele correndo juntas) ou já removida:
+            // é corrida, que a reentrega resolve — a falha original segue para a política transiente.
+            if (IdentificadorLegivelJaDivulgadoException.Classificar(
+                falha, versao.ProcessoSeletivoId, dono?.Id, certame.IdentificadorLegivel) is not { } conflito)
+            {
+                throw;
+            }
+
+            throw conflito;
+        }
     }
 
     /// <summary>

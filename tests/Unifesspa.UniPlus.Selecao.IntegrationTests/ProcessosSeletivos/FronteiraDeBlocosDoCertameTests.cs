@@ -119,6 +119,39 @@ public sealed class FronteiraDeBlocosDoCertameTests
             resultado.Error?.Message);
     }
 
+    [Theory(DisplayName = "Envelope sem identificador legível válido não é projetado")]
+    [InlineData(null)]
+    [InlineData("PSIQ 2026")]
+    [InlineData("3f2504e0-4f89-41d3-9a0c-0305e82c3301")]
+    public void Projetar_QuandoIdentificadorLegivelAusenteOuInvalido_DeveRecusar(string? identificador)
+    {
+        // É a chave pela qual a leitura pública localiza o certame: projetar sem ela deixaria a
+        // divulgação inalcançável pelo endereço público, e com valor fora da regra do cadastro
+        // deixaria a busca casar o que o cadastro nunca aceitaria.
+        JsonObject envelope = (JsonObject)JsonNode.Parse(
+            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+        envelope["identificadorLegivel"] = identificador;
+
+        Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Message.Should().Contain("identificador legível");
+    }
+
+    [Fact(DisplayName = "A projeção expõe o identificador congelado no envelope")]
+    public void Projetar_QuandoEnvelopeTrazIdentificador_DeveExpoLo()
+    {
+        JsonObject envelope = (JsonObject)JsonNode.Parse(
+            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+        envelope["identificadorLegivel"] = "psiq-2026";
+
+        Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope);
+
+        resultado.Value!.IdentificadorLegivel.Should().Be("psiq-2026");
+    }
+
     [Theory(DisplayName = "Documento com bloco presente mas incompleto é recusado, não servido com nulo")]
     [InlineData("tipoProcesso", "{}")]
     [InlineData("documentoEdital", """{"documentoEditalId":"01a0b13f-b9ed-70f4-9ff3-cfdc7503fc9b"}""")]
@@ -274,8 +307,8 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
-    [InlineData("2")]
-    [InlineData("0")]
+    [InlineData("3")]
+    [InlineData("1")]
     public void TentarLerProjecao_QuandoAVersaoNaoEADesteBinario_DeveRecusar(string outraVersao)
     {
         // Num deploy em fases, um processo novo materializa a versão seguinte e um processo antigo

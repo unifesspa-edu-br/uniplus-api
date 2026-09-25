@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 using Xunit;
 
@@ -276,7 +277,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
             Guid.CreateVersion7(),
             new string('a', 64),
             versaoProjecao: "1",
-            new FacetasDoCertameDivulgado(nome, numero, ["AC"], Agora.AddDays(-60), inscricoesAte),
+            new FacetasDoCertameDivulgado(IdentificadoresDeTeste.Novo().Valor, nome, numero, ["AC"], Agora.AddDays(-60), inscricoesAte),
             """{"nome":"documento"}""",
             Agora);
 }

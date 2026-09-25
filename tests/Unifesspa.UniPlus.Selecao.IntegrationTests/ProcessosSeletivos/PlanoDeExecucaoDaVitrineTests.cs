@@ -50,6 +50,7 @@ public sealed class PlanoDeExecucaoDaVitrineTests : IClassFixture<ProcessoSeleti
                 new string('a', 64),
                 versaoProjecao: "1",
                 new FacetasDoCertameDivulgado(
+                    string.Create(CultureInfo.InvariantCulture, $"certame-{i:D5}"),
                     string.Create(CultureInfo.InvariantCulture, $"Certame {i:D5}"),
                     string.Create(CultureInfo.InvariantCulture, $"{i:D5}/2026"),
                     ModalidadesDe(i),

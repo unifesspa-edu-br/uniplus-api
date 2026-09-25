@@ -45,6 +45,12 @@ public sealed class CertameDivulgado : IIdentificavel
     public string VersaoProjecao { get; private set; } = null!;
 
     /// <summary>
+    /// Identificador legível congelado na versão projetada. Coluna, com índice único, porque a
+    /// leitura pública localiza o certame por ele.
+    /// </summary>
+    public string IdentificadorLegivel { get; private set; } = null!;
+
+    /// <summary>
     /// Título congelado do certame. Coluna, e não só campo do documento, porque a vitrine o busca e
     /// ordena por ele.
     /// </summary>
@@ -97,6 +103,7 @@ public sealed class CertameDivulgado : IIdentificavel
             AtoCriadorId = atoCriadorId,
             HashConfiguracao = hashConfiguracao,
             VersaoProjecao = versaoProjecao,
+            IdentificadorLegivel = facetas.IdentificadorLegivel,
             Nome = facetas.Nome,
             Numero = facetas.Numero,
             // Cópia: o tipo do parâmetro é só leitura, mas a instância concreta é do chamador, e
@@ -135,6 +142,7 @@ public sealed class CertameDivulgado : IIdentificavel
         AtoCriadorId = atoCriadorId;
         HashConfiguracao = hashConfiguracao;
         VersaoProjecao = versaoProjecao;
+        IdentificadorLegivel = facetas.IdentificadorLegivel;
         Nome = facetas.Nome;
         Numero = facetas.Numero;
         ModalidadesOfertadas = [.. facetas.ModalidadesOfertadas];

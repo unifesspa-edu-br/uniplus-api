@@ -180,7 +180,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                     new string('a', 64),
                     versaoProjecao: "1",
                     new FacetasDoCertameDivulgado(
-                        processo.Nome, dados.Numero, ["AC"], dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim),
+                        processo.IdentificadorLegivel!.Value.Valor, processo.Nome, dados.Numero, ["AC"], dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim),
                     """{"nome":"documento"}""",
                     TimeProvider.System.GetUtcNow()),
                 CancellationToken.None);
