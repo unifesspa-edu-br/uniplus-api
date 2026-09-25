@@ -49,7 +49,9 @@ internal sealed record CertamePublicoResponse(
 /// </summary>
 /// <param name="Id">Identificador do ato.</param>
 /// <param name="Data">Data de publicação declarada no documento do ato.</param>
-/// <param name="Titulo">Nome do tipo do ato seguido do número, quando declarado.</param>
+/// <param name="Titulo">Nome do tipo do ato seguido do número, quando declarado, sem compor o ano.</param>
+/// <param name="Numero">Número do ato como declarado pelo órgão. Ausente quando o ato não declara número.</param>
+/// <param name="Ano">Ano da numeração declarada pelo órgão (não é o ano da data de publicação).</param>
 /// <param name="Tipo">Tipo do ato.</param>
 /// <param name="Descricao">Motivo da retificação, quando o ato retifica outro.</param>
 /// <param name="DocumentoUrl">
@@ -59,6 +61,8 @@ internal sealed record EventoDaLinhaDoTempoResponse(
     Guid Id,
     DateOnly Data,
     string Titulo,
+    string? Numero,
+    int Ano,
     TipoDoEventoResponse Tipo,
     string? Descricao,
     string? DocumentoUrl)
@@ -68,6 +72,8 @@ internal sealed record EventoDaLinhaDoTempoResponse(
             evento.Id,
             evento.Data,
             evento.Titulo,
+            evento.Numero,
+            evento.Ano,
             new TipoDoEventoResponse(evento.Tipo.Codigo, evento.Tipo.Nome),
             evento.Descricao,
             DocumentoUrl: null);

@@ -287,6 +287,8 @@
           "id",
           "data",
           "titulo",
+          "numero",
+          "ano",
           "tipo",
           "descricao",
           "documentoUrl"
@@ -303,6 +305,20 @@
           },
           "titulo": {
             "type": "string"
+          },
+          "numero": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ano": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "tipo": {
             "$ref": "#/components/schemas/TipoDoEventoResponse"

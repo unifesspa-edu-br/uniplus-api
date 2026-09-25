@@ -64,6 +64,8 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         JsonElement edital = linha[2];
         edital.GetProperty("data").GetString().Should().Be("2026-12-01");
         edital.GetProperty("titulo").GetString().Should().Be("Edital de abertura nº 012/2026");
+        edital.GetProperty("numero").GetString().Should().Be("012/2026");
+        edital.GetProperty("ano").GetInt32().Should().Be(2026);
         edital.GetProperty("tipo").GetProperty("codigo").GetString().Should().Be("EDITAL_ABERTURA");
         edital.GetProperty("tipo").GetProperty("nome").GetString().Should().Be("Edital de abertura");
         edital.GetProperty("descricao").ValueKind.Should().Be(JsonValueKind.Null);
@@ -73,6 +75,10 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         JsonElement aviso = linha[1];
         aviso.GetProperty("titulo").GetString().Should().Be("AVISO");
         aviso.GetProperty("tipo").GetProperty("nome").GetString().Should().Be("AVISO");
+
+        // Ato sem número declarado: o número vem ausente e o ano da numeração continua presente.
+        aviso.GetProperty("numero").ValueKind.Should().Be(JsonValueKind.Null);
+        aviso.GetProperty("ano").GetInt32().Should().Be(2027);
     }
 
     [Fact(DisplayName = "A resposta não carrega dado pessoal do ato nem campo interno da composição")]
