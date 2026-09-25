@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.ReverseProxy;
 using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Portal.API;
 using Unifesspa.UniPlus.Portal.API.Errors;
+using Unifesspa.UniPlus.Portal.Application;
 using Unifesspa.UniPlus.Portal.Infrastructure;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
@@ -71,6 +72,7 @@ builder.Services.AdicionarObservabilidade(nomeServicoPortal, builder.Configurati
 
 // AddPortalInfrastructure resolve a connection string via IConfiguration
 // injetada no factory do AddDbContext — simetria com Selecao/Ingresso (#204).
+builder.Services.AddPortalApplication();
 builder.Services.AddPortalInfrastructure();
 
 // Migrations EF Core do módulo Portal aplicadas no host StartAsync via IHostedService —
@@ -85,10 +87,13 @@ builder.Services.AddPortalInfrastructure();
 builder.Services.AddDbContextMigrationsOnStartup<PortalDbContext>();
 
 // Wolverine como backbone CQRS/messaging com outbox transacional —
-// ver ADR-0003, ADR-0004 e ADR-0005. Esqueleto sem rotas adicionais
-// (não há domain events publicáveis ainda); a Story que introduzir o
-// primeiro caso de uso completa o roteamento.
-builder.Host.UseWolverineOutboxCascading(builder.Configuration, connectionStringName: "PortalDb");
+// ver ADR-0003, ADR-0004 e ADR-0005. Os handlers da camada Application
+// são descobertos a partir do assembly dela; não há rotas de publicação
+// porque a Portal não publica domain events.
+builder.Host.UseWolverineOutboxCascading(
+    builder.Configuration,
+    connectionStringName: "PortalDb",
+    configureRouting: opts => opts.Discovery.IncludeAssembly(typeof(PortalApplicationAssemblyMarker).Assembly));
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddReverseProxyConfiguration(builder.Configuration, builder.Environment);

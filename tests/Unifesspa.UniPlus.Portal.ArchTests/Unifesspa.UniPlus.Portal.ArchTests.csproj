@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="TngTech.ArchUnitNET" />
+    <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Application.Abstractions/Unifesspa.UniPlus.Application.Abstractions.csproj" />
+    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />
+    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Application/Unifesspa.UniPlus.Portal.Application.csproj" />
+    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Infrastructure/Unifesspa.UniPlus.Portal.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

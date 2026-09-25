@@ -29,7 +29,7 @@ using ReflectionType = System.Type;
 /// <list type="bullet">
 ///   <item><description>Selecao (4 layers — Domain, Application, Infrastructure, API)</description></item>
 ///   <item><description>Ingresso (3 layers — sem Application separada, handlers em Infrastructure)</description></item>
-///   <item><description>Portal (3 layers — sem Application separada)</description></item>
+///   <item><description>Portal (4 layers — Domain, Application, Infrastructure, API)</description></item>
 ///   <item><description>OrganizacaoInstitucional (4 layers)</description></item>
 ///   <item><description>Configuracao (5 layers — inclui Contracts próprio)</description></item>
 /// </list>
@@ -304,6 +304,7 @@ public sealed class CrossModuleReadIsolationTests
 
             // Portal
             typeof(global::Unifesspa.UniPlus.Portal.Domain.PortalDomainAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Portal.Application.PortalApplicationAssemblyMarker).Assembly,
             typeof(global::Unifesspa.UniPlus.Portal.Infrastructure.Persistence.PortalDbContext).Assembly,
             typeof(global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker).Assembly,
 

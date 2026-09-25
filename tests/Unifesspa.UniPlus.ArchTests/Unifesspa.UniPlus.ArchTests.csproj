@@ -30,6 +30,7 @@
     <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Domain/Unifesspa.UniPlus.Ingresso.Domain.csproj" />
     <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Infrastructure/Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
     <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />
+    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Application/Unifesspa.UniPlus.Portal.Application.csproj" />
     <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Infrastructure/Unifesspa.UniPlus.Portal.Infrastructure.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Application/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.csproj" />

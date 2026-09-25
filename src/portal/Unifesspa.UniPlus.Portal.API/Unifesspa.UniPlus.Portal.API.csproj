@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Portal.Application\Unifesspa.UniPlus.Portal.Application.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Portal.Infrastructure\Unifesspa.UniPlus.Portal.Infrastructure.csproj" />
   </ItemGroup>
 
