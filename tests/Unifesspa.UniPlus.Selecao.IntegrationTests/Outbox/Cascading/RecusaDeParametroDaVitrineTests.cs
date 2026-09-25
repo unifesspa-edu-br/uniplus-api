@@ -94,4 +94,19 @@ public sealed class RecusaDeParametroDaVitrineTests
         string corpo = await resposta.Content.ReadAsStringAsync(CancellationToken.None);
         corpo.Should().Contain("inscricoesAte", "a recusa precisa dizer o que vale, não só que errou");
     }
+
+    [Fact(DisplayName = "Toda resposta da vitrine traz a revisão do recorte, sem precisar pedi-la")]
+    public async Task Listar_DeveEmitirARevisaoDoRecorte()
+    {
+        // Ao contrário dos contadores, a revisão não é opt-in: quem compõe a vitrine precisa dela
+        // em toda página para perceber que a coleção avançou.
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri("/api/selecao/certames?situacao=encerradas", UriKind.Relative), CancellationToken.None);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        resposta.Headers.TryGetValues("X-Certames-Revisao", out IEnumerable<string>? valores).Should().BeTrue();
+        valores!.Should().ContainSingle().Which.Should().NotBeNullOrWhiteSpace();
+    }
 }

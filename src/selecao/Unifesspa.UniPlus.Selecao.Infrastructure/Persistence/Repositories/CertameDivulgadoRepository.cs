@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using System.Data;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -86,7 +88,9 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
             .BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken)
             .ConfigureAwait(false);
 
-        RevisaoDaColecao revisao = await RevisaoDaColecaoAsync(cancellationToken).ConfigureAwait(false);
+        string revisao = await RevisaoDoRecorteAsync(
+                instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida, cancellationToken)
+            .ConfigureAwait(false);
 
         IQueryable<CertameNaVitrine> query = Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
             .Select(c => new CertameNaVitrine
@@ -120,7 +124,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         await instantaneo.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return new PaginaDaVitrine(
-            [.. page.Items.Select(static linha => linha.Entidade)], instanteUtc, page.Previous, page.Next, contadores);
+            [.. page.Items.Select(static linha => linha.Entidade)], instanteUtc, page.Previous, page.Next, contadores, revisao);
     }
 
     private async Task<ContadoresDaVitrine> ContarPorSituacaoAsync(
@@ -231,55 +235,75 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         DateTimeOffset instanteUtc,
         RecorteDaVitrine recorte,
         string? termo,
-        RevisaoDaColecao revisao) =>
+        string revisao) =>
     [
         Instante(instanteUtc),
         recorte.Situacao?.ToString() ?? string.Empty,
         recorte.Modalidade ?? string.Empty,
         termo ?? string.Empty,
-        revisao.ToString(),
+        revisao,
     ];
 
     /// <summary>
-    /// Quanto da coleção mudou desde que o cursor foi emitido: quantas linhas ela tem e quando foi
-    /// a divulgação mais recente.
+    /// A revisão do recorte: um marcador opaco dos certames que a consulta seleciona e do que cada
+    /// um tem de ordenável e exibível, no instante congelado da travessia. A ordenação pedida não
+    /// entra: ela já é fixada pela assinatura do cursor, junto com esta revisão.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Entra na assinatura do cursor porque a âncora guarda uma POSIÇÃO, e o prazo que a define
-    /// muda: uma retificação no meio do percurso reposiciona um certame em relação à âncora, e quem
-    /// a cruza num sentido aparece duas vezes, quem cruza no outro desaparece. Com a revisão na
-    /// assinatura, a continuação sob coleção diferente é recusada e o cliente recomeça — que é o
-    /// que a ADR-0131 exige em vez de uma lista silenciosamente inconsistente.
+    /// Entra na assinatura do cursor porque a âncora guarda uma POSIÇÃO, e o que a define muda: uma
+    /// publicação ou retificação no meio do percurso reposiciona um certame em relação à âncora, e
+    /// quem a cruza num sentido aparece duas vezes, quem cruza no outro desaparece. Com a revisão na
+    /// assinatura, a continuação sob recorte diferente é recusada e o cliente recomeça — que é o que
+    /// a ADR-0131 exige em vez de uma lista silenciosamente inconsistente. É também o valor servido
+    /// no cabeçalho da vitrine, para que quem compõe a coleção (a Portal) detecte o avanço.
     /// </para>
     /// <para>
-    /// A contagem acompanha o instante porque este é tempo de evento, lido do relógio antes da
-    /// gravação, e não ordem de commit: de duas divulgações concorrentes, a que leu o relógio antes
-    /// pode confirmar depois, e o máximo não se move quando ela entra. A contagem se move em toda
-    /// inserção, qualquer que seja o instante que a linha carregue. O que os dois juntos ainda não
-    /// alcançam é a retificação que confirma fora de ordem: mesma contagem, instante menor que o
-    /// máximo corrente.
+    /// Deriva, para cada linha do recorte, do identificador, do ato que criou a versão divulgada —
+    /// que muda a cada publicação ou retificação e, com ele, tudo o que ordena e o que se mostra — e
+    /// da situação classificada no instante congelado. A situação entra porque depende do relógio:
+    /// cruzar a fronteira da janela muda o item de grupo e de posição sem que linha alguma mude.
+    /// Como o instante viaja na âncora, todas as páginas da mesma travessia enxergam a mesma
+    /// revisão.
+    /// </para>
+    /// <para>
+    /// Custo: uma leitura de quatro colunas (identificador, ato criador e as duas pontas da janela)
+    /// de cada linha do recorte, sem limite, dentro do mesmo
+    /// instantâneo da página. A vitrine tem da ordem de dezenas a centenas de certames; o que isto
+    /// compra é a correção que a contagem mais o instante máximo não alcançavam — a retificação que
+    /// confirma fora de ordem. O resumo não expõe nada além do que a própria vitrine já mostra.
     /// </para>
     /// </remarks>
-    private async Task<RevisaoDaColecao> RevisaoDaColecaoAsync(CancellationToken cancellationToken)
+    private async Task<string> RevisaoDoRecorteAsync(
+        DateTimeOffset instanteUtc,
+        RecorteDaVitrine recorte,
+        string? termo,
+        TimeSpan limiarDosUltimosDias,
+        string versaoDaProjecaoServida,
+        CancellationToken cancellationToken)
     {
-        var revisao = await _context.CertamesDivulgados
-            .AsNoTracking()
-            .GroupBy(static _ => 1)
-            .Select(g => new { Linhas = g.Count(), Ultima = g.Max(c => (DateTimeOffset?)c.DivulgadoEm) })
-            .FirstOrDefaultAsync(cancellationToken)
+        var linhas = await Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
+            .OrderBy(static c => c.Id)
+            .Select(static c => new { c.Id, c.AtoCriadorId, c.InscricoesDe, c.InscricoesAte })
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return revisao is null ? new RevisaoDaColecao(0, null) : new RevisaoDaColecao(revisao.Linhas, revisao.Ultima);
-    }
+        StringBuilder texto = new();
+        foreach (var linha in linhas)
+        {
+            SituacaoDoCertame situacao = SituacaoDaVitrine.Classificar(
+                linha.InscricoesDe, linha.InscricoesAte, instanteUtc, limiarDosUltimosDias);
 
-    /// <summary>Estado da coleção que o cursor assina.</summary>
-    private readonly record struct RevisaoDaColecao(int Linhas, DateTimeOffset? Ultima)
-    {
-        public override string ToString() =>
-            Ultima is { } instante
-                ? string.Create(CultureInfo.InvariantCulture, $"{Linhas}@{Instante(instante)}")
-                : Linhas.ToString(CultureInfo.InvariantCulture);
+            texto.Append(linha.Id.ToString("N", CultureInfo.InvariantCulture))
+                .Append(':')
+                .Append(linha.AtoCriadorId.ToString("N", CultureInfo.InvariantCulture))
+                .Append(':')
+                .Append((int)situacao)
+                .Append(';');
+        }
+
+        byte[] resumo = SHA256.HashData(Encoding.UTF8.GetBytes(texto.ToString()));
+        return Convert.ToHexStringLower(resumo.AsSpan(0, 16));
     }
 
     private static string Instante(DateTimeOffset valor) =>
