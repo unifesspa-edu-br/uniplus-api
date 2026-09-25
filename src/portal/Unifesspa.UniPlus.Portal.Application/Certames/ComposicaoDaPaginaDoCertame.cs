@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Portal.Application.Certames;
 
-using System.Globalization;
-
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 
@@ -153,32 +151,26 @@ public sealed class ComposicaoDaPaginaDoCertame
     private static EventoDaLinhaDoTempo ParaEvento(AtoDaOrigem ato)
     {
         string nomeDoTipo = string.IsNullOrWhiteSpace(ato.TipoNome) ? ato.TipoCodigo : ato.TipoNome;
+        string? numero = string.IsNullOrWhiteSpace(ato.Numero) ? null : ato.Numero.Trim();
 
         return new EventoDaLinhaDoTempo(
             ato.Id,
             ato.DataPublicacao,
-            Titulo(nomeDoTipo, ato),
+            Titulo(nomeDoTipo, numero),
+            numero,
+            ato.Ano,
             new TipoDoEvento(ato.TipoCodigo, nomeDoTipo),
             ato.MotivoRetificacao);
     }
 
     /// <summary>
-    /// Nome do tipo seguido do número do ato. O número é texto livre declarado na publicação e às
-    /// vezes já traz o ano ("012/2026"); o ano só é acrescentado quando falta, para não sair
-    /// repetido.
+    /// Nome do tipo seguido do número do ato, exatamente como declarado.
     /// </summary>
-    private static string Titulo(string nomeDoTipo, AtoDaOrigem ato)
-    {
-        if (string.IsNullOrWhiteSpace(ato.Numero))
-        {
-            return nomeDoTipo;
-        }
-
-        string numero = ato.Numero.Trim();
-        string sufixoDoAno = "/" + ato.Ano.ToString(CultureInfo.InvariantCulture);
-
-        return numero.EndsWith(sufixoDoAno, StringComparison.Ordinal)
-            ? $"{nomeDoTipo} nº {numero}"
-            : $"{nomeDoTipo} nº {numero}{sufixoDoAno}";
-    }
+    /// <remarks>
+    /// O ano não é acrescentado: número e ano são campos distintos da numeração, e o número é texto
+    /// livre que às vezes já traz o ano ("012/2026", "012/2026-R1"). Compor o ano por fora repetiria
+    /// o que o órgão declarou; o ano segue no próprio evento, para quem renderiza decidir a forma.
+    /// </remarks>
+    private static string Titulo(string nomeDoTipo, string? numero) =>
+        numero is null ? nomeDoTipo : $"{nomeDoTipo} nº {numero}";
 }

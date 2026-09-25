@@ -26,13 +26,17 @@ public sealed record PaginaDoCertame(
 /// </summary>
 /// <param name="Id">Identificador do ato.</param>
 /// <param name="Data">Data de publicação declarada no documento do ato.</param>
-/// <param name="Titulo">Nome do tipo do ato seguido do número, quando declarado.</param>
+/// <param name="Titulo">Nome do tipo do ato seguido do número, quando declarado, sem compor o ano.</param>
+/// <param name="Numero">Número do ato como declarado pelo órgão, quando declarado.</param>
+/// <param name="Ano">Ano da numeração declarada pelo órgão.</param>
 /// <param name="Tipo">Tipo do ato.</param>
 /// <param name="Descricao">Motivo da retificação, quando o ato retifica outro.</param>
 public sealed record EventoDaLinhaDoTempo(
     Guid Id,
     DateOnly Data,
     string Titulo,
+    string? Numero,
+    int Ano,
     TipoDoEvento Tipo,
     string? Descricao);
 

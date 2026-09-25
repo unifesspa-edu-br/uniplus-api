@@ -136,24 +136,30 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     }
 
     [Theory]
-    [InlineData("Edital de abertura", "7", 2026, "Edital de abertura nº 7/2026")]
-    [InlineData("Edital de abertura", "012/2026", 2026, "Edital de abertura nº 012/2026")]
-    [InlineData("Edital de abertura", null, 2026, "Edital de abertura")]
-    [InlineData(null, "7", 2026, "EDITAL nº 7/2026")]
-    public async Task Titulo_do_evento_e_o_nome_do_tipo_com_o_numero(
+    [InlineData("Edital de abertura", "015", "Edital de abertura nº 015", "015")]
+    [InlineData("Edital de abertura", "012/2026", "Edital de abertura nº 012/2026", "012/2026")]
+    [InlineData("Edital de retificação", "012/2026-R1", "Edital de retificação nº 012/2026-R1", "012/2026-R1")]
+    [InlineData("Edital de abertura", " 015 ", "Edital de abertura nº 015", "015")]
+    [InlineData("Edital de abertura", null, "Edital de abertura", null)]
+    [InlineData("Edital de abertura", "   ", "Edital de abertura", null)]
+    [InlineData(null, "015", "EDITAL nº 015", "015")]
+    public async Task Titulo_do_evento_e_o_nome_do_tipo_com_o_numero_declarado_sem_compor_o_ano(
         string? tipoNome,
         string? numero,
-        int ano,
-        string esperado)
+        string tituloEsperado,
+        string? numeroEsperado)
     {
-        AtoDaOrigem ato = Ato(Criador, "EDITAL", tipoNome, numero, new(ano, 3, 10), congela: true);
+        // Ano da numeração diferente do ano da data: o evento carrega o declarado, não o derivado.
+        AtoDaOrigem ato = new(Criador, "EDITAL", tipoNome, 2026, numero, new(2027, 3, 10), true, null);
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([ato], null));
 
         EventoDaLinhaDoTempo evento = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None))
             .Value!.LinhaDoTempo.Single();
 
-        evento.Titulo.Should().Be(esperado);
+        evento.Titulo.Should().Be(tituloEsperado);
+        evento.Numero.Should().Be(numeroEsperado);
+        evento.Ano.Should().Be(2026);
         evento.Tipo.Should().Be(new TipoDoEvento("EDITAL", tipoNome ?? "EDITAL"));
     }
 
