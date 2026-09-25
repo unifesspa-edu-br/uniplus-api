@@ -9,7 +9,11 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -144,6 +148,63 @@ public sealed class AtoNormativoEndpointTests
         detalhe.RootElement.GetProperty("efeitoIrreversivel").GetBoolean().Should().BeTrue();
         detalhe.RootElement.GetProperty("_links").GetProperty("self").GetString()
             .Should().Be($"{BaseAtos}/{atoId}");
+    }
+
+    [Fact(DisplayName = "POST copia o nome do tipo vigente, e renomear o tipo não reescreve o ato")]
+    public async Task Registrar_CopiaNomeDoTipo_RenomearNaoReescreve()
+    {
+        (string tipo, Guid tipoId) = await CadastrarTipoVigenteAsync(nome: "Edital de abertura");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid atoId = await PostAtoIdAsync(client, PayloadAto(tipo, SerieUnica(), "12"));
+
+        (await LerAtoAsync(client, atoId)).GetProperty("tipoNome").GetString()
+            .Should().Be("Edital de abertura");
+
+        using HttpRequestMessage put = new(HttpMethod.Put, new Uri($"{AdminTipos}/{tipoId}", UriKind.Relative));
+        Autenticar(put);
+        put.Content = JsonContent.Create(new
+        {
+            id = tipoId,
+            codigo = tipo,
+            nome = "Edital de abertura renomeado",
+            congelaConfiguracao = false,
+            unicoPorObjeto = false,
+            efeitoIrreversivel = false,
+            vigenciaInicio = "2020-01-01",
+            vigenciaFim = (string?)null,
+        });
+        (await client.SendAsync(put)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await LerAtoAsync(client, atoId)).GetProperty("tipoNome").GetString()
+            .Should().Be("Edital de abertura", "o nome foi copiado por valor no registro, e o cadastro editável não reescreve o passado");
+    }
+
+    [Fact(DisplayName = "Ato registrado sem o nome do tipo devolve o nome ausente e o código presente")]
+    public async Task Obter_AtoSemNomeDoTipo_NomeAusenteCodigoPresente()
+    {
+        string tipo = await CriarTipoVigenteAsync();
+        AtoNormativo semNome = AtoNormativo.Registrar(
+            Guid.CreateVersion7(), "CEPS", SerieUnica(), 2026, "1", tipo,
+            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
+            dataPublicacao: new DateOnly(2026, 3, 13),
+            documentoHash: HashValido,
+            assinante: "Jairo Belchior",
+            registradoEm: DateTimeOffset.UtcNow,
+            versaoInvocada: null);
+        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            PublicacoesDbContext ctx = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+            await ctx.Set<AtoNormativo>().AddAsync(semNome);
+            await ctx.SaveChangesAsync();
+        }
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonElement ato = await LerAtoAsync(client, semNome.Id);
+
+        (ato.TryGetProperty("tipoNome", out JsonElement nome) ? nome.ValueKind : JsonValueKind.Undefined)
+            .Should().BeOneOf(JsonValueKind.Null, JsonValueKind.Undefined);
+        ato.GetProperty("tipoCodigo").GetString().Should().Be(tipo);
     }
 
     [Fact(DisplayName = "POST de ato sem número é aceito (número é opcional)")]
@@ -432,13 +493,18 @@ public sealed class AtoNormativoEndpointTests
     }
 
     /// <summary>Cadastra um tipo de ato vigente (janela ampla) e devolve o código.</summary>
-    private async Task<string> CriarTipoVigenteAsync(bool congela = false, bool efeito = false)
+    private async Task<string> CriarTipoVigenteAsync(bool congela = false, bool efeito = false) =>
+        (await CadastrarTipoVigenteAsync(congela: congela, efeito: efeito)).Codigo;
+
+    /// <summary>Cadastra um tipo de ato vigente (janela ampla) e devolve o código e o id.</summary>
+    private async Task<(string Codigo, Guid Id)> CadastrarTipoVigenteAsync(
+        string nome = "Tipo para ato de teste", bool congela = false, bool efeito = false)
     {
         string codigo = "ATO_TIPO_" + Sufixo();
         object payload = new
         {
             codigo,
-            nome = "Tipo para ato de teste",
+            nome,
             congelaConfiguracao = congela,
             unicoPorObjeto = false,
             efeitoIrreversivel = efeito,
@@ -454,7 +520,15 @@ public sealed class AtoNormativoEndpointTests
 
         HttpResponseMessage response = await client.SendAsync(request);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        return codigo;
+        Guid id = Guid.Parse(response.Headers.Location!.Segments[^1], CultureInfo.InvariantCulture);
+        return (codigo, id);
+    }
+
+    private static async Task<JsonElement> LerAtoAsync(HttpClient client, Guid atoId)
+    {
+        using JsonDocument doc = JsonDocument.Parse(
+            await client.GetStringAsync(new Uri($"{BaseAtos}/{atoId}", UriKind.Relative)));
+        return doc.RootElement.Clone();
     }
 
     /// <summary>Série única no teste, para isolar a numeração do aviso entre casos.</summary>

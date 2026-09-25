@@ -43,7 +43,8 @@ public static class RegistrarAtoNormativoCommandHandler
         // consumo da fila; reler faria um edital publicado como congelante ser registrado
         // com um tipo que já não congela. O ato foi publicado sob as regras que valiam
         // então, e é sob elas que se registra — mudança no cadastro vale para o que vier
-        // depois, não reescreve o passado.
+        // depois, não reescreve o passado. O nome do tipo segue o mesmo caminho: é ele que
+        // compõe o título público do ato, e renomear o tipo não pode reescrevê-lo.
         string tipoCodigo;
         AtributosDoTipoAto atributos;
 
@@ -68,7 +69,7 @@ public static class RegistrarAtoNormativoCommandHandler
 
             tipoCodigo = tipo.Codigo;
             atributos = new AtributosDoTipoAto(
-                tipo.CongelaConfiguracao, tipo.UnicoPorObjeto, tipo.EfeitoIrreversivel);
+                tipo.CongelaConfiguracao, tipo.UnicoPorObjeto, tipo.EfeitoIrreversivel, tipo.Nome);
         }
 
         // AC7: o par {id, hash} é recebido por valor, completo ou ausente.
@@ -118,7 +119,8 @@ public static class RegistrarAtoNormativoCommandHandler
             versaoResult?.Value,
             command.AtoRetificadoId,
             command.MotivoRetificacao,
-            vinculos);
+            vinculos,
+            atributos.Nome);
 
         Guid raizDaLinhagem = command.AtoRetificadoId is { } paraRaiz
             ? await atosRepository.ObterRaizDaCadeiaAsync(paraRaiz, cancellationToken).ConfigureAwait(false)

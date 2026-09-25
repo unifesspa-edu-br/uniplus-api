@@ -59,6 +59,9 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         ato.Id.Should().Be(atoId, "o id do ato é decidido por Seleção — é o que torna a reentrega idempotente");
         ato.TipoCodigo.Should().Be("EDITAL_ABERTURA");
+        ato.TipoNome.Should().Be(
+            "Edital de abertura",
+            "o nome do tipo viaja por valor na requisição, como Seleção o conferiu ao publicar");
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
@@ -112,7 +115,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
                 AtoRetificadoId: null,
                 MotivoRetificacao: null,
                 Vinculos: [new Unifesspa.UniPlus.Publicacoes.Contracts.VinculoEntidadeRequisicao("PROCESSO_SELETIVO", processoOutro)],
-                AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(true, true, false)));
+                AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(true, true, false, null)));
         };
 
         // A recusa ESCAPA como exceção — é isso que faz o Wolverine retentar e, esgotado,
@@ -231,7 +234,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
                 MotivoRetificacao: "Tentativa de emendar um ato congelante com um não congelante",
                 Vinculos: [],
                 // Os atributos conferidos: este ato declara NÃO congelar, e emenda um que congela.
-                AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(false, false, false)));
+                AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(false, false, false, null)));
         };
 
         await entrega.Should().ThrowAsync<Exception>();
@@ -382,7 +385,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
                 Vinculos: [new Unifesspa.UniPlus.Publicacoes.Contracts.VinculoEntidadeRequisicao("PROCESSO_SELETIVO", processoId)],
                 // O que o catálogo dizia QUANDO a publicação foi aceita.
                 AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(
-                    CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false)));
+                    CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, Nome: null)));
         }
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
@@ -424,7 +427,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
                 AtoRetificadoId: null,
                 MotivoRetificacao: null,
                 Vinculos: [new Unifesspa.UniPlus.Publicacoes.Contracts.VinculoEntidadeRequisicao("PROCESSO_SELETIVO", processoId)],
-                AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(true, true, false)));
+                AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(true, true, false, null)));
         }
 
         // Publicar agora seria dar 204 e ver o ato morrer na dead letter — o certame ficaria
@@ -471,7 +474,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
                 Vinculos: [new Unifesspa.UniPlus.Publicacoes.Contracts.VinculoEntidadeRequisicao("PROCESSO_SELETIVO", processoId)],
                 // O tipo NÃO era único quando este ato foi registrado — logo, sem vaga.
                 AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(
-                    CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false)));
+                    CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, Nome: null)));
         }
 
         await using (AsyncServiceScope conferencia = api.Services.CreateAsyncScope())
@@ -528,7 +531,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
                 AtoRetificadoId: abertura,
                 MotivoRetificacao: "Retificação registrada fora do fluxo de Seleção",
                 Vinculos: [],
-                AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(true, false, false)));
+                AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(true, false, false, null)));
         }
 
         // Retificar agora emendaria um ato já emendado: o registro recusaria com
@@ -781,7 +784,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
             MotivoRetificacao: null,
             Vinculos: [new Unifesspa.UniPlus.Publicacoes.Contracts.VinculoEntidadeRequisicao("PROCESSO_SELETIVO", processoId)],
             AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(
-                ato.CongelaConfiguracao, ato.UnicoPorObjeto, ato.EfeitoIrreversivel));
+                ato.CongelaConfiguracao, ato.UnicoPorObjeto, ato.EfeitoIrreversivel, ato.TipoNome));
     }
 
     /// <summary>

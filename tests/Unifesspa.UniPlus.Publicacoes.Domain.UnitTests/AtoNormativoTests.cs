@@ -164,6 +164,30 @@ public sealed class AtoNormativoTests
         acao.Should().Throw<ArgumentException>();
     }
 
+    [Fact(DisplayName = "Nome do tipo é guardado por valor, sem espaços nas pontas")]
+    public void Registrar_ComNomeDoTipo_GuardaNormalizado()
+    {
+        AtoNormativo ato = Registrar(tipoNome: "  Edital de abertura  ");
+        ato.TipoNome.Should().Be("Edital de abertura");
+    }
+
+    [Theory(DisplayName = "Nome do tipo ausente ou em branco fica nulo (ato sem nome, com o código presente)")]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void Registrar_SemNomeDoTipo_ArmazenaNulo(string? tipoNome)
+    {
+        AtoNormativo ato = Registrar(tipoNome: tipoNome);
+        ato.TipoNome.Should().BeNull();
+        ato.TipoCodigo.Should().Be("EDITAL_ABERTURA");
+    }
+
+    [Fact(DisplayName = "Nome do tipo acima do limite do catálogo (200) é recusado")]
+    public void Registrar_ComNomeDoTipoLongoDemais_Lanca()
+    {
+        Action acao = () => Registrar(tipoNome: new string('x', 201));
+        acao.Should().Throw<ArgumentException>();
+    }
+
     private static AtoNormativo Registrar(
         string orgao = "CEPS",
         string serie = "EDITAL",
@@ -175,7 +199,8 @@ public sealed class AtoNormativoTests
         string assinante = "Jairo Belchior",
         ReferenciaVersaoConfiguracao? versao = null,
         Guid? atoRetificadoId = null,
-        string? motivoRetificacao = null) =>
+        string? motivoRetificacao = null,
+        string? tipoNome = null) =>
         AtoNormativo.Registrar(
             Guid.CreateVersion7(),
             orgao, serie, ano, numero, tipoCodigo,
@@ -188,5 +213,6 @@ public sealed class AtoNormativoTests
             registradoEm: Registro,
             versaoInvocada: versao,
             atoRetificadoId: atoRetificadoId,
-            motivoRetificacao: motivoRetificacao);
+            motivoRetificacao: motivoRetificacao,
+            tipoNome: tipoNome);
 }
