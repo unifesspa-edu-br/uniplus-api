@@ -76,6 +76,8 @@ A regra vale para o detalhe **e para a vitrine**, pelo mesmo motivo e com o mesm
 
   **E o selo precisa cobrir as duas origens, não só a configuração.** A página do certame é composta, e a linha do tempo muda sem que a configuração mude: uma mesma entidade acumula vários atos ([ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md)), de modo que vincular um aviso a um certame já publicado altera a resposta sem criar versão de configuração nova. Um selo que ignore isso faz a revalidação responder "não mudou" sobre uma linha do tempo desatualizada — e o defeito é pior que o anterior, porque agora há revalidação e ela mente. O selo da resposta composta incorpora também o estado da linha do tempo; alternativamente, a parte composta não é guardada.
 
+  > **Emenda (2026-09-24):** as duas alternativas deixaram de ser alternativas — o selo cobre as duas origens **e** a parte composta não é guardada. Ver [Emenda 1](#emenda-1-2026-09-24--degradação-da-linha-do-tempo-e-revalidação-sob-a-divulgação-materializada).
+
 - **O cursor de paginação não trafega entre fronteiras, e a chave que o cifra não é compartilhada.** O cursor é opaco, cifrado e carrega o recurso a que pertence justamente para impedir reuso entre coleções ([ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)). Compartilhar a chave com o Portal lhe daria a capacidade de cunhar cursor para qualquer coleção de Seleção.
 
   O Portal emite cursor próprio e **encapsula o cursor de origem dentro do seu**, cifrado — em vez de guardar a correspondência em cache. Guardá-la tornaria descartável um mecanismo que nasceu autocontido: um endereço de continuação já entregue, e possivelmente guardado pela borda ou pelo navegador, continuaria criptograficamente válido enquanto a correspondência teria sumido por reinício, expulsão ou validade menor que a do próprio cursor — e a navegação terminaria antes do prazo que a ADR-0026 promete. Encapsulado, o cursor do Portal é autossuficiente.
@@ -87,6 +89,8 @@ A regra vale para o detalhe **e para a vitrine**, pelo mesmo motivo e com o mesm
 - **A indisponibilidade das origens tem respostas distintas.** Ausência do registro do ato **degrada** enquanto o certame já é visível — o que, pelo critério de visibilidade adiante, significa atos posteriores ainda não drenados, e não o ato criador: a linha do tempo vem vazia ou incompleta, com aviso neutro, e essa resposta não é cacheada.
 
   Isso exige que a pendência seja **observável**, e hoje não é: a consulta unificada devolve os atos já persistidos, de modo que "há ato a caminho" e "não há ato novo" produzem a mesma resposta. Sem um sinal durável do que se espera registrar, o Portal não tem como emitir o aviso nem como escolher a política de cache — e apresentaria como completa uma linha do tempo que não está. Tornar essa pendência observável é parte da decisão, não detalhe de implementação: sem ela, a degradação aqui descrita não é exequível — como também não o é a resposta em que o documento do edital ainda está sendo copiado para o acervo ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md)). A regra vale para todo estado transitório: o selo do cache compõe versão da projeção e hash da configuração, e nenhum dos dois muda quando a pendência se resolve. Ausência do contrato de Seleção **não** degrada: o Portal não serve conteúdo vencido, porque a configuração publicada tem efeito jurídico e uma retificação não pode ser encoberta por cache; responde indisponibilidade temporária, sinalizando quando reencaminhar.
+
+  > **Emenda (2026-09-24):** sob a divulgação materializada da [ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md), a pendência de ato **não** é caso de degradação, e o sinal de pendência exigido acima não é construído. O que degrada a linha do tempo passa a ser o que o Portal observa nas respostas das origens. Ver [Emenda 1](#emenda-1-2026-09-24--degradação-da-linha-do-tempo-e-revalidação-sob-a-divulgação-materializada).
 - **A prontidão do Portal responde por quem ele serve, e o critério é esse — não uma lista.** Uma sonda que reprova por dependência sem consumidor tira do ar um processo capaz de atender; uma que aprova com rota inoperante manda tráfego para o erro. Ambos são desonestos, e a decisão fixa o critério para distinguir:
 
   - entra o que **alguma rota servida precisa para responder** — e enquanto as rotas autenticadas de sessão e perfil compartilharem o deployable, isso inclui o provedor de identidade;
@@ -152,9 +156,59 @@ Por isso o critério é conjunto, e a ausência do ato não é lida como atraso:
 - **Fronteira de módulo:** nenhum projeto do Portal referencia projeto de Seleção. Essa checagem não enxerga acoplamento por rede, e por isso vale o que está no parágrafo seguinte.
 - **Contrato próprio, não emprestado:** o documento de contrato do Portal é gerado a partir dos seus próprios tipos. Onde um tipo do Portal tiver o mesmo nome de um de outro módulo, a verificação de coerência entre contratos exige que as duas formas sejam idênticas — ela não proíbe o nome repetido, obriga a coincidência. **Essa cobertura não existe hoje:** a verificação enumera os contratos dos cinco módulos internos, e o do Portal ainda não existe nem está na lista. Publicar o contrato do Portal e incluí-lo nessa enumeração é requisito desta decisão; enquanto não acontecer, um tipo do Portal pode divergir sob nome alheio sem quebrar gate algum.
 - **Ausência de oráculo:** as rotas públicas respondem com o mesmo "não encontrado" para tudo que não satisfaça o critério de visibilidade — versão vigente **e** ato criador registrado. Um processo inexistente, um em rascunho e um cuja publicação teve o registro do ato recusado recebem a mesma resposta, e nenhuma delas se distingue das demais. O último caso importa duas vezes: além de não vazar estado interno, é ele que impede divulgar certame sem ato correspondente.
+
+  > **Emenda (2026-09-24):** o "não encontrado" uniforme vale para a **abertura** cujo registro do ato foi recusado; na retificação recusada, o certame continua servido com o conteúdo anterior ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md)). Ver [Emenda 1](#emenda-1-2026-09-24--degradação-da-linha-do-tempo-e-revalidação-sob-a-divulgação-materializada).
 - **Nada vencido depois de uma retificação:** retificar um certame, ou vincular-lhe um ato novo, muda o que as rotas públicas devolvem na consulta seguinte — tanto no detalhe quanto na vitrine, e tanto na origem quanto em representação já guardada. Uma resposta de "não modificado" sobre conteúdo que mudou é falha do ensaio.
+
+  > **Emenda (2026-09-24):** por este ensaio, o Portal não guarda conteúdo nem ponteiro com validade — qualquer janela o reprovaria. Ver [Emenda 1](#emenda-1-2026-09-24--degradação-da-linha-do-tempo-e-revalidação-sob-a-divulgação-materializada).
 - **Navegação estável:** um percurso da vitrine sem mudança de revisão devolve cada certame uma vez, sem repetição nem omissão. Quando uma retificação altera prazos no meio do percurso, a navegação **não** tenta prosseguir com a âncora antiga: ela é interrompida com o sinal de reinício. E um endereço de continuação nunca sobrevive ao da origem que ele encapsula.
 - **Prontidão honesta:** a sonda não reprova por dependência sem consumidor entre as rotas servidas, nem por origem consultada por rede; e não aprova o processo quando uma rota que ele expõe está inoperante por dependência própria — incluindo as autenticadas, enquanto compartilharem o deployable.
+
+## Emenda 1 (2026-09-24) — degradação da linha do tempo e revalidação sob a divulgação materializada
+
+A [ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) tornou a divulgação uma linha materializada quando o ato normativo se registra. Isso muda o que esta decisão precisava fixar sobre a indisponibilidade das origens e sobre a revalidação. O texto original permanece como registro; onde divergir, vale esta emenda.
+
+### Não há sinal de pendência de ato
+
+A exigência de tornar observável a pendência de "atos posteriores ainda não drenados" deixa de valer, e construir esse sinal passa a ser indesejável:
+
+- o único ato registrado por mensagem durável é o que cria versão de configuração; o registro feito diretamente no módulo de Publicações é síncrono e não tem janela de drenagem;
+- sem esse ato, a divulgação não avança — não há conteúdo novo a anunciar, e o detalhe continua servindo o último estado que tem ato normativo;
+- a recusa de mérito é terminal: a [ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md) prevê retentativa antes da fila morta, mas a política do registro a reserva às falhas transitórias e à recusa por ordem — a recusa de mérito não melhora com o tempo e vai direto para a fila morta, onde só uma intervenção a reprocessa. Um sinal derivado da diferença entre o ato esperado e o registrado ficaria pendente para sempre, e a página, degradada para sempre;
+- expor o sinal revelaria a existência de uma retificação interna ainda sem publicidade, contra a ausência de oráculo que a Confirmação exige.
+
+### O que degrada a linha do tempo
+
+A degradação é decidida pelo que o Portal observa nas próprias respostas das origens, sem estado adicional em nenhum módulo. A linha do tempo é servida vazia ou incompleta, com aviso neutro, e a resposta não é guardada em camada nenhuma, quando:
+
+- o registro de atos está indisponível ou falha — inclusive no meio do percurso de páginas: uma resposta parcial não é apresentada como completa;
+- o percurso atinge o teto de páginas que o Portal se impõe — a origem ordena do mais antigo para o mais recente, e truncar cortaria justamente os atos mais recentes;
+- o ato que criou a versão servida pelo detalhe não aparece na linha do tempo;
+- a linha do tempo traz um ato que congela configuração **mais recente** que o ato criador da versão servida: o registro já aconteceu, mas a divulgação ainda não o alcançou — janela de consumo, ou divulgação parada na fila morta. O ato já é público no registro de atos, e por isso apontar a defasagem não revela nada que o público não possa consultar.
+
+Os dois últimos casos são conferências de consistência entre as duas origens, e não um segundo critério de visibilidade: quem decide o que é divulgado continua sendo o contrato de Seleção.
+
+O endereço do documento ainda em cópia para o acervo é observável na própria resposta de Seleção ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md)) e segue a mesma regra: é estado transitório, e a resposta não é guardada.
+
+### Indisponibilidade de Seleção
+
+Mantém-se o que o texto original decide: não degrada e não serve conteúdo vencido. A forma é a de indisponibilidade temporária — `503`, no formato de erro da [ADR-0023](0023-wire-formato-erro-rfc-9457.md) — com `Retry-After` indicando quando reencaminhar.
+
+### Revalidação sem janela
+
+O Portal **não guarda a resposta composta** — nem o conteúdo, nem um ponteiro do identificador do certame para o selo. Qualquer validade de conteúdo guardado reprovaria o ensaio "Nada vencido depois de uma retificação", que exige refletir o ato novo na consulta seguinte; e a própria decisão já registra que cache de conteúdo anônimo pertence à borda. O Portal revalida por identificador de conteúdo sobre a composição, com revalidação obrigatória em toda resposta, e a resposta degradada não é guardada.
+
+O selo da resposta composta é formado por:
+
+- o identificador de conteúdo que Seleção devolve, **como recebido** — recompô-lo a partir de campos do corpo criaria uma segunda definição do mesmo selo, que divergiria em silêncio no dia em que Seleção passasse a incluir nele algo novo;
+- um resumo dos itens da linha do tempo já adaptados pelo Portal — de modo que um ato novo, ou uma mudança de forma no registro de atos, também invalide o selo;
+- a versão do contrato do Portal.
+
+Com isso, "o selo cobre as duas origens" e "a parte composta não é guardada" deixam de ser alternativas: valem as duas.
+
+### Abertura e retificação na ausência de oráculo
+
+A confirmação "Ausência de oráculo" lê-se com a distinção já registrada na emenda de 2026-09-17: o mesmo "não encontrado" vale para processo inexistente, em rascunho e cuja **abertura** teve o registro do ato recusado. Na retificação recusada, o certame continua servido com o conteúdo anterior, que é o que tem ato.
 
 ## Mais informações
 
@@ -174,6 +228,7 @@ ADRs relacionadas:
 - [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md) — o cursor opaco cujo alcance esta ADR restringe.
 - [ADR-0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) — controle de taxa na borda, agora com consumidor concreto e prazo.
 - [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md) — o armazenamento público de onde o edital é servido; é ela que dispensa o contrato público de emitir credencial ou redirecionar.
+- [ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) — **emenda esta decisão**: a divulgação é materializada no registro do ato; é ela que dispensa o sinal de pendência (Emenda 1).
 - [ADR-0023](0023-wire-formato-erro-rfc-9457.md) e [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — formato de erro e versionamento que o contrato público segue.
 
 Origem dos padrões adotados:
