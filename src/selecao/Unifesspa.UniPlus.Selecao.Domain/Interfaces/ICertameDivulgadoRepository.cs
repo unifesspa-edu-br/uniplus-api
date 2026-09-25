@@ -51,6 +51,14 @@ public interface ICertameDivulgadoRepository
     /// <summary>Divulgação corrente do processo, para leitura. Nula quando não é público.</summary>
     Task<CertameDivulgado?> ObterParaLeituraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Divulgação corrente localizada pelo identificador legível congelado, para leitura. Nula
+    /// quando nenhum certame público o traz.
+    /// </summary>
+    Task<CertameDivulgado?> ObterParaLeituraPorIdentificadorAsync(
+        string identificadorLegivel,
+        CancellationToken cancellationToken = default);
+
     Task AdicionarAsync(CertameDivulgado divulgado, CancellationToken cancellationToken = default);
 
     /// <summary>

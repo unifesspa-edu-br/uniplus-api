@@ -5,6 +5,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Domain.ValueObjects;
+
 using DTOs;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -32,7 +34,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "1";
+    public const string Versao = "2";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta.
@@ -120,6 +122,7 @@ internal static class ProjecaoDoCertamePublicado
         // resto passar em silêncio. O ELEMENTO nulo dentro de um arranjo é recusado antes, na
         // desserialização, por ArranjoSemElementoNulo.
         return certame is not null
+            && certame.IdentificadorLegivel is not null
             && certame.Nome is not null
             // Igualdade, não presença: num deploy em fases um processo novo materializa a versão
             // seguinte e este continua lendo a mesma linha. O documento desserializa — os campos
@@ -157,6 +160,15 @@ internal static class ProjecaoDoCertamePublicado
         string hashConfiguracao,
         JsonObject envelope)
     {
+        // Obrigatório na projeção, embora o bloco admita nulo no envelope: publicação e sucessão de
+        // versão recusam a ausência, então uma versão divulgável sempre o traz. A regra do cadastro
+        // é reaplicada ao valor lido porque é ele que a leitura pública usa como chave de busca.
+        if (!TentarTexto(envelope, BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
+            || IdentificadorLegivel.Criar(identificadorLegivel).IsFailure)
+        {
+            return Recusar("identificador legível");
+        }
+
         if (!TentarObjeto(envelope, BlocoPublico("tipoProcesso"), out JsonObject? tipoProcessoNode)
             || !TentarTipoNomeado(tipoProcessoNode, out TipoCatalogadoCertameDto? tipoProcesso))
         {
@@ -239,6 +251,7 @@ internal static class ProjecaoDoCertamePublicado
 
         return Result<CertamePublicadoDto>.Success(new CertamePublicadoDto(
             processoSeletivoId,
+            identificadorLegivel,
             atoCriadorId,
             nome,
             Versao,

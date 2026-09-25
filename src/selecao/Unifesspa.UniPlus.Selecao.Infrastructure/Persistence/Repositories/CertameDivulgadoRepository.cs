@@ -40,6 +40,12 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         _context.CertamesDivulgados.AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == processoSeletivoId, cancellationToken);
 
+    public Task<CertameDivulgado?> ObterParaLeituraPorIdentificadorAsync(
+        string identificadorLegivel,
+        CancellationToken cancellationToken = default) =>
+        _context.CertamesDivulgados.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.IdentificadorLegivel == identificadorLegivel, cancellationToken);
+
     public async Task AdicionarAsync(CertameDivulgado divulgado, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(divulgado);

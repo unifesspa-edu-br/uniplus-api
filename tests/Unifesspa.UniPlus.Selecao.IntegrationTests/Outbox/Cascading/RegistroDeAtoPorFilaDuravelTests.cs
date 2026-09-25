@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -710,6 +711,89 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
             new Uri($"/api/selecao/certames/{processoId}", UriKind.Relative), CancellationToken.None);
         certame.StatusCode.Should().Be(
             HttpStatusCode.OK, "formulário e certame respondem sobre a mesma linha, então respondem juntos");
+    }
+
+    [Fact(DisplayName = "O certame é localizado pelo identificador legível congelado, com o mesmo conteúdo e o mesmo selo do Guid")]
+    public async Task Certame_PeloIdentificadorLegivel_MesmoConteudoESeloDoGuid()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(
+            api, nameof(Certame_PeloIdentificadorLegivel_MesmoConteudoESeloDoGuid));
+        string identificador = await ObterIdentificadorLegivelAsync(api, processoId);
+
+        // Em rascunho, inexistente e fora do formato do cadastro: a MESMA recusa.
+        string recusaEmRascunho = await CodigoDaRecusaAsync(client, identificador);
+        string recusaInexistente = await CodigoDaRecusaAsync(client, "certame-que-nao-existe");
+        string recusaForaDoFormato = await CodigoDaRecusaAsync(client, "PSIQ%202026");
+
+        recusaInexistente.Should().Be(recusaEmRascunho);
+        recusaForaDoFormato.Should().Be(recusaEmRascunho);
+
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Guid atoDaAbertura = await ObterAtoIdAsync(api, processoId);
+        await EsperaDeAtoRegistrado.AguardarAsync(api, atoDaAbertura, "ato da abertura", processoId);
+        await EsperarDivulgacaoAsync(api, processoId, "divulgação da abertura");
+
+        using HttpResponseMessage peloGuid = await client.GetAsync(
+            new Uri($"/api/selecao/certames/{processoId}", UriKind.Relative), CancellationToken.None);
+        using HttpResponseMessage peloIdentificador = await client.GetAsync(
+            new Uri($"/api/selecao/certames/{identificador}", UriKind.Relative), CancellationToken.None);
+
+        peloGuid.StatusCode.Should().Be(HttpStatusCode.OK);
+        peloIdentificador.StatusCode.Should().Be(HttpStatusCode.OK);
+        peloIdentificador.Headers.ETag.Should().Be(peloGuid.Headers.ETag);
+        peloIdentificador.Headers.CacheControl!.NoCache.Should().BeTrue();
+
+        string corpoPeloIdentificador = await peloIdentificador.Content.ReadAsStringAsync();
+        corpoPeloIdentificador.Should().Be(await peloGuid.Content.ReadAsStringAsync());
+
+        using (JsonDocument detalhe = JsonDocument.Parse(corpoPeloIdentificador))
+        {
+            detalhe.RootElement.GetProperty("identificadorLegivel").GetString().Should().Be(
+                identificador, "o identificador exposto é o congelado na publicação");
+        }
+
+        // A revalidação pelo identificador responde pelo mesmo selo.
+        using HttpRequestMessage revalidacao = new(
+            HttpMethod.Get, new Uri($"/api/selecao/certames/{identificador}", UriKind.Relative));
+        revalidacao.Headers.IfNoneMatch.Add(peloGuid.Headers.ETag!);
+        using HttpResponseMessage naoModificado = await client.SendAsync(revalidacao);
+        naoModificado.StatusCode.Should().Be(HttpStatusCode.NotModified);
+
+        // A vitrine traz o mesmo identificador para o mesmo processo.
+        using HttpResponseMessage vitrine = await client.GetAsync(
+            new Uri("/api/selecao/certames?limit=100", UriKind.Relative), CancellationToken.None);
+        vitrine.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument itens = JsonDocument.Parse(await vitrine.Content.ReadAsStringAsync());
+        JsonElement item = ItensDaVitrine(itens.RootElement)
+            .Single(i => i.GetProperty("processoSeletivoId").GetGuid() == processoId);
+        item.GetProperty("identificadorLegivel").GetString().Should().Be(identificador);
+    }
+
+    private static async Task<string> CodigoDaRecusaAsync(HttpClient client, string identificador)
+    {
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"/api/selecao/certames/{identificador}", UriKind.Relative), CancellationToken.None);
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        resposta.Headers.CacheControl!.NoCache.Should().BeTrue();
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        return problema.RootElement.GetProperty("code").GetString()!;
+    }
+
+    private static JsonElement.ArrayEnumerator ItensDaVitrine(JsonElement raiz) =>
+        raiz.ValueKind == JsonValueKind.Array
+            ? raiz.EnumerateArray()
+            : raiz.GetProperty("items").EnumerateArray();
+
+    private static async Task<string> ObterIdentificadorLegivelAsync(CascadingApiFactory api, Guid processoId)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking().FirstAsync(p => p.Id == processoId);
+        return processo.IdentificadorLegivel!.Value.Valor;
     }
 
     private static Task<HttpResponseMessage> ObterFormularioAsync(HttpClient client, Guid processoId) =>

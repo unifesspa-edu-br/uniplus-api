@@ -92,6 +92,7 @@ public static class ListarCertamesPublicadosQueryHandler
 
             itens.Add(new CertameNaVitrineDto(
                 divulgado.Id,
+                certame.IdentificadorLegivel,
                 certame.Periodo.Numero,
                 certame.Nome,
                 certame.TipoProcesso,

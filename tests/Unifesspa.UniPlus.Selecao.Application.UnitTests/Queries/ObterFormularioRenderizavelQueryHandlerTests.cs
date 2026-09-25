@@ -79,7 +79,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                 AtoDaDivulgacao,
                 new string('a', 64),
                 versaoProjecao: "1",
-                new FacetasDoCertameDivulgado("Certame", "001/2026", ["AC"], DataHoraFixa, DataHoraFixa.AddDays(30)),
+                new FacetasDoCertameDivulgado("certame-formulario", "Certame", "001/2026", ["AC"], DataHoraFixa, DataHoraFixa.AddDays(30)),
                 """{"nome":"documento"}""",
                 DataHoraFixa));
         return repositorio;

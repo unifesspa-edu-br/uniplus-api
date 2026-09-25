@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -151,6 +152,7 @@ public sealed class LeituraPublicaDoCertameTests
             new string('a', 64),
             ProjecaoDoCertamePublicado.Versao,
             new FacetasDoCertameDivulgado(
+                projecao.IdentificadorLegivel,
                 projecao.Nome,
                 projecao.Periodo.Numero,
                 projecao.ModalidadesOfertadas,
@@ -161,6 +163,7 @@ public sealed class LeituraPublicaDoCertameTests
 
     private static CertamePublicadoDto Projecao(Guid processoId) => new(
         processoId,
+        IdentificadoresDeTeste.Novo().Valor,
         Guid.CreateVersion7(),
         "SISU 2026.1",
         ProjecaoDoCertamePublicado.Versao,

@@ -62,6 +62,12 @@ internal sealed class ReentregaDaDivulgacaoDoCertame : IHandlerPolicy
                 .ScheduleRetry(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15))
                 .Then.MoveToErrorQueue();
 
+            // Endereço público já ocupado por outro certame divulgado: dado inconsistente, que
+            // nenhuma reentrega corrige. Vai direto para a fila morta, com a exceção que nomeia o
+            // processo e o identificador.
+            chain.OnException<IdentificadorLegivelJaDivulgadoException>()
+                .MoveToErrorQueue();
+
             // Falha transiente — indisponibilidade momentânea, deadlock, conflito entre duas
             // entregas do mesmo ato — é o caso em que insistir resolve em segundos.
             chain.OnException<Exception>()

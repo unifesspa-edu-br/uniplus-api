@@ -179,15 +179,24 @@ public sealed class CertamePublicadoController : ControllerBase
 
     /// <summary>
     /// Certame publicado, projetado da versão de configuração vigente e visível apenas quando o ato
-    /// normativo que a criou está registrado.
+    /// normativo que a criou está registrado — localizado pelo Guid do processo ou pelo
+    /// identificador legível congelado na publicação.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// Uma rota só para as duas chaves: o identificador legível nunca tem a forma de um Guid (o
+    /// cadastro a recusa), então o próprio valor diz qual é. Mesmo conteúdo, mesmo selo e mesmas
+    /// recusas pelas duas.
+    /// </para>
+    /// <para>
     /// <c>404</c> cobre, com a mesma resposta, o processo inexistente, o processo em rascunho, o
-    /// processo sem versão vigente e aquele cujo ato ainda não foi registrado — inclusive quando o
-    /// registro foi recusado. A resposta não distingue os casos de propósito: para um chamador
-    /// anônimo, distinguir seria responder "esse identificador é um rascunho?".
+    /// processo sem versão vigente, aquele cujo ato ainda não foi registrado — inclusive quando o
+    /// registro foi recusado — e o valor que não é Guid nem identificador que algum certame público
+    /// traga. A resposta não distingue os casos de propósito: para um chamador anônimo, distinguir
+    /// seria responder "esse identificador é um rascunho?".
+    /// </para>
     /// </remarks>
-    [HttpGet("certames/{id:guid}")]
+    [HttpGet("certames/{id}")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "certame", Versions = [1])]
     [ProducesResponseType(typeof(CertamePublicadoDto), StatusCodes.Status200OK)]
@@ -196,13 +205,25 @@ public sealed class CertamePublicadoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ObterCertamePublicado(
-        Guid id,
+    public Task<IActionResult> ObterCertamePublicado(
+        [Description("Guid do processo seletivo ou identificador legível do certame (kebab-case, congelado na publicação).")] string id,
         [FromHeader(Name = "If-None-Match")] string? ifNoneMatch,
         CancellationToken cancellationToken)
     {
+        IQuery<Result<CertamePublicadoDto>> consulta = Guid.TryParse(id, out Guid processoSeletivoId)
+            ? new ObterCertamePublicadoQuery(processoSeletivoId)
+            : new ObterCertamePublicadoPorIdentificadorQuery(id);
+
+        return ServirAsync(consulta, ifNoneMatch, cancellationToken);
+    }
+
+    private async Task<IActionResult> ServirAsync(
+        IQuery<Result<CertamePublicadoDto>> consulta,
+        string? ifNoneMatch,
+        CancellationToken cancellationToken)
+    {
         Result<CertamePublicadoDto> resultado = await _queryBus
-            .Send(new ObterCertamePublicadoQuery(id), cancellationToken)
+            .Send(consulta, cancellationToken)
             .ConfigureAwait(false);
 
         // Revalidação obrigatória, não cache proibido: o endereço não muda quando o certame é

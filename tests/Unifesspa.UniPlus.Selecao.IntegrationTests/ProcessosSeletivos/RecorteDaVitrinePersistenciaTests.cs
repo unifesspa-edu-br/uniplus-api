@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 using Xunit;
 
@@ -171,7 +172,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
             Guid.CreateVersion7(),
             new string('a', 64),
             versaoProjecao,
-            new FacetasDoCertameDivulgado("Certame de recorte", "001/2026", ["AC"], inscricoesDe, inscricoesAte),
+            new FacetasDoCertameDivulgado(IdentificadoresDeTeste.Novo().Valor, "Certame de recorte", "001/2026", ["AC"], inscricoesDe, inscricoesAte),
             """{"nome":"Certame de recorte"}""",
             Agora);
 }
