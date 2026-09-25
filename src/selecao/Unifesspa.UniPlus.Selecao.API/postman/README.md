@@ -13,49 +13,83 @@ testes de borda de validação.
 ## Arquivos
 
 - `selecao.postman_collection.json` — a coleção (Postman v2.1).
-- `selecao.postman_environment.json` — ambiente local (dev): URLs, client e
-  credenciais do realm `unifesspa-dev-local`. Valores **dev-only**.
+- `selecao.postman_environment.json` — ambiente local (dev): URL da API, URL de
+  token do Keycloak, client e credenciais. Valores **dev-only**; todos podem ser
+  sobrescritos por `--env-var` sem editar o arquivo.
 
 ## Pré-condições
 
 O módulo Seleção é servido pela **API UniPlus** (monólito modular, serviço
-`uniplus-api`), junto de Configuração/Organização/Publicações — não existe API
-"Seleção" própria em porta separada. O override `docker-compose.smoke.yml`
-realinha a API ao realm `unifesspa-dev-local` (o override default usa `unifesspa`,
-dos frontends) — sem ele o token dev-local do environment é rejeitado com 401.
+`uniplus-api`, porta `:5200`), junto de Configuração/Organização/Publicações —
+não existe API "Seleção" própria em porta separada. A rota administrativa de
+`ProcessoSeletivo` exige o papel `plataforma-admin` (usuário `admin`).
+
+A coleção roda contra a stack local em **um de dois modos**, conforme o realm que
+a API valida:
+
+| Modo | Realm validado pela API | Quando usar |
+|---|---|---|
+| Stack com override padrão | `unifesspa` (o mesmo dos frontends) | a stack já está de pé para desenvolvimento — **não recrie containers** |
+| Stack de smoke | `unifesspa-dev-local` | ambiente dedicado a smoke, sem frontends em uso |
+
+**Atenção ao `docker-compose.smoke.yml`:** ele **não** sobe uma stack isolada. É
+uma camada sobre o mesmo projeto Compose que só troca o `Auth__Authority` de
+`uniplus-api`, `geo-api` e `portal-api`. Rodar o `up` com ele **recria esses
+containers** da stack que estiver de pé, com o realm `unifesspa-dev-local`, e os
+frontends (que usam `unifesspa`) passam a receber 401. Os dados continuam indo para
+o mesmo Postgres. Use o modo de smoke só quando ninguém estiver usando a stack.
 
 ```bash
+# Modo smoke (ambiente dedicado)
 cd repositories/uniplus-api
-cp docker/.env.example docker/.env                                          # se ainda não existir
-cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml  # se ainda não existir
-
+cp docker/.env.example docker/.env                                                 # se ainda não existir
+cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml   # se ainda não existir
 docker compose -f docker/docker-compose.yml \
                -f docker/docker-compose.override.yml \
                -f docker/docker-compose.smoke.yml \
                --env-file docker/.env --project-directory docker \
                up -d postgres redis kafka minio apicurio keycloak uniplus-api
-```
-
-Aguarde `uniplus-api` ficar `healthy`:
-
-```bash
 until [ "$(docker inspect --format='{{.State.Health.Status}}' docker-uniplus-api-1 2>/dev/null)" = "healthy" ]; do
   sleep 3
 done
 ```
 
-A API fica em `:5200` (`base_url` do environment). O Keycloak (`:8080`) importa o
-realm `unifesspa-dev-local` com o usuário `admin` (role `plataforma-admin` — a
-única com acesso a todo o `ProcessoSeletivoController`, que é `[Authorize(Roles =
-"plataforma-admin")]` na classe inteira).
+### Token
+
+A pasta **Auth** obtém o token por senha (ROPC). No realm `unifesspa`, o único
+client que aceita ROPC é o `admin-cli`, e ele só emite token com `aud=uniplus`
+(exigido pela API) depois de `scripts/setup-keycloak-dev.sh` — o `realm-export.json`
+reflete a configuração de produção e não traz o scope `uniplus-profile` no
+`admin-cli` (ver `docker/keycloak/README.md`). Sem o script, as requisições
+recebem 401.
+
+Alternativa sem ROPC: preencha a variável `access_token` com um token já emitido
+(por exemplo, copiado do navegador depois do login no app de Seleção). Com ela
+preenchida, a pasta Auth não chama o Keycloak e a coleção usa esse token.
+
+A coleção cria dados a cada execução (unidade, curso, oferta, modalidades,
+processos com identificador legível único) — ver "O que é coberto". Rodar de novo
+em seguida é suportado: os códigos levam um sufixo aleatório por execução.
 
 ## Rodar (Newman)
 
 ```bash
 cd repositories/uniplus-api
 P=src/selecao/Unifesspa.UniPlus.Selecao.API/postman
+
+# Stack com override padrão (realm unifesspa)
+npx --yes newman@6.2.1 run "$P/selecao.postman_collection.json" -e "$P/selecao.postman_environment.json" \
+  --env-var keycloak_token_url=http://localhost:8080/realms/unifesspa/protocol/openid-connect/token \
+  --env-var client_id=admin-cli --env-var 'password=<senha do admin no realm unifesspa>' \
+  --reporters cli --reporter-cli-no-banner
+
+# Stack de smoke (realm unifesspa-dev-local): os valores do environment já servem
 npx --yes newman@6.2.1 run "$P/selecao.postman_collection.json" -e "$P/selecao.postman_environment.json" \
   --reporters cli --reporter-cli-no-banner
+
+# Com token pronto
+npx --yes newman@6.2.1 run "$P/selecao.postman_collection.json" -e "$P/selecao.postman_environment.json" \
+  --env-var "access_token=$TOKEN" --reporters cli --reporter-cli-no-banner
 ```
 
 Ou importe ambos os arquivos no Postman e selecione o ambiente — a coleção roda
@@ -65,11 +99,11 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente — a coleção r
 
 | Folder | Cobre |
 |---|---|
-| **Auth** | Password grant contra Keycloak (`unifesspa-dev-local`) |
+| **Auth** | Password grant contra o Keycloak do realm configurado, ou token pronto via `access_token` |
 | **Setup — Publicações** | `POST admin/tipos-ato` (EDITAL_ABERTURA, EDITAL_RETIFICACAO) — tolera 409 em reexecuções |
 | **Setup — Organização** | `POST admin/instituicao` (singleton, tolera 409) + `GET instituicao` + `POST admin/unidades` |
-| **Setup — Configuração** | Árvore Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica (nenhum pré-seedado) |
-| **ProcessoSeletivo — Configuração** | `Criar` + as 9 dimensões `Definir*` (etapas, oferta-atendimento, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE EM`/renda, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`), referência-temporal-fatos) |
+| **Setup — Configuração** | Árvore Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica (nenhum pré-seedado), e a leitura dos catálogos de tipo de processo (`SiSU`) e de tipo de etapa (`PROVA_OBJETIVA`, `ENTREVISTA`), que a criação do processo e as etapas referenciam por id |
+| **ProcessoSeletivo — Configuração** | `Criar` (com tipo, localidade e identificador legível) + as dimensões `Definir*` (etapas, oferta-atendimento, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, referência-temporal-fatos, **fatos-coletados** e **regras-derivação** — antes dos documentos, porque uma condição só pode citar fato que o processo coleta ou deriva —, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE EM`/renda, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`)) |
 | **ProcessoSeletivo — Leitura** | `Listar`, `ObterPorId`, `ObterConformidade`, `ObterConformidadeLegal` |
 | **ProcessoSeletivo — Publicação** | Upload de Edital em 3 passos (URL pré-assinada MinIO, PUT direto, confirmação) → `Publicar` → `ObterSnapshotVigente` |
 | **ProcessoSeletivo — Retificação (atalho)** | Novo Edital confirmado → `Retificar` (atalho atômico, sem sessão) |
