@@ -50,9 +50,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// impede gerar versão publicada (<see cref="PendenciaDoIdentificadorLegivel"/>).
     /// </summary>
     /// <remarks>
-    /// Definido só enquanto o processo nunca foi publicado (<see cref="DefinirIdentificadorLegivel"/>):
-    /// trocar um identificador já publicado mudaria o endereço de um certame que o público já
-    /// conhece.
+    /// Congelado com a versão, e imutável depois de constar em versão publicada
+    /// (<see cref="DefinirIdentificadorLegivel"/>): trocá-lo mudaria o endereço de um certame que
+    /// o público já conhece.
     /// </remarks>
     public IdentificadorLegivel? IdentificadorLegivel { get; private set; }
 
@@ -1889,14 +1889,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Declara, troca ou remove o identificador legível de um processo que nunca foi publicado.
+    /// Declara, troca ou remove o identificador legível enquanto ele não consta em versão
+    /// publicada.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Antes da primeira publicação o endereço público ainda não existe, e o identificador é
-    /// livre. Num processo publicado a recusa vale mesmo dentro da sessão de retificação: o
-    /// endereço da página e a chave do documento no acervo derivam dele, e trocá-lo quebraria o
-    /// endereço que o público já conhece.
+    /// livre. Depois dela, o que vale é a versão congelada: se a versão sobre a qual a sessão de
+    /// retificação foi aberta já traz o identificador, ele não muda mais — o endereço da página e
+    /// a chave do documento no acervo derivam dele, e o público já o conhece. Se não traz, a
+    /// sessão o declara (e pode corrigi-lo enquanto estiver aberta), e a versão que ela gerar o
+    /// congela; descartá-la repõe a ausência.
+    /// </para>
+    /// <para>
+    /// Fora da sessão, um processo publicado recusa a mutação pela regra geral
+    /// (<see cref="MutacaoBloqueada"/>).
     /// </para>
     /// <para>
     /// A unicidade entre processos não é conferida aqui: depende de consulta, e fica com o
@@ -1910,14 +1917,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        if (Status != StatusProcesso.Rascunho)
+        if (Rascunho is { VersaoBaseComIdentificadorLegivel: true })
         {
             return Result.Failure(new DomainError(
                 ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
-                "O identificador legível só é definido pelo cadastro antes da primeira publicação."));
+                "O identificador legível já consta em versão publicada e não pode ser alterado."));
         }
 
         IdentificadorLegivel = identificador;
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -5247,6 +5255,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // precisamente o que o descarte existe para desfazer.
         AlgoritmoContagemPrazo = grafo.AlgoritmoContagemPrazo;
 
+        // Identificador legível: reposição incondicional, pela mesma razão da convenção acima. Uma
+        // declaração feita na sessão de retificação sobre versão congelada sem identificador não
+        // pode sobreviver ao descarte — o endereço público ficaria reservado sem versão publicada
+        // que o sustente.
+        IdentificadorLegivel = grafo.IdentificadorLegivel;
+
         // Cronograma de fases (Story #851): a reconciliação é por ORDEM, não por Id —
         // reusa a instância TRACKED cuja Ordem bate com a da fase congelada,
         // atualizando-a no lugar (mesmo cuidado que as etapas já tomam — ver a nota em
@@ -5460,11 +5474,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     /// <param name="motivo">Justificativa do ato de retificação — normalizada e validada em <see cref="RascunhoRetificacao"/>.</param>
     /// <param name="versaoBase">A versão corrente do processo, eleita pelo handler (<see cref="VersaoConfiguracao"/> é agregado próprio — ADR-0104).</param>
+    /// <param name="identificadorDaVersaoBase">
+    /// O identificador legível que a versão base congelou, lido do envelope dela pelo handler (o
+    /// Domain não decodifica — ADR-0042). É ele, e não o valor vivo da raiz, que decide se a sessão
+    /// pode declarar o identificador.
+    /// </param>
     /// <param name="abertoPorSub">Sub do usuário autenticado (via <c>IUserContext</c>, nunca input do command).</param>
     /// <param name="abertoEm">Instante lido do relógio injetado (ADR-0068).</param>
     public Result<RascunhoRetificacao> AbrirRetificacao(
         string motivo,
         VersaoConfiguracao versaoBase,
+        IdentificadorLegivel? identificadorDaVersaoBase,
         string abertoPorSub,
         DateTimeOffset abertoEm)
     {
@@ -5490,7 +5510,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         Result<RascunhoRetificacao> rascunho = RascunhoRetificacao.Criar(
-            Id, motivo, versaoBase, abertoPorSub, abertoEm);
+            Id, motivo, versaoBase, identificadorDaVersaoBase is not null, abertoPorSub, abertoEm);
         if (rascunho.IsFailure)
         {
             return rascunho;

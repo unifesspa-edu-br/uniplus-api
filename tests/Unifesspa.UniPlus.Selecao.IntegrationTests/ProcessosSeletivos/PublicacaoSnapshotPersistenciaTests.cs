@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_Contem28BlocosCanonicos</c> (os 28 blocos — todos
+/// pela app) e <c>Snapshot_Contem29BlocosCanonicos</c> (os 29 blocos — todos
 /// reais — estão presentes). Story #575 promoveu <c>cascataRemanejamento</c>
 /// de stub a bloco real; issue #849 promoveu <c>identidadesUnidade</c>;
 /// Story #559 promoveu <c>formulario</c>; issue #563 promoveu <c>divulgacao</c>
@@ -176,10 +176,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_Contem28BlocosCanonicos — os 28 blocos, todos reais, estão presentes")]
-    public async Task Snapshot_Contem28BlocosCanonicos()
+    [Fact(DisplayName = "Snapshot_Contem29BlocosCanonicos — os 29 blocos, todos reais, estão presentes")]
+    public async Task Snapshot_Contem29BlocosCanonicos()
     {
-        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem28BlocosCanonicos));
+        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem29BlocosCanonicos));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao versao = await readContext.VersoesConfiguracao
@@ -205,6 +205,8 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "algoritmoContagemPrazo",
             // UNI-REQ-0080: calendário de dias úteis copiado por valor — 28º bloco.
             "calendarioDiasUteis",
+            // Identificador legível: o endereço público do certame, congelado com a versão — 29º bloco.
+            "identificadorLegivel",
         ];
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)
@@ -326,7 +328,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         // retificação que redefine a exigência com um TipoDocumento diferente e persiste a
         // mudança no MESMO DbContext que já gravou a versão anterior.
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Corrigir código do tipo de documento exigido", versaoAbertura, "user-sub-123", TimeProvider.System.GetUtcNow());
+            "Corrigir código do tipo de documento exigido", versaoAbertura, identificadorDaVersaoBase: null, "user-sub-123", TimeProvider.System.GetUtcNow());
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         DocumentoExigido exigenciaEditada = DocumentoExigido.Criar(

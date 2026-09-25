@@ -364,7 +364,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Incluir exigência documental", versaoAbertura, "user-sub-123", clock.GetUtcNow());
+            "Incluir exigência documental", versaoAbertura, identificadorDaVersaoBase: null, "user-sub-123", clock.GetUtcNow());
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         Guid faseId = processo.CronogramaFases.Single().Id;
@@ -512,7 +512,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Estender exigência de heteroidentificação para a cota PPI", versaoAbertura, "user-sub-123", clock.GetUtcNow());
+            "Estender exigência de heteroidentificação para a cota PPI", versaoAbertura, identificadorDaVersaoBase: null, "user-sub-123", clock.GetUtcNow());
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         // Mesma consequência ELIMINA — só o gatilho muda, de AC (ação null, coerente) para

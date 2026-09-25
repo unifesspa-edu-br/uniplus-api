@@ -104,6 +104,46 @@ public sealed class EnvelopeCodecRoundTripTests
         AssertRoundTrip(processo, versao, congelado);
     }
 
+    // ── Identificador legível: o endereço público volta com a versão, nos dois estados ──
+
+    [Fact(DisplayName = "Reidratar devolve o identificador legível congelado, e recanonicalizar o reproduz")]
+    public void RoundTrip_IdentificadorLegivelCongelado()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+
+        EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
+
+        envelope.Grafo.IdentificadorLegivel.Should().Be(processo.IdentificadorLegivel,
+            "o público lê a versão congelada, e o endereço dele tem de estar nela");
+    }
+
+    [Fact(DisplayName = "Versão congelada sem identificador legível reidrata a ausência, e o descarte a repõe na raiz")]
+    public void RoundTrip_SemIdentificadorLegivel_ReporAusencia()
+    {
+        // O encoder emite null quando a raiz não tem identificador. A publicação recusa esse
+        // estado, então os bytes são congelados antes de o identificador voltar à raiz, e a versão
+        // é montada sobre eles.
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        IdentificadorLegivel? declarado = processo.IdentificadorLegivel;
+        processo.DefinirIdentificadorLegivel(null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        processo.DefinirIdentificadorLegivel(declarado, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+
+        EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
+
+        envelope.Grafo.IdentificadorLegivel.Should().BeNull(
+            "a versão foi congelada sem identificador — a reidratação não pode inventar um");
+        processo.IdentificadorLegivel.Should().BeNull(
+            "repor a versão devolve o que ela de fato tinha, inclusive a ausência");
+    }
+
     // ── Story #575 — cascataRemanejamento reidrata nos dois estados (presente/ausente) ──
 
     /// <summary>
@@ -432,6 +472,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("atendimento.condicoes.0.condicaoNome", "Outra condição")]
     [InlineData("atendimento.recursos.0.recursoNome", "Intérprete de Libras")]
     [InlineData("atendimento.tiposDeficiencia.0.tipoDeficienciaNome", "Deficiência física")]
+    [InlineData("identificadorLegivel", "outro-certame-2026")]
     public void Decoder_NaoPerdeCampo(string caminho, string valorNovo)
     {
         (byte[] originais, byte[] mutados, byte[] recodificados) = MutarEReidratar(caminho, valorNovo);

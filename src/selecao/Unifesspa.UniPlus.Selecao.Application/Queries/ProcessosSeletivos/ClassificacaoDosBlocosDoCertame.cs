@@ -25,12 +25,14 @@ public static class ClassificacaoDosBlocosDoCertame
 {
     /// <summary>
     /// Blocos que o contrato público do certame projeta. <c>retificacao</c> é condicional: só
-    /// existe no envelope depois que o edital é emendado.
+    /// existe no envelope depois que o edital é emendado. <c>identificadorLegivel</c> é o endereço
+    /// público do certame — publicá-lo é o propósito dele.
     /// </summary>
     public static readonly IReadOnlySet<string> Publicados = new HashSet<string>(StringComparer.Ordinal)
     {
         "tipoProcesso",
         "periodo",
+        "identificadorLegivel",
         "localidade",
         "identidadesUnidade",
         "hashesEdital",

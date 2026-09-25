@@ -264,7 +264,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
             ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
             Result<RascunhoRetificacao> abertura = tracked.AbrirRetificacao(
-                "Gravar uma linha explícita igual ao default", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+                "Gravar uma linha explícita igual ao default", versaoAbertura, identificadorDaVersaoBase: null, "integration-test-user", TimeProvider.System.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
             // A linha VIVA agora é EXPLÍCITA, mas com o MESMO conteúdo do default — o cenário

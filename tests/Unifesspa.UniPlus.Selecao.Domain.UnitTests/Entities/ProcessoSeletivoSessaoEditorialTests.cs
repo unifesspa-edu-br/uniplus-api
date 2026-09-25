@@ -79,7 +79,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Correção do prazo", versao, "user-sub-1", Agora);
+            "Correção do prazo", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora);
 
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
         processo.Status.Should().Be(
@@ -92,7 +92,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     {
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
 
-        processo.AbrirRetificacao("Correção do prazo", versao, "user-sub-1", Agora)
+        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora)
             .IsSuccess.Should().BeTrue();
 
         processo.DomainEvents.Should().BeEmpty(
@@ -105,7 +105,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
 
         RascunhoRetificacao rascunho = processo
-            .AbrirRetificacao("Correção do prazo", versao, "user-sub-1", Agora).Value!;
+            .AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).Value!;
 
         rascunho.Revisao.Should().Be(1);
         rascunho.VersaoBaseId.Should().Be(versao.Id);
@@ -122,7 +122,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     {
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
 
-        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(motivo, versao, "user-sub-1", Agora);
+        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(motivo, versao, identificadorDaVersaoBase: null, "user-sub-1", Agora);
 
         abertura.IsFailure.Should().BeTrue();
         abertura.Error!.Code.Should().Be("RascunhoRetificacao.MotivoObrigatorio");
@@ -138,7 +138,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         const string Nfd = "  correção do prazo  ";
 
         RascunhoRetificacao rascunho = processo
-            .AbrirRetificacao(Nfd, versao, "user-sub-1", Agora).Value!;
+            .AbrirRetificacao(Nfd, versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).Value!;
 
         rascunho.Motivo.Should().Be(
             "correção do prazo",
@@ -151,7 +151,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            new string('a', RascunhoRetificacao.MotivoMaxLength + 1), versao, "user-sub-1", Agora);
+            new string('a', RascunhoRetificacao.MotivoMaxLength + 1), versao, identificadorDaVersaoBase: null, "user-sub-1", Agora);
 
         abertura.IsFailure.Should().BeTrue();
         abertura.Error!.Code.Should().Be("RascunhoRetificacao.MotivoMuitoLongo");
@@ -161,9 +161,9 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     public void Abrir_ComSessaoAberta_Recusa()
     {
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
-        processo.AbrirRetificacao("Primeira", versao, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+        processo.AbrirRetificacao("Primeira", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
 
-        Result<RascunhoRetificacao> segunda = processo.AbrirRetificacao("Segunda", versao, "user-sub-2", Agora);
+        Result<RascunhoRetificacao> segunda = processo.AbrirRetificacao("Segunda", versao, identificadorDaVersaoBase: null, "user-sub-2", Agora);
 
         segunda.IsFailure.Should().BeTrue();
         segunda.Error!.Code.Should().Be("RascunhoRetificacao.JaAberta");
@@ -177,7 +177,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo outro = NovoProcessoPublicado(out VersaoConfiguracao versaoDeOutro);
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Correção", versaoDeOutro, "user-sub-1", Agora);
+            "Correção", versaoDeOutro, identificadorDaVersaoBase: null, "user-sub-1", Agora);
 
         abertura.IsFailure.Should().BeTrue();
         abertura.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
@@ -191,7 +191,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         NovoProcessoPublicado(out VersaoConfiguracao versaoAlheia);
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Correção", versaoAlheia, "user-sub-1", Agora);
+            "Correção", versaoAlheia, identificadorDaVersaoBase: null, "user-sub-1", Agora);
 
         abertura.IsFailure.Should().BeTrue();
         abertura.Error!.Code.Should().Be("VersaoConfiguracao.VersaoDeOutroProcesso");
@@ -402,7 +402,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
 
         RascunhoRetificacao primeira = processo
-            .AbrirRetificacao("Primeira sessão", versao, "user-sub-1", Agora).Value!;
+            .AbrirRetificacao("Primeira sessão", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).Value!;
         string tagDaPrimeira = primeira.ETag;
 
         // A sessão morre e outra nasce. A revisão da nova reinicia em 1 — a MESMA da antiga.
@@ -411,7 +411,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         // a segunda.
         DescartarSessao(processo);
         RascunhoRetificacao segunda = processo
-            .AbrirRetificacao("Segunda sessão", versao, "user-sub-2", Agora).Value!;
+            .AbrirRetificacao("Segunda sessão", versao, identificadorDaVersaoBase: null, "user-sub-2", Agora).Value!;
 
         segunda.Revisao.Should().Be(primeira.Revisao, "a contagem reinicia — é justamente esta coincidência que cria o ABA");
         segunda.Id.Should().NotBe(primeira.Id);
@@ -493,7 +493,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     {
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
         RascunhoRetificacao rascunho = processo
-            .AbrirRetificacao("Correção", versao, "user-sub-1", Agora).Value!;
+            .AbrirRetificacao("Correção", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).Value!;
 
         processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
             .IsSuccess.Should().BeTrue();
@@ -530,7 +530,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     public void Retificar_ComSessaoAberta_Recusa()
     {
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
-        processo.AbrirRetificacao("Sessão em curso", versao, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+        processo.AbrirRetificacao("Sessão em curso", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
@@ -548,7 +548,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     private static ProcessoSeletivo ComSessaoAberta(out RascunhoRetificacao rascunho)
     {
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
-        rascunho = processo.AbrirRetificacao("Correção do prazo", versao, "user-sub-1", Agora).Value!;
+        rascunho = processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).Value!;
         return processo;
     }
 
