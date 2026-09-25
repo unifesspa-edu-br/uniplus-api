@@ -15,3 +15,10 @@ data:
   {{- range $index, $network := .Values.reverseProxy.trustedNetworks }}
   ReverseProxy__TrustedNetworks__{{ $index }}: {{ $network | quote }}
   {{- end }}
+  {{- with .Values.origens.selecaoBaseUrl }}
+  Origens__SelecaoBaseUrl: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.origens.publicacoesBaseUrl }}
+  Origens__PublicacoesBaseUrl: {{ . | quote }}
+  {{- end }}
+  Origens__ReencaminharAposEmSegundos: {{ .Values.origens.reencaminharAposEmSegundos | quote }}

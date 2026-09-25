@@ -99,6 +99,74 @@
         ]
       }
     },
+    "/api/portal/certames/{identificador}": {
+      "get": {
+        "tags": [
+          "CertamePublico"
+        ],
+        "parameters": [
+          {
+            "name": "identificador",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.certame-publico.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertamePublicoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Retry-After": {
+                "description": "Em quantos segundos vale tentar de novo. Presente quando os dados do certame est\u00E3o temporariamente indispon\u00EDveis.",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/portal/ping": {
       "get": {
         "tags": [
@@ -171,6 +239,88 @@
           }
         }
       },
+      "CertamePublicoResponse": {
+        "required": [
+          "identificador",
+          "nome",
+          "numeroEdital",
+          "documentoEditalUrl",
+          "linhaDoTempo",
+          "aviso"
+        ],
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "numeroEdital": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentoEditalUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "linhaDoTempo": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoDaLinhaDoTempoResponse"
+            }
+          },
+          "aviso": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "EventoDaLinhaDoTempoResponse": {
+        "required": [
+          "id",
+          "data",
+          "titulo",
+          "tipo",
+          "descricao",
+          "documentoUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "data": {
+            "type": "string",
+            "format": "date"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoDoEventoResponse"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "PingResponse": {
         "required": [
           "pong",
@@ -226,6 +376,21 @@
           "retryable": {
             "type": "boolean",
             "description": "Presente e \u0060true\u0060 quando o conflito descreve uma corrida que j\u00E1 passou: a mesma requisi\u00E7\u00E3o, repetida sem altera\u00E7\u00E3o, pode agora ser aceita. A aus\u00EAncia \u00E9 o default conservador do servidor \u2014 diz que o conflito n\u00E3o foi declarado retent\u00E1vel, n\u00E3o que repetir esteja descartado; nesse caso vale a descri\u00E7\u00E3o da pr\u00F3pria resposta."
+          }
+        }
+      },
+      "TipoDoEventoResponse": {
+        "required": [
+          "codigo",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
           }
         }
       },
@@ -301,6 +466,9 @@
     },
     {
       "name": "Profile"
+    },
+    {
+      "name": "CertamePublico"
     },
     {
       "name": "Ping"

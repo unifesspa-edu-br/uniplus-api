@@ -76,4 +76,10 @@ public sealed class OrigensOptions
 
     /// <summary>Quanto tempo o circuito permanece aberto antes de deixar passar uma chamada de prova.</summary>
     public int DuracaoDoCorteEmSegundos { get; init; } = 15;
+
+    /// <summary>
+    /// Em quantos segundos a página pública indica que vale tentar de novo quando Seleção está
+    /// indisponível — o valor do cabeçalho <c>Retry-After</c> da resposta 503.
+    /// </summary>
+    public int ReencaminharAposEmSegundos { get; init; } = 15;
 }

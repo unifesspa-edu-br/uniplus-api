@@ -38,6 +38,20 @@ cors:
 reverseProxy:
   trustedNetworks: []
 
+# Origens que a pagina publica do certame compoe (ADR-0131): o contrato publico
+# de leitura do certame (Selecao) e a consulta unificada de atos (Publicacoes).
+# Ambas sao servidas pelo deployable monolitico, sem credencial. Endereco base,
+# sem caminho — ex.: http://<release-do-monolito>-uniplus-api. Sem
+# selecaoBaseUrl, a Portal sobe sem a composicao e a rota
+# /api/portal/certames/{identificador} fica sem como responder; com ele, a
+# configuracao inteira e validada na subida. Cada chave vira a env var
+# Origens__<Chave> via ConfigMap.
+origens:
+  selecaoBaseUrl: ""
+  publicacoesBaseUrl: ""
+  # Segundos do Retry-After da resposta 503 quando Selecao esta indisponivel.
+  reencaminharAposEmSegundos: 15
+
 secrets:
   connectionString: ""
   redisConnection: ""

@@ -75,6 +75,11 @@ internal sealed class OrigensOptionsValidator : IValidateOptions<OrigensOptions>
             falhas.Add("Origens:DuracaoDoCorteEmSegundos precisa ser pelo menos 1.");
         }
 
+        if (options.ReencaminharAposEmSegundos < 1)
+        {
+            falhas.Add("Origens:ReencaminharAposEmSegundos precisa ser pelo menos 1.");
+        }
+
         return falhas.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(falhas);
     }
 

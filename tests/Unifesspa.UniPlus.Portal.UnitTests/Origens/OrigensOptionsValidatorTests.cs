@@ -62,4 +62,20 @@ public sealed class OrigensOptionsValidatorTests
 
         resultado.Failed.Should().BeTrue();
     }
+
+    [Fact]
+    public void Recusa_indicacao_de_reencaminhamento_menor_que_um_segundo()
+    {
+        ValidateOptionsResult resultado = new OrigensOptionsValidator().Validate(
+            null,
+            new OrigensOptions
+            {
+                SelecaoBaseUrl = Valida.SelecaoBaseUrl,
+                PublicacoesBaseUrl = Valida.PublicacoesBaseUrl,
+                ReencaminharAposEmSegundos = 0,
+            });
+
+        resultado.Failed.Should().BeTrue();
+        resultado.FailureMessage.Should().Contain("ReencaminharAposEmSegundos");
+    }
 }
