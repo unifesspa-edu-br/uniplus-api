@@ -33,6 +33,7 @@ public static class CursorPaginationServiceCollectionExtensions
             .Validate(static o => o.LimitDefault >= o.LimitMin && o.LimitDefault <= o.LimitMax,
                 "CursorPaginationOptions.LimitDefault deve estar entre LimitMin e LimitMax.")
             .Validate(static o => o.CursorTtl > TimeSpan.Zero, "CursorPaginationOptions.CursorTtl deve ser positivo.")
+            .Validate(static o => !string.IsNullOrWhiteSpace(o.KeyName), "CursorPaginationOptions.KeyName é obrigatório.")
             .ValidateOnStart();
 
         services.AddSingleton<CursorEncoder>();

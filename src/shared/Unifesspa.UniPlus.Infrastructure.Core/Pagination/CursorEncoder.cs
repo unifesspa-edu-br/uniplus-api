@@ -6,25 +6,15 @@ using System.Text.Json;
 
 using Cryptography;
 
+using Microsoft.Extensions.Options;
+
 /// <summary>
 /// Codifica e decodifica cursores opacos AES-GCM (ADR-0026): JSON do
 /// <see cref="CursorPayload"/> cifrado via <see cref="IUniPlusEncryptionService"/>
-/// e codificado em Base64URL.
+/// e codificado em Base64URL, com a chave nomeada em <see cref="CursorPaginationOptions.KeyName"/>.
 /// </summary>
 public sealed class CursorEncoder
 {
-    /// <summary>
-    /// Nome de chave usado para cifrar cursores em <see cref="IUniPlusEncryptionService"/>.
-    /// Default alinhado com a key canônica provisionada pelo chart
-    /// <c>platform/vault-transit-bootstrap</c> do uniplus-infra (uniplus-infra#219):
-    /// <c>uniplus-idempotency-aesgcm</c>. Por enquanto reusa a mesma key da
-    /// Idempotency-Key (escopo pragmático, mesma policy <c>uniplus-api-transit</c>).
-    /// Quando o standalone evoluir para key separation por capability (ex.: dedicar
-    /// uma key <c>uniplus-cursor-aesgcm</c> para pagination), extrair para options
-    /// configurável + key + policy dedicada (follow-up uniplus-infra TBD).
-    /// </summary>
-    public const string KeyName = "uniplus-idempotency-aesgcm";
-
     private static readonly JsonSerializerOptions PayloadJsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -32,6 +22,7 @@ public sealed class CursorEncoder
     };
 
     private readonly IUniPlusEncryptionService _encryption;
+    private readonly string _keyName;
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
@@ -40,12 +31,17 @@ public sealed class CursorEncoder
     /// adicional sem TimeProvider seria silenciosamente preferido por
     /// <c>ActivatorUtilities</c> e ignoraria override de relógio em testes.
     /// </summary>
-    public CursorEncoder(IUniPlusEncryptionService encryption, TimeProvider timeProvider)
+    public CursorEncoder(
+        IUniPlusEncryptionService encryption,
+        IOptions<CursorPaginationOptions> options,
+        TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(encryption);
+        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         _encryption = encryption;
+        _keyName = options.Value.KeyName;
         _timeProvider = timeProvider;
     }
 
@@ -54,7 +50,7 @@ public sealed class CursorEncoder
         ArgumentNullException.ThrowIfNull(payload);
 
         byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(payload, PayloadJsonOptions);
-        byte[] ciphertext = await _encryption.EncryptAsync(KeyName, plaintext, cancellationToken).ConfigureAwait(false);
+        byte[] ciphertext = await _encryption.EncryptAsync(_keyName, plaintext, cancellationToken).ConfigureAwait(false);
         return Base64Url.EncodeToString(ciphertext);
     }
 
@@ -76,7 +72,7 @@ public sealed class CursorEncoder
         byte[] plaintext;
         try
         {
-            plaintext = await _encryption.DecryptAsync(KeyName, ciphertext, cancellationToken).ConfigureAwait(false);
+            plaintext = await _encryption.DecryptAsync(_keyName, ciphertext, cancellationToken).ConfigureAwait(false);
         }
         catch (EncryptionFailureException)
         {

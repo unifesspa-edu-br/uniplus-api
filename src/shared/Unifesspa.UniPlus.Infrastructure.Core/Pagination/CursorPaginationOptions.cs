@@ -10,6 +10,13 @@ public sealed record CursorPaginationOptions
 {
     public const string SectionName = "UniPlus:Pagination:Cursor";
 
+    /// <summary>
+    /// Chave canônica provisionada pelo chart <c>platform/vault-transit-bootstrap</c> do
+    /// uniplus-infra e compartilhada com a Idempotency-Key, sob a policy
+    /// <c>uniplus-api-transit</c>.
+    /// </summary>
+    public const string DefaultKeyName = "uniplus-idempotency-aesgcm";
+
     /// <summary>Tempo de validade do cursor opaco emitido pelo binder.</summary>
     public TimeSpan CursorTtl { get; init; } = TimeSpan.FromMinutes(15);
 
@@ -21,4 +28,11 @@ public sealed record CursorPaginationOptions
 
     /// <summary>Limite máximo aceito; valores acima retornam 422 (QS) ou são clampados (cursor).</summary>
     public int LimitMax { get; init; } = 100;
+
+    /// <summary>
+    /// Nome da chave com que o cursor é cifrado em <see cref="Cryptography.IUniPlusEncryptionService"/>.
+    /// Um deployable que compõe a coleção de outro com paginação própria usa chave própria: quem
+    /// detém a chave consegue emitir cursor para qualquer coleção cifrada com ela (ADR-0131).
+    /// </summary>
+    public string KeyName { get; init; } = DefaultKeyName;
 }

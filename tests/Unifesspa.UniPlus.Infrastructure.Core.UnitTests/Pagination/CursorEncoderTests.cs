@@ -14,14 +14,20 @@ public sealed class CursorEncoderTests
     private static readonly byte[] ValidKey = new byte[32];
     private static readonly string ValidKeyBase64 = Convert.ToBase64String(ValidKey);
 
-    private static (CursorEncoder Encoder, MutableTimeProvider Time) CriarEncoder(DateTimeOffset? now = null)
+    private static (CursorEncoder Encoder, MutableTimeProvider Time) CriarEncoder(
+        DateTimeOffset? now = null,
+        string keyName = CursorPaginationOptions.DefaultKeyName)
     {
         MutableTimeProvider time = new(now ?? new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
-        LocalAesEncryptionService encryption = new(
-            Options.Create(new EncryptionOptions { Provider = "local", LocalKey = ValidKeyBase64 }),
-            NullLogger<LocalAesEncryptionService>.Instance);
-        return (new CursorEncoder(encryption, time), time);
+        return (new CursorEncoder(CriarCifragem(), Options.Create(new CursorPaginationOptions { KeyName = keyName }), time), time);
     }
+
+    private static LocalAesEncryptionService CriarCifragem() => new(
+        Options.Create(new EncryptionOptions { Provider = "local", LocalKey = ValidKeyBase64 }),
+        NullLogger<LocalAesEncryptionService>.Instance);
+
+    private static CursorPayload PayloadValido() => new(
+        "id", 10, "certames", DateTimeOffset.UtcNow.AddMinutes(5), PaginationDirection.Next);
 
     private sealed class MutableTimeProvider : TimeProvider
     {
@@ -105,5 +111,40 @@ public sealed class CursorEncoderTests
         CursorDecodeResult resultado = await encoder.TryDecodeAsync("@@@invalid@@@");
 
         resultado.Status.Should().Be(CursorDecodeStatus.Invalid);
+    }
+
+    [Fact]
+    public void Options_SemConfiguracao_UsamAChaveCanonica()
+    {
+        new CursorPaginationOptions().KeyName.Should().Be("uniplus-idempotency-aesgcm");
+    }
+
+    [Fact]
+    public async Task Encode_SemConfiguracao_CifraComAChaveCanonica()
+    {
+        (CursorEncoder encoder, _) = CriarEncoder();
+
+        string token = await encoder.EncodeAsync(PayloadValido());
+
+        // A mesma cifragem abre o cursor quando recebe explicitamente o nome canônico.
+        byte[] claro = await CriarCifragem().DecryptAsync(
+            CursorPaginationOptions.DefaultKeyName, System.Buffers.Text.Base64Url.DecodeFromChars(token));
+        claro.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task TryDecode_CursorCifradoComOutraChave_RetornaInvalid()
+    {
+        (CursorEncoder origem, _) = CriarEncoder(keyName: CursorPaginationOptions.DefaultKeyName);
+        (CursorEncoder portal, _) = CriarEncoder(keyName: "uniplus-portal-cursor-aesgcm");
+
+        string cursorDaOrigem = await origem.EncodeAsync(PayloadValido());
+        string cursorDaPortal = await portal.EncodeAsync(PayloadValido());
+
+        (await portal.TryDecodeAsync(cursorDaOrigem)).Status.Should().Be(CursorDecodeStatus.Invalid,
+            "quem não detém a chave da origem não abre nem reaproveita o cursor dela");
+        (await origem.TryDecodeAsync(cursorDaPortal)).Status.Should().Be(CursorDecodeStatus.Invalid,
+            "a origem não aceita cursor emitido com a chave de quem a compõe");
+        (await portal.TryDecodeAsync(cursorDaPortal)).Status.Should().Be(CursorDecodeStatus.Success);
     }
 }
