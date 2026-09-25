@@ -12,6 +12,9 @@ using Domain.Enums;
 public sealed record ProcessoSeletivoDto(
     Guid Id,
     string Nome,
+    // Identificador legível (issue #1479): read-back administrativo. null = ainda não
+    // declarado, o que bloqueia a publicação.
+    string? IdentificadorLegivel,
     TipoProcessoSnapshotDto TipoProcesso,
     // Status e OrigemCandidatos são tipados pelo enum, não projetados por `.ToString()`:
     // é o que faz o wire sair no mesmo vocabulário que a criação aceita e o que leva o

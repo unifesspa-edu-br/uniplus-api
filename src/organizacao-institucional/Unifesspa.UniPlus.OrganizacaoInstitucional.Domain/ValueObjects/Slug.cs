@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
-
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 
@@ -12,17 +11,12 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 /// pontos, e há colisões de normalização que exigem decisão humana).
 /// </summary>
 /// <remarks>
-/// Formato: <c>^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$</c> — inicia com letra
-/// minúscula, segmentos separados por hífen único (sem hífens consecutivos nem
-/// nas pontas), termina com letra minúscula ou dígito. O comprimento (3-64) é
-/// validado à parte em <see cref="From"/>. O valor normalizado é armazenado em
-/// lowercase, sem espaços ou acentos.
+/// Formato e comprimento são os de <see cref="FormatoKebab"/>, compartilhados com
+/// os demais identificadores legíveis do sistema. O valor normalizado é armazenado
+/// em lowercase, sem espaços ou acentos.
 /// </remarks>
-public readonly partial record struct Slug
+public readonly record struct Slug
 {
-    private const int ComprimentoMinimo = 3;
-    private const int ComprimentoMaximo = 64;
-
     public string Valor { get; }
 
     private Slug(string valor) => Valor = valor;
@@ -38,14 +32,14 @@ public readonly partial record struct Slug
 
         string normalizado = valor.Trim();
 
-        if (normalizado.Length < ComprimentoMinimo || normalizado.Length > ComprimentoMaximo)
+        if (!FormatoKebab.TemComprimentoValido(normalizado))
         {
             return Result<Slug>.Failure(new DomainError(
                 UnidadeErrorCodes.SlugTamanho,
-                $"Slug deve ter entre {ComprimentoMinimo} e {ComprimentoMaximo} caracteres."));
+                $"Slug deve ter entre {FormatoKebab.ComprimentoMinimo} e {FormatoKebab.ComprimentoMaximo} caracteres."));
         }
 
-        if (!FormatoValido().IsMatch(normalizado))
+        if (!FormatoKebab.TemFormatoValido(normalizado))
         {
             return Result<Slug>.Failure(new DomainError(
                 UnidadeErrorCodes.SlugFormatoInvalido,
@@ -58,7 +52,4 @@ public readonly partial record struct Slug
     }
 
     public override string ToString() => Valor ?? string.Empty;
-
-    [GeneratedRegex(@"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
 }

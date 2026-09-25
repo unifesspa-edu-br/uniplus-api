@@ -43,6 +43,19 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ProcessoSeletivo : SoftDeletableEntity
 {
     public string Nome { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Identificador legível escolhido no cadastro, de onde derivam o endereço da página pública
+    /// do certame e a chave do documento no acervo. Ausência = ainda não declarado, o que só
+    /// impede gerar versão publicada (<see cref="PendenciaDoIdentificadorLegivel"/>).
+    /// </summary>
+    /// <remarks>
+    /// Definido só enquanto o processo nunca foi publicado (<see cref="DefinirIdentificadorLegivel"/>):
+    /// trocar um identificador já publicado mudaria o endereço de um certame que o público já
+    /// conhece.
+    /// </remarks>
+    public IdentificadorLegivel? IdentificadorLegivel { get; private set; }
+
     /// <summary>Id da origem em Configuração, sem FK cross-schema (ADR-0061).</summary>
     public Guid TipoProcessoOrigemId => TipoProcesso.OrigemId;
 
@@ -216,7 +229,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         OrigemCandidatos origemCandidatos,
         Guid unidadeAdministradoraOrigemId,
         UnidadeAdministradoraSnapshot unidadeAdministradora,
-        LocalidadeRegente localidade)
+        LocalidadeRegente localidade,
+        IdentificadorLegivel? identificadorLegivel = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         if (tipoProcesso is null)
@@ -245,6 +259,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             UnidadeAdministradoraOrigemId = unidadeAdministradoraOrigemId,
             UnidadeAdministradora = unidadeAdministradora,
             Localidade = localidade,
+            IdentificadorLegivel = identificadorLegivel,
             Status = StatusProcesso.Rascunho,
         };
     }
@@ -1874,6 +1889,39 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Declara, troca ou remove o identificador legível de um processo que nunca foi publicado.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Antes da primeira publicação o endereço público ainda não existe, e o identificador é
+    /// livre. Num processo publicado a recusa vale mesmo dentro da sessão de retificação: o
+    /// endereço da página e a chave do documento no acervo derivam dele, e trocá-lo quebraria o
+    /// endereço que o público já conhece.
+    /// </para>
+    /// <para>
+    /// A unicidade entre processos não é conferida aqui: depende de consulta, e fica com o
+    /// handler. O índice único do banco é a última defesa.
+    /// </para>
+    /// </remarks>
+    public Result DefinirIdentificadorLegivel(IdentificadorLegivel? identificador, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (Status != StatusProcesso.Rascunho)
+        {
+            return Result.Failure(new DomainError(
+                ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
+                "O identificador legível só é definido pelo cadastro antes da primeira publicação."));
+        }
+
+        IdentificadorLegivel = identificador;
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Redeclara o município cujo calendário rege a contagem dos prazos (UNI-REQ-0111), em rascunho
     /// ou sob sessão editorial aberta.
     /// </summary>
@@ -1940,6 +1988,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
+
+    /// <summary>
+    /// Recusa gerar versão sem identificador legível: o certame publicado ficaria sem endereço
+    /// legível e sem chave no acervo público.
+    /// </summary>
+    private DomainError? PendenciaDoIdentificadorLegivel() =>
+        IdentificadorLegivel is null
+            ? new DomainError(
+                ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente,
+                "O identificador legível é obrigatório para gerar versão publicada.")
+            : null;
 
     /// <summary>
     /// Recusa gerar versão sem a localidade que rege a contagem dos prazos (UNI-REQ-0111).
@@ -2208,16 +2267,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Checklist de conformidade ESTRUTURAL do agregado (issue #1092): bicondicional com os
-    /// SEIS gates que <see cref="Publicar"/>/<see cref="SucederVersao"/> aplicam, nesta ordem
-    /// — <see cref="PendenciaDaLocalidade"/>, <see cref="PendenciaDoAlgoritmoDeContagem"/>,
+    /// gates que <see cref="Publicar"/>/<see cref="SucederVersao"/> aplicam, nesta ordem
+    /// — <see cref="PendenciaDoIdentificadorLegivel"/>, <see cref="PendenciaDaLocalidade"/>,
+    /// <see cref="PendenciaDoAlgoritmoDeContagem"/>,
     /// <see cref="PendenciaDeConformidade"/>, <see cref="PendenciaDoCronograma"/>,
     /// <see cref="PendenciaDaCascata"/> e <see cref="PendenciaPreCanonicalizacao"/>. Todos os
-    /// itens ficam <see langword="true"/> se e somente se os seis gates não têm pendência —
+    /// itens ficam <see langword="true"/> se e somente se esses gates não têm pendência —
     /// não existe estado em que este checklist declare tudo <c>Ok</c> e a publicação recuse por
     /// razão estrutural.
     /// </summary>
     /// <remarks>
-    /// <b>Delimitação — "estrutural" não é "publicável".</b> Mesmo com os seis gates verdes, a
+    /// <b>Delimitação — "estrutural" não é "publicável".</b> Mesmo com esses gates verdes, a
     /// publicação ainda pode recusar por conformidade LEGAL (motor data-driven, <c>GET
     /// /conformidade-legal</c>), documento confirmado, tipo de ato e outras leituras
     /// request-specific que só o command handler de publicação avalia (ADR-0109). Este método
@@ -2250,10 +2310,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return
         [
         // ── Gates que a raiz aplica ANTES do agregador genérico, na ordem de Publicar ──
-        // Os dois têm erro nomeado próprio e por isso não entram em
+        // Têm erro nomeado próprio e por isso não entram em
         // ItensEstruturaisDeConformidade(), que alimenta o agregador: lá dentro, o
         // ConformidadeInsuficiente interceptaria a causa específica antes de ela ser
         // alcançada — mesma razão pela qual a cascata fica de fora.
+        new ItemConformidade("identificador_legivel_nao_declarado", DimensaoConformidade.Identificacao, "Identificador legível do certame", PendenciaDoIdentificadorLegivel() is null),
         new ItemConformidade("localidade_nao_declarada", DimensaoConformidade.ContagemDePrazos, "Localidade que rege a contagem dos prazos", PendenciaDaLocalidade() is null),
         new ItemConformidade("algoritmo_contagem_prazo_nao_declarado", DimensaoConformidade.ContagemDePrazos, "Convenção de contagem dos prazos de recurso", PendenciaDoAlgoritmoDeContagem() is null),
         new ItemConformidade("calendario_vigente_ausente", DimensaoConformidade.ContagemDePrazos, "Calendário de dias úteis vigente", PendenciaDoCalendarioVigente(contexto) is null),
@@ -3724,6 +3785,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"Só é possível publicar um processo em rascunho — status atual: {Status}."));
         }
 
+        // O endereço público e a chave no acervo derivam do identificador legível: sem ele, a
+        // versão gerada não teria como ser encontrada pelo público. Vale para as três transições
+        // que geram versão, como a localidade logo abaixo.
+        if (PendenciaDoIdentificadorLegivel() is { } pendenciaIdentificador)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaIdentificador);
+        }
+
         // Localidade (UNI-REQ-0111): a versão publicada congela o município cujo calendário rege a
         // contagem dos prazos, e sem ele a janela de recurso não se recalcula. Desde que a
         // localidade é exigida na criação, chegar aqui sem ela não é estado alcançável pelo fluxo
@@ -4077,6 +4146,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // abre uma versão append-only e vinculante; congelar configuração incompleta
         // aqui produz um documento irreparável, exatamente como na publicação. Mesma
         // fonte, mesmo DomainError.
+        // O endereço público e a chave no acervo derivam do identificador legível: sem ele, a
+        // versão gerada não teria como ser encontrada pelo público. Vale para as três transições
+        // que geram versão, como a localidade logo abaixo.
+        if (PendenciaDoIdentificadorLegivel() is { } pendenciaIdentificador)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaIdentificador);
+        }
+
         // Localidade (UNI-REQ-0111): a versão publicada congela o município cujo calendário rege a
         // contagem dos prazos, e sem ele a janela de recurso não se recalcula. Desde que a
         // localidade é exigida na criação, chegar aqui sem ela não é estado alcançável pelo fluxo

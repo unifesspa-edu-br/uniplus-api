@@ -2,11 +2,14 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<ProcessoSeletivo>
 {
@@ -43,6 +46,18 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Property(p => p.Id).ValueGeneratedNever();
 
         builder.Property(p => p.Nome).HasMaxLength(NomeMaxLength).IsRequired();
+
+        // Identificador legível (issue #1479): nulável até a publicação, que o exige. O índice
+        // único não filtra os excluídos logicamente — o endereço público de um certame excluído
+        // não pode ser herdado por outro —, só os ausentes.
+        builder.Property(p => p.IdentificadorLegivel)
+            .HasConversion(IdentificadorLegivelConverter)
+            .HasMaxLength(FormatoKebab.ComprimentoMaximo)
+            .HasComment("Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado.");
+        builder.HasIndex(p => p.IdentificadorLegivel)
+            .IsUnique()
+            .HasFilter("identificador_legivel IS NOT NULL")
+            .HasDatabaseName("ix_processos_seletivos_identificador_legivel");
         builder.Ignore(p => p.TipoProcessoOrigemId);
         builder.OwnsOne(p => p.TipoProcesso, tipo =>
         {
@@ -282,6 +297,22 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // (mesmo tipo de retorno IEnumerable<NoExigencia>) e cria uma FK-sombra duplicada
         // (processo_seletivo_id1) para desambiguar.
         builder.Ignore(p => p.RaizesDeExigencia);
+    }
+
+    // Valor inválido no banco indica corrupção: falha alto ao reidratar, como o conversor do
+    // slug da unidade administradora.
+    private static readonly Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<IdentificadorLegivel, string> IdentificadorLegivelConverter =
+        new(
+            identificador => identificador.Valor,
+            valor => ReidratarIdentificadorLegivel(valor));
+
+    private static IdentificadorLegivel ReidratarIdentificadorLegivel(string valor)
+    {
+        Result<IdentificadorLegivel> resultado = IdentificadorLegivel.Criar(valor);
+        return resultado.IsSuccess
+            ? resultado.Value!
+            : throw new InvalidOperationException(
+                $"Dado inválido no banco ao reidratar o identificador legível '{valor}' ({resultado.Error!.Code}).");
     }
 
     private static readonly Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<ReferenciaTipo, string?> ReferenciaTipoConverter =

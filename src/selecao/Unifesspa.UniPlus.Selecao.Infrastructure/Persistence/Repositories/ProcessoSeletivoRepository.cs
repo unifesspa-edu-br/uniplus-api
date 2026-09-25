@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -285,6 +286,20 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         return await _context.ProcessosSeletivos
             .AsNoTracking()
             .AnyAsync(p => p.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<bool> IdentificadorLegivelEmUsoAsync(
+        IdentificadorLegivel identificador,
+        Guid? excluirId,
+        CancellationToken cancellationToken = default)
+    {
+        // IgnoreQueryFilters: a unicidade inclui os excluídos logicamente, como o índice único.
+        return await _context.ProcessosSeletivos
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => excluirId == null || p.Id != excluirId)
+            .AnyAsync(p => p.IdentificadorLegivel == identificador, cancellationToken)
             .ConfigureAwait(false);
     }
 
