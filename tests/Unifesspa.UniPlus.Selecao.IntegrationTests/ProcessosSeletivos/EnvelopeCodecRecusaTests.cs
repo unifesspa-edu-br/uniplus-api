@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -382,6 +383,43 @@ public sealed class EnvelopeCodecRecusaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    // ── Identificador legível congelado: o decoder aplica a mesma regra do cadastro. Um valor que
+    // o value object recusaria não sai do encoder, então achá-lo é sinal de bytes que não vieram
+    // desse caminho. ──
+
+    [Fact(DisplayName = "Identificador legível ausente do envelope é recusado")]
+    public void IdentificadorLegivelAusente_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope => envelope.Remove("identificadorLegivel"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("identificadorLegivel");
+    }
+
+    [Fact(DisplayName = "Identificador legível que não é texto é recusado")]
+    public void IdentificadorLegivelNaoTexto_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope => envelope["identificadorLegivel"] = 2026);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("identificadorLegivel");
+    }
+
+    [Theory(DisplayName = "Identificador legível fora da regra do cadastro é recusado com a causa do cadastro")]
+    [InlineData("PSIQ 2026", ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido)]
+    [InlineData("ps", ProcessoSeletivoErrorCodes.IdentificadorLegivelTamanho)]
+    [InlineData("a1b2c3d4-e5f6-4789-8abc-def012345678", ProcessoSeletivoErrorCodes.IdentificadorLegivelComFormatoDeGuid)]
+    public void IdentificadorLegivelInvalido_Recusa(string valor, string codigoEsperado)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope => envelope["identificadorLegivel"] = valor);
+
+        resultado.IsFailure.Should().BeTrue(
+            "o endereço público congelado tem de obedecer à mesma regra que o cadastro impõe");
+        resultado.Error!.Code.Should().Be(codigoEsperado);
     }
 
     // ── issue #563 — CA-12: o bloco divulgacao promovido de stub a real precisa de um decoder

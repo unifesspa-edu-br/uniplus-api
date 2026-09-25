@@ -86,6 +86,23 @@ public sealed class AbrirRetificacaoCommandHandlerTests
         cenario.Processo.Status.Should().Be(StatusProcesso.Publicado, "CA-10: abrir não muda o status");
     }
 
+    [Fact(DisplayName = "A sessão registra o identificador da versão base lido do envelope, e não o da raiz viva")]
+    public async Task Abrir_IdentificadorDaBase_VemDoEnvelope()
+    {
+        IdentificadorLegivel congelado = IdentificadorLegivel.Criar("medicina-2027").Value;
+        Cenario cenario = Cenario.ComVersaoBase(
+            schemaVersion: "1.1",
+            capacidades: [new CapacidadeCodec("1.1", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)],
+            identificadorCongelado: congelado);
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.IdentificadorLegivel))!.SetValue(cenario.Processo, null);
+
+        Result<RetificacaoEmCursoDto> resultado = await cenario.ExecutarAsync();
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        cenario.Processo.Rascunho!.VersaoBaseComIdentificadorLegivel.Should().BeTrue(
+            "a base congelou o identificador — a raiz viva sem ele não muda o que foi publicado");
+    }
+
     [Fact(DisplayName = "Abrir num processo inexistente devolve 404 — e não toca no registro de codecs")]
     public async Task Abrir_ProcessoInexistente_NaoEncontrado()
     {
@@ -140,7 +157,10 @@ public sealed class AbrirRetificacaoCommandHandlerTests
 
         public required IRegistroCodecsEnvelope Registro { get; init; }
 
-        public static Cenario ComVersaoBase(string schemaVersion, IReadOnlyList<CapacidadeCodec> capacidades)
+        public static Cenario ComVersaoBase(
+            string schemaVersion,
+            IReadOnlyList<CapacidadeCodec> capacidades,
+            IdentificadorLegivel? identificadorCongelado = null)
         {
             ProcessoSeletivo processo = NovoProcessoConforme();
             VersaoConfiguracao versao = processo.Publicar(
@@ -154,9 +174,24 @@ public sealed class AbrirRetificacaoCommandHandlerTests
 
             IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
             registro.Capacidades.Returns(capacidades);
+            registro.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(
+                EnvelopeDaBase(processo, identificadorCongelado ?? processo.IdentificadorLegivel)));
 
             return new Cenario { Processo = processo, Repositorio = repositorio, Registro = registro };
         }
+
+        /// <summary>
+        /// O envelope reidratado da base, montado da configuração do próprio processo. O identificador
+        /// é o congelado, que o teste pode fazer divergir do valor vivo da raiz.
+        /// </summary>
+        private static EnvelopeReidratado EnvelopeDaBase(ProcessoSeletivo processo, IdentificadorLegivel? identificadorCongelado) =>
+            new(
+                new GrafoConfiguracao(
+                    [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+                    processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
+                    [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
+                    identificadorLegivel: identificadorCongelado),
+                NovosDados(), HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null);
 
         public Task<Result<RetificacaoEmCursoDto>> ExecutarAsync() => AbrirRetificacaoCommandHandler.Handle(
             new AbrirRetificacaoCommand(Processo.Id, "Correção do prazo"),

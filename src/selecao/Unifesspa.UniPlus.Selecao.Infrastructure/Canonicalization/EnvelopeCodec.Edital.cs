@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -14,7 +15,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Leitura do bloco de identidade do certame: dados do edital (<c>periodo</c>,
-/// <c>hashesEdital</c>), o tipo de processo e a identidade da unidade administradora.
+/// <c>hashesEdital</c>), o tipo de processo, o identificador legível e a identidade da
+/// unidade administradora.
 /// </summary>
 public sealed partial class EnvelopeCodec
 {
@@ -35,6 +37,26 @@ public sealed partial class EnvelopeCodec
         leitor.Identificador(tipo, "origemId", "tipoProcesso");
         leitor.TextoNaoVazio(tipo, "codigo", "tipoProcesso");
         leitor.TextoNaoVazio(tipo, "nome", "tipoProcesso");
+    }
+
+    /// <summary>
+    /// Lê o identificador legível congelado com a versão. Nulo é forma aceita — a versão congelada
+    /// sem ele —, mas um texto presente passa pela mesma regra do cadastro: um valor que o
+    /// value object recusaria não sai do encoder, então achá-lo é sinal de bytes que não vieram
+    /// desse caminho.
+    /// </summary>
+    private static IdentificadorLegivel? LerIdentificadorLegivel(LeitorEnvelope leitor, JsonObject payload)
+    {
+        string? valor = leitor.TextoOpcional(payload, "identificadorLegivel", "$", FormatoKebab.ComprimentoMaximo);
+        if (leitor.Falhou || valor is null)
+        {
+            return null;
+        }
+
+        Result<IdentificadorLegivel> identificador = IdentificadorLegivel.Criar(valor);
+        return identificador.IsFailure
+            ? leitor.Propagar<IdentificadorLegivel?>(identificador.Error!)
+            : identificador.Value;
     }
 
     private static DadosEdital? LerDadosEdital(LeitorEnvelope leitor, JsonObject payload, out string hashDocumento)

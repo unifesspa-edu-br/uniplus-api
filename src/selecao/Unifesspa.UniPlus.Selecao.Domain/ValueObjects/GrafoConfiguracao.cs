@@ -67,7 +67,11 @@ public sealed class GrafoConfiguracao
         // não a constrói, e versão publicada que legitimamente não declarou porque nenhuma
         // contagem sua distingue dia útil. AplicarGrafo repõe o que veio, inclusive a
         // ausência, para que o descarte devolva a configuração que a versão de fato tinha.
-        ReferenciaRegra? algoritmoContagemPrazo = null)
+        ReferenciaRegra? algoritmoContagemPrazo = null,
+        // Identificador legível (issue #1480) — o endereço público do certame, congelado com a
+        // versão. AplicarGrafo repõe o que veio, inclusive a ausência: descartar uma retificação
+        // devolve o identificador que a versão vigente de fato tinha.
+        IdentificadorLegivel? identificadorLegivel = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -84,6 +88,7 @@ public sealed class GrafoConfiguracao
         // que nunca foi validada.
         Localidade = localidade;
         AlgoritmoContagemPrazo = algoritmoContagemPrazo;
+        IdentificadorLegivel = identificadorLegivel;
         Etapas = [.. etapas];
         OfertaAtendimento = ofertaAtendimento;
         DistribuicaoVagas = [.. distribuicaoVagas];
@@ -186,4 +191,10 @@ public sealed class GrafoConfiguracao
     /// nenhuma contagem que distinga dia útil, e nesse caso não declarou convenção alguma.
     /// </summary>
     public ReferenciaRegra? AlgoritmoContagemPrazo { get; }
+
+    /// <summary>
+    /// Identificador legível que a versão congelou. <see langword="null"/> quando a versão foi
+    /// congelada sem ele.
+    /// </summary>
+    public IdentificadorLegivel? IdentificadorLegivel { get; }
 }

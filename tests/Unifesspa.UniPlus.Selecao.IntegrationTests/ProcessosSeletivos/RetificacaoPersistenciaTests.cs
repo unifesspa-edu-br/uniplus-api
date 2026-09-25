@@ -290,7 +290,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ProcessoSeletivo carregado = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
             Result<RascunhoRetificacao> abertura = carregado.AbrirRetificacao(
-                "Corrigir a ordem legal de remanejamento", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+                "Corrigir a ordem legal de remanejamento", versaoAbertura, identificadorDaVersaoBase: null, "integration-test-user", TimeProvider.System.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
             // A EDIÇÃO durante a sessão — o que este teste prova: DefinirCascataRemanejamento
@@ -368,7 +368,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
             Result<RascunhoRetificacao> abertura = tracked.AbrirRetificacao(
-                "Testar edição e descarte da cascata", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+                "Testar edição e descarte da cascata", versaoAbertura, identificadorDaVersaoBase: null, "integration-test-user", TimeProvider.System.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
             tracked.DefinirCascataRemanejamento(CascataDeUmDestinoPorOrigem(), PrecondicaoIfMatch.Curinga)
@@ -440,7 +440,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
             Result<RascunhoRetificacao> abertura = tracked.AbrirRetificacao(
-                "Testar edição e descarte do formulário", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+                "Testar edição e descarte do formulário", versaoAbertura, identificadorDaVersaoBase: null, "integration-test-user", TimeProvider.System.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
             tracked.DefinirFormulario(tituloEditado, termoEditado, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
@@ -513,7 +513,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ProcessoSeletivo carregado = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
             Result<RascunhoRetificacao> abertura = carregado.AbrirRetificacao(
-                "Remover a divulgação do nome abreviado", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+                "Remover a divulgação do nome abreviado", versaoAbertura, identificadorDaVersaoBase: null, "integration-test-user", TimeProvider.System.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
             // A EDIÇÃO durante a sessão: remove nome_abreviado — só o piso sobrevive.
@@ -590,7 +590,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
             Result<RascunhoRetificacao> abertura = tracked.AbrirRetificacao(
-                "Testar edição e descarte da divulgação", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+                "Testar edição e descarte da divulgação", versaoAbertura, identificadorDaVersaoBase: null, "integration-test-user", TimeProvider.System.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
             tracked.DefinirConfiguracaoDivulgacao(

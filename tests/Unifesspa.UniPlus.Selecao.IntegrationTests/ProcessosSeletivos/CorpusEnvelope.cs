@@ -9,7 +9,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -204,7 +203,10 @@ internal static class CorpusEnvelope
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
                 cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
+            // Determinístico, como os ids das etapas: o identificador entra no envelope e a golden
+            // congela os bytes. A variante o mantém único entre os testes que persistem o corpus.
+            identificadorLegivel: IdentificadorLegivel.Criar($"ps-rico-2026-v{variante}").Value);
 
         // O corpus tem fase com regra de recurso, e o prazo de interposição corre sobre dia
         // útil — logo a convenção de contagem é exigida para publicar.

@@ -998,7 +998,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         VersaoConfiguracao versao = VersaoDo(processo);
         Guid faseId = processo.CronogramaFases.Single().Id;
 
-        processo.AbrirRetificacao("Incluir exigência documental", versao, "testes", DateTimeOffset.UnixEpoch)
+        processo.AbrirRetificacao("Incluir exigência documental", versao, identificadorDaVersaoBase: null, "testes", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
@@ -1035,7 +1035,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         VersaoConfiguracao versao = VersaoDo(processo);
         Guid faseId = processo.CronogramaFases.Single().Id;
 
-        processo.AbrirRetificacao("Ajustar referência temporal", versao, "testes", DateTimeOffset.UnixEpoch)
+        processo.AbrirRetificacao("Ajustar referência temporal", versao, identificadorDaVersaoBase: null, "testes", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
 
         ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!;
@@ -1061,7 +1061,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         // A sessão editorial grava OUTRA configuração — é o estado que a restauração tem de
         // substituir, não preservar.
-        processo.AbrirRetificacao("Editar a divulgação", versao, "testes", DateTimeOffset.UnixEpoch)
+        processo.AbrirRetificacao("Editar a divulgação", versao, identificadorDaVersaoBase: null, "testes", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
         processo.DefinirConfiguracaoDivulgacao(
             ConfiguracaoDivulgacao.Criar(["numero_inscricao"], null).Value!, PrecondicaoIfMatch.Curinga)
@@ -1085,7 +1085,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
-        processo.AbrirRetificacao("Editar a divulgação", versao, "testes", DateTimeOffset.UnixEpoch)
+        processo.AbrirRetificacao("Editar a divulgação", versao, identificadorDaVersaoBase: null, "testes", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
         processo.DefinirConfiguracaoDivulgacao(
             ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!, PrecondicaoIfMatch.Curinga)
@@ -1108,7 +1108,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
-        processo.AbrirRetificacao("Trocar a fase da Ordem 1", versao, "testes", DateTimeOffset.UnixEpoch)
+        processo.AbrirRetificacao("Trocar a fase da Ordem 1", versao, identificadorDaVersaoBase: null, "testes", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
 
         // A sessão editorial troca a fase da Ordem 1 por uma fase GENUINAMENTE diferente

@@ -1291,7 +1291,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
         // A retificação aberta libera a gravação da distribuição; regravá-la depois de o curso
         // perder o grupo no cadastro congela a oferta sem grupo.
-        processo.AbrirRetificacao("Ajustar as vagas", publicada.Value!, "teste", DateTimeOffset.UnixEpoch)
+        processo.AbrirRetificacao("Ajustar as vagas", publicada.Value!, identificadorDaVersaoBase: null, "teste", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
         ConfiguracaoDistribuicaoVagas semGrupo = OfertaAmpla(12, grupoAreaEnem: null);
         processo.DefinirDistribuicaoVagas([semGrupo], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();

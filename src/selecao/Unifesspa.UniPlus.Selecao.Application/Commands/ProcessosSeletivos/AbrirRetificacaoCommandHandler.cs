@@ -74,11 +74,21 @@ public static class AbrirRetificacaoCommandHandler
             return Result<RetificacaoEmCursoDto>.Failure(pendencia);
         }
 
+        // O identificador legível que a base congelou vem do envelope dela, e não da raiz viva: é
+        // contra o que foi publicado que a sessão decide se ainda pode declará-lo. A base já foi
+        // conferida como reidratável logo acima.
+        Result<EnvelopeReidratado> baseReidratada = registroCodecs.Reidratar(versaoAtual);
+        if (baseReidratada.IsFailure)
+        {
+            return Result<RetificacaoEmCursoDto>.Failure(baseReidratada.Error!);
+        }
+
         string abertoPorSub = userContext.UserId ?? "system";
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
             command.Motivo,
             versaoAtual,
+            baseReidratada.Value!.Grafo.IdentificadorLegivel,
             abertoPorSub,
             timeProvider.GetUtcNow());
         if (abertura.IsFailure)

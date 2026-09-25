@@ -51,6 +51,16 @@ public sealed class RascunhoRetificacao : EntityBase
 
     public int NumeroVersaoBase { get; private set; }
 
+    /// <summary>
+    /// Se a versão base já congelou um identificador legível. É o que decide se a sessão pode
+    /// declará-lo: o que já consta em versão publicada não muda mais.
+    /// </summary>
+    /// <remarks>
+    /// Registrado na abertura a partir do envelope da versão base, e não da raiz viva: a imutabilidade
+    /// é conferida contra o que foi publicado, e é o documento congelado que diz o que foi.
+    /// </remarks>
+    public bool VersaoBaseComIdentificadorLegivel { get; private set; }
+
     public DateTimeOffset AbertoEm { get; private set; }
 
     /// <summary>Sub do usuário autenticado que abriu a sessão (via <c>IUserContext</c>).</summary>
@@ -68,6 +78,7 @@ public sealed class RascunhoRetificacao : EntityBase
         Guid processoSeletivoId,
         string motivo,
         VersaoConfiguracao versaoBase,
+        bool versaoBaseComIdentificadorLegivel,
         string abertoPorSub,
         DateTimeOffset abertoEm)
     {
@@ -86,6 +97,7 @@ public sealed class RascunhoRetificacao : EntityBase
             Motivo = motivoNormalizado.Value!,
             VersaoBaseId = versaoBase.Id,
             NumeroVersaoBase = versaoBase.NumeroVersao,
+            VersaoBaseComIdentificadorLegivel = versaoBaseComIdentificadorLegivel,
             AbertoPorSub = abertoPorSub,
             AbertoEm = abertoEm,
             Revisao = 1,

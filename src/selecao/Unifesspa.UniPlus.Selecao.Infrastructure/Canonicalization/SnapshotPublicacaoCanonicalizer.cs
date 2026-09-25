@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
-/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>28 blocos
+/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>29 blocos
 /// reais</b> — e devolve os bytes via <see cref="PerfilCanonicoV1"/>.
 /// <c>documentosExigidos</c> (Story #853) já carrega <c>obrigatoriedades[]</c> e
 /// <c>exigencias[]</c> (#554) reais. <c>vagas</c> (issue #848/ADR-0115) é outro: o
@@ -237,6 +237,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>ALOCACAO-OPCOES-RN04</c> dá lugar
     /// a <c>ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA</c> em <c>classificacao.regraOrdemAlocacao</c>: a 1ª opção
     /// tem prioridade, e a 2ª só recebe a vaga que sobra depois do remanejamento dentro do curso.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, entra <c>identificadorLegivel</c>
+    /// como 29º bloco de topo: o identificador legível do processo, de onde derivam o endereço da
+    /// página pública e a chave do documento no acervo. O público lê a versão congelada, então o
+    /// endereço tem de estar nela, e não só no agregado vivo. Texto quando declarado; nulo só se a
+    /// versão foi congelada sem ele, o que a publicação e a sucessão de versão recusam.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -297,11 +302,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["localidade"] = SerializarLocalidade(processo, entrada.FusoHorario),
             ["algoritmoContagemPrazo"] = SerializarAlgoritmoContagemPrazo(processo),
             ["calendarioDiasUteis"] = SerializarCalendarioDiasUteis(entrada.CalendarioDiasUteis),
+            ["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor,
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 29º bloco preservando os 28
+        // ADR-0101: a retificação ACRESCENTA um 30º bloco preservando os 29
         // anteriores (a issue #1112 elevou de 24 para 25, a localidade de 25 para 26, a
-        // convenção de contagem de 26 para 27 e o calendário de 27 para 28). A
+        // convenção de contagem de 26 para 27, o calendário de 27 para 28 e o identificador
+        // legível de 28 para 29). A
         // abertura não escreve esta chave —
         // seu payload é byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).

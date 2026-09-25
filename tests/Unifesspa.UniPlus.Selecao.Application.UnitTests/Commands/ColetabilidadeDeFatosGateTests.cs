@@ -160,7 +160,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicadoComFatoColetado();
 
         Result<RascunhoRetificacao> rascunho = processo.AbrirRetificacao(
-            "Correção do prazo", versaoAtual, "user-sub-1", Agora);
+            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, "user-sub-1", Agora);
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
         processo.DequeueDomainEvents();
 

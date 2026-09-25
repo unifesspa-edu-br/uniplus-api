@@ -44,17 +44,34 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Formato inválido é recusado sem carregar o processo")]
-    public async Task Handle_FormatoInvalido_RecusaSemIO()
+    [Fact(DisplayName = "Formato inválido é recusado sem alterar a raiz nem consultar a unicidade")]
+    public async Task Handle_FormatoInvalido_Recusa()
     {
-        Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
+        ProcessoSeletivo processo = NovoProcesso();
+        Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(Guid.CreateVersion7(), "psiq 2026", PrecondicaoIfMatch.Ausente),
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq 2026", PrecondicaoIfMatch.Ausente),
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
-        await mocks.Repository.DidNotReceiveWithAnyArgs().ObterParaMutacaoAsync(default, default);
+        processo.IdentificadorLegivel.Should().BeNull();
+        await mocks.Repository.DidNotReceiveWithAnyArgs().IdentificadorLegivelEmUsoAsync(default, default, default);
+    }
+
+    [Fact(DisplayName = "Processo publicado sem sessão recusa pela precondição antes do formato")]
+    public async Task Handle_PublicadoSemSessao_FormatoInvalido_RecusaPelaPrecondicao()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq 2026", PrecondicaoIfMatch.Ausente),
+            mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
+            "o gate de estado e concorrência sai antes da validação do valor");
     }
 
     [Fact(DisplayName = "Identificador em uso por outro processo é recusado e o rastreamento é descartado")]

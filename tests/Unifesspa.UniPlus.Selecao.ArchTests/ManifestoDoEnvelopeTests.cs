@@ -179,6 +179,11 @@ public sealed class ManifestoDoEnvelopeTests
             ["Codigo", "Versao", "Hash"],
             []),
 
+        // Identificador legível — o endereço público do certame, congelado com a versão como texto.
+        [typeof(IdentificadorLegivel)] = (
+            ["Valor"],
+            []),
+
         // Issue #1071 — snapshot de tipo de etapa, mesmo padrão de cópia por valor de
         // ReferenciaRegra acima.
         [typeof(TipoEtapaSnapshot)] = (

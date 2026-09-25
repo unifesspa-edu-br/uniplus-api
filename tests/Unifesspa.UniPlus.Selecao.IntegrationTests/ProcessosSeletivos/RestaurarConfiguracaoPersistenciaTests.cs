@@ -353,12 +353,15 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             "bancas e janelas recursais inclusive");
     }
 
-    private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext context, Guid id) =>
+    internal static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext context, Guid id) =>
         await context.ProcessosSeletivos
             // As filhas da etapa vêm explícitas, como no repositório de produção: sem elas a
             // coleção tracked nasce vazia e o agregado relido recanonicaliza com produtos,
             // bancas e recursos zerados — bytes a menos que os congelados, e a prova de que
             // "nada se perdeu no caminho" valeria só para o que o Include alcançou.
+            // A sessão editorial, como no repositório de produção: sem ela, abrir, fechar e descartar a
+            // retificação sobre o agregado relido não enxergariam a sessão persistida.
+            .Include(p => p.Rascunho)
             .Include(p => p.Etapas).ThenInclude(e => e.Produtos)
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .Include(p => p.Etapas).ThenInclude(e => e.Recursos)

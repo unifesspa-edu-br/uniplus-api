@@ -8,7 +8,7 @@ using Controllers;
 /// </summary>
 /// <remarks>
 /// Kebab-case de 3 a 64 caracteres, minúsculas sem acento, começando por letra e terminando por
-/// letra ou dígito, e sem a forma de um Guid. Ausente remove a declaração. Aceito só enquanto o
-/// processo nunca foi publicado.
+/// letra ou dígito, e sem a forma de um Guid. Ausente remove a declaração. Aceito enquanto o
+/// identificador não consta em versão publicada.
 /// </remarks>
 public sealed record DefinirIdentificadorLegivelRequest(string? IdentificadorLegivel);

@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// O <b>ciclo fechado</b> da retificação (Stories #860, #861, #862 — ADR-0110): abrir →
@@ -237,6 +238,39 @@ public sealed class CicloDaRetificacaoEndpointTests
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
+    // Identificador legível na retificação: a sessão decide pelo que a versão vigente congelou, e
+    // não pelo valor vivo da raiz. O caminho da versão congelada sem identificador (declarar,
+    // fechar, descartar) está em IdentificadorLegivelNaRetificacaoPersistenciaTests.
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    [Fact(DisplayName = "Versão vigente com identificador recusa a declaração na sessão, mesmo com a raiz viva sem ele")]
+    public async Task Identificador_VersaoComValor_RaizVivaSem_Recusa()
+    {
+        Ciclo c = await PublicarAsync(nameof(Identificador_VersaoComValor_RaizVivaSem_Recusa));
+        await RetirarIdentificadorDaRaizAsync(c);
+
+        string etag = LerETag(await c.AbrirAsync("Tenta declarar outro endereço"));
+        HttpResponseMessage resposta = await c.PutIdentificadorAsync(IdentificadoresDeTeste.NovoValor(), etag);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "a versão vigente congelou o identificador — é contra ela, e não contra a raiz viva, que a sessão decide");
+        (await LerIdentificadorVivoAsync(c)).Should().BeNull("a recusa não altera a raiz");
+    }
+
+    [Fact(DisplayName = "If-Match defasado com identificador malformado devolve 412, e não 422")]
+    public async Task Identificador_IfMatchDefasado_FormatoInvalido_412()
+    {
+        Ciclo c = await PublicarAsync(nameof(Identificador_IfMatchDefasado_FormatoInvalido_412));
+        string etagInicial = LerETag(await c.AbrirAsync("Correção"));
+        (await c.PutEtapasAsync(peso: 2.0m, ifMatch: etagInicial)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // O mesmo ETag, agora defasado: o PUT acima incrementou a revisão.
+        HttpResponseMessage resposta = await c.PutIdentificadorAsync("PSIQ 2026", etagInicial);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed,
+            "quem edita sobre estado desatualizado precisa reler antes de corrigir o valor");
+    }
+
     // Infra do cenário
     // ══════════════════════════════════════════════════════════════════════════════
 
@@ -258,6 +292,13 @@ public sealed class CicloDaRetificacaoEndpointTests
                 HttpMethod.Post,
                 $"{Rota}/{ProcessoId}/retificacao-em-curso/fechamento",
                 CorpoDoAto(documentoId, motivo: null),
+                ifMatch);
+
+        public Task<HttpResponseMessage> PutIdentificadorAsync(string? identificador, string? ifMatch) =>
+            EnviarAsync(
+                HttpMethod.Put,
+                $"{Rota}/{ProcessoId}/identificador-legivel",
+                new { identificadorLegivel = identificador },
                 ifMatch);
 
         public Task<HttpResponseMessage> AtalhoAsync(Guid documentoId, string motivo) =>
@@ -422,6 +463,28 @@ public sealed class CicloDaRetificacaoEndpointTests
         return (
             raiz.GetProperty("hashConfiguracao").GetString()!,
             raiz.GetProperty("configuracao").GetRawText());
+    }
+
+    /// <summary>
+    /// Anula só o identificador vivo da raiz, deixando a versão vigente com o valor que ela congelou:
+    /// é a divergência que prova que a sessão decide pelo envelope, e não pela raiz.
+    /// </summary>
+    private static async Task RetirarIdentificadorDaRaizAsync(Ciclo c)
+    {
+        await using AsyncServiceScope scope = c.Api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        int alterados = await db.ProcessosSeletivos
+            .Where(p => p.Id == c.ProcessoId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.IdentificadorLegivel, (Domain.ValueObjects.IdentificadorLegivel?)null));
+        alterados.Should().Be(1);
+    }
+
+    private static async Task<string?> LerIdentificadorVivoAsync(Ciclo c)
+    {
+        await using AsyncServiceScope scope = c.Api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == c.ProcessoId);
+        return processo.IdentificadorLegivel?.Valor;
     }
 
     private static async Task<int> ContarVersoesAsync(Ciclo c)

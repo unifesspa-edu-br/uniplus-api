@@ -59,6 +59,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         "localidade",
         "algoritmoContagemPrazo",
         "calendarioDiasUteis",
+        "identificadorLegivel",
     ];
 
     /// <summary>
@@ -212,6 +213,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
         ReferenciaRegra? algoritmoContagemPrazo = LerAlgoritmoContagemPrazo(leitor, payload);
         CalendarioDiasUteisCongelado? calendarioDiasUteis = LerCalendarioDiasUteis(leitor, payload, cronogramaFases);
+        IdentificadorLegivel? identificadorLegivel = LerIdentificadorLegivel(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -279,7 +281,8 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             configuracaoDivulgacao: configuracaoDivulgacao,
             configuracaoTaxaInscricao: configuracaoTaxaInscricao,
             localidade: localidade,
-            algoritmoContagemPrazo: algoritmoContagemPrazo);
+            algoritmoContagemPrazo: algoritmoContagemPrazo,
+            identificadorLegivel: identificadorLegivel);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,

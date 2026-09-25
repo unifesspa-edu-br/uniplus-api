@@ -11,8 +11,8 @@ using Kernel.Results;
 /// <summary>
 /// Handler do <see cref="DefinirIdentificadorLegivelCommand"/>. A regra de quando o identificador
 /// pode mudar é da raiz (<see cref="ProcessoSeletivo.DefinirIdentificadorLegivel"/>); aqui ficam
-/// o que depende de consulta — a unicidade entre processos — e a validação do formato, que
-/// precede qualquer leitura.
+/// o que depende de consulta — a unicidade entre processos —, a precondição da sessão editorial,
+/// que sai primeiro, e a validação do formato.
 /// </summary>
 public static class DefinirIdentificadorLegivelCommandHandler
 {
@@ -26,6 +26,23 @@ public static class DefinirIdentificadorLegivelCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        ProcessoSeletivo? processo = await processoSeletivoRepository
+            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
+        if (processo is null)
+        {
+            return Result<MutacaoAceita>.Failure(new DomainError(
+                "ProcessoSeletivo.NaoEncontrado",
+                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+        }
+
+        // A precondição é o gate de concorrência da sessão editorial e sai antes do formato: quem
+        // edita sobre um estado desatualizado precisa reler antes de qualquer outra correção.
+        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        {
+            return Result<MutacaoAceita>.Failure(bloqueio);
+        }
+
         IdentificadorLegivel? identificador = null;
         if (!string.IsNullOrWhiteSpace(command.IdentificadorLegivel))
         {
@@ -36,16 +53,6 @@ public static class DefinirIdentificadorLegivelCommandHandler
             }
 
             identificador = identificadorResult.Value;
-        }
-
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
         // A recusa da raiz vem primeiro: quem não pode alterar recebe essa causa, e não um

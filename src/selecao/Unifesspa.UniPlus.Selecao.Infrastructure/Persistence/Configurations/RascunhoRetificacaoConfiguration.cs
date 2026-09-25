@@ -33,6 +33,7 @@ public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<
 
         builder.Property(r => r.VersaoBaseId).IsRequired();
         builder.Property(r => r.NumeroVersaoBase).IsRequired();
+        builder.Property(r => r.VersaoBaseComIdentificadorLegivel).IsRequired();
         builder.Property(r => r.AbertoEm).IsRequired();
         builder.Property(r => r.AbertoPorSub).HasMaxLength(255).IsRequired();
         builder.Property(r => r.Revisao).IsRequired();
