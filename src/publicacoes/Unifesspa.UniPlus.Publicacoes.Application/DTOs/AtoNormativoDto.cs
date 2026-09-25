@@ -12,6 +12,9 @@ using System.Text.Json.Serialization;
 /// <para><c>DataPublicacao</c> é documental (o que o PDF declara);
 /// <c>RegistradoEm</c> é o instante forense em que o registro entrou no sistema.
 /// São grandezas distintas — só a segunda ordena no relógio do sistema.</para>
+/// <para><c>TipoNome</c> é o nome do tipo copiado por valor no registro — não muda quando o
+/// tipo é renomeado no cadastro. Nulo nos atos registrados antes de o nome passar a ser
+/// copiado; quem compõe um título cai para <c>TipoCodigo</c>.</para>
 /// <para><c>AtoRetificadoId</c>/<c>MotivoRetificacao</c> são o par simétrico da
 /// retificação (ADR-0103): ambos presentes num ato que emenda outro, ambos nulos
 /// no ato que não emenda ninguém.</para>
@@ -26,6 +29,7 @@ public sealed record AtoNormativoDto(
     int Ano,
     string? Numero,
     string TipoCodigo,
+    string? TipoNome,
     bool CongelaConfiguracao,
     bool EfeitoIrreversivel,
     bool UnicoPorObjeto,

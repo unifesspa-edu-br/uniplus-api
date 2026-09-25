@@ -15,6 +15,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
     private const int SerieMaxLength = 100;
     private const int NumeroMaxLength = 60;
     private const int TipoCodigoMaxLength = 60;
+    private const int TipoNomeMaxLength = 200;
     private const int AssinanteMaxLength = 200;
     private const int MotivoRetificacaoMaxLength = 1000;
     private const int HashLength = 64;
@@ -81,6 +82,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         builder.Property(a => a.Ano).IsRequired();
         builder.Property(a => a.Numero).HasMaxLength(NumeroMaxLength);
         builder.Property(a => a.TipoCodigo).HasMaxLength(TipoCodigoMaxLength).IsRequired();
+        builder.Property(a => a.TipoNome).HasMaxLength(TipoNomeMaxLength);
 
         builder.Property(a => a.CongelaConfiguracao).IsRequired();
         builder.Property(a => a.EfeitoIrreversivel).IsRequired();

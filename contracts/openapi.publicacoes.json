@@ -1060,6 +1060,7 @@
           "ano",
           "numero",
           "tipoCodigo",
+          "tipoNome",
           "congelaConfiguracao",
           "efeitoIrreversivel",
           "unicoPorObjeto",
@@ -1100,6 +1101,12 @@
           },
           "tipoCodigo": {
             "type": "string"
+          },
+          "tipoNome": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "congelaConfiguracao": {
             "type": "boolean"

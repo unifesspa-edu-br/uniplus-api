@@ -60,6 +60,7 @@ public sealed class AtoNormativo : IForensicEntity
     private const int SerieMaxLength = 100;
     private const int NumeroMaxLength = 60;
     private const int TipoCodigoMaxLength = 60;
+    private const int TipoNomeMaxLength = 200;
     private const int AssinanteMaxLength = 200;
     private const int MotivoRetificacaoMaxLength = 1000;
 
@@ -79,6 +80,13 @@ public sealed class AtoNormativo : IForensicEntity
 
     /// <summary>Código do tipo de ato no catálogo (<c>TipoAtoPublicado</c>) vigente na data de publicação.</summary>
     public string TipoCodigo { get; private init; } = null!;
+
+    /// <summary>
+    /// Nome do tipo de ato no instante do registro — copiado por valor do catálogo, como
+    /// os atributos de consequência, para que renomear o tipo não reescreva o título de um
+    /// ato já publicado. Nulo nos atos registrados antes de o nome passar a ser copiado.
+    /// </summary>
+    public string? TipoNome { get; private init; }
 
     /// <summary>Se o ato produz nova versão congelada da configuração — copiado por valor do catálogo (RN08).</summary>
     public bool CongelaConfiguracao { get; private init; }
@@ -175,7 +183,8 @@ public sealed class AtoNormativo : IForensicEntity
         ReferenciaVersaoConfiguracao? versaoInvocada,
         Guid? atoRetificadoId = null,
         string? motivoRetificacao = null,
-        IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null)
+        IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null,
+        string? tipoNome = null)
     {
         string orgaoNorm = ExigirTexto(orgao, OrgaoMaxLength, nameof(orgao));
         string serieNorm = ExigirTexto(serie, SerieMaxLength, nameof(serie));
@@ -183,6 +192,7 @@ public sealed class AtoNormativo : IForensicEntity
         string assinanteNorm = ExigirTexto(assinante, AssinanteMaxLength, nameof(assinante));
         string? numeroNorm = NormalizarOpcional(numero, NumeroMaxLength, nameof(numero));
         string? motivoNorm = NormalizarOpcional(motivoRetificacao, MotivoRetificacaoMaxLength, nameof(motivoRetificacao));
+        string? tipoNomeNorm = NormalizarOpcional(tipoNome, TipoNomeMaxLength, nameof(tipoNome));
 
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(ano);
 
@@ -224,6 +234,7 @@ public sealed class AtoNormativo : IForensicEntity
             Ano = ano,
             Numero = numeroNorm,
             TipoCodigo = tipoCodigoNorm,
+            TipoNome = tipoNomeNorm,
             CongelaConfiguracao = congelaConfiguracao,
             EfeitoIrreversivel = efeitoIrreversivel,
             UnicoPorObjeto = unicoPorObjeto,

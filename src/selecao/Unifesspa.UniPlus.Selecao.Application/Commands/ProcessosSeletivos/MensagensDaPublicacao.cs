@@ -66,7 +66,8 @@ internal static class MensagensDaPublicacao
                 AtributosDoTipo: new AtributosDoTipoAto(
                     tipoConferido.CongelaConfiguracao,
                     tipoConferido.UnicoPorObjeto,
-                    tipoConferido.EfeitoIrreversivel)),
+                    tipoConferido.EfeitoIrreversivel,
+                    tipoConferido.Nome)),
         ];
     }
 }

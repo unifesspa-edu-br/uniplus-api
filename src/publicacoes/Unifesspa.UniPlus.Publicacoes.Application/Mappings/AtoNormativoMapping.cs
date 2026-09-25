@@ -20,6 +20,7 @@ public static class AtoNormativoMapping
             ato.Ano,
             ato.Numero,
             ato.TipoCodigo,
+            ato.TipoNome,
             ato.CongelaConfiguracao,
             ato.EfeitoIrreversivel,
             ato.UnicoPorObjeto,

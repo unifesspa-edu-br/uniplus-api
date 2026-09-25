@@ -51,11 +51,18 @@ public sealed record RegistrarAtoNormativoRequisicao(
 /// O ato foi publicado sob as regras que valiam então, e é sob elas que se registra.
 /// Mudança posterior no cadastro vale para o que vier depois, não reescreve o passado.
 /// </para>
+/// <para>
+/// O <see cref="Nome"/> segue a mesma regra: é o nome com que o tipo foi publicado, e é ele
+/// que a consulta pública mostra no título do ato. Renomear o tipo no cadastro não reescreve
+/// o título de atos já registrados. Anulável porque uma requisição emitida antes de o nome
+/// viajar na mensagem chega sem ele — e o ato fica sem nome, com o código presente.
+/// </para>
 /// </remarks>
 public sealed record AtributosDoTipoAto(
     bool CongelaConfiguracao,
     bool UnicoPorObjeto,
-    bool EfeitoIrreversivel);
+    bool EfeitoIrreversivel,
+    string? Nome);
 
 /// <summary>
 /// Entidade de outro domínio a que o ato se liga (ADR-0105). O par é opaco para

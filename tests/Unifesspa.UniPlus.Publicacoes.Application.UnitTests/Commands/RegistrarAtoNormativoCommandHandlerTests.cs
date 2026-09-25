@@ -9,6 +9,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
@@ -211,6 +212,63 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         capturado!.UnicoPorObjeto.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Registro pelo endpoint copia o nome do tipo vigente por valor")]
+    public async Task Handle_PeloEndpoint_CopiaNomeDoTipoVigente()
+    {
+        VigenteComConsequencia(congela: false, efeito: false);
+        SemConflitoDeNumero();
+        AtoNormativo? capturado = null;
+        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
+
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando());
+
+        resultado.IsSuccess.Should().BeTrue();
+        capturado!.TipoNome.Should().Be("Edital de abertura");
+    }
+
+    [Fact(DisplayName = "Registro por mensagem grava o nome conferido pelo emissor, sem reler o catálogo")]
+    public async Task Handle_PorMensagem_GravaNomeConferidoSemReler()
+    {
+        // O catálogo já tem outro nome para o tipo: se o handler o relesse, gravaria este.
+        VigenteComConsequencia(congela: false, efeito: false);
+        SemConflitoDeNumero();
+        AtoNormativo? capturado = null;
+        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
+
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
+        {
+            AtoId = Guid.CreateVersion7(),
+            AtributosDoTipo = new AtributosDoTipoAto(
+                CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false,
+                Nome: "Edital de abertura (nome da publicação)"),
+        });
+
+        resultado.IsSuccess.Should().BeTrue();
+        capturado!.TipoNome.Should().Be("Edital de abertura (nome da publicação)");
+        await _tipos.DidNotReceive().ObterVigenteAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Requisição emitida sem o nome registra o ato sem nome, com o código presente")]
+    public async Task Handle_PorMensagemSemNome_RegistraSemNome()
+    {
+        VigenteComConsequencia(congela: false, efeito: false);
+        SemConflitoDeNumero();
+        AtoNormativo? capturado = null;
+        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
+
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
+        {
+            AtoId = Guid.CreateVersion7(),
+            AtributosDoTipo = new AtributosDoTipoAto(
+                CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, Nome: null),
+        });
+
+        resultado.IsSuccess.Should().BeTrue();
+        capturado!.TipoNome.Should().BeNull();
+        capturado.TipoCodigo.Should().Be("EDITAL_ABERTURA");
     }
 
     [Fact(DisplayName = "Retificação exclui o ato retificado do aviso de numeração (mesma linhagem, não colisão)")]
