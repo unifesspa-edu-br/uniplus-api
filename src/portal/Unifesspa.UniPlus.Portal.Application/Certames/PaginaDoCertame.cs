@@ -1,0 +1,44 @@
+namespace Unifesspa.UniPlus.Portal.Application.Certames;
+
+/// <summary>
+/// A página pública do certame composta pela Portal: os dados publicados por Seleção e a linha
+/// do tempo de atos de Publicações.
+/// </summary>
+/// <param name="ProcessoSeletivoId">Identificador do processo seletivo.</param>
+/// <param name="Nome">Título do certame congelado na publicação.</param>
+/// <param name="NumeroEdital">Número do edital, quando declarado na publicação.</param>
+/// <param name="LinhaDoTempo">Atos do certame, do mais recente para o mais antigo.</param>
+/// <param name="Degradacao">
+/// Por que a linha do tempo está vazia ou incompleta; nulo quando ela está completa e consistente
+/// com o detalhe servido.
+/// </param>
+/// <param name="SeloDaOrigem">Selo do conteúdo emitido por Seleção, tal como recebido.</param>
+public sealed record PaginaDoCertame(
+    Guid ProcessoSeletivoId,
+    string Nome,
+    string? NumeroEdital,
+    IReadOnlyList<EventoDaLinhaDoTempo> LinhaDoTempo,
+    MotivoDaDegradacao? Degradacao,
+    string? SeloDaOrigem);
+
+/// <summary>
+/// Um ato na linha do tempo da página pública.
+/// </summary>
+/// <param name="Id">Identificador do ato.</param>
+/// <param name="Data">Data de publicação declarada no documento do ato.</param>
+/// <param name="Titulo">Nome do tipo do ato seguido do número, quando declarado.</param>
+/// <param name="Tipo">Tipo do ato.</param>
+/// <param name="Descricao">Motivo da retificação, quando o ato retifica outro.</param>
+public sealed record EventoDaLinhaDoTempo(
+    Guid Id,
+    DateOnly Data,
+    string Titulo,
+    TipoDoEvento Tipo,
+    string? Descricao);
+
+/// <summary>
+/// Tipo de um ato da linha do tempo.
+/// </summary>
+/// <param name="Codigo">Código do tipo do ato.</param>
+/// <param name="Nome">Nome do tipo copiado no registro do ato, ou o código quando o ato não o tem.</param>
+public sealed record TipoDoEvento(string Codigo, string Nome);

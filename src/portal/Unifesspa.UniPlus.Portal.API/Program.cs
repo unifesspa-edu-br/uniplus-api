@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Portal.API;
 using Unifesspa.UniPlus.Portal.API.Errors;
 using Unifesspa.UniPlus.Portal.Application;
 using Unifesspa.UniPlus.Portal.Infrastructure;
+using Unifesspa.UniPlus.Portal.Infrastructure.Origens;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -74,6 +75,10 @@ builder.Services.AdicionarObservabilidade(nomeServicoPortal, builder.Configurati
 // injetada no factory do AddDbContext — simetria com Selecao/Ingresso (#204).
 builder.Services.AddPortalApplication();
 builder.Services.AddPortalInfrastructure();
+
+// Origens da página pública do certame — contrato público de Seleção e consulta unificada de atos
+// de Publicações (ADR-0131). Registradas só quando há endereço configurado.
+builder.Services.AddPortalOrigens(builder.Configuration);
 
 // Migrations EF Core do módulo Portal aplicadas no host StartAsync via IHostedService —
 // pareado com AutoBuildMessageStorageOnStartup do Wolverine (issue #344). Como hosted
