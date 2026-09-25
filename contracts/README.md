@@ -9,6 +9,7 @@ Specs OpenAPI 3.1 versionados como **fonte de verdade do contrato V1** da `unipl
 - `openapi.organizacao.json` — spec do módulo Organização Institucional (Instituição e Unidades, sob o prefixo de módulo `/api/organizacao/*`, incluindo as variantes administrativas `/api/organizacao/admin/*`). Áreas Organizacionais ficam fora do contrato — em aposentadoria (issue #625), o controller foi removido.
 - `openapi.configuracao.json` — spec do módulo Configuração (Campus e Local de Oferta, sob o prefixo de módulo `/api/configuracao/*`, incluindo as variantes administrativas `/api/configuracao/admin/*`). A Cidade é referenciada por código IBGE + display cache (ADR-0090) — não há endpoint de cidade aqui.
 - `openapi.publicacoes.json` — spec do módulo Publicações (atos normativos e catálogo de tipos de ato, sob o prefixo `/api/publicacoes/*`, incluindo `/api/publicacoes/admin/*`).
+- `openapi.portal.json` — spec da Portal API, o *Backend for Frontend* público do portal do candidato ([ADR-0131](../docs/adrs/0131-portal-como-bff-publico-de-dominio.md)), sob o prefixo `/api/portal/*`, mais os endpoints compartilhados de sessão e perfil. Nasce só com o endpoint de teste; cada endpoint público novo regenera esta baseline.
 
 ## Como o spec é gerado
 
@@ -23,7 +24,7 @@ Endpoint runtime: `GET /openapi/{modulo}.json`.
 
 ## Drift check
 
-A integração `OpenApiEndpointTests` nos módulos com baseline (`tests/Unifesspa.UniPlus.{Selecao,Ingresso,OrganizacaoInstitucional}.IntegrationTests/OpenApiEndpointTests.cs`) compara o spec emitido em runtime com o baseline committed nesta pasta. **Qualquer mudança no contrato faz o teste falhar** — clientes externos (frontend, integradores, `uniplus-developers`) ficam protegidos contra breaking changes acidentais.
+A integração `OpenApiEndpointTests` nos módulos com baseline (`tests/Unifesspa.UniPlus.{Selecao,Ingresso,OrganizacaoInstitucional,Configuracao,Publicacoes,Portal}.IntegrationTests/OpenApiEndpointTests.cs`) compara o spec emitido em runtime com o baseline committed nesta pasta. **Qualquer mudança no contrato faz o teste falhar** — clientes externos (frontend, integradores, `uniplus-developers`) ficam protegidos contra breaking changes acidentais.
 
 ### Como regerar o baseline
 
@@ -33,9 +34,10 @@ UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Ingresso.Integrati
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Configuracao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Publicacoes.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
+UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Portal.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 ```
 
-Os arquivos `contracts/openapi.{selecao,ingresso,organizacao}.json` são reescritos. **Revise o diff** (`git diff contracts/`) e só commit se a mudança for intencional. PRs que mudam controllers sem regerar o baseline falham CI.
+Os arquivos `contracts/openapi.*.json` correspondentes são reescritos. **Revise o diff** (`git diff contracts/`) e só commit se a mudança for intencional. PRs que mudam controllers sem regerar o baseline falham CI.
 
 > **Nota sobre `NormalizeJson`**: o teste de drift canonicaliza apenas indentação/whitespace (via `JsonSerializer.Serialize` com `WriteIndented = true`); não reordena chaves. Se uma atualização do `Microsoft.OpenApi` reordenar campos no spec emitido (ex.: `schema.type` antes ou depois de `schema.pattern`), o teste falha como drift legítimo até a baseline ser regerada — comportamento correto, não falso positivo.
 
