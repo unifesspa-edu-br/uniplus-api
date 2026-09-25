@@ -19,6 +19,7 @@ internal static class OpenApiBaselines
         "openapi.organizacao.json",
         "openapi.configuracao.json",
         "openapi.publicacoes.json",
+        "openapi.portal.json",
     ];
 
     /// <summary>Caminho absoluto de cada baseline, na ordem de <see cref="FileNames"/>.</summary>
