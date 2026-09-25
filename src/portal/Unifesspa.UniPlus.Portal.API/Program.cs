@@ -101,10 +101,13 @@ builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
 
-// Health checks agregados: Postgres + Redis + MinIO + Kafka + OIDC (já registrado por
-// AddOidcAuthentication acima). Endpoints separados em /health/live (deps-free), /health/ready
-// (todos com tag "ready") e /health (alias retrocompat).
-builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "PortalDb");
+// A prontidão responde por quem a Portal serve (ADR-0131): entra o que alguma rota servida
+// precisa para responder. Hoje as rotas são sessão e perfil (JWT validado contra o provedor de
+// identidade) e o ping, que não tocam banco, cache, armazenamento nem mensageria — por isso a
+// Portal não registra AddUniPlusHealthChecks, e a única verificação de prontidão é a do provedor
+// de identidade, registrada por AddOidcAuthentication. O banco é exercido só no arranque
+// (migrations); as origens consultadas por rede respondem na própria resposta do endpoint, não
+// na sonda. Uma rota nova que dependa de uma dessas peças traz a verificação correspondente.
 
 // Papel deste processo quanto às migrations (ADR-0127), pelas mesmas razões do host: o
 // callback compartilhado do Wolverine já respeita o modo, e sem tratá-lo aqui o Portal teria
@@ -134,7 +137,7 @@ app.MapSharedProfileEndpoints();
 app.MapControllers();
 app.MapOpenApi("/openapi/{documentName}.json");
 // Liveness dependency-free: 200 enquanto o processo está respondendo, sem
-// avaliar checks externos (OIDC, Postgres, Kafka, Redis). Predicate => false
+// avaliar checks externos (o do provedor de identidade). Predicate => false
 // resulta em healthy quando nenhum check passa pelo filtro — exatamente o
 // comportamento que queremos para evitar restart loops do Kubernetes
 // quando uma dependência transient cai. Readiness mantém o /health agregado.
@@ -142,8 +145,8 @@ app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthC
 {
     Predicate = _ => false,
 });
-// Readiness: agrega checks tagueados "ready" (Postgres, Redis, MinIO, Kafka, OIDC).
-// Reflete o estado real das deps externas — Kubernetes deve apontar readinessProbe aqui.
+// Readiness: agrega os checks tagueados "ready" — na Portal, só o provedor de identidade (ver o
+// registro acima). Kubernetes deve apontar readinessProbe aqui.
 app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = h => h.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag),
