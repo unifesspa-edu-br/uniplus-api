@@ -742,17 +742,17 @@ internal static class CorpusEnvelope
                     [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 15).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000002"), "V", "PcD em ampla concorrência",
-                    NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, null,
+                    NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, null,
                     RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null,
                     ["laudo_medico"], "RECLASSIFICAR_AC", "Lei 13.146/2015", quantidadeDeclarada: 5).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000003"), "IND", "Indígena",
-                    NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, "AC",
+                    NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "QUI", "AC",
                     ["autodeclaracao", "documento_funai"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000004"), "QUI", "Quilombola",
-                    NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, "AC",
+                    NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
                     ["autodeclaracao"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
             ],

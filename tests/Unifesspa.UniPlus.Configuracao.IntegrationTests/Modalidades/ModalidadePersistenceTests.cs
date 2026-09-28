@@ -321,7 +321,7 @@ public sealed class ModalidadePersistenceTests
             "o seed torna as modalidades legais fixas presentes sem digitação por edital");
 
         Modalidade acPcd = semeadas.Single(m => m.Codigo.Valor == "AC_PCD");
-        acPcd.NaturezaLegal.Should().Be(NaturezaLegal.OutraModalidade);
+        acPcd.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
         acPcd.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiraDe);
         acPcd.ComposicaoOrigem.Should().Be("AC", "AC_PCD retira suas vagas da ampla concorrência, não do total");
         acPcd.RegraRemanejamento.Should().Be(RegraRemanejamento.DestinoUnico);
@@ -358,7 +358,7 @@ public sealed class ModalidadePersistenceTests
         // Vagas por acréscimo: somam ao total do curso, então não saem de lugar nenhum.
         foreach (Modalidade m in psiq)
         {
-            m.NaturezaLegal.Should().Be(NaturezaLegal.Suplementar);
+            m.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
             m.ComposicaoVagas.Should().Be(ComposicaoVagas.SuplementarAoTotal);
             m.ComposicaoOrigem.Should().BeNull("vaga suplementar não é retirada de outra modalidade");
             m.RegraRemanejamento.Should().Be(RegraRemanejamento.Cruzado);
@@ -419,7 +419,7 @@ public sealed class ModalidadePersistenceTests
 
         // Mesma mecânica de vagas — a vaga de PcD sai da ampla e volta a ela quando ociosa,
         // e isso não depende de a modalidade ser exclusiva das cotas da Lei.
-        pcdPuro.NaturezaLegal.Should().Be(NaturezaLegal.OutraModalidade);
+        pcdPuro.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
         pcdPuro.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiraDe);
         pcdPuro.ComposicaoOrigem.Should().Be("AC");
         pcdPuro.RegraRemanejamento.Should().Be(RegraRemanejamento.DestinoUnico);
@@ -481,7 +481,7 @@ public sealed class ModalidadePersistenceTests
         Modalidade.Criar(codigo, null, "AMPLA", "RETIRA_DE", origem, null, null, null, null, null, null, null).Value!;
 
     private static Modalidade DestinoUnico(string codigo, string destino) =>
-        Modalidade.Criar(codigo, null, "SUPLEMENTAR", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", destino, null, null, null, null, null).Value!;
+        Modalidade.Criar(codigo, null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", destino, null, null, null, null, null).Value!;
 
     private static string CodigoUnico() => $"MOD_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

@@ -10,8 +10,7 @@ public static class NaturezaLegalModalidadeCodigo
 {
     public const string CotaReservada = "COTA_RESERVADA";
     public const string Ampla = "AMPLA";
-    public const string Suplementar = "SUPLEMENTAR";
-    public const string OutraModalidade = "OUTRA_MODALIDADE";
+    public const string AcaoAfirmativa = "ACAO_AFIRMATIVA";
 
     /// <summary>
     /// Converte o token cross-módulo para o enum local. Um token não
@@ -36,8 +35,7 @@ public static class NaturezaLegalModalidadeCodigo
     {
         NaturezaLegalModalidade.CotaReservada => CotaReservada,
         NaturezaLegalModalidade.Ampla => Ampla,
-        NaturezaLegalModalidade.Suplementar => Suplementar,
-        NaturezaLegalModalidade.OutraModalidade => OutraModalidade,
+        NaturezaLegalModalidade.AcaoAfirmativa => AcaoAfirmativa,
         NaturezaLegalModalidade.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(natureza), natureza, "NaturezaLegalModalidade.Nenhuma é sentinela e não tem token canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(natureza), natureza, "NaturezaLegalModalidade desconhecida."),
@@ -47,8 +45,7 @@ public static class NaturezaLegalModalidadeCodigo
     {
         CotaReservada => NaturezaLegalModalidade.CotaReservada,
         Ampla => NaturezaLegalModalidade.Ampla,
-        Suplementar => NaturezaLegalModalidade.Suplementar,
-        OutraModalidade => NaturezaLegalModalidade.OutraModalidade,
+        AcaoAfirmativa => NaturezaLegalModalidade.AcaoAfirmativa,
         _ => NaturezaLegalModalidade.Nenhuma,
     };
 }
