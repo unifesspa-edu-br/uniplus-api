@@ -238,9 +238,9 @@ public static class RegraCatalogoSeed
             "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)"),
 
         // A mesma fórmula de DISTRIB-VAGAS-LEI-12711, com AC_PCD (retirada da ampla
-        // concorrência) como décima modalidade do rol — não há "Lei 12.711 + PCD_PURO"
-        // (UNI-REQ-0090): PCD_PURO só convive com AC e as suplementares AC_I/AC_Q, e é por
-        // isso que a folga é AC_PCD, não PCD_PURO.
+        // concorrência) como décima modalidade do rol. Ofertar AC_PCD junto das cotas é
+        // válido: a exclusividade entre cota da lei e ação afirmativa vale por inscrição, não
+        // por oferta (UNI-REQ-0142).
         new(SeedId(27), RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
             """
             {"pr_minimo":"numeric (piso 0,5 — art. 10 II; teto 1,0)","modo_arredondamento":"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11","ordem_garantia_minima":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_PCD","LI_EP"],"sub_reservas":["PPI","Q","PCD","EP"],"entradas_por_edital":["VO_base","PR","ReferenciaReservaDemografica"],"modalidades_admitidas":["AC","LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP","AC_PCD"]}
@@ -266,21 +266,21 @@ public static class RegraCatalogoSeed
             """
             ["quadro fixo por edital (não recalculado pelo art. 10)","certame exclusivo: não há ampla concorrência","rol composto só de vagas por acréscimo — sem outro conjunto ao qual se somem, a soma delas é o total publicado"]
             """,
-            "Res. Unifesspa 22/2014-CONSEPE, atualizada pela Res. Unifesspa 532/2021-CONSEPE (vagas por acréscimo para candidatos indígenas e quilombolas)"),
+            "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)"),
 
-        // Generaliza o antigo código exclusivo do PSE Educação do Campo: o rol já era
-        // genérico — só o nome e a "aplicacao" amarravam a um processo específico, quando
-        // UNI-REQ-0085 descreve PCD_PURO como a reserva de qualquer processo que não oferta
-        // as cotas federais. AC permanece obrigatória: PCD_PURO é RETIRA_DE origem AC, e
-        // ValidarReferenciasCruzadas recusa a ausência em qualquer ramo.
-        new(SeedId(26), RegraDistribuicaoVagasCodigo.ComPcdPuro, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
+        // O processo que reserva vaga de pessoa com deficiência sem ofertar as cotas
+        // federais, como o PSE Educação do Campo. A reserva é a mesma AC_PCD do ramo federal —
+        // a ação afirmativa não depende de escola nem de renda (UNI-REQ-0141). AC permanece
+        // obrigatória: AC_PCD é RETIRA_DE origem AC, e ValidarReferenciasCruzadas recusa a
+        // ausência em qualquer ramo.
+        new(SeedId(26), RegraDistribuicaoVagasCodigo.ComAcPcd, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
             """
-            {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"quadro fixo sem as cotas federais — PCD_PURO como reserva de qualquer processo fora do regime federal","modalidades_admitidas":["AC","PCD_PURO"]}
+            {"quadro_fixo_por_modalidade":"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)","aplicacao":"quadro fixo sem as cotas federais — AC_PCD como reserva de pessoa com deficiência fora do regime federal","modalidades_admitidas":["AC","AC_PCD"]}
             """,
             """
-            ["quadro fixo por edital (não recalculado pelo art. 10)","certame sem as cotas da Lei 12.711","PCD_PURO retira de AC: o par fecha no VO_base"]
+            ["quadro fixo por edital (não recalculado pelo art. 10)","certame sem as cotas da Lei 12.711","AC_PCD retira de AC: o par fecha no VO_base"]
             """,
-            "Res. Unifesspa 64/2015-CONSEPE (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12"),
+            "Res. Unifesspa 532/2021-CONSEPE, art. 1º (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12"),
     ];
 }
 

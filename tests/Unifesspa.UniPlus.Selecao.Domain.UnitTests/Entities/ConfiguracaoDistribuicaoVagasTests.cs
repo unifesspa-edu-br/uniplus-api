@@ -18,8 +18,8 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     private static ReferenciaRegra RegraPsiq() =>
         ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Psiq, "v1", new string('d', 64)).Value!;
 
-    private static ReferenciaRegra RegraComPcdPuro() =>
-        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.ComPcdPuro, "v1", new string('e', 64)).Value!;
+    private static ReferenciaRegra RegraComAcPcd() =>
+        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.ComAcPcd, "v1", new string('e', 64)).Value!;
 
     private static ReferenciaRegra RegraLei12711ComAcPcd() =>
         ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v1", new string('f', 64)).Value!;
@@ -239,8 +239,8 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Value!.VagasOfertadas.Should().Contain(v => v.ModalidadeCodigo == "AC_PCD" && v.Quantidade == 2);
     }
 
-    [Fact(DisplayName = "Com PCD puro recusa cota da Lei 12.711 fora do seu rol")]
-    public void Criar_ComPcdPuro_ComCotaDaLei_Falha()
+    [Fact(DisplayName = "Com AC_PCD sem cotas recusa cota da Lei 12.711 fora do seu rol")]
+    public void Criar_ComAcPcd_ComCotaDaLei_Falha()
     {
         List<ModalidadeSelecionada> modalidades =
         [
@@ -249,10 +249,10 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "PCD_PURO"]);
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "AC_PCD"]);
 
-        resultado.IsFailure.Should().BeTrue("o rol de COM-PCD-PURO só admite AC e PCD_PURO — nenhuma cota da Lei 12.711");
+        resultado.IsFailure.Should().BeTrue("o rol de COM-AC-PCD só admite AC e AC_PCD — nenhuma cota da Lei 12.711");
         resultado.Errors.Should().Contain(e =>
             e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra"
             && e.Error.Message.Contains(ModalidadesFederaisLei12711.LbPpi, StringComparison.Ordinal));
@@ -349,21 +349,21 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             "sem outro conjunto ao qual se somem, as vagas por acréscimo são o total publicado");
     }
 
-    [Fact(DisplayName = "Com PCD puro aceita AC e PCD_PURO, com a reserva retirando da ampla")]
-    public void Criar_ComPcdPuro_ComRolAdmitido_Sucesso()
+    [Fact(DisplayName = "Com AC_PCD sem cotas aceita AC e AC_PCD, com a reserva retirando da ampla")]
+    public void Criar_ComAcPcd_ComRolAdmitido_Sucesso()
     {
         List<ModalidadeSelecionada> modalidades =
         [
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 38),
-            Modalidade("PCD_PURO", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "PCD_PURO"]);
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null,
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "AC_PCD"]);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.TotalPublicado.Should().Be(40, "PCD_PURO retira de AC — o par fecha no VO_base");
+        resultado.Value!.TotalPublicado.Should().Be(40, "AC_PCD retira de AC — o par fecha no VO_base");
     }
 
     [Fact(DisplayName = "Regra sem rol declarado não restringe as modalidades")]
@@ -388,11 +388,11 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 40),
-            Modalidade("PCD_PURO", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), RegraAjuste(), referenciaDemografica: null,
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), RegraAjuste(), referenciaDemografica: null,
             modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null,
             argsAjuste: new ArgsReduzirDe("AC"));
 
@@ -401,7 +401,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Value.Estouro.Should().Be(4, "o excesso absorvido precisa aparecer, não desaparecer");
         resultado.Value.CapadoEmVo.Should().BeTrue();
         resultado.Value.VagasOfertadas.Single(v => v.ModalidadeCodigo == "AC").Quantidade.Should().Be(36);
-        resultado.Value.VagasOfertadas.Single(v => v.ModalidadeCodigo == "PCD_PURO").Quantidade.Should().Be(4);
+        resultado.Value.VagasOfertadas.Single(v => v.ModalidadeCodigo == "AC_PCD").Quantidade.Should().Be(4);
     }
 
     [Fact(DisplayName = "Sem regra de ajuste, o quadro que excede continua sendo recusado")]
@@ -410,11 +410,11 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 40),
-            Modalidade("PCD_PURO", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), regraAjuste: null, referenciaDemografica: null,
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null,
             modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null, argsAjuste: null);
 
         resultado.IsFailure.Should().BeTrue("sem motor declarado não há de onde tirar");
@@ -467,11 +467,11 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             ModalidadeComAcao("AC", acaoQuandoIndeferido: null, quantidadeDeclarada: 38),
-            ModalidadeComAcao("PCD_PURO", "RECLASSIFICAR_AC", quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+            ModalidadeComAcao("AC_PCD", "RECLASSIFICAR_AC", quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComPcdPuro(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null, modalidades);
 
         resultado.IsSuccess.Should().BeTrue("a ampla está ofertada — o destino da reclassificação existe");
     }

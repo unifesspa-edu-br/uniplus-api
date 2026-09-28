@@ -2093,10 +2093,10 @@ public sealed class EnvelopeCodecRecusaTests
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Já aconteceu neste codec — um envelope publicado sob PSIQ ou sob a regra que hoje é
-    /// COM-PCD-PURO era irreidratável porque o rol do decodificador estava fechado em dois
-    /// literais. A configuração congelada é a evidência jurídica do certame; recusá-la deixa o
-    /// descarte da retificação sem como repor o estado anterior.
+    /// Um rol do decodificador fechado em literais deixaria irreidratável o envelope publicado
+    /// sob uma regra que a lista esquecesse, como a do PSIQ ou a de quadro fixo com AC_PCD. A
+    /// configuração congelada é a evidência jurídica do certame; recusá-la deixa o descarte da
+    /// retificação sem como repor o estado anterior.
     /// </para>
     /// <para>
     /// A asserção é de <b>sucesso</b>, e não de "falhou por outro motivo": nada no decodificador

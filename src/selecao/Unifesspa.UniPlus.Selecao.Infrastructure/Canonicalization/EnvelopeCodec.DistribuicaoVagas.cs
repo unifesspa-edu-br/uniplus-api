@@ -149,8 +149,8 @@ public sealed partial class EnvelopeCodec
             decimal pr = leitor.Decimal(item, "pr", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPr);
             // O rol deriva de RegraDistribuicaoVagasCodigo.Todos, não de literais fixos: um
             // código federal (EhRamoFederal) ou de quadro fixo (EhQuadroFixo) publicado sob
-            // qualquer regra do catálogo tem de reidratar — dois literais aqui já deixaram
-            // PSIQ e a regra que hoje é COM-PCD-PURO irreidratáveis antes desta correção.
+            // qualquer regra do catálogo tem de reidratar, e uma lista escrita à mão aqui
+            // deixaria de fora a regra que não lembrasse de acompanhar.
             ReferenciaRegra regra = leitor.Regra(
                 item,
                 "regraDistribuicao",

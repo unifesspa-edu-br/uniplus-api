@@ -25,8 +25,12 @@ public static class RegraDistribuicaoVagasCodigo
     /// <summary>Processo Seletivo Indígena e Quilombola — quadro fixo, exclusivo de vagas por acréscimo.</summary>
     public const string Psiq = "DISTRIB-VAGAS-PSIQ";
 
-    /// <summary>Quadro fixo, ampla concorrência e reserva de PcD sem as cotas federais — generaliza o antigo PSE Educação do Campo (UNI-REQ-0085).</summary>
-    public const string ComPcdPuro = "DISTRIB-VAGAS-COM-PCD-PURO";
+    /// <summary>
+    /// Quadro fixo com ampla concorrência e a reserva de pessoa com deficiência (<c>AC_PCD</c>),
+    /// sem as cotas federais — o processo que reserva vaga de PcD fora do regime da Lei 12.711,
+    /// como o PSE Educação do Campo (UNI-REQ-0140).
+    /// </summary>
+    public const string ComAcPcd = "DISTRIB-VAGAS-COM-AC-PCD";
 
     /// <summary>
     /// Todo código reconhecido — partição fechada com <see cref="EhQuadroFixo"/>: uma regra nova
@@ -35,7 +39,7 @@ public static class RegraDistribuicaoVagasCodigo
     /// </summary>
     public static readonly IReadOnlyList<string> Todos =
     [
-        Lei12711, Lei12711ComAcPcd, Institucional, Psiq, ComPcdPuro,
+        Lei12711, Lei12711ComAcPcd, Institucional, Psiq, ComAcPcd,
     ];
 
     /// <summary>
@@ -50,7 +54,7 @@ public static class RegraDistribuicaoVagasCodigo
     /// compartilham a mesma montagem: as quantidades declaradas dividem o VO_base.
     /// </summary>
     public static bool EhQuadroFixo(string codigo) =>
-        codigo is Institucional or Psiq or ComPcdPuro;
+        codigo is Institucional or Psiq or ComAcPcd;
 
     /// <summary>
     /// O rol exato que cada código de quadro fechado reconhece. A camada de aplicação resolve
@@ -67,7 +71,7 @@ public static class RegraDistribuicaoVagasCodigo
         Lei12711 => ModalidadesFederaisLei12711.CodigosComAc,
         Lei12711ComAcPcd => [.. ModalidadesFederaisLei12711.CodigosComAc, "AC_PCD"],
         Psiq => ["AC_I", "AC_Q"],
-        ComPcdPuro => ["AC", "PCD_PURO"],
+        ComAcPcd => ["AC", "AC_PCD"],
         _ => null,
     };
 }
