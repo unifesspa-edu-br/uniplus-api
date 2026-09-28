@@ -59,7 +59,6 @@ public sealed class RemoverModalidadeCommandHandlerTests
     [InlineData("LB_PPI")]
     [InlineData("AC")]
     [InlineData("AC_PCD")]
-    [InlineData("PCD_PURO")]
     [InlineData("AC_I")]
     [InlineData("AC_Q")]
     public async Task Handle_LegalFixa_RetornaConflito(string codigo)

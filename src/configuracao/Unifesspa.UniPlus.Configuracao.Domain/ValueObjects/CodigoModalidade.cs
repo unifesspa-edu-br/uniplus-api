@@ -62,12 +62,6 @@ public sealed partial record CodigoModalidade
     public const string LiEp = "LI_EP";
 
     /// <summary>
-    /// Pessoa com deficiência sem nenhuma condição de origem escolar — a reserva de PcD
-    /// para o processo que não oferta as cotas da Lei 12.711/2012 (UNI-REQ-0085).
-    /// </summary>
-    public const string PcdPuro = "PCD_PURO";
-
-    /// <summary>
     /// Vaga por acréscimo para candidato indígena — modalidade institucional do PSIQ,
     /// suplementar ao total do curso (UNI-REQ-0096). Par cruzado de <see cref="AcQ"/>.
     /// </summary>
@@ -80,18 +74,17 @@ public sealed partial record CodigoModalidade
     public const string AcQ = "AC_Q";
 
     /// <summary>
-    /// Os treze códigos do catálogo legal fixo — piso de ações afirmativas da Lei
-    /// 12.711/2012 (red. Lei 14.723/2023) mais a ampla concorrência, as duas modalidades de
-    /// pessoa com deficiência fora da reserva federal (<see cref="AcPcd"/>, condicionada a
-    /// não ser egresso de escola pública, e <see cref="PcdPuro"/>, sem essa condição) e as
-    /// duas vagas por acréscimo do PSIQ (<see cref="AcI"/> e <see cref="AcQ"/>, par cruzado
-    /// uma da outra). Não são cadastro: nascem do seed, e a estrutura de vagas de cada um
+    /// Os doze códigos do catálogo legal fixo — as oito cotas da Lei 12.711/2012 (red. Lei
+    /// 14.723/2023), a ampla concorrência e as três ações afirmativas da Resolução Unifesspa
+    /// 532/2021 (UNI-REQ-0141): a reserva de pessoa com deficiência (<see cref="AcPcd"/>, a
+    /// mesma com ou sem as cotas da lei no processo) e as duas vagas por acréscimo do PSIQ
+    /// (<see cref="AcI"/> e <see cref="AcQ"/>, par cruzado uma da outra). Não são cadastro: nascem do seed, e a estrutura de vagas de cada um
     /// (natureza, composição, remanejamento) é ditada por norma, não pela universidade.
     /// Alterá-la exige mudança no seed e migração — o que, no par cruzado, é também o que
     /// mantém a reciprocidade: um lado editado sozinho quebraria o cruzamento em silêncio.
     /// </summary>
     public static FrozenSet<string> CodigosLegaisFixos { get; } = FrozenSet.ToFrozenSet(
-        [Ac, AcPcd, LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp, PcdPuro, AcI, AcQ],
+        [Ac, AcPcd, LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp, AcI, AcQ],
         StringComparer.Ordinal);
 
     public string Valor { get; }

@@ -17,7 +17,6 @@ public sealed class CodigoModalidadeTests
     [InlineData("LI_Q")]
     [InlineData("LI_PCD")]
     [InlineData("LI_EP")]
-    [InlineData("PCD_PURO")]
     [InlineData("AC_I")]
     [InlineData("AC_Q")]
     public void EhLegalFixa_CodigoDoCatalogo_Verdadeiro(string codigo)
@@ -57,12 +56,16 @@ public sealed class CodigoModalidadeTests
     public void EhCodigoLegalFixo_NuloOuBranco_Falso(string? codigo) =>
         CodigoModalidade.EhCodigoLegalFixo(codigo).Should().BeFalse();
 
-    [Fact(DisplayName = "O catálogo legal fixo tem exatamente treze códigos")]
-    public void CodigosLegaisFixos_TemTrezeItens() =>
-        CodigoModalidade.CodigosLegaisFixos.Should().HaveCount(13,
-            "as oito modalidades da Lei 12.711/2012, a ampla concorrência, as duas "
-            + "modalidades de pessoa com deficiência fora da reserva federal e as duas "
-            + "vagas por acréscimo do PSIQ");
+    [Fact(DisplayName = "O catálogo legal fixo tem exatamente doze códigos")]
+    public void CodigosLegaisFixos_TemDozeItens() =>
+        CodigoModalidade.CodigosLegaisFixos.Should().HaveCount(12,
+            "as oito modalidades da Lei 12.711/2012, a ampla concorrência, a reserva de "
+            + "pessoa com deficiência e as duas vagas por acréscimo do PSIQ");
+
+    [Fact(DisplayName = "PCD_PURO deixou de ser código protegido — a reserva de PcD é AC_PCD")]
+    public void EhCodigoLegalFixo_PcdPuro_Falso() =>
+        CodigoModalidade.EhCodigoLegalFixo("PCD_PURO").Should().BeFalse(
+            "a reserva de pessoa com deficiência sem as cotas da lei passou a ser AC_PCD");
 
     [Fact(DisplayName = "A comparação do catálogo é case-sensitive")]
     public void EhCodigoLegalFixo_Minusculas_Falso() =>

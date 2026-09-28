@@ -39,7 +39,6 @@ public sealed class CriarModalidadeCommandHandlerTests
     [InlineData("LB_PPI")]
     [InlineData("AC")]
     [InlineData("AC_PCD")]
-    [InlineData("PCD_PURO")]
     [InlineData("AC_I")]
     [InlineData("AC_Q")]
     [InlineData(" LB_PPI ")]

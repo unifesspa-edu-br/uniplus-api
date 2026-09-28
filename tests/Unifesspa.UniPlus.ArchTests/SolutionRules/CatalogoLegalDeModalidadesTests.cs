@@ -28,7 +28,7 @@ public sealed class CatalogoLegalDeModalidadesTests
             "um código que a distribuição de vagas exige mas o catálogo não protege pode "
             + "ser apagado por cadastro, inviabilizando configurar a lei depois");
 
-    [Fact(DisplayName = "O catálogo protegido acrescenta as quatro modalidades institucionais fora da reserva federal")]
+    [Fact(DisplayName = "O catálogo protegido acrescenta as três ações afirmativas institucionais")]
     public void CatalogoProtegido_ExcedeSelecaoNasModalidadesInstitucionais()
     {
         string[] exclusivosDoCatalogo = [.. CodigoModalidade.CodigosLegaisFixos
@@ -36,9 +36,9 @@ public sealed class CatalogoLegalDeModalidadesTests
             .Order(StringComparer.Ordinal)];
 
         exclusivosDoCatalogo.Should().Equal(
-            [CodigoModalidade.AcI, CodigoModalidade.AcPcd, CodigoModalidade.AcQ, CodigoModalidade.PcdPuro],
-            "nenhuma das quatro entra na cascata das oito federais — AC_PCD e PCD_PURO retiram "
-            + "vaga da ampla concorrência, AC_I e AC_Q somam ao total do curso —, mas todas são "
-            + "reserva fixada por norma institucional, e a proteção do catálogo vale para as quatro");
+            [CodigoModalidade.AcI, CodigoModalidade.AcPcd, CodigoModalidade.AcQ],
+            "nenhuma das três entra na cascata das oito federais — AC_PCD retira vaga da ampla "
+            + "concorrência, AC_I e AC_Q somam ao total do curso —, mas todas são ação afirmativa "
+            + "fixada por norma institucional, e a proteção do catálogo vale para as três");
     }
 }
