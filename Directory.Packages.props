@@ -66,7 +66,7 @@
          como já foi feito para Microsoft.OpenApi. -->
     <PackageVersion Include="Refit" Version="15.2.0" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="15.2.0" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.9.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
 
     <!-- Storage -->
     <PackageVersion Include="Minio" Version="7.0.0" />
