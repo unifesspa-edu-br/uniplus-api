@@ -737,31 +737,20 @@
           ]
         },
         {
-          "name": "Criar Modalidade (AC)",
+          "name": "Obter Modalidade (AC, catálogo semeado)",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Idempotency-Key",
-                "value": "{{$guid}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/api/configuracao/admin/modalidades",
+              "raw": "{{base_url}}/api/configuracao/modalidades/70da1000-0000-7000-8000-000000000001",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "configuracao",
-                "admin",
-                "modalidades"
+                "modalidades",
+                "70da1000-0000-7000-8000-000000000001"
               ]
             },
             "auth": {
@@ -773,15 +762,6 @@
                   "type": "string"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"codigo\": \"AC_SMK_{{run_suffix}}\",\n  \"descricao\": \"Ampla concorrência (smoke)\",\n  \"naturezaLegal\": \"AMPLA\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": null,\n  \"remanejamentoDestino\": null,\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "response": [],
@@ -791,10 +771,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('201 Created com Guid', () => {",
-                  "  pm.response.to.have.status(201);",
-                  "  const id = pm.response.json();",
-                  "  pm.environment.set('modalidade_id', id);",
+                  "pm.test('200 com a modalidade AC do catálogo semeado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const m = pm.response.json();",
+                  "  pm.expect(m.codigo).to.eql('AC');",
+                  "  pm.expect(m.naturezaLegal).to.eql('AMPLA');",
+                  "  pm.environment.set('modalidade_id', m.id);",
                   "});"
                 ]
               }
@@ -802,31 +784,20 @@
           ]
         },
         {
-          "name": "Criar Modalidade (LB_PPI, cota de renda)",
+          "name": "Obter Modalidade (AC_PCD, catálogo semeado)",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Idempotency-Key",
-                "value": "{{$guid}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/api/configuracao/admin/modalidades",
+              "raw": "{{base_url}}/api/configuracao/modalidades/70da1000-0000-7000-8000-000000000010",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "configuracao",
-                "admin",
-                "modalidades"
+                "modalidades",
+                "70da1000-0000-7000-8000-000000000010"
               ]
             },
             "auth": {
@@ -838,15 +809,6 @@
                   "type": "string"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"codigo\": \"LB_PPI_SMK_{{run_suffix}}\",\n  \"descricao\": \"Baixa renda PPI (smoke)\",\n  \"naturezaLegal\": \"OUTRA_MODALIDADE\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": \"DESTINO_UNICO\",\n  \"remanejamentoDestino\": \"AC_SMK_{{run_suffix}}\",\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012, art. 3º\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "response": [],
@@ -856,75 +818,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('201 Created com Guid', () => {",
-                  "  pm.response.to.have.status(201);",
-                  "  const id = pm.response.json();",
-                  "  pm.environment.set('modalidade_lb_ppi_id', id);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Criar Modalidade (LB_Q, cota de renda)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Idempotency-Key",
-                "value": "{{$guid}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/configuracao/admin/modalidades",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "configuracao",
-                "admin",
-                "modalidades"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"codigo\": \"LB_Q_SMK_{{run_suffix}}\",\n  \"descricao\": \"Baixa renda quilombola (smoke)\",\n  \"naturezaLegal\": \"OUTRA_MODALIDADE\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": \"DESTINO_UNICO\",\n  \"remanejamentoDestino\": \"AC_SMK_{{run_suffix}}\",\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012, art. 3º\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('201 Created com Guid', () => {",
-                  "  pm.response.to.have.status(201);",
-                  "  const id = pm.response.json();",
-                  "  pm.environment.set('modalidade_lb_q_id', id);",
+                  "pm.test('200 com a modalidade AC_PCD do catálogo semeado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const m = pm.response.json();",
+                  "  pm.expect(m.codigo).to.eql('AC_PCD');",
+                  "  pm.expect(m.naturezaLegal).to.eql('ACAO_AFIRMATIVA');",
+                  "  pm.environment.set('modalidade_ac_pcd_id', m.id);",
                   "});"
                 ]
               }
@@ -1627,7 +1526,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\",\n      \"{{modalidade_lb_ppi_id}}\",\n      \"{{modalidade_lb_q_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 30\n      },\n      {\n        \"modalidadeId\": \"{{modalidade_lb_ppi_id}}\",\n        \"quantidade\": 5\n      },\n      {\n        \"modalidadeId\": \"{{modalidade_lb_q_id}}\",\n        \"quantidade\": 5\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\",\n      \"{{modalidade_ac_pcd_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 38\n      },\n      {\n        \"modalidadeId\": \"{{modalidade_ac_pcd_id}}\",\n        \"quantidade\": 2\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2242,7 +2141,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"codigoFato\": \"MODALIDADE\",\n    \"regras\": [\n      {\n        \"ordem\": 0,\n        \"contribui\": \"AC_SMK_{{run_suffix}}\",\n        \"quando\": null\n      },\n      {\n        \"ordem\": 1,\n        \"contribui\": \"AC_SMK_{{run_suffix}}\",\n        \"quando\": [\n          [\n            {\n              \"fato\": \"COR_RACA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"PRETA\"\n            }\n          ]\n        ]\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"codigoFato\": \"MODALIDADE\",\n    \"regras\": [\n      {\n        \"ordem\": 0,\n        \"contribui\": \"AC\",\n        \"quando\": null\n      },\n      {\n        \"ordem\": 1,\n        \"contribui\": \"AC\",\n        \"quando\": [\n          [\n            {\n              \"fato\": \"COR_RACA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"PRETA\"\n            }\n          ]\n        ]\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2564,7 +2463,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Norma interna do certame\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"AC_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": null\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"EM\",\n          \"valor\": \"[\\\"LB_PPI_SMK_{{run_suffix}}\\\",\\\"LB_Q_SMK_{{run_suffix}}\\\"]\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 12.711/2012, art. 3º\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda per capita\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"CONDICAO_ATENDIMENTO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PCD_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 13.146/2015, art. 30\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo médico com CID\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SEXO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"MASCULINO\"\n        },\n        {\n          \"clausula\": 0,\n          \"fato\": \"FAIXA_ETARIA\",\n          \"operador\": \"MAIOR_IGUAL\",\n          \"valor\": \"18\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Certificado de alistamento/quitação militar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"NACIONALIDADE\",\n          \"operador\": \"DIFERENTE\",\n          \"valor\": \"ESTRANGEIRO\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Quitação com o serviço militar — exigida de candidatos não estrangeiros (PS Principal 2027, PSIQ 2027)\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        {\n          \"formato\": \"PDF\",\n          \"tamanhoMaximoBytesMax\": 3000000\n        },\n        {\n          \"formato\": \"JPEG\",\n          \"tamanhoMaximoBytesMax\": null\n        }\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 15\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda — últimos 3 meses\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": 3,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": \"COMPETENCIA_MENSAL\",\n    \"dataReferencia\": \"2027-03-01\",\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"RG de cada membro do núcleo familiar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Norma interna do certame\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"AC\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": null\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"EM\",\n          \"valor\": \"[\\\"AC_PCD\\\"]\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 1º\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo que comprova a deficiência\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"CONDICAO_ATENDIMENTO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PCD_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 13.146/2015, art. 30\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo médico com CID\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SEXO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"MASCULINO\"\n        },\n        {\n          \"clausula\": 0,\n          \"fato\": \"FAIXA_ETARIA\",\n          \"operador\": \"MAIOR_IGUAL\",\n          \"valor\": \"18\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Certificado de alistamento/quitação militar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"NACIONALIDADE\",\n          \"operador\": \"DIFERENTE\",\n          \"valor\": \"ESTRANGEIRO\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Quitação com o serviço militar — exigida de candidatos não estrangeiros (PS Principal 2027, PSIQ 2027)\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        {\n          \"formato\": \"PDF\",\n          \"tamanhoMaximoBytesMax\": 3000000\n        },\n        {\n          \"formato\": \"JPEG\",\n          \"tamanhoMaximoBytesMax\": null\n        }\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 15\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda — últimos 3 meses\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": 3,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": \"COMPETENCIA_MENSAL\",\n    \"dataReferencia\": \"2027-03-01\",\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"RG de cada membro do núcleo familiar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3234,13 +3133,13 @@
                   "  pm.expect(geral.condicaoGatilho).to.be.null;",
                   "",
                   "  const condicionais = exigencias.filter(e => e.aplicabilidade === 'Condicional');",
-                  "  pm.expect(condicionais, '5 CONDICIONAL (AC-IGUAL + renda-EM + laudo + reservista + nacionalidade)').to.have.lengthOf(5);",
+                  "  pm.expect(condicionais, '5 CONDICIONAL (AC-IGUAL + AC_PCD-EM + laudo + reservista + nacionalidade)').to.have.lengthOf(5);",
                   "",
                   "  const suf = pm.environment.get('run_suffix');",
                   "  const renda = condicionais.find(e => e.condicaoGatilho?.[0]?.[0]?.fato === 'MODALIDADE'",
                   "    && e.condicaoGatilho[0][0].operador === 'EM');",
-                  "  pm.expect(renda, 'renda (MODALIDADE EM cotas)').to.not.be.undefined;",
-                  "  pm.expect(renda.condicaoGatilho[0][0].valor).to.have.members([`LB_PPI_SMK_${suf}`, `LB_Q_SMK_${suf}`]);",
+                  "  pm.expect(renda, 'laudo de AC_PCD (MODALIDADE EM ação afirmativa)').to.not.be.undefined;",
+                  "  pm.expect(renda.condicaoGatilho[0][0].valor).to.have.members(['AC_PCD']);",
                   "",
                   "  const laudo = condicionais.find(e => e.condicaoGatilho?.[0]?.[0]?.fato === 'CONDICAO_ATENDIMENTO');",
                   "  pm.expect(laudo, 'laudo (CONDICAO_ATENDIMENTO IGUAL PCD)').to.not.be.undefined;",

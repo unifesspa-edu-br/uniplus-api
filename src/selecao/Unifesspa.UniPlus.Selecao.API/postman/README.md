@@ -67,8 +67,9 @@ Alternativa sem ROPC: preencha a variável `access_token` com um token já emiti
 (por exemplo, copiado do navegador depois do login no app de Seleção). Com ela
 preenchida, a pasta Auth não chama o Keycloak e a coleção usa esse token.
 
-A coleção cria dados a cada execução (unidade, curso, oferta, modalidades,
-processos com identificador legível único) — ver "O que é coberto". Rodar de novo
+A coleção cria dados a cada execução (unidade, curso, oferta, processos com
+identificador legível único); as modalidades não são criadas, são as do catálogo
+semeado (`AC` e `AC_PCD`) — ver "O que é coberto". Rodar de novo
 em seguida é suportado: os códigos levam um sufixo aleatório por execução.
 
 ## Rodar (Newman)
@@ -102,8 +103,8 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente — a coleção r
 | **Auth** | Password grant contra o Keycloak do realm configurado, ou token pronto via `access_token` |
 | **Setup — Publicações** | `POST admin/tipos-ato` (EDITAL_ABERTURA, EDITAL_RETIFICACAO) — tolera 409 em reexecuções |
 | **Setup — Organização** | `POST admin/instituicao` (singleton, tolera 409) + `GET instituicao` + `POST admin/unidades` |
-| **Setup — Configuração** | Árvore Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica (nenhum pré-seedado), e a leitura dos catálogos de tipo de processo (`SiSU`) e de tipo de etapa (`PROVA_OBJETIVA`, `ENTREVISTA`), que a criação do processo e as etapas referenciam por id |
-| **ProcessoSeletivo — Configuração** | `Criar` (com tipo, localidade e identificador legível) + as dimensões `Definir*` (etapas, oferta-atendimento, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, referência-temporal-fatos, **fatos-coletados** e **regras-derivação** — antes dos documentos, porque uma condição só pode citar fato que o processo coleta ou deriva —, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE EM`/renda, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`)) |
+| **Setup — Configuração** | Árvore Campus→LocalOferta→Curso→OfertaCurso + TipoDocumento + FaseCanonica (nenhum pré-seedado), a leitura das modalidades `AC` e `AC_PCD` do catálogo semeado, e a leitura dos catálogos de tipo de processo (`SiSU`) e de tipo de etapa (`PROVA_OBJETIVA`, `ENTREVISTA`), que a criação do processo e as etapas referenciam por id |
+| **ProcessoSeletivo — Configuração** | `Criar` (com tipo, localidade e identificador legível) + as dimensões `Definir*` (etapas, oferta-atendimento, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, referência-temporal-fatos, **fatos-coletados** e **regras-derivação** — antes dos documentos, porque uma condição só pode citar fato que o processo coleta ou deriva —, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE EM`/laudo de `AC_PCD`, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`)) |
 | **ProcessoSeletivo — Leitura** | `Listar`, `ObterPorId`, `ObterConformidade`, `ObterConformidadeLegal` |
 | **ProcessoSeletivo — Publicação** | Upload de Edital em 3 passos (URL pré-assinada MinIO, PUT direto, confirmação) → `Publicar` → `ObterSnapshotVigente` |
 | **ProcessoSeletivo — Retificação (atalho)** | Novo Edital confirmado → `Retificar` (atalho atômico, sem sessão) |
@@ -178,7 +179,7 @@ A mesma configuração de `ProcessoSeletivo` desta coleção define, num único 
 | Sub-caso | Fato/operador | O que prova |
 |---|---|---|
 | Nível de ensino | `aplicabilidade: GERAL`, `condicoes: []` | GERAL nunca avalia gatilho — exigida de todo candidato |
-| Renda | `MODALIDADE EM ["LB_PPI_...", "LB_Q_..."]` | Cardinalidade multivalorada (ADR-0111); domínio dinâmico resolvido contra `DistribuicaoVagas` do próprio processo |
+| Laudo de `AC_PCD` | `MODALIDADE EM ["AC_PCD"]` | Cardinalidade multivalorada (ADR-0111); domínio dinâmico resolvido contra `DistribuicaoVagas` do próprio processo |
 | Laudo | `CONDICAO_ATENDIMENTO IGUAL "PCD_..."` | Fato dinâmico resolvido contra `OfertaAtendimento` do próprio processo (não um catálogo fixo) |
 | Reservista | `SEXO IGUAL MASCULINO` **E** `FAIXA_ETARIA MAIOR_IGUAL 18`, mesma `clausula` | Conjunção AND dentro de uma cláusula DNF (`CondicaoGatilho`: OU entre cláusulas, E dentro) |
 
@@ -248,8 +249,6 @@ risco desproporcional a um problema cosmético. Documentado como comentário em
 
 ### Bugs de contrato corrigidos durante a construção da coleção
 
-- `Modalidade.Codigo` recusa hífen (`PredicateValidator` — só maiúsculas, dígitos
-  e `_`); a coleção usa `AC_SMK_{{run_suffix}}`.
 - `TipoDocumento.Codigo` passou a ter o mesmo formato fechado
   (`^[A-Z][A-Z0-9_]{1,49}$`); a coleção usa `IDENTIDADE_SMK_{{run_suffix}}`. Com
   hífen, o `POST` responde `422` e a coleção segue sem `tipo_documento_id`, o que
