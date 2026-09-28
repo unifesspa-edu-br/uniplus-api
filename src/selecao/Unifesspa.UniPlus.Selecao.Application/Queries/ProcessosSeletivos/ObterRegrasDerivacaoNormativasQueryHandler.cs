@@ -17,6 +17,10 @@ using DTOs;
 /// contribui código fora das modalidades ofertadas, de modo que devolver a matriz inteira daria ao
 /// cliente uma proposta que o próprio servidor rejeitaria em seguida.
 /// <para>
+/// O processo que não oferta nenhuma cota da lei recebe a matriz sem cotas: nela a reserva de pessoa
+/// com deficiência não cita escola pública nem opção pelas cotas, fatos que ele não coleta.
+/// </para>
+/// <para>
 /// Sobrando regra nenhuma — processo que ainda não declarou quadro de vagas, ou que oferta só
 /// modalidade de outro ramo — a resposta é uma lista vazia, e não uma configuração sem regra: o
 /// agregado recusa configuração vazia, e propô-la seria propor o que não se pode gravar.
@@ -47,9 +51,13 @@ public static class ObterRegrasDerivacaoNormativasQueryHandler
                 .Select(static modalidade => modalidade.Codigo),
         ];
 
+        RegrasDerivacaoFato matriz = ModalidadesFederaisLei12711.Codigos.Any(ofertadas.Contains)
+            ? RegrasDerivacaoModalidadeLei12711.Construir()
+            : RegrasDerivacaoModalidadeLei12711.ConstruirSemCotasDaLei();
+
         List<RegraDerivacaoDto> regras = [];
         int ordem = 0;
-        foreach (RegraDerivacao regra in RegrasDerivacaoModalidadeLei12711.Construir().Regras)
+        foreach (RegraDerivacao regra in matriz.Regras)
         {
             if (!ofertadas.Contains(regra.Contribui))
             {

@@ -69,29 +69,39 @@ public sealed class MotorDerivacaoModalidadeTests
         Derivar(Fatos()).Should().Equal("AC");
 
     /// <summary>
-    /// A vaga institucional de PcD é para quem a Lei de Cotas não alcança — o
-    /// egresso de escola privada.
+    /// A ação afirmativa de PcD é de quem não optou pelas cotas da lei — aqui, o
+    /// egresso de escola privada (UNI-REQ-0142).
     /// </summary>
     [Fact(DisplayName = "PcD opt-in, não escola pública → {AC, AC_PCD}")]
     public void PcdSemEscolaPublica_AcEAcPcd() =>
         Derivar(Fatos(("CONCORRER_PCD", Sim))).Should().Equal("AC", "AC_PCD");
 
     /// <summary>
-    /// Vindo de escola pública, a via é a da Lei: `LI_PCD`. Somar `AC_PCD` daria
-    /// a este candidato a vaga institucional criada para quem não tem essa via
-    /// (UNI-REQ-0076).
+    /// Quem opta pelas cotas da lei concorre a `LI_PCD` e, por ser egresso de escola
+    /// pública, a `LI_EP`; `AC_PCD` fica de fora porque cota e ação afirmativa não
+    /// convivem na mesma inscrição (UNI-REQ-0142).
     /// </summary>
-    [Fact(DisplayName = "PcD opt-in, escola pública, sem renda → {AC, LI_PCD}")]
-    public void PcdEscolaPublicaSemRenda() =>
+    [Fact(DisplayName = "PcD opta pelas cotas, sem renda → {AC, LI_EP, LI_PCD}")]
+    public void PcdOptaPelasCotasSemRenda() =>
         Derivar(Fatos(
-            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_RENDA", Nao)))
-            .Should().Equal("AC", "LI_PCD");
+            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_RENDA", Nao)))
+            .Should().Equal("AC", "LI_EP", "LI_PCD");
 
-    [Fact(DisplayName = "PcD opt-in, escola pública, +renda → {AC, LI_PCD, LB_PCD}")]
-    public void PcdEscolaPublicaComRenda() =>
+    [Fact(DisplayName = "PcD opta pelas cotas, +renda → {AC, LI_EP, LB_EP, LI_PCD, LB_PCD}")]
+    public void PcdOptaPelasCotasComRenda() =>
         Derivar(Fatos(
-            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_RENDA", Sim)))
-            .Should().Equal("AC", "LB_PCD", "LI_PCD");
+            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_RENDA", Sim)))
+            .Should().Equal("AC", "LB_EP", "LB_PCD", "LI_EP", "LI_PCD");
+
+    /// <summary>
+    /// O egresso de escola pública que recusa as cotas fica, como o de escola privada,
+    /// com a ação afirmativa (UNI-REQ-0142).
+    /// </summary>
+    [Fact(DisplayName = "PcD de escola pública que recusa as cotas → {AC, AC_PCD}")]
+    public void PcdEscolaPublicaRecusaCotas() =>
+        Derivar(Fatos(
+            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Nao), ("CONCORRER_RENDA", Nao)))
+            .Should().Equal("AC", "AC_PCD");
 
     [Fact(DisplayName = "Escola pública + CONCORRER_EP, sem renda → {AC, LI_EP}")]
     public void EscolaPublicaEpSemRenda() =>
@@ -111,17 +121,17 @@ public sealed class MotorDerivacaoModalidadeTests
             ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Nao), ("CONCORRER_RENDA", Nao)))
             .Should().Equal("AC");
 
-    [Fact(DisplayName = "PPI + CONCORRER_PPI, escola pública, sem renda → {AC, LI_PPI}")]
+    [Fact(DisplayName = "PPI opta pelas cotas, sem renda → {AC, LI_EP, LI_PPI}")]
     public void PpiEscolaPublicaSemRenda() =>
         Derivar(Fatos(
-            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_RENDA", Nao)))
-            .Should().Equal("AC", "LI_PPI");
+            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_RENDA", Nao)))
+            .Should().Equal("AC", "LI_EP", "LI_PPI");
 
-    [Fact(DisplayName = "PPI + CONCORRER_PPI, escola pública, +renda → {AC, LI_PPI, LB_PPI}")]
+    [Fact(DisplayName = "PPI opta pelas cotas, +renda → {AC, LI_EP, LB_EP, LI_PPI, LB_PPI}")]
     public void PpiEscolaPublicaComRenda() =>
         Derivar(Fatos(
-            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_RENDA", Sim)))
-            .Should().Equal("AC", "LB_PPI", "LI_PPI");
+            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_RENDA", Sim)))
+            .Should().Equal("AC", "LB_EP", "LB_PPI", "LI_EP", "LI_PPI");
 
     [Fact(DisplayName = "PPI-elegível opta por EP em vez de PPI → {AC, LI_EP}")]
     public void PpiOptOutEpOptIn() =>
@@ -129,17 +139,17 @@ public sealed class MotorDerivacaoModalidadeTests
             ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_PPI", Nao), ("CONCORRER_EP", Sim), ("CONCORRER_RENDA", Nao)))
             .Should().Equal("AC", "LI_EP");
 
-    [Fact(DisplayName = "Quilombola + CONCORRER_Q, escola pública, sem renda → {AC, LI_Q}")]
+    [Fact(DisplayName = "Quilombola opta pelas cotas, sem renda → {AC, LI_EP, LI_Q}")]
     public void QuilombolaEscolaPublicaSemRenda() =>
         Derivar(Fatos(
-            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Nao)))
-            .Should().Equal("AC", "LI_Q");
+            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Nao)))
+            .Should().Equal("AC", "LI_EP", "LI_Q");
 
-    [Fact(DisplayName = "Quilombola + CONCORRER_Q, escola pública, +renda → {AC, LI_Q, LB_Q}")]
+    [Fact(DisplayName = "Quilombola opta pelas cotas, +renda → {AC, LI_EP, LB_EP, LI_Q, LB_Q}")]
     public void QuilombolaEscolaPublicaComRenda() =>
         Derivar(Fatos(
-            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Sim)))
-            .Should().Equal("AC", "LB_Q", "LI_Q");
+            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Sim)))
+            .Should().Equal("AC", "LB_EP", "LB_Q", "LI_EP", "LI_Q");
 
     [Fact(DisplayName = "Quilombola-elegível opta por EP em vez de Q → {AC, LI_EP}")]
     public void QuilombolaOptOutEpOptIn() =>
@@ -153,40 +163,79 @@ public sealed class MotorDerivacaoModalidadeTests
             ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_Q", NaoAplicavel), ("CONCORRER_EP", Sim), ("CONCORRER_RENDA", Nao)))
             .Should().Equal("AC", "LI_EP");
 
-    [Fact(DisplayName = "PPI + Q simultâneos (preto/pardo quilombola), escola pública, sem renda → {AC, LI_PPI, LI_Q}")]
+    [Fact(DisplayName = "PPI + Q simultâneos (preto/pardo quilombola), opta pelas cotas, sem renda → {AC, LI_EP, LI_PPI, LI_Q}")]
     public void PpiEQSimultaneos() =>
         Derivar(Fatos(
-            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Nao)))
-            .Should().Equal("AC", "LI_PPI", "LI_Q");
+            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Nao)))
+            .Should().Equal("AC", "LI_EP", "LI_PPI", "LI_Q");
 
-    [Fact(DisplayName = "PPI + Q simultâneos, +renda → {AC, LI_PPI, LB_PPI, LI_Q, LB_Q}")]
+    [Fact(DisplayName = "PPI + Q simultâneos, opta pelas cotas, +renda → as cotas de EP, PPI e Q, mais AC")]
     public void PpiEQSimultaneosComRenda() =>
         Derivar(Fatos(
-            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Sim)))
-            .Should().Equal("AC", "LB_PPI", "LB_Q", "LI_PPI", "LI_Q");
+            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_Q", Sim), ("CONCORRER_RENDA", Sim)))
+            .Should().Equal("AC", "LB_EP", "LB_PPI", "LB_Q", "LI_EP", "LI_PPI", "LI_Q");
 
     /// <summary>
-    /// O que separa as duas vagas de PcD é a origem escolar, e só ela: mesma
-    /// deficiência, mesmo opt-in, modalidades distintas. `AC_PCD` alcança quem
-    /// a Lei de Cotas não alcança, e não havendo ocupação a vaga retorna a `AC`
-    /// — somar as duas ao mesmo candidato tiraria vaga de quem só tem uma via.
+    /// O que separa as duas vagas de PcD é a opção pelas cotas da lei, e só ela:
+    /// mesma deficiência, mesma escola pública, modalidades distintas (UNI-REQ-0142).
     /// </summary>
-    [Fact(DisplayName = "A origem escolar decide entre AC_PCD e LI_PCD, e nunca dá as duas")]
-    public void OrigemEscolarSeparaAsDuasVagasDePcd()
+    [Fact(DisplayName = "A opção pelas cotas decide entre AC_PCD e LI_PCD, e nunca dá as duas")]
+    public void OpcaoPelasCotasSeparaAsDuasVagasDePcd()
     {
-        IReadOnlyCollection<string> escolaPrivada = Derivar(Fatos(
-            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Nao)));
-        IReadOnlyCollection<string> escolaPublica = Derivar(Fatos(
-            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim)));
+        IReadOnlyCollection<string> optou = Derivar(Fatos(
+            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_RENDA", Nao)));
+        IReadOnlyCollection<string> recusou = Derivar(Fatos(
+            ("CONCORRER_PCD", Sim), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Nao), ("CONCORRER_RENDA", Nao)));
 
-        escolaPrivada.Should().Contain("AC_PCD").And.NotContain("LI_PCD");
-        escolaPublica.Should().Contain("LI_PCD").And.NotContain("AC_PCD");
+        optou.Should().Contain("LI_PCD").And.NotContain("AC_PCD");
+        recusou.Should().Contain("AC_PCD").And.NotContain("LI_PCD");
+    }
+
+    /// <summary>
+    /// Nenhuma combinação de respostas — inclusive as que a coleta não produziria —
+    /// dá ao mesmo candidato `AC_PCD` e uma cota da lei.
+    /// </summary>
+    [Fact(DisplayName = "Nenhuma combinação de respostas deriva AC_PCD junto de cota da lei")]
+    public void AcPcdNuncaConviveComCota()
+    {
+        FatoResolvido[] estados = [Sim, Nao, NaoAplicavel];
+        string[] dependencias =
+            ["CONCORRER_PCD", "EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA"];
+        int combinacoes = (int)Math.Pow(estados.Length, dependencias.Length);
+
+        for (int n = 0; n < combinacoes; n++)
+        {
+            Dictionary<string, FatoResolvido> fatos = new(StringComparer.Ordinal);
+            int resto = n;
+            foreach (string dependencia in dependencias)
+            {
+                fatos[dependencia] = estados[resto % estados.Length];
+                resto /= estados.Length;
+            }
+
+            IReadOnlyCollection<string> derivado = MotorDerivacao.Derivar(Ruleset, fatos).Valores;
+            bool temCota = derivado.Any(static codigo => codigo.StartsWith("LI_", StringComparison.Ordinal)
+                || codigo.StartsWith("LB_", StringComparison.Ordinal));
+
+            (derivado.Contains("AC_PCD") && temCota).Should().BeFalse(
+                $"a combinação {n} derivou {string.Join(", ", derivado)}");
+        }
+    }
+
+    [Fact(DisplayName = "Sem cotas da lei ofertadas, a matriz dá AC_PCD a quem se declara PcD")]
+    public void MatrizSemCotasDaLei_AcPcdPeloOptInDePcd()
+    {
+        RegrasDerivacaoFato semCotas = RegrasDerivacaoModalidadeLei12711.ConstruirSemCotasDaLei();
+
+        MotorDerivacao.Derivar(semCotas, new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = Sim })
+            .Valores.Should().BeEquivalentTo(["AC", "AC_PCD"]);
+        MotorDerivacao.Derivar(semCotas, new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = Nao })
+            .Valores.Should().BeEquivalentTo(["AC"]);
     }
 
     /// <summary>
     /// Todas as vias da Lei ao mesmo tempo. `AC_PCD` fica de fora porque este
-    /// candidato vem de escola pública: a vaga institucional é de quem não tem
-    /// acesso às cotas.
+    /// candidato optou pelas cotas.
     /// </summary>
     [Fact(DisplayName = "PcD + PPI + EP, escola pública, +renda → as seis modalidades da Lei, mais AC")]
     public void PcdPpiEp_UniaoCompleta() =>
@@ -215,11 +264,12 @@ public sealed class MotorDerivacaoModalidadeTests
     public void DependenteResolvidoComTipoIncoerente_DerivadoIndeterminado()
     {
         // CONCORRER_PPI resolvido como STRING em vez de booleano: passa o gate (estado Resolvido),
-        // mas o predicado da regra R6 avalia indeterminado (tipo incoerente com o operador). O motor
+        // mas o predicado de LI_PPI avalia indeterminado (tipo incoerente com o operador). O motor
         // não pode tratar a regra como inativa e devolver {AC} resolvido — seria decidir sobre dado
         // corrompido. Deve propagar indeterminado.
         Dictionary<string, FatoResolvido> fatos = Fatos(
             ("EGRESSO_ESCOLA_PUBLICA", Sim),
+            ("CONCORRER_EP", Sim),
             ("CONCORRER_PPI", FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("SIM"))),
             ("CONCORRER_RENDA", Nao));
 
@@ -249,9 +299,9 @@ public sealed class MotorDerivacaoModalidadeTests
         // Renda não-aplicável é informação resolvida: não bloqueia o derivado; só faz as LB_* não
         // contribuírem (a cláusula com CONCORRER_RENDA colapsa falso pelo átomo não-aplicável).
         string[] derivado = Derivar(Fatos(
-            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_RENDA", NaoAplicavel)));
+            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("CONCORRER_EP", Sim), ("CONCORRER_PPI", Sim), ("CONCORRER_RENDA", NaoAplicavel)));
 
-        derivado.Should().Equal("AC", "LI_PPI");
+        derivado.Should().Equal("AC", "LI_EP", "LI_PPI");
         derivado.Should().NotContain("LB_PPI");
     }
 

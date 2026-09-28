@@ -7,23 +7,21 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Constrói a regra de derivação de <c>MODALIDADE</c> do ramo Lei 12.711/2012 (red. Lei 14.723/2023)
-/// — a matriz R0–R9 (Story #927). É a configuração normativa desse ramo, reutilizável pelo cadastro e
-/// pelos testes; um processo do ramo institucional traz a sua própria.
+/// — a matriz R0–R9 (Story #927, UNI-REQ-0076). É a configuração normativa desse ramo, reutilizável
+/// pelo cadastro e pelos testes; um processo do ramo institucional traz a sua própria.
 /// </summary>
 /// <remarks>
 /// <para>
 /// R0 é a âncora incondicional: todo candidato concorre à ampla concorrência (concorrência dupla da
-/// Lei 14.723/2023). As demais contribuem uma cota quando o candidato optou por concorrer a ela e é
-/// elegível — a elegibilidade e o gate de escola pública são garantidos pela pré-condição do opt-in
-/// na coleta, mas cada regra ainda exige explicitamente <c>EGRESSO_ESCOLA_PUBLICA</c> das subcotas,
-/// para que o motor recuse entrada inconsistente sem depender do grafo de coleta.
+/// Lei 14.723/2023). Optar pelas cotas da lei é ser egresso de escola pública e optar por concorrer
+/// às vagas de escola pública, e toda cota exige essa opção — cada regra repete os dois átomos, para
+/// que o motor recuse entrada inconsistente sem depender do grafo de coleta. <c>LB ⊂ LI</c> é
+/// estrutural: cada regra <c>LB_*</c> repete os átomos da <c>LI_*</c> irmã mais o átomo de renda.
 /// </para>
 /// <para>
-/// <c>LB ⊂ LI</c> é estrutural: cada regra <c>LB_*</c> repete os átomos da <c>LI_*</c> irmã mais o
-/// átomo de renda. A modalidade de pessoa com deficiência fora da reserva federal é <c>AC_PCD</c> —
-/// nunca o rótulo <c>V</c> — e é a única regra com átomo negativo: ela existe para o candidato PcD
-/// que a Lei de Cotas não alcança, o egresso de escola privada. Quem vem de escola pública concorre
-/// por <c>LI_PCD</c>, e <c>LB_PCD</c> quando elegível à renda (UNI-REQ-0076).
+/// <c>AC_PCD</c> é ação afirmativa (UNI-REQ-0141) e não convive com cota da lei (UNI-REQ-0142): vale
+/// para a pessoa com deficiência que não optou pelas cotas — por não ser egressa de escola pública ou
+/// por tê-las recusado. As duas cláusulas dela contradizem, átomo a átomo, as das cotas.
 /// </para>
 /// </remarks>
 public static class RegrasDerivacaoModalidadeLei12711
@@ -44,18 +42,23 @@ public static class RegrasDerivacaoModalidadeLei12711
     /// <summary>Constrói a matriz R0–R9 como regra de derivação de MODALIDADE.</summary>
     public static RegrasDerivacaoFato Construir()
     {
+        (string, bool) optouPelasCotas1 = (EgressoEscolaPublica, true);
+        (string, bool) optouPelasCotas2 = (ConcorrerEp, true);
+
         List<RegraDerivacao> regras =
         [
             Ancora("AC"),
-            Regra("AC_PCD", (ConcorrerPcd, true), (EgressoEscolaPublica, false)),
-            Regra("LI_PCD", (ConcorrerPcd, true), (EgressoEscolaPublica, true)),
-            Regra("LB_PCD", (ConcorrerPcd, true), (EgressoEscolaPublica, true), (ConcorrerRenda, true)),
-            Regra("LI_EP", (EgressoEscolaPublica, true), (ConcorrerEp, true)),
-            Regra("LB_EP", (EgressoEscolaPublica, true), (ConcorrerEp, true), (ConcorrerRenda, true)),
-            Regra("LI_PPI", (EgressoEscolaPublica, true), (ConcorrerPpi, true)),
-            Regra("LB_PPI", (EgressoEscolaPublica, true), (ConcorrerPpi, true), (ConcorrerRenda, true)),
-            Regra("LI_Q", (EgressoEscolaPublica, true), (ConcorrerQ, true)),
-            Regra("LB_Q", (EgressoEscolaPublica, true), (ConcorrerQ, true), (ConcorrerRenda, true)),
+            Regra("AC_PCD",
+                [(ConcorrerPcd, true), (EgressoEscolaPublica, false)],
+                [(ConcorrerPcd, true), (ConcorrerEp, false)]),
+            Regra("LI_PCD", [optouPelasCotas1, optouPelasCotas2, (ConcorrerPcd, true)]),
+            Regra("LB_PCD", [optouPelasCotas1, optouPelasCotas2, (ConcorrerPcd, true), (ConcorrerRenda, true)]),
+            Regra("LI_EP", [optouPelasCotas1, optouPelasCotas2]),
+            Regra("LB_EP", [optouPelasCotas1, optouPelasCotas2, (ConcorrerRenda, true)]),
+            Regra("LI_PPI", [optouPelasCotas1, optouPelasCotas2, (ConcorrerPpi, true)]),
+            Regra("LB_PPI", [optouPelasCotas1, optouPelasCotas2, (ConcorrerPpi, true), (ConcorrerRenda, true)]),
+            Regra("LI_Q", [optouPelasCotas1, optouPelasCotas2, (ConcorrerQ, true)]),
+            Regra("LB_Q", [optouPelasCotas1, optouPelasCotas2, (ConcorrerQ, true), (ConcorrerRenda, true)]),
         ];
 
         string[] dependencias =
@@ -64,15 +67,31 @@ public static class RegrasDerivacaoModalidadeLei12711
         return RegrasDerivacaoFato.Criar(CodigoFato, regras, dependencias, DominioCanonico).Value!;
     }
 
+    /// <summary>
+    /// A proposta para o processo que não oferta nenhuma cota da lei — ampla concorrência e a reserva
+    /// de pessoa com deficiência. Escola pública e opção pelas cotas não são coletadas ali, então
+    /// <c>AC_PCD</c> depende só do opt-in por deficiência (UNI-REQ-0076).
+    /// </summary>
+    public static RegrasDerivacaoFato ConstruirSemCotasDaLei()
+    {
+        List<RegraDerivacao> regras =
+        [
+            Ancora("AC"),
+            Regra("AC_PCD", [(ConcorrerPcd, true)]),
+        ];
+
+        return RegrasDerivacaoFato.Criar(CodigoFato, regras, [ConcorrerPcd], ["AC", "AC_PCD"]).Value!;
+    }
+
     private static RegraDerivacao Ancora(string contribui) =>
         RegraDerivacao.Criar(PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, contribui).Value!;
 
-    private static RegraDerivacao Regra(string contribui, params (string Fato, bool Valor)[] atomos)
+    /// <summary>Cada lista de átomos é uma cláusula (E lógico); as cláusulas se somam em OU.</summary>
+    private static RegraDerivacao Regra(string contribui, params (string Fato, bool Valor)[][] clausulas)
     {
-        // Todos os átomos de uma regra vivem na MESMA cláusula (E lógico) — a ordinal 1.
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [.. atomos
-            .Select(a => (Clausula: 1, Condicao: CondicaoDnf.Criar(
-                a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))];
+        List<(int Clausula, CondicaoDnf Condicao)> linhas = [.. clausulas
+            .SelectMany((atomos, indice) => atomos.Select(a => (Clausula: indice + 1, Condicao: CondicaoDnf.Criar(
+                a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)))];
 
         return RegraDerivacao.Criar(PredicadoDnf.CriarDeCondicoesAgrupadas(linhas).Value!, contribui).Value!;
     }

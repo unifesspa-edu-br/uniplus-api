@@ -110,7 +110,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
                 .Select(c => c.GetProperty("fato").GetString()!)
                 .Distinct(),
         ];
-        citados.Should().BeEquivalentTo(["EGRESSO_ESCOLA_PUBLICA", "CONCORRER_PPI", "CONCORRER_RENDA"]);
+        citados.Should().BeEquivalentTo(["EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP", "CONCORRER_PPI", "CONCORRER_RENDA"]);
 
         // Sem coletar o que as regras citam, o próprio PUT recusa a matriz que acabou de ser
         // proposta — a proposta é coerente com o domínio, não com o estado do processo.
@@ -121,6 +121,49 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
 
         HttpResponseMessage comColeta = await ctx.PutRegrasAsync(doc.RootElement);
         comColeta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact(DisplayName = "Com cota da lei ofertada, AC_PCD vem para quem não optou pelas cotas, e a proposta é gravável")]
+    public async Task Get_ComCotaEAcPcd_AcPcdPelaRecusaDasCotas()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(Get_ComCotaEAcPcd_AcPcdPelaRecusaDasCotas));
+        await ctx.OfertarAsync(AmplaConcorrencia(28), Cota(), AcaoAfirmativaPcd());
+
+        using JsonDocument doc = await ctx.ObterNormativasAsync();
+        JsonElement acPcd = doc.RootElement[0].GetProperty("regras").EnumerateArray()
+            .Single(r => r.GetProperty("contribui").GetString() == "AC_PCD");
+
+        string[] clausulas =
+        [
+            .. acPcd.GetProperty("quando").EnumerateArray().Select(clausula => string.Join(" E ",
+                clausula.EnumerateArray()
+                    .Select(c => $"{c.GetProperty("fato").GetString()}={c.GetProperty("valor").GetRawText()}")
+                    .Order(StringComparer.Ordinal))),
+        ];
+        clausulas.Should().Equal(
+            "CONCORRER_PCD=true E EGRESSO_ESCOLA_PUBLICA=false",
+            "CONCORRER_EP=false E CONCORRER_PCD=true");
+
+        await ctx.ColetarAsync(["CONCORRER_PCD", "EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP", "CONCORRER_PPI", "CONCORRER_RENDA"]);
+        HttpResponseMessage gravacao = await ctx.PutRegrasAsync(doc.RootElement);
+        gravacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact(DisplayName = "Sem cota da lei ofertada, AC_PCD depende só da declaração de deficiência")]
+    public async Task Get_SemCotaComAcPcd_AcPcdSoPelaDeficiencia()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(Get_SemCotaComAcPcd_AcPcdSoPelaDeficiencia));
+        await ctx.OfertarAsync(AmplaConcorrencia(38), AcaoAfirmativaPcd());
+
+        using JsonDocument doc = await ctx.ObterNormativasAsync();
+        JsonElement regras = doc.RootElement[0].GetProperty("regras");
+
+        regras.EnumerateArray().Select(r => r.GetProperty("contribui").GetString())
+            .Should().Equal("AC", "AC_PCD");
+        JsonElement quando = regras[1].GetProperty("quando");
+        quando.GetArrayLength().Should().Be(1);
+        quando[0].EnumerateArray().Select(c => c.GetProperty("fato").GetString())
+            .Should().Equal("CONCORRER_PCD");
     }
 
     [Fact(DisplayName = "Processo inexistente não tem matriz a propor")]
@@ -149,7 +192,10 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
         }
 
         /** Acrescenta ao quadro de vagas uma cota da Lei de Cotas, ao lado da ampla concorrência. */
-        public async Task OfertarCotaAsync()
+        public Task OfertarCotaAsync() => OfertarAsync(AmplaConcorrencia(), Cota());
+
+        /** Troca o quadro de vagas pelo das modalidades informadas. */
+        public async Task OfertarAsync(params ModalidadeSelecionada[] modalidades)
         {
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
             SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
@@ -161,8 +207,8 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
 
             // O quadro é montado do zero, e não acrescentando à coleção carregada: reaproveitar
             // as modalidades já rastreadas pelo contexto as levaria para uma segunda
-            // configuração, e o que interessa aqui é só o par ampla concorrência + cota.
-            Result<ConfiguracaoDistribuicaoVagas> comCota = ConfiguracaoDistribuicaoVagas.Criar(
+            // configuração, e o que interessa aqui é só o quadro informado.
+            Result<ConfiguracaoDistribuicaoVagas> quadro = ConfiguracaoDistribuicaoVagas.Criar(
                 ofertaCursoOrigemId: atual.OfertaCursoOrigemId,
                 voBase: atual.VoBase,
                 pr: atual.Pr,
@@ -173,10 +219,10 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
                     RegraDistribuicaoVagasCodigo.Institucional, "v1", HashDeTeste).Value!,
                 regraAjuste: null,
                 referenciaDemografica: null,
-                modalidades: [AmplaConcorrencia(), Cota()]);
-            comCota.IsSuccess.Should().BeTrue(comCota.Error?.Message);
+                modalidades: modalidades);
+            quadro.IsSuccess.Should().BeTrue(quadro.Error?.Message);
 
-            processo.DefinirDistribuicaoVagas([comCota.Value!], PrecondicaoIfMatch.Ausente)
+            processo.DefinirDistribuicaoVagas([quadro.Value!], PrecondicaoIfMatch.Ausente)
                 .IsSuccess.Should().BeTrue();
             await db.SaveChangesAsync();
         }
@@ -261,7 +307,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
     }
 
     /** A ampla concorrência, que toda distribuição do ramo da Lei de Cotas contém. */
-    private static ModalidadeSelecionada AmplaConcorrencia() =>
+    private static ModalidadeSelecionada AmplaConcorrencia(int quantidade = 30) =>
         ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
             codigo: "AC",
@@ -276,7 +322,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
             criteriosCumulativos: [],
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 30).Value!;
+            quantidadeDeclarada: quantidade).Value!;
 
     /** A cota de pretos, pardos e indígenas de baixa renda egressos de escola pública. */
     private static ModalidadeSelecionada Cota() =>
@@ -297,6 +343,24 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
             acaoQuandoIndeferido: null,
             baseLegal: "Lei 12.711/2012",
             quantidadeDeclarada: 10).Value!;
+
+    /** A ação afirmativa de pessoa com deficiência, retirando vagas da ampla concorrência. */
+    private static ModalidadeSelecionada AcaoAfirmativaPcd() =>
+        ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(),
+            codigo: "AC_PCD",
+            descricao: "Pessoa com deficiência",
+            naturezaLegal: NaturezaLegalModalidade.AcaoAfirmativa,
+            composicaoVagas: ComposicaoVagasModalidade.RetiraDe,
+            composicaoOrigemCodigo: "AC",
+            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null,
+            remanejamentoPar: null,
+            remanejamentoFallback: null,
+            criteriosCumulativos: [],
+            acaoQuandoIndeferido: null,
+            baseLegal: "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 2).Value!;
 
     private static void Autenticar(HttpRequestMessage request)
     {
