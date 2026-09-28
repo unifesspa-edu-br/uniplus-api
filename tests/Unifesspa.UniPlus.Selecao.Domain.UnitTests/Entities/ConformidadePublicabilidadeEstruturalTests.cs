@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -723,6 +724,108 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio);
+    }
+
+    /// <summary>As oito cotas da lei, a ampla e a ação afirmativa de PcD retirando duas vagas da ampla.</summary>
+    private static ProcessoSeletivo ProcessoComCotaEAcaoAfirmativa()
+    {
+        ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
+            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal", 2).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjusteArt11(), Demografica(),
+            [.. AsOitoFederaisMaisAc(), acPcd]).Value!;
+
+        ProcessoSeletivo processo = ProcessoConforme([oferta]);
+        processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    [Fact(DisplayName = "Pré-canonicalização: regras que derivam cota e ação afirmativa para o mesmo candidato — item vermelho e Publicar recusa nomeando o par")]
+    public void PreCanon_CotaEAcaoAfirmativaDerivaveisJuntas()
+    {
+        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
+        ConfiguracaoDerivacaoFato configuracao = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+        [
+            RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
+            RegraDerivacaoConfigurada.Criar(1, "AC_PCD", condicoes: null).Value!,
+            RegraDerivacaoConfigurada.Criar(2, "LI_PCD", condicoes: null).Value!,
+        ]).Value!;
+        processo.DefinirRegrasDerivacao([configuracao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        SoEstesItensVermelhos(processo, "derivacao_cota_e_acao_afirmativa_juntas");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CotaEAcaoAfirmativaDerivaveisJuntas");
+        resultado.Error.Message.Should().Contain("\"LI_PCD\"").And.Contain("\"AC_PCD\"");
+    }
+
+    private static bool ItemDaExclusividadeOk(ProcessoSeletivo processo) =>
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario)
+            .Single(i => i.Codigo == "derivacao_cota_e_acao_afirmativa_juntas").Ok;
+
+    private static ConfiguracaoDerivacaoFato CotaEAcaoAfirmativaPor(string fato, object valorDaCota, object valorDaAcaoAfirmativa) =>
+        ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+        [
+            RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
+            RegraDerivacaoConfigurada.Criar(1, "LI_PCD",
+                [CondicaoRegraDerivacao.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(valorDaCota)).Value!]).Value!,
+            RegraDerivacaoConfigurada.Criar(2, "AC_PCD",
+                [CondicaoRegraDerivacao.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(valorDaAcaoAfirmativa)).Value!]).Value!,
+        ]).Value!;
+
+    /// <summary>
+    /// Sobre fato de seleção múltipla, <c>IGUAL</c> é pertinência: o candidato que marca os dois
+    /// valores satisfaz as duas regras, então valores diferentes não as tornam excludentes.
+    /// </summary>
+    [Fact(DisplayName = "Pré-canonicalização: IGUAL a valores diferentes em fato de seleção múltipla não separa cota de ação afirmativa")]
+    public void PreCanon_FatoMultivalorado_NaoProvaExclusao()
+    {
+        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
+        FatoColetado condicao = FatoColetado.Criar(
+            "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
+            TipoRenderizacao.SelecaoMultipla, obrigatorio: false, precondicoes: null).Value!;
+        processo.DefinirFatosColetados([condicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao(
+            [CotaEAcaoAfirmativaPor("CONDICAO_ATENDIMENTO", "A", "B")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ItemDaExclusividadeOk(processo).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Pré-canonicalização: 1 e 1.0 são o mesmo número e não separam cota de ação afirmativa")]
+    public void PreCanon_NumeroEquivalente_NaoProvaExclusao()
+    {
+        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
+        processo.DefinirRegrasDerivacao(
+            [CotaEAcaoAfirmativaPor("NOTA", 1, 1.0m)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ItemDaExclusividadeOk(processo).Should().BeFalse();
+    }
+
+    /// <summary>
+    /// A matriz normativa passa pela recusa: cada cláusula de <c>AC_PCD</c> contradiz, num fato,
+    /// a opção pelas cotas que toda cota exige.
+    /// </summary>
+    [Fact(DisplayName = "Pré-canonicalização: a matriz normativa, com cota e AC_PCD, não acende o item")]
+    public void PreCanon_MatrizNormativa_ItemOk()
+    {
+        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
+        List<RegraDerivacaoConfigurada> regras =
+        [
+            .. RegrasDerivacaoModalidadeLei12711.Construir().Regras.Select((regra, ordem) =>
+                RegraDerivacaoConfigurada.Criar(
+                    ordem,
+                    regra.Contribui,
+                    regra.EhAncora
+                        ? null
+                        : [.. regra.Quando.Clausulas.SelectMany((clausula, indice) => clausula.Condicoes.Select(c =>
+                            CondicaoRegraDerivacao.Criar(indice + 1, c.Fato, c.Operador, c.Valor).Value!))]).Value!),
+        ];
+        ConfiguracaoDerivacaoFato configuracao = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", regras).Value!;
+        processo.DefinirRegrasDerivacao([configuracao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ItemDaExclusividadeOk(processo).Should().BeTrue();
     }
 
     [Fact(DisplayName = "Pré-canonicalização: ciclo entre duas configurações de derivação — item vermelho e Publicar recusa com GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo")]

@@ -321,6 +321,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "derivacao_fatos_citados_inexistentes",
                 "fato_coletavel_sem_valores_ofertados",
                 "derivacao_dominio_de_contribuicao_invalido",
+                "derivacao_cota_e_acao_afirmativa_juntas",
                 "grafo_dependencia_com_ciclo",
                 "criterios_desempate_em_excesso",
                 "desempate_area_enem_areas_mal_formadas",

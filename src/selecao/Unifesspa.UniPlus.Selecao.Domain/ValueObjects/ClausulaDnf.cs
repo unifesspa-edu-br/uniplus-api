@@ -194,7 +194,7 @@ public sealed record ClausulaDnf
     /// kinds distintos no <c>System.Text.Json</c>, mas isso é a forma normal de um booleano
     /// divergir, não uma incoerência de tipo.
     /// </summary>
-    private static Ternario CompararIgualdade(JsonElement candidato, JsonElement configurado)
+    internal static Ternario CompararIgualdade(JsonElement candidato, JsonElement configurado)
     {
         bool candidatoBooleano = candidato.ValueKind is JsonValueKind.True or JsonValueKind.False;
         bool configuradoBooleano = configurado.ValueKind is JsonValueKind.True or JsonValueKind.False;
