@@ -124,10 +124,13 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
                 "Somente um documento pendente pode ser confirmado."));
         }
 
-        // A reivindicação condicional garante exclusão mútua no banco, mas a guarda do
-        // agregado continua como defesa contra uma entidade rastreada que esteja fora de
-        // sincronia com a reivindicação. Se essa defesa falhar depois do UPDATE, não há
-        // resposta de negócio segura: lançar é necessário para reverter a transação.
+        // Quem garante a exclusão mútua é a reivindicação condicional no banco, não
+        // a guarda de Confirmar(...). Hoje documento.Status continua Pendente em
+        // memória — o ExecuteUpdate da reivindicação não sincroniza o rastreamento —,
+        // então a guarda não dispara. Se a entidade passar a ser recarregada depois
+        // da reivindicação, a guarda recusará; nesse ponto o UPDATE já foi emitido e
+        // não há resposta de negócio segura: lançar força a reversão da transação em
+        // vez de confirmar Status=Confirmado sem hash, tamanho e cópia selada.
         Result confirmacao = documento.Confirmar(conteudo.LongLength, hashSha256, clock);
         if (confirmacao.IsFailure)
         {

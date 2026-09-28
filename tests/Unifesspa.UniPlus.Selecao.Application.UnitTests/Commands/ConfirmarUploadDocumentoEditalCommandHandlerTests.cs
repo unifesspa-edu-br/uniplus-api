@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Security.Cryptography;
 
 using AwesomeAssertions;
@@ -13,7 +12,6 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
@@ -212,10 +210,10 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
-                // Simula o contexto sendo sincronizado após o ExecuteUpdateAsync.
-                typeof(DocumentoEdital)
-                    .GetProperty(nameof(DocumentoEdital.Status), BindingFlags.Public | BindingFlags.Instance)!
-                    .SetValue(documento, StatusDocumentoEdital.Confirmado);
+                // Simula a entidade rastreada sincronizada com o UPDATE da
+                // reivindicação: em memória ela já deixou de ser pendente.
+                documento.Confirmar(ConteudoPdfValido.Length, new string('0', 64), TimeProvider.System)
+                    .IsSuccess.Should().BeTrue();
                 return true;
             });
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
