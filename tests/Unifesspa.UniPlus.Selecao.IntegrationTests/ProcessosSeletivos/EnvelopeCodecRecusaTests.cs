@@ -695,9 +695,9 @@ public sealed class EnvelopeCodecRecusaTests
     // Uma cota reservada da Lei 12.711 que foge da cascata legal (INV-12).
     [InlineData("CotaReservada", "Nenhuma")]
     [InlineData("CotaReservada", "DestinoUnico")]
-    // Uma suplementar que não remaneja para lugar nenhum.
-    [InlineData("Suplementar", "Nenhuma")]
-    [InlineData("OutraModalidade", "SegueCascata")]
+    // Uma ação afirmativa que não remaneja para lugar nenhum, ou que segue a cascata da lei.
+    [InlineData("AcaoAfirmativa", "Nenhuma")]
+    [InlineData("AcaoAfirmativa", "SegueCascata")]
     public void NaturezaIncoerenteComRemanejamento_Recusa(string natureza, string remanejamento)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>

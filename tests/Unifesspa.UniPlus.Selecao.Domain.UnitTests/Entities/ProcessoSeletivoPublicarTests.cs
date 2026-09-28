@@ -640,9 +640,9 @@ public sealed class ProcessoSeletivoPublicarTests
             baseLegal: "Lei 12.711/2012",
             // Story #575: sob o regime federal (Lei 12.711), a quantidade de uma modalidade
             // DentroDoVr/ResidualDoVo é CALCULADA pela fórmula — informá-la é recusado
-            // (ConfiguracaoDistribuicaoVagas.QuantidadeCalculadaNaoInformavel). Só natureza
-            // Suplementar (regime institucional, quantidade fixada pelo edital) precisa do 10.
-            quantidadeDeclarada: naturezaLegal == NaturezaLegalModalidade.Suplementar ? 10 : null).Value!;
+            // (ConfiguracaoDistribuicaoVagas.QuantidadeCalculadaNaoInformavel). Só a ação
+            // afirmativa, cuja quantidade o edital fixa fora da fórmula, precisa do 10.
+            quantidadeDeclarada: naturezaLegal == NaturezaLegalModalidade.AcaoAfirmativa ? 10 : null).Value!;
 
     /// <summary>
     /// A matriz legal 8×7 completa, fallback AC (Story #575) — usada por
@@ -817,7 +817,7 @@ public sealed class ProcessoSeletivoPublicarTests
     public void Publicar_LaudoMedicoElimina_IncoerenteComAcaoDaModalidadeAlcancadaPorGatilho()
     {
         ModalidadeSelecionada suplementar = NovaModalidadeComAcao(
-            "PSIQ_INDIGENA", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, "PENDENCIA_REENVIO");
+            "PSIQ_INDIGENA", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, "PENDENCIA_REENVIO");
         ProcessoSeletivo processo = NovoProcessoComModalidade(suplementar);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(

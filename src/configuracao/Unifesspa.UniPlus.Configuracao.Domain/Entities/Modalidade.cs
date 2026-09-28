@@ -519,12 +519,11 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
                     ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
                     "Ampla concorrência não admite regra de remanejamento."));
 
-            case NaturezaLegal.Suplementar or NaturezaLegal.OutraModalidade
+            case NaturezaLegal.AcaoAfirmativa
                 when regra is not (Enums.RegraRemanejamento.DestinoUnico or Enums.RegraRemanejamento.Cruzado):
                 return new("regraRemanejamento", new DomainError(
                     ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
-                    "Modalidade suplementar ou de outra natureza exige regra de remanejamento "
-                    + "DESTINO_UNICO ou CRUZADO."));
+                    "Ação afirmativa exige regra de remanejamento DESTINO_UNICO ou CRUZADO."));
 
             default:
                 return null;

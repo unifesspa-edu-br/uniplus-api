@@ -130,22 +130,22 @@ public static class ModalidadeSeed
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(10), "AC_PCD", "Ampla Concorrência – Pessoa com Deficiência (V)",
-            NaturezaLegal.OutraModalidade, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
+            NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
             RegraRemanejamento.DestinoUnico, RemanejamentoArgs.Criar("AC", par: null, fallback: null),
             BaseLegalReservaPcdNaAmplaConcorrencia),
 
         new(SeedId(11), "PCD_PURO", "Pessoa com Deficiência — reserva sem as cotas da Lei 12.711",
-            NaturezaLegal.OutraModalidade, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
+            NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.RetiraDe, ComposicaoOrigem: "AC",
             RegraRemanejamento.DestinoUnico, RemanejamentoArgs.Criar("AC", par: null, fallback: null),
             BaseLegalReservaPcdSemCotasFederais),
 
         new(SeedId(12), "AC_I", "Vaga por acréscimo — candidato indígena (PSIQ)",
-            NaturezaLegal.Suplementar, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
+            NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
             RegraRemanejamento.Cruzado, RemanejamentoArgs.Criar(destino: null, par: "AC_Q", fallback: null),
             BaseLegalVagasPorAcrescimo),
 
         new(SeedId(13), "AC_Q", "Vaga por acréscimo — candidato quilombola (PSIQ)",
-            NaturezaLegal.Suplementar, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
+            NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
             RegraRemanejamento.Cruzado, RemanejamentoArgs.Criar(destino: null, par: "AC_I", fallback: null),
             BaseLegalVagasPorAcrescimo),
     ];

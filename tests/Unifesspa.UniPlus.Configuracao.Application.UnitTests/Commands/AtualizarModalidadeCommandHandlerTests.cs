@@ -59,7 +59,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, NaturezaLegal: "SUPLEMENTAR", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC");
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(
@@ -81,7 +81,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
             .Returns(false);
 
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, NaturezaLegal: "SUPLEMENTAR", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "XPTO");
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(

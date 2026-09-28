@@ -17,9 +17,10 @@ public enum NaturezaLegalModalidade
     /// <summary>Ampla concorrência (o residual do VO_base após as reservas).</summary>
     Ampla = 2,
 
-    /// <summary>Vaga suplementar institucional (soma ao total publicado, ex.: PSIQ).</summary>
-    Suplementar = 3,
-
-    /// <summary>Outra modalidade não coberta pela Lei 12.711 (ex.: PcD "V" retirada da AC).</summary>
-    OutraModalidade = 4,
+    /// <summary>
+    /// Ação afirmativa institucional, fora da Lei 12.711 — a PcD "V" retirada da AC e as
+    /// vagas por acréscimo do PSIQ. Não convive com cota da lei na mesma inscrição
+    /// (UNI-REQ-0142).
+    /// </summary>
+    AcaoAfirmativa = 3,
 }

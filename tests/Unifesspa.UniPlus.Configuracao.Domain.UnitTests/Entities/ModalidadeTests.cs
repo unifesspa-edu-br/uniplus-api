@@ -108,21 +108,21 @@ public sealed class ModalidadeTests
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
     }
 
-    [Fact(DisplayName = "Suplementar com SEGUE_CASCATA é incoerente (exige destino único ou cruzado)")]
-    public void Criar_SuplementarComCascata_Incoerente()
+    [Fact(DisplayName = "Ação afirmativa com SEGUE_CASCATA é incoerente (exige destino único ou cruzado)")]
+    public void Criar_AcaoAfirmativaComCascata_Incoerente()
     {
         Result<Modalidade> r = Criar(
-            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL", regra: "SEGUE_CASCATA");
+            natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL", regra: "SEGUE_CASCATA");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
     }
 
-    [Fact(DisplayName = "Contraprova: Suplementar com DESTINO_UNICO + destino é coerente")]
-    public void Criar_SuplementarComDestinoUnico_Coerente()
+    [Fact(DisplayName = "Contraprova: ação afirmativa com DESTINO_UNICO + destino é coerente")]
+    public void Criar_AcaoAfirmativaComDestinoUnico_Coerente()
     {
         Result<Modalidade> r = Criar(
-            codigo: "AC_I", natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+            codigo: "AC_I", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "DESTINO_UNICO", destino: "AC");
 
         r.IsSuccess.Should().BeTrue();
@@ -160,13 +160,13 @@ public sealed class ModalidadeTests
         {
             "origem" => Criar(codigo: "AC_PCD", composicao: "RETIRA_DE", origem: "AC_PCD"),
             "destino" => Criar(
-                codigo: "AC_I", natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+                codigo: "AC_I", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
                 regra: "DESTINO_UNICO", destino: "AC_I"),
             "par" => Criar(
-                codigo: "AC_I", natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+                codigo: "AC_I", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
                 regra: "CRUZADO", par: "AC_I"),
             _ => Criar(
-                codigo: "AC_I", natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+                codigo: "AC_I", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
                 regra: "CRUZADO", par: "AC_Q", fallback: "AC_I"),
         };
 
@@ -183,7 +183,7 @@ public sealed class ModalidadeTests
     {
         Result<Modalidade> resultado = Criar(
             codigo: "AC_I", descricao: new string('x', 500),
-            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+            natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "DESTINO_UNICO", destino: "AC_I");
 
         resultado.IsFailure.Should().BeTrue();
@@ -200,11 +200,11 @@ public sealed class ModalidadeTests
         // Código fora do catálogo legal fixo: as modalidades protegidas recusam qualquer
         // alteração estrutural antes de chegar às invariantes de coerência.
         Modalidade m = Criar(
-            codigo: "PSIQ_REGIONAL", natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+            codigo: "PSIQ_REGIONAL", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "CRUZADO", par: "AC_Q").Value!;
 
         Result resultado = m.Atualizar(
-            null, "OUTRA_MODALIDADE", "SUPLEMENTAR_AO_TOTAL", null, "CRUZADO",
+            null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "CRUZADO",
             null, "PSIQ_REGIONAL", null, null, null, null);
 
         resultado.IsFailure.Should().BeTrue("a recusa vale nos dois caminhos de escrita");
@@ -226,7 +226,7 @@ public sealed class ModalidadeTests
     public void Criar_DestinoUnicoSemDestino_Falha()
     {
         Result<Modalidade> r = Criar(
-            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL", regra: "DESTINO_UNICO");
+            natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL", regra: "DESTINO_UNICO");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio);
@@ -236,7 +236,7 @@ public sealed class ModalidadeTests
     public void Criar_CruzadoSemPar_Falha()
     {
         Result<Modalidade> r = Criar(
-            natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+            natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "CRUZADO", fallback: "AC");
 
         r.IsFailure.Should().BeTrue();
@@ -247,7 +247,7 @@ public sealed class ModalidadeTests
     public void Criar_CruzadoSemFallback_Aceita()
     {
         Modalidade m = Criar(
-            natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+            natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "CRUZADO", par: "AC_Q").Value!;
 
         m.RemanejamentoArgs.Par.Should().Be("AC_Q");
@@ -261,7 +261,7 @@ public sealed class ModalidadeTests
     public void Criar_CruzadoComParFallback_Aceita()
     {
         Modalidade m = Criar(
-            codigo: "AC_I", natureza: "OUTRA_MODALIDADE", composicao: "SUPLEMENTAR_AO_TOTAL",
+            codigo: "AC_I", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "CRUZADO", par: "AC", fallback: "LB_PPI").Value!;
 
         m.RemanejamentoArgs.Par.Should().Be("AC");
@@ -367,7 +367,7 @@ public sealed class ModalidadeTests
 
     /// <summary>Pessoa com deficiência na ampla concorrência: única fixa com argumento de remanejamento.</summary>
     private static Modalidade AcPcd() =>
-        Criar(codigo: "AC_PCD", natureza: "OUTRA_MODALIDADE", composicao: "RETIRA_DE",
+        Criar(codigo: "AC_PCD", natureza: "ACAO_AFIRMATIVA", composicao: "RETIRA_DE",
             origem: "AC", regra: "DESTINO_UNICO", destino: "AC").Value!;
 
     [Fact(DisplayName = "Legal fixa recusa alteração de natureza")]
@@ -477,7 +477,7 @@ public sealed class ModalidadeTests
         Modalidade m = AcPcd();
 
         Result r = m.Atualizar(
-            descricao: null, naturezaLegal: "OUTRA_MODALIDADE", composicaoVagas: "RETIRA_DE",
+            descricao: null, naturezaLegal: "ACAO_AFIRMATIVA", composicaoVagas: "RETIRA_DE",
             composicaoOrigem: "AC", regraRemanejamento: "DESTINO_UNICO",
             remanejamentoDestino: destino, remanejamentoPar: par, remanejamentoFallback: fallback,
             criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
@@ -518,13 +518,13 @@ public sealed class ModalidadeTests
             composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA").Value!;
 
         Result r = m.Atualizar(
-            descricao: null, naturezaLegal: "SUPLEMENTAR", composicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            descricao: null, naturezaLegal: "ACAO_AFIRMATIVA", composicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             composicaoOrigem: null, regraRemanejamento: "DESTINO_UNICO",
             remanejamentoDestino: "AC", remanejamentoPar: null, remanejamentoFallback: null,
             criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
 
         r.IsSuccess.Should().BeTrue();
-        m.NaturezaLegal.Should().Be(NaturezaLegal.Suplementar);
+        m.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
     }
 
     [Fact(DisplayName = "Token inválido numa legal fixa reporta o erro de domínio, não a proteção")]
@@ -572,7 +572,7 @@ public sealed class ModalidadeTests
     public void Criar_RegraInvalidaComArgumento_NaoDerivaIncoerenciaDeArgumento()
     {
         Result<Modalidade> r = Criar(
-            codigo: "AC_I", natureza: "SUPLEMENTAR", composicao: "SUPLEMENTAR_AO_TOTAL",
+            codigo: "AC_I", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "CASCATA", destino: "AC");
 
         r.IsFailure.Should().BeTrue();

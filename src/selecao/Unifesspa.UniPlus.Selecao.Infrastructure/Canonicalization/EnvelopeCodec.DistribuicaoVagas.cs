@@ -502,11 +502,11 @@ public sealed partial class EnvelopeCodec
                     $"Envelope malformado em 'modalidades': {codigo} é de ampla concorrência e não admite regra de " +
                     "remanejamento — as vagas ociosas dela não vão para lugar nenhum."),
 
-            NaturezaLegalModalidade.Suplementar or NaturezaLegalModalidade.OutraModalidade
+            NaturezaLegalModalidade.AcaoAfirmativa
                 when remanejamento is not (RegraRemanejamentoModalidade.DestinoUnico or RegraRemanejamentoModalidade.Cruzado) =>
                 new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"Envelope malformado em 'modalidades': {codigo} é suplementar ou de outra natureza e exige " +
+                    $"Envelope malformado em 'modalidades': {codigo} é ação afirmativa e exige " +
                     "regra de remanejamento DESTINO_UNICO ou CRUZADO."),
 
             _ => null,

@@ -56,7 +56,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             .. ModalidadesFederaisLei12711.Codigos.Select(codigo =>
                 NovaModalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata)),
             NovaModalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo),
-            NovaModalidade("V", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, composicaoOrigemCodigo: "AC", quantidadeDeclarada: 2),
+            NovaModalidade("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, composicaoOrigemCodigo: "AC", quantidadeDeclarada: 2),
         ];
 
         ReferenciaRegra regraAjuste = ReferenciaRegra.Criar(
@@ -122,7 +122,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64)).Value!;
         Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 60, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [NovaModalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)]);
+            [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)]);
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([configResult.Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -154,7 +154,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64)).Value!;
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 60, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [NovaModalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)],
+            [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)],
             grupoAreaEnem: ("TECNOLOGICA", "Tecnológica")).Value!;
         processo.DefinirDistribuicaoVagas([oferta], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -188,7 +188,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         Guid ofertaCursoId = Guid.CreateVersion7();
         ConfiguracaoDistribuicaoVagas original = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoId, voBase: 40, pr: 1m, regra, null, null,
-            [NovaModalidade("QUIL", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 40)]).Value!;
+            [NovaModalidade("QUIL", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 40)]).Value!;
         processo.DefinirDistribuicaoVagas([original], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -206,8 +206,8 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             ConfiguracaoDistribuicaoVagas nova = ConfiguracaoDistribuicaoVagas.Criar(
                 ofertaCursoId, voBase: 45, pr: 1m, regra, null, null,
                 [
-                    NovaModalidade("QUIL", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 20),
-                    NovaModalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 25),
+                    NovaModalidade("QUIL", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 20),
+                    NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 25),
                 ]).Value!;
 
             Result result = carregado.DefinirDistribuicaoVagas([nova], PrecondicaoIfMatch.Ausente);

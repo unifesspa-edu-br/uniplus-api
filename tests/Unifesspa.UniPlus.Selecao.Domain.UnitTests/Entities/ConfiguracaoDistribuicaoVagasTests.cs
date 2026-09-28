@@ -75,8 +75,8 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
-            Modalidade("QUIL", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
+            Modalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
+            Modalidade("QUIL", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -94,7 +94,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60),
+            Modalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -121,7 +121,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60),
+            Modalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -140,7 +140,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 40),
-            Modalidade("AC_PCD", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -175,8 +175,8 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         // ao qual elas pudessem acrescer, e o total publicado é a soma do quadro.
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
-            Modalidade("AC_Q", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
+            Modalidade("AC_I", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
+            Modalidade("AC_Q", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -192,7 +192,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             .. AsOitoFederaisMaisAc(),
-            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 5),
+            Modalidade("AC_I", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 5),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -208,7 +208,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             .. AsOitoFederaisMaisAc(),
-            Modalidade("AC_PCD", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -227,7 +227,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             .. AsOitoFederaisMaisAc(),
-            Modalidade("AC_PCD", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -245,7 +245,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 38),
-            Modalidade(ModalidadesFederaisLei12711.LbPpi, NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade(ModalidadesFederaisLei12711.LbPpi, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -297,8 +297,8 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
-            Modalidade("AC_Q", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade("AC_I", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade("AC_Q", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 6),
         ];
 
@@ -318,7 +318,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade("AC_I", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -336,8 +336,8 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("AC_I", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
-            Modalidade("AC_Q", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade("AC_I", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
+            Modalidade("AC_Q", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 2),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -355,7 +355,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 38),
-            Modalidade("PCD_PURO", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+            Modalidade("PCD_PURO", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -371,7 +371,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("QUALQUER_CODIGO", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 10),
+            Modalidade("QUALQUER_CODIGO", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 10),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -388,7 +388,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 40),
-            Modalidade("PCD_PURO", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
+            Modalidade("PCD_PURO", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -410,7 +410,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades =
         [
             Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 40),
-            Modalidade("PCD_PURO", NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
+            Modalidade("PCD_PURO", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidadeDeclarada: 4, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
@@ -499,7 +499,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         string? composicaoOrigemCodigo = null) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null,
-            NaturezaLegalModalidade.Suplementar,
+            NaturezaLegalModalidade.AcaoAfirmativa,
             composicaoOrigemCodigo is null ? ComposicaoVagasModalidade.SuplementarAoTotal : ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo,
             RegraRemanejamentoModalidade.Nenhuma,
@@ -571,7 +571,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     private static ModalidadeSelecionada ModalidadeCruzada(string codigo, string par) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null,
-            NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             composicaoOrigemCodigo: null,
             RegraRemanejamentoModalidade.Cruzado,
             remanejamentoDestino: null, remanejamentoPar: par, remanejamentoFallback: null,
@@ -632,7 +632,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_ComposicaoOrigemForaDoConjunto_Falha()
     {
         ModalidadeSelecionada retiraDeSemOrigemSelecionada = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe,
+            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo: "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal").Value!;
 
         // "AC" não está selecionado nesta oferta — a origem do RETIRA_DE
@@ -648,7 +648,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_RemanejamentoParForaDoConjunto_Falha()
     {
         ModalidadeSelecionada indSemParSelecionado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "IND", null, NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            Guid.CreateVersion7(), "IND", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             null, RegraRemanejamentoModalidade.Cruzado, null, remanejamentoPar: "QUIL", remanejamentoFallback: "AC",
             criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "base legal").Value!;
 
@@ -688,7 +688,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_Lei12711RetiradaForaDeAc_Falha()
     {
         ModalidadeSelecionada retiradaDeSubReserva = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe,
+            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo: ModalidadesFederaisLei12711.LbPpi, RegraRemanejamentoModalidade.Nenhuma,
             null, null, null, [], null, "base legal", quantidadeDeclarada: 1).Value!;
 
@@ -704,7 +704,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     [Fact(DisplayName = "Criar institucional com referência demográfica indevida falha")]
     public void Criar_InstitucionalComDemografica_Falha()
     {
-        List<ModalidadeSelecionada> modalidades = [Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal)];
+        List<ModalidadeSelecionada> modalidades = [Modalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal)];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), null, Demografica(), modalidades);

@@ -59,7 +59,7 @@ public sealed class ModalidadeSelecionadaTests
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "V", "PcD retirada da AC",
-            NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe,
+            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo: "AC", RegraRemanejamentoModalidade.Nenhuma,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
             criteriosCumulativos: ["PCD"], acaoQuandoIndeferido: null, baseLegal: "Edital SiSU 4.1.2");
@@ -73,7 +73,7 @@ public sealed class ModalidadeSelecionadaTests
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "IND", "Indígena (PSIQ)",
-            NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Cruzado,
             remanejamentoDestino: null, remanejamentoPar: "QUIL", remanejamentoFallback: "AC",
             criteriosCumulativos: ["INDIGENA"], acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");
@@ -134,7 +134,7 @@ public sealed class ModalidadeSelecionadaTests
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "V", null,
-            NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe,
+            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base");
 
         resultado.IsFailure.Should().BeTrue();
@@ -170,7 +170,7 @@ public sealed class ModalidadeSelecionadaTests
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "X", null,
-            NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             null, RegraRemanejamentoModalidade.DestinoUnico, remanejamentoDestino: null, null, null, [], null, "base");
 
         resultado.IsFailure.Should().BeTrue();
@@ -182,7 +182,7 @@ public sealed class ModalidadeSelecionadaTests
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "IND", null,
-            NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             null, RegraRemanejamentoModalidade.Cruzado, null, remanejamentoPar: null, remanejamentoFallback: "AC",
             criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "base");
 
@@ -195,7 +195,7 @@ public sealed class ModalidadeSelecionadaTests
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC_I", "Vaga por acréscimo — candidato indígena (PSIQ)",
-            NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Cruzado,
             remanejamentoDestino: null, remanejamentoPar: "AC_Q", remanejamentoFallback: null,
             criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");

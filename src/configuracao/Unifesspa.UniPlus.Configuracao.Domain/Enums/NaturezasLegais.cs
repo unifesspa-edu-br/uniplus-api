@@ -6,7 +6,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// <para>O parsing é por <b>allowlist textual explícita</b> (<see cref="TryAnalisar"/>):
-/// só os quatro tokens canônicos são aceitos. Deliberadamente <b>não</b> usa
+/// só os três tokens canônicos são aceitos. Deliberadamente <b>não</b> usa
 /// <c>Enum.TryParse</c>, que aceitaria tokens numéricos (<c>"1"</c> → primeiro
 /// valor) e nomes PascalCase do enum — ambos fora do contrato textual da #589.</para>
 /// <para>É o vocabulário fonte do CHECK de domínio em <c>modalidade.natureza_legal</c>
@@ -18,14 +18,13 @@ public static class NaturezasLegais
     {
         [NaturezaLegal.CotaReservada] = "COTA_RESERVADA",
         [NaturezaLegal.Ampla] = "AMPLA",
-        [NaturezaLegal.Suplementar] = "SUPLEMENTAR",
-        [NaturezaLegal.OutraModalidade] = "OUTRA_MODALIDADE",
+        [NaturezaLegal.AcaoAfirmativa] = "ACAO_AFIRMATIVA",
     };
 
     private static readonly Dictionary<string, NaturezaLegal> DeToken =
         ParaToken.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.Ordinal);
 
-    /// <summary>Os quatro tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
+    /// <summary>Os três tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
     public static readonly IReadOnlyList<string> TokensCanonicos = [.. ParaToken.Values];
 
     /// <summary>Token textual de contrato/banco (UPPER_SNAKE) de uma natureza válida.</summary>
@@ -54,6 +53,6 @@ public static class NaturezasLegais
         return false;
     }
 
-    /// <summary>Indica se <paramref name="token"/> é um dos quatro tokens canônicos, sem alocar resultado.</summary>
+    /// <summary>Indica se <paramref name="token"/> é um dos três tokens canônicos, sem alocar resultado.</summary>
     public static bool EhValido(string? token) => TryAnalisar(token, out _);
 }
