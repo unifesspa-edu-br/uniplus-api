@@ -2367,6 +2367,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
+        new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: cota da lei e ação afirmativa não derivam juntas", PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
         new ItemConformidade("criterios_desempate_em_excesso", DimensaoConformidade.Classificacao, $"Critérios de desempate: no máximo {CriteriosDesempateMaximo}", ValidarQuantidadeDeCriteriosDesempate(_criteriosDesempate.Count).Count == 0),
         new ItemConformidade("desempate_area_enem_areas_mal_formadas", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada critério tem ao menos uma área, sem exceder o teto, com códigos bem formados e sem repetição", Sem(desempate, DesempatePorAreaEnemErrorCodes.AreasObrigatorias, DesempatePorAreaEnemErrorCodes.AreasEmExcesso, DesempatePorAreaEnemErrorCodes.AreaInvalida, DesempatePorAreaEnemErrorCodes.AreaRepetida)),
@@ -3202,6 +3203,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return contribuicaoForaDoDominio;
         }
 
+        if (PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is { } cotaEAcaoAfirmativa)
+        {
+            return cotaEAcaoAfirmativa;
+        }
+
         if (PendenciaDoGrafoConjunto() is { } grafoConjunto)
         {
             return grafoConjunto;
@@ -3244,6 +3250,97 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return null;
     }
+
+    /// <summary>
+    /// A mesma inscrição não concorre a cota da lei e a ação afirmativa (UNI-REQ-0142). A derivação de
+    /// <c>MODALIDADE</c> é o que define as modalidades do candidato, então a recusa é sobre ela: se
+    /// alguma combinação de respostas faz valer, ao mesmo tempo, uma regra que contribui cota e outra
+    /// que contribui ação afirmativa, o processo não publica.
+    /// </summary>
+    /// <remarks>
+    /// Duas cláusulas só valem juntas se nenhum fato é exigido com valores incompatíveis nelas. A prova
+    /// de incompatibilidade é conservadora — o mesmo fato escalar com <c>IGUAL</c> a valores
+    /// diferentes, ou <c>IGUAL</c> e <c>DIFERENTE</c> ao mesmo valor —, e o que ela não prova conta
+    /// como derivável junto. Fato multivalorado (seleção múltipla) ou derivado não é tratado como
+    /// escalar: sobre ele <c>IGUAL</c> é pertinência, e o mesmo candidato pode conter os dois valores.
+    /// A âncora, sem cláusula, vale sempre.
+    /// </remarks>
+    private DomainError? PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa()
+    {
+        Dictionary<string, NaturezaLegalModalidade> naturezas = _distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .DistinctBy(static m => m.Codigo, StringComparer.Ordinal)
+            .ToDictionary(static m => m.Codigo, static m => m.NaturezaLegal, StringComparer.Ordinal);
+
+        HashSet<string> fatosMultivalorados = [
+            .. _fatosColetados
+                .Where(static f => f.TipoRenderizacao == TipoRenderizacao.SelecaoMultipla)
+                .Select(static f => f.FatoCodigo),
+            .. _regrasDerivacao.Select(static c => c.CodigoFato),
+        ];
+
+        foreach (ConfiguracaoDerivacaoFato config in _regrasDerivacao)
+        {
+            if (!string.Equals(config.CodigoFato, RegrasDerivacaoModalidadeLei12711.CodigoFato, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            List<RegraDerivacao> regras = [.. config.Regras
+                .OrderBy(static r => r.Ordem)
+                .Select(static r => r.ParaRegraDerivacao())
+                .Where(static r => r.IsSuccess)
+                .Select(static r => r.Value!)];
+
+            foreach (RegraDerivacao cota in regras.Where(r => NaturezaDe(r) == NaturezaLegalModalidade.CotaReservada))
+            {
+                foreach (RegraDerivacao acaoAfirmativa in regras.Where(r => NaturezaDe(r) == NaturezaLegalModalidade.AcaoAfirmativa))
+                {
+                    if (PodemValerJuntas(cota.Quando, acaoAfirmativa.Quando, fatosMultivalorados))
+                    {
+                        return new DomainError(
+                            "ProcessoSeletivo.CotaEAcaoAfirmativaDerivaveisJuntas",
+                            $"As regras de derivação permitem que o mesmo candidato concorra à cota \"{cota.Contribui}\" "
+                            + $"e à ação afirmativa \"{acaoAfirmativa.Contribui}\"; quem opta pelas cotas da lei "
+                            + "não concorre a ação afirmativa.");
+                    }
+                }
+            }
+        }
+
+        return null;
+
+        NaturezaLegalModalidade NaturezaDe(RegraDerivacao regra) =>
+            naturezas.GetValueOrDefault(regra.Contribui, NaturezaLegalModalidade.Nenhuma);
+    }
+
+    private static bool PodemValerJuntas(PredicadoDnf primeiro, PredicadoDnf segundo, IReadOnlySet<string> fatosMultivalorados) =>
+        ClausulasDe(primeiro).Any(a => ClausulasDe(segundo).Any(b => !Incompativeis(a, b, fatosMultivalorados)));
+
+    private static IEnumerable<IReadOnlyList<CondicaoDnf>> ClausulasDe(PredicadoDnf predicado) =>
+        predicado.Clausulas.Count == 0 ? [[]] : predicado.Clausulas.Select(static c => c.Condicoes);
+
+    private static bool Incompativeis(
+        IReadOnlyList<CondicaoDnf> primeira,
+        IReadOnlyList<CondicaoDnf> segunda,
+        IReadOnlySet<string> fatosMultivalorados) =>
+        primeira.Any(a => segunda.Any(b =>
+            string.Equals(a.Fato, b.Fato, StringComparison.Ordinal)
+            && (a.Operador, b.Operador) switch
+            {
+                (Operador.Igual, Operador.Igual) => !fatosMultivalorados.Contains(a.Fato) && ValoresDistintos(a, b),
+                (Operador.Igual, Operador.Diferente) or (Operador.Diferente, Operador.Igual) => MesmoValor(a, b),
+                _ => false,
+            }));
+
+    /// <summary>
+    /// Na régua do motor: tipos que ele não compara não provam nem igualdade nem diferença.
+    /// </summary>
+    private static bool MesmoValor(CondicaoDnf a, CondicaoDnf b) =>
+        ClausulaDnf.CompararIgualdade(a.Valor, b.Valor) == Ternario.Verdadeiro;
+
+    private static bool ValoresDistintos(CondicaoDnf a, CondicaoDnf b) =>
+        ClausulaDnf.CompararIgualdade(a.Valor, b.Valor) == Ternario.Falso;
 
     /// <summary>
     /// A condição de uma regra de derivação tem de citar um fato que exista no processo — coletado
