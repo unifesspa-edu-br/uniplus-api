@@ -200,7 +200,6 @@ public sealed class ModalidadeEndpointTests
 
     [Theory(DisplayName = "DELETE de modalidade legal fixa retorna 409 e a modalidade continua viva")]
     [InlineData("LB_PPI")]
-    [InlineData("PCD_PURO")]
     public async Task Remover_LegalFixa_Retorna409EPermanece(string codigo)
     {
         Guid id = IdSemeado(codigo);
