@@ -152,26 +152,25 @@ public sealed class EnvelopeCodecTiposTests
     /// <summary>
     /// O rol que o decodificador aceita para <c>regraDistribuicao.codigo</c>
     /// deriva de <see cref="RegraDistribuicaoVagasCodigo.Todos"/> — todo código do catálogo, não
-    /// só os dois que <c>ProcessoRico</c> exercita. Antes desta cobertura, um envelope publicado
-    /// sob PSIQ ou sob a regra que hoje é COM-PCD-PURO era irreidratável: o rol do decoder era
-    /// fechado em dois literais.
+    /// só os dois que <c>ProcessoRico</c> exercita. Um rol fechado em literais deixaria
+    /// irreidratável o envelope publicado sob PSIQ ou sob COM-AC-PCD.
     /// </summary>
     /// <remarks>
     /// O resto do payload continua descrevendo a Lei 12.711 (9 modalidades federais) — incompatível
-    /// com o rol restrito de PSIQ e de COM-PCD-PURO — então a reidratação ainda falha adiante, no
+    /// com o rol restrito de PSIQ e de COM-AC-PCD — então a reidratação ainda falha adiante, no
     /// domínio. O que a asserção prova é que ela não falha MAIS CEDO, no gate do decoder, com o
     /// código recusado por não pertencer ao rol conhecido.
     /// </remarks>
-    [Theory(DisplayName = "PSIQ e COM-PCD-PURO no bloco distribuicao não são mais recusados como RegraDesconhecida")]
+    [Theory(DisplayName = "PSIQ e COM-AC-PCD no bloco distribuicao não são recusados como RegraDesconhecida")]
     [InlineData(RegraDistribuicaoVagasCodigo.Psiq)]
-    [InlineData(RegraDistribuicaoVagasCodigo.ComPcdPuro)]
+    [InlineData(RegraDistribuicaoVagasCodigo.ComAcPcd)]
     public void CodigoDeQuadroFixoDoSeed_NaoFicaMaisForaDoRolAceitoPeloDecoder(string codigo)
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
             envelope["distribuicao"]!.AsArray()[0]!["regraDistribuicao"]!["codigo"] = codigo);
 
         resultado.IsFailure.Should().BeTrue(
-            "o payload continua descrevendo a Lei 12.711 — incompatível com o rol restrito de PSIQ/COM-PCD-PURO");
+            "o payload continua descrevendo a Lei 12.711 — incompatível com o rol restrito de PSIQ/COM-AC-PCD");
         resultado.Error!.Code.Should().NotBe(
             ErrosCodecEnvelope.RegraDesconhecida,
             $"'{codigo}' pertence a RegraDistribuicaoVagasCodigo.Todos — o decoder não pode mais recusá-lo como fora do rol conhecido");
@@ -182,7 +181,7 @@ public sealed class EnvelopeCodecTiposTests
     /// subconjunto. O payload de <c>ProcessoRico</c> (9 modalidades federais, sem AC_PCD)
     /// atravessa o gate do decoder (não é mais <c>RegraDesconhecida</c>), mas falha adiante no
     /// domínio por faltar justamente a décima modalidade que só esta variação exige — o mesmo
-    /// desfecho de PSIQ/COM-PCD-PURO, ainda que pelo lado oposto do rol (falta, não excedente).
+    /// desfecho de PSIQ/COM-AC-PCD, ainda que pelo lado oposto do rol (falta, não excedente).
     /// </summary>
     [Fact(DisplayName = "LEI-12711-COM-AC-PCD no bloco distribuicao atravessa o gate do decoder — não é mais recusada como RegraDesconhecida")]
     public void CodigoLei12711ComAcPcd_NaoFicaMaisForaDoRolAceitoPeloDecoder()

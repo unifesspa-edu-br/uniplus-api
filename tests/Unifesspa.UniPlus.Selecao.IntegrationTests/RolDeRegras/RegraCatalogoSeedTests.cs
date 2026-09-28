@@ -47,7 +47,9 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-LEI-12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-PSIQ" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
-        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-COM-PCD-PURO" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-COM-AC-PCD" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().NotContain(r => r.Codigo == "DISTRIB-VAGAS-COM-PCD-PURO",
+            "a reserva de pessoa com deficiência sem as cotas da lei passou a ser AC_PCD");
         regras.Should().Contain(r => r.Codigo == "FORMULA-MEDIA-PONDERADA" && r.Tipo == TipoRegra.RegraCalculo);
         regras.Should().Contain(r => r.Codigo == "REMANEJ-CASCATA-LEI-12711" && r.Tipo == TipoRegra.CriterioRemanejamento);
         regras.Should().Contain(r => r.Codigo == AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial && r.Tipo == TipoRegra.AlgoritmoContagemPrazo);
@@ -254,7 +256,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD",
             "DISTRIB-VAGAS-INSTITUCIONAL",
             "DISTRIB-VAGAS-PSIQ",
-            "DISTRIB-VAGAS-COM-PCD-PURO",
+            "DISTRIB-VAGAS-COM-AC-PCD",
         })
         {
             RegraCatalogo? v1 = await reader.ObterAsync(codigo, "v1", CancellationToken.None);
@@ -303,6 +305,23 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         // (codigo, versao), e exige que a verificação seja executada, não presumida.
         await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
             context, CodigoRegraDeCascata, RegraCatalogoSeed.VersaoV1);
+    }
+
+    [Theory(DisplayName = "A base legal das regras de ação afirmativa é a Res. 532/2021, sem resolução revogada")]
+    [InlineData(RegraDistribuicaoVagasCodigo.ComAcPcd, "532/2021-CONSEPE, art. 1º")]
+    [InlineData(RegraDistribuicaoVagasCodigo.Psiq, "532/2021-CONSEPE, art. 2º")]
+    public async Task RegraDeAcaoAfirmativa_FundamentadaNaResolucao532(string codigo, string normaEsperada)
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+
+        RegraCatalogo regra = await context.RolDeRegras.AsNoTracking()
+            .SingleAsync(r => r.Codigo == codigo && r.Versao == RegraCatalogoSeed.VersaoV1, CancellationToken.None);
+
+        // A base legal entra no hash e congela com a regra no edital: citar resolução revogada
+        // pelo art. 3º da 532/2021 fundamentaria a vaga numa norma sem vigência.
+        regra.BaseLegal.Should().Contain(normaEsperada)
+            .And.NotContain("22/2014")
+            .And.NotContain("64/2015");
     }
 
     /// <summary>

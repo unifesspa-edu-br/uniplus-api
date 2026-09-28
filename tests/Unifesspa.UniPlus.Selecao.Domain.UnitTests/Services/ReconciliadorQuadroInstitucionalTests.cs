@@ -14,7 +14,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     public void ReduzirDe_TiraODaModalidadeNomeada()
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
-            ["AC", "PCD_PURO"], [38, 4], excesso: 2, new ArgsReduzirDe("PCD_PURO"));
+            ["AC", "AC_PCD"], [38, 4], excesso: 2, new ArgsReduzirDe("AC_PCD"));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Quantidades.Should().Equal([38, 2]);
@@ -25,7 +25,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     public void ReduzirDe_SemSaldo_Recusa()
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
-            ["AC", "PCD_PURO"], [38, 1], excesso: 5, new ArgsReduzirDe("PCD_PURO"));
+            ["AC", "AC_PCD"], [38, 1], excesso: 5, new ArgsReduzirDe("AC_PCD"));
 
         resultado.IsFailure.Should().BeTrue(
             "reduzir o que se pode e devolver um quadro ainda estourado entregaria como reconciliado o que não fecha");
@@ -86,7 +86,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     public void Reduzir_SemExcesso_NaoAltera()
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
-            ["AC", "PCD_PURO"], [38, 2], excesso: 0, new ArgsReduzirDe("PCD_PURO"));
+            ["AC", "AC_PCD"], [38, 2], excesso: 0, new ArgsReduzirDe("AC_PCD"));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Quantidades.Should().Equal([38, 2]);

@@ -37,7 +37,7 @@ public sealed class RegraDistribuicaoVagasCodigoTests
             RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd,
             RegraDistribuicaoVagasCodigo.Institucional,
             RegraDistribuicaoVagasCodigo.Psiq,
-            RegraDistribuicaoVagasCodigo.ComPcdPuro,
+            RegraDistribuicaoVagasCodigo.ComAcPcd,
         ]);
     }
 
