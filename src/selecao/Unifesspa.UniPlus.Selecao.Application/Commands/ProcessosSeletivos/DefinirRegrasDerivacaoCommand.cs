@@ -7,6 +7,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Uma condição do predicado <c>quando</c> de uma regra de derivação — a tripla

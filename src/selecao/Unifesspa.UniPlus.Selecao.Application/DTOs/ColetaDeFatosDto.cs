@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// DTO de leitura de uma condição de pré-condição de fato coletado (Story #987). Mesma forma flat
 /// do wire de escrita (<c>CondicaoPrecondicaoInput</c>): fecha o round-trip GET→PUT sem

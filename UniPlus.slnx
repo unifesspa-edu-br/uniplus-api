@@ -50,6 +50,7 @@
     <Project Path="src/shared/Unifesspa.UniPlus.Application.Abstractions/Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <Project Path="src/shared/Unifesspa.UniPlus.Authorization/Unifesspa.UniPlus.Authorization.csproj" />
     <Project Path="src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
+    <Project Path="src/shared/Unifesspa.UniPlus.Regras/Unifesspa.UniPlus.Regras.csproj" />
     <Project Path="src/shared/Unifesspa.UniPlus.Infrastructure.Core/Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <Project Path="src/shared/Unifesspa.UniPlus.Kernel/Unifesspa.UniPlus.Kernel.csproj" />
   </Folder>

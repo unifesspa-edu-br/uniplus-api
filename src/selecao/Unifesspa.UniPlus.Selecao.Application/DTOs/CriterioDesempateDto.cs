@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Projeção de leitura de um critério de desempate (Story #774). Os args
 /// além de <see cref="Regra"/> refletem a mesma forma flat de

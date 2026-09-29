@@ -1,7 +1,7 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Regras.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Uma regra da derivação de um fato: quando o predicado <see cref="Quando"/> é verdadeiro, a regra

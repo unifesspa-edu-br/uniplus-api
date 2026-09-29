@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -24,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// modalidades, tornando a variante incompatível com o agregado real.
 /// <b>Correção sobre o xmldoc de <see cref="PredicadoObrigatoriedade"/></b>:
 /// o padrão "CS8509 sem catch-all" que o projeto usa para <c>enum</c> (ex.
-/// <see cref="Unifesspa.UniPlus.Selecao.Domain.Enums.TipoDominioFatoCodigo"/>)
+/// <see cref="Unifesspa.UniPlus.Regras.Enums.TipoDominioFatoCodigo"/>)
 /// não se aplica aqui — o Roslyn não prova exaustividade de switch sobre uma
 /// hierarquia de classes/records aberta (mesmo com todo derivado
 /// <c>sealed</c>), só sobre o conjunto fechado de valores de um <c>enum</c>.

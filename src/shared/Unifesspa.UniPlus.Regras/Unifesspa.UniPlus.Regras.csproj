@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Regras sobre fatos do candidato compartilhadas por Configuração e Seleção
+    (ADR-0135): predicado em forma normal disjuntiva, validador, motor de
+    derivação e estado resolvido do fato. Lógica pura sobre valores — sem
+    entidade, persistência nem I/O.
+
+    Vive em src/shared/ porque os dois módulos a consomem, e um módulo não
+    referencia outro. Depende só do Kernel (para Result); não referencia
+    projeto de módulo nem outro projeto compartilhado.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

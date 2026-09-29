@@ -6,12 +6,14 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Uma condição do gatilho DNF de um <see cref="DocumentoExigido"/> (Story #554, PR #896) —
 /// a forma <b>relacional</b> (linha com ordinal de cláusula) da tripla
-/// <c>{ Fato, Operador, Valor }</c> de <see cref="ValueObjects.CondicaoDnf"/>. Agrupadas por
+/// <c>{ Fato, Operador, Valor }</c> de <see cref="Regras.ValueObjects.CondicaoDnf"/>. Agrupadas por
 /// <see cref="Clausula"/> (OU entre cláusulas, E dentro — mesma convenção de
 /// <c>PredicadoDnf.CriarDeCondicoesAgrupadas</c>), formam o predicado que decide se a
 /// exigência se aplica a um candidato. <c>EntityBase</c> puro — filha de
@@ -39,7 +41,7 @@ public sealed class CondicaoGatilho : EntityBase
     /// vazio, operador reconhecido, valor coerente com o operador). A validação
     /// <b>semântica</b> (fato no vocabulário fechado, operador × domínio, valor × domínio,
     /// integridade referencial contra a oferta do processo — CA-02/CA-03) é do
-    /// <c>Selecao.Domain.Services.PredicadoDnfValidador</c>, resolvido pela Application, que
+    /// <c>Unifesspa.UniPlus.Regras.Services.PredicadoDnfValidador</c>, resolvido pela Application, que
     /// tem acesso ao vocabulário cross-módulo e à oferta do processo — nunca aqui.
     /// </summary>
     public static Result<CondicaoGatilho> Criar(int clausula, string fato, Operador operador, JsonElement valor)

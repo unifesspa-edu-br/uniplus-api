@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="CondicaoRegraDerivacao"/> (Story #927) — entidade filha de
 /// <see cref="RegraDerivacaoConfigurada"/>, <c>EntityBase</c> puro (sem soft-delete). Mesmo mapeamento de

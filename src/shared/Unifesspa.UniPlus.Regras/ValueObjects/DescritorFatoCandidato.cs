@@ -1,16 +1,14 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Regras.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Contrato de leitura, próprio do Domain de Selecao, do vocabulário fechado
-/// de fatos do candidato (ADR-0111): o metadado mínimo que
-/// <see cref="Services.PredicadoDnfValidador"/> precisa para validar uma
-/// condição — sem depender de <c>Unifesspa.UniPlus.Configuracao.Contracts</c>
-/// (Domain só depende de SharedKernel). Quem chama o validador (Application)
-/// mapeia <c>FatoCandidatoView</c> (o DTO cross-módulo real, entregue pelo
-/// leitor do #846) para este tipo.
+/// Metadado mínimo de um fato do candidato (ADR-0111) de que
+/// <see cref="Regras.Services.PredicadoDnfValidador"/> precisa para validar uma
+/// condição. As regras sobre fatos dependem só do Kernel (ADR-0135), então este tipo
+/// não conhece <c>Unifesspa.UniPlus.Configuracao.Contracts</c>: quem chama o validador,
+/// em cada módulo, mapeia para ele o fato que leu do catálogo (<c>FatoCandidatoView</c>).
 /// </summary>
 /// <remarks>
 /// Só representa fatos cujo domínio é genericamente validável por esta

@@ -726,6 +726,7 @@
           "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Regras": "[1.0.0, )",
           "VaultSharp": "[1.17.5.1, )",
           "WolverineFx": "[5.41.0, )",
           "WolverineFx.EntityFrameworkCore": "[5.41.0, )",
@@ -741,6 +742,12 @@
         "type": "Project",
         "dependencies": {
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.regras": {
+        "type": "Project",
+        "dependencies": {
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
@@ -762,7 +769,8 @@
         "type": "Project",
         "dependencies": {
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Regras": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.selecao.infrastructure": {

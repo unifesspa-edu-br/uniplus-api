@@ -9,6 +9,8 @@
       vive em src/shared/ e não tem dependências de infra.
     -->
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
+    <!-- Regras sobre fatos compartilhadas com a Configuração (ADR-0135). -->
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Regras\Unifesspa.UniPlus.Regras.csproj" />
   </ItemGroup>
 
   <!--

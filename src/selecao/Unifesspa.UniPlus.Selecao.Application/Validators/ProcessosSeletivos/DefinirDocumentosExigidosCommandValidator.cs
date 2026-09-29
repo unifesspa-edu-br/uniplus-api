@@ -4,6 +4,7 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>

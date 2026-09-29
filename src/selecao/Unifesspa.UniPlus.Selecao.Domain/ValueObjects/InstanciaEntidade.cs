@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
 /// <summary>
 /// Story #922 — uma instância declarada pelo candidato de um <see cref="Enums.TipoEntidade"/>
 /// repetível (ex.: "membro 2" do núcleo familiar, "PJ 1" vinculada). O runtime de declaração em

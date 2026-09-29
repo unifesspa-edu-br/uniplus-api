@@ -1,7 +1,7 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Services;
+namespace Unifesspa.UniPlus.Regras.Services;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Deriva o valor de um fato a partir da sua regra de derivação e dos fatos resolvidos do candidato

@@ -8,6 +8,7 @@ using Domain.Enums;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Recusa o congelamento de uma versão que exporia, ou já cita, um valor INATIVO do domínio

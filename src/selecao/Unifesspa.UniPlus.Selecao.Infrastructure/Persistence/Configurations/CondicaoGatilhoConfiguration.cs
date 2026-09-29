@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="CondicaoGatilho"/> (Story #554, PR #896) — entidade
 /// filha de <see cref="DocumentoExigido"/>, <c>EntityBase</c> puro (sem soft-delete).

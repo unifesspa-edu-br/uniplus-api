@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// alguma <see cref="CondicaoGatilho"/> de alguma <see cref="DocumentoExigido"/> viva do
 /// processo — mapeando <see cref="FatoCandidatoView"/> (Configuração) para
 /// <see cref="MetadadoFatoCongelado"/> (Application.Abstractions), nunca reaproveitando
-/// <see cref="Domain.ValueObjects.DescritorFatoCandidato"/> (VO mínimo do validador de
+/// <see cref="Regras.ValueObjects.DescritorFatoCandidato"/> (VO mínimo do validador de
 /// predicado, propósito distinto: validação de forma, não congelamento de evidência).
 /// </summary>
 /// <remarks>

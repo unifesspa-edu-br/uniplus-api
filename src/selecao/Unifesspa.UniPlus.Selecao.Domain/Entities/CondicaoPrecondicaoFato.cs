@@ -6,6 +6,8 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -21,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// discriminador acoplaria dois ciclos de vida distintos — a exigência é substituída com os
 /// documentos, o fato coletado com o formulário — e faria a chave estrangeira de uma valer para a
 /// outra. O reúso está onde importa: ambas produzem <see cref="CondicaoDnf"/> e são avaliadas pelo
-/// mesmo <see cref="ValueObjects.PredicadoDnf"/>.
+/// mesmo <see cref="Regras.ValueObjects.PredicadoDnf"/>.
 /// </remarks>
 public sealed class CondicaoPrecondicaoFato : EntityBase
 {
@@ -42,7 +44,7 @@ public sealed class CondicaoPrecondicaoFato : EntityBase
     /// <summary>
     /// Cria a condição validando a <b>forma</b> via <see cref="CondicaoDnf.Criar"/>. A validação
     /// semântica — fato no vocabulário fechado, operador × domínio, valor × domínio — é do
-    /// <see cref="Services.PredicadoDnfValidador"/>, resolvido pela Application, que tem acesso ao
+    /// <see cref="Regras.Services.PredicadoDnfValidador"/>, resolvido pela Application, que tem acesso ao
     /// vocabulário cross-módulo. A validação <b>estrutural</b> do grafo (fato citado existe na
     /// coleta, é anterior, e não fecha ciclo) é do agregado, em
     /// <see cref="ProcessoSeletivo.DefinirFatosColetados"/>.

@@ -1,7 +1,7 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Resultado da avaliação de um <b>átomo</b> — uma <see cref="ValueObjects.CondicaoDnf"/>
+/// Resultado da avaliação de um <b>átomo</b> — uma <see cref="Regras.ValueObjects.CondicaoDnf"/>
 /// isolada — contra os fatos de um candidato (Story #926). Tem quatro estados,
 /// um a mais que <see cref="Ternario"/>, porque o átomo é o único ponto onde a
 /// inaplicabilidade do fato ainda é distinguível.

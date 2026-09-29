@@ -1,11 +1,11 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Services;
+namespace Unifesspa.UniPlus.Regras.Services;
 
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Domain service estático que confere um <see cref="PredicadoDnf"/> contra o
@@ -21,7 +21,7 @@ public static class PredicadoDnfValidador
     /// <summary>
     /// Percorre toda condição de toda cláusula do predicado; a primeira
     /// falha interrompe a validação (early-return, mesmo estilo de
-    /// <see cref="ObrigatoriedadeLegalPayloadNormalizer"/>).
+    /// <c>ObrigatoriedadeLegalPayloadNormalizer</c>).
     /// </summary>
     /// <param name="predicado">O predicado a validar.</param>
     /// <param name="vocabularioFechado">O vocabulário fechado de fatos, por código.</param>

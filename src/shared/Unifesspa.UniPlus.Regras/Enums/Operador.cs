@@ -1,7 +1,7 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Operador de uma <see cref="ValueObjects.CondicaoDnf"/> — a tripla
+/// Operador de uma <see cref="Regras.ValueObjects.CondicaoDnf"/> — a tripla
 /// <c>{ Fato, Operador, Valor }</c> que compõe a forma normal disjuntiva de um
 /// predicado sobre o candidato (ADR-0111, Story #847; operadores de exclusão
 /// <see cref="Diferente"/>/<see cref="NaoEm"/>, Story #916). Conjunto fechado por

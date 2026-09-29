@@ -9,6 +9,9 @@ using Enums;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
 using ValueObjects;
 
 /// <summary>

@@ -6,6 +6,8 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -19,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// deliberadamente separada delas: os três ciclos de vida são distintos (pré-condição do campo,
 /// gatilho da exigência, regra de derivação), e cada um é substituído com o seu pai. O reúso está
 /// onde importa — todas produzem <see cref="CondicaoDnf"/> e são avaliadas pelo mesmo
-/// <see cref="ValueObjects.PredicadoDnf"/>.
+/// <see cref="Regras.ValueObjects.PredicadoDnf"/>.
 /// </remarks>
 public sealed class CondicaoRegraDerivacao : EntityBase
 {
@@ -40,7 +42,7 @@ public sealed class CondicaoRegraDerivacao : EntityBase
     /// <summary>
     /// Cria a condição validando a <b>forma</b> via <see cref="CondicaoDnf.Criar"/>. A validação
     /// semântica — fato no vocabulário fechado, operador × domínio, valor × domínio — é do
-    /// <see cref="Services.PredicadoDnfValidador"/>, resolvido pela Application, que tem acesso ao
+    /// <see cref="Regras.Services.PredicadoDnfValidador"/>, resolvido pela Application, que tem acesso ao
     /// vocabulário cross-módulo.
     /// </summary>
     public static Result<CondicaoRegraDerivacao> Criar(int clausula, string fato, Operador operador, JsonElement valor)

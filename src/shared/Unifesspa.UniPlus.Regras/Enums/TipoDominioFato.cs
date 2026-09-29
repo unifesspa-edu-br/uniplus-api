@@ -1,8 +1,8 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Domínio de valor de um fato do candidato, na forma que
-/// <see cref="Services.PredicadoDnfValidador"/> consegue validar
+/// <see cref="Regras.Services.PredicadoDnfValidador"/> consegue validar
 /// genericamente (Story #847). Deliberadamente mais estreito que o
 /// <c>Dominio</c> do catálogo <c>rol_de_fatos_candidato</c> (ADR-0111, três
 /// tokens: <c>CATEGORICO</c>/<c>BOOLEANO</c>/<c>NUMERICO</c>): um fato

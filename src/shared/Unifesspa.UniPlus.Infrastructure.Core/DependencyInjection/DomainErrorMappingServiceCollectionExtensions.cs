@@ -35,6 +35,7 @@ public static class DomainErrorMappingServiceCollectionExtensions
         services.TryAddSingleton<IProblemTypeUriFactory, ProblemTypeUriFactory>();
 
         services.AddSingleton<IDomainErrorRegistration, KernelDomainErrorRegistration>();
+        services.AddSingleton<IDomainErrorRegistration, RegrasDomainErrorRegistration>();
         services.AddSingleton<IDomainErrorMapper>(sp =>
         {
             IEnumerable<IDomainErrorRegistration> registrations = sp.GetServices<IDomainErrorRegistration>();

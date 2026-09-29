@@ -631,11 +631,18 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
+      "unifesspa.uniplus.regras": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
       "unifesspa.uniplus.selecao.domain": {
         "type": "Project",
         "dependencies": {
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Regras": "[1.0.0, )"
         }
       },
       "Microsoft.Extensions.Logging.Abstractions": {

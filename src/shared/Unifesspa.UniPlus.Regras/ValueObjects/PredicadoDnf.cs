@@ -1,15 +1,15 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Regras.ValueObjects;
 
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Predicado sobre o candidato na forma normal disjuntiva — um OU de
 /// <see cref="ClausulaDnf"/>, cada uma um E de <see cref="CondicaoDnf"/>
 /// (ADR-0111, Story #847). Compartilhado por <c>DESEMPATE-PREDICADO-FATO</c>
-/// (via <see cref="ArgsDesempatePredicadoFato"/>) e pelos futuros consumidores
+/// (via <c>ArgsDesempatePredicadoFato</c>) e pelos futuros consumidores
 /// #554 (<c>CondicaoGatilho</c>) e #559 (<c>CampoFormulario.CondicaoExibicao</c>).
 /// </summary>
 /// <remarks>

@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Regras.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
 
