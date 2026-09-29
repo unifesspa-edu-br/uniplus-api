@@ -124,7 +124,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) | Rate-limiting de endpoints públicos de reference data na borda (gateway), não no app | accepted | 2026-06-19 |
 | [0094](0094-keyset-ordenado-via-mr-sob-cursor-opaco.md) | Ordenação keyset na API via biblioteca de seek sob cursor opaco | accepted | 2026-06-19 |
 | [0095](0095-chave-de-ordenacao-keyset-nao-nula.md) | Chave de ordenação keyset não-nula via coluna gerada | accepted | 2026-06-19 |
-| [0096](0096-endereco-como-referencia-estruturada-ao-geo.md) | Endereço de entidades institucionais como referência estruturada ao Geo | accepted | 2026-06-22 |
+| [0096](0096-endereco-como-referencia-estruturada-ao-geo.md) | Endereço de entidades institucionais como referência estruturada ao Geo — emendada pela ADR-0136: o endereço do candidato é conferido no servidor contra o Geo | accepted | 2026-06-22 |
 | [0097](0097-topologia-de-deploy-em-tres-apis-monolito-modular.md) | Topologia de deploy em 3 APIs — módulos internos como libraries co-hospedadas | accepted | 2026-06-26 |
 | [0098](0098-politica-de-service-location-do-codegen-wolverine.md) | Política de service location do codegen Wolverine (`NotAllowed` + allow-list por tipo) | accepted | 2026-06-26 |
 | [0099](0099-geo-como-repositorio-dedicado.md) | Geo como repositório e serviço transversal dedicado | accepted | 2026-06-26 |
@@ -139,12 +139,12 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0108](0108-registro-do-ato-por-mensagem-duravel.md) | O domínio registra o ato por mensagem durável, não por chamada síncrona (supersede a 0106 no mecanismo) | accepted | 2026-07-12 |
 | [0109](0109-envelope-canonico-v2-do-congelamento.md) | Contrato do envelope canônico do congelamento (v2) | accepted | 2026-07-13 |
 | [0110](0110-retificacao-como-sessao-editorial.md) | A retificação é uma sessão editorial sobre a configuração, não um estado do certame | accepted | 2026-07-13 |
-| [0111](0111-vocabulario-fechado-de-fatos-do-candidato.md) | Vocabulário fechado de fatos do candidato (catálogo seed-governado em Configuração, identidade imutável) — emendada em 2026-07-22: operadores de exclusão, semântica sobre fato multivalorado e ordem canônica | accepted | 2026-07-15 |
+| [0111](0111-vocabulario-fechado-de-fatos-do-candidato.md) | Vocabulário fechado de fatos do candidato (catálogo seed-governado em Configuração, identidade imutável) — emendada em 2026-07-22: operadores de exclusão, semântica sobre fato multivalorado e ordem canônica; sucedida em parte pela ADR-0136: governança por seed só para fatos de sistema, domínios texto, data e endereço, fonte dos valores, derivado categórico multivalorado e marcos de imutabilidade | accepted | 2026-07-15 |
 | [0112](0112-fronteira-append-only-do-catalogo-de-regras.md) | Fronteira do append-only na correção do catálogo de regras (substituível enquanto nada congelado referenciar) | accepted | 2026-07-14 |
 | [0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) | Fase × Etapa — eixo temporal (cronograma) e eixo de pontuação são agregados distintos, ligados por bicondicional; precedência entre fases é dado de cadastro | accepted | 2026-07-15 |
 | [0114](0114-ruleset-conformidade-legal-processo-seletivo.md) | Ruleset de conformidade legal do processo seletivo | accepted | 2026-07-15 |
 | [0115](0115-quadro-de-vagas-materializacao-derivada-congelamento-atomico.md) | O quadro de vagas é output derivado da configuração de distribuição, materializado e congelado na mesma operação que os insumos | accepted | 2026-07-16 |
-| [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111; emendada em 2026-07-22: `MODALIDADE` passa a derivado e o binding admite mais de um prefixo por origem | accepted | 2026-07-19 |
+| [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111; emendada em 2026-07-22: `MODALIDADE` passa a derivado e o binding admite mais de um prefixo por origem; sucedida em parte pela ADR-0136: governança por seed e marco de imutabilidade só para fatos de sistema, e novo mapa de prefixos | accepted | 2026-07-19 |
 | [0117](0117-politica-de-analise-estatica-e-supressao.md) | Política de análise estática e supressão de diagnósticos: `AnalysisLevel=latest-recommended` com opt-in/opt-out nomeado no `.editorconfig` e critério de supressão por alcance | proposed | 2026-07-22 |
 | [0118](0118-identidade-publica-modulos-api-metadado-assembly.md) | Identidade pública de módulos de API via metadado de assembly | proposed | 2026-07-29 |
 | [0119](0119-padrao-concorrencia-otimista-handlers-wolverine.md) | Padrão de conflito de concorrência otimista em handlers Wolverine — propagar sem catch quando o endpoint não é idempotency-protected; mapeamento centralizado no GlobalExceptionMiddleware | accepted | 2026-08-03 |
@@ -157,15 +157,16 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0126](0126-regime-de-turno-da-oferta-de-curso.md) | Regime de turno da oferta de curso — `INTEGRAL` deixa de ser turno e passa a ser o regime que nomeia dois turnos | accepted | 2026-08-25 |
 | [0127](0127-migrations-aplicadas-por-job-de-deploy.md) | Migrations aplicadas por Job de deploy, com o boot do pod como default preservado | accepted | 2026-08-26 |
 | [0128](0128-regime-de-funcionamento-da-oferta-de-curso.md) | Regime de funcionamento da oferta de curso — dimensão própria, conferida contra o regime de turno | accepted | 2026-08-28 |
-| [0129](0129-identidade-da-origem-decide-conformidade.md) | Identidade da origem decide conformidade; o código é o que se mostra ao humano | accepted | 2026-09-01 |
+| [0129](0129-identidade-da-origem-decide-conformidade.md) | Identidade da origem decide conformidade; o código é o que se mostra ao humano — aplicada na ADR-0136: o fato do candidato é referenciado pelo código imutável | accepted | 2026-09-01 |
 | [0130](0130-integracao-com-o-sigaa-por-consulta-http-paginada.md) | Integração com o SIGAA por consulta HTTP paginada, não por tópico de mensageria | accepted | 2026-09-02 |
 | [0131](0131-portal-como-bff-publico-de-dominio.md) | O Portal do candidato consome um contrato público de Seleção, não o envelope congelado | accepted | 2026-09-13 |
 | [0132](0132-armazenamento-publico-separado-para-documento-publicado.md) | Documento tornado público vive em armazenamento separado, com leitura anônima e endereço imutável | accepted | 2026-09-13 |
 | [0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) | A divulgação do certame é materializada quando o ato normativo se registra — a existência da linha é a publicidade | accepted | 2026-09-17 |
 | [0134](0134-conflito-retentavel-declarado-nao-ocupa-a-chave-de-idempotencia.md) | O conflito declarado retentável não ocupa a chave de idempotência — 409 de corrida não é 409 de estado | proposed | 2026-09-19 |
 | [0135](0135-projeto-compartilhado-de-regras-sobre-fatos.md) | As regras sobre fatos do candidato (predicado, validador, derivação e avaliação de formulário) vivem no projeto compartilhado `Unifesspa.UniPlus.Regras`, fora do Kernel, dependente só dele | accepted | 2026-09-29 |
+| [0136](0136-catalogo-de-fatos-do-candidato-administravel.md) | O catálogo de fatos do candidato é administrável: o administrador cadastra fatos declarados e derivados por regra, e os fatos de sistema continuam protegidos | accepted | 2026-09-29 |
 
-> **Nota de numeração:** a sequência de `0001` a `0135` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0136+`.
+> **Nota de numeração:** a sequência de `0001` a `0136` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0137+`.
 
 ## Como adicionar um novo ADR
 

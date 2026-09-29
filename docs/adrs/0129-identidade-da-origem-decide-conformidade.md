@@ -119,6 +119,7 @@ Os testes que acompanham cada ponto de decisão vêm em par, e ambos falham sem 
 
 ## Mais informações
 
+- **Aplicação na ADR-0136:** o fato do candidato é referenciado pelo código, e não por identidade de origem, porque o código do fato é imutável por invariante e nunca reutilizado — o caso que esta ADR admite, como o `AreaCodigo`.
 - [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) — pattern de snapshot-copy, emendado nas regras 2 e 5 por esta decisão.
 - [ADR-0055](0055-organizacao-institucional-bounded-context.md) — código imutável por invariante, mecanismo alternativo (opção B).
 - [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) — por que a resolução chega ao domínio como dado, e não como leitor.
