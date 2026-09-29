@@ -163,8 +163,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0132](0132-armazenamento-publico-separado-para-documento-publicado.md) | Documento tornado público vive em armazenamento separado, com leitura anônima e endereço imutável | accepted | 2026-09-13 |
 | [0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) | A divulgação do certame é materializada quando o ato normativo se registra — a existência da linha é a publicidade | accepted | 2026-09-17 |
 | [0134](0134-conflito-retentavel-declarado-nao-ocupa-a-chave-de-idempotencia.md) | O conflito declarado retentável não ocupa a chave de idempotência — 409 de corrida não é 409 de estado | proposed | 2026-09-19 |
+| [0135](0135-projeto-compartilhado-de-regras-sobre-fatos.md) | As regras sobre fatos do candidato (predicado, validador, derivação e avaliação de formulário) vivem no projeto compartilhado `Unifesspa.UniPlus.Regras`, fora do Kernel, dependente só dele | accepted | 2026-09-29 |
 
-> **Nota de numeração:** a sequência de `0001` a `0134` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0135+`.
+> **Nota de numeração:** a sequência de `0001` a `0135` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0136+`.
 
 ## Como adicionar um novo ADR
 
