@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// depende do fato, então o estado é declarado, nunca inferido da ausência.
 /// </para>
 /// <para>
-/// As três factories são o único caminho de construção, e cada uma fixa a
+/// As quatro factories são o único caminho de construção, e cada uma fixa a
 /// combinação válida: só <see cref="Resolvido"/> carrega valor, e ele nunca é
 /// <see cref="JsonValueKind.Null"/> nem <see cref="JsonValueKind.Undefined"/> —
 /// aceitar um desses reintroduziria pela porta dos fundos a ambiguidade que este
@@ -28,6 +28,7 @@ public sealed record FatoResolvido
 {
     private static readonly FatoResolvido NaoAplicavelInstancia = new(EstadoFato.NaoAplicavel, valor: null);
     private static readonly FatoResolvido IndeterminadoInstancia = new(EstadoFato.Indeterminado, valor: null);
+    private static readonly FatoResolvido NaoInformadoInstancia = new(EstadoFato.NaoInformado, valor: null);
 
     private FatoResolvido(EstadoFato estado, JsonElement? valor)
     {
@@ -56,10 +57,16 @@ public sealed record FatoResolvido
     public static FatoResolvido Indeterminado() => IndeterminadoInstancia;
 
     /// <summary>
+    /// O campo opcional foi deixado em branco e a etapa foi concluída: resolvido sem valor.
+    /// Quem depende dele não fica pendente, e toda condição sobre ele é falsa.
+    /// </summary>
+    public static FatoResolvido NaoInformado() => NaoInformadoInstancia;
+
+    /// <summary>
     /// O fato se aplica e tem valor. Um <paramref name="valor"/> nulo ou indefinido
     /// é recusado: essa forma significa "sem valor", e sem valor o fato é
-    /// <see cref="NaoAplicavel"/> ou <see cref="Indeterminado"/> — quem chama tem de
-    /// dizer qual.
+    /// <see cref="NaoAplicavel"/>, <see cref="Indeterminado"/> ou <see cref="NaoInformado"/> —
+    /// quem chama tem de dizer qual.
     /// </summary>
     /// <exception cref="ArgumentException">
     /// Quando <paramref name="valor"/> é <see cref="JsonValueKind.Null"/> ou
@@ -70,7 +77,7 @@ public sealed record FatoResolvido
         if (valor.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
             throw new ArgumentException(
-                "Um fato resolvido exige valor. Para a ausência de valor, use NaoAplicavel() ou Indeterminado() — "
+                "Um fato resolvido exige valor. Para a ausência de valor, use NaoAplicavel(), Indeterminado() ou NaoInformado() — "
                 + "o estado é declarado, nunca inferido do nulo.",
                 nameof(valor));
         }

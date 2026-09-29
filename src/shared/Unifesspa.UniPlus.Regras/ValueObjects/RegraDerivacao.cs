@@ -62,11 +62,7 @@ public sealed record RegraDerivacao
     }
 
     /// <summary>Os códigos de fato citados no predicado da regra, sem repetição.</summary>
-    public IReadOnlyCollection<string> FatosCitados =>
-        [.. Quando.Clausulas
-            .SelectMany(static c => c.Condicoes)
-            .Select(static cond => cond.Fato)
-            .Distinct(StringComparer.Ordinal)];
+    public IReadOnlyCollection<string> FatosCitados => Quando.FatosCitados;
 }
 
 /// <summary>Códigos de erro de <see cref="RegraDerivacao"/>.</summary>

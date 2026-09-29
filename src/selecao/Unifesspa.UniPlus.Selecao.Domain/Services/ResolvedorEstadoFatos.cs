@@ -2,11 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using System.Text.Json;
 
-using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Resolve o estado de cada fato do candidato a partir do grafo de coleta congelado e das
@@ -22,13 +20,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// precisar apagá-la de lugar nenhum.
 /// </para>
 /// <para>
-/// A ordem de avaliação é a ordem de coleta, que o agregado já garante ser total e coerente com
-/// as dependências: quando um fato é avaliado, todo fato que a sua pré-condição cita já está
-/// resolvido. Não há segunda passada nem ponto fixo a calcular.
+/// A avaliação é a do avaliador de formulário compartilhado (ADR-0135): a coleta vira uma etapa
+/// única, com os fatos na ordem de coleta, a pré-condição como exibição e a obrigatoriedade do
+/// campo. Nenhuma etapa é dada como concluída, então um campo aplicável sem resposta fica pendente.
 /// </para>
 /// </remarks>
 public static class ResolvedorEstadoFatos
 {
+    /// <summary>Código da etapa única em que a coleta é descrita para o avaliador.</summary>
+    private const string EtapaDaColeta = "COLETA";
+
     /// <summary>
     /// Resolve todos os fatos coletados pelo processo.
     /// </summary>
@@ -45,50 +46,22 @@ public static class ResolvedorEstadoFatos
         ArgumentNullException.ThrowIfNull(fatosColetados);
         ArgumentNullException.ThrowIfNull(respostasBrutas);
 
-        Dictionary<string, FatoResolvido> resolvidos = new(StringComparer.Ordinal);
+        DefinicaoEtapa coleta = new(
+            EtapaDaColeta,
+            exibicao: null,
+            [.. fatosColetados.OrderBy(static f => f.Ordem).Select(static fato => new DefinicaoItem(
+                fato.FatoCodigo,
+                fato.ParaPredicado(),
+                fato.Obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca,
+                restricoes: []))]);
 
-        foreach (FatoColetado fato in fatosColetados.OrderBy(static f => f.Ordem))
-        {
-            resolvidos[fato.FatoCodigo] = ResolverFato(fato, respostasBrutas, resolvidos);
-        }
+        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+            new DefinicaoFormulario([coleta], termos: [], derivacoes: []),
+            new EntradaAvaliacaoFormulario(
+                respostasBrutas,
+                EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
+                FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
 
-        return resolvidos;
-    }
-
-    private static FatoResolvido ResolverFato(
-        FatoColetado fato,
-        IReadOnlyDictionary<string, JsonElement> respostasBrutas,
-        IReadOnlyDictionary<string, FatoResolvido> jaResolvidos)
-    {
-        if (fato.ParaPredicado() is { } precondicao)
-        {
-            switch (precondicao.Avaliar(jaResolvidos))
-            {
-                case Ternario.Falso:
-                    // O campo não é apresentado. Estado resolvido e definitivo — e é aqui que uma
-                    // resposta gravada antes, quando a pré-condição ainda era verdadeira, deixa de
-                    // valer: ela nem chega a ser lida.
-                    return FatoResolvido.NaoAplicavel();
-
-                case Ternario.Indeterminado:
-                    // Ainda não se sabe se o campo se aplica, porque algum fato de que ele depende
-                    // não foi respondido. Propagar a indeterminação é o comportamento fail-closed:
-                    // decidir por não-aplicável dispensaria o que talvez venha a ser exigido.
-                    return FatoResolvido.Indeterminado();
-
-                case Ternario.Verdadeiro:
-                default:
-                    break;
-            }
-        }
-
-        // O campo se aplica: o estado passa a depender só de o candidato ter respondido ou não.
-        if (!respostasBrutas.TryGetValue(fato.FatoCodigo, out JsonElement resposta)
-            || resposta.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return FatoResolvido.Indeterminado();
-        }
-
-        return FatoResolvido.Resolvido(resposta);
+        return avaliacao.Fatos;
     }
 }

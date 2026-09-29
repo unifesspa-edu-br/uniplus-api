@@ -18,8 +18,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// O gate de dependências vem <b>antes</b> da avaliação das regras, e prevalece sobre o colapso local
 /// de uma cláusula: se qualquer dependente declarado está ausente ou indeterminado, o derivado é
 /// indeterminado como um todo (fail-closed), sem tentar unir contribuições parciais. Um dependente
-/// não-aplicável, por outro lado, é informação resolvida — não bloqueia; a regra que o cita
-/// simplesmente não contribui (a cláusula colapsa falso).
+/// não-aplicável ou não informado (opcional em branco com a etapa concluída), por outro lado, é
+/// informação resolvida — não bloqueia; a regra que o cita simplesmente não contribui (a cláusula
+/// colapsa falso).
 /// </para>
 /// </remarks>
 public static class MotorDerivacao
