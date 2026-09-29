@@ -375,6 +375,7 @@ os protege.
 
 ## Mais informações
 
+- **Sucedida em parte pela ADR-0136:** a governança somente por seed passa a valer só para os fatos de sistema e de integração; os domínios texto, data e endereço passam a ser aceitos, com restrição de citação em regra; a distinção entre fato categórico estático e de escopo-processo passa a ser a fonte dos valores; o derivado categórico por regra é multivalorado mesmo com fonte `GLOBAL`; e a imutabilidade dos eixos segue os marcos daquela ADR (cadastro para os fatos do administrador, primeira publicação que cite o fato para os de sistema).
 - ADR-0056 (módulo Configuração e leitor cross-módulo `IXxxReader`).
 - ADR-0058 (`ObrigatoriedadeLegal` como validação data-driven tipada — precedente da **forma** fechada de um vocabulário que alimenta um avaliador; sua governança é editável por catálogo e diverge desta ADR).
 - ADR-0061 (referência cross-módulo por snapshot-copy; na topologia atual da

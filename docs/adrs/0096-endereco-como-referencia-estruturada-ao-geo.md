@@ -116,6 +116,7 @@ São escolhas técnicas internas à opção aprovada — não reabrem a decisão
 
 ## Mais informações
 
+- **Emendada pela ADR-0136:** o endereço do candidato usa `ReferenciaEnderecoGeo`, mas decide elegibilidade (bônus regional por município); por isso o CEP e a cidade dele são conferidos no servidor contra o Geo, e não aceitos como retrato enviado pelo frontend.
 - ADR-0090 (módulo Geo como bounded context; composição no cliente; display cache) — este ADR **evolui** o padrão de referência de cidade para referência de endereço.
 - ADR-0092 (ETL de carga do DNE) — fonte do endereçamento estruturado.
 - ADR-0056 (isolamento de leitura cross-módulo) — preservado.

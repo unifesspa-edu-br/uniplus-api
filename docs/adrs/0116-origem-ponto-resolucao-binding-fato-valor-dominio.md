@@ -160,9 +160,12 @@ mesmo mecanismo de `OfertaAtendimentoEspecializado`/`OfertaTipoDeficiencia`).
 
 ## Mais informações
 
+- **Sucedida em parte pela ADR-0136:** a governança somente por seed passa a valer só para os fatos de sistema; o marco de imutabilidade da emenda 1.1 continua valendo nos fatos de sistema, estendido a todos os eixos (o código é imutável desde o cadastro em todo fato, e nos fatos do administrador os eixos são imutáveis desde o cadastro); a emenda 1.5 ganha o derivado booleano e o categórico multivalorado, e o recorte pela oferta do item 4 passa a acontecer também na cópia da regra padrão para o processo; e o mapa de prefixos do vínculo passa a ser o daquela ADR (`CAMPO_FORMULARIO:` no lugar de `CAMPO_INSCRICAO:`, e `AGREGACAO_GRUPO:` reservado para os agregados do grupo repetível, aceito só depois da ADR do grupo).
 - ADR-0111 (vocabulário fechado de fatos do candidato — continua vigente para
-  domínio, cardinalidade e governança seed-only; esta ADR refina só origem,
-  ponto de resolução, binding e descrição por valor).
+  domínio, cardinalidade e governança seed-only, com o alcance reduzido pela
+  ADR-0136: domínios texto, data e endereço aceitos e governança por seed só
+  para fatos de sistema; esta ADR refina só origem, ponto de resolução, binding
+  e descrição por valor).
 - ADR-0056 (leitor cross-módulo `IXxxReader`).
 - ADR-0061 (snapshot-copy cross-módulo).
 - Change OpenSpec `documentos-exigidos-cobertura-editais`, Story
