@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -1748,7 +1749,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // Ciclo antes de ordem: o erro de ciclo nomeia o caminho inteiro, que é acionável;
         // o de ordem apontaria só o primeiro par fora de sequência do mesmo problema.
-        if (DetectarCiclo(porCodigo) is { } caminho)
+        Dictionary<string, IReadOnlyCollection<string>> citacoes = porCodigo.ToDictionary(
+            static par => par.Key, static par => par.Value.FatosCitados, StringComparer.Ordinal);
+        if (GrafoDeFatos.DetectarCiclo(citacoes) is { } caminho)
         {
             return new DomainError(
                 FatoColetadoErrorCodes.GrafoComCiclo,
@@ -1783,58 +1786,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Busca em profundidade com marcação tricolor, devolvendo o caminho do primeiro ciclo
-    /// encontrado — ou <see langword="null"/> quando o grafo é acíclico. A travessia segue, de
-    /// cada fato, os fatos que a sua pré-condição <b>cita</b>, de modo que um caminho reportado
-    /// <c>A → B → A</c> se lê "A cita B, B cita A".
-    /// </summary>
-    private static IReadOnlyList<string>? DetectarCiclo(Dictionary<string, FatoColetado> porCodigo)
-    {
-        HashSet<string> visitados = new(StringComparer.Ordinal);
-        HashSet<string> naPilha = new(StringComparer.Ordinal);
-        List<string> caminho = [];
-
-        foreach (string codigo in porCodigo.Keys)
-        {
-            if (Visitar(codigo) is { } ciclo)
-            {
-                return ciclo;
-            }
-        }
-
-        return null;
-
-        IReadOnlyList<string>? Visitar(string codigo)
-        {
-            if (naPilha.Contains(codigo))
-            {
-                int inicio = caminho.IndexOf(codigo);
-                return [.. caminho[inicio..], codigo];
-            }
-
-            if (!visitados.Add(codigo) || !porCodigo.TryGetValue(codigo, out FatoColetado? fato))
-            {
-                return null;
-            }
-
-            naPilha.Add(codigo);
-            caminho.Add(codigo);
-
-            foreach (string citado in fato.FatosCitados)
-            {
-                if (Visitar(citado) is { } ciclo)
-                {
-                    return ciclo;
-                }
-            }
-
-            naPilha.Remove(codigo);
-            caminho.RemoveAt(caminho.Count - 1);
-            return null;
-        }
     }
 
     /// <summary>

@@ -28,6 +28,13 @@ public sealed record PredicadoDnf
 
     public IReadOnlyList<ClausulaDnf> Clausulas { get; }
 
+    /// <summary>Os códigos de fato citados pelas condições, sem repetição, na ordem em que aparecem.</summary>
+    public IReadOnlyCollection<string> FatosCitados =>
+        [.. Clausulas
+            .SelectMany(static c => c.Condicoes)
+            .Select(static cond => cond.Fato)
+            .Distinct(StringComparer.Ordinal)];
+
     /// <summary>
     /// Agrupa condições por ordinal de cláusula (o formato bruto que
     /// <c>CondicaoGatilho</c> — linhas relacionais com coluna <c>clausula</c>

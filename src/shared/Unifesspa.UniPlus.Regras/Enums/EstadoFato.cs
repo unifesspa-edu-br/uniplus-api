@@ -34,4 +34,12 @@ public enum EstadoFato
 
     /// <summary>O fato se aplica e tem valor conhecido.</summary>
     Resolvido = 2,
+
+    /// <summary>
+    /// O campo opcional foi apresentado e deixado em branco, com a etapa já concluída
+    /// (UNI-REQ-0074). É estado <b>resolvido sem valor</b>: não é pendência, porque o
+    /// candidato já decidiu não responder, e não é inaplicável, porque o campo se aplicava.
+    /// Não trava as regras seguintes, e toda condição sobre ele é falsa.
+    /// </summary>
+    NaoInformado = 3,
 }

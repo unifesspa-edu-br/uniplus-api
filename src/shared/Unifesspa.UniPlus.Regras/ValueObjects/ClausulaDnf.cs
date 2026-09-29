@@ -103,6 +103,14 @@ public sealed record ClausulaDnf
             return EstadoAtomo.NaoAplicavel;
         }
 
+        // Opcional em branco com a etapa concluída (UNI-REQ-0074): não há valor a comparar nem a
+        // negar, então a condição é falsa para todo operador, inclusive DIFERENTE e NAO_EM — quem
+        // não respondeu não satisfaz "diferente de X" por omissão.
+        if (fato.Estado == EstadoFato.NaoInformado)
+        {
+            return EstadoAtomo.Falso;
+        }
+
         if (fato.Estado != EstadoFato.Resolvido || fato.Valor is not { } valorCandidato)
         {
             return EstadoAtomo.Indeterminado;
