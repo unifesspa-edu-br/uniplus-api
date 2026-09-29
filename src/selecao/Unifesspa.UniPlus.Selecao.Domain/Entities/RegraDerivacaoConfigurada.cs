@@ -2,13 +2,14 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Uma regra de derivação configurada num processo (Story #927): quando o predicado
 /// <c>quando</c> — formado pelas <see cref="Condicoes"/> — é verdadeiro, a regra contribui o código
 /// <see cref="Contribui"/> para o conjunto derivado. É a forma persistida de
-/// <see cref="ValueObjects.RegraDerivacao"/>.
+/// <see cref="Regras.ValueObjects.RegraDerivacao"/>.
 /// </summary>
 /// <remarks>
 /// A regra <b>âncora</b> (incondicional) é a que não tem condição alguma: predicado de DNF vazio,
@@ -88,7 +89,7 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
         ConfiguracaoDerivacaoFatoId = configuracaoDerivacaoFatoId;
 
     /// <summary>
-    /// Reconstrói o VO <see cref="ValueObjects.RegraDerivacao"/> — o predicado é montado das
+    /// Reconstrói o VO <see cref="Regras.ValueObjects.RegraDerivacao"/> — o predicado é montado das
     /// condições agrupadas por cláusula; sem condições, o predicado é vazio (âncora).
     /// </summary>
     internal Result<RegraDerivacao> ParaRegraDerivacao()

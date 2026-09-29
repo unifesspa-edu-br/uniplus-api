@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Mapeamento único entre <see cref="Operador"/> e o código textual canônico
@@ -37,7 +37,7 @@ public static class OperadorCodigo
     /// <summary>
     /// Converte o código canônico de volta para o operador. Um código não
     /// reconhecido mapeia para o sentinela <see cref="Operador.Nenhuma"/> —
-    /// que <see cref="ValueObjects.CondicaoDnf.Criar"/> já rejeita com um erro
+    /// que <see cref="Regras.ValueObjects.CondicaoDnf.Criar"/> já rejeita com um erro
     /// de domínio (422) claro, em vez de estourar uma exceção não tratada.
     /// </summary>
     public static Operador FromCodigo(string? codigo) => codigo switch

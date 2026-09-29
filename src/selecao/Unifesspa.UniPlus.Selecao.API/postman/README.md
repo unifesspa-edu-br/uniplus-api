@@ -192,9 +192,9 @@ CONDICIONAL) com o `condicaoGatilho` exato de cada uma — inclusive o par
 recusado com 422 antes do PUT válido final) cobrem os limites do validador do
 gatilho DNF, com asserção no `code` do `ProblemDetails` — não só no status:
 
-- `MODALIDADE EM` com um código que não está na `DistribuicaoVagas` do processo → `uniplus.selecao.predicado_dnf.valor_fora_do_dominio`.
-- `FAIXA_ETARIA MAIOR_IGUAL "18.5"` (decimal onde o domínio exige inteiro) → `uniplus.selecao.predicado_dnf.valor_incompativel_com_tipo`.
-- `FAIXA_ETARIA EM [...]` (operador `EM` não é válido para domínio numérico) → `uniplus.selecao.predicado_dnf.operador_incompativel_com_dominio`.
+- `MODALIDADE EM` com um código que não está na `DistribuicaoVagas` do processo → `uniplus.predicado_dnf.valor_fora_do_dominio`.
+- `FAIXA_ETARIA MAIOR_IGUAL "18.5"` (decimal onde o domínio exige inteiro) → `uniplus.predicado_dnf.valor_incompativel_com_tipo`.
+- `FAIXA_ETARIA EM [...]` (operador `EM` não é válido para domínio numérico) → `uniplus.predicado_dnf.operador_incompativel_com_dominio`.
 - `GERAL` com uma condição viva não-vazia (CA-01: GERAL nunca convive com gatilho) → `uniplus.selecao.documento_exigido.geral_com_condicao`.
 
 Simplificação assumida: os 5 itens de `documentos-exigidos` usam a mesma fase

@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Estado de resolução de um fato do candidato (Story #926, ADR-0111). É o

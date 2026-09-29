@@ -1,9 +1,9 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Regras.ValueObjects;
 
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Conjunção (E) de <see cref="CondicaoDnf"/> — uma cláusula da forma normal
@@ -194,7 +194,7 @@ public sealed record ClausulaDnf
     /// kinds distintos no <c>System.Text.Json</c>, mas isso é a forma normal de um booleano
     /// divergir, não uma incoerência de tipo.
     /// </summary>
-    internal static Ternario CompararIgualdade(JsonElement candidato, JsonElement configurado)
+    public static Ternario CompararIgualdade(JsonElement candidato, JsonElement configurado)
     {
         bool candidatoBooleano = candidato.ValueKind is JsonValueKind.True or JsonValueKind.False;
         bool configuradoBooleano = configurado.ValueKind is JsonValueKind.True or JsonValueKind.False;

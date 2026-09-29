@@ -1,8 +1,8 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Regras.ValueObjects;
 
 using System.Collections.Frozen;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// O resultado da derivação de um fato (Story #927): o estado e, quando resolvido, o conjunto de

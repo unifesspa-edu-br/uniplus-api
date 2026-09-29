@@ -43,7 +43,7 @@ public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descr
 /// o(s) conjunto(s) de valores, no instante em que o fato foi citado numa condição de
 /// gatilho de <see cref="Domain.Entities.DocumentoExigido"/>. Mapeado pelo HANDLER a
 /// partir de <c>Unifesspa.UniPlus.Configuracao.Contracts.FatoCandidatoView</c> —
-/// nunca reaproveita <see cref="Domain.ValueObjects.DescritorFatoCandidato"/> (VO mínimo
+/// nunca reaproveita <see cref="Regras.ValueObjects.DescritorFatoCandidato"/> (VO mínimo
 /// do validador de predicado, propósito distinto: validação de forma, não congelamento
 /// de evidência).
 /// </summary>

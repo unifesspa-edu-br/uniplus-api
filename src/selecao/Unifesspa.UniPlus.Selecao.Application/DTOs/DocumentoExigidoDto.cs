@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// DTO de leitura de <see cref="Domain.Entities.DocumentoExigido"/> (Story #554, PR #895).
 /// Compõe <c>ProcessoSeletivoDto</c> — não há rota aninhada própria de leitura, mesmo

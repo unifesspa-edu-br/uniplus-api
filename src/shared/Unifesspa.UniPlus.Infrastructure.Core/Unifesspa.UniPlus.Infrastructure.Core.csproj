@@ -47,6 +47,8 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Authorization\Unifesspa.UniPlus.Authorization.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
+    <!-- Registro único do mapeamento de erros das regras sobre fatos (ADR-0135). -->
+    <ProjectReference Include="..\Unifesspa.UniPlus.Regras\Unifesspa.UniPlus.Regras.csproj" />
   </ItemGroup>
 
   <ItemGroup>

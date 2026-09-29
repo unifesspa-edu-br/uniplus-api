@@ -9,6 +9,8 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 public static class ObterProcessoSeletivoQueryHandler
 {
     public static async Task<ProcessoSeletivoDto?> Handle(
@@ -128,7 +130,7 @@ public static class ObterProcessoSeletivoQueryHandler
     /// </summary>
     private static IReadOnlyList<IReadOnlyList<TCondicao>>? ProjectPredicado<TLinha, TCondicao>(
         IReadOnlyCollection<TLinha> linhas,
-        Func<TLinha, (int Clausula, string Fato, Domain.Enums.Operador Operador, JsonElement Valor)> extrair,
+        Func<TLinha, (int Clausula, string Fato, Regras.Enums.Operador Operador, JsonElement Valor)> extrair,
         Func<string, string, JsonElement, TCondicao> criar)
     {
         if (linhas.Count == 0)

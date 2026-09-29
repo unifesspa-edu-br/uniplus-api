@@ -12,6 +12,8 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Handler do <see cref="DefinirCriteriosDesempateCommand"/> (Story #774). Lê o catálogo de

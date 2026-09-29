@@ -6,6 +6,8 @@ using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -1583,7 +1585,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <remarks>
     /// Um item nulo é invariante quebrada, não entrada tolerável: nenhum dos sete vocabulários
     /// admite <c>null</c> como elemento — <see cref="LeitorEnvelope.Textos"/> já o recusa na
-    /// leitura para os seis primeiros, e <see cref="Services.PredicadoDnfValidador"/> já
+    /// leitura para os seis primeiros, e <see cref="Regras.Services.PredicadoDnfValidador"/> já
     /// recusa alternativa não-string (logo nunca nula) antes da publicação para o sétimo. Um
     /// envelope que o emitisse produziria um documento que o próprio decoder da mesma versão
     /// rejeitaria. Falha alto aqui, com mensagem própria, em vez de deixar o
@@ -1660,7 +1662,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// array sob outro operador não tem garantia de ser conjunto e não é tocado — a decisão
     /// não pode vir da forma do valor (um array também seria a forma de um escalar JSON
     /// opaco em outro contexto), só da matriz operador × domínio que
-    /// <see cref="ValueObjects.CondicaoDnf"/> já valida.
+    /// <see cref="Regras.ValueObjects.CondicaoDnf"/> já valida.
     /// </summary>
     /// <remarks>
     /// Cada alternativa é analisada isoladamente, a partir do <see cref="JsonElement"/> bruto

@@ -8,6 +8,9 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
 /// <summary>
 /// Handler da <see cref="ObterRegrasDerivacaoNormativasQuery"/>: leitura pura que recorta a matriz
 /// normativa para o que o processo oferta.

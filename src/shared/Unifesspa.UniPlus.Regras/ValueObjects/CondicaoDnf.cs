@@ -1,31 +1,31 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Regras.ValueObjects;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Átomo tipado <c>{ Fato, Operador, Valor }</c> de um predicado sobre o
 /// candidato — a unidade compartilhada por <see cref="ClausulaDnf"/>/
 /// <see cref="PredicadoDnf"/> e reusada literalmente por
-/// <see cref="ArgsDesempatePredicadoFato"/> (ADR-0111, Story #847).
+/// <c>ArgsDesempatePredicadoFato</c> (ADR-0111, Story #847).
 /// </summary>
 /// <remarks>
 /// <para>
 /// Validação de <b>forma</b>, sem I/O: <see cref="Fato"/> não vazio,
 /// <see cref="Operador"/> um dos valores do domínio fechado (nunca o
-/// sentinela <see cref="Enums.Operador.Nenhuma"/>), e a forma de
-/// <see cref="Valor"/> coerente com o operador — <see cref="Enums.Operador.Em"/> e
-/// <see cref="Enums.Operador.NaoEm"/> (Story #916) exigem array JSON, sem itens de
+/// sentinela <see cref="Regras.Enums.Operador.Nenhuma"/>), e a forma de
+/// <see cref="Valor"/> coerente com o operador — <see cref="Regras.Enums.Operador.Em"/> e
+/// <see cref="Regras.Enums.Operador.NaoEm"/> (Story #916) exigem array JSON, sem itens de
 /// texto em branco; array <b>vazio</b> é aceito na forma (a semântica de avaliar
 /// <c>EM []</c>/<c>NAO_EM []</c> é de <see cref="PredicadoDnf"/>, não desta factory). Os
-/// demais operadores (<see cref="Enums.Operador.Igual"/>, <see cref="Enums.Operador.Diferente"/>,
-/// <see cref="Enums.Operador.MaiorIgual"/>, <see cref="Enums.Operador.MenorIgual"/>) exigem
+/// demais operadores (<see cref="Regras.Enums.Operador.Igual"/>, <see cref="Regras.Enums.Operador.Diferente"/>,
+/// <see cref="Regras.Enums.Operador.MaiorIgual"/>, <see cref="Regras.Enums.Operador.MenorIgual"/>) exigem
 /// escalar (rejeitam array e objeto). A validação <b>semântica</b> (fato existe no
 /// vocabulário, operador compatível com o domínio do fato, valor pertence ao domínio) é
-/// responsabilidade de <see cref="Services.PredicadoDnfValidador"/>, que
+/// responsabilidade de <see cref="Regras.Services.PredicadoDnfValidador"/>, que
 /// recebe o vocabulário como dado — por isso vive separada desta factory.
 /// </para>
 /// </remarks>
@@ -36,10 +36,10 @@ public sealed record CondicaoDnf
     /// que o <c>System.Text.Json</c> usa para materializar <c>CriterioDesempate.Args</c>
     /// a partir da coluna <c>json</c> (EF <c>ValueComparer</c>/reidratação de change
     /// tracking) — o mesmo tratamento que os demais registros de
-    /// <see cref="ArgsCriterioDesempate"/> já recebem implicitamente (construtor
+    /// <c>ArgsCriterioDesempate</c> já recebem implicitamente (construtor
     /// posicional público). O dado já foi validado por <see cref="Criar"/> quando
     /// escrito; esta materialização não revalida, no mesmo espírito das demais
-    /// variantes de <see cref="ArgsCriterioDesempate"/>.
+    /// variantes de <c>ArgsCriterioDesempate</c>.
     /// </remarks>
     [JsonConstructor]
     private CondicaoDnf(string fato, Operador operador, JsonElement valor)

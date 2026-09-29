@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
 /// <summary>
 /// Args aplicados de um <see cref="Entities.CriterioDesempate"/> — os
 /// parâmetros que o admin preenche ao aplicar uma regra do

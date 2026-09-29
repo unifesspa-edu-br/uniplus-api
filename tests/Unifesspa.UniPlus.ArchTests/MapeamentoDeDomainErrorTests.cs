@@ -84,6 +84,27 @@ public sealed partial class MapeamentoDeDomainErrorTests
         NenhumCodeMontadoPorInterpolacao([kernel]);
     }
 
+    [Fact(DisplayName = "codes de DomainError das regras sobre fatos estão registrados")]
+    public void Codes_DasRegrasSobreFatos_EstaoRegistrados()
+    {
+        // Mesmo motivo do kernel: as regras sobre fatos não são módulo de negócio, mas
+        // emitem erros que Configuração e Seleção propagam, e o registro delas mora em
+        // Infrastructure.Core (ADR-0135). Fora deste Fact, um code novo sem mapeamento
+        // passaria verde pela Theory dos módulos, que não varre src/shared/.
+        string regras = Path.Join(RaizDoRepositorio(), "src", "shared", "Unifesspa.UniPlus.Regras");
+
+        HashSet<string> emitidos = LerCodesDeConstantes(Assembly.Load("Unifesspa.UniPlus.Regras"));
+        emitidos.UnionWith(LerCodesEmLiteraisInline([regras]));
+
+        IReadOnlyList<string> orfaos = [.. emitidos.Except(LerCodesRegistrados("Regras")).Order()];
+        orfaos.Should().BeEmpty(
+            "todo code emitido pelas regras sobre fatos precisa de mapeamento em "
+                + "IDomainErrorRegistration; sem ele o mapper devolve 500 genérico em vez do "
+                + $"ProblemDetails canônico (ADR-0024). Sem mapeamento: {string.Join(", ", orfaos)}");
+
+        NenhumCodeMontadoPorInterpolacao([regras]);
+    }
+
     /// <remarks>
     /// A cobertura por code alcança literal e constante, mas um code montado em tempo
     /// de execução não existe no fonte nem nos metadados: o teste passaria verde sem

@@ -2220,7 +2220,7 @@
                 "exec": [
                   "pm.test('422 PredicadoDnf.ValorForaDoDominio', () => {",
                   "  pm.response.to.have.status(422);",
-                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.predicado_dnf.valor_fora_do_dominio');",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.predicado_dnf.valor_fora_do_dominio');",
                   "});"
                 ]
               }
@@ -2285,7 +2285,7 @@
                 "exec": [
                   "pm.test('422 PredicadoDnf.ValorIncompativelComTipo', () => {",
                   "  pm.response.to.have.status(422);",
-                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.predicado_dnf.valor_incompativel_com_tipo');",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.predicado_dnf.valor_incompativel_com_tipo');",
                   "});"
                 ]
               }
@@ -2350,7 +2350,7 @@
                 "exec": [
                   "pm.test('422 PredicadoDnf.OperadorIncompativelComDominio', () => {",
                   "  pm.response.to.have.status(422);",
-                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.predicado_dnf.operador_incompativel_com_dominio');",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.predicado_dnf.operador_incompativel_com_dominio');",
                   "});"
                 ]
               }

@@ -13,6 +13,9 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Handler do <see cref="DefinirDocumentosExigidosCommand"/> (Story #554; árvore E/OU na

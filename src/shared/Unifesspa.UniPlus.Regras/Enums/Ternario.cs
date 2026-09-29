@@ -1,8 +1,8 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Resultado ternário fail-closed da avaliação de um <see cref="ValueObjects.PredicadoDnf"/>
-/// (ou de uma <see cref="ValueObjects.ClausulaDnf"/>) contra os fatos de um candidato
+/// Resultado ternário fail-closed da avaliação de um <see cref="Regras.ValueObjects.PredicadoDnf"/>
+/// (ou de uma <see cref="Regras.ValueObjects.ClausulaDnf"/>) contra os fatos de um candidato
 /// (Story #916, ADR-0111). Um fato citado numa condição que não está resolvido — ausente,
 /// <c>null</c>, ou de tipo incoerente com o operador — nunca é tratado como
 /// <see cref="Falso"/>: o predicado avalia como <see cref="Indeterminado"/>, e quem consome o

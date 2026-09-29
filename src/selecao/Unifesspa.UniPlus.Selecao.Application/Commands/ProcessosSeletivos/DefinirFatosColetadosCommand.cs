@@ -7,6 +7,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Uma condição da pré-condição de um fato coletado — a tripla

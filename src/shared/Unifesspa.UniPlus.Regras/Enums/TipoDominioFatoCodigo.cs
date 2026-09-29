@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Mapeamento único entre <see cref="TipoDominioFato"/> e o código textual

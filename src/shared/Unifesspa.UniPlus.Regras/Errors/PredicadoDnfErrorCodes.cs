@@ -1,4 +1,6 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
+namespace Unifesspa.UniPlus.Regras.Errors;
+
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Códigos de erro do predicado sobre fatos do candidato que quem o valida precisa distinguir

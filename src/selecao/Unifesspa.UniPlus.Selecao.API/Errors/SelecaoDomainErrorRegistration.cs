@@ -5,6 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
@@ -242,22 +245,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(DesempatePorAreaEnemErrorCodes.AreaCitadaPorOutroCriterio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.area_enem_citada_por_outro_criterio", "A área do ENEM já é comparada por outro critério de desempate")),
         new(DesempatePorAreaEnemErrorCodes.SemQuadro, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.desempate_area_enem_sem_quadro", "Desempate por área do ENEM exige classificação baseada em ENEM com quadro de pesos por área")),
         new(DesempatePorAreaEnemErrorCodes.ForaDoQuadro, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.desempate_area_enem_fora_do_quadro", "O desempate cita área do ENEM que o quadro de pesos por área não tem")),
-        // PredicadoDnf — VO compartilhado de predicado sobre o candidato (Story #847,
-        // ADR-0111). Consumido hoje por DESEMPATE-PREDICADO-FATO; consumido amanhã por
-        // #554 (CondicaoGatilho) e #559 (CampoFormulario.CondicaoExibicao) sem
-        // reimplementar a gramática.
-        new("ClausulaDnf.ClausulaVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.clausula_dnf.clausula_vazia", "Uma cláusula do predicado deve ter ao menos uma condição")),
-        new("CondicaoDnf.FatoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_dnf.fato_obrigatorio", "O fato da condição é obrigatório")),
-        new("CondicaoDnf.OperadorInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_dnf.operador_invalido", "O operador da condição não é reconhecido")),
-        new("CondicaoDnf.FormaIncoerenteComOperador", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_dnf.forma_incoerente_com_operador", "A forma do valor não é coerente com o operador da condição")),
-        new("PredicadoDnf.FatoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.fato_desconhecido", "O fato da condição não pertence ao vocabulário fechado")),
-        new(PredicadoDnfErrorCodes.OperadorIncompativelComDominio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.operador_incompativel_com_dominio", "O operador da condição não é compatível com o domínio do fato")),
-        new(PredicadoDnfErrorCodes.ValorIncompativelComTipo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.valor_incompativel_com_tipo", "O valor da condição não é compatível com o tipo do fato")),
-        new(PredicadoDnfErrorCodes.ValorForaDoDominio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.valor_fora_do_dominio", "O valor da condição não pertence ao domínio declarado do fato")),
-        new("PredicadoDnf.FatoNaoColetadoPeloProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.fato_nao_coletado_pelo_processo", "O fato da condição não é coletado por este processo")),
-        // Story #554, PR #896: extensão do PredicadoDnf para domínio dinâmico/multivalorado.
-        new("PredicadoDnf.DominioDinamicoNaoFornecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.dominio_dinamico_nao_fornecido", "O domínio dinâmico do fato não foi fornecido pelo chamador")),
-        new("DescritorFatoCandidato.DominioIncoerente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.descritor_fato_candidato.dominio_incoerente", "A combinação de domínio e valores declarados do fato é incoerente")),
+        // Predicado, derivação e descritor do fato vivem em Unifesspa.UniPlus.Regras (ADR-0135):
+        // os códigos deles são registrados uma única vez em RegrasDomainErrorRegistration.
         new("ConfiguracaoBonusRegional.RegraInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.regra_invalida", "A regra referenciada não é do código BONUS-MULTIPLICATIVO")),
         new("ConfiguracaoBonusRegional.FatorInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.fator_invalido", "O fator do bônus deve ser maior que zero")),
         new("ConfiguracaoBonusRegional.TetoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.teto_invalido", "O teto do bônus, quando informado, deve ser maior que zero")),
@@ -460,13 +449,6 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RegraDerivacaoConfigurada.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_derivacao_configurada.ordem_invalida", "A ordem da regra não pode ser negativa")),
         new("RegraDerivacaoConfigurada.ContribuiObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_derivacao_configurada.contribui_obrigatorio", "Uma regra de derivação precisa contribuir um código")),
         new("CondicaoRegraDerivacao.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_regra_derivacao.clausula_invalida", "O ordinal da cláusula da regra não pode ser negativo")),
-        // Códigos do value object da regra (motor), que ParaRegrasDerivacao pode devolver ao
-        // reconstruir a regra contra o domínio do fato.
-        new("RegraDerivacao.ContribuiObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_derivacao.contribui_obrigatorio", "Uma regra de derivação precisa contribuir um código")),
-        new("RegrasDerivacaoFato.SemRegras", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_derivacao_fato.sem_regras", "A derivação de um fato precisa de ao menos uma regra")),
-        new("RegrasDerivacaoFato.ContribuiForaDoDominio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_derivacao_fato.contribui_fora_do_dominio", "Uma regra contribui um código fora do domínio do fato")),
-        new("RegrasDerivacaoFato.DependenciasIncoerentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_derivacao_fato.dependencias_incoerentes", "As dependências declaradas não são exatamente os fatos citados")),
-        new("RegrasDerivacaoFato.DerivacaoAutorreferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_derivacao_fato.derivacao_autorreferente", "Um fato derivado não pode depender de si mesmo")),
         // Grafo de dependência conjunto (Story #928, §6): ciclo pelas quatro classes de aresta juntas.
         new("GrafoDependenciaConjunta.GrafoConjuntoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo", "O grafo de dependência conjunto (produção, pré-condição, derivação e gatilho) forma um ciclo")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),

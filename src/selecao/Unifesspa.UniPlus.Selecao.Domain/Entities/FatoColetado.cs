@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Um fato do vocabulário que <b>este</b> processo seletivo coleta do candidato, com a sua
@@ -194,10 +195,10 @@ public sealed class FatoColetado : EntityBase
     /// oposto de "sem pré-condição" —, então a ausência é representada pelo nulo, nunca por um
     /// predicado vazio.
     /// </summary>
-    internal ValueObjects.PredicadoDnf? ParaPredicado() =>
+    internal Regras.ValueObjects.PredicadoDnf? ParaPredicado() =>
         _precondicoes.Count == 0
             ? null
-            : ValueObjects.PredicadoDnf.CriarDeCondicoesAgrupadas(
+            : Regras.ValueObjects.PredicadoDnf.CriarDeCondicoesAgrupadas(
                 [.. _precondicoes.Select(static c => (c.Clausula, c.ParaCondicaoDnf()))]).Value!;
 }
 

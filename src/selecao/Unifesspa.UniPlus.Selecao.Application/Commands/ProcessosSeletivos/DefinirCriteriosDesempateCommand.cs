@@ -5,6 +5,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Item de entrada de um critério de desempate, usado por
