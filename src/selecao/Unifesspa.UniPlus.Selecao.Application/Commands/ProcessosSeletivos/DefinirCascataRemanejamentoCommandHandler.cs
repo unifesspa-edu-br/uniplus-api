@@ -87,10 +87,10 @@ public static class DefinirCascataRemanejamentoCommandHandler
         {
             DestinoRemanejamentoInput? destinoInput = command.Destinos[indice];
 
-            // Defesa em profundidade: o FluentValidation (middleware, antes deste handler) já
-            // recusa um item nulo, mas o handler não deve confiar exclusivamente nisso para
-            // não desreferenciar null — um payload que contornasse a validação de borda não
-            // pode virar 500.
+            // Única barreira contra item nulo: o validator não inspeciona os itens de Destinos
+            // (a forma de cada item é responsabilidade de DestinoRemanejamento.Criar), então um
+            // payload com `destinos: [null]` chega até aqui — recusar como CamposObrigatorios no
+            // índice do item em vez de desreferenciar null e virar 500.
             if (destinoInput is null)
             {
                 itemErros.Add(new($"destinos[{indice}]", new DomainError(
