@@ -164,7 +164,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(21);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(22);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -195,7 +195,7 @@ public sealed class FatoCandidatoPersistenceTests
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Sensivel)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONDICAO_ATENDIMENTO", "COR_RACA", "MODALIDADE",
-                "PCD", "QUILOMBOLA", "TIPO_DEFICIENCIA");
+                "MODALIDADE_CONVOCACAO", "PCD", "QUILOMBOLA", "TIPO_DEFICIENCIA");
         fatos.Where(f => f.ClassificacaoProtecao != ClassificacaoProtecaoDado.Sensivel)
             .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Pessoal);
     }
@@ -312,7 +312,7 @@ public sealed class FatoCandidatoPersistenceTests
             ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
     }
 
-    [Fact(DisplayName = "Origem: FAIXA_ETARIA, RENDA_PER_CAPITA e MODALIDADE são Derivado; todos os demais são Declarado (ADR-0116)")]
+    [Fact(DisplayName = "Origem: os calculados de atributo, a modalidade e a modalidade da convocação são Derivado; os demais são Declarado (ADR-0116)")]
     public async Task Seed_OrigemReclassificadaConformeADR0116()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -326,19 +326,20 @@ public sealed class FatoCandidatoPersistenceTests
 
         // MODALIDADE passou a Derivado: não é resposta do candidato, e sim resultado da avaliação
         // dos fatos declarados contra as regras congeladas do processo (ADR-0116, emenda 2026-07-22).
-        derivados.Should().Equal("FAIXA_ETARIA", "MODALIDADE", "MUNICIPIO_RESIDENCIA", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
+        derivados.Should().Equal("FAIXA_ETARIA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "MUNICIPIO_RESIDENCIA", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
         fatos.Where(f => f.Origem != OrigemFato.Derivado)
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
 
-    [Fact(DisplayName = "PontoResolucao: todos os fatos de sistema resolvem em INSCRICAO")]
+    [Fact(DisplayName = "PontoResolucao: os fatos de sistema resolvem na inscrição, exceto a modalidade da convocação, no resultado final")]
     public async Task Seed_PontoResolucaoInscricaoParaTodos()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
 
-        fatos.Should().OnlyContain(f => f.PontoResolucao == "INSCRICAO");
+        fatos.Where(static f => f.Codigo != "MODALIDADE_CONVOCACAO").Should().OnlyContain(static f => f.PontoResolucao == "INSCRICAO");
+        fatos.Single(static f => f.Codigo == "MODALIDADE_CONVOCACAO").PontoResolucao.Should().Be("RESULTADO_FINAL");
     }
 
     [Fact(DisplayName = "Cardinalidade: só MODALIDADE e CONDICAO_ATENDIMENTO são multivalorados; os demais escalares")]
@@ -418,7 +419,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
 
-        views.Should().HaveCount(21);
+        views.Should().HaveCount(22);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -516,29 +517,30 @@ public sealed class FatoCandidatoPersistenceTests
         // Falha se a fonte do seed divergir da autoridade da ADR (código, id fixo,
         // domínio, origem, cardinalidade, ponto de resolução, binding ou valores),
         // não apenas se a migration divergir da fonte.
-        (string Codigo, string IdSufixo, DominioFato Dominio, OrigemFato Origem, CardinalidadeFato Cardinalidade, string Binding)[] esperado =
+        (string Codigo, string IdSufixo, DominioFato Dominio, OrigemFato Origem, CardinalidadeFato Cardinalidade, string Binding, string PontoResolucao)[] esperado =
         [
-            ("COR_RACA", "001", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:COR_RACA"),
-            ("QUILOMBOLA", "002", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:QUILOMBOLA"),
-            ("PCD", "003", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:PCD"),
-            ("EGRESSO_ESCOLA_PUBLICA", "004", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:EGRESSO_ESCOLA_PUBLICA"),
-            ("RENDA_PER_CAPITA", "005", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA"),
-            ("FAIXA_ETARIA", "006", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA"),
-            ("SEXO", "007", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SEXO"),
-            ("MODALIDADE", "008", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, "REGRA_DERIVACAO:MODALIDADE"),
-            ("CONDICAO_ATENDIMENTO", "009", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO"),
-            ("NACIONALIDADE", "010", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NACIONALIDADE"),
-            ("TIPO_DEFICIENCIA", "011", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:TIPO_DEFICIENCIA"),
-            ("BAIXA_RENDA", "012", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:BAIXA_RENDA"),
-            ("CONCORRER_PCD", "013", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PCD"),
-            ("CONCORRER_EP", "014", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_EP"),
-            ("CONCORRER_PPI", "015", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PPI"),
-            ("CONCORRER_Q", "016", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_Q"),
-            ("CONCORRER_RENDA", "017", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_RENDA"),
-            ("ENDERECO_RESIDENCIAL", "018", DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:ENDERECO_RESIDENCIAL"),
-            ("DATA_NASCIMENTO", "019", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DATA_NASCIMENTO"),
-            ("UF_RESIDENCIA", "020", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA"),
-            ("MUNICIPIO_RESIDENCIA", "021", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA"),
+            ("COR_RACA", "001", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:COR_RACA", "INSCRICAO"),
+            ("QUILOMBOLA", "002", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:QUILOMBOLA", "INSCRICAO"),
+            ("PCD", "003", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:PCD", "INSCRICAO"),
+            ("EGRESSO_ESCOLA_PUBLICA", "004", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:EGRESSO_ESCOLA_PUBLICA", "INSCRICAO"),
+            ("RENDA_PER_CAPITA", "005", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", "INSCRICAO"),
+            ("FAIXA_ETARIA", "006", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", "INSCRICAO"),
+            ("SEXO", "007", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SEXO", "INSCRICAO"),
+            ("MODALIDADE", "008", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, "REGRA_DERIVACAO:MODALIDADE", "INSCRICAO"),
+            ("CONDICAO_ATENDIMENTO", "009", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO", "INSCRICAO"),
+            ("NACIONALIDADE", "010", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NACIONALIDADE", "INSCRICAO"),
+            ("TIPO_DEFICIENCIA", "011", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:TIPO_DEFICIENCIA", "INSCRICAO"),
+            ("BAIXA_RENDA", "012", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:BAIXA_RENDA", "INSCRICAO"),
+            ("CONCORRER_PCD", "013", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PCD", "INSCRICAO"),
+            ("CONCORRER_EP", "014", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_EP", "INSCRICAO"),
+            ("CONCORRER_PPI", "015", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PPI", "INSCRICAO"),
+            ("CONCORRER_Q", "016", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_Q", "INSCRICAO"),
+            ("CONCORRER_RENDA", "017", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_RENDA", "INSCRICAO"),
+            ("ENDERECO_RESIDENCIAL", "018", DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:ENDERECO_RESIDENCIAL", "INSCRICAO"),
+            ("DATA_NASCIMENTO", "019", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DATA_NASCIMENTO", "INSCRICAO"),
+            ("UF_RESIDENCIA", "020", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA", "INSCRICAO"),
+            ("MUNICIPIO_RESIDENCIA", "021", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA", "INSCRICAO"),
+            ("MODALIDADE_CONVOCACAO", "022", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "CLASSIFICACAO:MODALIDADE_CONVOCACAO", "RESULTADO_FINAL"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -546,14 +548,14 @@ public sealed class FatoCandidatoPersistenceTests
 
         fatos.Should().HaveCount(esperado.Length);
 
-        foreach ((string codigo, string idSufixo, DominioFato dominio, OrigemFato origem, CardinalidadeFato cardinalidade, string binding) in esperado)
+        foreach ((string codigo, string idSufixo, DominioFato dominio, OrigemFato origem, CardinalidadeFato cardinalidade, string binding, string pontoResolucao) in esperado)
         {
             FatoCandidato fato = fatos.Single(f => f.Codigo == codigo);
             fato.Id.Should().Be(Guid.Parse($"fa700000-0000-7000-8000-{idSufixo.PadLeft(12, '0')}"));
             fato.Dominio.Should().Be(dominio);
             fato.Origem.Should().Be(origem);
             fato.Cardinalidade.Should().Be(cardinalidade);
-            fato.PontoResolucao.Should().Be("INSCRICAO");
+            fato.PontoResolucao.Should().Be(pontoResolucao);
             fato.Binding.Should().Be(binding);
         }
     }

@@ -26,8 +26,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </para>
 /// <para>
 /// <see cref="OrigemFato"/> (ADR-0116): <c>FAIXA_ETARIA</c> e <c>RENDA_PER_CAPITA</c>
-/// (computados de atributo do candidato) e <c>MODALIDADE</c> (derivada das regras
-/// congeladas do processo) são <see cref="OrigemFato.Derivado"/>; todos os demais são
+/// (computados de atributo do candidato), <c>MODALIDADE</c> (derivada das regras
+/// congeladas do processo) e <c>MODALIDADE_CONVOCACAO</c> (resultado da classificação) são
+/// <see cref="OrigemFato.Derivado"/>; todos os demais são
 /// <see cref="OrigemFato.Declarado"/> (resposta/seleção direta do candidato), inclusive
 /// os cinco opt-ins <c>CONCORRER_*</c> — que são seleção direta, ainda que expressem
 /// vontade e não afirmação de elegibilidade. <see cref="OrigemFato.Integracao"/> fica
@@ -40,14 +41,15 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// fase posterior.
 /// </para>
 /// <para>
-/// Todos os fatos semeados resolvem em <c>PontoResolucao = "INSCRICAO"</c> — são
-/// respondidos/derivados no cadastro de inscrição do candidato, nenhum depende de
-/// fase posterior (o gate que recusaria isso é a Story #916/PR2).
+/// Os fatos semeados resolvem em <c>PontoResolucao = "INSCRICAO"</c> — são
+/// respondidos/derivados no cadastro de inscrição do candidato —, exceto
+/// <c>MODALIDADE_CONVOCACAO</c>, que só existe depois do resultado final.
 /// </para>
 /// </remarks>
 public static class FatoCandidatoSeed
 {
     private const string PontoResolucaoInscricao = "INSCRICAO";
+    private const string PontoResolucaoResultadoFinal = "RESULTADO_FINAL";
 
     /// <summary>
     /// Todo fato semeado trata o dado por cumprimento de obrigação legal: a Lei nº 12.711/2012 e
@@ -191,6 +193,14 @@ public static class FatoCandidatoSeed
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.GeoMunicipio,
             PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeResidencia),
+
+        // O grupo de vagas em que o candidato foi convocado, e não as modalidades a que concorreu:
+        // os documentos da habilitação seguem a convocação (UNI-REQ-0147). A classificação o produz
+        // e ele só é conhecido depois do resultado final.
+        new(SeedId(22), "MODALIDADE_CONVOCACAO", "Modalidade da convocação", null,
+            DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.Modalidade,
+            PontoResolucaoResultadoFinal, "CLASSIFICACAO:MODALIDADE_CONVOCACAO",
+            ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
     ];
 }
 

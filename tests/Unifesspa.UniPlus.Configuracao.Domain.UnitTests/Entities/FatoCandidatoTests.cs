@@ -157,6 +157,7 @@ public sealed class FatoCandidatoTests
 
     [Theory(DisplayName = "Fato do administrador não usa vínculo que exige código do sistema")]
     [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:DADO")]
+    [InlineData(OrigemFato.Derivado, "CLASSIFICACAO:DADO")]
     [InlineData(OrigemFato.Integracao, "INTEGRACAO:DADO")]
     public void Criar_FatoDoAdministradorComVinculoDeSistema_Recusa(OrigemFato origem, string binding) =>
         Criar(codigo: "DADO", origem: origem, binding: binding)

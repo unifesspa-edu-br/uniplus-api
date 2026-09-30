@@ -34,17 +34,19 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
     private const string PrefixoBindingDerivadoAtributo = "ATRIBUTO_CANDIDATO";
     private const string PrefixoBindingDerivadoRegra = "REGRA_DERIVACAO";
+    private const string PrefixoBindingDerivadoClassificacao = "CLASSIFICACAO";
     private const string PrefixoBindingDeclarado = "CAMPO_INSCRICAO";
     private const string PrefixoBindingIntegracao = "INTEGRACAO";
 
-    // Um fato derivado tem dois mecanismos de produção de valor: computar de um atributo do
-    // candidato (FAIXA_ETARIA, RENDA_PER_CAPITA) ou referenciar a regra de derivação congelada do
-    // processo (MODALIDADE). O catálogo é global e diz o mecanismo; a config do edital diz o
-    // conteúdo. Declarado e Integracao seguem com um prefixo cada (ADR-0116, emenda de 2026-07-22).
+    // Um fato derivado tem três mecanismos de produção de valor: computar de um atributo do
+    // candidato (FAIXA_ETARIA, RENDA_PER_CAPITA), referenciar a regra de derivação congelada do
+    // processo (MODALIDADE) ou receber o resultado da classificação (MODALIDADE_CONVOCACAO, o grupo
+    // em que o candidato foi convocado). O catálogo é global e diz o mecanismo; a config do edital
+    // diz o conteúdo. Declarado e Integracao seguem com um prefixo cada (ADR-0116).
     private static readonly Dictionary<OrigemFato, IReadOnlyList<string>> PrefixosBindingPorOrigem =
         new()
         {
-            [OrigemFato.Derivado] = [PrefixoBindingDerivadoAtributo, PrefixoBindingDerivadoRegra],
+            [OrigemFato.Derivado] = [PrefixoBindingDerivadoAtributo, PrefixoBindingDerivadoRegra, PrefixoBindingDerivadoClassificacao],
             [OrigemFato.Declarado] = [PrefixoBindingDeclarado],
             [OrigemFato.Integracao] = [PrefixoBindingIntegracao],
         };
@@ -262,15 +264,16 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 erros.Add(new("binding", bindingResult.Error!));
             }
             else if (!sistema && (origem == OrigemFato.Integracao
-                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoAtributo + ":", StringComparison.Ordinal)))
+                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoAtributo + ":", StringComparison.Ordinal)
+                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoClassificacao + ":", StringComparison.Ordinal)))
             {
                 // O fato do administrador não tem código que calcule ou traga o valor: é declarado,
-                // ou derivado pela regra que ele mesmo cadastra. Atributo do candidato e integração
-                // só existem em fato de sistema.
+                // ou derivado pela regra que ele mesmo cadastra. Atributo do candidato, classificação
+                // e integração só existem em fato de sistema.
                 Recusar(
                     "origem",
                     FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
-                    "Fato do administrador é declarado ou derivado por regra; atributo do candidato e integração só existem em fato de sistema.");
+                    "Fato do administrador é declarado ou derivado por regra; atributo do candidato, classificação e integração só existem em fato de sistema.");
             }
         }
 
