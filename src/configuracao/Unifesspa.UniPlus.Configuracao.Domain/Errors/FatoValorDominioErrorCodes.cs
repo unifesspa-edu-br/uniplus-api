@@ -29,4 +29,7 @@ public static class FatoValorDominioErrorCodes
     public const string DescricaoObrigatoria = "FatoValorDominio.DescricaoObrigatoria";
     public const string DescricaoTamanho = "FatoValorDominio.DescricaoTamanho";
     public const string OrdemInvalida = "FatoValorDominio.OrdemInvalida";
+    public const string NaoEncontrado = "FatoValorDominio.NaoEncontrado";
+    public const string JaAtivo = "FatoValorDominio.JaAtivo";
+    public const string JaDesativado = "FatoValorDominio.JaDesativado";
 }

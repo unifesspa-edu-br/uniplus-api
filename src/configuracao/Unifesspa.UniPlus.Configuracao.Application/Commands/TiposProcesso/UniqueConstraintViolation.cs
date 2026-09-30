@@ -6,7 +6,10 @@ internal static class UniqueConstraintViolation
     private const string UniqueViolationSqlState = "23505";
     private const string Constraint = "ix_tipos_processo_codigo";
 
-    public static bool EhConflitoDeCodigo(Exception exception)
+    public static bool EhConflitoDeCodigo(Exception exception) => EhConflito(exception, Constraint);
+
+    /// <summary>Se a exceção é a violação do índice único <paramref name="constraint"/>.</summary>
+    public static bool EhConflito(Exception exception, string constraint)
     {
         ArgumentNullException.ThrowIfNull(exception);
         if (!string.Equals(exception.GetType().FullName, "Microsoft.EntityFrameworkCore.DbUpdateException", StringComparison.Ordinal)
@@ -17,6 +20,6 @@ internal static class UniqueConstraintViolation
 
         Type tipo = exception.InnerException.GetType();
         return string.Equals(tipo.GetProperty("SqlState")?.GetValue(exception.InnerException) as string, UniqueViolationSqlState, StringComparison.Ordinal)
-            && string.Equals(tipo.GetProperty("ConstraintName")?.GetValue(exception.InnerException) as string, Constraint, StringComparison.Ordinal);
+            && string.Equals(tipo.GetProperty("ConstraintName")?.GetValue(exception.InnerException) as string, constraint, StringComparison.Ordinal);
     }
 }

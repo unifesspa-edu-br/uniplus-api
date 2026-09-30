@@ -148,7 +148,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
     /// <summary>
     /// Factory canônica: valida o código, o nome, o domínio, a origem, a cardinalidade, a fonte
-    /// dos valores, o ponto de resolução, o binding, o escopo e a proteção de dados.
+    /// dos valores, o formato, o ponto de resolução, o vínculo, o escopo e a proteção de dados. As
+    /// violações independentes são acumuladas (ADR-0125); a que depende de outro campo só é
+    /// conferida quando esse campo é válido.
     /// </summary>
     public static Result<FatoCandidato> Criar(
         string codigo,
@@ -167,105 +169,109 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         HipoteseLegalTratamento hipoteseLegal,
         bool sistema)
     {
+        List<FieldError> erros = [];
+        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
+
         Result<CodigoFatoCandidato> codigoResult = CodigoFatoCandidato.Criar(codigo);
         if (codigoResult.IsFailure)
         {
-            return Result<FatoCandidato>.Failure(codigoResult.Error!);
+            erros.Add(new("codigo", codigoResult.Error!));
         }
 
         Result<(string Nome, string? Descricao)> descritivo = ValidarDescritivo(nome, descricao);
-        if (descritivo.IsFailure)
-        {
-            return Result<FatoCandidato>.Failure(descritivo.Error!);
-        }
+        erros.AddRange(descritivo.Errors);
 
+        bool dominioValido = dominio != DominioFato.Nenhum && Enum.IsDefined(dominio);
         if (dominio == DominioFato.Nenhum)
         {
-            return Falha(FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório.");
+            Recusar("dominio", FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório.");
         }
-
-        if (!Enum.IsDefined(dominio))
+        else if (!dominioValido)
         {
-            return Falha(FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado.");
+            Recusar("dominio", FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado.");
         }
 
+        bool origemValida = origem != OrigemFato.Nenhuma && Enum.IsDefined(origem);
         if (origem == OrigemFato.Nenhuma)
         {
-            return Falha(FatoCandidatoErrorCodes.OrigemObrigatoria, "Origem do fato é obrigatória.");
+            Recusar("origem", FatoCandidatoErrorCodes.OrigemObrigatoria, "Origem do fato é obrigatória.");
         }
-
-        if (!Enum.IsDefined(origem))
+        else if (!origemValida)
         {
-            return Falha(FatoCandidatoErrorCodes.OrigemInvalida, "Origem do fato fora do vocabulário fechado.");
+            Recusar("origem", FatoCandidatoErrorCodes.OrigemInvalida, "Origem do fato fora do vocabulário fechado.");
         }
 
         if (cardinalidade == CardinalidadeFato.Nenhuma)
         {
-            return Falha(FatoCandidatoErrorCodes.CardinalidadeObrigatoria, "Cardinalidade do fato é obrigatória.");
+            Recusar("cardinalidade", FatoCandidatoErrorCodes.CardinalidadeObrigatoria, "Cardinalidade do fato é obrigatória.");
+        }
+        else if (!Enum.IsDefined(cardinalidade))
+        {
+            Recusar("cardinalidade", FatoCandidatoErrorCodes.CardinalidadeInvalida, "Cardinalidade do fato fora do vocabulário fechado.");
         }
 
-        if (!Enum.IsDefined(cardinalidade))
+        if (dominioValido)
         {
-            return Falha(FatoCandidatoErrorCodes.CardinalidadeInvalida, "Cardinalidade do fato fora do vocabulário fechado.");
-        }
+            bool ehCategorico = dominio == DominioFato.Categorico;
+            if (ehCategorico && (fonteValores is null or FonteValoresFato.Nenhuma || !Enum.IsDefined(fonteValores.Value)))
+            {
+                Recusar("fonteValores", FatoCandidatoErrorCodes.FonteValoresObrigatoria, "Fato categórico precisa declarar a fonte dos seus valores.");
+            }
+            else if (!ehCategorico && fonteValores is not null)
+            {
+                Recusar("fonteValores", FatoCandidatoErrorCodes.FonteValoresForaDeCategorico, "Só fato categórico declara a fonte dos seus valores.");
+            }
 
-        bool ehCategorico = dominio == DominioFato.Categorico;
-        if (ehCategorico && (fonteValores is null or FonteValoresFato.Nenhuma || !Enum.IsDefined(fonteValores.Value)))
-        {
-            return Falha(
-                FatoCandidatoErrorCodes.FonteValoresObrigatoria,
-                "Fato categórico precisa declarar a fonte dos seus valores.");
-        }
-
-        if (!ehCategorico && fonteValores is not null)
-        {
-            return Falha(
-                FatoCandidatoErrorCodes.FonteValoresForaDeCategorico,
-                "Só fato categórico declara a fonte dos seus valores.");
-        }
-
-        bool ehTexto = dominio == DominioFato.Texto;
-        if (ehTexto && (formato is null or FormatoTexto.Nenhum || !Enum.IsDefined(formato.Value)))
-        {
-            return Falha(FatoCandidatoErrorCodes.FormatoObrigatorio, "Fato de domínio texto precisa declarar o formato.");
-        }
-
-        if (!ehTexto && formato is not null)
-        {
-            return Falha(FatoCandidatoErrorCodes.FormatoForaDeTexto, "Só fato de domínio texto declara formato.");
+            bool ehTexto = dominio == DominioFato.Texto;
+            if (ehTexto && (formato is null or FormatoTexto.Nenhum || !Enum.IsDefined(formato.Value)))
+            {
+                Recusar("formato", FatoCandidatoErrorCodes.FormatoObrigatorio, "Fato de domínio texto precisa declarar o formato.");
+            }
+            else if (!ehTexto && formato is not null)
+            {
+                Recusar("formato", FatoCandidatoErrorCodes.FormatoForaDeTexto, "Só fato de domínio texto declara formato.");
+            }
         }
 
         Result<string> pontoResolucaoResult = ValidarPontoResolucao(pontoResolucao);
         if (pontoResolucaoResult.IsFailure)
         {
-            return Result<FatoCandidato>.Failure(pontoResolucaoResult.Error!);
+            erros.Add(new("pontoResolucao", pontoResolucaoResult.Error!));
         }
 
-        Result<string> bindingResult = ValidarBinding(binding, origem, codigoResult.Value!.Valor);
-        if (bindingResult.IsFailure)
+        string? bindingValidado = null;
+        if (codigoResult.IsSuccess && origemValida)
         {
-            return Result<FatoCandidato>.Failure(bindingResult.Error!);
-        }
-
-        // O fato do administrador não tem código que calcule ou traga o valor: é declarado, ou
-        // derivado pela regra que ele mesmo cadastra. Atributo do candidato e integração só existem
-        // em fato de sistema.
-        if (!sistema && (origem == OrigemFato.Integracao || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoAtributo + ":", StringComparison.Ordinal)))
-        {
-            return Falha(
-                FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
-                "Fato do administrador é declarado ou derivado por regra; atributo do candidato e integração só existem em fato de sistema.");
+            Result<string> bindingResult = ValidarBinding(binding, origem, codigoResult.Value!.Valor);
+            bindingValidado = bindingResult.Value;
+            if (bindingResult.IsFailure)
+            {
+                erros.Add(new("binding", bindingResult.Error!));
+            }
+            else if (!sistema && (origem == OrigemFato.Integracao
+                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoAtributo + ":", StringComparison.Ordinal)))
+            {
+                // O fato do administrador não tem código que calcule ou traga o valor: é declarado,
+                // ou derivado pela regra que ele mesmo cadastra. Atributo do candidato e integração
+                // só existem em fato de sistema.
+                Recusar(
+                    "origem",
+                    FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
+                    "Fato do administrador é declarado ou derivado por regra; atributo do candidato e integração só existem em fato de sistema.");
+            }
         }
 
         if (escopo == EscopoFato.Nenhum || !Enum.IsDefined(escopo))
         {
-            return Falha(FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.");
+            Recusar("escopo", FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.");
         }
 
         Result<ProtecaoValidada> protecao = ValidarProtecao(dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
-        if (protecao.IsFailure)
+        erros.AddRange(protecao.Errors);
+
+        if (erros.Count > 0)
         {
-            return Result<FatoCandidato>.Failure(protecao.Error!);
+            return Result<FatoCandidato>.ValidationFailure(erros);
         }
 
         return Result<FatoCandidato>.Success(new FatoCandidato(
@@ -278,10 +284,66 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             fonteValores,
             formato,
             pontoResolucaoResult.Value!,
-            bindingResult.Value!,
+            bindingValidado!,
             escopo,
             protecao.Value,
             sistema));
+    }
+
+    /// <summary>
+    /// Cadastro de fato pelo administrador (ADR-0136): sempre declarado, com o vínculo ao campo de
+    /// formulário gerado a partir do código, e nunca de sistema.
+    /// </summary>
+    public static Result<FatoCandidato> CriarDoAdministrador(
+        string codigo,
+        string nome,
+        string? descricao,
+        DominioFato dominio,
+        CardinalidadeFato cardinalidade,
+        FonteValoresFato? fonteValores,
+        FormatoTexto? formato,
+        string pontoResolucao,
+        EscopoFato escopo,
+        ClassificacaoProtecaoDado classificacaoProtecao,
+        string finalidadeTratamento,
+        HipoteseLegalTratamento hipoteseLegal) =>
+        Criar(
+            codigo, nome, descricao, dominio, OrigemFato.Declarado, cardinalidade, fonteValores, formato, pontoResolucao,
+            $"{PrefixoBindingDeclarado}:{codigo?.Trim()}", escopo, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
+            sistema: false);
+
+    /// <summary>
+    /// Desativa um valor do fato do administrador: condição nova que o cite é recusada, e a que já o
+    /// citava continua. O valor do fato de sistema só muda por nova versão do sistema.
+    /// </summary>
+    public Result DesativarValor(string codigo) => DefinirAtivoDoValor(codigo, ativo: false);
+
+    /// <summary>Reativa um valor do fato do administrador.</summary>
+    public Result ReativarValor(string codigo) => DefinirAtivoDoValor(codigo, ativo: true);
+
+    private Result DefinirAtivoDoValor(string codigo, bool ativo)
+    {
+        if (RecusaSeSistema() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        FatoValorDominio? valor = _valoresDominioDeclarados.FirstOrDefault(v =>
+            string.Equals(v.Codigo, codigo?.Trim(), StringComparison.Ordinal));
+        if (valor is null)
+        {
+            return Result.Failure(new DomainError(FatoValorDominioErrorCodes.NaoEncontrado, "Valor de domínio não encontrado neste fato."));
+        }
+
+        if (valor.Ativo == ativo)
+        {
+            return Result.Failure(ativo
+                ? new DomainError(FatoValorDominioErrorCodes.JaAtivo, "O valor já está ativo.")
+                : new DomainError(FatoValorDominioErrorCodes.JaDesativado, "O valor já está desativado."));
+        }
+
+        valor.DefinirAtivo(ativo);
+        return Result.Success();
     }
 
     /// <summary>
@@ -294,7 +356,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         Result<(string Nome, string? Descricao)> descritivo = ValidarDescritivo(nome, descricao);
         if (descritivo.IsFailure)
         {
-            return Result.Failure(descritivo.Error!);
+            return Result.ValidationFailure(descritivo.Errors);
         }
 
         (Nome, Descricao) = descritivo.Value;
@@ -368,48 +430,47 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 + "nas demais fontes, os valores vêm do processo."));
         }
 
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Result.Failure(new DomainError(
-                FatoValorDominioErrorCodes.CodigoObrigatorio,
-                "Código do valor de domínio é obrigatório."));
-        }
+        // As recusas de estado acima saem de imediato; as do valor são independentes e acumulam,
+        // cada uma no seu campo (ADR-0125).
+        List<FieldError> erros = [];
+        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
 
-        string codigoNormalizado = codigo.Trim();
-        if (codigoNormalizado.Length > FatoValorDominio.CodigoMaxLength)
+        string codigoNormalizado = codigo?.Trim() ?? string.Empty;
+        if (codigoNormalizado.Length == 0)
         {
-            return Result.Failure(new DomainError(
-                FatoValorDominioErrorCodes.CodigoTamanho,
-                $"Código do valor de domínio deve ter no máximo {FatoValorDominio.CodigoMaxLength} caracteres."));
+            Recusar("codigo", FatoValorDominioErrorCodes.CodigoObrigatorio, "Código do valor de domínio é obrigatório.");
         }
-
-        if (_valoresDominioDeclarados.Any(v => string.Equals(v.Codigo, codigoNormalizado, StringComparison.Ordinal)))
+        else if (codigoNormalizado.Length > FatoValorDominio.CodigoMaxLength)
         {
-            return Result.Failure(new DomainError(
-                FatoValorDominioErrorCodes.CodigoDuplicado,
-                $"Já existe um valor de domínio com o código '{codigoNormalizado}' neste fato."));
+            Recusar("codigo", FatoValorDominioErrorCodes.CodigoTamanho,
+                $"Código do valor de domínio deve ter no máximo {FatoValorDominio.CodigoMaxLength} caracteres.");
+        }
+        else if (_valoresDominioDeclarados.Any(v => string.Equals(v.Codigo, codigoNormalizado, StringComparison.Ordinal)))
+        {
+            Recusar("codigo", FatoValorDominioErrorCodes.CodigoDuplicado,
+                $"Já existe um valor de domínio com o código '{codigoNormalizado}' neste fato.");
         }
 
         string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
         if (descricaoNormalizada is { Length: > FatoValorDominio.DescricaoMaxLength })
         {
-            return Result.Failure(new DomainError(
-                FatoValorDominioErrorCodes.DescricaoTamanho,
-                $"Descrição do valor de domínio deve ter no máximo {FatoValorDominio.DescricaoMaxLength} caracteres."));
+            Recusar("descricao", FatoValorDominioErrorCodes.DescricaoTamanho,
+                $"Descrição do valor de domínio deve ter no máximo {FatoValorDominio.DescricaoMaxLength} caracteres.");
         }
-
-        if (Origem == OrigemFato.Declarado && descricaoNormalizada is null)
+        else if (Origem == OrigemFato.Declarado && descricaoNormalizada is null)
         {
-            return Result.Failure(new DomainError(
-                FatoValorDominioErrorCodes.DescricaoObrigatoria,
-                "Descrição do valor de domínio é obrigatória quando a origem do fato é DECLARADO."));
+            Recusar("descricao", FatoValorDominioErrorCodes.DescricaoObrigatoria,
+                "Descrição do valor de domínio é obrigatória quando a origem do fato é DECLARADO.");
         }
 
         if (ordem < 0)
         {
-            return Result.Failure(new DomainError(
-                FatoValorDominioErrorCodes.OrdemInvalida,
-                "Ordem do valor de domínio não pode ser negativa."));
+            Recusar("ordem", FatoValorDominioErrorCodes.OrdemInvalida, "Ordem do valor de domínio não pode ser negativa.");
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
         }
 
         _valoresDominioDeclarados.Add(FatoValorDominio.Criar(Id, codigoNormalizado, descricaoNormalizada, ordem, ativo));
@@ -425,79 +486,77 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
     private static Result<(string Nome, string? Descricao)> ValidarDescritivo(string nome, string? descricao)
     {
-        if (string.IsNullOrWhiteSpace(nome))
+        List<FieldError> erros = [];
+        string nomeNormalizado = nome?.Trim() ?? string.Empty;
+        if (nomeNormalizado.Length == 0)
         {
-            return Result<(string, string?)>.Failure(new DomainError(
-                FatoCandidatoErrorCodes.NomeObrigatorio, "Nome do fato é obrigatório."));
+            erros.Add(new("nome", new DomainError(FatoCandidatoErrorCodes.NomeObrigatorio, "Nome do fato é obrigatório.")));
         }
-
-        string nomeNormalizado = nome.Trim();
-        if (nomeNormalizado.Length > NomeMaxLength)
+        else if (nomeNormalizado.Length > NomeMaxLength)
         {
-            return Result<(string, string?)>.Failure(new DomainError(
-                FatoCandidatoErrorCodes.NomeTamanho, $"Nome do fato deve ter no máximo {NomeMaxLength} caracteres."));
+            erros.Add(new("nome", new DomainError(
+                FatoCandidatoErrorCodes.NomeTamanho, $"Nome do fato deve ter no máximo {NomeMaxLength} caracteres.")));
         }
 
         string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
         if (descricaoNormalizada is { Length: > DescricaoMaxLength })
         {
-            return Result<(string, string?)>.Failure(new DomainError(
-                FatoCandidatoErrorCodes.DescricaoTamanho, $"Descrição do fato deve ter no máximo {DescricaoMaxLength} caracteres."));
+            erros.Add(new("descricao", new DomainError(
+                FatoCandidatoErrorCodes.DescricaoTamanho, $"Descrição do fato deve ter no máximo {DescricaoMaxLength} caracteres.")));
         }
 
-        return Result<(string, string?)>.Success((nomeNormalizado, descricaoNormalizada));
+        return erros.Count > 0
+            ? Result<(string, string?)>.ValidationFailure(erros)
+            : Result<(string, string?)>.Success((nomeNormalizado, descricaoNormalizada));
     }
 
     private static Result<ProtecaoValidada> ValidarProtecao(
         DominioFato dominio, ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese)
     {
-        if (classificacao == ClassificacaoProtecaoDado.Nenhuma || !Enum.IsDefined(classificacao))
-        {
-            return FalhaProtecao(
-                FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria, "Classificação de proteção de dados do fato é obrigatória.");
-        }
+        List<FieldError> erros = [];
+        void Recusar(string campo, string codigo, string mensagem) => erros.Add(new(campo, new DomainError(codigo, mensagem)));
 
-        // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
-        // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal.
-        if (dominio is DominioFato.Texto or DominioFato.Data or DominioFato.Endereco
+        bool classificacaoValida = classificacao != ClassificacaoProtecaoDado.Nenhuma && Enum.IsDefined(classificacao);
+        if (!classificacaoValida)
+        {
+            Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria,
+                "Classificação de proteção de dados do fato é obrigatória.");
+        }
+        else if (dominio is DominioFato.Texto or DominioFato.Data or DominioFato.Endereco
             && classificacao is not (ClassificacaoProtecaoDado.Pessoal or ClassificacaoProtecaoDado.Sensivel))
         {
-            return FalhaProtecao(
-                FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
+            // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
+            // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal.
+            Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
                 "Fato de texto, data ou endereço é classificado como pessoal ou sensível.");
         }
 
-        if (string.IsNullOrWhiteSpace(finalidade))
+        string finalidadeNormalizada = finalidade?.Trim() ?? string.Empty;
+        if (finalidadeNormalizada.Length == 0)
         {
-            return FalhaProtecao(
-                FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria, "Finalidade do tratamento do fato é obrigatória.");
+            Recusar("finalidadeTratamento", FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria,
+                "Finalidade do tratamento do fato é obrigatória.");
         }
-
-        string finalidadeNormalizada = finalidade.Trim();
-        if (finalidadeNormalizada.Length > FinalidadeTratamentoMaxLength)
+        else if (finalidadeNormalizada.Length > FinalidadeTratamentoMaxLength)
         {
-            return FalhaProtecao(
-                FatoCandidatoErrorCodes.FinalidadeTratamentoTamanho,
+            Recusar("finalidadeTratamento", FatoCandidatoErrorCodes.FinalidadeTratamentoTamanho,
                 $"Finalidade do tratamento deve ter no máximo {FinalidadeTratamentoMaxLength} caracteres.");
         }
 
         if (hipotese == HipoteseLegalTratamento.Nenhuma || !Enum.IsDefined(hipotese))
         {
-            return FalhaProtecao(FatoCandidatoErrorCodes.HipoteseLegalObrigatoria, "Hipótese legal de tratamento do fato é obrigatória.");
+            Recusar("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalObrigatoria, "Hipótese legal de tratamento do fato é obrigatória.");
         }
-
-        if (!HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, classificacao))
+        else if (classificacaoValida && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, classificacao))
         {
-            return FalhaProtecao(
-                FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao,
+            Recusar("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao,
                 "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.");
         }
 
-        return Result<ProtecaoValidada>.Success(new ProtecaoValidada(classificacao, finalidadeNormalizada, hipotese));
+        return erros.Count > 0
+            ? Result<ProtecaoValidada>.ValidationFailure(erros)
+            : Result<ProtecaoValidada>.Success(new ProtecaoValidada(classificacao, finalidadeNormalizada, hipotese));
     }
-
-    private static Result<ProtecaoValidada> FalhaProtecao(string codigo, string mensagem) =>
-        Result<ProtecaoValidada>.Failure(new DomainError(codigo, mensagem));
 
     private static Result<string> ValidarPontoResolucao(string pontoResolucao)
     {
@@ -578,9 +637,6 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         PrefixosBindingPorOrigem.TryGetValue(origem, out IReadOnlyList<string>? prefixos)
             ? prefixos
             : throw new ArgumentOutOfRangeException(nameof(origem), origem, "Origem de fato fora do domínio fechado.");
-
-    private static Result<FatoCandidato> Falha(string codigo, string mensagem) =>
-        Result<FatoCandidato>.Failure(new DomainError(codigo, mensagem));
 
     /// <summary>A proteção de dados já validada, aplicada na criação.</summary>
     private readonly record struct ProtecaoValidada(

@@ -46,6 +46,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IFaseCanonicaRepository, FaseCanonicaRepository>();
         services.AddScoped<ITipoBancaRepository, TipoBancaRepository>();
         services.AddScoped<ITipoProcessoRepository, TipoProcessoRepository>();
+        services.AddScoped<IFatoCandidatoRepository, FatoCandidatoRepository>();
         services.AddScoped<ITipoEtapaRepository, TipoEtapaRepository>();
         services.AddScoped<ICursoRepository, CursoRepository>();
         services.AddScoped<IOfertaCursoRepository, OfertaCursoRepository>();

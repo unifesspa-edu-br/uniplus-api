@@ -6,14 +6,13 @@ using System.Text.RegularExpressions;
 using AwesomeAssertions;
 
 /// <summary>
-/// Fitness tests do catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0077, ADR-0111): o
-/// vocabulário é seed-governado e append-only, consumido cross-módulo por leitor
-/// síncrono, sem FK cross-schema (ADR-0061). Estas regras travam duas fronteiras
-/// da decisão diretamente sobre o código-fonte:
+/// Fitness tests do catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0077, ADR-0136): o
+/// catálogo é cadastrado pelo administrador e consumido cross-módulo por leitor síncrono, sem FK
+/// cross-schema (ADR-0061). Estas regras travam duas fronteiras da decisão diretamente sobre o
+/// código-fonte:
 /// <list type="bullet">
-///   <item><description>o controller do catálogo não expõe rota de escrita —
-///   adicionar um fato é um PR de desenvolvimento (seed + código de resolução),
-///   nunca uma operação de tela;</description></item>
+///   <item><description>toda rota de escrita do catálogo exige o papel
+///   <c>plataforma-admin</c>;</description></item>
 ///   <item><description>nenhuma migration de qualquer módulo cria uma chave
 ///   estrangeira apontando para <c>rol_de_fatos_candidato</c> — a referência cross-módulo
 ///   é por valor (snapshot-copy), não por FK cross-schema.</description></item>
@@ -37,16 +36,24 @@ public sealed class FatoCandidatoCatalogoTests
         "principalTable:\\s*\"rol_de_fatos_candidato\"",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-    [Fact(DisplayName = "O controller do catálogo de fatos não declara verbo HTTP de escrita")]
-    public void Controller_SomenteLeitura()
+    [Fact(DisplayName = "Toda escrita no catálogo de fatos exige o papel plataforma-admin")]
+    public void Controller_EscritaSoDoAdministrador()
     {
         string controller = CaminhoDoController();
         File.Exists(controller).Should().BeTrue($"o controller do catálogo vive em {controller}");
 
-        // Comentários C# removidos antes do match: uma nota que cite um verbo não
-        // pode ser lida como uma rota real.
-        VerboDeEscrita.IsMatch(SemComentarios(controller)).Should().BeFalse(
-            "o catálogo rol_de_fatos_candidato é seed-governado — nenhum POST/PUT/PATCH/DELETE o edita por HTTP");
+        // Comentários C# removidos antes do match: uma nota que cite um verbo não pode ser lida
+        // como uma rota real. Cada verbo de escrita tem de vir acompanhado da exigência do papel
+        // no mesmo bloco de atributos (ADR-0136: o catálogo é cadastrado pelo administrador).
+        string codigo = SemComentarios(controller);
+        MatchCollection verbos = VerboDeEscrita.Matches(codigo);
+        verbos.Should().NotBeEmpty("o administrador cadastra e mantém o catálogo por HTTP");
+        foreach (Match verbo in verbos)
+        {
+            string blocoDeAtributos = codigo.Substring(verbo.Index, Math.Min(200, codigo.Length - verbo.Index));
+            blocoDeAtributos.Should().Contain("[Authorize(Roles = \"plataforma-admin\")]",
+                $"a rota de escrita em {verbo.Value} é exclusiva do administrador");
+        }
     }
 
     [Fact(DisplayName = "Nenhuma migration de outro módulo cria FK cross-schema apontando para rol_de_fatos_candidato")]

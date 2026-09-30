@@ -69,4 +69,10 @@ public static class FatoCandidatoErrorCodes
     public const string BindingReferenciaRegraIncoerente = "FatoCandidato.BindingReferenciaRegraIncoerente";
 
     public const string NaoEncontrado = "FatoCandidato.NaoEncontrado";
+
+    /// <summary>Código já usado por outro fato, ativo ou desativado: o código nunca é reutilizado.</summary>
+    public const string CodigoJaExiste = "FatoCandidato.CodigoJaExiste";
+
+    /// <summary>O fato foi alterado por outra escrita concorrente.</summary>
+    public const string ConflitoDeConcorrencia = "FatoCandidato.ConflitoDeConcorrencia";
 }
