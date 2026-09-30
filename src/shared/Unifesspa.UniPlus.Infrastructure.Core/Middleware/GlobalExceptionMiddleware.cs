@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging;
 
 using Pagination;
 
+using Unifesspa.UniPlus.Kernel.Results;
+
 public sealed partial class GlobalExceptionMiddleware
 {
     private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web);
@@ -21,18 +23,22 @@ public sealed partial class GlobalExceptionMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionMiddleware> _logger;
     private readonly IProblemTypeUriFactory _problemTypeUriFactory;
+    private readonly IDomainErrorMapper _domainErrorMapper;
 
     public GlobalExceptionMiddleware(
         RequestDelegate next,
         ILogger<GlobalExceptionMiddleware> logger,
-        IProblemTypeUriFactory problemTypeUriFactory)
+        IProblemTypeUriFactory problemTypeUriFactory,
+        IDomainErrorMapper domainErrorMapper)
     {
         ArgumentNullException.ThrowIfNull(next);
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(problemTypeUriFactory);
+        ArgumentNullException.ThrowIfNull(domainErrorMapper);
         _next = next;
         _logger = logger;
         _problemTypeUriFactory = problemTypeUriFactory;
+        _domainErrorMapper = domainErrorMapper;
     }
 
     [SuppressMessage(
@@ -50,7 +56,7 @@ public sealed partial class GlobalExceptionMiddleware
         catch (ValidationException ex)
         {
             LogValidationError(_logger, context.Request.Path, ex);
-            await EscreverRespostaValidacao(context, ex, _problemTypeUriFactory).ConfigureAwait(false);
+            await EscreverRespostaValidacao(context, ex, _domainErrorMapper).ConfigureAwait(false);
         }
         catch (CursorAnchorMismatchException ex)
         {
@@ -72,28 +78,63 @@ public sealed partial class GlobalExceptionMiddleware
     private static async Task EscreverRespostaValidacao(
         HttpContext context,
         ValidationException exception,
-        IProblemTypeUriFactory problemTypeUriFactory)
+        IDomainErrorMapper domainErrorMapper)
     {
-        context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+        // code/type/title pelo mapper, como todo emissor de erro (ADR-0024): o 422 de
+        // validação deixa de ser o único trio escrito à mão, fora do catálogo.
+        (int status, string type, string title, string code, bool _) = DomainErrorProblemDetailsFactory.Resolve(
+            new DomainError(ValidationErrorCodes.Raiz, "Erro de validação"), domainErrorMapper);
+
+        context.Response.StatusCode = status;
 
         Dictionary<string, object?> body = new()
         {
-            ["type"] = problemTypeUriFactory.Build("uniplus.validacao"),
-            ["title"] = "Erro de validação",
-            ["status"] = StatusCodes.Status422UnprocessableEntity,
+            ["type"] = type,
+            ["title"] = title,
+            ["status"] = status,
             ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
-            ["code"] = "uniplus.validacao",
+            ["code"] = code,
             ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
             // Invariante: e.ErrorMessage não deve conter PII nem o valor rejeitado.
             // Usar {PropertyValue} em templates FluentValidation viola essa restrição.
             ["errors"] = exception.Errors
-                .Select(static e => new { field = e.PropertyName, code = e.ErrorCode, message = e.ErrorMessage })
+                .Select(e => new
+                {
+                    field = NomeDeCampoNoPayload(e.PropertyName),
+                    // O ErrorCode já chega na taxonomia (ValidationErrorCodes.Resolve, ou
+                    // .WithErrorCode explícito); o mapper publica o código de wire dele.
+                    code = DomainErrorProblemDetailsFactory.Resolve(
+                        new DomainError(e.ErrorCode ?? ValidationErrorCodes.Regra, e.ErrorMessage), domainErrorMapper).Code,
+                    message = e.ErrorMessage,
+                })
                 .ToArray(),
         };
 
         await context.Response
             .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Traduz o caminho de propriedade do FluentValidation (PascalCase, nome C#) para o casing
+    /// do payload JSON — o mesmo que o caminho de validação do domínio já emite (ADR-0125) e
+    /// que o frontend usa para achar o controle do formulário. A conversão é por segmento,
+    /// preservando o índice: <c>Quadro[0].Quantidade</c> vira <c>quadro[0].quantidade</c>.
+    /// </summary>
+    private static string NomeDeCampoNoPayload(string? propertyName)
+    {
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            return string.Empty;
+        }
+
+        return string.Join('.', propertyName.Split('.').Select(static segmento =>
+        {
+            int indice = segmento.IndexOf('[', StringComparison.Ordinal);
+            return indice < 0
+                ? JsonNamingPolicy.CamelCase.ConvertName(segmento)
+                : JsonNamingPolicy.CamelCase.ConvertName(segmento[..indice]) + segmento[indice..];
+        }));
     }
 
     private static async Task EscreverRespostaConflitoDeConcorrencia(
