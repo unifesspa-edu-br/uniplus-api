@@ -224,14 +224,14 @@ public sealed partial class EnvelopeCodec
             JsonObject item = leitor.ItemObjeto(array, i, "fatosColetados");
             leitor.ExigirChaves(
                 item, path,
-                "fatoCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "opcoesDoProcesso", "precondicao", "valoresSelecionaveis");
+                "fatoCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "origemValores", "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             int ordem = leitor.Inteiro(item, "ordem", path);
             string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
             string tipoRenderizacaoCodigo = leitor.TextoNaoVazio(item, "tipoRenderizacao", path);
             bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
-            bool opcoesDoProcesso = leitor.Booleano(item, "opcoesDoProcesso", path);
+            OrigemValoresColeta origemValores = leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path);
             if (leitor.Falhou)
             {
                 return ([], valoresSelecionaveis);
@@ -266,7 +266,7 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes, opcoesDoProcesso);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes, origemValores);
             if (fatoColetado.IsFailure)
             {
                 return (leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [], valoresSelecionaveis);

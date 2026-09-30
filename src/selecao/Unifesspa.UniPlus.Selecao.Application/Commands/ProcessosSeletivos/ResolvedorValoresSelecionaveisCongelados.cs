@@ -25,14 +25,16 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// caminhos (publicação nova e recanonicalização pós-restauração) pela MESMA forma.
 /// </para>
 /// <para>
-/// Duas origens para o valor de um fato categórico coletado (UNI-REQ-0072 §2): ESTÁTICO
-/// (COR_RACA, SEXO, NACIONALIDADE — o catálogo declara <c>ValoresDominioDeclarados</c>) usa o
-/// vocabulário do catálogo tal qual, SEM filtrar por <c>Ativo</c> — é
-/// <see cref="ConferenciaDeValoresDeDominioAtivos"/>, rodado ANTES deste resolvedor no mesmo
-/// congelamento, que garante que só chega aqui um fato coletado cujo vocabulário inteiro está
-/// ativo. Fonte do PROCESSO (ADR-0136) usa as opções do PRÓPRIO processo, pela mesma leitura
-/// (<c>ProcessoSeletivo.OpcoesDoProcesso</c>) que valida predicado — para que a opção oferecida
-/// ao candidato case com o que um predicado pode citar.
+/// Três origens para o valor de um fato categórico coletado (UNI-REQ-0072 §2, ADR-0136). O
+/// catálogo de fonte GLOBAL (COR_RACA, SEXO, NACIONALIDADE — <c>ValoresDominioDeclarados</c>) é
+/// usado tal qual, SEM filtrar por <c>Ativo</c>: é <see cref="ConferenciaDeValoresDeDominioAtivos"/>,
+/// rodado ANTES deste resolvedor no mesmo congelamento, que garante que só chega aqui um fato
+/// coletado cujo vocabulário inteiro está ativo. Para as demais, decide a origem copiada para o
+/// campo coletado (<c>ProcessoSeletivo.OrigemDasOpcoes</c>), a mesma que o agregado confere na
+/// publicação: as opções do PRÓPRIO processo, pela mesma leitura que valida predicado
+/// (<c>ProcessoSeletivo.OpcoesDoProcesso</c>); ou os municípios do bônus regional, com o código
+/// IBGE como valor, "Município/UF" como rótulo e a ordem alfabética de nome de
+/// <c>VocabularioDeFatos.MunicipiosDoBonus</c>.
 /// </para>
 /// <para>
 /// Não faz I/O próprio — recebe o catálogo já lido UMA vez pelo handler (D4-bis), o mesmo
@@ -72,7 +74,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             }
 
             Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> valoresDoFato =
-                ResolverValoresDoFato(fato.FatoCodigo, fatoNoCatalogo, processo);
+                ResolverValoresDoFato(fato, fatoNoCatalogo, processo);
             if (valoresDoFato.IsFailure)
             {
                 return Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>>.Failure(
@@ -96,9 +98,10 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     /// devolve <see cref="DomainError"/>, não lança.
     /// </summary>
     private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverValoresDoFato(
-        string fatoCodigo, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo)
+        FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo)
     {
-        Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> resolvido = ResolverOrigemDosValores(fatoCodigo, fatoNoCatalogo, processo);
+        string fatoCodigo = fato.FatoCodigo;
+        Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> resolvido = ResolverOrigemDosValores(fato, fatoNoCatalogo, processo);
         if (resolvido.IsFailure)
         {
             return resolvido;
@@ -122,8 +125,26 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     }
 
     private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverOrigemDosValores(
-        string fatoCodigo, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo)
+        FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo)
     {
+        string fatoCodigo = fato.FatoCodigo;
+
+        // A origem é a copiada para o campo quando a coleta foi definida, a mesma que o agregado
+        // confere na publicação — nunca a do catálogo lido agora. O catálogo só responde pelo
+        // campo cuja origem é ele.
+        switch (ProcessoSeletivo.OrigemDasOpcoes(fato))
+        {
+            case OrigemValoresColeta.OpcoesDoProcesso:
+                return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success([.. processo.OpcoesDoProcesso(fatoCodigo)
+                    .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))]);
+            case OrigemValoresColeta.MunicipiosDoBonus:
+                return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success([.. VocabularioDeFatos.MunicipiosDoBonus(processo)
+                    .Select(static (m, ordem) => new ValorDominioDeclaradoCongelado(m.CodigoIbge, $"{m.Nome}/{m.Uf}", ordem))]);
+            case OrigemValoresColeta.Catalogo:
+            default:
+                break;
+        }
+
         if (fatoNoCatalogo.ValoresDominioDeclarados is { Count: > 0 } declarados)
         {
             // Ordenação canônica própria (D2): o encoder não pode depender de o catálogo já vir
@@ -137,16 +158,9 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(valores);
         }
 
-        if (VocabularioDeFatos.OpcoesDoProcesso(fatoNoCatalogo))
-        {
-            IReadOnlyList<ValorDominioDeclaradoCongelado> opcoes = [.. processo.OpcoesDoProcesso(fatoCodigo)
-                .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
-            return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(opcoes);
-        }
-
         return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(new DomainError(
             "ProcessoSeletivo.FatoDeSelecaoSemOrigemDeValores",
             $"O fato coletado '{fatoCodigo}' está vinculado como seleção, mas o catálogo não declara valores de "
-            + "domínio para ele e a fonte dos seus valores não é o processo — não há de onde derivar os valores selecionáveis."));
+            + "domínio para ele e a fonte dos seus valores não é o processo nem o bônus regional — não há de onde derivar os valores selecionáveis."));
     }
 }

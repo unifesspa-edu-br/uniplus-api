@@ -157,6 +157,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public IReadOnlyCollection<OpcaoDeclaradaFato> OpcoesDeclaradas => _opcoesDeclaradas.AsReadOnly();
 
     /// <summary>
+    /// De onde vêm as opções de um campo coletado: a origem copiada do catálogo quando a coleta foi
+    /// definida, com os dois fatos da oferta de atendimento sempre de opções do processo, porque a
+    /// oferta é a dona deles.
+    /// </summary>
+    public static OrigemValoresColeta OrigemDasOpcoes(FatoColetado fato)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        return OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo)
+            ? OrigemValoresColeta.OpcoesDoProcesso
+            : fato.OrigemValores;
+    }
+
+    /// <summary>
     /// As opções que o processo oferece para o fato, na ordem: da oferta de atendimento, quando
     /// ela gere o fato, ou as declaradas pelo processo. Vazio quando não há nenhuma. É a única
     /// leitura das opções do processo — publicação, validação de predicado e formulário usam
@@ -630,6 +643,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
+        }
+
+        // Os campos com os municípios do bônus como opções referenciam o município pelo código
+        // IBGE: trocar a área ou remover o bônus não pode deixar de fora um município citado por
+        // condição viva, que nunca mais seria satisfeita.
+        HashSet<string> novosMunicipios = [.. (bonus?.Municipios ?? []).Select(static m => m.CodigoIbge)];
+        if (_fatosColetados
+            .Where(static f => f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus)
+            .Any(f => ReferenciaDinamicaSeriaInvalidada(f.FatoCodigo, novosMunicipios)))
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva",
+                "Existe condição citando um município que deixaria a área do bônus regional — ajuste ou remova a condição antes de redefinir o bônus."));
         }
 
         if (bonus is null)
@@ -2412,6 +2438,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
+        new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
         new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
         new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: cota da lei e ação afirmativa não derivam juntas", PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
@@ -3244,6 +3271,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return fatoSemOferta;
         }
 
+        if (PendenciaDeMunicipioDoBonusForaDaArea() is { } municipioForaDaArea)
+        {
+            return municipioForaDaArea;
+        }
+
         if (PendenciaDoDominioDeContribuicao() is { } contribuicaoForaDoDominio)
         {
             return contribuicaoForaDoDominio;
@@ -3452,16 +3484,47 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 continue;
             }
 
-            bool opcoesDoProcesso = fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo);
-            if (opcoesDoProcesso && OpcoesDoProcesso(fato.FatoCodigo).Count == 0)
+            OrigemValoresColeta origem = OrigemDasOpcoes(fato);
+            if (origem == OrigemValoresColeta.OpcoesDoProcesso && OpcoesDoProcesso(fato.FatoCodigo).Count == 0)
             {
                 return new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
                     $"O fato '{fato.FatoCodigo}' é coletável, mas o processo não declara nenhuma opção para ele.");
             }
+
+            if (origem == OrigemValoresColeta.MunicipiosDoBonus && BonusRegional is null)
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
+                    $"O fato '{fato.FatoCodigo}' oferece os municípios do bônus regional, mas o processo não tem bônus regional.");
+            }
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Toda condição viva que cita um campo com os municípios do bônus regional cita município da
+    /// área atual. A recusa ao redefinir o bônus só alcança os campos coletados naquele momento;
+    /// conferir na publicação cobre qualquer ordem de edição, como retirar o campo da coleta,
+    /// trocar a área e recolocá-lo.
+    /// </summary>
+    private DomainError? PendenciaDeMunicipioDoBonusForaDaArea()
+    {
+        if (BonusRegional is null)
+        {
+            return null;
+        }
+
+        HashSet<string> municipios = [.. BonusRegional.Municipios.Select(static m => m.CodigoIbge)];
+        FatoColetado? fato = _fatosColetados.FirstOrDefault(f =>
+            f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus
+            && ReferenciaDinamicaSeriaInvalidada(f.FatoCodigo, municipios));
+        return fato is null
+            ? null
+            : new DomainError(
+                "ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva",
+                $"Existe condição citando, no fato '{fato.FatoCodigo}', um município fora da área do bônus regional.");
     }
 
     /// <summary>

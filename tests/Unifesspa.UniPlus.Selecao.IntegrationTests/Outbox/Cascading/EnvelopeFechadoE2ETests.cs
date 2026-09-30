@@ -321,6 +321,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "referencia_temporal_fim_inscricao_indisponivel",
                 "derivacao_fatos_citados_inexistentes",
                 "fato_coletavel_sem_valores_ofertados",
+                "fato_coletavel_municipio_citado_fora_da_area_do_bonus",
                 "derivacao_dominio_de_contribuicao_invalido",
                 "derivacao_cota_e_acao_afirmativa_juntas",
                 "grafo_dependencia_com_ciclo",

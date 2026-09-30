@@ -1354,7 +1354,7 @@ public sealed class EnvelopeCodecRoundTripTests
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         processo.DefinirFatosColetados(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
-                opcoesDoProcesso: true).Value!],
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM",
@@ -1390,7 +1390,7 @@ public sealed class EnvelopeCodecRoundTripTests
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         processo.DefinirFatosColetados(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
-                opcoesDoProcesso: true).Value!],
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM",
@@ -1421,9 +1421,9 @@ public sealed class EnvelopeCodecRoundTripTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
-                opcoesDoProcesso: true).Value!,
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!,
              FatoColetado.Criar("LOCAL_PROVA", 1, "Local de prova", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
-                opcoesDoProcesso: true).Value!],
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM",

@@ -68,11 +68,14 @@ public sealed class FatoColetado : EntityBase
     public bool Obrigatorio { get; private set; }
 
     /// <summary>
-    /// Se as opções do campo são as que o processo oferece (fonte dos valores <c>PROCESSO</c>,
-    /// ADR-0136). Copiado do catálogo quando a coleta é definida — a Seleção congela por cópia e
-    /// não lê o catálogo ao publicar.
+    /// De onde vêm as opções do campo no processo (ADR-0136). Copiada da fonte dos valores do
+    /// fato no catálogo quando a coleta é definida — a Seleção congela por cópia e não lê o
+    /// catálogo ao publicar.
     /// </summary>
-    public bool OpcoesDoProcesso { get; private set; }
+    public OrigemValoresColeta OrigemValores { get; private set; }
+
+    /// <summary>Se as opções do campo são as que o processo declara.</summary>
+    public bool OpcoesDoProcesso => OrigemValores == OrigemValoresColeta.OpcoesDoProcesso;
 
     public IReadOnlyCollection<CondicaoPrecondicaoFato> Precondicoes => _precondicoes.AsReadOnly();
 
@@ -90,7 +93,7 @@ public sealed class FatoColetado : EntityBase
         TipoRenderizacao tipoRenderizacao,
         bool obrigatorio,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
-        bool opcoesDoProcesso = false)
+        OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo)
     {
         List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
 
@@ -121,7 +124,7 @@ public sealed class FatoColetado : EntityBase
             Rotulo = rotulo.Trim(),
             TipoRenderizacao = tipoRenderizacao,
             Obrigatorio = obrigatorio,
-            OpcoesDoProcesso = opcoesDoProcesso,
+            OrigemValores = origemValores,
         };
         foreach (CondicaoPrecondicaoFato precondicao in condicoes)
         {

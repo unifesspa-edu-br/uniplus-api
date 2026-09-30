@@ -13,6 +13,7 @@ public static class FontesValoresFato
         [FonteValoresFato.Global] = "GLOBAL",
         [FonteValoresFato.Processo] = "PROCESSO",
         [FonteValoresFato.Modalidade] = "MODALIDADE",
+        [FonteValoresFato.MunicipiosBonus] = "MUNICIPIOS_BONUS",
     };
 
     private static readonly Dictionary<string, FonteValoresFato> DeToken =

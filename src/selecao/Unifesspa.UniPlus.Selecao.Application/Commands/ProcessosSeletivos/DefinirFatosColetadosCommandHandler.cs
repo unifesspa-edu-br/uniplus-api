@@ -164,7 +164,7 @@ public static class DefinirFatosColetadosCommandHandler
 
         return FatoColetado.Criar(
             input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, input.Obrigatorio, precondicoesResult.Value,
-            opcoesDoProcesso: VocabularioDeFatos.OpcoesDoProcesso(view));
+            origemValores: VocabularioDeFatos.OrigemValores(view));
     }
 
     /// <summary>
