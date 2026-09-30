@@ -598,7 +598,7 @@ public sealed class RestauradorDeConfiguracaoTests
         // CONDICAO_ATENDIMENTO (escopo-processo, SELECAO_MULTIPLA).
         processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
             FatoColetado.Criar("CONDICAO_ATENDIMENTO", 2, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!,
         ], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 

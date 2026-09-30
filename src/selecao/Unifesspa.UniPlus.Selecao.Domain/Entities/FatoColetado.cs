@@ -382,6 +382,7 @@ public static class FatoColetadoErrorCodes
     public const string AjudaTamanho = "FatoColetado.AjudaTamanho";
     public const string RestricaoIncoerente = "FatoColetado.RestricaoIncoerente";
     public const string OpcoesDeOutroDominio = "FatoColetado.OpcoesDeOutroDominio";
+    public const string OpcionalQueAlimentaRegra = "ProcessoSeletivo.CampoOpcionalQueAlimentaRegra";
     public const string ObrigatoriedadeInvalida = "FatoColetado.ObrigatoriedadeInvalida";
     public const string PrecondicaoAutorreferente = "FatoColetado.PrecondicaoAutorreferente";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
