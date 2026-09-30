@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class FormulariosPorFinalidadeTests
 {
     private static FatoColetado Item(string codigo, int ordem, string? etapa = FormularioDeTeste.Secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: etapa).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: etapa).Value!;
 
     private static ProcessoSeletivo ComHabilitacao()
     {
@@ -253,7 +253,7 @@ public sealed class FormulariosPorFinalidadeTests
     ];
 
     private static FatoColetado ItemNaSecao(string codigo, int ordem, string secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: secao).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: secao).Value!;
 
     [Fact(DisplayName = "Exibição de seção cita campo de seção anterior; campo da própria seção é recusado")]
     public void Secao_ExibicaoCitaSoOQueVemAntes()
@@ -327,6 +327,35 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("RENDA_FORMAL")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+    }
+
+    private static FatoColetado Opcional(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes, etapaCodigo: FormularioDeTeste.Secao).Value!;
+
+    [Fact(DisplayName = "Campo opcional que alimenta derivação recusa a publicação; obrigatório sempre que exibido, aceita")]
+    public void Publicacao_CampoOpcionalQueAlimentaDerivacao_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Opcional("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.OpcionalQueAlimentaRegra);
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Campo opcional citado por DIFERENTE em regra de outro campo recusa a publicação")]
+    public void Publicacao_CampoOpcionalCitadoPorNegacao_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao,
+        [
+            Opcional("NACIONALIDADE_BR", 0),
+            Opcional("COMPROVANTE", 1, CondicaoPrecondicaoFato.Criar(0, "NACIONALIDADE_BR", Operador.Diferente, JsonSerializer.SerializeToElement(true)).Value!),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao()!.Message.Should().Contain("'NACIONALIDADE_BR'");
     }
 
     [Fact(DisplayName = "Bloco de sistema não tem exibição condicional")]

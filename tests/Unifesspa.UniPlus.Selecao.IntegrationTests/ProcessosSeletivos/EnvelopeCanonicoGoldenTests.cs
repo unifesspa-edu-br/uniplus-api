@@ -207,7 +207,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         // (MODALIDADE→exigência). MODALIDADE só contribui AC, a única modalidade ofertada.
         processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

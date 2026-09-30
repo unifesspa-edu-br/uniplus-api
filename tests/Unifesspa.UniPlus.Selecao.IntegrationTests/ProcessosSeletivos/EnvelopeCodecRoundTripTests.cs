@@ -103,8 +103,9 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirItens(
         [
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
             FatoColetado.Criar(
-                "RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica,
+                "TEM_BOLSA", 2, "Tem bolsa", TipoRenderizacao.Booleano,
                 Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas(
                     [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!),
                 null, ajuda: "Renda por pessoa da família", pedirConfirmacao: true).Value!,
@@ -114,10 +115,10 @@ public sealed class EnvelopeCodecRoundTripTests
         CorpusEnvelope.Publicar(processo);
 
         AssertRoundTrip(processo, CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        JsonObject renda = Envelope(congelado)["fatosColetados"]!.AsArray()
-            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "RENDA")!.AsObject();
-        renda["obrigatoriedade"]!["tipo"]!.GetValue<string>().Should().Be("QUANDO");
-        renda["pedirConfirmacao"]!.GetValue<bool>().Should().BeTrue();
+        JsonObject bolsa = Envelope(congelado)["fatosColetados"]!.AsArray()
+            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "TEM_BOLSA")!.AsObject();
+        bolsa["obrigatoriedade"]!["tipo"]!.GetValue<string>().Should().Be("QUANDO");
+        bolsa["pedirConfirmacao"]!.GetValue<bool>().Should().BeTrue();
     }
 
     [Fact(DisplayName = "Campo de texto com formato reproduz os bytes")]
@@ -127,7 +128,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirItens(
         [
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
             FatoColetado.Criar("NOME_SOCIAL", 2, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, formato: "NOME_PESSOA").Value!,

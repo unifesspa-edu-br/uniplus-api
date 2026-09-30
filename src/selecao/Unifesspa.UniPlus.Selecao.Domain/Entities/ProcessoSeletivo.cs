@@ -2818,6 +2818,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
+        new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação ou negação é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
         new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciaDeTermoSemFormaDeAceite() is null),
@@ -3652,6 +3653,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return fatoCitado;
         }
 
+        if (PendenciaDeCampoOpcionalQueAlimentaRegra() is { } campoOpcional)
+        {
+            return campoOpcional;
+        }
+
         if (PendenciaDeFatoColetadoSemValoresOfertados() is { } fatoSemOferta)
         {
             return fatoSemOferta;
@@ -3877,6 +3883,29 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // As regras dos itens, a exibição das seções e as condições dos termos citam o que o
         // formulário conhece; os itens e as derivações podem ter mudado depois da citação.
         return CitacaoInvalidaNosFormularios(_formularios, _fatosColetados, _termosExigidos, _regrasDerivacao);
+    }
+
+    /// <summary>
+    /// Campo opcional sem resposta resolve sem valor, e todo operador sobre ele dá falso — inclusive
+    /// <c>DIFERENTE</c> e <c>NAO_EM</c> (UNI-REQ-0074). Por isso o campo cujo fato é dependência de
+    /// uma derivação, ou é citado por negação em qualquer regra, precisa ser obrigatório sempre que
+    /// exibido: sem resposta, a derivação e a negação dariam resultado que o candidato não declarou.
+    /// Toda dependência de derivação conta, o que já cobre o fato citado por negação por meio de um
+    /// derivado.
+    /// </summary>
+    private DomainError? PendenciaDeCampoOpcionalQueAlimentaRegra()
+    {
+        HashSet<string> alimentamRegra = new(
+            _regrasDerivacao.SelectMany(static c => c.FatosCitados)
+                .Concat(CondicoesVivasComOperador().Where(static c => c.Operador is Operador.Diferente or Operador.NaoEm).Select(static c => c.Fato)),
+            StringComparer.Ordinal);
+        return _fatosColetados
+            .Where(f => f.Obrigatoriedade.Tipo != TipoObrigatoriedade.Sempre && alimentamRegra.Contains(f.FatoCodigo))
+            .OrderBy(static f => f.Finalidade).ThenBy(static f => f.Ordem)
+            .Select(static f => new DomainError(
+                FatoColetadoErrorCodes.OpcionalQueAlimentaRegra,
+                $"O campo '{f.FatoCodigo}' alimenta uma derivação ou uma condição de negação e precisa ser obrigatório sempre que exibido."))
+            .FirstOrDefault();
     }
 
     /// <summary>
@@ -4401,14 +4430,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// exibição das seções do formulário.
     /// </summary>
     private IEnumerable<(string Fato, JsonElement Valor)> CondicoesVivas() =>
-        _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Valor))
-            .Concat(_fatosColetados.SelectMany(static f => f.Condicoes).Select(static c => (c.Fato, c.Valor)))
+        CondicoesVivasComOperador().Select(static c => (c.Fato, c.Valor));
+
+    /// <summary>Todo predicado vivo que cita fato, com o operador de cada condição — a enumeração única das fontes.</summary>
+    private IEnumerable<(string Fato, Operador Operador, JsonElement Valor)> CondicoesVivasComOperador() =>
+        _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor))
+            .Concat(_fatosColetados.SelectMany(static f => f.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
             .Concat(_regrasDerivacao.SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
-                .Select(static c => (c.Fato, c.Valor)))
+                .Select(static c => (c.Fato, c.Operador, c.Valor)))
             .Concat(_criteriosDesempate.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
-                .Select(static a => (a.Condicao.Fato, a.Condicao.Valor)))
-            .Concat(_termosExigidos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor)))
-            .Concat(_formularios.SelectMany(static f => f.Etapas).SelectMany(static e => e.Condicoes).Select(static c => (c.Fato, c.Valor)));
+                .Select(static a => (a.Condicao.Fato, a.Condicao.Operador, a.Condicao.Valor)))
+            .Concat(_termosExigidos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
+            .Concat(_formularios.SelectMany(static f => f.Etapas).SelectMany(static e => e.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)));
 
     /// <summary>
     /// CA-03 (Story #554, issue #892): um gatilho DNF sobre um
