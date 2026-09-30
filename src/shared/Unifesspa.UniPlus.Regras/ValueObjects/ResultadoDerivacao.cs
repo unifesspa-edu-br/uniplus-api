@@ -16,11 +16,19 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </remarks>
 public sealed record ResultadoDerivacao
 {
-    private ResultadoDerivacao(EstadoFato estado, IReadOnlySet<string> valores)
+    private ResultadoDerivacao(EstadoFato estado, IReadOnlySet<string> valores, bool? valorBooleano = null)
     {
         Estado = estado;
         Valores = valores;
+        ValorBooleano = valorBooleano;
     }
+
+    /// <summary>O valor do derivado booleano resolvido; nulo no categórico e no indeterminado.</summary>
+    public bool? ValorBooleano { get; }
+
+    /// <summary>O derivado booleano é conhecido: verdadeiro se alguma regra ativou.</summary>
+    public static ResultadoDerivacao ResolvidoBooleano(bool valor) =>
+        new(EstadoFato.Resolvido, FrozenSet<string>.Empty, valor);
 
     public EstadoFato Estado { get; }
 

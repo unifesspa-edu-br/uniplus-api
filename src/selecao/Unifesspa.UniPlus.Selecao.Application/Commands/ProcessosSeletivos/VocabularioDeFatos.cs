@@ -152,4 +152,25 @@ internal static class VocabularioDeFatos
         ArgumentNullException.ThrowIfNull(valoresCitados);
         return [.. (fato.ValoresDominioDeclarados ?? []).Where(v => v.Ativo || valoresCitados.Contains((fato.Codigo, v.Codigo)))];
     }
+
+    /// <summary>
+    /// Os códigos que uma regra de derivação do fato pode contribuir no processo: os valores do
+    /// domínio dinâmico enumerado, ou todos os valores do catálogo. Nulo quando a fonte não é
+    /// enumerável pelo servidor. O valor desativado pertence ao domínio: quem o recusa como vínculo
+    /// novo, com o motivo certo, é a conferência de vínculo novo.
+    /// </summary>
+    public static IReadOnlyCollection<string>? DominioDeContribuicao(
+        FatoCandidatoView fato,
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        ArgumentNullException.ThrowIfNull(dominiosDinamicos);
+
+        if (dominiosDinamicos.TryGetValue(fato.Codigo, out DominioDeValores? dinamico))
+        {
+            return dinamico.Valores;
+        }
+
+        return fato.FonteValores == FonteGlobal ? [.. (fato.ValoresDominioDeclarados ?? []).Select(static v => v.Codigo)] : null;
+    }
 }

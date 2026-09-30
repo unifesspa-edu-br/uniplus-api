@@ -51,4 +51,23 @@ public sealed class VocabularioDeFatosTests
     private static FatoCandidatoView Derivado(string codigo, string fonte) => new(
         Guid.CreateVersion7(), codigo, codigo, null, "CATEGORICO", "DERIVADO", "ESCALAR",
         ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: fonte, Ativo: true);
+
+    [Fact(DisplayName = "O domínio de contribuição de uma regra segue a fonte: valores do processo, ou todos os do catálogo")]
+    public void DominioDeContribuicao_PelaFonte()
+    {
+        FatoCandidatoView global = new(
+            Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
+            ["REGULAR", "EJA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
+            [new FatoValorDominioViewItem("REGULAR", "Regular", 0, true), new FatoValorDominioViewItem("EJA", "EJA", 1, false)],
+            "GLOBAL", Ativo: true);
+        Dictionary<string, DominioDeValores> dinamicos = new(StringComparer.Ordinal)
+        {
+            ["MODALIDADE"] = DominioDeValores.Enumerado(["AC", "LB_PPI"]),
+        };
+
+        VocabularioDeFatos.DominioDeContribuicao(global, dinamicos)
+            .Should().BeEquivalentTo(["REGULAR", "EJA"], "o desativado é recusado como vínculo novo, não como fora do domínio");
+        VocabularioDeFatos.DominioDeContribuicao(Derivado("MODALIDADE", "MODALIDADE"), dinamicos)
+            .Should().BeEquivalentTo(["AC", "LB_PPI"]);
+    }
 }

@@ -592,10 +592,10 @@ public sealed partial class EnvelopeCodec
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao,
         JsonObject payload)
     {
-        // Pré-produção: há UMA semântica de motor ("1") e nenhum snapshot congelado em banco. Exigir
-        // que a versão do envelope seja a corrente é a leitura honesta enquanto não existe versão
-        // legada a preservar — uma evolução da semântica antes da produção reescreve as fixtures (bump
-        // de forma no 0.x), não reidrata um "1" antigo. O despacho por versão do interpretador (aceitar
+        // Pré-produção: há uma só semântica de motor vigente (MotorDerivacao.VersaoSemantica) e nenhum
+        // snapshot congelado em banco. Exigir que a versão do envelope seja a corrente é a leitura
+        // honesta enquanto não existe versão legada a preservar — uma evolução da semântica antes da
+        // produção reescreve as fixtures (bump de forma no 0.x), não reidrata uma versão anterior. O despacho por versão do interpretador (aceitar
         // uma versão anterior e recanonicalizar na semântica DELA, com encoder legado) é o mesmo
         // versionamento forense deliberadamente adiado para a 1ª release de produção (1.0.0) — a versão
         // é congelada AGORA justamente para esse despacho futuro poder existir sem migrar dado.

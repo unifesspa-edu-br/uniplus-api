@@ -818,7 +818,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .. RegrasDerivacaoModalidadeLei12711.Construir().Regras.Select((regra, ordem) =>
                 RegraDerivacaoConfigurada.Criar(
                     ordem,
-                    regra.Contribui,
+                    regra.Contribui!,
                     regra.EhAncora
                         ? null
                         : [.. regra.Quando.Clausulas.SelectMany((clausula, indice) => clausula.Condicoes.Select(c =>

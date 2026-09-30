@@ -95,8 +95,6 @@ public static class DefinirRegrasDerivacaoCommandHandler
 
         Dictionary<string, DominioDeValores> dominiosDinamicos =
             VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
-        IReadOnlyCollection<string> modalidadesOfertadas =
-            [.. dominiosDinamicos.GetValueOrDefault(RegrasDerivacaoModalidadeLei12711.CodigoFato)?.Valores ?? new HashSet<string>()];
 
         // Universo dos fatos disponíveis na configuração final: os coletados pelo processo mais os
         // derivados definidos neste mesmo comando (a substituição é integral). Uma condição só pode
@@ -116,7 +114,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
         foreach (ConfiguracaoDerivacaoInput configInput in command.Configuracoes)
         {
             Result<ConfiguracaoDerivacaoFato> configResult =
-                ResolverConfiguracao(configInput, catalogo, vocabulario, universo, dominiosDinamicos, modalidadesOfertadas);
+                ResolverConfiguracao(configInput, catalogo, vocabulario, universo, dominiosDinamicos);
             if (configResult.IsFailure)
             {
                 return Result<MutacaoAceita>.ValidationFailure(configResult.Errors);
@@ -154,12 +152,11 @@ public static class DefinirRegrasDerivacaoCommandHandler
         IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
         IReadOnlySet<string> universo,
-        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos,
-        IReadOnlyCollection<string> modalidadesOfertadas)
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
         // Alvo: o fato tem de existir e ser derivado com o binding da própria regra de derivação
         // (REGRA_DERIVACAO:{codigo}). Um fato declarado, ou derivado por outro mecanismo, não tem
-        // regras configuráveis. No vocabulário atual, MODALIDADE é o único alvo válido.
+        // regras configuráveis.
         if (!catalogo.TryGetValue(configInput.CodigoFato, out FatoCandidatoView? view))
         {
             return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
@@ -171,8 +168,8 @@ public static class DefinirRegrasDerivacaoCommandHandler
         {
             return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
                 DerivabilidadeDeFato.FatoNaoDerivavel,
-                $"O fato '{configInput.CodigoFato}' não é um alvo de derivação — só um fato derivado com binding de "
-                + "regra de derivação pode ter regras configuradas."));
+                $"O fato '{configInput.CodigoFato}' não é um alvo de derivação — só um fato categórico derivado com "
+                + "binding de regra de derivação pode ter regras configuradas."));
         }
 
         List<RegraDerivacaoConfigurada> regras = [];
@@ -194,13 +191,14 @@ public static class DefinirRegrasDerivacaoCommandHandler
             return configResult;
         }
 
-        // Domínio de contribuição: só MODALIDADE tem domínio validável nesta Story — cada código
-        // contribuído tem de ser uma das modalidades ofertadas pelo processo (mesmo domínio e mesmo
-        // erro do gate de publicação). Um segundo fato derivado com binding de regra, quando existir
-        // no seed, estende esta validação; até lá, a estrutura das regras já foi conferida.
-        if (string.Equals(configInput.CodigoFato, RegrasDerivacaoModalidadeLei12711.CodigoFato, StringComparison.Ordinal))
+        // Domínio de contribuição: todo código contribuído pertence aos valores que o fato tem no
+        // processo, pela fonte (ADR-0136) — modalidades ofertadas, opções declaradas, municípios do
+        // bônus ou todos os valores do catálogo. O valor desativado do catálogo pertence ao domínio
+        // e é recusado adiante, como vínculo novo. A fonte que o servidor não enumera (Geo) não tem
+        // conferência aqui.
+        if (VocabularioDeFatos.DominioDeContribuicao(view, dominiosDinamicos) is { } dominio)
         {
-            Result<RegrasDerivacaoFato> dominioResult = configResult.Value!.ParaRegrasDerivacao(modalidadesOfertadas);
+            Result<RegrasDerivacaoFato> dominioResult = configResult.Value!.ParaRegrasDerivacao(dominio);
             if (dominioResult.IsFailure)
             {
                 return Result<ConfiguracaoDerivacaoFato>.Failure(dominioResult.Error!);
@@ -318,11 +316,19 @@ internal static class DerivabilidadeDeFato
     private const string OrigemDerivado = "DERIVADO";
     private const string PrefixoBindingRegraDerivacao = "REGRA_DERIVACAO:";
 
+    private const string DominioCategorico = "CATEGORICO";
+
+    /// <summary>
+    /// A regra do processo contribui código, então o alvo é categórico: o derivado booleano ainda
+    /// não tem regra configurável no processo, e aceitá-lo gravaria contribuições que o motor
+    /// emitiria como lista num fato declarado booleano.
+    /// </summary>
     public static bool EhAlvoDeDerivacao(FatoCandidatoView fato)
     {
         ArgumentNullException.ThrowIfNull(fato);
 
         return string.Equals(fato.Origem, OrigemDerivado, StringComparison.Ordinal)
+            && string.Equals(fato.Dominio, DominioCategorico, StringComparison.Ordinal)
             && string.Equals(fato.Binding, PrefixoBindingRegraDerivacao + fato.Codigo, StringComparison.Ordinal);
     }
 }
