@@ -46,7 +46,7 @@ public sealed class GlobalExceptionMiddlewareTests
     {
         DefaultHttpContext context = CriarContexto();
         GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
-            throw new ValidationException([new ValidationFailure("Email", "E-mail inválido") { ErrorCode = "Email.Invalido" }]));
+            throw ExcecaoDeValidacao(ComandoValido() with { Email = "invalido" }));
 
         await middleware.InvokeAsync(context);
 
@@ -58,7 +58,7 @@ public sealed class GlobalExceptionMiddlewareTests
     {
         DefaultHttpContext context = CriarContexto();
         GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
-            throw new ValidationException([new ValidationFailure("Campo", "Inválido") { ErrorCode = "Campo.Invalido" }]));
+            throw ExcecaoDeValidacao(ComandoValido() with { Nome = "" }));
 
         await middleware.InvokeAsync(context);
 
@@ -68,9 +68,9 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComValidationException_DeveConterArrayDeErrorsNoFormato()
     {
-        ValidationFailure falha = new("Email", "E-mail inválido") { ErrorCode = "Email.Invalido" };
         DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ => throw new ValidationException([falha]));
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+            throw ExcecaoDeValidacao(ComandoValido() with { Email = "invalido" }));
 
         await middleware.InvokeAsync(context);
 
@@ -79,9 +79,83 @@ public sealed class GlobalExceptionMiddlewareTests
         errors.GetArrayLength().Should().Be(1);
 
         JsonElement primeiro = errors[0];
-        primeiro.GetProperty("field").GetString().Should().Be("Email");
-        primeiro.GetProperty("code").GetString().Should().Be("Email.Invalido");
+        primeiro.GetProperty("field").GetString().Should().Be("email");
+        primeiro.GetProperty("code").GetString().Should().Be(ValidationErrorCodes.Formato);
         primeiro.GetProperty("message").GetString().Should().Be("E-mail inválido");
+    }
+
+    /// <summary>
+    /// Cada categoria de validator publica o código da taxonomia, e não o nome da classe
+    /// interna do FluentValidation (<c>NotEmptyValidator</c>, <c>MaximumLengthValidator</c>…)
+    /// que vazava para o contrato quando nenhuma regra declarava <c>.WithErrorCode</c>.
+    /// </summary>
+    [Theory]
+    [InlineData(nameof(ComandoDeTeste.Nome), "", ValidationErrorCodes.Obrigatorio)]
+    [InlineData(nameof(ComandoDeTeste.Nome), "nome longo demais", ValidationErrorCodes.Tamanho)]
+    [InlineData(nameof(ComandoDeTeste.Email), "invalido", ValidationErrorCodes.Formato)]
+    [InlineData(nameof(ComandoDeTeste.Idade), "-1", ValidationErrorCodes.Faixa)]
+    [InlineData(nameof(ComandoDeTeste.Apelido), "proibido", ValidationErrorCodes.Regra)]
+    public async Task InvokeAsync_ComValidationException_CodeDeCadaViolacaoVemDaTaxonomia(
+        string campo, string valor, string codeEsperado)
+    {
+        ComandoDeTeste comando = campo switch
+        {
+            nameof(ComandoDeTeste.Nome) => ComandoValido() with { Nome = valor },
+            nameof(ComandoDeTeste.Email) => ComandoValido() with { Email = valor },
+            nameof(ComandoDeTeste.Idade) => ComandoValido() with { Idade = int.Parse(valor, System.Globalization.CultureInfo.InvariantCulture) },
+            _ => ComandoValido() with { Apelido = valor },
+        };
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ => throw ExcecaoDeValidacao(comando));
+
+        await middleware.InvokeAsync(context);
+
+        using JsonDocument doc = await LerBodyAsync(context);
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(1);
+        errors[0].GetProperty("code").GetString().Should().Be(codeEsperado);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ComWithErrorCodeExplicito_CodeVemDoMapeamentoDaRegra()
+    {
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+            throw ExcecaoDeValidacao(ComandoValido() with { Cpf = "123" }));
+
+        await middleware.InvokeAsync(context);
+
+        using JsonDocument doc = await LerBodyAsync(context);
+        doc.RootElement.GetProperty("errors")[0].GetProperty("code").GetString().Should().Be("uniplus.cpf.invalido");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ComViolacaoEmColecao_FieldEmCamelCasePorSegmentoPreservandoIndice()
+    {
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+            throw ExcecaoDeValidacao(ComandoValido() with { Itens = [new ItemDeTeste(1), new ItemDeTeste(0)] }));
+
+        await middleware.InvokeAsync(context);
+
+        using JsonDocument doc = await LerBodyAsync(context);
+        JsonElement primeiro = doc.RootElement.GetProperty("errors")[0];
+        primeiro.GetProperty("field").GetString().Should().Be("itens[1].quantidade");
+        primeiro.GetProperty("code").GetString().Should().Be(ValidationErrorCodes.Faixa);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ComValidationException_TitleVemDoMapper()
+    {
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+            throw ExcecaoDeValidacao(ComandoValido() with { Nome = "" }));
+
+        await middleware.InvokeAsync(context);
+
+        using JsonDocument doc = await LerBodyAsync(context);
+        doc.RootElement.GetProperty("title").GetString().Should().Be("Erro de validação");
+        doc.RootElement.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status422UnprocessableEntity);
     }
 
     [Fact]
@@ -89,7 +163,7 @@ public sealed class GlobalExceptionMiddlewareTests
     {
         DefaultHttpContext context = CriarContexto();
         GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
-            throw new ValidationException([new ValidationFailure("Campo", "Erro") { ErrorCode = "Campo.Erro" }]));
+            throw ExcecaoDeValidacao(ComandoValido() with { Nome = "" }));
 
         await middleware.InvokeAsync(context);
 
@@ -108,7 +182,7 @@ public sealed class GlobalExceptionMiddlewareTests
     {
         DefaultHttpContext context = CriarContexto();
         GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
-            throw new ValidationException([new ValidationFailure("Cpf", "Cpf.Invalido") { ErrorCode = "Cpf.Invalido" }]));
+            throw ExcecaoDeValidacao(ComandoValido() with { Cpf = "123" }));
 
         await middleware.InvokeAsync(context);
 
@@ -247,11 +321,23 @@ public sealed class GlobalExceptionMiddlewareTests
 
     private static Exception ExcecaoPara(string code) => code switch
     {
-        "uniplus.validacao" => new ValidationException(
-            [new ValidationFailure("Campo", "Inválido") { ErrorCode = "Campo.Invalido" }]),
+        "uniplus.validacao" => ExcecaoDeValidacao(ComandoValido() with { Nome = "" }),
         "uniplus.concorrencia.conflito" => new DbUpdateConcurrencyException("conflito"),
         _ => new InvalidOperationException("erro"),
     };
+
+    private static ComandoDeTeste ComandoValido() =>
+        new("Nome", "pessoa@exemplo.com", 30, "apelido", "52998224725", [new ItemDeTeste(1)]);
+
+    // Exceção montada pelo validator real, como o pipeline do Wolverine faz: o ErrorCode de
+    // cada falha é o que o resolver global produz, e não um valor escrito à mão no teste.
+    private static ValidationException ExcecaoDeValidacao(ComandoDeTeste comando)
+    {
+        ValidationErrorCodes.InstallGlobalResolver();
+        ValidationResult resultado = new ComandoDeTesteValidator().Validate(comando);
+        resultado.IsValid.Should().BeFalse("o cenário precisa de ao menos uma violação");
+        return new ValidationException(resultado.Errors);
+    }
 
     private static DefaultHttpContext CriarContexto()
     {
@@ -265,12 +351,36 @@ public sealed class GlobalExceptionMiddlewareTests
         ILogger<GlobalExceptionMiddleware> logger = Substitute.For<ILogger<GlobalExceptionMiddleware>>();
         ProblemTypeUriFactory problemTypeUriFactory = new(
             Options.Create(new ProblemTypeOptions { BaseUri = BaseUriDoCatalogo }));
-        return new GlobalExceptionMiddleware(next, logger, problemTypeUriFactory);
+        DomainErrorMappingRegistry mapper = new([new KernelDomainErrorRegistration()], problemTypeUriFactory);
+        return new GlobalExceptionMiddleware(next, logger, problemTypeUriFactory, mapper);
     }
 
     private static async Task<JsonDocument> LerBodyAsync(HttpContext context)
     {
         context.Response.Body.Seek(0, SeekOrigin.Begin);
         return await JsonDocument.ParseAsync(context.Response.Body);
+    }
+
+    public sealed record ItemDeTeste(int Quantidade);
+
+    public sealed record ComandoDeTeste(
+        string Nome,
+        string Email,
+        int Idade,
+        string Apelido,
+        string Cpf,
+        IReadOnlyList<ItemDeTeste> Itens);
+
+    private sealed class ComandoDeTesteValidator : AbstractValidator<ComandoDeTeste>
+    {
+        public ComandoDeTesteValidator()
+        {
+            RuleFor(c => c.Nome).Cascade(CascadeMode.Stop).NotEmpty().MaximumLength(10);
+            RuleFor(c => c.Email).EmailAddress().WithMessage("E-mail inválido");
+            RuleFor(c => c.Idade).GreaterThanOrEqualTo(0);
+            RuleFor(c => c.Apelido).Must(a => a != "proibido");
+            RuleFor(c => c.Cpf).Length(11).WithErrorCode("Cpf.Invalido");
+            RuleForEach(c => c.Itens).ChildRules(item => item.RuleFor(i => i.Quantidade).GreaterThan(0));
+        }
     }
 }

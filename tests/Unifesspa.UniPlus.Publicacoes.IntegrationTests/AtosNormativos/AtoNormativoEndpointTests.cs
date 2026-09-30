@@ -282,6 +282,55 @@ public sealed class AtoNormativoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    /// <summary>
+    /// O 422 do validator FluentValidation publica cada violação na taxonomia
+    /// <c>uniplus.validacao.*</c> e com o campo no casing do payload — e não o nome da classe
+    /// interna do FluentValidation (<c>NotEmptyValidator</c>, <c>MaximumLengthValidator</c>…)
+    /// nem o nome C# da propriedade, que vazavam para o contrato consumido pelo frontend.
+    /// O payload dispara uma violação de cada categoria, inclusive dentro da coleção de
+    /// vínculos e em regras com <c>OverridePropertyName</c>.
+    /// </summary>
+    [Fact(DisplayName = "POST reprovado no validator publica errors[] na taxonomia e com field em camelCase")]
+    public async Task Registrar_ReprovadoNoValidator_ErrorsNaTaxonomiaComFieldEmCamelCase()
+    {
+        object payload = new
+        {
+            orgao = "",
+            serie = new string('A', 101),
+            ano = 0,
+            numero = "1",
+            tipoCodigo = "QUALQUER",
+            dataPublicacao = Publicacao,
+            documentoHash = "nao-e-hash",
+            assinante = "Jairo Belchior",
+            versaoInvocadaId = Guid.CreateVersion7(),
+            versaoInvocadaHash = (string?)null,
+            vinculos = new[] { new { entidadeTipo = "minusculo", entidadeId = Guid.Empty } },
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await PostAtoAsync(client, payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.validacao");
+
+        (string? Field, string? Code)[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()
+            .Select(e => (e.GetProperty("field").GetString(), e.GetProperty("code").GetString()))];
+
+        erros.Should().AllSatisfy(e => e.Code.Should().MatchRegex(@"^uniplus\.validacao\.[a-z_]+$"));
+        erros.Should().BeEquivalentTo(new (string?, string?)[]
+        {
+            ("orgao", "uniplus.validacao.obrigatorio"),
+            ("serie", "uniplus.validacao.tamanho"),
+            ("ano", "uniplus.validacao.faixa"),
+            ("documentoHash", "uniplus.validacao.formato"),
+            ("versaoInvocadaHash", "uniplus.validacao.regra"),
+            ("vinculos[0].entidadeTipo", "uniplus.validacao.formato"),
+            ("vinculos[0].entidadeId", "uniplus.validacao.obrigatorio"),
+        });
+    }
+
     // ── Aviso de numeração (AC4) ─────────────────────────────────────────────
 
     [Fact(DisplayName = "Número já usado gera aviso no registro, sem impedir; detalhe recomputa")]
