@@ -54,8 +54,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         IReadOnlySet<(string Fato, string Valor)> valoresCitados = processo.Vinculos().Valores;
         foreach (FatoColetado fato in processo.FatosColetados)
         {
-            bool ehFatoDeSelecao = fato.TipoRenderizacao is TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla;
-            if (!ehFatoDeSelecao)
+            if (!fato.TipoRenderizacao.EhSelecao())
             {
                 valoresPorFato[fato.FatoCodigo] = null;
                 continue;

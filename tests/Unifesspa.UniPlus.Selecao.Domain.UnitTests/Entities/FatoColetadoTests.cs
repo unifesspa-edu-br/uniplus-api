@@ -44,6 +44,25 @@ public sealed class FatoColetadoTests
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.TipoRenderizacaoObrigatorio);
     }
 
+    [Theory(DisplayName = "O formato existe se, e só se, o campo é de texto")]
+    [InlineData(TipoRenderizacao.Texto, null, false)]
+    [InlineData(TipoRenderizacao.Texto, "CPF", true)]
+    [InlineData(TipoRenderizacao.Booleano, "CPF", false)]
+    [InlineData(TipoRenderizacao.Booleano, null, true)]
+    public void Criar_FormatoSoEmCampoDeTexto(TipoRenderizacao tipo, string? formato, bool aceito)
+    {
+        Result<FatoColetado> resultado = FatoColetado.Criar("NOME_SOCIAL", 0, "Nome social", tipo, obrigatorio: false, null, formato: formato);
+
+        if (aceito)
+        {
+            resultado.Value!.Formato.Should().Be(formato);
+        }
+        else
+        {
+            resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FormatoIncoerente);
+        }
+    }
+
     [Fact(DisplayName = "Rótulo com espaços nas bordas é aparado")]
     public void Criar_RotuloComEspacos_EAparado()
     {

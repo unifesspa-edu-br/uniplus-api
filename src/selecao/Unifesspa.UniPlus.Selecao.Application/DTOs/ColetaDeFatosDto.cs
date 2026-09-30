@@ -18,7 +18,8 @@ public sealed record CondicaoPrecondicaoDto(string Fato, string Operador, JsonEl
 /// disjuntiva — o OU de cláusulas, cada cláusula o E de condições —, ou <see langword="null"/>
 /// quando o fato é coletado incondicionalmente (nunca uma lista vazia). <see cref="Opcoes"/> são as
 /// opções que o processo oferece ao fato cuja fonte dos valores é o processo (issue #1619), ou
-/// <see langword="null"/> quando os valores não vêm do processo.
+/// <see langword="null"/> quando os valores não vêm do processo. <see cref="Formato"/> é o formato
+/// da resposta do campo de texto (livre, CPF, e-mail…), <see langword="null"/> nos demais campos.
 /// </summary>
 public sealed record FatoColetadoDto(
     string FatoCodigo,
@@ -28,7 +29,8 @@ public sealed record FatoColetadoDto(
     bool Obrigatorio,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao,
     IReadOnlyList<OpcaoDoProcessoDto>? Opcoes,
-    string? EtapaCodigo);
+    string? EtapaCodigo,
+    string? Formato);
 
 /// <summary>Uma opção que o processo oferece a um fato (issue #1619).</summary>
 public sealed record OpcaoDoProcessoDto(string Codigo, string Rotulo, int Ordem);

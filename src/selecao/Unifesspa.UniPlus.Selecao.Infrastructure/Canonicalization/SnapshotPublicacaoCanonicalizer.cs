@@ -1788,7 +1788,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         JsonArray array = [];
         foreach (FatoColetado fato in fatos.OrderBy(static f => f.Finalidade).ThenBy(static f => f.Ordem))
         {
-            bool ehFatoDeSelecao = fato.TipoRenderizacao is TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla;
+            bool ehFatoDeSelecao = fato.TipoRenderizacao.EhSelecao();
             IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = null;
             bool temEntrada = valoresSelecionaveisCongelados?.TryGetValue(fato.FatoCodigo, out valoresDoFato) ?? false;
 
@@ -1829,6 +1829,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["tipoRenderizacao"] = fato.TipoRenderizacao.ToCodigo(),
                 ["obrigatorio"] = fato.Obrigatorio,
                 ["origemValores"] = fato.OrigemValores.ToString(),
+                ["formato"] = fato.Formato,
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(
                     static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
                 ["valoresSelecionaveis"] = ehFatoDeSelecao

@@ -152,5 +152,5 @@ internal static class FormularioDeTeste
             : FatoColetado.Criar(
                 fato.FatoCodigo, fato.Ordem, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatorio,
                 [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
-                fato.OrigemValores, Secao).Value!;
+                fato.OrigemValores, Secao, formato: fato.Formato).Value!;
 }

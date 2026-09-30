@@ -40,6 +40,7 @@ public sealed class FatoColetado : EntityBase
     /// curto.
     /// </summary>
     public const int RotuloMaxLength = 300;
+    public const int FormatoMaxLength = 30;
 
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
@@ -75,6 +76,12 @@ public sealed class FatoColetado : EntityBase
     /// </summary>
     public OrigemValoresColeta OrigemValores { get; private set; }
 
+    /// <summary>
+    /// O formato da resposta de texto (livre, CPF, e-mail…), copiado do fato no catálogo quando a
+    /// coleta é definida; existe se, e só se, o campo é de texto.
+    /// </summary>
+    public string? Formato { get; private set; }
+
     /// <summary>Se as opções do campo são as que o processo declara.</summary>
     public bool OpcoesDoProcesso => OrigemValores == OrigemValoresColeta.OpcoesDoProcesso;
 
@@ -102,9 +109,19 @@ public sealed class FatoColetado : EntityBase
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
         OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo,
         string? etapaCodigo = null,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma)
+        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
+        string? formato = null)
     {
         List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
+
+        string? formatoNormalizado = string.IsNullOrWhiteSpace(formato) ? null : formato.Trim();
+        if ((tipoRenderizacao == TipoRenderizacao.Texto) != (formatoNormalizado is not null)
+            || formatoNormalizado is { Length: > FormatoMaxLength })
+        {
+            erros.Add(new("formato", new DomainError(
+                FatoColetadoErrorCodes.FormatoIncoerente,
+                $"O campo de texto tem o formato do fato no catálogo, com no máximo {FormatoMaxLength} caracteres; os demais campos não têm formato.")));
+        }
 
         string codigo = fatoCodigo?.Trim() ?? string.Empty;
         IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
@@ -134,6 +151,7 @@ public sealed class FatoColetado : EntityBase
             TipoRenderizacao = tipoRenderizacao,
             Obrigatorio = obrigatorio,
             OrigemValores = origemValores,
+            Formato = formatoNormalizado,
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
 
             // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
@@ -238,6 +256,7 @@ public static class FatoColetadoErrorCodes
     public const string RotuloObrigatorio = "FatoColetado.RotuloObrigatorio";
     public const string RotuloTamanho = "FatoColetado.RotuloTamanho";
     public const string TipoRenderizacaoObrigatorio = "FatoColetado.TipoRenderizacaoObrigatorio";
+    public const string FormatoIncoerente = "FatoColetado.FormatoIncoerente";
     public const string PrecondicaoAutorreferente = "FatoColetado.PrecondicaoAutorreferente";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
     public const string OrdemDuplicada = "FatoColetado.OrdemDuplicada";
