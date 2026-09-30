@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Issue #1077: um fato coletável de SELEÇÃO (CONDICAO_ATENDIMENTO/TIPO_DEFICIENCIA) sem
@@ -36,7 +37,7 @@ public sealed class FatoColetavelDeEscopoGateTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         // ProcessoSeletivoConformeBuilder já oferta atendimento vazio (sem condições) — só falta o fato coletável.
-        processo.DefinirFatosColetados([FatoCondicaoAtendimentoSemOferta()], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoCondicaoAtendimentoSemOferta()], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
@@ -90,7 +91,7 @@ public sealed class FatoColetavelDeEscopoGateTests
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
         processo.DequeueDomainEvents();
 
-        processo.DefinirFatosColetados([FatoCondicaoAtendimentoSemOferta()], PrecondicaoIfMatch.Curinga)
+        processo.DefinirItens([FatoCondicaoAtendimentoSemOferta()], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();

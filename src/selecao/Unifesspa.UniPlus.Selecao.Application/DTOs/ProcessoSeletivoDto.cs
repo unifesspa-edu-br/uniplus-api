@@ -37,13 +37,11 @@ public sealed record ProcessoSeletivoDto(
     IReadOnlyList<DocumentoExigidoDto> DocumentosExigidos,
     IReadOnlyList<NoExigenciaDto> RaizesExigencia,
     ReferenciaTemporalFatosDto? ReferenciaTemporalFatos,
-    IReadOnlyList<FatoColetadoDto> FatosColetados,
     IReadOnlyList<ConfiguracaoDerivacaoDto> RegrasDerivacao,
-    // Formulário de inscrição (Story #559): read-back administrativo do que foi salvo antes da
-    // publicação — o GET público (FormularioInscricaoController) projeta só da VersaoConfiguracao
-    // vigente e devolve 422 para processo em rascunho, então não serve para reler a tela de edição.
-    string? FormularioTitulo,
-    IReadOnlyList<TermoExigidoDto> TermosExigidos,
+    // Formulários por finalidade (UNI-REQ-0144): read-back administrativo do que foi salvo antes
+    // da publicação — o GET público projeta só da versão vigente, e não serve para reler a tela de
+    // edição. Cada formulário traz os itens e os termos dele.
+    IReadOnlyList<FormularioDto> Formularios,
     // Divulgação pública (UNI-REQ-0050, issue #563): read-back administrativo pelo mesmo motivo
     // do formulário acima — sem ele, a tela de edição (uniplus-web#504) não conseguiria reler a
     // configuração salva e poderia sobrescrevê-la com o default ao reenviar. A regra de

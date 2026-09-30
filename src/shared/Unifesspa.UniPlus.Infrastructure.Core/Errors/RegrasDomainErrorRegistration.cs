@@ -19,6 +19,16 @@ internal sealed class RegrasDomainErrorRegistration : IDomainErrorRegistration
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
+        new("EstruturaFormulario.EtapaCodigoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.etapa_codigo_duplicado", "O código de etapa se repete no formulário")),
+        new("EstruturaFormulario.EtapaOrdemDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.etapa_ordem_duplicada", "Duas etapas do formulário têm a mesma ordem")),
+        new("EstruturaFormulario.TipoDeEtapaObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.tipo_de_etapa_obrigatorio", "A etapa é uma seção ou um bloco de sistema")),
+        new("EstruturaFormulario.SecaoComBloco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.secao_com_bloco", "Uma seção não declara bloco de sistema")),
+        new("EstruturaFormulario.BlocoNaoAdmitido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.bloco_nao_admitido", "O bloco não é admitido pela finalidade do formulário")),
+        new("EstruturaFormulario.BlocoRepetido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.bloco_repetido", "O bloco aparece mais de uma vez no formulário")),
+        new("EstruturaFormulario.BlocoExigidoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.bloco_exigido_ausente", "Falta um bloco que a finalidade exige")),
+        new("EstruturaFormulario.RevisaoEAceiteForaDoFim", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.revisao_e_aceite_fora_do_fim", "A revisão e aceite é sempre a última etapa")),
+        new("EstruturaFormulario.ItemForaDeSecao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.item_fora_de_secao", "O item precisa estar numa seção do formulário")),
+        new("EstruturaFormulario.ItemForaDaOrdemDasSecoes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.item_fora_da_ordem_das_secoes", "A ordem dos itens não acompanha a ordem das seções")),
         new("PredicadoDnf.FormaJsonInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.predicado_dnf.forma_json_invalida", "O predicado ou a obrigatoriedade não tem a forma esperada")),
         new("ClausulaDnf.ClausulaVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.clausula_dnf.clausula_vazia", "Uma cláusula do predicado deve ter ao menos uma condição")),
         new("CondicaoDnf.FatoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.condicao_dnf.fato_obrigatorio", "O fato da condição é obrigatório")),

@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do
@@ -120,6 +121,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
@@ -192,7 +194,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         [
             "tipoProcesso", "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
             "atendimento", "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital",
-            "documentosExigidos", "arvoreSatisfacao", "formulario", "cascataRemanejamento", "divulgacao",
+            "documentosExigidos", "arvoreSatisfacao", "formularios", "cascataRemanejamento", "divulgacao",
             "cronogramaFases", "identidadesUnidade",
             // Story #928, §7.4: coleta de fatos, derivação, grafo conjunto congelado, versão do
             // interpretador e conjunto de modalidades ofertadas.

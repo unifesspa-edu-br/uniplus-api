@@ -20,16 +20,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// precisar apagá-la de lugar nenhum.
 /// </para>
 /// <para>
-/// A avaliação é a do avaliador de formulário compartilhado (ADR-0135): a coleta vira uma etapa
-/// única, com os fatos na ordem de coleta, a pré-condição como exibição e a obrigatoriedade do
-/// campo. Nenhuma etapa é dada como concluída, então um campo aplicável sem resposta fica pendente.
+/// A avaliação é a do avaliador de formulário compartilhado (ADR-0135): cada formulário é uma
+/// etapa, na ordem das finalidades, com os fatos na ordem de coleta, a pré-condição como exibição
+/// e a obrigatoriedade do campo. Nenhuma etapa é dada como concluída, então um campo aplicável sem resposta fica pendente.
 /// </para>
 /// </remarks>
 public static class ResolvedorEstadoFatos
 {
-    /// <summary>Código da etapa única em que a coleta é descrita para o avaliador.</summary>
-    private const string EtapaDaColeta = "COLETA";
-
     /// <summary>
     /// Resolve todos os fatos coletados pelo processo.
     /// </summary>
@@ -54,17 +51,22 @@ public static class ResolvedorEstadoFatos
         ArgumentNullException.ThrowIfNull(respostasBrutas);
         ArgumentNullException.ThrowIfNull(valoresOfertados);
 
-        DefinicaoEtapa coleta = new(
-            EtapaDaColeta,
-            exibicao: null,
-            [.. fatosColetados.OrderBy(static f => f.Ordem).Select(static fato => new DefinicaoItem(
-                fato.FatoCodigo,
-                fato.ParaPredicado(),
-                fato.Obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca,
-                restricoes: []))]);
+        // Uma etapa por formulário, na ordem das finalidades: a ordem dos itens é única dentro de
+        // cada formulário, e não entre eles.
+        DefinicaoEtapa[] etapas = [.. fatosColetados
+            .GroupBy(static f => f.Finalidade)
+            .OrderBy(static g => g.Key)
+            .Select(static g => new DefinicaoEtapa(
+                g.Key.ToString(),
+                exibicao: null,
+                [.. g.OrderBy(static f => f.Ordem).Select(static fato => new DefinicaoItem(
+                    fato.FatoCodigo,
+                    fato.ParaPredicado(),
+                    fato.Obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca,
+                    restricoes: []))]))];
 
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
-            new DefinicaoFormulario([coleta], termos: [], derivacoes: []),
+            new DefinicaoFormulario(etapas, termos: [], derivacoes: []),
             new EntradaAvaliacaoFormulario(
                 RespostasDentroDaOferta(respostasBrutas, valoresOfertados),
                 EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),

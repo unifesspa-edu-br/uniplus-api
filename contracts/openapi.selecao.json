@@ -802,10 +802,10 @@
         ]
       }
     },
-    "/api/selecao/processos-seletivos/{id}/formulario": {
+    "/api/selecao/processos-seletivos/{id}/formularios/{finalidade}": {
       "get": {
         "tags": [
-          "FormularioInscricao"
+          "Formularios"
         ],
         "parameters": [
           {
@@ -816,13 +816,21 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "finalidade",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "application/vnd.uniplus.formulario-inscricao.v1\u002Bjson": {
+              "application/vnd.uniplus.formulario.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/FormularioRenderizavelDto"
                 }
@@ -862,10 +870,10 @@
         }
       }
     },
-    "/api/selecao/admin/processos-seletivos/{id}/formulario": {
+    "/api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}": {
       "put": {
         "tags": [
-          "FormularioInscricao"
+          "Formularios"
         ],
         "parameters": [
           {
@@ -875,6 +883,14 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "finalidade",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -1026,12 +1042,10 @@
           }
         ],
         "x-uniplus-idempotent": true
-      }
-    },
-    "/api/selecao/admin/processos-seletivos/{id}/formulario/termos": {
-      "put": {
+      },
+      "delete": {
         "tags": [
-          "FormularioInscricao"
+          "Formularios"
         ],
         "parameters": [
           {
@@ -1041,6 +1055,264 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "finalidade",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}/itens": {
+      "put": {
+        "tags": [
+          "Formularios"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "finalidade",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirItensDoFormularioRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirItensDoFormularioRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirItensDoFormularioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Requisi\u00E7\u00E3o concorrente com a mesma Idempotency-Key ainda em processamento (uniplus.idempotency.processing_conflict). Repetir depois, com a MESMA chave. Conclu\u00EDda a opera\u00E7\u00E3o anterior, a repeti\u00E7\u00E3o recebe em replay o resultado dela quando ele \u00E9 guard\u00E1vel; n\u00E3o sendo (5xx, cancelamento, ou conflito que a pr\u00F3pria resposta declara retent\u00E1vel), a reserva \u00E9 liberada e a repeti\u00E7\u00E3o executa de novo.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
+    "/api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}/termos": {
+      "put": {
+        "tags": [
+          "Formularios"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "finalidade",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -5541,181 +5813,6 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/selecao/processos-seletivos/{id}/fatos-coletados": {
-      "put": {
-        "tags": [
-          "ProcessoSeletivo"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "If-Match",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
-            "required": true,
-            "schema": {
-              "maxLength": 255,
-              "minLength": 1,
-              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/FatoColetadoInput"
-                }
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/FatoColetadoInput"
-                }
-              }
-            },
-            "application/*\u002Bjson": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/FatoColetadoInput"
-                }
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "No Content",
-            "headers": {
-              "ETag": {
-                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "412": {
-            "description": "Precondition Failed",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "428": {
-            "description": "Precondition Required",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Requisi\u00E7\u00E3o concorrente com a mesma Idempotency-Key ainda em processamento (uniplus.idempotency.processing_conflict). Repetir depois, com a MESMA chave. Conclu\u00EDda a opera\u00E7\u00E3o anterior, a repeti\u00E7\u00E3o recebe em replay o resultado dela quando ele \u00E9 guard\u00E1vel; n\u00E3o sendo (5xx, cancelamento, ou conflito que a pr\u00F3pria resposta declara retent\u00E1vel), a reserva \u00E9 liberada e a repeti\u00E7\u00E3o executa de novo.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Autenticado, mas sem a autoriza\u00E7\u00E3o exigida pela rota (ex.: a role plataforma-admin).",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-uniplus-idempotent": true
-      }
-    },
     "/api/selecao/processos-seletivos/{id}/regras-derivacao": {
       "put": {
         "tags": [
@@ -9716,15 +9813,30 @@
       },
       "DefinirFormularioRequest": {
         "required": [
-          "titulo"
+          "faseId",
+          "titulo",
+          "etapas"
         ],
         "type": "object",
         "properties": {
+          "faseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "titulo": {
             "type": [
               "null",
               "string"
             ]
+          },
+          "etapas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaFormularioInput"
+            }
           }
         }
       },
@@ -9739,6 +9851,20 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "DefinirItensDoFormularioRequest": {
+        "required": [
+          "itens"
+        ],
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FatoColetadoInput"
+            }
           }
         }
       },
@@ -10192,6 +10318,104 @@
           },
           "emiteParecerIndividual": {
             "type": "boolean"
+          }
+        }
+      },
+      "EtapaFormularioDto": {
+        "required": [
+          "codigo",
+          "ordem",
+          "tipo",
+          "bloco",
+          "titulo",
+          "descricao",
+          "aviso"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "bloco": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aviso": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "EtapaFormularioInput": {
+        "required": [
+          "codigo",
+          "ordem",
+          "tipo",
+          "bloco",
+          "titulo",
+          "descricao",
+          "aviso"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "bloco": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aviso": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10661,7 +10885,8 @@
           "tipoRenderizacao",
           "obrigatorio",
           "precondicao",
-          "opcoes"
+          "opcoes",
+          "etapaCodigo"
         ],
         "type": "object",
         "properties": {
@@ -10705,6 +10930,12 @@
             "items": {
               "$ref": "#/components/schemas/OpcaoDoProcessoDto"
             }
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10750,6 +10981,12 @@
                 "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
               }
             }
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10761,7 +10998,8 @@
           "tipoRenderizacao",
           "obrigatorio",
           "precondicao",
-          "valoresSelecionaveis"
+          "valoresSelecionaveis",
+          "etapaCodigo"
         ],
         "type": "object",
         "properties": {
@@ -10806,6 +11044,12 @@
             "items": {
               "$ref": "#/components/schemas/ValorSelecionavelDto"
             }
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10869,19 +11113,92 @@
           }
         }
       },
-      "FormularioRenderizavelDto": {
+      "FormularioDto": {
         "required": [
+          "finalidade",
+          "faseId",
           "titulo",
-          "termos",
-          "fatosColetados"
+          "modeloOrigemId",
+          "modeloOrigemCodigo",
+          "etapas",
+          "fatosColetados",
+          "termos"
         ],
         "type": "object",
         "properties": {
+          "finalidade": {
+            "type": "string"
+          },
+          "faseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "titulo": {
             "type": [
               "null",
               "string"
             ]
+          },
+          "modeloOrigemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "modeloOrigemCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "etapas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaFormularioDto"
+            }
+          },
+          "fatosColetados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FatoColetadoDto"
+            }
+          },
+          "termos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermoExigidoDto"
+            }
+          }
+        }
+      },
+      "FormularioRenderizavelDto": {
+        "required": [
+          "finalidade",
+          "titulo",
+          "etapas",
+          "termos",
+          "fatosColetados"
+        ],
+        "type": "object",
+        "properties": {
+          "finalidade": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "etapas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaFormularioDto"
+            }
           },
           "termos": {
             "type": "array",
@@ -12030,10 +12347,8 @@
           "documentosExigidos",
           "raizesExigencia",
           "referenciaTemporalFatos",
-          "fatosColetados",
           "regrasDerivacao",
-          "formularioTitulo",
-          "termosExigidos",
+          "formularios",
           "configuracaoDivulgacao",
           "configuracaoTaxaInscricao",
           "algoritmoContagemPrazo",
@@ -12155,28 +12470,16 @@
               }
             ]
           },
-          "fatosColetados": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FatoColetadoDto"
-            }
-          },
           "regrasDerivacao": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ConfiguracaoDerivacaoDto"
             }
           },
-          "formularioTitulo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "termosExigidos": {
+          "formularios": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TermoExigidoDto"
+              "$ref": "#/components/schemas/FormularioDto"
             }
           },
           "configuracaoDivulgacao": {
@@ -13707,7 +14010,7 @@
       "name": "DocumentosEdital"
     },
     {
-      "name": "FormularioInscricao"
+      "name": "Formularios"
     },
     {
       "name": "MotivosDecisaoIsencao"

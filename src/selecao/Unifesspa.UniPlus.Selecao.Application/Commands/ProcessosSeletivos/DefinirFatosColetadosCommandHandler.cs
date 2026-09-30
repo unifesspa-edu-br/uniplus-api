@@ -70,12 +70,12 @@ public static class DefinirFatosColetadosCommandHandler
         // no catálogo, e uma violação de forma de um fato podia ser mascarada pelo erro
         // semântico de outro fato da mesma lista.
         List<FieldError> formaErros = [];
-        for (int indice = 0; indice < command.Fatos.Count; indice++)
+        for (int indice = 0; indice < command.Itens.Count; indice++)
         {
-            FatoColetadoInput input = command.Fatos[indice];
+            FatoColetadoInput input = command.Itens[indice];
             List<FieldError> itemErros = FatoColetado.ValidarFormaBasica(
                 input.FatoCodigo, input.Ordem, input.Rotulo, TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao));
-            formaErros.AddRange(itemErros.Select(erro => erro with { Field = $"fatos[{indice}].{erro.Field}" }));
+            formaErros.AddRange(itemErros.Select(erro => erro with { Field = $"itens[{indice}].{erro.Field}" }));
         }
 
         if (formaErros.Count > 0)
@@ -98,7 +98,7 @@ public static class DefinirFatosColetadosCommandHandler
         // nunca foram cobertas pelo FluentValidation e continuam com essa granularidade, como já
         // acontecia antes desta migração.
         List<FatoColetado> fatos = [];
-        foreach (FatoColetadoInput input in command.Fatos)
+        foreach (FatoColetadoInput input in command.Itens)
         {
             Result<FatoColetado> fatoResult = ResolverFato(input, catalogo, vocabulario, dominiosDinamicos);
             if (fatoResult.IsFailure)
@@ -120,10 +120,10 @@ public static class DefinirFatosColetadosCommandHandler
             return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
         }
 
-        Result result = processo.DefinirFatosColetados(fatos, command.Precondicao);
+        Result result = processo.DefinirFatosColetados(command.Finalidade, fatos, command.Precondicao);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(result.Error!);
+            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
         }
 
         // Agregado tracked: a substituição da coleção (Clear + filhos novos com Guid v7) é
@@ -175,7 +175,7 @@ public static class DefinirFatosColetadosCommandHandler
 
         return FatoColetado.Criar(
             input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, input.Obrigatorio, precondicoesResult.Value,
-            origemValores: VocabularioDeFatos.OrigemValores(view));
+            origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo);
     }
 
     /// <summary>

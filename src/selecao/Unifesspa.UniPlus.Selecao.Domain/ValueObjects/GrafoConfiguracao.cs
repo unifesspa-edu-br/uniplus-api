@@ -44,9 +44,9 @@ public sealed class GrafoConfiguracao
         // Cascata de remanejamento (Story #575) — opcional, mesmo padrão de BonusRegional
         // (ausência = nenhuma cascata configurada, toggle por presença).
         ConfiguracaoCascataRemanejamento? cascataRemanejamento = null,
-        // Formulário de inscrição (Story #559): título opcional e os termos exigidos
-        // (UNI-REQ-0086), ausência = nenhum termo.
-        string? formularioTitulo = null,
+        // Formulários por finalidade (UNI-REQ-0144) e os termos que eles exigem (UNI-REQ-0086);
+        // ausência = nenhum.
+        IReadOnlyList<FormularioProcesso>? formularios = null,
         IReadOnlyList<TermoExigidoFormulario>? termosExigidos = null,
         // Divulgação pública (UNI-REQ-0050, issue #563) — opcional, ausência = default
         // minimizado (só o número de inscrição), mesmo padrão de BonusRegional/CascataRemanejamento
@@ -105,7 +105,7 @@ public sealed class GrafoConfiguracao
         OpcoesDeclaradas = opcoesDeclaradas is null ? [] : [.. opcoesDeclaradas];
         RegrasDerivacao = regrasDerivacao is null ? [] : [.. regrasDerivacao];
         CascataRemanejamento = cascataRemanejamento;
-        FormularioTitulo = formularioTitulo;
+        Formularios = formularios is null ? [] : [.. formularios];
         TermosExigidos = termosExigidos is null ? [] : [.. termosExigidos];
         ConfiguracaoDivulgacao = configuracaoDivulgacao;
         ConfiguracaoTaxaInscricao = configuracaoTaxaInscricao;
@@ -163,10 +163,10 @@ public sealed class GrafoConfiguracao
     /// </summary>
     public ConfiguracaoCascataRemanejamento? CascataRemanejamento { get; }
 
-    /// <summary>Título do formulário de inscrição (Story #559) — ausência = sem título configurado.</summary>
-    public string? FormularioTitulo { get; }
+    /// <summary>Os formulários do processo, um por finalidade (UNI-REQ-0144).</summary>
+    public IReadOnlyList<FormularioProcesso> Formularios { get; }
 
-    /// <summary>Os termos exigidos pelo formulário de inscrição, congelados por versão (UNI-REQ-0086).</summary>
+    /// <summary>Os termos exigidos pelos formulários, cada um com a sua finalidade, congelados por versão (UNI-REQ-0086).</summary>
     public IReadOnlyList<TermoExigidoFormulario> TermosExigidos { get; }
 
     /// <summary>

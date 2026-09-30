@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -11,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Semeia um Processo Seletivo conforme e o publica pelo caminho real do
@@ -108,6 +110,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         DefinirTaxaInscricaoNaoCobra(processo);
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
@@ -191,6 +194,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         DefinirTaxaInscricaoNaoCobra(processo);
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 

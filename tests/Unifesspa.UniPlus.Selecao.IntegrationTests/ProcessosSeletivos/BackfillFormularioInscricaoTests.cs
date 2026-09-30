@@ -42,6 +42,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
 {
     private const string MigrationAnterior = "20260804035257_DefineBaseadoEmEnem";
+    private const string MigrationDoBackfill = "20260804120909_DefineFormularioInscricao";
 
     private static readonly Guid ProcessoId = new("66666666-6666-6666-8666-666666666661");
     private static readonly Guid CorRacaId = new("66666666-6666-6666-8666-666666666662");
@@ -70,25 +71,25 @@ public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
                 (BaixaRendaId, "BAIXA_RENDA", 1));
         }
 
+        // Migra só até a migration do backfill: as seguintes mudam a forma da tabela, e a dos
+        // formulários por finalidade apaga os fatos coletados.
         await using (SelecaoDbContext contextoNovo = CriarContexto())
         {
-            await contextoNovo.Database.MigrateAsync();
+            await contextoNovo.GetService<IMigrator>().MigrateAsync(MigrationDoBackfill);
         }
 
-        await using SelecaoDbContext leitura = CriarContexto();
-
-        FatoColetado corRaca = await leitura.Set<FatoColetado>().AsNoTracking().SingleAsync(f => f.Id == CorRacaId, CancellationToken.None);
-        corRaca.Rotulo.Should().Be("Cor ou raça", "o backfill promove o rótulo do catálogo para o código conhecido COR_RACA");
-        corRaca.TipoRenderizacao.Should().Be(
-            Unifesspa.UniPlus.Selecao.Domain.Enums.TipoRenderizacao.SelecaoUnica,
+        (string rotulo, int tipo) corRaca = await LerApresentacaoAsync(CorRacaId);
+        corRaca.rotulo.Should().Be("Cor ou raça", "o backfill promove o rótulo do catálogo para o código conhecido COR_RACA");
+        corRaca.tipo.Should().Be(
+            (int)Unifesspa.UniPlus.Selecao.Domain.Enums.TipoRenderizacao.SelecaoUnica,
             "COR_RACA é CATEGORICO/ESCALAR no catálogo — o tipo coerente é seleção única");
 
-        FatoColetado baixaRenda = await leitura.Set<FatoColetado>().AsNoTracking().SingleAsync(f => f.Id == BaixaRendaId, CancellationToken.None);
-        baixaRenda.Rotulo.Should().Be(
+        (string rotulo, int tipo) baixaRenda = await LerApresentacaoAsync(BaixaRendaId);
+        baixaRenda.rotulo.Should().Be(
             "Renda familiar per capita igual ou inferior a um salário mínimo",
             "o backfill promove o rótulo do catálogo para o código conhecido BAIXA_RENDA");
-        baixaRenda.TipoRenderizacao.Should().Be(
-            Unifesspa.UniPlus.Selecao.Domain.Enums.TipoRenderizacao.Booleano,
+        baixaRenda.tipo.Should().Be(
+            (int)Unifesspa.UniPlus.Selecao.Domain.Enums.TipoRenderizacao.Booleano,
             "BAIXA_RENDA é BOOLEANO no catálogo — o tipo coerente é booleano");
     }
 
@@ -142,6 +143,17 @@ public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
                 VALUES ('{{id}}', '{{ProcessoId}}', '{{fatoCodigo}}', {{ordem}}, now());
                 """);
         }
+    }
+
+    private async Task<(string Rotulo, int Tipo)> LerApresentacaoAsync(Guid id)
+    {
+        await using NpgsqlConnection conexao = new(_postgres.GetConnectionString());
+        await conexao.OpenAsync();
+        await using NpgsqlCommand comando = new(
+            $"SELECT rotulo, tipo_renderizacao FROM selecao.fatos_coletados WHERE id = '{id}'", conexao);
+        await using NpgsqlDataReader leitor = await comando.ExecuteReaderAsync();
+        (await leitor.ReadAsync()).Should().BeTrue("o fato semeado continua na tabela depois do backfill");
+        return (leitor.GetString(0), leitor.GetInt32(1));
     }
 
     private static async Task ExecutarAsync(NpgsqlConnection conexao, string sql)

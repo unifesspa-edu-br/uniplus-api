@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -108,14 +109,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     public ReferenciaRegra? AlgoritmoContagemPrazo { get; private set; }
 
-    /// <summary>Título do formulário de inscrição apresentado ao candidato (Story #559). Ausência = sem título configurado.</summary>
-    public string? FormularioTitulo { get; private set; }
+    private readonly List<FormularioProcesso> _formularios = [];
+
+    /// <summary>Os formulários do processo, no máximo um por finalidade (UNI-REQ-0144).</summary>
+    public IReadOnlyCollection<FormularioProcesso> Formularios => _formularios.AsReadOnly();
 
     private readonly List<TermoExigidoFormulario> _termosExigidos = [];
 
     /// <summary>
-    /// Os termos de consentimento ou declaração que o formulário de inscrição exige, escolhidos no
-    /// catálogo e congelados por versão (UNI-REQ-0086).
+    /// Os termos de consentimento ou declaração que os formulários exigem, escolhidos no catálogo e
+    /// congelados por versão (UNI-REQ-0086), cada um marcado com a finalidade do seu formulário.
     /// </summary>
     public IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos => _termosExigidos.AsReadOnly();
 
@@ -989,41 +992,124 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             (true, true) => [ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem],
         };
 
-    private const int FormularioTituloMaxLength = 300;
-
     /// <summary>
-    /// Define (ou substitui) o título do formulário de inscrição (Story #559) — mesmo padrão dos
-    /// demais <c>Definir*</c>: <see cref="MutacaoBloqueada"/> primeiro, <see cref="Result"/> nunca
-    /// exceção. Os termos exigidos têm definição própria (<see cref="DefinirTermosDoFormulario"/>).
+    /// Define ou substitui o formulário de uma finalidade: a fase em que é respondido, o título e
+    /// as etapas (UNI-REQ-0144). Sob retificação, acrescentar formulário é permitido. A fase, quando
+    /// informada, está no cronograma e é a que a finalidade pede; o rascunho pode ainda não a ter.
+    /// Os itens que já estão em seções do formulário continuam em seções dele, na ordem delas.
     /// </summary>
-    public Result DefinirFormulario(string? titulo, PrecondicaoIfMatch precondicao)
+    public Result DefinirFormulario(
+        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<EtapaFormulario> etapas,
+        PrecondicaoIfMatch precondicao)
     {
+        ArgumentNullException.ThrowIfNull(etapas);
+
         // ADR-0110 D9: a precondição de concorrência precede a validação de payload.
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
 
-        // Alinhado a ProcessoSeletivoConfiguration (varchar(300)): sem o limite aqui, um valor
-        // mais longo só falharia no SaveChanges, com erro de banco em vez de 422.
-        if (titulo is not null && titulo.Trim().Length > FormularioTituloMaxLength)
+        IReadOnlyList<FieldError> recusas = ConferirFormulario(finalidade, faseId, titulo, etapas);
+        if (recusas.Count > 0)
         {
-            return Result.ValidationFailure([new("titulo", new DomainError(
-                "ProcessoSeletivo.FormularioTituloTamanho",
-                $"Título do formulário deve ter no máximo {FormularioTituloMaxLength} caracteres."))]);
+            return Result.ValidationFailure(recusas);
         }
 
-        FormularioTitulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim();
+        // A conferência acima já recusou o que a fábrica recusaria.
+        FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, etapas).Value!;
+        if (FormularioDe(finalidade) is { } existente)
+        {
+            existente.Substituir(novo);
+        }
+        else
+        {
+            novo.VincularProcessoSeletivo(Id);
+            _formularios.Add(novo);
+        }
+
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
     /// <summary>
-    /// Substitui os termos que o formulário de inscrição exige (UNI-REQ-0086). Código e ordem são
+    /// Confere o formulário sem mutar o processo, acumulando as recusas (ADR-0125): finalidade e
+    /// título, a fase que a finalidade pede e, com as etapas completas, a estrutura e os itens que
+    /// já estão em seções. Com <paramref name="etapasCompletas"/> falso — alguma etapa já foi
+    /// recusada — a estrutura não é conferida, porque recusaria a etapa que falta.
+    /// </summary>
+    public IReadOnlyList<FieldError> ConferirFormulario(
+        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<EtapaFormulario> etapas, bool etapasCompletas = true)
+    {
+        ArgumentNullException.ThrowIfNull(etapas);
+
+        List<FieldError> recusas = FormularioProcesso.ValidarCabecalho(finalidade, titulo);
+        if (faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(finalidade, fase) is { } recusaDaFase)
+        {
+            recusas.Add(new("faseId", recusaDaFase));
+        }
+
+        if (etapasCompletas && finalidade != FinalidadeFormulario.Nenhuma)
+        {
+            IReadOnlyList<EtapaEstrutura> estrutura = [.. etapas.Select(static e => e.Estrutura)];
+            IReadOnlyList<FieldError> daEstrutura = EstruturaFormulario.ValidarEtapas(finalidade, estrutura);
+            recusas.AddRange(daEstrutura);
+            if (daEstrutura.Count == 0)
+            {
+                // Os itens não estão no corpo do formulário: a recusa aponta as etapas que os
+                // deixariam fora de seção, e a mensagem nomeia o item.
+                recusas.AddRange(EstruturaFormulario
+                    .ValidarItens(estrutura, ItensDaFinalidade(finalidade, _fatosColetados), secaoObrigatoria: false)
+                    .Select(static recusa => recusa with { Field = "etapas" }));
+            }
+        }
+
+        return recusas;
+    }
+
+    /// <summary>
+    /// Remove o formulário de uma finalidade, com os seus itens e termos. Só em rascunho: a
+    /// retificação acrescenta formulário, mas não retira o que o edital publicou.
+    /// </summary>
+    public Result RemoverFormulario(FinalidadeFormulario finalidade, PrecondicaoIfMatch precondicao)
+    {
+        // A recusa da retificação vem antes da precondição: nenhuma remoção sob sessão é aceita,
+        // então exigir o If-Match dela só esconderia o motivo.
+        if (Rascunho is not null)
+        {
+            return Result.Failure(new DomainError(
+                FormularioProcessoErrorCodes.RemocaoSoEmRascunho,
+                "A retificação acrescenta formulário, mas não remove o que o edital publicou."));
+        }
+
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (FormularioDe(finalidade) is not { } formulario)
+        {
+            return Result.Failure(FormularioInexistente(finalidade));
+        }
+
+        if (finalidade == FinalidadeFormulario.Inscricao && CitacaoQueFicariaOrfa([]) is { } orfa)
+        {
+            return Result.Failure(orfa);
+        }
+
+        _formularios.Remove(formulario);
+        _fatosColetados.RemoveAll(f => f.Finalidade == finalidade);
+        _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Substitui os termos que o formulário da finalidade exige (UNI-REQ-0086). Código e ordem são
     /// únicos no formulário. As condições dos termos já chegam validadas contra os fatos que o
     /// processo resolve, e a publicação confere de novo que eles continuam resolvidos.
     /// </summary>
-    public Result DefinirTermosDoFormulario(IReadOnlyList<TermoExigidoFormulario> termos, PrecondicaoIfMatch precondicao)
+    public Result DefinirTermosDoFormulario(
+        FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(termos);
 
@@ -1032,22 +1118,65 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
+        if (FormularioDe(finalidade) is null)
+        {
+            return Result.Failure(FormularioInexistente(finalidade));
+        }
+
         List<FieldError> erros = TermoExigidoFormulario.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
         }
 
-        _termosExigidos.Clear();
+        _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
         foreach (TermoExigidoFormulario termo in termos)
         {
             termo.VincularProcessoSeletivo(Id);
+            termo.VincularFinalidade(finalidade);
             _termosExigidos.Add(termo);
         }
 
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
+
+    /// <summary>O formulário da finalidade, quando o processo o tem.</summary>
+    public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
+        _formularios.Find(f => f.Finalidade == finalidade);
+
+    private static DomainError FormularioInexistente(FinalidadeFormulario finalidade) => new(
+        FormularioProcessoErrorCodes.FormularioInexistente,
+        $"O processo não tem formulário de {EstruturaFormulario.ParaToken(finalidade)}; defina o formulário antes dos itens e termos.");
+
+    /// <summary>
+    /// A fase do formulário está no cronograma e é a que a finalidade pede: a que coleta
+    /// inscrição, a de solicitação de isenção ou a de habilitação.
+    /// </summary>
+    private DomainError? RecusaDaFaseDoFormulario(FinalidadeFormulario finalidade, Guid faseId)
+    {
+        if (_cronogramaFases.Find(f => f.Id == faseId) is not { } fase)
+        {
+            return new DomainError(FormularioProcessoErrorCodes.FaseForaDoCronograma, "A fase do formulário não está no cronograma do processo.");
+        }
+
+        bool atende = finalidade switch
+        {
+            FinalidadeFormulario.Inscricao => fase.ColetaInscricao,
+            FinalidadeFormulario.IsencaoTaxa => fase.ColetaSolicitacaoIsencao,
+            FinalidadeFormulario.Habilitacao => string.Equals(fase.Codigo, FormularioProcesso.CodigoFaseHabilitacao, StringComparison.Ordinal),
+            _ => false,
+        };
+        return atende
+            ? null
+            : new DomainError(
+                FormularioProcessoErrorCodes.FaseIncoerenteComFinalidade,
+                $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {EstruturaFormulario.ParaToken(finalidade)}.");
+    }
+
+    /// <summary>Os itens da finalidade, na forma que a estrutura confere.</summary>
+    private static IReadOnlyList<ItemEstrutura> ItensDaFinalidade(FinalidadeFormulario finalidade, IEnumerable<FatoColetado> fatos) =>
+        [.. fatos.Where(f => f.Finalidade == finalidade).Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))];
 
     /// <summary>
     /// Substitui integralmente o cronograma de fases do processo (Story #851, §3.7):
@@ -1177,6 +1306,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     return Result.Failure(new DomainError(
                         "FaseCronograma.EtapaDaFaseReferenciada",
                         $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapaReferenciada.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes."));
+                }
+
+                // O formulário é respondido na fase, mas não é configuração dela: removê-lo por
+                // tabela apagaria itens e termos que ninguém pediu para tirar.
+                if (_formularios.Find(f => f.FaseId == antiga.Id) is { } formularioDaFase)
+                {
+                    return Result.Failure(new DomainError(
+                        FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario,
+                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {EstruturaFormulario.ParaToken(formularioDaFase.Finalidade)} é respondido nela — troque a fase do formulário antes."));
                 }
 
                 codigosRemovidos.Add(antiga.Codigo);
@@ -1726,8 +1864,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Substitui integralmente o grafo de coleta de fatos: quais fatos este processo coleta, em
-    /// que ordem, e sob qual pré-condição cada campo é apresentado (Story #926).
+    /// Substitui os itens do formulário de uma finalidade: quais fatos ele coleta, em que ordem, e
+    /// sob qual pré-condição cada campo é apresentado (Story #926). Os itens dos outros formulários
+    /// não mudam.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -1752,7 +1891,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// congelada — por isso a edição sob retificação é segura.
     /// </para>
     /// </remarks>
-    public Result DefinirFatosColetados(IReadOnlyList<FatoColetado> fatosColetados, PrecondicaoIfMatch precondicao)
+    public Result DefinirFatosColetados(
+        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
 
@@ -1761,15 +1901,48 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        if (ValidarGrafoDeFatos(fatosColetados) is { } erro)
+        if (FormularioDe(finalidade) is not { } formulario)
+        {
+            return Result.Failure(FormularioInexistente(finalidade));
+        }
+
+        // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
+        HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
+            ? new(StringComparer.Ordinal)
+            : FatosDaInscricao(_fatosColetados);
+        if (ValidarGrafoDeFatos(finalidade, fatosColetados, daInscricao) is { } erro)
         {
             return Result.Failure(erro);
         }
 
-        _fatosColetados.Clear();
+        if (finalidade == FinalidadeFormulario.Inscricao && CitacaoQueFicariaOrfa(fatosColetados) is { } orfa)
+        {
+            return Result.Failure(orfa);
+        }
+
+        // Produtor único (UNI-REQ-0144): cada fato é coletado por um só formulário do processo.
+        if (_fatosColetados.Find(f => f.Finalidade != finalidade
+                && fatosColetados.Any(novo => string.Equals(novo.FatoCodigo, f.FatoCodigo, StringComparison.Ordinal))) is { } jaProduzido)
+        {
+            return Result.Failure(new DomainError(
+                FatoColetadoErrorCodes.FatoDuplicado,
+                $"O fato '{jaProduzido.FatoCodigo}' já é coletado pelo formulário de {EstruturaFormulario.ParaToken(jaProduzido.Finalidade)}."));
+        }
+
+        IReadOnlyList<FieldError> itensForaDasSecoes = EstruturaFormulario.ValidarItens(
+            formulario.Estrutura,
+            [.. fatosColetados.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))],
+            secaoObrigatoria: false);
+        if (itensForaDasSecoes.Count > 0)
+        {
+            return Result.ValidationFailure(itensForaDasSecoes);
+        }
+
+        _fatosColetados.RemoveAll(f => f.Finalidade == finalidade);
         foreach (FatoColetado fato in fatosColetados)
         {
             fato.VincularProcessoSeletivo(Id);
+            fato.VincularFinalidade(finalidade);
             _fatosColetados.Add(fato);
         }
 
@@ -1839,6 +2012,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _fatosColetados.Clear();
         _regrasDerivacao.Clear();
         _termosExigidos.Clear();
+        _formularios.Clear();
     }
 
     /// <summary>
@@ -1852,7 +2026,43 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result<GrafoDependenciaConjunta> ConstruirGrafoDependencia() =>
         GrafoDependenciaConjunta.Construir(_fatosColetados, _regrasDerivacao, _documentosExigidos);
 
-    private static DomainError? ValidarGrafoDeFatos(IReadOnlyList<FatoColetado> fatos)
+    /// <summary>Os fatos coletados pela inscrição, que os formulários das outras finalidades podem citar.</summary>
+    private static HashSet<string> FatosDaInscricao(IEnumerable<FatoColetado> fatos) =>
+        new(fatos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+
+    /// <summary>
+    /// Trocar os itens da inscrição não pode tirar um fato que um item de outra finalidade cita:
+    /// a pré-condição dele passaria a depender de uma resposta que ninguém pede.
+    /// </summary>
+    private DomainError? CitacaoQueFicariaOrfa(IReadOnlyCollection<FatoColetado> novosDaInscricao)
+    {
+        HashSet<string> coletados = new(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+        foreach (IGrouping<FinalidadeFormulario, FatoColetado> outro in _fatosColetados
+            .Where(static f => f.Finalidade != FinalidadeFormulario.Inscricao).GroupBy(static f => f.Finalidade))
+        {
+            HashSet<string> doProprio = new(outro.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+            foreach (FatoColetado item in outro)
+            {
+                if (item.FatosCitados.FirstOrDefault(c => !doProprio.Contains(c) && !coletados.Contains(c)) is { } citado)
+                {
+                    return new DomainError(
+                        FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+                        $"O fato '{citado}' é citado pelo item '{item.FatoCodigo}' do formulário de "
+                        + $"{EstruturaFormulario.ParaToken(outro.Key)} e não pode sair da inscrição.");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// O grafo de coleta de um formulário. A pré-condição de um campo cita um campo anterior do
+    /// mesmo formulário ou, em outra finalidade, um fato já coletado pela inscrição, que todo
+    /// candidato preenche antes (UNI-REQ-0144, UNI-REQ-0145).
+    /// </summary>
+    private static DomainError? ValidarGrafoDeFatos(
+        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatos, HashSet<string> daInscricao)
     {
         Dictionary<string, FatoColetado> porCodigo = new(StringComparer.Ordinal);
         HashSet<int> ordens = [];
@@ -1897,9 +2107,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 // estado de coleta, ainda inexistente), a citação fica restrita ao que se coleta.
                 if (!porCodigo.TryGetValue(citado, out FatoColetado? anterior))
                 {
+                    if (daInscricao.Contains(citado))
+                    {
+                        continue;
+                    }
+
                     return new DomainError(
                         FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
-                        $"A pré-condição do fato '{fato.FatoCodigo}' cita '{citado}', que este processo não coleta.");
+                        finalidade == FinalidadeFormulario.Inscricao
+                            ? $"A pré-condição do fato '{fato.FatoCodigo}' cita '{citado}', que o formulário dele não coleta."
+                            : $"A pré-condição do fato '{fato.FatoCodigo}' cita '{citado}', que nem o formulário dele nem o de inscrição coletam.");
                 }
 
                 if (anterior.Ordem >= fato.Ordem)
@@ -2448,6 +2665,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
         new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciaDeTermoSemFormaDeAceite() is null),
+        new ItemConformidade("formulario_inscricao_ausente", DimensaoConformidade.ColetaDeFatos, "Formulários: processo com inscrição própria tem formulário de inscrição", PendenciaDoFormularioDeInscricao() is null),
+        new ItemConformidade("formulario_fase_incoerente", DimensaoConformidade.ColetaDeFatos, "Formulários: cada um na fase do cronograma que a finalidade pede", PendenciaDaFaseDosFormularios() is null),
+        new ItemConformidade("formulario_isencao_sem_taxa", DimensaoConformidade.ColetaDeFatos, "Formulários: isenção de taxa só em processo que cobra taxa", PendenciaDaIsencaoSemTaxa() is null),
+        new ItemConformidade("formulario_item_fora_de_secao", DimensaoConformidade.ColetaDeFatos, "Formulários: todo item numa seção, na ordem das seções", PendenciaDosItensForaDeSecao() is null),
         new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
         new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: cota da lei e ação afirmativa não derivam juntas", PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
@@ -3290,6 +3511,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return termoSemFormaDeAceite;
         }
 
+        if (PendenciaDoFormularioDeInscricao() is { } semFormularioDeInscricao)
+        {
+            return semFormularioDeInscricao;
+        }
+
+        if (PendenciaDaFaseDosFormularios() is { } faseDoFormulario)
+        {
+            return faseDoFormulario;
+        }
+
+        if (PendenciaDaIsencaoSemTaxa() is { } isencaoSemTaxa)
+        {
+            return isencaoSemTaxa;
+        }
+
+        if (PendenciaDosItensForaDeSecao() is { } itemForaDeSecao)
+        {
+            return itemForaDeSecao;
+        }
+
         if (PendenciaDoDominioDeContribuicao() is { } contribuicaoForaDoDominio)
         {
             return contribuicaoForaDoDominio;
@@ -3523,6 +3764,58 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
                     $"O fato '{fato.FatoCodigo}' oferece os municípios do bônus regional, mas o processo não tem bônus regional.");
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Processo com inscrição própria publica o formulário de inscrição (UNI-REQ-0144): sem ele, o
+    /// candidato não tem onde se inscrever.
+    /// </summary>
+    private DomainError? PendenciaDoFormularioDeInscricao() =>
+        OrigemCandidatos == OrigemCandidatos.InscricaoPropria && FormularioDe(FinalidadeFormulario.Inscricao) is null
+            ? new DomainError(FormularioProcessoErrorCodes.InscricaoSemFormulario, "O processo tem inscrição própria e ainda não tem formulário de inscrição.")
+            : null;
+
+    /// <summary>
+    /// Todo formulário tem a fase que a finalidade pede e que continua no cronograma — a definição
+    /// confere quando a fase é informada, e o cronograma pode ter mudado depois.
+    /// </summary>
+    private DomainError? PendenciaDaFaseDosFormularios()
+    {
+        foreach (FormularioProcesso formulario in _formularios.OrderBy(static f => f.Finalidade))
+        {
+            if (formulario.FaseId is not { } fase)
+            {
+                return new DomainError(FormularioProcessoErrorCodes.SemFase,
+                    $"O formulário de {EstruturaFormulario.ParaToken(formulario.Finalidade)} ainda não declara a fase em que é respondido.");
+            }
+
+            if (RecusaDaFaseDoFormulario(formulario.Finalidade, fase) is { } recusa)
+            {
+                return recusa;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Formulário de isenção só em processo que cobra taxa de inscrição (UNI-REQ-0144).</summary>
+    private DomainError? PendenciaDaIsencaoSemTaxa() =>
+        FormularioDe(FinalidadeFormulario.IsencaoTaxa) is not null && ConfiguracaoTaxaInscricao?.Cobra != true
+            ? new DomainError(FormularioProcessoErrorCodes.IsencaoSemTaxa, "O processo tem formulário de isenção de taxa, mas não cobra taxa de inscrição.")
+            : null;
+
+    /// <summary>Todo item publicado está numa seção do seu formulário, na ordem das seções.</summary>
+    private DomainError? PendenciaDosItensForaDeSecao()
+    {
+        foreach (FormularioProcesso formulario in _formularios.OrderBy(static f => f.Finalidade))
+        {
+            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, ItensDaFinalidade(formulario.Finalidade, _fatosColetados)) is [{ } primeiro, ..])
+            {
+                return new DomainError(FormularioProcessoErrorCodes.ItemForaDeSecao, primeiro.Error.Message);
             }
         }
 
@@ -5480,21 +5773,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         grafo.Classificacao.VincularProcesso(Id);
         Classificacao = grafo.Classificacao;
 
-        // Formulário de inscrição (Story #559): escalares simples da própria raiz, sem
-        // reconciliação — reatribuídos direto, mesmo padrão de BonusRegional/Cascata acima. Sem
-        // isso, editar o título durante uma sessão de retificação e depois descartar deixaria o
-        // valor editado na configuração viva, driblando RN08 exatamente pelos dois campos que
-        // esta reposição cobre.
-        FormularioTitulo = grafo.FormularioTitulo;
-
         // Termos exigidos (UNI-REQ-0086): mesma reconciliação dos fatos coletados abaixo — reusa a
-        // instância rastreada de mesmo código, e o descarte de uma sessão que editou os termos
-        // chega aqui com a coleção já limpa pela LimparColetaEDerivacaoParaRestauracao.
-        Dictionary<string, TermoExigidoFormulario> termosTracked = _termosExigidos.ToDictionary(t => t.Codigo, StringComparer.Ordinal);
+        // instância rastreada de mesma finalidade e código, e o descarte de uma sessão que editou
+        // os termos chega aqui com a coleção já limpa pela LimparColetaEDerivacaoParaRestauracao.
+        Dictionary<(FinalidadeFormulario, string), TermoExigidoFormulario> termosTracked =
+            _termosExigidos.ToDictionary(static t => (t.Finalidade, t.Codigo));
         _termosExigidos.Clear();
         foreach (TermoExigidoFormulario congelado in grafo.TermosExigidos)
         {
-            TermoExigidoFormulario termo = termosTracked.TryGetValue(congelado.Codigo, out TermoExigidoFormulario? vivo) ? vivo : congelado;
+            TermoExigidoFormulario termo = termosTracked.TryGetValue((congelado.Finalidade, congelado.Codigo), out TermoExigidoFormulario? vivo)
+                ? vivo
+                : congelado;
             termo.VincularProcessoSeletivo(Id);
             _termosExigidos.Add(termo);
         }
@@ -5625,6 +5914,29 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             documento.VincularProcesso(Id);
             _documentosExigidos.Add(documento);
+        }
+
+        // Formulários por finalidade (UNI-REQ-0144): reconciliação pela finalidade, reusando a
+        // instância rastreada com o conteúdo congelado; a fase congelada é remapeada para a viva
+        // quando a reconciliação do cronograma trocou de instância, como a dos documentos acima.
+        Dictionary<FinalidadeFormulario, FormularioProcesso> formulariosTracked = _formularios.ToDictionary(static f => f.Finalidade);
+        _formularios.Clear();
+        foreach (FormularioProcesso congelado in grafo.Formularios)
+        {
+            if (congelado.FaseId is { } faseCongelada && faseIdCongeladaParaViva.TryGetValue(faseCongelada, out Guid faseDoFormulario))
+            {
+                congelado.RemapearFase(faseDoFormulario);
+            }
+
+            FormularioProcesso formulario = congelado;
+            if (formulariosTracked.TryGetValue(congelado.Finalidade, out FormularioProcesso? vivo))
+            {
+                vivo.Repor(congelado);
+                formulario = vivo;
+            }
+
+            formulario.VincularProcessoSeletivo(Id);
+            _formularios.Add(formulario);
         }
 
         // Árvore de satisfação (Story #920, wrapper de árvore no envelope — Story #923):

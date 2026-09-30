@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -47,7 +48,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         "documentosExigidos",
         "vagas",
         "arvoreSatisfacao",
-        "formulario",
+        "formularios",
         "divulgacao",
         "identidadesUnidade",
         "fatosColetados",
@@ -207,7 +208,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         LerIdentidadesUnidade(leitor, payload);
         (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentosExigidos, ReferenciaTemporalFatos? referenciaTemporalFatos,
             IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) = LerDocumentosExigidos(leitor, payload);
-        (string? formularioTitulo, IReadOnlyList<TermoExigidoFormulario> termosExigidos) = LerFormulario(leitor, payload);
+        (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termosExigidos) = LerFormularios(leitor, payload);
         ConfiguracaoDivulgacao? configuracaoDivulgacao = LerDivulgacao(leitor, payload);
         ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = LerTaxaInscricao(leitor, payload);
         (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
@@ -242,6 +243,11 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         if (leitor.Falhou)
         {
             return leitor.Falha<EnvelopeReidratado>();
+        }
+
+        if (ItensForaDosFormularios(formularios, fatosColetados) is { } itemForaDoFormulario)
+        {
+            return Result<EnvelopeReidratado>.Failure(itemForaDoFormulario);
         }
 
         if (VerificarCoerenciaComAVersao(versao, hashDocumento, retificacao) is { } incoerencia)
@@ -283,7 +289,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases,
             documentosExigidos, todosOsNos, referenciaTemporalFatos, fatosColetados, regrasDerivacao,
             cascataRemanejamento: cascata,
-            formularioTitulo: formularioTitulo,
+            formularios: formularios,
             termosExigidos: termosExigidos,
             configuracaoDivulgacao: configuracaoDivulgacao,
             configuracaoTaxaInscricao: configuracaoTaxaInscricao,
@@ -320,5 +326,30 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         }
 
         return documentosExigidos.ToDictionary(static d => d.Id);
+    }
+
+    /// <summary>
+    /// Todo item pertence a um formulário do envelope e está numa seção dele, na ordem das seções —
+    /// a mesma recusa da publicação, que nunca congela outra forma.
+    /// </summary>
+    private static DomainError? ItensForaDosFormularios(IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<FatoColetado> fatos)
+    {
+        Dictionary<FinalidadeFormulario, FormularioProcesso> porFinalidade = formularios.ToDictionary(static f => f.Finalidade);
+        foreach (IGrouping<FinalidadeFormulario, FatoColetado> itens in fatos.GroupBy(static f => f.Finalidade))
+        {
+            if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
+            {
+                return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'fatosColetados' tem itens de {EstruturaFormulario.ParaToken(itens.Key)}, que não tem formulário no envelope.");
+            }
+
+            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))])
+                is [{ } primeiro, ..])
+            {
+                return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {primeiro.Error.Message}");
+            }
+        }
+
+        return null;
     }
 }

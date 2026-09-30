@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
@@ -13,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -116,12 +118,12 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados([
+        processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFormulario("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTitulo("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         return processo;
@@ -197,7 +199,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             await using SelecaoDbContext readContext = _fixture.CreateDbContext();
             ProcessoSeletivoRepository repository = new(readContext, TimeProvider.System);
             Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
-                new ObterFormularioRenderizavelQuery(processoId), repository,
+                new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), repository,
                 new CertameDivulgadoRepository(readContext), RegistroCodecs, CancellationToken.None);
             resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
             return resultado.Value!;

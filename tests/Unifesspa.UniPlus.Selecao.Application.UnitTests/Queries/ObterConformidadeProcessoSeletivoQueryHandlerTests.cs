@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 {
@@ -105,7 +106,9 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         result!.Itens.Should().Contain(
             i => i.Codigo == "cronograma_inscricao_propria_sem_fase_de_coleta" && !i.Ok,
             "a origem é InscricaoPropria e nenhuma fase coleta inscrição — antes da correção este item nem existia, e o checklist devolvia tudo Ok");
-        result.Itens.Should().ContainSingle(i => !i.Ok,
+        // O processo também não tem formulário de inscrição, e os itens do formulário ficam fora da
+        // razão que este teste isola.
+        result.Itens.Where(static i => !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal)).Should().ContainSingle(i => !i.Ok,
             "isolar a asserção: só esta razão deveria estar vermelha neste estado — as outras três razões do cronograma e os demais gates estão satisfeitos");
 
         // A mesma pendência que o checklist agora denuncia é a que Publicar já recusava — as
@@ -165,6 +168,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente);
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);

@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -89,6 +90,25 @@ public sealed class ResolvedorEstadoFatosTests
         estados["COR_RACA"].Estado.Should().Be(EstadoFato.Indeterminado, "a resposta fora da oferta não vale");
         estados["CONCORRER_PPI"].Estado.Should().NotBe(
             EstadoFato.Resolvido, "a condição cita INDIGENA, mas o valor não é ofertado e por isso não a satisfaz");
+    }
+
+    [Fact(DisplayName = "Itens de dois formulários, com a mesma ordem, resolvem juntos, e o de um cita o fato do outro")]
+    public void DoisFormularios_ResolvemJuntos()
+    {
+        FatoColetado corRaca = FatoColetado.Criar(
+            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        FatoColetado declaracao = FatoColetado.Criar(
+            "DECLARACAO_PERTENCIMENTO", 0, "Declaração", TipoRenderizacao.Booleano, obrigatorio: true,
+            [Cond("COR_RACA", Operador.Igual, Cor("PRETA"))], finalidade: FinalidadeFormulario.Habilitacao).Value!;
+
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
+            [declaracao, corRaca],
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["COR_RACA"] = Cor("BRANCA") },
+            CoresOfertadas);
+
+        estados["COR_RACA"].Estado.Should().Be(EstadoFato.Resolvido);
+        estados["DECLARACAO_PERTENCIMENTO"].Estado.Should().Be(
+            EstadoFato.NaoAplicavel, "o item da habilitação depende da resposta dada no formulário de inscrição");
     }
 
     [Fact(DisplayName = "Opt-in condicionado à elegibilidade não é coletado quando a autodeclaração é negativa")]

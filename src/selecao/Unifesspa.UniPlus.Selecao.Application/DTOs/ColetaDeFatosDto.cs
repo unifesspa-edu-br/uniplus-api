@@ -27,7 +27,8 @@ public sealed record FatoColetadoDto(
     string TipoRenderizacao,
     bool Obrigatorio,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao,
-    IReadOnlyList<OpcaoDoProcessoDto>? Opcoes);
+    IReadOnlyList<OpcaoDoProcessoDto>? Opcoes,
+    string? EtapaCodigo);
 
 /// <summary>Uma opção que o processo oferece a um fato (issue #1619).</summary>
 public sealed record OpcaoDoProcessoDto(string Codigo, string Rotulo, int Ordem);

@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// A leitura tipada de fatos coletados e regras de derivação no <c>GET</c> do processo (Story
@@ -74,8 +75,9 @@ public sealed class LeituraTipadaColetaEndpointTests
         using JsonDocument doc = await ctx.ObterProcessoAsync();
         JsonElement root = doc.RootElement;
 
-        // Fatos coletados — ordenados por ordem, precondicao ausente é null.
-        JsonElement fatos = root.GetProperty("fatosColetados");
+        // Fatos coletados — dentro do formulário de inscrição, ordenados por ordem, precondicao
+        // ausente é null.
+        JsonElement fatos = root.GetProperty("formularios")[0].GetProperty("fatosColetados");
         fatos.GetArrayLength().Should().Be(2);
 
         JsonElement corRaca = fatos[0];
@@ -114,23 +116,21 @@ public sealed class LeituraTipadaColetaEndpointTests
         using JsonDocument doc = await ctx.ObterProcessoAsync();
         JsonElement root = doc.RootElement;
 
-        root.GetProperty("fatosColetados").GetArrayLength().Should().Be(0);
+        root.GetProperty("formularios")[0].GetProperty("fatosColetados").GetArrayLength().Should().Be(0);
         root.GetProperty("regrasDerivacao").GetArrayLength().Should().Be(0);
     }
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId)
     {
         public Task<HttpResponseMessage> PutFatosAsync(IReadOnlyList<object> corpo) =>
-            PutAsync("fatos-coletados", corpo);
+            PutAsync(FormularioDeInscricaoHttp.RotaDosItens(ProcessoId), FormularioDeInscricaoHttp.CorpoDosItens(corpo));
 
         public Task<HttpResponseMessage> PutRegrasAsync(IReadOnlyList<object> corpo) =>
-            PutAsync("regras-derivacao", corpo);
+            PutAsync(new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/regras-derivacao", UriKind.Relative), corpo);
 
-        private async Task<HttpResponseMessage> PutAsync(string recurso, object corpo)
+        private async Task<HttpResponseMessage> PutAsync(Uri rota, object corpo)
         {
-            using HttpRequestMessage request = new(
-                HttpMethod.Put,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/{recurso}", UriKind.Relative))
+            using HttpRequestMessage request = new(HttpMethod.Put, rota)
             {
                 Content = JsonContent.Create(corpo),
             };

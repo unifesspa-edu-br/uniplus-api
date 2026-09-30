@@ -6,9 +6,11 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A <b>sessão editorial</b> de retificação (Story #860, ADR-0110 D3/D4/D5/D7): a allowlist
@@ -254,13 +256,13 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
         int revisaoAntes = rascunho.Revisao;
 
-        processo.DefinirFatosColetados([FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+        processo.DefinirItens([FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
             .IsSuccess.Should().BeTrue();
         rascunho.Revisao.Should().Be(revisaoAntes + 1);
 
         // Publicado SEM sessão: bloqueado pela recusa geral de mutação pós-publicação.
         ProcessoSeletivo semSessao = NovoProcessoPublicado(out _);
-        Result recusa = semSessao.DefinirFatosColetados([FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!], PrecondicaoIfMatch.Ausente);
+        Result recusa = semSessao.DefinirItens([FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!], PrecondicaoIfMatch.Ausente);
         recusa.IsFailure.Should().BeTrue();
         recusa.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
@@ -286,33 +288,40 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         recusa.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 
-    [Fact(DisplayName = "O formulário de inscrição É editável sob sessão de retificação — a revisão avança; publicado sem sessão é bloqueado (Story #559)")]
-    public void DefinirFormulario_SobSessao_AceitaEIncrementaRevisao()
+    [Fact(DisplayName = "Sob sessão de retificação, acrescentar formulário é aceito e a revisão avança; remover é recusado; publicado sem sessão é bloqueado")]
+    public void Formulario_SobSessao_AcrescentaENaoRemove()
     {
         ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
         int revisaoAntes = rascunho.Revisao;
 
-        processo.DefinirFormulario("Formulário de Inscrição", PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+        processo.DefinirFormulario(
+                FinalidadeFormulario.Habilitacao, null, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.DeTags([rascunho.ETag]))
             .IsSuccess.Should().BeTrue();
         rascunho.Revisao.Should().Be(revisaoAntes + 1);
-        processo.FormularioTitulo.Should().Be("Formulário de Inscrição");
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Titulo.Should().Be("Habilitação");
+
+        // Sem If-Match, como a remoção chega pela rota: o motivo da recusa é a retificação, não a
+        // precondição que nenhuma remoção sob sessão poderia satisfazer.
+        processo.RemoverFormulario(FinalidadeFormulario.Habilitacao, PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.RemocaoSoEmRascunho);
 
         ProcessoSeletivo semSessao = NovoProcessoPublicado(out _);
-        Result recusa = semSessao.DefinirFormulario("Título", PrecondicaoIfMatch.Ausente);
-        recusa.IsFailure.Should().BeTrue();
-        recusa.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        semSessao.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "Título", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 
-    [Fact(DisplayName = "DefinirFormulario aceita título em rascunho, e trata string em branco como ausência")]
+    [Fact(DisplayName = "DefinirFormulario apara o título e trata o título em branco como ausência")]
     public void DefinirFormulario_EmRascunho_AceitaETrataBrancoComoNulo()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        processo.DefinirFormulario("  Formulário  ", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.FormularioTitulo.Should().Be("Formulário", "espaços nas bordas são aparados, mesmo padrão dos demais campos textuais");
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "  Formulário  ", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Titulo.Should().Be("Formulário");
 
-        processo.DefinirFormulario("   ", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.FormularioTitulo.Should().BeNull("string em branco é tratada como ausência, não como valor vazio persistido");
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "   ", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Titulo.Should().BeNull("string em branco é ausência, não valor vazio persistido");
     }
 
     [Fact(DisplayName = "DefinirFormulario recusa título acima de 300 caracteres — mesmo limite da coluna, recusado antes do SaveChanges")]
@@ -320,11 +329,11 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        Result resultado = processo.DefinirFormulario(new string('a', 301), PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirFormulario(
+            FinalidadeFormulario.Habilitacao, null, new string('a', 301), FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().ContainSingle(e => e.Field == "titulo" && e.Error.Code == "ProcessoSeletivo.FormularioTituloTamanho");
-        processo.FormularioTitulo.Should().BeNull("a mutação recusada não altera o estado");
+        resultado.Errors.Should().ContainSingle(e => e.Field == "titulo" && e.Error.Code == FormularioProcessoErrorCodes.TituloTamanho);
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull("a mutação recusada não altera o estado");
     }
 
     [Fact(DisplayName = "Uma mutação RECUSADA não move a revisão — o ETag do cliente continua válido")]
@@ -642,6 +651,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 

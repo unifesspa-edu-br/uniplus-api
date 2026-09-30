@@ -127,7 +127,7 @@ public sealed class EnvelopeFechadoE2ETests
 
         // Âncora do estado inicial: sem este valor fixado, um corpus que já nascesse com o peso
         // pós-retificação (4.0000) tornaria vácua a asserção de peso no envelope depois do
-        // fechamento — a diferença deixaria de provar que o PUT sob a sessão (passo 19) entrou.
+        // fechamento — a diferença deixaria de provar que o PUT sob a sessão (passo 18) entrou.
         processoComEtapas.Etapas.Single(e => e.Id == objetivaId).Peso.Should().Be(
             3.5000m, "a Prova Objetiva nasce com este peso em EtapasIniciais — é o valor que a sessão editorial altera");
 
@@ -199,13 +199,17 @@ public sealed class EnvelopeFechadoE2ETests
             HttpStatusCode.NoContent, "PUT cronograma-fases", "/cronograma-fases");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 9 — fatos coletados (COR_RACA de seleção única — completude semântica do DoD;
-        // BAIXA_RENDA gated por COR_RACA=PRETA)
+        // Passo 9 — formulário de inscrição, respondido na fase que coleta a inscrição, e os
+        // itens dele (COR_RACA de seleção única; BAIXA_RENDA exibido quando COR_RACA=PRETA)
         // ══════════════════════════════════════════════════════════════════════════════
 
+        Guid faseDeInscricaoId = (await ctx.ObterProcessoAsync()).CronogramaFases.Single(f => f.ColetaInscricao).Id;
+        await ExecutarPassoAsync(
+            () => ctx.PutFormularioAsync("Formulário de Inscrição — PS Rico E2E", faseDeInscricaoId, ifMatch: null),
+            HttpStatusCode.NoContent, "PUT formulario", "admin/processos-seletivos/{id}/formularios/INSCRICAO");
         await ExecutarPassoAsync(
             () => ctx.PutFatosColetadosAsync(),
-            HttpStatusCode.NoContent, "PUT fatos-coletados", "/fatos-coletados");
+            HttpStatusCode.NoContent, "PUT itens do formulario", "admin/processos-seletivos/{id}/formularios/INSCRICAO/itens");
 
         // ══════════════════════════════════════════════════════════════════════════════
         // Passo 10 — regras de derivação (MODALIDADE: AC âncora, LI_PPI quando COR_RACA=PRETA)
@@ -234,16 +238,7 @@ public sealed class EnvelopeFechadoE2ETests
             HttpStatusCode.NoContent, "PUT documentos-exigidos", "/documentos-exigidos");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 13 — formulário (rota em FormularioInscricaoController, NÃO no controller
-        // principal — plano §4.2)
-        // ══════════════════════════════════════════════════════════════════════════════
-
-        await ExecutarPassoAsync(
-            () => ctx.PutFormularioAsync("Formulário de Inscrição — PS Rico E2E", ifMatch: null),
-            HttpStatusCode.NoContent, "PUT formulario", "admin/processos-seletivos/{id}/formulario");
-
-        // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 14 — divulgação (a dimensão que a #563 entregou por último nesta cascata)
+        // Passo 13 — divulgação (a dimensão que a #563 entregou por último nesta cascata)
         // ══════════════════════════════════════════════════════════════════════════════
 
         await ExecutarPassoAsync(
@@ -251,7 +246,7 @@ public sealed class EnvelopeFechadoE2ETests
             HttpStatusCode.NoContent, "PUT divulgacao", "/divulgacao");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 15 — GET /conformidade: projeção HTTP do checklist, não gate independente
+        // Passo 14 — GET /conformidade: projeção HTTP do checklist, não gate independente
         // (plano §4.4) — lista não vazia, sem duplicatas, todos ok
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -266,7 +261,7 @@ public sealed class EnvelopeFechadoE2ETests
         conformidade.Itens.Should().NotBeEmpty("uma lista vazia daria falso verde por AllSatisfy trivial");
         conformidade.Itens.Select(i => i.Codigo).Should().OnlyHaveUniqueItems("cada item do checklist aparece uma única vez");
         // issue #1092: o checklist passou a ser bicondicional com os gates estruturais (antes só
-        // projetava PendenciaDeConformidade) — a publicação no passo 16 só devolve 204 porque
+        // projetava PendenciaDeConformidade) — a publicação no passo 15 só devolve 204 porque
         // todos eles já estão satisfeitos, então o corpus rico continua OnlyContain(Ok): a
         // ampliação não pode criar falso vermelho no caminho HTTP completo.
         conformidade.Itens.Should().OnlyContain(i => i.Ok, "o processo está completo — nenhum item deveria estar pendente");
@@ -323,6 +318,10 @@ public sealed class EnvelopeFechadoE2ETests
                 "fato_coletavel_sem_valores_ofertados",
                 "fato_coletavel_municipio_citado_fora_da_area_do_bonus",
                 "termo_exigido_sem_forma_de_aceite",
+                "formulario_inscricao_ausente",
+                "formulario_fase_incoerente",
+                "formulario_isencao_sem_taxa",
+                "formulario_item_fora_de_secao",
                 "derivacao_dominio_de_contribuicao_invalido",
                 "derivacao_cota_e_acao_afirmativa_juntas",
                 "grafo_dependencia_com_ciclo",
@@ -335,8 +334,8 @@ public sealed class EnvelopeFechadoE2ETests
             "o conjunto exato de itens que este corpus produz — remover um item do checklist, ou acrescentar um item indevido marcado ok, muda este conjunto");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 16 — publicar. A publicação em si é 204; o ato ainda NÃO existe em Publicações
-        // neste instante (ADR-0108, fila durável) — é o que o passo 17 confirma.
+        // Passo 15 — publicar. A publicação em si é 204; o ato ainda NÃO existe em Publicações
+        // neste instante (ADR-0108, fila durável) — é o que o passo 16 confirma.
         // ══════════════════════════════════════════════════════════════════════════════
 
         Guid documentoV1 = await SemearDocumentoConfirmadoAsync(api, processoId);
@@ -347,7 +346,7 @@ public sealed class EnvelopeFechadoE2ETests
         Guid atoV1Id = await ObterAtoCriadorUnicoAsync(api, processoId);
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 17 — BARREIRA CAUSAL: confirmar o ato V1 registrado em Publicações antes de
+        // Passo 16 — BARREIRA CAUSAL: confirmar o ato V1 registrado em Publicações antes de
         // abrir a sessão (plano §4.5) — "publicou" e "o ato existe" são afirmações diferentes.
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -355,7 +354,7 @@ public sealed class EnvelopeFechadoE2ETests
         atoV1.TipoCodigo.Should().Be("EDITAL_ABERTURA");
 
         // Checkpoint de ligação (plano §4.5): a identidade/hash de V1, gravados agora — o
-        // fechamento (passo 21) vai reconferir que eles não mudaram um byte.
+        // fechamento (passo 20) vai reconferir que eles não mudaram um byte.
         (string hashV1, Guid versaoV1Id) = await LerIdentidadeDaVersaoAsync(api, atoV1Id);
 
         // O vínculo cross-módulo é provado pela IDENTIDADE da versão que o ato guarda por
@@ -366,7 +365,7 @@ public sealed class EnvelopeFechadoE2ETests
         atoV1.VersaoInvocada.Hash.Should().Be(hashV1, "o hash guardado em Publicações é o mesmo que Seleção congelou para V1");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 18 — abrir a SESSÃO editorial (não o atalho atômico) — captura o ETag da abertura
+        // Passo 17 — abrir a SESSÃO editorial (não o atalho atômico) — captura o ETag da abertura
         // ══════════════════════════════════════════════════════════════════════════════
 
         HttpResponseMessage abertura = await ExecutarPassoAsync(
@@ -375,7 +374,7 @@ public sealed class EnvelopeFechadoE2ETests
         string etagAbertura = LerETag(abertura, "abrir sessão");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 19 — PUT de uma dimensão SOB a sessão, com o If-Match da abertura — captura o
+        // Passo 18 — PUT de uma dimensão SOB a sessão, com o If-Match da abertura — captura o
         // ETag NOVO. Chave nova por requisição (plano §4.0) — nunca reutilizar a Idempotency-Key.
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -387,7 +386,7 @@ public sealed class EnvelopeFechadoE2ETests
         etagNovo.Should().NotBe(etagAbertura, "toda mutação aceita sob a sessão incrementa a revisão, e o controller devolve o tag novo");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 20 — fechar a sessão com o ETag NOVO (não o da abertura — plano §4.0: fechar
+        // Passo 19 — fechar a sessão com o ETag NOVO (não o da abertura — plano §4.0: fechar
         // com o tag velho devolveria 412)
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -397,7 +396,7 @@ public sealed class EnvelopeFechadoE2ETests
             HttpStatusCode.NoContent, "POST retificacao-em-curso/fechamento", "/retificacao-em-curso/fechamento");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 21 — identidade das versões pelo AtoCriadorId (plano §4.5, bloqueante): V2
+        // Passo 20 — identidade das versões pelo AtoCriadorId (plano §4.5, bloqueante): V2
         // retifica V1, nunca "qualquer ato do processo". V1 permanece intacta (append-only).
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -409,7 +408,7 @@ public sealed class EnvelopeFechadoE2ETests
         hashV1AposFechamento.Should().Be(hashV1, "a versão anterior é imutável — o fechamento não muta o passado (append-only)");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 22 — confirmar o ato V2 em Publicações, pela identidade EXATA de V2 (não
+        // Passo 21 — confirmar o ato V2 em Publicações, pela identidade EXATA de V2 (não
         // "qualquer ato do processo" — é a barreira que o plano nomeia como bloqueante)
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -424,7 +423,7 @@ public sealed class EnvelopeFechadoE2ETests
         hashV2.Should().NotBe(hashV1, "V2 congela outra configuração — se os hashes coincidissem, a asserção de identidade acima seria vácua");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 23 — GET /snapshot-vigente == versão 2 (a versão vigente reflete o fechamento)
+        // Passo 22 — GET /snapshot-vigente == versão 2 (a versão vigente reflete o fechamento)
         // ══════════════════════════════════════════════════════════════════════════════
 
         HttpResponseMessage snapshotResp = await ExecutarPassoAsync(
@@ -436,12 +435,12 @@ public sealed class EnvelopeFechadoE2ETests
 
         // A diferença de hash sozinha não prova que a edição entrou: toda retificação
         // acrescenta o bloco `retificacao` ao envelope, então o hash muda mesmo que o peso
-        // enviado no passo 19 tivesse sido ignorado. A prova de que a edição entrou é o valor
+        // enviado no passo 18 tivesse sido ignorado. A prova de que a edição entrou é o valor
         // do peso dentro da configuração congelada, casado pelo id da etapa — nunca por
         // posição no array, que a política de ordenação pode mudar.
         JsonObject etapaObjetivaCongelada = LocalizarEtapaPorId(snapshotVigente.Configuracao, objetivaId);
         etapaObjetivaCongelada["peso"]!.GetValue<string>().Should().Be(
-            "4.0000", "V2 congela a configuração EDITADA sob a sessão — o peso da Prova Objetiva enviado no passo 19");
+            "4.0000", "V2 congela a configuração EDITADA sob a sessão — o peso da Prova Objetiva enviado no passo 18");
         snapshotVigente.HashConfiguracao.Should().NotBe(hashV1, "V2 é uma versão congelada distinta de V1 — consequência de qualquer retificação, provada aqui só como reforço da asserção de peso acima");
 
         // O quadro de pesos por área chega ao envelope publicado: a resolução declarada e um
@@ -514,7 +513,7 @@ public sealed class EnvelopeFechadoE2ETests
     /// <summary>
     /// A mesma coleção, com o Id de cada etapa ECOADO (reconciliação in-place —
     /// <c>DefinirEtapasCommandHandler.cs:64-77</c>) e o peso da Objetiva alterado — é a
-    /// dimensão que muda sob a sessão editorial (passo 19).
+    /// dimensão que muda sob a sessão editorial (passo 18).
     /// </summary>
     private static object[] EtapasComPesoAlterado(Guid objetivaId, Guid redacaoId, Guid entrevistaId) =>
     [
@@ -714,7 +713,9 @@ public sealed class EnvelopeFechadoE2ETests
                 },
             ];
 
-            return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/fatos-coletados", fatos, ifMatch: null);
+            return EnviarAsync(
+                HttpMethod.Put, FormularioDeInscricaoHttp.RotaDosItens(ProcessoId).ToString(),
+                FormularioDeInscricaoHttp.CorpoDosItens(fatos), ifMatch: null);
         }
 
         public Task<HttpResponseMessage> PutRegrasDerivacaoAsync()
@@ -775,10 +776,20 @@ public sealed class EnvelopeFechadoE2ETests
         public Task<HttpResponseMessage> PutDocumentosExigidosAsync(object[] raizes) =>
             EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/documentos-exigidos", raizes, ifMatch: null);
 
-        public Task<HttpResponseMessage> PutFormularioAsync(string titulo, string? ifMatch) =>
+        public Task<HttpResponseMessage> PutFormularioAsync(string titulo, Guid faseId, string? ifMatch) =>
             EnviarAsync(
-                HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{ProcessoId}/formulario",
-                new { titulo }, ifMatch);
+                HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/INSCRICAO",
+                new
+                {
+                    faseId,
+                    titulo,
+                    etapas = new object[]
+                    {
+                        new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados" },
+                        new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão e aceite" },
+                    },
+                },
+                ifMatch);
 
         public Task<HttpResponseMessage> PutDivulgacaoAsync(IReadOnlyList<string>? camposPublicos, string? justificativa, string? ifMatch) =>
             EnviarAsync(

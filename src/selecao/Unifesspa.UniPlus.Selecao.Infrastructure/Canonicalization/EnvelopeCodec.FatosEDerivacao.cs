@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -224,9 +225,12 @@ public sealed partial class EnvelopeCodec
             JsonObject item = leitor.ItemObjeto(array, i, "fatosColetados");
             leitor.ExigirChaves(
                 item, path,
-                "fatoCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "origemValores", "precondicao", "valoresSelecionaveis");
+                "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "origemValores",
+                "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
+            FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
+            string? etapaCodigo = leitor.TextoOpcional(item, "etapaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario);
             int ordem = leitor.Inteiro(item, "ordem", path);
             string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
             string tipoRenderizacaoCodigo = leitor.TextoNaoVazio(item, "tipoRenderizacao", path);
@@ -235,6 +239,12 @@ public sealed partial class EnvelopeCodec
             if (leitor.Falhou)
             {
                 return ([], valoresSelecionaveis);
+            }
+
+            if (finalidade == FinalidadeFormulario.Nenhuma)
+            {
+                return (leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.finalidade' fora do vocabulário de finalidades.")) ?? [], valoresSelecionaveis);
             }
 
             TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacaoCodigo);
@@ -266,7 +276,7 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes, origemValores);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes, origemValores, etapaCodigo, finalidade);
             if (fatoColetado.IsFailure)
             {
                 return (leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [], valoresSelecionaveis);
@@ -606,9 +616,10 @@ public sealed partial class EnvelopeCodec
                 + $"'{MotorDerivacao.VersaoSemantica}'.");
         }
 
+        // Produtor único no processo; ordem única dentro de cada formulário.
         HashSet<string> coletados = new(StringComparer.Ordinal);
-        HashSet<int> ordens = [];
-        Dictionary<string, int> ordemPorCodigo = new(StringComparer.Ordinal);
+        HashSet<(FinalidadeFormulario, int)> ordens = [];
+        Dictionary<string, FatoColetado> coletadoPorCodigo = new(StringComparer.Ordinal);
         foreach (FatoColetado fato in fatos)
         {
             if (!coletados.Add(fato.FatoCodigo))
@@ -616,12 +627,12 @@ public sealed partial class EnvelopeCodec
                 return Malformado($"'fatosColetados': o fato '{fato.FatoCodigo}' aparece mais de uma vez.");
             }
 
-            if (!ordens.Add(fato.Ordem))
+            if (!ordens.Add((fato.Finalidade, fato.Ordem)))
             {
-                return Malformado($"'fatosColetados': a ordem {fato.Ordem} é usada por mais de um fato.");
+                return Malformado($"'fatosColetados': a ordem {fato.Ordem} é usada por mais de um fato do mesmo formulário.");
             }
 
-            ordemPorCodigo[fato.FatoCodigo] = fato.Ordem;
+            coletadoPorCodigo[fato.FatoCodigo] = fato;
         }
 
         HashSet<string> derivados = new(StringComparer.Ordinal);
@@ -636,19 +647,21 @@ public sealed partial class EnvelopeCodec
             universo.Add(config.CodigoFato);
         }
 
-        // Pré-condição de campo só cita fato COLETADO e ANTERIOR (a garantia de anterioridade que o
-        // resolvedor de runtime pressupõe — ele percorre os coletados por ordem, sem acionar o motor).
+        // Pré-condição de campo só cita fato COLETADO: anterior no mesmo formulário (a garantia de
+        // anterioridade que o resolvedor de runtime pressupõe — ele percorre os coletados por ordem,
+        // sem acionar o motor) ou, em outra finalidade, coletado pela inscrição, que vem antes.
         foreach (FatoColetado fato in fatos)
         {
             foreach (CondicaoPrecondicaoFato precondicao in fato.Precondicoes)
             {
-                if (!ordemPorCodigo.TryGetValue(precondicao.Fato, out int ordemCitada))
+                if (!coletadoPorCodigo.TryGetValue(precondicao.Fato, out FatoColetado? citado)
+                    || (citado.Finalidade != fato.Finalidade && citado.Finalidade != FinalidadeFormulario.Inscricao))
                 {
                     return Malformado(
-                        $"'fatosColetados': a pré-condição do fato '{fato.FatoCodigo}' cita '{precondicao.Fato}', que o processo não coleta.");
+                        $"'fatosColetados': a pré-condição do fato '{fato.FatoCodigo}' cita '{precondicao.Fato}', que nem o formulário dele nem o de inscrição coletam.");
                 }
 
-                if (ordemCitada >= fato.Ordem)
+                if (citado.Finalidade == fato.Finalidade && citado.Ordem >= fato.Ordem)
                 {
                     return Malformado(
                         $"'fatosColetados': a pré-condição do fato '{fato.FatoCodigo}' cita '{precondicao.Fato}', que não é anterior na ordem de coleta.");

@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class DefinirTaxaInscricaoCommandHandlerTests
 {
@@ -132,6 +133,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
             periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             documentoEditalId: Guid.CreateVersion7()).Value!;
         byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         processo.Publicar(
             dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo,
             "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario).IsSuccess.Should().BeTrue();

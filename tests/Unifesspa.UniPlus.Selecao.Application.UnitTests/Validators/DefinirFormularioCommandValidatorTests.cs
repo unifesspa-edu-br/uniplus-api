@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using FluentValidation.Results;
 
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -20,7 +21,7 @@ public sealed class DefinirFormularioCommandValidatorTests
     [Fact(DisplayName = "Passa com título nulo — ausência é estado válido")]
     public void Aceita_TituloNulo()
     {
-        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.CreateVersion7(), null, PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, null, null, [], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -28,7 +29,7 @@ public sealed class DefinirFormularioCommandValidatorTests
     [Fact(DisplayName = "Falha quando ProcessoSeletivoId é vazio")]
     public void Rejeita_ProcessoSeletivoIdVazio()
     {
-        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.Empty, null, PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.Empty, FinalidadeFormulario.Inscricao, null, null, [], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "ProcessoSeletivoId");

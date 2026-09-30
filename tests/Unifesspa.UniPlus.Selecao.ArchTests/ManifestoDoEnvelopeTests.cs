@@ -361,7 +361,7 @@ public sealed class ManifestoDoEnvelopeTests
         // Rotulo/TipoRenderizacao/Obrigatorio (Story #559) — a apresentação do campo no
         // formulário de inscrição, congelada junto do fato no mesmo bloco `fatosColetados`.
         [typeof(FatoColetado)] = (
-            ["FatoCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatorio", "OrigemValores", "Precondicoes"],
+            ["FatoCodigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatorio", "OrigemValores", "Precondicoes"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("SemPrecondicao", "Derivada de Precondicoes — congelá-la duplicaria a fonte de verdade."),
@@ -375,8 +375,22 @@ public sealed class ManifestoDoEnvelopeTests
             ["FatoCodigo", "Codigo", "Rotulo", "Ordem"],
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
 
+        [typeof(FormularioProcesso)] = (
+            ["Finalidade", "FaseId", "Titulo", "ModeloOrigemId", "ModeloOrigemCodigo", "Etapas"],
+            [
+                ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("Estrutura", "Derivada das Etapas — a forma que a estrutura do formulário confere, recomputada."),
+            ]),
+
+        [typeof(EtapaFormulario)] = (
+            ["Codigo", "Ordem", "Tipo", "Bloco", "Titulo", "Descricao", "Aviso"],
+            [
+                ("FormularioProcessoId", "FK interna."),
+                ("Estrutura", "Derivada dos campos da etapa — recomputada, nunca persistida."),
+            ]),
+
         [typeof(TermoExigidoFormulario)] = (
-            ["Codigo", "Ordem", "TermoId", "VersaoId", "Nome", "Texto", "BaseLegal", "FormaAceite", "HashVersao", "Exibicao", "Obrigatoriedade"],
+            ["Codigo", "Finalidade", "Ordem", "TermoId", "VersaoId", "Nome", "Texto", "BaseLegal", "FormaAceite", "HashVersao", "Exibicao", "Obrigatoriedade"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),

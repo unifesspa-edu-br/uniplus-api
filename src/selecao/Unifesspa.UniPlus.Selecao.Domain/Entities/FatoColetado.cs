@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -79,6 +80,12 @@ public sealed class FatoColetado : EntityBase
 
     public IReadOnlyCollection<CondicaoPrecondicaoFato> Precondicoes => _precondicoes.AsReadOnly();
 
+    /// <summary>A finalidade do formulário que produz o fato; atribuída pelo processo ao definir os itens.</summary>
+    public FinalidadeFormulario Finalidade { get; private set; }
+
+    /// <summary>A seção do formulário em que o item aparece.</summary>
+    public string? EtapaCodigo { get; private set; }
+
     private FatoColetado() { }
 
     /// <summary>
@@ -93,7 +100,9 @@ public sealed class FatoColetado : EntityBase
         TipoRenderizacao tipoRenderizacao,
         bool obrigatorio,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
-        OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo)
+        OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo,
+        string? etapaCodigo = null,
+        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma)
     {
         List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
 
@@ -125,6 +134,10 @@ public sealed class FatoColetado : EntityBase
             TipoRenderizacao = tipoRenderizacao,
             Obrigatorio = obrigatorio,
             OrigemValores = origemValores,
+            EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
+
+            // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
+            Finalidade = finalidade,
         };
         foreach (CondicaoPrecondicaoFato precondicao in condicoes)
         {
@@ -200,6 +213,8 @@ public sealed class FatoColetado : EntityBase
 
     internal void VincularProcessoSeletivo(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
+
+    internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
 
     /// <summary>
     /// O predicado de pré-condição na forma avaliável, ou <see langword="null"/> quando o fato é

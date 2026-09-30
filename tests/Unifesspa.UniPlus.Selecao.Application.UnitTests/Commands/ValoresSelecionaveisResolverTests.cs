@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A resolução dos valores selecionáveis (issue #1059, UNI-REQ-0072), atravessando um HANDLER
@@ -36,7 +37,7 @@ public sealed class ValoresSelecionaveisResolverTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         FatoColetado corRaca = FatoColetado.Criar(
             "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!;
-        processo.DefinirFatosColetados([corRaca], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([corRaca], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Should().BeEmpty("pré-condição: COR_RACA não é citado em gatilho algum");
 
         FatoValorDominioViewItem[] seisValores =
@@ -81,7 +82,7 @@ public sealed class ValoresSelecionaveisResolverTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         FatoColetado baixaRenda = FatoColetado.Criar(
             "BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, obrigatorio: false, null).Value!;
-        processo.DefinirFatosColetados([baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView baixaRendaNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "BAIXA_RENDA", Nome: "Baixa renda", Descricao: null,
@@ -125,7 +126,7 @@ public sealed class ValoresSelecionaveisResolverTests
 
         FatoColetado condicaoAtendimento = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, obrigatorio: false, null).Value!;
-        processo.DefinirFatosColetados([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,
@@ -172,7 +173,7 @@ public sealed class ValoresSelecionaveisResolverTests
 
         FatoColetado condicaoAtendimento = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, obrigatorio: false, null).Value!;
-        processo.DefinirFatosColetados([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,

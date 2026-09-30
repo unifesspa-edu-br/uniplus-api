@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -192,7 +193,7 @@ public sealed class PoliticaDeOrdenacaoTests
 
         if (fatosColetados is not null)
         {
-            processo.DefinirFatosColetados(fatosColetados, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirItens(fatosColetados, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
 
         if (regrasDerivacao is not null)

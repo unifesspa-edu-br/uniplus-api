@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// Reconfere, no momento do congelamento, que cada <see cref="FatoColetado"/> do processo ainda
 /// satisfaz <see cref="ColetabilidadeDeFato.EhColetavel"/> contra o catálogo VIVO — o mesmo
 /// predicado que <see cref="DefinirFatosColetadosCommandHandler"/> já aplica ao vincular o fato
-/// (PUT /fatos-coletados), reaplicado aqui porque o catálogo pode reclassificar a
+/// (PUT dos itens do formulário), reaplicado aqui porque o catálogo pode reclassificar a
 /// <c>Origem</c> de um fato depois que ele já virou <see cref="FatoColetado"/> — a migration que
 /// reclassificou MODALIDADE de DECLARADO para DERIVADO é o caminho real que o projeto usa para
 /// evoluir o catálogo. Sem esta reconferência, um vínculo morto seria congelado numa versão
@@ -40,7 +40,8 @@ internal static class ConferenciaDeColetabilidadeDeFatos
         }
 
         FatoColetado? naoColetavel = processo.FatosColetados
-            .OrderBy(static f => f.Ordem)
+            .OrderBy(static f => f.Finalidade)
+            .ThenBy(static f => f.Ordem)
             .FirstOrDefault(f => !catalogo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
                 || !ColetabilidadeDeFato.EhColetavel(fato));
 

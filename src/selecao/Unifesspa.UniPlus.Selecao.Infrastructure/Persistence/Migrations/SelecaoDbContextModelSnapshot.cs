@@ -1177,6 +1177,72 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("documentos_exigidos_base_legal", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaFormulario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Aviso")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("aviso");
+
+                    b.Property<int>("Bloco")
+                        .HasColumnType("integer")
+                        .HasColumnName("bloco");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("descricao");
+
+                    b.Property<Guid>("FormularioProcessoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("formulario_processo_id");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer")
+                        .HasColumnName("tipo");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("titulo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_etapas_formulario");
+
+                    b.HasIndex("FormularioProcessoId", "Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_etapas_formulario_formulario_codigo");
+
+                    b.HasIndex("FormularioProcessoId", "Ordem")
+                        .IsUnique()
+                        .HasDatabaseName("ux_etapas_formulario_formulario_ordem");
+
+                    b.ToTable("etapas_formulario", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1348,11 +1414,20 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("EtapaCodigo")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("etapa_codigo");
+
                     b.Property<string>("FatoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("fato_codigo");
+
+                    b.Property<int>("Finalidade")
+                        .HasColumnType("integer")
+                        .HasColumnName("finalidade");
 
                     b.Property<bool>("Obrigatorio")
                         .HasColumnType("boolean")
@@ -1391,11 +1466,61 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_fatos_coletados_processo_fato");
 
-                    b.HasIndex("ProcessoSeletivoId", "Ordem")
+                    b.HasIndex("ProcessoSeletivoId", "Finalidade", "Ordem")
                         .IsUnique()
-                        .HasDatabaseName("ux_fatos_coletados_processo_ordem");
+                        .HasDatabaseName("ux_fatos_coletados_processo_finalidade_ordem");
 
                     b.ToTable("fatos_coletados", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("FaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fase_id");
+
+                    b.Property<int>("Finalidade")
+                        .HasColumnType("integer")
+                        .HasColumnName("finalidade");
+
+                    b.Property<string>("ModeloOrigemCodigo")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("modelo_origem_codigo");
+
+                    b.Property<Guid?>("ModeloOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("modelo_origem_id");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<string>("Titulo")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("titulo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_formularios_processo");
+
+                    b.HasIndex("ProcessoSeletivoId", "Finalidade")
+                        .IsUnique()
+                        .HasDatabaseName("ux_formularios_processo_processo_finalidade");
+
+                    b.ToTable("formularios_processo", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
@@ -2128,12 +2253,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
                         .HasColumnName("deleted_by");
-
-                    b.Property<string>("FormularioTitulo")
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("formulario_titulo")
-                        .HasComment("Título do formulário de inscrição apresentado ao candidato. Ausência = sem título configurado.");
 
                     b.Property<string>("IdentificadorLegivel")
                         .HasMaxLength(64)
@@ -2929,6 +3048,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("exibicao");
 
+                    b.Property<int>("Finalidade")
+                        .HasColumnType("integer")
+                        .HasColumnName("finalidade");
+
                     b.Property<string>("FormaAceite")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -2981,13 +3104,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_termos_exigidos_formulario");
 
-                    b.HasIndex("ProcessoSeletivoId", "Codigo")
+                    b.HasIndex("ProcessoSeletivoId", "Finalidade", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_termos_exigidos_formulario_processo_codigo");
+                        .HasDatabaseName("ux_termos_exigidos_formulario_processo_finalidade_codigo");
 
-                    b.HasIndex("ProcessoSeletivoId", "Ordem")
+                    b.HasIndex("ProcessoSeletivoId", "Finalidade", "Ordem")
                         .IsUnique()
-                        .HasDatabaseName("ux_termos_exigidos_formulario_processo_ordem");
+                        .HasDatabaseName("ux_termos_exigidos_formulario_processo_finalidade_ordem");
 
                     b.ToTable("termos_exigidos_formulario", "selecao");
                 });
@@ -3787,6 +3910,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_documentos_exigidos_base_legal_documento_exigido_documento_");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaFormulario", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", null)
+                        .WithMany("Etapas")
+                        .HasForeignKey("FormularioProcessoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_etapas_formulario_formulario_processo_formulario_processo_id");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
@@ -3863,6 +3996,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_fatos_coletados_processos_seletivos_processo_seletivo_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithMany("Formularios")
+                        .HasForeignKey("ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_formularios_processo_processos_seletivos_processo_seletivo_");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
@@ -4601,6 +4744,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Navigation("Precondicoes");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", b =>
+                {
+                    b.Navigation("Etapas");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
                 {
                     b.Navigation("Areas");
@@ -4645,6 +4793,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Navigation("Etapas");
 
                     b.Navigation("FatosColetados");
+
+                    b.Navigation("Formularios");
 
                     b.Navigation("NosExigencia");
 

@@ -3,9 +3,11 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O gate do calendário de dias úteis (UNI-REQ-0116): contagem que distingue dia útil só é
@@ -93,8 +95,7 @@ public sealed class GateDoCalendarioVigenteTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.DefinirCronogramaFases(
-            CronogramaComRecurso(unidade), [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, CronogramaComRecurso(unidade), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         processo.DefinirAlgoritmoContagemPrazo(
             Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, 'e'), PrecondicaoIfMatch.Curinga)
@@ -145,8 +146,8 @@ public sealed class GateDoCalendarioVigenteTests
     public void CalendarioEConvencao_SaoCausasDistintas()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirCronogramaFases(
-            CronogramaComRecurso(UnidadePrazo.DiasUteis), [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, CronogramaComRecurso(UnidadePrazo.DiasUteis), PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
 
         // Sem declarar a convenção: as duas causas coexistem, e o checklist mostra as duas.
         string[] vermelhos = [.. processo.AvaliarConformidade(SemCalendario)

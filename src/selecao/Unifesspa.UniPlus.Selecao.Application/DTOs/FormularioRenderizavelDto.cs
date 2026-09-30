@@ -15,7 +15,7 @@ public sealed record ValorSelecionavelDto(string Codigo, string? Descricao, int 
 /// </summary>
 /// <remarks>
 /// DTO PRÓPRIO, e não reaproveitamento de <see cref="FatoColetadoDto"/>: aquele é o read-back
-/// administrativo da configuração EDITÁVEL (<c>GET</c>/<c>PUT /fatos-coletados</c>,
+/// administrativo da configuração EDITÁVEL (<c>GET</c> do processo e <c>PUT</c> dos itens do formulário,
 /// <see cref="ProcessoSeletivoDto"/>), projetado direto do agregado vivo, sem I/O ao catálogo.
 /// Acrescentar o campo nele quebraria aquela projeção — devolver <see langword="null"/> sempre
 /// (seletor mudo no GET administrativo) ou fazer I/O novo ao catálogo, mudança de contrato que
@@ -28,16 +28,19 @@ public sealed record FatoFormularioRenderizavelDto(
     string TipoRenderizacao,
     bool Obrigatorio,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao,
-    IReadOnlyList<ValorSelecionavelDto>? ValoresSelecionaveis);
+    IReadOnlyList<ValorSelecionavelDto>? ValoresSelecionaveis,
+    string? EtapaCodigo);
 
 /// <summary>
-/// Formulário de inscrição pronto para renderização (Story #559): título, termos exigidos
-/// (UNI-REQ-0086) e os fatos coletados na ordem de coleta, cada um com rótulo, tipo de renderização, obrigatoriedade,
+/// Formulário de uma finalidade pronto para renderização (UNI-REQ-0144): título, etapas, termos
+/// exigidos (UNI-REQ-0086) e os fatos coletados na ordem de coleta, cada um com rótulo, tipo de renderização, obrigatoriedade,
 /// a pré-condição já congelada e os valores selecionáveis (issue #1059). Projetado da
-/// <c>VersaoConfiguracao</c> vigente — nunca da raiz viva — pelo <c>FormularioInscricaoController</c>,
+/// <c>VersaoConfiguracao</c> vigente — nunca da raiz viva — pelo <c>FormulariosController</c>,
 /// endpoint público.
 /// </summary>
 public sealed record FormularioRenderizavelDto(
+    string Finalidade,
     string? Titulo,
+    IReadOnlyList<EtapaFormularioDto> Etapas,
     IReadOnlyList<TermoExigidoDto> Termos,
     IReadOnlyList<FatoFormularioRenderizavelDto> FatosColetados);

@@ -36,6 +36,7 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
 
         builder.Property(t => t.Codigo).HasMaxLength(TermoExigidoFormulario.CodigoMaxLength).IsRequired();
         builder.Property(t => t.Ordem).IsRequired();
+        builder.Property(t => t.Finalidade).HasConversion<int>().IsRequired();
         builder.Property(t => t.TermoId).IsRequired();
         builder.Property(t => t.VersaoId).IsRequired();
         builder.Property(t => t.Nome).HasMaxLength(NomeMaxLength).IsRequired();
@@ -57,12 +58,12 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
         builder.Ignore(t => t.FatosCitados);
 
         // Invariantes do agregado, garantidas também contra escrita concorrente.
-        builder.HasIndex(t => new { t.ProcessoSeletivoId, t.Codigo })
+        builder.HasIndex(t => new { t.ProcessoSeletivoId, t.Finalidade, t.Codigo })
             .IsUnique()
-            .HasDatabaseName("ux_termos_exigidos_formulario_processo_codigo");
-        builder.HasIndex(t => new { t.ProcessoSeletivoId, t.Ordem })
+            .HasDatabaseName("ux_termos_exigidos_formulario_processo_finalidade_codigo");
+        builder.HasIndex(t => new { t.ProcessoSeletivoId, t.Finalidade, t.Ordem })
             .IsUnique()
-            .HasDatabaseName("ux_termos_exigidos_formulario_processo_ordem");
+            .HasDatabaseName("ux_termos_exigidos_formulario_processo_finalidade_ordem");
     }
 
     // O EF não chama o conversor para nulo: a coluna nula é a exibição sempre.

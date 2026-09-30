@@ -5,6 +5,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Um termo que o formulário exige: o identificador da exigência, a ordem, o termo e a versão do
@@ -27,5 +28,6 @@ public sealed record TermoExigidoInput(
 /// </summary>
 public sealed record DefinirTermosDoFormularioCommand(
     Guid ProcessoSeletivoId,
+    FinalidadeFormulario Finalidade,
     IReadOnlyList<TermoExigidoInput> Termos,
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

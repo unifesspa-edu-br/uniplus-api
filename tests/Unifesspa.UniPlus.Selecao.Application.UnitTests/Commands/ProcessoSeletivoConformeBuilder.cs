@@ -2,10 +2,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Processo mínimo conforme às seis dimensões estruturais de
@@ -97,6 +99,7 @@ internal static class ProcessoSeletivoConformeBuilder
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 

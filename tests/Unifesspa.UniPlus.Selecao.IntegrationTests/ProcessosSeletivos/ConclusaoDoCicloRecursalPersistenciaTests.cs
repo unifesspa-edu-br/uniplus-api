@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A bicondicional entre o gate de publicação e o item de conformidade da conclusão do ciclo
@@ -146,6 +147,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
 
@@ -178,6 +180,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
             .Include(p => p.Etapas)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.Classificacao)
+            .Include(p => p.Formularios).ThenInclude(f => f.Etapas)
             .Include(p => p.OfertaAtendimento)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.ConfiguracaoTaxaInscricao)

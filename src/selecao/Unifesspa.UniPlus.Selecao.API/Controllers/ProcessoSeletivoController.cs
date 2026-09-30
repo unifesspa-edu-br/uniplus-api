@@ -721,38 +721,6 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Substitui integralmente os fatos que o processo coleta do candidato, com a sua ordem de
-    /// coleta e a pré-condição opcional que decide se o campo produtor é apresentado (Story #984).
-    /// Só é coletável um fato declarado, respondido em campo de inscrição — derivados e computados
-    /// são recusados. Editável em rascunho e sob sessão de retificação (Story #986): em rascunho a
-    /// resposta é <c>204</c> sem ETag e o <c>If-Match</c> é ignorado; sob sessão, o <c>If-Match</c>
-    /// é obrigatório (<c>428</c> ausente, <c>412</c> defasado) e o <c>204</c> devolve o ETag novo.
-    /// Processo publicado sem sessão é recusado com <c>422</c>.
-    /// </summary>
-    [HttpPut("{id:guid}/fatos-coletados")]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
-    public async Task<IActionResult> DefinirFatosColetados(
-        Guid id,
-        [FromBody] IReadOnlyList<FatoColetadoInput> fatos,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
-        CancellationToken cancellationToken)
-    {
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirFatosColetadosCommand(id, fatos, precondicao), cancellationToken);
-        return ResponderMutacao(resultado);
-    }
-
-    /// <summary>
     /// Substitui integralmente as regras que derivam os fatos derivados do processo — hoje a
     /// modalidade de concorrência (Story #985). Cada configuração traz o fato derivado e a lista de
     /// regras <c>{ ordem, contribui, quando? }</c>; a regra incondicional (âncora) tem <c>quando</c>

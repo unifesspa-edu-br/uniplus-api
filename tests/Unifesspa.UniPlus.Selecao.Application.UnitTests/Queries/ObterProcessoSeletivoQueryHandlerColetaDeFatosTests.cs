@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="ObterProcessoSeletivoQueryHandler.Handle"/> para a leitura tipada de
@@ -48,17 +49,18 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: false,
             [Precondicao(0, "BAIXA_RENDA", Operador.Igual, true)]).Value!;
         // Passa fora de ordem de propósito — a projeção é quem ordena.
-        processo.DefinirFatosColetados([corRaca, baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([corRaca, baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
+        IReadOnlyList<FatoColetadoDto> fatos = dto.Formularios.Should().ContainSingle().Which.FatosColetados;
 
-        dto.FatosColetados.Select(f => f.FatoCodigo).Should().ContainInOrder("BAIXA_RENDA", "COR_RACA");
-        dto.FatosColetados[0].Rotulo.Should().Be("Baixa renda");
-        dto.FatosColetados[0].TipoRenderizacao.Should().Be("BOOLEANO", "o wire de leitura usa o mesmo código canônico do wire de escrita");
-        dto.FatosColetados[0].Obrigatorio.Should().BeTrue();
-        dto.FatosColetados[0].Precondicao.Should().BeNull("fato sem pré-condição projeta null, nunca lista vazia");
+        fatos.Select(f => f.FatoCodigo).Should().ContainInOrder("BAIXA_RENDA", "COR_RACA");
+        fatos[0].Rotulo.Should().Be("Baixa renda");
+        fatos[0].TipoRenderizacao.Should().Be("BOOLEANO", "o wire de leitura usa o mesmo código canônico do wire de escrita");
+        fatos[0].Obrigatorio.Should().BeTrue();
+        fatos[0].Precondicao.Should().BeNull("fato sem pré-condição projeta null, nunca lista vazia");
 
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao = dto.FatosColetados[1].Precondicao;
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao = fatos[1].Precondicao;
         precondicao.Should().NotBeNull();
         precondicao!.Should().ContainSingle().Which.Should().ContainSingle();
         CondicaoPrecondicaoDto condicao = precondicao[0][0];
@@ -105,7 +107,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 
-        dto.FatosColetados.Should().BeEmpty();
+        dto.Formularios.Should().BeEmpty();
         dto.RegrasDerivacao.Should().BeEmpty();
     }
 }

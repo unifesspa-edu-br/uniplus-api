@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Monta e persiste um <see cref="ProcessoSeletivo"/> minimamente conforme
@@ -111,6 +112,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             regraRecurso: null).Value!;
         Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — o seeder
         // declara explicitamente "não cobra" para continuar representando um processo publicável.

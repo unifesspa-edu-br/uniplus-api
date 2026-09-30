@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Termos exigidos pelo formulário (UNI-REQ-0086): a versão vem do catálogo e o conteúdo dela é
@@ -57,7 +58,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
     private static Task<Result<MutacaoAceita>> HandleAsync(Mocks mocks, ProcessoSeletivo processo, params TermoExigidoInput[] termos) =>
         DefinirTermosDoFormularioCommandHandler.Handle(
-            new DefinirTermosDoFormularioCommand(processo.Id, termos, PrecondicaoIfMatch.Ausente),
+            new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Inscricao, termos, PrecondicaoIfMatch.Ausente),
             mocks.Repository, mocks.FatoCandidatoReader, mocks.TermoReader, mocks.UnitOfWork, CancellationToken.None);
 
     private static ProcessoSeletivo ProcessoQueColetaCorRaca()
@@ -66,7 +67,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             "PS Termos", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;

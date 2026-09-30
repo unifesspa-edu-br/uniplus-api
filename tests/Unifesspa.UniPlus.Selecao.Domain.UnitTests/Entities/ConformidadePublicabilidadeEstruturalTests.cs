@@ -74,6 +74,16 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, voBase, acaoQuandoIndeferido)],
             grupoAreaEnem: grupoAreaEnem).Value!;
 
+    /// <summary>
+    /// Os itens vermelhos do checklist, sem os do formulário: os testes que isolam uma razão de
+    /// recusa montam processos sem formulário, ou com o formulário mínimo sem a fase de inscrição, e
+    /// os itens do formulário ficariam vermelhos por isso — legitimamente, mas fora do que o teste
+    /// isola.
+    /// </summary>
+    private static IEnumerable<ItemConformidade> VermelhosForaDoFormulario(ProcessoSeletivo processo) =>
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario)
+            .Where(static i => !i.Ok && !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal));
+
     /// <summary>Fase mínima e coerente: não agrupa etapas (dispensável sem prova), produz resultado, não coleta inscrição.</summary>
     private static FaseCronograma FaseBase(bool coletaInscricao = false) => FaseCronograma.Criar(
         1, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
@@ -112,6 +122,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
@@ -189,7 +200,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+        VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("cronograma_inscricao_propria_sem_fase_de_coleta");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -216,7 +227,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+        VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("cronograma_fase_que_coleta_inscricao_sem_janela");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -419,7 +430,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void PreCanon_CondicionalVaziaDeterminaResultado()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
@@ -440,7 +451,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void PreCanon_ExigenciaRemoveVantagemSemVantagemViva()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL",
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: "REMOVE_VANTAGEM",
@@ -463,7 +474,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ConfiguracaoDistribuicaoVagas oferta = DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC");
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL",
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: "ELIMINA",
@@ -484,7 +495,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void PreCanon_GrupoRemoveVantagemSemVantagemViva()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido documento = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL",
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
@@ -508,7 +519,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ConfiguracaoDistribuicaoVagas oferta = DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC");
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido documento = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL",
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
@@ -534,7 +545,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void PreCanon_ReferenciaTemporalFatosAusente()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
@@ -629,7 +640,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void PreCanon_ReferenciaTemporalFatosFimInscricaoIndisponivel()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
@@ -682,9 +693,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
             TipoRenderizacao.SelecaoMultipla, obrigatorio: false, precondicoes: null).Value!;
-        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+        VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -702,9 +713,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         FatoColetado fato = FatoColetado.Criar(
             "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
             TipoRenderizacao.SelecaoUnica, obrigatorio: false, precondicoes: null).Value!;
-        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+        VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -741,6 +752,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
         processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
@@ -789,7 +801,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         FatoColetado condicao = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
             TipoRenderizacao.SelecaoMultipla, obrigatorio: false, precondicoes: null).Value!;
-        processo.DefinirFatosColetados([condicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([condicao]).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao(
             [CotaEAcaoAfirmativaPor("CONDICAO_ATENDIMENTO", "A", "B")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -897,6 +909,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 emiteParecerIndividual: false,
                 bancasRequeridas: [], regraRecurso: null).Value!],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
@@ -1104,7 +1117,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
             TipoRenderizacao.SelecaoMultipla, obrigatorio: false, precondicoes: null).Value!;
-        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
@@ -1122,7 +1135,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Possui alguma condição de atendimento?",
             TipoRenderizacao.Booleano, obrigatorio: false, precondicoes: null).Value!;
-        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
@@ -1135,7 +1148,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void Contraprova_SemGatilhoPorFaixaEtaria_ChecklistVerde()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         // Exigência GERAL, sem qualquer condição de gatilho — não aciona FAIXA_ETARIA.
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
@@ -1302,6 +1315,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDistribuicaoVagas(ofertas, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoEnemLocal(quadro ?? QuadroPesoAreaEnemDeTeste.Completo()), PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
@@ -1580,9 +1594,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void FatoDeFonteDoProcessoSemOpcao_RecusaAtePrimeiraOpcao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirFatosColetados([FatoEdicaoEnem()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([FatoEdicaoEnem()]).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+        VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
@@ -1611,7 +1625,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "BOLETIM_ENEM_2024", "Boletim do ENEM 2024", "ACADEMICO",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
@@ -1643,13 +1657,14 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void TermoSemFormaDeAceite_RecusaAteHaverRegistroDigital()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0, "A_DEFINIR")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([Termo("DECLARACAO", 0, "A_DEFINIR")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao()!.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+        VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("termo_exigido_sem_forma_de_aceite");
 
-        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao().Should().BeNull();
     }
@@ -1659,7 +1674,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0), Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([Termo("DECLARACAO", 0), Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente)
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
             [
                 ("termos[1].codigo", TermoExigidoFormularioErrorCodes.CodigoDuplicado),
@@ -1673,7 +1688,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        processo.DefinirTermosDoFormulario([Termo("DECLARAÇÃO", 0), Termo("DECLARAC\u0327A\u0303O", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([Termo("DECLARAÇÃO", 0), Termo("DECLARAC\u0327A\u0303O", 1)], PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be(TermoExigidoFormularioErrorCodes.CodigoDuplicado);
     }
 
@@ -1681,13 +1696,13 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void TermoCitaFatoNaoColetado_RecusaPublicacao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirFatosColetados([FatoEdicaoEnem()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([FatoEdicaoEnem()]).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2025"))], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2025"))], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.PendenciaPreCanonicalizacao().Should().BeNull();
 
-        processo.DefinirFatosColetados([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
@@ -1698,7 +1713,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2024"))], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2024"))], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
@@ -1724,7 +1739,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados([FatoMunicipioDoBonus()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao()!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
 
@@ -1739,8 +1754,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados([FatoMunicipioDoBonus()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
@@ -1762,8 +1777,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados([FatoMunicipioDoBonus()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
+        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
@@ -1773,12 +1788,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
         processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados([FatoMunicipioDoBonus()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao()!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+        VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_municipio_citado_fora_da_area_do_bonus");
     }
 }

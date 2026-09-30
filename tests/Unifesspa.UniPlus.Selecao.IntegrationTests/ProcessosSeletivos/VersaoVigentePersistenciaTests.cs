@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do seletor de
@@ -73,6 +74,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 

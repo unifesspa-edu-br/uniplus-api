@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Desativar um fato ou um valor no catálogo recusa só vínculo novo (ADR-0136): a configuração que
@@ -76,7 +77,7 @@ public sealed class DesativacaoNoCatalogoTests
             "PS Desativação", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, true, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = Catalogo(CorRaca());
@@ -84,7 +85,7 @@ public sealed class DesativacaoNoCatalogoTests
         ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["COR_RACA"]!
             .Select(static v => v.Codigo).Should().Equal("BRANCA", "PARDA");
 
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, true, null).Value!,
              FatoColetado.Criar("BAIXA_RENDA", 1, "Baixa renda", TipoRenderizacao.Booleano, false,
                  [CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!]).Value!],

@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura do <see cref="DefinirDocumentosExigidosCommandHandler"/> (Story #554): a
@@ -254,7 +255,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     private static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.SelecaoUnica)
     {
         FatoColetado fato = FatoColetado.Criar(codigo, 0, codigo, renderizacao, true, null).Value!;
-        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Handle com gatilho de fato desconhecido retorna PredicadoDnf.FatoDesconhecido")]

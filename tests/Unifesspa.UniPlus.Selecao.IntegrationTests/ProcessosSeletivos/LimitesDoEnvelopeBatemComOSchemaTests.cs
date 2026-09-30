@@ -100,7 +100,13 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // Story #559 — formulário de inscrição. Rotulo/FormularioTitulo reusam
         // NomeDeCadastro (mesma grandeza: rótulo curto legível).
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(FatoColetado), nameof(FatoColetado.Rotulo)),
-        ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.FormularioTitulo)),
+        ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(FormularioProcesso), nameof(FormularioProcesso.Titulo)),
+        ("CodigoEtapaFormulario", LimitesDoEnvelope.CodigoEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Codigo)),
+        ("CodigoEtapaFormulario", LimitesDoEnvelope.CodigoEtapaFormulario, typeof(FatoColetado), nameof(FatoColetado.EtapaCodigo)),
+        ("TituloEtapaFormulario", LimitesDoEnvelope.TituloEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Titulo)),
+        ("TextoEtapaFormulario", LimitesDoEnvelope.TextoEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Descricao)),
+        ("TextoEtapaFormulario", LimitesDoEnvelope.TextoEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Aviso)),
+        ("CodigoModeloDeFormulario", LimitesDoEnvelope.CodigoModeloDeFormulario, typeof(FormularioProcesso), nameof(FormularioProcesso.ModeloOrigemCodigo)),
         ("CodigoTermoExigido", LimitesDoEnvelope.CodigoTermoExigido, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Codigo)),
         ("NomeDoTermo", LimitesDoEnvelope.NomeDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Nome)),
         ("TextoDoTermo", LimitesDoEnvelope.TextoDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Texto)),

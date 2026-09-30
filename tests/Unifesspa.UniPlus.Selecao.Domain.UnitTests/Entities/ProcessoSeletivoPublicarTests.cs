@@ -8,9 +8,11 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="ProcessoSeletivo.Publicar"/> (RN08, Story #759 T4
@@ -95,6 +97,7 @@ public sealed class ProcessoSeletivoPublicarTests
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
@@ -434,7 +437,7 @@ public sealed class ProcessoSeletivoPublicarTests
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
             regraRecurso: null).Value!;
-        processo.DefinirCronogramaFases([FaseConforme(), semExtremo], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), semExtremo], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         return semExtremo.Id;
     }
 
@@ -563,7 +566,7 @@ public sealed class ProcessoSeletivoPublicarTests
         // Insere a fase de Ordem 2 ANTES da de Ordem 1 — _cronogramaFases preserva a ordem
         // de ENTRADA de DefinirCronogramaFases, diferente do envelope (sempre ordenado por
         // Ordem). Se a resolução dependesse dessa ordem de inserção, pegaria a fase errada.
-        processo.DefinirCronogramaFases([coletaOrdem2, coletaOrdem1], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [coletaOrdem2, coletaOrdem1], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         Guid faseOrdem1Id = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
 
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!], PrecondicaoIfMatch.Curinga)
@@ -605,7 +608,7 @@ public sealed class ProcessoSeletivoPublicarTests
         // exigência referencia a fase 1 (ExigidoNaFaseId), redefinir o cronograma depois
         // recriaria a fase 1 com outra FaseCanonicaOrigemId e o guard
         // FaseCronograma.ReferenciadaPorExigenciaViva recusaria a redefinição.
-        processo.DefinirCronogramaFases([FaseConforme(), faseComVirada], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), faseComVirada], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
         Guid faseComViradaId = processo.CronogramaFases.Single(f => f.Ordem == 2).Id;
 
@@ -747,6 +750,7 @@ public sealed class ProcessoSeletivoPublicarTests
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
