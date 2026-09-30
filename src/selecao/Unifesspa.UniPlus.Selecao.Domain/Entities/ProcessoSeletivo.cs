@@ -2037,15 +2037,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Monta o grafo de dependência conjunto (Story #928, §6) a partir das três dimensões da
-    /// configuração que o alimentam — os fatos coletados (campo + fato + pré-condição), as regras de
-    /// derivação (fato derivado + dependências) e as exigências (gatilho) — e valida a sua
+    /// Monta o grafo de dependência conjunto (Story #928, §6) a partir das dimensões da configuração
+    /// que o alimentam — os fatos coletados (campo + fato + regras do item), as regras de derivação
+    /// (fato derivado + dependências), as exigências (gatilho), as seções com exibição condicional e
+    /// os termos com condição — e valida a sua
     /// aciclicidade sobre as quatro classes de aresta juntas. Projeção read-only, sem mutar o
     /// agregado: um ciclo volta como erro nomeado, nunca lança. O congelamento do grafo no envelope e
     /// a recusa de publicação por ciclo são da fatia de determinismo (§7).
     /// </summary>
     public Result<GrafoDependenciaConjunta> ConstruirGrafoDependencia() =>
-        GrafoDependenciaConjunta.Construir(_fatosColetados, _regrasDerivacao, _documentosExigidos);
+        GrafoDependenciaConjunta.Construir(_fatosColetados, _regrasDerivacao, _documentosExigidos, _formularios, _termosExigidos);
 
     /// <summary>Os fatos coletados pela inscrição, que os formulários das outras finalidades podem citar.</summary>
     private static HashSet<string> FatosDaInscricao(IEnumerable<FatoColetado> fatos) =>
@@ -4003,7 +4004,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// O grafo de dependência conjunto (campos, fatos, exigências e as quatro arestas, §6) tem
+    /// O grafo de dependência conjunto (campos, fatos, exigências, seções e termos condicionados, e
+    /// as quatro arestas, §6) tem
     /// de ser um DAG para ser congelável: a ordem topológica total que o snapshot congela (RN08)
     /// não existe se houver ciclo. A construção do grafo (<see cref="ConstruirGrafoDependencia"/>)
     /// já detecta o ciclo — aqui ela vira gate de publicação, antes de canonicalizar.

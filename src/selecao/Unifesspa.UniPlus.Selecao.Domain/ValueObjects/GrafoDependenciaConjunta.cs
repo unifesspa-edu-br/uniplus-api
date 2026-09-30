@@ -1,13 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// O grafo de dependência conjunto de um processo (Story #928, §6): torna <b>explícito</b> o que a
 /// configuração hoje expressa implicitamente (ordem de coleta, pré-condições, dependências de
-/// derivação e gatilhos). Os nós são campos, fatos e exigências; as quatro classes de aresta são
+/// derivação e gatilhos). Os nós são campos, fatos, exigências, seções com exibição condicional e
+/// termos com condição; as quatro classes de aresta são
 /// <see cref="TipoArestaGrafo"/>. O grafo SHALL ser acíclico (DAG) considerando as quatro classes
 /// <b>juntas</b>, e a sua ordenação topológica é a ordem de coleta.
 /// </summary>
@@ -37,7 +39,7 @@ public sealed class GrafoDependenciaConjunta
         OrdemTopologica = ordemTopologica;
     }
 
-    /// <summary>Todos os nós do grafo (campos, fatos e exigências), sem repetição.</summary>
+    /// <summary>Todos os nós do grafo (campos, fatos, exigências, seções com exibição condicional e termos com condição), sem repetição.</summary>
     public IReadOnlyList<NoGrafoDependencia> Nos { get; }
 
     /// <summary>As arestas das quatro classes.</summary>
@@ -51,19 +53,25 @@ public sealed class GrafoDependenciaConjunta
     public IReadOnlyList<NoGrafoDependencia> OrdemTopologica { get; }
 
     /// <summary>
-    /// Constrói e valida o grafo conjunto a partir das três dimensões da configuração que o
-    /// alimentam: os fatos coletados (campo + fato declarado + pré-condição), as regras de derivação
-    /// (fato derivado + dependências) e as exigências (gatilho). Devolve erro nomeado — nunca lança —
-    /// quando as quatro classes de aresta juntas formam um ciclo.
+    /// Constrói e valida o grafo conjunto a partir das dimensões da configuração que o alimentam: os
+    /// fatos coletados (campo + fato declarado + as regras do item), as regras de derivação (fato
+    /// derivado + dependências), as exigências (gatilho), as seções com exibição (que gatam os seus
+    /// campos) e os termos com condição. A posição de coleta é a finalidade do formulário e depois a
+    /// ordem dentro dele (UNI-REQ-0078). Devolve erro nomeado — nunca lança — quando as quatro
+    /// classes de aresta juntas formam um ciclo.
     /// </summary>
     public static Result<GrafoDependenciaConjunta> Construir(
         IReadOnlyCollection<FatoColetado> fatosColetados,
         IReadOnlyCollection<ConfiguracaoDerivacaoFato> regrasDerivacao,
-        IReadOnlyCollection<DocumentoExigido> documentosExigidos)
+        IReadOnlyCollection<DocumentoExigido> documentosExigidos,
+        IReadOnlyCollection<FormularioProcesso> formularios,
+        IReadOnlyCollection<TermoExigidoFormulario> termos)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
         ArgumentNullException.ThrowIfNull(regrasDerivacao);
         ArgumentNullException.ThrowIfNull(documentosExigidos);
+        ArgumentNullException.ThrowIfNull(formularios);
+        ArgumentNullException.ThrowIfNull(termos);
 
         Dictionary<(ClasseNoGrafo, string), NoGrafoDependencia> nos = [];
         List<ArestaGrafoDependencia> arestas = [];
@@ -85,11 +93,12 @@ public sealed class GrafoDependenciaConjunta
         // pendurada (a recusa por dependência não declarada é do congelamento, §7); aqui a aresta só
         // liga nós existentes, o que preserva a detecção de ciclo.
         HashSet<string> fatosExistentes = new(StringComparer.Ordinal);
-        Dictionary<string, int> ordemDeclarada = new(StringComparer.Ordinal);
+        Dictionary<NoGrafoDependencia, long> posicaoDeclarada = [];
         foreach (FatoColetado fato in fatosColetados)
         {
             fatosExistentes.Add(fato.FatoCodigo);
-            ordemDeclarada[fato.FatoCodigo] = fato.Ordem;
+            posicaoDeclarada[No(ClasseNoGrafo.Campo, fato.FatoCodigo)] = Posicao(fato.Finalidade, fato.Ordem);
+            posicaoDeclarada[No(ClasseNoGrafo.Fato, fato.FatoCodigo)] = Posicao(fato.Finalidade, fato.Ordem);
         }
 
         foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
@@ -145,6 +154,39 @@ public sealed class GrafoDependenciaConjunta
             }
         }
 
+        // (4) Seções com exibição condicional: nó de seção + pré-condição fato citado → seção, e a
+        // seção gata cada campo dela (seção → campo). Seção sem exibição não acrescenta dependência.
+        foreach (FormularioProcesso formulario in formularios)
+        {
+            foreach (EtapaFormulario secao in formulario.Etapas.Where(static e => e.Exibicao is not null))
+            {
+                NoGrafoDependencia noSecao = No(ClasseNoGrafo.Secao, CodigoNoFormulario(formulario.Finalidade, secao.Codigo));
+                posicaoDeclarada[noSecao] = PosicaoDaSecao(formulario, secao, fatosColetados);
+                foreach (string citado in secao.FatosCitados.Where(fatosExistentes.Contains))
+                {
+                    arestas.Add(new ArestaGrafoDependencia(TipoArestaGrafo.Precondicao, No(ClasseNoGrafo.Fato, citado), noSecao));
+                }
+
+                foreach (FatoColetado campo in fatosColetados.Where(f =>
+                    f.Finalidade == formulario.Finalidade && string.Equals(f.EtapaCodigo, secao.Codigo, StringComparison.Ordinal)))
+                {
+                    arestas.Add(new ArestaGrafoDependencia(TipoArestaGrafo.Precondicao, noSecao, No(ClasseNoGrafo.Campo, campo.FatoCodigo)));
+                }
+            }
+        }
+
+        // (5) Termos com condição: nó de termo, depois de todos os campos do formulário dele e na
+        // ordem dos termos, + pré-condição fato citado → termo.
+        foreach (TermoExigidoFormulario termo in termos.Where(static t => t.FatosCitados.Count > 0))
+        {
+            NoGrafoDependencia noTermo = No(ClasseNoGrafo.Termo, CodigoNoFormulario(termo.Finalidade, termo.Codigo));
+            posicaoDeclarada[noTermo] = Posicao(termo.Finalidade, termo.Ordem, depoisDosCampos: true);
+            foreach (string citado in termo.FatosCitados.Where(fatosExistentes.Contains))
+            {
+                arestas.Add(new ArestaGrafoDependencia(TipoArestaGrafo.Precondicao, No(ClasseNoGrafo.Fato, citado), noTermo));
+            }
+        }
+
         List<NoGrafoDependencia> todosOsNos = [.. nos.Values];
         Dictionary<NoGrafoDependencia, List<NoGrafoDependencia>> adjacencia =
             ConstruirAdjacencia(todosOsNos, arestas);
@@ -166,10 +208,10 @@ public sealed class GrafoDependenciaConjunta
         // não fura a fila de um anterior que ainda espera a derivação. Nós sem posição alguma no ramo
         // (exigências, sorvedouros) ficam na sentinela e ordenam por (Classe, Codigo). Recursão
         // memoizada, segura no DAG. O §7 promove isto à chave rica (fase, ordem, idCanonico).
-        Dictionary<NoGrafoDependencia, int> ordemEfetiva = [];
+        Dictionary<NoGrafoDependencia, long> ordemEfetiva = [];
         foreach (NoGrafoDependencia no in todosOsNos)
         {
-            CalcularOrdemEfetiva(no, adjacencia, ordemDeclarada, ordemEfetiva);
+            CalcularOrdemEfetiva(no, adjacencia, posicaoDeclarada, ordemEfetiva);
         }
 
         Comparer<NoGrafoDependencia> comparadorNo = CriarComparadorNo(ordemEfetiva);
@@ -185,34 +227,60 @@ public sealed class GrafoDependenciaConjunta
             new GrafoDependenciaConjunta(todosOsNos, arestas, ordem));
     }
 
+    /// <summary>
+    /// A posição de coleta de um nó: primeiro a finalidade do formulário, na ordem em que o
+    /// candidato os preenche; depois os campos, e só então os termos; e a ordem dentro de cada um —
+    /// a ordem é única só dentro de cada formulário. A seção fica imediatamente antes do campo que
+    /// tem a mesma ordem, porque ela o precede no formulário.
+    /// </summary>
+    private static long Posicao(FinalidadeFormulario finalidade, int ordem, bool depoisDosCampos = false, bool antesDoCampo = false) =>
+        ((long)finalidade << 35) | ((depoisDosCampos ? 1L : 0L) << 34) | (((long)(uint)ordem << 1) | (antesDoCampo ? 0L : 1L));
+
+    /// <summary>
+    /// A posição da seção: a do primeiro campo dela ou, se está vazia, das seções seguintes; sem
+    /// campo em nenhuma delas, depois de todos os campos do formulário.
+    /// </summary>
+    private static long PosicaoDaSecao(FormularioProcesso formulario, EtapaFormulario secao, IEnumerable<FatoColetado> fatosColetados)
+    {
+        HashSet<string> daquiEmDiante = new(
+            formulario.Etapas.Where(e => e.Ordem >= secao.Ordem).Select(static e => e.Codigo), StringComparer.Ordinal);
+        int ordem = fatosColetados
+            .Where(f => f.Finalidade == formulario.Finalidade && f.EtapaCodigo is { } etapa && daquiEmDiante.Contains(etapa))
+            .Select(static f => f.Ordem)
+            .DefaultIfEmpty(int.MaxValue)
+            .Min();
+        return Posicao(formulario.Finalidade, ordem, antesDoCampo: true);
+    }
+
+    /// <summary>O código do nó de seção ou de termo: a finalidade e o código, que só é único no formulário.</summary>
+    private static string CodigoNoFormulario(FinalidadeFormulario finalidade, string codigo) =>
+        $"{EstruturaFormulario.ParaToken(finalidade)}.{codigo}";
+
     private static IReadOnlyCollection<string> FatosDoGatilho(DocumentoExigido documento) =>
         [.. documento.Condicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal)];
 
     /// <summary>
-    /// A posição de coleta efetiva de um nó: o mínimo entre a sua própria posição configurada (só
-    /// campo/fato declarado a tem) e a posição efetiva de todos os nós que dele dependem. Memoizada;
-    /// pressupõe o grafo acíclico. Faz um nó intermédio (fato derivado, campo-gate) ser ordenado pela
-    /// posição do campo mais cedo que ele desbloqueia.
+    /// A posição de coleta efetiva de um nó: o mínimo entre a sua própria posição configurada (a
+    /// têm o campo, o fato declarado e o termo) e a posição efetiva de todos os nós que dele
+    /// dependem. Memoizada; pressupõe o grafo acíclico. Faz um nó intermédio (fato derivado, seção,
+    /// campo-gate) ser ordenado pela posição do campo mais cedo que ele desbloqueia.
     /// </summary>
-    private static int CalcularOrdemEfetiva(
+    private static long CalcularOrdemEfetiva(
         NoGrafoDependencia no,
         Dictionary<NoGrafoDependencia, List<NoGrafoDependencia>> adjacencia,
-        Dictionary<string, int> ordemDeclarada,
-        Dictionary<NoGrafoDependencia, int> memo)
+        Dictionary<NoGrafoDependencia, long> posicaoDeclarada,
+        Dictionary<NoGrafoDependencia, long> memo)
     {
-        if (memo.TryGetValue(no, out int cached))
+        if (memo.TryGetValue(no, out long cached))
         {
             return cached;
         }
 
-        int melhor = no.Classe is ClasseNoGrafo.Campo or ClasseNoGrafo.Fato
-            && ordemDeclarada.TryGetValue(no.Codigo, out int propria)
-                ? propria
-                : int.MaxValue;
+        long melhor = posicaoDeclarada.TryGetValue(no, out long propria) ? propria : long.MaxValue;
 
         foreach (NoGrafoDependencia sucessor in adjacencia[no])
         {
-            melhor = Math.Min(melhor, CalcularOrdemEfetiva(sucessor, adjacencia, ordemDeclarada, memo));
+            melhor = Math.Min(melhor, CalcularOrdemEfetiva(sucessor, adjacencia, posicaoDeclarada, memo));
         }
 
         memo[no] = melhor;
@@ -351,7 +419,7 @@ public sealed class GrafoDependenciaConjunta
         });
 
     private static Comparer<NoGrafoDependencia> CriarComparadorNo(
-        Dictionary<NoGrafoDependencia, int> ordemEfetiva) =>
+        Dictionary<NoGrafoDependencia, long> ordemEfetiva) =>
         Comparer<NoGrafoDependencia>.Create((a, b) =>
         {
             int porOrdem = ordemEfetiva[a].CompareTo(ordemEfetiva[b]);
