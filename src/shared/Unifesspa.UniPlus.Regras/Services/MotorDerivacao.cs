@@ -29,9 +29,10 @@ public static class MotorDerivacao
     /// Versão semântica do interpretador de derivação, congelada no envelope de publicação (RN08).
     /// É a identidade da semântica com que um snapshot publicado foi resolvido — muda quando a
     /// forma como o motor avalia as regras muda (não a cada deploy), para que um snapshot antigo
-    /// continue reidratável com a semântica que o produziu. Enquanto há uma só semântica, é "1".
+    /// continue reidratável com a semântica que o produziu. A "2" acrescenta o derivado booleano:
+    /// verdadeiro se alguma regra ativa, falso se nenhuma (ADR-0136).
     /// </summary>
-    public const string VersaoSemantica = "1";
+    public const string VersaoSemantica = "2";
 
     public static ResultadoDerivacao Derivar(
         RegrasDerivacaoFato regras,
@@ -51,12 +52,18 @@ public static class MotorDerivacao
         }
 
         HashSet<string> derivado = new(StringComparer.Ordinal);
+        bool algumaAtiva = false;
         foreach (RegraDerivacao regra in regras.Regras)
         {
             switch (regra.AvaliarQuando(fatosResolvidos))
             {
                 case Ternario.Verdadeiro:
-                    derivado.Add(regra.Contribui);
+                    algumaAtiva = true;
+                    if (regra.Contribui is { } contribui)
+                    {
+                        derivado.Add(contribui);
+                    }
+
                     break;
 
                 case Ternario.Indeterminado:
@@ -72,6 +79,6 @@ public static class MotorDerivacao
             }
         }
 
-        return ResultadoDerivacao.Resolvido(derivado);
+        return regras.Booleano ? ResultadoDerivacao.ResolvidoBooleano(algumaAtiva) : ResultadoDerivacao.Resolvido(derivado);
     }
 }

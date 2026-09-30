@@ -110,9 +110,14 @@ public static class AvaliadorFormulario
     private static FatoResolvido Derivar(RegrasDerivacaoFato derivacao, IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
         ResultadoDerivacao resultado = MotorDerivacao.Derivar(derivacao, fatos);
-        return resultado.Estado == EstadoFato.Resolvido
-            ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(resultado.Valores.Order(StringComparer.Ordinal)))
-            : FatoResolvido.Indeterminado();
+        if (resultado.Estado != EstadoFato.Resolvido)
+        {
+            return FatoResolvido.Indeterminado();
+        }
+
+        return resultado.ValorBooleano is { } booleano
+            ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(booleano))
+            : FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(resultado.Valores.Order(StringComparer.Ordinal)));
     }
 
     private static (FatoResolvido Fato, AvaliacaoItem Avaliacao) AvaliarItem(

@@ -162,6 +162,56 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDerivacaoFato.FatoNaoDerivavel");
     }
 
+    [Fact(DisplayName = "Derivado booleano por regra não tem regra configurável no processo")]
+    public async Task Handle_AlvoDerivadoBooleano_RetornaNaoDerivavel()
+    {
+        ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            .. VocabularioSeed(),
+            new FatoCandidatoView(Guid.CreateVersion7(), "EGRESSO_REDE_PUBLICA", "Egresso da rede pública", null, "BOOLEANO",
+                "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:EGRESSO_REDE_PUBLICA", [], null, Ativo: true),
+        ]);
+        DefinirRegrasDerivacaoCommand command = new(processo.Id,
+            [new ConfiguracaoDerivacaoInput("EGRESSO_REDE_PUBLICA", [new RegraDerivacaoInput(0, "XYZ", null)])], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Error!.Code.Should().Be("ConfiguracaoDerivacaoFato.FatoNaoDerivavel");
+    }
+
+    [Theory(DisplayName = "Derivado de fonte global contribui valor do catálogo; o desativado é recusado como desativado e o desconhecido como fora do domínio")]
+    [InlineData("EJA", null)]
+    [InlineData("PROFICIENCIA", "ProcessoSeletivo.ValorDeDominioDesativado")]
+    [InlineData("XYZ", "RegrasDerivacaoFato.ContribuiForaDoDominio")]
+    public async Task Handle_DerivadoDeFonteGlobal_ContribuiSoValorVigente(string contribui, string? recusa)
+    {
+        ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            .. VocabularioSeed(),
+            new FatoCandidatoView(Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", null, "CATEGORICO", "DERIVADO",
+                "MULTIVALORADO", ["EJA", "PROFICIENCIA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
+                [new FatoValorDominioViewItem("EJA", "EJA", 0, true), new FatoValorDominioViewItem("PROFICIENCIA", "Proficiência", 1, false)],
+                "GLOBAL", Ativo: true),
+        ]);
+        DefinirRegrasDerivacaoCommand command = new(processo.Id,
+            [new ConfiguracaoDerivacaoInput("FORMA_CONCLUSAO", [new RegraDerivacaoInput(0, contribui, null)])], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        if (recusa is null)
+        {
+            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        }
+        else
+        {
+            resultado.Error!.Code.Should().Be(recusa);
+        }
+    }
+
     [Fact(DisplayName = "Contribui fora das modalidades ofertadas é recusado com ContribuiForaDoDominio")]
     public async Task Handle_ContribuiForaDoDominio_Recusa()
     {

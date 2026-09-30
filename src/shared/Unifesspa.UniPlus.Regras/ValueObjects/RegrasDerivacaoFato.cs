@@ -24,12 +24,19 @@ public sealed record RegrasDerivacaoFato
 {
     private readonly HashSet<string> _dependencias;
 
-    private RegrasDerivacaoFato(string codigoFato, IReadOnlyList<RegraDerivacao> regras, HashSet<string> dependencias)
+    private RegrasDerivacaoFato(string codigoFato, IReadOnlyList<RegraDerivacao> regras, HashSet<string> dependencias, bool booleano)
     {
         CodigoFato = codigoFato;
         Regras = regras;
         _dependencias = dependencias;
+        Booleano = booleano;
     }
+
+    /// <summary>
+    /// O derivado é booleano: verdadeiro se alguma regra ativa, falso se nenhuma (ADR-0136). O
+    /// categórico é a união dos códigos contribuídos.
+    /// </summary>
+    public bool Booleano { get; }
 
     /// <summary>Código do fato derivado que estas regras resolvem.</summary>
     public string CodigoFato { get; }
@@ -70,7 +77,7 @@ public sealed record RegrasDerivacaoFato
         HashSet<string> dominio = new(dominioDoFato, StringComparer.Ordinal);
         foreach (RegraDerivacao regra in regras)
         {
-            if (!dominio.Contains(regra.Contribui))
+            if (regra.Contribui is null || !dominio.Contains(regra.Contribui))
             {
                 return Result<RegrasDerivacaoFato>.Failure(new DomainError(
                     RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio,
@@ -78,6 +85,45 @@ public sealed record RegrasDerivacaoFato
             }
         }
 
+        return CriarComEstrutura(codigoFato, regras, dependenciasDeclaradas, booleano: false);
+    }
+
+    /// <summary>
+    /// Cria a derivação de um fato booleano: as regras não contribuem código, e a ativa torna o
+    /// derivado verdadeiro.
+    /// </summary>
+    public static Result<RegrasDerivacaoFato> CriarBooleana(
+        string codigoFato,
+        IReadOnlyList<RegraDerivacao> regras,
+        IReadOnlyCollection<string> dependenciasDeclaradas)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigoFato);
+        ArgumentNullException.ThrowIfNull(regras);
+        ArgumentNullException.ThrowIfNull(dependenciasDeclaradas);
+
+        if (regras.Count == 0)
+        {
+            return Result<RegrasDerivacaoFato>.Failure(new DomainError(
+                RegrasDerivacaoFatoErrorCodes.SemRegras,
+                $"A derivação de '{codigoFato}' precisa de ao menos uma regra."));
+        }
+
+        if (regras.Any(static r => r.Contribui is not null))
+        {
+            return Result<RegrasDerivacaoFato>.Failure(new DomainError(
+                RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio,
+                $"A derivação booleana de '{codigoFato}' não contribui código: a regra ativa torna o derivado verdadeiro."));
+        }
+
+        return CriarComEstrutura(codigoFato, regras, dependenciasDeclaradas, booleano: true);
+    }
+
+    private static Result<RegrasDerivacaoFato> CriarComEstrutura(
+        string codigoFato,
+        IReadOnlyList<RegraDerivacao> regras,
+        IReadOnlyCollection<string> dependenciasDeclaradas,
+        bool booleano)
+    {
         HashSet<string> citados = new(regras.SelectMany(static r => r.FatosCitados), StringComparer.Ordinal);
 
         // Auto-referência: uma regra que cita o próprio fato derivado exigiria que ele já estivesse
@@ -109,7 +155,7 @@ public sealed record RegrasDerivacaoFato
         }
 
         return Result<RegrasDerivacaoFato>.Success(
-            new RegrasDerivacaoFato(codigoFato.Trim(), [.. regras], declarados));
+            new RegrasDerivacaoFato(codigoFato.Trim(), [.. regras], declarados, booleano));
     }
 }
 

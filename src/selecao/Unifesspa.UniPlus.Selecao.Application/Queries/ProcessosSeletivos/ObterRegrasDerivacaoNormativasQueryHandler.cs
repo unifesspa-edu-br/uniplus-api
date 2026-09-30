@@ -62,14 +62,15 @@ public static class ObterRegrasDerivacaoNormativasQueryHandler
         int ordem = 0;
         foreach (RegraDerivacao regra in matriz.Regras)
         {
-            if (!ofertadas.Contains(regra.Contribui))
+            // A matriz normativa é da modalidade, categórica: toda regra contribui uma modalidade.
+            if (regra.Contribui is not { } modalidade || !ofertadas.Contains(modalidade))
             {
                 continue;
             }
 
             regras.Add(new RegraDerivacaoDto(
                 ordem++,
-                regra.Contribui,
+                modalidade,
                 regra.EhAncora ? null : [.. regra.Quando.Clausulas.Select(ComoClausula)]));
         }
 

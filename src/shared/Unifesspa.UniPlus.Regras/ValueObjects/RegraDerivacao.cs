@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </remarks>
 public sealed record RegraDerivacao
 {
-    private RegraDerivacao(PredicadoDnf quando, string contribui)
+    private RegraDerivacao(PredicadoDnf quando, string? contribui)
     {
         Quando = quando;
         Contribui = contribui;
@@ -31,8 +31,11 @@ public sealed record RegraDerivacao
     /// <summary>O predicado que ativa a regra. DNF vazio = incondicional (âncora).</summary>
     public PredicadoDnf Quando { get; }
 
-    /// <summary>O código de valor do domínio do fato que a regra contribui quando ativa.</summary>
-    public string Contribui { get; }
+    /// <summary>
+    /// O código de valor do domínio do fato que a regra contribui quando ativa; nulo na regra de
+    /// derivado booleano, em que a regra ativa contribui verdadeiro (ADR-0136).
+    /// </summary>
+    public string? Contribui { get; }
 
     /// <summary>Indica se a regra é incondicional — o <see cref="Quando"/> não tem cláusula alguma.</summary>
     public bool EhAncora => Quando.Clausulas.Count == 0;
@@ -49,6 +52,13 @@ public sealed record RegraDerivacao
         }
 
         return Result<RegraDerivacao>.Success(new RegraDerivacao(quando, contribui.Trim()));
+    }
+
+    /// <summary>A regra de um derivado booleano: quando ativa, torna o derivado verdadeiro.</summary>
+    public static RegraDerivacao CriarBooleana(PredicadoDnf quando)
+    {
+        ArgumentNullException.ThrowIfNull(quando);
+        return new RegraDerivacao(quando, contribui: null);
     }
 
     /// <summary>

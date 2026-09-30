@@ -3389,7 +3389,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return null;
 
         NaturezaLegalModalidade NaturezaDe(RegraDerivacao regra) =>
-            naturezas.GetValueOrDefault(regra.Contribui, NaturezaLegalModalidade.Nenhuma);
+            regra.Contribui is { } modalidade ? naturezas.GetValueOrDefault(modalidade, NaturezaLegalModalidade.Nenhuma) : NaturezaLegalModalidade.Nenhuma;
     }
 
     private static bool PodemValerJuntas(PredicadoDnf primeiro, PredicadoDnf segundo, IReadOnlySet<string> fatosMultivalorados) =>
