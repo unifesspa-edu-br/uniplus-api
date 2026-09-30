@@ -32,7 +32,33 @@ public sealed class FatoCandidatoTests
         IReadOnlyList<string>? valoresDominio = null,
         string pontoResolucao = PontoResolucaoInscricao,
         string binding = BindingCorRaca) =>
-        FatoCandidato.Criar(codigo, nome, descricao, dominio, origem, cardinalidade, valoresDominio, pontoResolucao, binding);
+        FatoCandidato.Criar(
+            codigo, nome, descricao, dominio, origem, cardinalidade,
+            dominio == DominioFato.Categorico ? FonteValoresFato.Global : null,
+            valoresDominio, pontoResolucao, binding);
+
+    [Fact(DisplayName = "Criar categórico sem fonte dos valores é recusado")]
+    public void Criar_CategoricoSemFonte_Recusa() =>
+        FatoCandidato.Criar("COR_RACA", "Cor ou raça", null, DominioFato.Categorico, OrigemFato.Declarado,
+            CardinalidadeFato.Escalar, fonteValores: null, null, PontoResolucaoInscricao, BindingCorRaca)
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresObrigatoria);
+
+    [Fact(DisplayName = "Criar booleano com fonte dos valores é recusado")]
+    public void Criar_BooleanoComFonte_Recusa() =>
+        FatoCandidato.Criar("PCD", "Pessoa com deficiência", null, DominioFato.Booleano, OrigemFato.Declarado,
+            CardinalidadeFato.Escalar, FonteValoresFato.Processo, null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:PCD")
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico);
+
+    [Fact(DisplayName = "Valor de domínio em fato de fonte do processo é recusado")]
+    public void AdicionarValorDominio_FonteProcesso_Recusa()
+    {
+        FatoCandidato fato = FatoCandidato.Criar("TIPO_DEFICIENCIA", "Tipo de deficiência", null, DominioFato.Categorico,
+            OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Processo, null, PontoResolucaoInscricao,
+            "CAMPO_INSCRICAO:TIPO_DEFICIENCIA").Value!;
+
+        fato.AdicionarValorDominio("VISUAL", "Deficiência visual", 0, ativo: true)
+            .Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal);
+    }
 
     [Fact(DisplayName = "Criar categórico válido preenche os campos com Guid v7")]
     public void Criar_CategoricoValido_Preenche()

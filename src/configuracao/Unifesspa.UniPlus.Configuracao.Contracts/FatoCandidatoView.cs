@@ -27,6 +27,11 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// quando o fato não tem <c>FatoValorDominio</c> filhos — booleano/numérico, ou
 /// categórico de escopo-processo. Ordenada por <c>Ordem</c> e depois por <c>Codigo</c>.
 /// </param>
+/// <param name="FonteValores">
+/// De onde vêm os valores de um categórico (ADR-0136) — token canônico (GLOBAL, PROCESSO,
+/// MODALIDADE), ou <see langword="null"/> para booleano e numérico. O consumidor decide por ela,
+/// nunca pelo código do fato.
+/// </param>
 public sealed record FatoCandidatoView(
     Guid Id,
     string Codigo,
@@ -38,7 +43,8 @@ public sealed record FatoCandidatoView(
     IReadOnlyList<string>? ValoresDominio,
     string PontoResolucao,
     string Binding,
-    IReadOnlyList<FatoValorDominioViewItem>? ValoresDominioDeclarados);
+    IReadOnlyList<FatoValorDominioViewItem>? ValoresDominioDeclarados,
+    string? FonteValores);
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidatoView"/> categórico

@@ -56,6 +56,7 @@ public sealed class FatoCandidatoPersistenceTests
                 item.Dominio,
                 item.Origem,
                 item.Cardinalidade,
+                item.FonteValores,
                 item.ValoresDominio,
                 item.PontoResolucao,
                 item.Binding);

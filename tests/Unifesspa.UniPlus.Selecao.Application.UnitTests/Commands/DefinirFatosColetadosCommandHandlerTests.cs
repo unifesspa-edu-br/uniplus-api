@@ -45,13 +45,13 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     private static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
     [
         new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null),
+            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null, "GLOBAL"),
         new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_INSCRICAO:BAIXA_RENDA", null),
+            null, "INSCRICAO", "CAMPO_INSCRICAO:BAIXA_RENDA", null, null),
         new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null),
+            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE"),
         new(Guid.CreateVersion7(), "RENDA_PER_CAPITA", "Renda per capita", null, "NUMERICO", "DERIVADO", "ESCALAR",
-            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null),
+            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null),
     ];
 
     private static ProcessoSeletivo ProcessoEmRascunho() =>

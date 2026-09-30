@@ -86,6 +86,12 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             .HasMaxLength(EnumTokenMaxLength)
             .IsRequired();
 
+        // fonte_valores (ADR-0136): anulável — só o fato categórico tem fonte; o booleano e o
+        // numérico ficam com NULL, que o EF encapsula sem chamar o converter.
+        builder.Property(f => f.FonteValores)
+            .HasConversion(FonteValoresConverter)
+            .HasMaxLength(EnumTokenMaxLength);
+
         // valores_dominio: conjunto fechado de um categórico estático, serializado
         // como jsonb anulável. Sem default '[]' — o nulo (escopo-processo, ou
         // booleano/numérico) é significante e precisa sobreviver ao round-trip. O
@@ -135,6 +141,13 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             "ck_rol_de_fatos_candidato_cardinalidade",
             $"cardinalidade IN ({TokensSql(CardinalidadesFato.TokensCanonicos)})");
 
+        // Coerência fonte_valores × domínio (invariante da factory, replicada no banco): o
+        // categórico declara uma das fontes; os demais domínios não têm fonte.
+        table.HasCheckConstraint(
+            "ck_rol_de_fatos_candidato_fonte_valores_coerente",
+            $"(dominio = 'CATEGORICO' AND fonte_valores IN ({TokensSql(FontesValoresFato.TokensCanonicos)})) "
+            + "OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
+
         // Coerência valores_dominio × domínio (invariante da factory, replicada no
         // banco): só categórico pode enumerar valores; quando enumera, é um array
         // jsonb não vazio cujos elementos são todos strings não vazias (o jsonpath
@@ -183,6 +196,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             item.Dominio,
             item.Origem,
             item.Cardinalidade,
+            item.FonteValores,
             item.ValoresDominio,
             item.PontoResolucao,
             item.Binding,
@@ -197,6 +211,9 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
 
     private static readonly ValueConverter<OrigemFato, string> OrigemConverter =
         new(origem => OrigensFato.ParaTokenCanonico(origem), token => OrigensFato.Analisar(token));
+
+    private static readonly ValueConverter<FonteValoresFato, string> FonteValoresConverter =
+        new(fonte => FontesValoresFato.ParaTokenCanonico(fonte), token => FontesValoresFato.Analisar(token));
 
     private static readonly ValueConverter<CardinalidadeFato, string> CardinalidadeConverter =
         new(cardinalidade => CardinalidadesFato.ParaTokenCanonico(cardinalidade), token => CardinalidadesFato.Analisar(token));
