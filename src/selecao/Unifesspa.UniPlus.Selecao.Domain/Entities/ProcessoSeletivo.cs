@@ -111,8 +111,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Título do formulário de inscrição apresentado ao candidato (Story #559). Ausência = sem título configurado.</summary>
     public string? FormularioTitulo { get; private set; }
 
-    /// <summary>Texto do termo de aceite do formulário de inscrição (Story #559). Ausência = sem termo configurado.</summary>
-    public string? FormularioTermoAceiteTexto { get; private set; }
+    private readonly List<TermoExigidoFormulario> _termosExigidos = [];
+
+    /// <summary>
+    /// Os termos de consentimento ou declaração que o formulário de inscrição exige, escolhidos no
+    /// catálogo e congelados por versão (UNI-REQ-0086).
+    /// </summary>
+    public IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos => _termosExigidos.AsReadOnly();
 
     private readonly List<EtapaProcesso> _etapas = [];
     public IReadOnlyCollection<EtapaProcesso> Etapas => _etapas.AsReadOnly();
@@ -984,62 +989,64 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             (true, true) => [ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem],
         };
 
-    /// <summary>
-    /// Define (ou substitui) o título e o texto do termo de aceite do formulário de inscrição
-    /// (Story #559) — mesmo padrão dos demais <c>Definir*</c>: <see cref="MutacaoBloqueada"/>
-    /// primeiro, <see cref="Result"/> nunca exceção. Sem invariante cruzando outra dimensão do
-    /// agregado: os dois campos só se relacionam com a apresentação, nunca com a estrutura do
-    /// processo.
-    /// </summary>
     private const int FormularioTituloMaxLength = 300;
-    private const int FormularioTermoAceiteTextoMaxLength = 4000;
 
-    public Result DefinirFormulario(string? titulo, string? termoAceiteTexto, PrecondicaoIfMatch precondicao)
+    /// <summary>
+    /// Define (ou substitui) o título do formulário de inscrição (Story #559) — mesmo padrão dos
+    /// demais <c>Definir*</c>: <see cref="MutacaoBloqueada"/> primeiro, <see cref="Result"/> nunca
+    /// exceção. Os termos exigidos têm definição própria (<see cref="DefinirTermosDoFormulario"/>).
+    /// </summary>
+    public Result DefinirFormulario(string? titulo, PrecondicaoIfMatch precondicao)
     {
-        // ADR-0110 D9: a precondição de concorrência precede a validação de payload —
-        // o guard de mutação roda primeiro, não depois (mesma ordem observável de hoje).
+        // ADR-0110 D9: a precondição de concorrência precede a validação de payload.
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
 
-        Result validacao = ValidarCamposDoFormulario(titulo, termoAceiteTexto);
-        if (validacao.IsFailure)
+        // Alinhado a ProcessoSeletivoConfiguration (varchar(300)): sem o limite aqui, um valor
+        // mais longo só falharia no SaveChanges, com erro de banco em vez de 422.
+        if (titulo is not null && titulo.Trim().Length > FormularioTituloMaxLength)
         {
-            return Result.ValidationFailure(validacao.Errors);
+            return Result.ValidationFailure([new("titulo", new DomainError(
+                "ProcessoSeletivo.FormularioTituloTamanho",
+                $"Título do formulário deve ter no máximo {FormularioTituloMaxLength} caracteres."))]);
         }
 
         FormularioTitulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim();
-        FormularioTermoAceiteTexto = string.IsNullOrWhiteSpace(termoAceiteTexto) ? null : termoAceiteTexto.Trim();
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
     /// <summary>
-    /// Acumula toda violação de campo do formulário em vez de retornar na primeira
-    /// (ADR-0125) — alinhado a <c>ProcessoSeletivoConfiguration</c> (varchar(300)/
-    /// varchar(4000)): sem o limite aqui, um valor mais longo passa e só falha em
-    /// <c>SaveChanges</c> com erro de banco em vez de 422.
+    /// Substitui os termos que o formulário de inscrição exige (UNI-REQ-0086). Código e ordem são
+    /// únicos no formulário. As condições dos termos já chegam validadas contra os fatos que o
+    /// processo resolve, e a publicação confere de novo que eles continuam resolvidos.
     /// </summary>
-    private static Result ValidarCamposDoFormulario(string? titulo, string? termoAceiteTexto)
+    public Result DefinirTermosDoFormulario(IReadOnlyList<TermoExigidoFormulario> termos, PrecondicaoIfMatch precondicao)
     {
-        List<FieldError> erros = [];
+        ArgumentNullException.ThrowIfNull(termos);
 
-        if (titulo is not null && titulo.Trim().Length > FormularioTituloMaxLength)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
-            erros.Add(new("titulo", new DomainError(
-                "ProcessoSeletivo.FormularioTituloTamanho",
-                $"Título do formulário deve ter no máximo {FormularioTituloMaxLength} caracteres.")));
+            return Result.Failure(bloqueio);
         }
 
-        if (termoAceiteTexto is not null && termoAceiteTexto.Trim().Length > FormularioTermoAceiteTextoMaxLength)
+        List<FieldError> erros = TermoExigidoFormulario.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
+        if (erros.Count > 0)
         {
-            erros.Add(new("termoAceiteTexto", new DomainError(
-                "ProcessoSeletivo.FormularioTermoAceiteTextoTamanho",
-                $"Termo de aceite do formulário deve ter no máximo {FormularioTermoAceiteTextoMaxLength} caracteres.")));
+            return Result.ValidationFailure(erros);
         }
 
-        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
+        _termosExigidos.Clear();
+        foreach (TermoExigidoFormulario termo in termos)
+        {
+            termo.VincularProcessoSeletivo(Id);
+            _termosExigidos.Add(termo);
+        }
+
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
     }
 
     /// <summary>
@@ -1831,6 +1838,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         _fatosColetados.Clear();
         _regrasDerivacao.Clear();
+        _termosExigidos.Clear();
     }
 
     /// <summary>
@@ -2439,6 +2447,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
+        new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciaDeTermoSemFormaDeAceite() is null),
         new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
         new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: cota da lei e ação afirmativa não derivam juntas", PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
@@ -3276,6 +3285,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return municipioForaDaArea;
         }
 
+        if (PendenciaDeTermoSemFormaDeAceite() is { } termoSemFormaDeAceite)
+        {
+            return termoSemFormaDeAceite;
+        }
+
         if (PendenciaDoDominioDeContribuicao() is { } contribuicaoForaDoDominio)
         {
             return contribuicaoForaDoDominio;
@@ -3463,6 +3477,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // A condição de termo é avaliada no formulário, com as respostas e os derivados do
+        // candidato: cita o mesmo universo, e a coleta pode ter mudado depois que o termo a citou.
+        foreach (TermoExigidoFormulario termo in _termosExigidos)
+        {
+            if (termo.FatosCitados.FirstOrDefault(f => !universo.Contains(f)) is { } ausente)
+            {
+                return new DomainError(
+                    FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+                    $"A condição do termo '{termo.Codigo}' cita '{ausente}', que este processo não coleta nem deriva.");
+            }
+        }
+
         return null;
     }
 
@@ -3502,6 +3528,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return null;
     }
+
+    /// <summary>
+    /// Termo exigido cuja versão ainda não definiu a forma de aceite não é publicável
+    /// (UNI-REQ-0086): só o registro digital, com ou sem log de IP, é forma resolvida.
+    /// </summary>
+    private DomainError? PendenciaDeTermoSemFormaDeAceite() =>
+        _termosExigidos.OrderBy(static t => t.Ordem).FirstOrDefault(static t => t.SemFormaDeAceite) is { } termo
+            ? new DomainError(
+                TermoExigidoFormularioErrorCodes.SemFormaDeAceite,
+                $"O termo '{termo.Codigo}' usa uma versão sem forma de aceite definida; escolha uma versão com registro digital.")
+            : null;
 
     /// <summary>
     /// Toda condição viva que cita um campo com os municípios do bônus regional cita município da
@@ -3920,7 +3957,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Todo predicado vivo que cita fato por valor: gatilhos de exigência, pré-condições da coleta,
-    /// condições das regras de derivação e critérios de desempate por fato.
+    /// condições das regras de derivação, critérios de desempate por fato e condições dos termos
+    /// do formulário.
     /// </summary>
     private IEnumerable<(string Fato, JsonElement Valor)> CondicoesVivas() =>
         _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Valor))
@@ -3928,7 +3966,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .Concat(_regrasDerivacao.SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
                 .Select(static c => (c.Fato, c.Valor)))
             .Concat(_criteriosDesempate.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
-                .Select(static a => (a.Condicao.Fato, a.Condicao.Valor)));
+                .Select(static a => (a.Condicao.Fato, a.Condicao.Valor)))
+            .Concat(_termosExigidos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor)));
 
     /// <summary>
     /// CA-03 (Story #554, issue #892): um gatilho DNF sobre um
@@ -5447,7 +5486,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // valor editado na configuração viva, driblando RN08 exatamente pelos dois campos que
         // esta reposição cobre.
         FormularioTitulo = grafo.FormularioTitulo;
-        FormularioTermoAceiteTexto = grafo.FormularioTermoAceiteTexto;
+
+        // Termos exigidos (UNI-REQ-0086): mesma reconciliação dos fatos coletados abaixo — reusa a
+        // instância rastreada de mesmo código, e o descarte de uma sessão que editou os termos
+        // chega aqui com a coleção já limpa pela LimparColetaEDerivacaoParaRestauracao.
+        Dictionary<string, TermoExigidoFormulario> termosTracked = _termosExigidos.ToDictionary(t => t.Codigo, StringComparer.Ordinal);
+        _termosExigidos.Clear();
+        foreach (TermoExigidoFormulario congelado in grafo.TermosExigidos)
+        {
+            TermoExigidoFormulario termo = termosTracked.TryGetValue(congelado.Codigo, out TermoExigidoFormulario? vivo) ? vivo : congelado;
+            termo.VincularProcessoSeletivo(Id);
+            _termosExigidos.Add(termo);
+        }
 
         // Divulgação pública (UNI-REQ-0050, issue #563): mesmo padrão de BonusRegional/Cascata
         // acima — reatribuição direta (toggle por presença). Sem esta reposição, editar a

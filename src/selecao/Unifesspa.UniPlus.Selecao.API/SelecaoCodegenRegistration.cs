@@ -122,6 +122,10 @@ public static class SelecaoCodegenRegistration
         // motivo dos demais readers cross-módulo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IBaseLegalBonusRegionalReader>();
 
+        // Termos de consentimento: DefinirTermosDoFormularioCommandHandler resolve as versões
+        // escolhidas e congela o conteúdo delas no formulário. Mesmo motivo dos demais readers.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITermoConsentimentoReader>();
+
         // Pesos por Área do ENEM: DefinirClassificacaoCommandHandler resolve a resolução
         // declarada e congela o quadro na classificação. Mesmo motivo dos demais readers
         // cross-módulo acima — o concreto PesoAreaEnemReader é internal a

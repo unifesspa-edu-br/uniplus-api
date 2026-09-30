@@ -44,11 +44,10 @@ public sealed class GrafoConfiguracao
         // Cascata de remanejamento (Story #575) — opcional, mesmo padrão de BonusRegional
         // (ausência = nenhuma cascata configurada, toggle por presença).
         ConfiguracaoCascataRemanejamento? cascataRemanejamento = null,
-        // Formulário de inscrição (Story #559) — escalares simples, ausência = sem
-        // título/termo configurado (não um toggle por presença; os dois campos são
-        // independentemente nuláveis).
+        // Formulário de inscrição (Story #559): título opcional e os termos exigidos
+        // (UNI-REQ-0086), ausência = nenhum termo.
         string? formularioTitulo = null,
-        string? formularioTermoAceiteTexto = null,
+        IReadOnlyList<TermoExigidoFormulario>? termosExigidos = null,
         // Divulgação pública (UNI-REQ-0050, issue #563) — opcional, ausência = default
         // minimizado (só o número de inscrição), mesmo padrão de BonusRegional/CascataRemanejamento
         // (toggle por presença — D5 do congelamento).
@@ -107,7 +106,7 @@ public sealed class GrafoConfiguracao
         RegrasDerivacao = regrasDerivacao is null ? [] : [.. regrasDerivacao];
         CascataRemanejamento = cascataRemanejamento;
         FormularioTitulo = formularioTitulo;
-        FormularioTermoAceiteTexto = formularioTermoAceiteTexto;
+        TermosExigidos = termosExigidos is null ? [] : [.. termosExigidos];
         ConfiguracaoDivulgacao = configuracaoDivulgacao;
         ConfiguracaoTaxaInscricao = configuracaoTaxaInscricao;
     }
@@ -167,8 +166,8 @@ public sealed class GrafoConfiguracao
     /// <summary>Título do formulário de inscrição (Story #559) — ausência = sem título configurado.</summary>
     public string? FormularioTitulo { get; }
 
-    /// <summary>Texto do termo de aceite do formulário de inscrição (Story #559) — ausência = sem termo configurado.</summary>
-    public string? FormularioTermoAceiteTexto { get; }
+    /// <summary>Os termos exigidos pelo formulário de inscrição, congelados por versão (UNI-REQ-0086).</summary>
+    public IReadOnlyList<TermoExigidoFormulario> TermosExigidos { get; }
 
     /// <summary>
     /// Divulgação pública do certame (UNI-REQ-0050, issue #563) — congelada no envelope e

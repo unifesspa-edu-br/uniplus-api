@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -371,12 +372,13 @@ internal static class CorpusEnvelope
             ]).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        // Formulário de inscrição (Story #559): título e termo de aceite não-default — o
-        // decoder tem de reconstruir os dois escalares a partir do bloco "formulario", que deixou
-        // de ser stub nesta Story.
-        processo.DefinirFormulario(
-            "Formulário de Inscrição — PS Rico 2026",
-            "Declaro que as informações prestadas são verdadeiras, sob pena de eliminação do certame.",
+        // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
+        // obrigatoriedade condicionais — o decoder tem de remontar o termo inteiro.
+        processo.DefinirFormulario("Formulário de Inscrição — PS Rico 2026", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        PredicadoDnf corPreta = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
+        processo.DefinirTermosDoFormulario(
+            [Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta))],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao(Ordem([
@@ -981,4 +983,17 @@ internal static class CorpusEnvelope
         emiteParecerIndividual: false,
         bancasRequeridas: [],
         regraRecurso: null).Value!;
+
+    /// <summary>Um termo exigido com versão fixa, para envelope determinístico.</summary>
+    internal static TermoExigidoFormulario Termo(
+        string codigo, int ordem, string formaAceite = "REGISTRO_DIGITAL_SEM_LOG_IP", PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null) =>
+        TermoExigidoFormulario.Criar(
+            codigo,
+            ordem,
+            new VersaoTermoEscolhida(
+                Guid.Parse("0199a000-0000-7000-8000-00000000a001"), Guid.Parse("0199a000-0000-7000-8000-00000000b001"),
+                "Declaração de veracidade", "Declaro que as informações prestadas são verdadeiras.", "Lei 9.784/1999, art. 4º",
+                formaAceite, new string('a', 64)),
+            exibicao,
+            obrigatoriedade ?? Obrigatoriedade.Sempre).Value!;
 }

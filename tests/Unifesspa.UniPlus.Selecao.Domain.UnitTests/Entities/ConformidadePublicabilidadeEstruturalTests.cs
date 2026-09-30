@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -1618,6 +1619,86 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════════════
+    // Termos exigidos pelo formulário (UNI-REQ-0086)
+    // ══════════════════════════════════════════════════════════════════════════════════════
+
+    private static TermoExigidoFormulario Termo(
+        string codigo, int ordem, string formaAceite = "REGISTRO_DIGITAL_SEM_LOG_IP", PredicadoDnf? exibicao = null) =>
+        TermoExigidoFormulario.Criar(
+            codigo, ordem,
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", formaAceite, new string('a', 64)),
+            exibicao, Obrigatoriedade.Sempre).Value!;
+
+    private static PredicadoDnf EdicaoEnem(string edicao) => PredicadoDnf.CriarDeCondicoesAgrupadas(
+        [(0, CondicaoDnf.Criar("EDICAO_ENEM", Operador.Igual, JsonSerializer.SerializeToElement(edicao)).Value!)]).Value!;
+
+    [Fact(DisplayName = "Termo cuja versão não definiu a forma de aceite: item vermelho e publicação recusada; com registro digital, liberado")]
+    public void TermoSemFormaDeAceite_RecusaAteHaverRegistroDigital()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0, "A_DEFINIR")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+            .Which.Codigo.Should().Be("termo_exigido_sem_forma_de_aceite");
+
+        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Termos com código ou ordem repetidos são recusados, cada recusa no índice do termo")]
+    public void DefinirTermos_CodigoEOrdemRepetidos_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+
+        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0), Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente)
+            .Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+            [
+                ("termos[1].codigo", TermoExigidoFormularioErrorCodes.CodigoDuplicado),
+                ("termos[1].ordem", TermoExigidoFormularioErrorCodes.OrdemDuplicada),
+            ]);
+        processo.TermosExigidos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Códigos de termo que só diferem na forma Unicode são o mesmo código")]
+    public void DefinirTermos_CodigoEmFormaUnicodeDiferente_ERepetido()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+
+        processo.DefinirTermosDoFormulario([Termo("DECLARAÇÃO", 0), Termo("DECLARAC\u0327A\u0303O", 1)], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(TermoExigidoFormularioErrorCodes.CodigoDuplicado);
+    }
+
+    [Fact(DisplayName = "Condição de termo que cita fato que o processo deixou de coletar recusa a publicação")]
+    public void TermoCitaFatoNaoColetado_RecusaPublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirFatosColetados([FatoEdicaoEnem()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2025"))], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+
+        processo.DefinirFatosColetados([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+    }
+
+    [Fact(DisplayName = "Redefinir opções recusa deixar de fora uma opção citada pela condição de um termo")]
+    public void DefinirOpcoesDeclaradas_OpcaoCitadaPorTermo_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2024"))], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)

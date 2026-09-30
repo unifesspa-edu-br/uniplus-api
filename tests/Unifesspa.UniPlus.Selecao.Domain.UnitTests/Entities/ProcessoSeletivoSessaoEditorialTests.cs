@@ -292,27 +292,27 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
         int revisaoAntes = rascunho.Revisao;
 
-        processo.DefinirFormulario("Formulário de Inscrição", "Declaro que as informações são verdadeiras.", PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+        processo.DefinirFormulario("Formulário de Inscrição", PrecondicaoIfMatch.DeTags([rascunho.ETag]))
             .IsSuccess.Should().BeTrue();
         rascunho.Revisao.Should().Be(revisaoAntes + 1);
         processo.FormularioTitulo.Should().Be("Formulário de Inscrição");
-        processo.FormularioTermoAceiteTexto.Should().Be("Declaro que as informações são verdadeiras.");
 
         ProcessoSeletivo semSessao = NovoProcessoPublicado(out _);
-        Result recusa = semSessao.DefinirFormulario("Título", "Termo", PrecondicaoIfMatch.Ausente);
+        Result recusa = semSessao.DefinirFormulario("Título", PrecondicaoIfMatch.Ausente);
         recusa.IsFailure.Should().BeTrue();
         recusa.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 
-    [Fact(DisplayName = "DefinirFormulario aceita título/termo em rascunho, e trata string em branco como ausência")]
+    [Fact(DisplayName = "DefinirFormulario aceita título em rascunho, e trata string em branco como ausência")]
     public void DefinirFormulario_EmRascunho_AceitaETrataBrancoComoNulo()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        processo.DefinirFormulario("  Formulário  ", "   ", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
+        processo.DefinirFormulario("  Formulário  ", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.FormularioTitulo.Should().Be("Formulário", "espaços nas bordas são aparados, mesmo padrão dos demais campos textuais");
-        processo.FormularioTermoAceiteTexto.Should().BeNull("string em branco é tratada como ausência, não como valor vazio persistido");
+
+        processo.DefinirFormulario("   ", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.FormularioTitulo.Should().BeNull("string em branco é tratada como ausência, não como valor vazio persistido");
     }
 
     [Fact(DisplayName = "DefinirFormulario recusa título acima de 300 caracteres — mesmo limite da coluna, recusado antes do SaveChanges")]
@@ -320,35 +320,11 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        Result resultado = processo.DefinirFormulario(new string('a', 301), null, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirFormulario(new string('a', 301), PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle(e => e.Field == "titulo" && e.Error.Code == "ProcessoSeletivo.FormularioTituloTamanho");
         processo.FormularioTitulo.Should().BeNull("a mutação recusada não altera o estado");
-    }
-
-    [Fact(DisplayName = "DefinirFormulario recusa termo de aceite acima de 4000 caracteres")]
-    public void DefinirFormulario_TermoAceiteExcedeLimite_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme();
-
-        Result resultado = processo.DefinirFormulario(null, new string('a', 4001), PrecondicaoIfMatch.Ausente);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().ContainSingle(e => e.Field == "termoAceiteTexto" && e.Error.Code == "ProcessoSeletivo.FormularioTermoAceiteTextoTamanho");
-    }
-
-    [Fact(DisplayName = "DefinirFormulario com título e termo acima do limite acumula as duas violações no mesmo lote")]
-    public void DefinirFormulario_ComDoisCamposInvalidos_AcumulaOsDois()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme();
-
-        Result resultado = processo.DefinirFormulario(new string('a', 301), new string('a', 4001), PrecondicaoIfMatch.Ausente);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().HaveCount(2);
-        resultado.Errors.Should().Contain(e => e.Field == "titulo" && e.Error.Code == "ProcessoSeletivo.FormularioTituloTamanho");
-        resultado.Errors.Should().Contain(e => e.Field == "termoAceiteTexto" && e.Error.Code == "ProcessoSeletivo.FormularioTermoAceiteTextoTamanho");
     }
 
     [Fact(DisplayName = "Uma mutação RECUSADA não move a revisão — o ETag do cliente continua válido")]

@@ -199,33 +199,33 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     [Theory(DisplayName = "Envelope com valor de tipo/nulidade incoerente (só alcançável por linha adulterada) recusa com o mesmo erro nomeado, nunca estoura")]
     [InlineData(
         // "obrigatorio" como texto em vez de booleano.
-        """{"formulario":{"titulo":null,"termoAceiteTexto":null},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":"true","precondicao":null,"valoresSelecionaveis":[]}]}""")]
+        """{"formulario":{"titulo":null,"termos":[]},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":"true","precondicao":null,"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "rotulo" presente mas null — chave existe, valor não é o esperado.
-        """{"formulario":{"titulo":null,"termoAceiteTexto":null},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":null,"tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":[]}]}""")]
+        """{"formulario":{"titulo":null,"termos":[]},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":null,"tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "precondicao" presente com tipo errado (objeto em vez de array) — não pode virar
         // silenciosamente "sem pré-condição", que mudaria a semântica do campo.
-        """{"formulario":{"titulo":null,"termoAceiteTexto":null},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":{},"valoresSelecionaveis":[]}]}""")]
+        """{"formulario":{"titulo":null,"termos":[]},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":{},"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "valoresSelecionaveis" null num fato de seleção — descumpre a bicondicional (issue
         // #1059): SELECAO_UNICA/SELECAO_MULTIPLA exige array, nunca null.
-        """{"formulario":{"titulo":null,"termoAceiteTexto":null},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"formulario":{"titulo":null,"termos":[]},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":null}]}""")]
     [InlineData(
         // "valoresSelecionaveis" ausente — envelope congelado antes de a chave existir.
-        """{"formulario":{"titulo":null,"termoAceiteTexto":null},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null}]}""")]
+        """{"formulario":{"titulo":null,"termos":[]},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null}]}""")]
     [InlineData(
         // "tipoRenderizacao" fora dos quatro tokens fechados, com valoresSelecionaveis null — o
         // decoder converteria o token em TipoRenderizacao.Nenhuma e FatoColetado.Criar recusaria;
         // sem esta guarda aqui, o token desconhecido cairia no ramo "não é seleção" por omissão.
-        """{"formulario":{"titulo":null,"termoAceiteTexto":null},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"TEXTO","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"formulario":{"titulo":null,"termos":[]},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"TEXTO","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":null}]}""")]
     [InlineData(
         // "ordem" negativa dentro de um item de valoresSelecionaveis — o decoder recusa.
-        """{"formulario":{"titulo":null,"termoAceiteTexto":null},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":-1}]}]}""")]
+        """{"formulario":{"titulo":null,"termos":[]},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":-1}]}]}""")]
     [InlineData(
         // "valorCodigo" repetido no array — o decoder recusa (o encoder nunca emite duas entradas
         // para o mesmo valor).
-        """{"formulario":{"titulo":null,"termoAceiteTexto":null},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0},{"valorCodigo":"BRANCA","descricao":null,"ordem":1}]}]}""")]
+        """{"formulario":{"titulo":null,"termos":[]},"fatosColetados":[{"fatoCodigo":"COR_RACA","ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatorio":false,"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0},{"valorCodigo":"BRANCA","descricao":null,"ordem":1}]}]}""")]
     public async Task Handle_EnvelopeComValorIncoerente_RecusaSemEstourar(string envelopeJson)
     {
         Guid processoId = Guid.CreateVersion7();
@@ -237,12 +237,21 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
     }
 
-    [Fact(DisplayName = "Versão vigente congelada com a forma corrente projeta título/termo/fatos com apresentação e valores selecionáveis")]
+    [Fact(DisplayName = "Versão vigente congelada com a forma corrente projeta título, termos e fatos com apresentação e valores selecionáveis")]
     public async Task Handle_EnvelopeCorrente_ProjetaApresentacao()
     {
         const string envelopeCorrente = """
             {
-              "formulario": {"titulo": "Formulário de Inscrição", "termoAceiteTexto": null},
+              "formulario": {"titulo": "Formulário de Inscrição", "termos": [
+                {
+                  "codigo": "DECLARACAO_PERTENCIMENTO", "ordem": 0,
+                  "termoId": "0199a000-0000-7000-8000-00000000a001", "versaoId": "0199a000-0000-7000-8000-00000000b001",
+                  "nome": "Declaração de pertencimento", "texto": "Declaro pertencer à comunidade.", "baseLegal": "Lei 12.711/2012",
+                  "formaAceite": "REGISTRO_DIGITAL_SEM_LOG_IP", "hashVersao": "aaaa",
+                  "exibicao": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]],
+                  "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}
+                }
+              ]},
               "fatosColetados": [
                 {
                   "fatoCodigo": "COR_RACA", "ordem": 0, "rotulo": "Cor ou raça",
@@ -262,7 +271,10 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Titulo.Should().Be("Formulário de Inscrição");
-        resultado.Value!.TermoAceiteTexto.Should().BeNull();
+        TermoExigidoDto termo = resultado.Value!.Termos.Should().ContainSingle().Which;
+        termo.Texto.Should().Be("Declaro pertencer à comunidade.");
+        termo.Exibicao.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("COR_RACA");
+        termo.Obrigatoriedade.Should().Be(new ObrigatoriedadeDto("SEMPRE", null));
         FatoFormularioRenderizavelDto fato = resultado.Value!.FatosColetados.Should().ContainSingle().Which;
         fato.FatoCodigo.Should().Be("COR_RACA");
         fato.Rotulo.Should().Be("Cor ou raça");
@@ -294,7 +306,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelopeFormaCorrente = """
             {
-              "formulario": {"titulo": "Formulário de Inscrição", "termoAceiteTexto": null},
+              "formulario": {"titulo": "Formulário de Inscrição", "termos": []},
               "fatosColetados": []
             }
             """;
