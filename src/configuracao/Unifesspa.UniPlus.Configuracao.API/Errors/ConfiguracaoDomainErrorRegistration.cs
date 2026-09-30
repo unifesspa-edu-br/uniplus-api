@@ -624,6 +624,30 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.fonte_valores_fora_de_categorico",
                 "Só fato categórico declara a fonte dos seus valores")),
 
+        new(FatoCandidatoErrorCodes.FormatoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.formato_obrigatorio",
+                "Fato de domínio texto precisa declarar o formato")),
+
+        new(FatoCandidatoErrorCodes.FormatoForaDeTexto,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.formato_fora_de_texto",
+                "Só fato de domínio texto declara formato")),
+
+        new(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.classificacao_abaixo_do_minimo_do_dominio",
+                "Fato de texto, data ou endereço é classificado como pessoal ou sensível")),
+
+        new(FatoCandidatoErrorCodes.TextoLivreVazio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.texto_livre_vazio",
+                "O texto é obrigatório")),
+
         new(FatoCandidatoErrorCodes.EscopoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

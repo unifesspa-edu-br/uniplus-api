@@ -6,16 +6,19 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Parsing por allowlist textual dos três eixos do catálogo de fatos (ADR-0111,
-/// refinada pela ADR-0116): domínio, origem e cardinalidade. Só os tokens
-/// canônicos UPPER_SNAKE são aceitos; tokens PascalCase e fora do domínio (ex.:
-/// <c>TEXTO</c>) são rejeitados — o que <c>Enum.TryParse</c> aceitaria por engano.
+/// refinada pela ADR-0116 e pela ADR-0136): domínio, origem e cardinalidade. Só os tokens
+/// canônicos UPPER_SNAKE são aceitos; tokens PascalCase e fora do domínio são rejeitados —
+/// o que <c>Enum.TryParse</c> aceitaria por engano.
 /// </summary>
 public sealed class FatoCandidatoEnumsTests
 {
-    [Theory(DisplayName = "DominiosFato resolve os três tokens canônicos e o round-trip é estável")]
+    [Theory(DisplayName = "DominiosFato resolve os tokens canônicos e o round-trip é estável")]
     [InlineData("CATEGORICO", DominioFato.Categorico)]
     [InlineData("BOOLEANO", DominioFato.Booleano)]
     [InlineData("NUMERICO", DominioFato.Numerico)]
+    [InlineData("TEXTO", DominioFato.Texto)]
+    [InlineData("DATA", DominioFato.Data)]
+    [InlineData("ENDERECO", DominioFato.Endereco)]
     public void DominiosFato_TokenCanonico_Resolve(string token, DominioFato esperado)
     {
         DominiosFato.TryAnalisar(token, out DominioFato dominio).Should().BeTrue();
@@ -23,8 +26,8 @@ public sealed class FatoCandidatoEnumsTests
         DominiosFato.ParaTokenCanonico(dominio).Should().Be(token);
     }
 
-    [Theory(DisplayName = "DominiosFato rejeita 'texto', PascalCase, vazio e nulo")]
-    [InlineData("TEXTO")]
+    [Theory(DisplayName = "DominiosFato rejeita token desconhecido, PascalCase, vazio e nulo")]
+    [InlineData("DECIMAL")]
     [InlineData("Categorico")]
     [InlineData("categorico")]
     [InlineData("")]
@@ -36,9 +39,9 @@ public sealed class FatoCandidatoEnumsTests
         DominiosFato.EhValido(token).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "DominiosFato expõe exatamente os três tokens canônicos")]
+    [Fact(DisplayName = "DominiosFato expõe exatamente os seis tokens canônicos")]
     public void DominiosFato_TokensCanonicos() =>
-        DominiosFato.TokensCanonicos.Should().BeEquivalentTo(["CATEGORICO", "BOOLEANO", "NUMERICO"]);
+        DominiosFato.TokensCanonicos.Should().BeEquivalentTo(["CATEGORICO", "BOOLEANO", "NUMERICO", "TEXTO", "DATA", "ENDERECO"]);
 
     [Theory(DisplayName = "OrigensFato resolve os três tokens de origem-do-dado (ADR-0116)")]
     [InlineData("DERIVADO", OrigemFato.Derivado)]

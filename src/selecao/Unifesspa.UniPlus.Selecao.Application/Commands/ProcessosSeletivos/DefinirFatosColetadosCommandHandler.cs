@@ -89,7 +89,7 @@ public static class DefinirFatosColetadosCommandHandler
 
         // O domínio dos fatos categóricos cuja fonte é o processo vem do PRÓPRIO processo — uma
         // pré-condição que os cite valida contra ele, nunca contra um catálogo global.
-        IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos =
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos =
             VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
 
         // Segunda passada: forma básica já confirmada para todos os fatos — resolve o
@@ -128,7 +128,7 @@ public static class DefinirFatosColetadosCommandHandler
         FatoColetadoInput input,
         IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
-        IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos)
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
         // Coletabilidade: o fato existe no vocabulário e é DECLARADO com binding de campo de
         // inscrição. Um derivado (MODALIDADE, binding REGRA_DERIVACAO) ou um computado
@@ -177,7 +177,7 @@ public static class DefinirFatosColetadosCommandHandler
     private static Result<IReadOnlyList<CondicaoPrecondicaoFato>?> ResolverPrecondicao(
         IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? precondicao,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
-        IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos)
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
         if (precondicao is null)
         {

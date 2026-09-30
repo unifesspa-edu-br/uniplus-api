@@ -200,13 +200,13 @@ public sealed class PredicadoDnfValidadorTests
     };
 
     private static Result ValidarComDominioDinamico(
-        CondicaoDnf condicao, IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos) =>
+        CondicaoDnf condicao, IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos) =>
         PredicadoDnfValidador.Validar(PredicadoDe(condicao), VocabularioComDinamico, null, dominiosDinamicos);
 
     [Fact(DisplayName = "Aceita IGUAL/EM categórico dinâmico com domínio fornecido pelo chamador")]
     public void Validar_CategoricoDinamico_DominioFornecido_Aceita()
     {
-        Dictionary<string, IReadOnlySet<string>> dominios = new() { ["MODALIDADE"] = new HashSet<string> { "LB_PPI", "AC" } };
+        Dictionary<string, DominioDeValores> dominios = new() { ["MODALIDADE"] = DominioDeValores.Enumerado(["LB_PPI", "AC"]) };
 
         CondicaoDnf igual = CondicaoDnf.Criar("MODALIDADE", Operador.Igual, Json("\"LB_PPI\"")).Value!;
         CondicaoDnf em = CondicaoDnf.Criar("MODALIDADE", Operador.Em, Json("[\"LB_PPI\",\"AC\"]")).Value!;
@@ -218,7 +218,7 @@ public sealed class PredicadoDnfValidadorTests
     [Fact(DisplayName = "CA-03: rejeita valor categórico dinâmico fora do domínio ofertado pelo processo")]
     public void Validar_CategoricoDinamico_ForaDoDominio_Recusa()
     {
-        Dictionary<string, IReadOnlySet<string>> dominios = new() { ["MODALIDADE"] = new HashSet<string> { "AC" } };
+        Dictionary<string, DominioDeValores> dominios = new() { ["MODALIDADE"] = DominioDeValores.Enumerado(["AC"]) };
         CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.Igual, Json("\"LB_Q\"")).Value!;
 
         Result resultado = ValidarComDominioDinamico(condicao, dominios);
@@ -241,7 +241,7 @@ public sealed class PredicadoDnfValidadorTests
     [Fact(DisplayName = "Rejeita MAIOR_IGUAL/MENOR_IGUAL para categórico dinâmico (mesma matriz do estático)")]
     public void Validar_CategoricoDinamico_OperadorNumerico_Recusa()
     {
-        Dictionary<string, IReadOnlySet<string>> dominios = new() { ["MODALIDADE"] = new HashSet<string> { "AC" } };
+        Dictionary<string, DominioDeValores> dominios = new() { ["MODALIDADE"] = DominioDeValores.Enumerado(["AC"]) };
         CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.MaiorIgual, Json("\"AC\"")).Value!;
 
         Result resultado = ValidarComDominioDinamico(condicao, dominios);
@@ -287,7 +287,7 @@ public sealed class PredicadoDnfValidadorTests
     [Fact(DisplayName = "NAO_EM categórico dinâmico é aceito (mesma matriz do estático)")]
     public void Validar_CategoricoDinamico_NaoEm_Aceita()
     {
-        Dictionary<string, IReadOnlySet<string>> dominios = new() { ["MODALIDADE"] = new HashSet<string> { "LB_PPI", "AC" } };
+        Dictionary<string, DominioDeValores> dominios = new() { ["MODALIDADE"] = DominioDeValores.Enumerado(["LB_PPI", "AC"]) };
         CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.NaoEm, Json("[\"LB_PPI\"]")).Value!;
 
         ValidarComDominioDinamico(condicao, dominios).IsSuccess.Should().BeTrue();

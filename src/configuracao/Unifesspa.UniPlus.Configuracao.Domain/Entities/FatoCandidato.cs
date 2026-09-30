@@ -73,6 +73,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// </summary>
     public string Binding { get; private set; } = null!;
 
+    /// <summary>O formato do texto — só no fato de domínio texto.</summary>
+    public FormatoTexto? Formato { get; private set; }
+
     /// <summary>Sobre quem o fato é respondido: o candidato ou cada membro de um grupo repetível.</summary>
     public EscopoFato Escopo { get; private set; }
 
@@ -118,12 +121,14 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         OrigemFato origem,
         CardinalidadeFato cardinalidade,
         FonteValoresFato? fonteValores,
+        FormatoTexto? formato,
         string pontoResolucao,
         string binding,
         EscopoFato escopo,
         ProtecaoValidada protecao,
         bool sistema)
     {
+        Formato = formato;
         Codigo = codigo;
         FonteValores = fonteValores;
         Nome = nome;
@@ -153,6 +158,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         OrigemFato origem,
         CardinalidadeFato cardinalidade,
         FonteValoresFato? fonteValores,
+        FormatoTexto? formato,
         string pontoResolucao,
         string binding,
         EscopoFato escopo,
@@ -218,6 +224,17 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 "Só fato categórico declara a fonte dos seus valores.");
         }
 
+        bool ehTexto = dominio == DominioFato.Texto;
+        if (ehTexto && (formato is null or FormatoTexto.Nenhum || !Enum.IsDefined(formato.Value)))
+        {
+            return Falha(FatoCandidatoErrorCodes.FormatoObrigatorio, "Fato de domínio texto precisa declarar o formato.");
+        }
+
+        if (!ehTexto && formato is not null)
+        {
+            return Falha(FatoCandidatoErrorCodes.FormatoForaDeTexto, "Só fato de domínio texto declara formato.");
+        }
+
         Result<string> pontoResolucaoResult = ValidarPontoResolucao(pontoResolucao);
         if (pontoResolucaoResult.IsFailure)
         {
@@ -245,7 +262,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Falha(FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.");
         }
 
-        Result<ProtecaoValidada> protecao = ValidarProtecao(classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
+        Result<ProtecaoValidada> protecao = ValidarProtecao(dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
         if (protecao.IsFailure)
         {
             return Result<FatoCandidato>.Failure(protecao.Error!);
@@ -259,6 +276,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             origem,
             cardinalidade,
             fonteValores,
+            formato,
             pontoResolucaoResult.Value!,
             bindingResult.Value!,
             escopo,
@@ -431,12 +449,22 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     }
 
     private static Result<ProtecaoValidada> ValidarProtecao(
-        ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese)
+        DominioFato dominio, ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese)
     {
         if (classificacao == ClassificacaoProtecaoDado.Nenhuma || !Enum.IsDefined(classificacao))
         {
             return FalhaProtecao(
                 FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria, "Classificação de proteção de dados do fato é obrigatória.");
+        }
+
+        // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
+        // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal.
+        if (dominio is DominioFato.Texto or DominioFato.Data or DominioFato.Endereco
+            && classificacao is not (ClassificacaoProtecaoDado.Pessoal or ClassificacaoProtecaoDado.Sensivel))
+        {
+            return FalhaProtecao(
+                FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
+                "Fato de texto, data ou endereço é classificado como pessoal ou sensível.");
         }
 
         if (string.IsNullOrWhiteSpace(finalidade))

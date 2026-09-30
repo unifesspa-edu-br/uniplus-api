@@ -27,4 +27,10 @@ public enum FonteValoresFato
     /// código IBGE.
     /// </summary>
     MunicipiosBonus,
+
+    /// <summary>As UFs do módulo Geo, pela sigla (derivado de residência).</summary>
+    GeoUf,
+
+    /// <summary>Os municípios do módulo Geo, pelo código IBGE (derivado de residência).</summary>
+    GeoMunicipio,
 }

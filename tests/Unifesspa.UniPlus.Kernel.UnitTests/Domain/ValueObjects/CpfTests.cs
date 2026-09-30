@@ -138,4 +138,12 @@ public sealed class CpfTests
         (cpf1 == cpf2).Should().BeTrue();
         cpf1.GetHashCode().Should().Be(cpf2.GetHashCode());
     }
+
+    [Fact(DisplayName = "CPF com dígitos de largura total é recusado: só dígitos ASCII formam CPF")]
+    public void Criar_DadoDigitosNaoAscii_DeveRetornarFailureCpfInvalido() =>
+        Cpf.Criar("\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17\uFF18\uFF1967").Error!.Code.Should().Be("Cpf.Invalido");
+
+    [Fact(DisplayName = "CPF com caractere que não é dígito nem separador é recusado")]
+    public void Criar_DadoCaractereEstranho_DeveRetornarFailureCpfInvalido() =>
+        Cpf.Criar("abc529.982.247-25xyz").Error!.Code.Should().Be("Cpf.Invalido");
 }

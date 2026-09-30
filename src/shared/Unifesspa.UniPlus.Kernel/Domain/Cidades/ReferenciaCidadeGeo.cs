@@ -84,6 +84,19 @@ public static class ReferenciaCidadeGeo
     private static readonly FrozenSet<string> UfsValidas =
         UfPorPrefixo.Values.ToFrozenSet(StringComparer.Ordinal);
 
+    /// <summary>As 27 siglas de UF válidas.</summary>
+    public static IReadOnlyCollection<string> Ufs => UfsValidas;
+
+    /// <summary>
+    /// Indica se <paramref name="codigoIbge"/> tem a forma de um código IBGE de município: sete
+    /// dígitos com prefixo de UF real. Validação só de formato, como a do resto desta referência.
+    /// </summary>
+    public static bool EhCodigoMunicipioValido(string codigoIbge)
+    {
+        ArgumentNullException.ThrowIfNull(codigoIbge);
+        return codigoIbge.Length == CodigoIbgeLength && codigoIbge.All(char.IsAsciiDigit) && TemPrefixoDeUfValido(codigoIbge);
+    }
+
     /// <summary>
     /// Indica se os dois primeiros dígitos de <paramref name="codigoIbge"/>
     /// (assumido já validado como 7 dígitos numéricos) correspondem a um prefixo

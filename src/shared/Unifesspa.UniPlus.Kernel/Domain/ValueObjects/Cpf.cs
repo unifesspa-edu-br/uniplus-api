@@ -13,7 +13,11 @@ public sealed record Cpf
         if (string.IsNullOrWhiteSpace(cpf))
             return Result<Cpf>.Failure(new DomainError("Cpf.Vazio", "CPF é obrigatório."));
 
-        string apenasDigitos = new(cpf.Where(char.IsDigit).ToArray());
+        // Só dígitos e os separadores usuais de CPF; qualquer outro caractere recusa.
+        if (!cpf.All(static c => char.IsAsciiDigit(c) || c is ' ' or '.' or '-'))
+            return Result<Cpf>.Failure(new DomainError("Cpf.Invalido", "CPF inválido."));
+
+        string apenasDigitos = new(cpf.Where(char.IsAsciiDigit).ToArray());
 
         if (apenasDigitos.Length != 11 || !ValidarDigitos(apenasDigitos))
             return Result<Cpf>.Failure(new DomainError("Cpf.Invalido", "CPF inválido."));

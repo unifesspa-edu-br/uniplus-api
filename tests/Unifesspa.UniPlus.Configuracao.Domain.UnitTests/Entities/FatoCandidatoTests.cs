@@ -31,6 +31,7 @@ public sealed class FatoCandidatoTests
         OrigemFato origem = OrigemFato.Declarado,
         CardinalidadeFato cardinalidade = CardinalidadeFato.Escalar,
         FonteValoresFato? fonteValores = FonteValoresFato.Global,
+        FormatoTexto? formato = null,
         string pontoResolucao = PontoResolucaoInscricao,
         string binding = BindingCorRaca,
         ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Sensivel,
@@ -41,6 +42,7 @@ public sealed class FatoCandidatoTests
         FatoCandidato.Criar(
             codigo, nome, descricao, dominio, origem, cardinalidade,
             dominio == DominioFato.Categorico ? fonteValores : null,
+            formato,
             pontoResolucao, binding, escopo, classificacao, finalidade, hipotese, sistema);
 
     [Fact(DisplayName = "Criar categórico sem fonte dos valores é recusado")]
@@ -50,7 +52,7 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "Criar booleano com fonte dos valores é recusado")]
     public void Criar_BooleanoComFonte_Recusa() =>
         FatoCandidato.Criar("PCD", "Pessoa com deficiência", null, DominioFato.Booleano, OrigemFato.Declarado,
-            CardinalidadeFato.Escalar, FonteValoresFato.Processo, PontoResolucaoInscricao, "CAMPO_INSCRICAO:PCD",
+            CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:PCD",
             EscopoFato.Candidato, ClassificacaoProtecaoDado.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
             sistema: false)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico);
@@ -70,6 +72,23 @@ public sealed class FatoCandidatoTests
     [InlineData((EscopoFato)999)]
     public void Criar_EscopoInvalido_Recusa(EscopoFato escopo) =>
         Criar(escopo: escopo).Error!.Code.Should().Be(FatoCandidatoErrorCodes.EscopoObrigatorio);
+
+    [Theory(DisplayName = "Fato de texto declara formato, e só ele")]
+    [InlineData(DominioFato.Texto, null, FatoCandidatoErrorCodes.FormatoObrigatorio)]
+    [InlineData(DominioFato.Booleano, FormatoTexto.Cpf, FatoCandidatoErrorCodes.FormatoForaDeTexto)]
+    public void Criar_FormatoIncoerenteComDominio_Recusa(DominioFato dominio, FormatoTexto? formato, string codigoEsperado) =>
+        Criar(codigo: "CPF", dominio: dominio, formato: formato, binding: "CAMPO_INSCRICAO:CPF")
+            .Error!.Code.Should().Be(codigoEsperado);
+
+    [Theory(DisplayName = "Texto, data e endereço não aceitam classificação abaixo de pessoal")]
+    [InlineData(DominioFato.Texto, ClassificacaoProtecaoDado.Interno)]
+    [InlineData(DominioFato.Data, ClassificacaoProtecaoDado.Publico)]
+    [InlineData(DominioFato.Endereco, ClassificacaoProtecaoDado.Interno)]
+    public void Criar_ClassificacaoAbaixoDoMinimo_Recusa(DominioFato dominio, ClassificacaoProtecaoDado classificacao) =>
+        Criar(
+            codigo: "DADO", dominio: dominio, formato: dominio == DominioFato.Texto ? FormatoTexto.Livre : null,
+            binding: "CAMPO_INSCRICAO:DADO", classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
     [Theory(DisplayName = "Proteção de dados incompleta é recusada")]
     [InlineData(ClassificacaoProtecaoDado.Nenhuma, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
