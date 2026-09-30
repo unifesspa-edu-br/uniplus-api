@@ -105,19 +105,18 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null;
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
         IReadOnlySet<string>? fatosResolviveis = null;
+        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos = null;
         if (existeGatilho)
         {
             IReadOnlySet<string> resolvidosPorAtributo;
-            (vocabularioFatos, pontoResolucaoPorFato, resolvidosPorAtributo) =
+            IReadOnlyList<FatoCandidatoView> catalogo;
+            (vocabularioFatos, pontoResolucaoPorFato, resolvidosPorAtributo, catalogo) =
                 await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken)
                     .ConfigureAwait(false);
 
             fatosResolviveis = FatosQueOProcessoResolve(processo, resolvidosPorAtributo);
+            dominiosDinamicos = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
         }
-
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos = existeGatilho
-            ? ResolverDominiosDinamicos(processo)
-            : null;
 
         // Folha primeiro, bottom-up: NoExigencia.CriarGrupo recebe os filhos já prontos. A
         // recursão em si é top-down (visita o nó antes dos filhos) — por isso dá para
@@ -594,31 +593,6 @@ public static class DefinirDocumentosExigidosCommandHandler
         return Result<IReadOnlyList<NoExigenciaBaseLegal>>.Success(basesLegais);
     }
 
-    /// <summary>
-    /// Domínio dinâmico (Story #554, PR #896): as modalidades/condições de atendimento
-    /// válidas para um gatilho são as que o PRÓPRIO PROCESSO oferece — nunca um catálogo
-    /// global (CA-03, integridade referencial).
-    /// </summary>
-    private static Dictionary<string, IReadOnlySet<string>> ResolverDominiosDinamicos(ProcessoSeletivo processo)
-    {
-        HashSet<string> modalidades = [.. processo.DistribuicaoVagas
-            .SelectMany(static d => d.Modalidades)
-            .Select(static m => m.Codigo)];
-
-        HashSet<string> condicoesAtendimento = [.. (processo.OfertaAtendimento?.Condicoes ?? [])
-            .Select(static c => c.CondicaoCodigo)];
-
-        HashSet<string> tiposDeficiencia = [.. (processo.OfertaAtendimento?.TiposDeficiencia ?? [])
-            .Select(static t => t.TipoDeficienciaCodigo)];
-
-        return new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            ["MODALIDADE"] = modalidades,
-            ["CONDICAO_ATENDIMENTO"] = condicoesAtendimento,
-            ["TIPO_DEFICIENCIA"] = tiposDeficiencia,
-        };
-    }
-
     // Story #922 — schema fechado de atributos por TipoEntidade (mesmo catálogo fechado do
     // domínio, Enums.TipoEntidade) — os NOMES dos fatos de escopo-entidade que uma folha
     // dentro de uma subárvore repetePorEntidade pode citar no gatilho. Ampliar exige nova
@@ -687,7 +661,7 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// própria deste handler, e não em <see cref="DescritorFatoCandidato"/> (VO mínimo
     /// compartilhado com <c>DefinirCriteriosDesempateCommandHandler</c>, que não precisa dela).
     /// </summary>
-    private static async Task<(IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyDictionary<string, string> PontoResolucaoPorFato, IReadOnlySet<string> ResolvidosPorAtributo)> ResolverVocabularioFatosAsync(
+    private static async Task<(IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyDictionary<string, string> PontoResolucaoPorFato, IReadOnlySet<string> ResolvidosPorAtributo, IReadOnlyList<FatoCandidatoView> Catalogo)> ResolverVocabularioFatosAsync(
         IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader
@@ -699,14 +673,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         HashSet<string> resolvidosPorAtributo = new(StringComparer.Ordinal);
         foreach (FatoCandidatoView fato in fatos)
         {
-            TipoDominioFato? tipoDominio = fato switch
-            {
-                { Dominio: "BOOLEANO" } => TipoDominioFato.Booleano,
-                { Dominio: "NUMERICO" } => TipoDominioFato.Numerico,
-                { Dominio: "CATEGORICO", ValoresDominio.Count: > 0 } => TipoDominioFato.CategoricoEstatico,
-                { Dominio: "CATEGORICO", ValoresDominio: null } => TipoDominioFato.CategoricoDinamico,
-                _ => null,
-            };
+            TipoDominioFato? tipoDominio = VocabularioDeFatos.Classificar(fato);
 
             if (tipoDominio is not { } tipo)
             {
@@ -731,7 +698,7 @@ public static class DefinirDocumentosExigidosCommandHandler
             }
         }
 
-        return (vocabulario, pontoResolucaoPorFato, resolvidosPorAtributo);
+        return (vocabulario, pontoResolucaoPorFato, resolvidosPorAtributo, fatos);
     }
 
     /// <summary>Prefixo de binding do fato que o processo obtém direto do candidato.</summary>

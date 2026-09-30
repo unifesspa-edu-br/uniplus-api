@@ -67,6 +67,13 @@ public sealed class FatoColetado : EntityBase
     /// <summary>Se o candidato é obrigado a preencher o campo para prosseguir com a inscrição.</summary>
     public bool Obrigatorio { get; private set; }
 
+    /// <summary>
+    /// Se as opções do campo são as que o processo oferece (fonte dos valores <c>PROCESSO</c>,
+    /// ADR-0136). Copiado do catálogo quando a coleta é definida — a Seleção congela por cópia e
+    /// não lê o catálogo ao publicar.
+    /// </summary>
+    public bool OpcoesDoProcesso { get; private set; }
+
     public IReadOnlyCollection<CondicaoPrecondicaoFato> Precondicoes => _precondicoes.AsReadOnly();
 
     private FatoColetado() { }
@@ -82,7 +89,8 @@ public sealed class FatoColetado : EntityBase
         string rotulo,
         TipoRenderizacao tipoRenderizacao,
         bool obrigatorio,
-        IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes)
+        IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
+        bool opcoesDoProcesso = false)
     {
         List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
 
@@ -113,6 +121,7 @@ public sealed class FatoColetado : EntityBase
             Rotulo = rotulo.Trim(),
             TipoRenderizacao = tipoRenderizacao,
             Obrigatorio = obrigatorio,
+            OpcoesDoProcesso = opcoesDoProcesso,
         };
         foreach (CondicaoPrecondicaoFato precondicao in condicoes)
         {

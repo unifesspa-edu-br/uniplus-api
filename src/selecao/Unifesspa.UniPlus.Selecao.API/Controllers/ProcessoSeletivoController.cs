@@ -152,6 +152,46 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Substitui as opções que o processo declara para um fato cuja fonte dos valores é o
+    /// processo — por exemplo, as edições do ENEM aceitas —, congeladas no edital na publicação
+    /// (issue #1619). As opções dos fatos de atendimento especializado vêm da oferta de atendimento.
+    /// </summary>
+    [HttpPut("{id:guid}/fatos/{fatoCodigo}/opcoes")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirOpcoesDeclaradas(
+        Guid id,
+        string fatoCodigo,
+        [FromBody] DefinirOpcoesDeclaradasRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirOpcoesDeclaradasCommand(
+                id,
+                fatoCodigo,
+                // A nulidade da lista ou de um item segue para o validator, que a recusa com 4xx —
+                // desreferenciar aqui responderia 500 antes de o comando existir.
+                request.Opcoes is null
+                    ? null!
+                    : [.. request.Opcoes.Select(static o => o is null ? null! : new OpcaoDeclaradaInput(o.Codigo, o.Rotulo))],
+                precondicao),
+            cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Define (ou substitui) a oferta de atendimento especializado do
     /// processo (CA-06) — tipo de deficiência só é aceito sob a condição PcD
     /// (ADR-0067).

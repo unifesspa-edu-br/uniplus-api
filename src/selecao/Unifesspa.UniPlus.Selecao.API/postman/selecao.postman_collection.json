@@ -1486,6 +1486,71 @@
           ]
         },
         {
+          "name": "Definir opções declaradas de fato gerido pela oferta — 422",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/fatos/CONDICAO_ATENDIMENTO/opcoes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "fatos",
+                "CONDICAO_ATENDIMENTO",
+                "opcoes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"opcoes\": [\n    { \"codigo\": \"PCD\", \"rotulo\": \"Pessoa com deficiência\" }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 — as opções vêm da oferta de atendimento', () => pm.response.to.have.status(422));",
+                  "pm.test('code: opções geridas pela oferta', () => pm.expect(pm.response.json().code).to.eql('uniplus.selecao.opcao_declarada_fato.geridas_pela_oferta_de_atendimento'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Definir Distribuição de Vagas",
           "request": {
             "method": "PUT",

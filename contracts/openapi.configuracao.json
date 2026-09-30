@@ -13275,7 +13275,8 @@
           "valoresDominio",
           "pontoResolucao",
           "binding",
-          "valoresDominioDeclarados"
+          "valoresDominioDeclarados",
+          "fonteValores"
         ],
         "type": "object",
         "properties": {
@@ -13327,6 +13328,12 @@
             "items": {
               "$ref": "#/components/schemas/FatoValorDominioViewItem"
             }
+          },
+          "fonteValores": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

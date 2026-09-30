@@ -16,7 +16,9 @@ public sealed record CondicaoPrecondicaoDto(string Fato, string Operador, JsonEl
 /// DTO de leitura de um fato coletado (Story #987; apresentação — Rotulo/TipoRenderizacao/
 /// Obrigatorio — Story #559). A <see cref="Precondicao"/> é o predicado na forma normal
 /// disjuntiva — o OU de cláusulas, cada cláusula o E de condições —, ou <see langword="null"/>
-/// quando o fato é coletado incondicionalmente (nunca uma lista vazia).
+/// quando o fato é coletado incondicionalmente (nunca uma lista vazia). <see cref="Opcoes"/> são as
+/// opções que o processo oferece ao fato cuja fonte dos valores é o processo (issue #1619), ou
+/// <see langword="null"/> quando os valores não vêm do processo.
 /// </summary>
 public sealed record FatoColetadoDto(
     string FatoCodigo,
@@ -24,7 +26,11 @@ public sealed record FatoColetadoDto(
     string Rotulo,
     string TipoRenderizacao,
     bool Obrigatorio,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao);
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao,
+    IReadOnlyList<OpcaoDoProcessoDto>? Opcoes);
+
+/// <summary>Uma opção que o processo oferece a um fato (issue #1619).</summary>
+public sealed record OpcaoDoProcessoDto(string Codigo, string Rotulo, int Ordem);
 
 /// <summary>
 /// DTO de leitura de uma condição do predicado <c>quando</c> de uma regra de derivação (Story

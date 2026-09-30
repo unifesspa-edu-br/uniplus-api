@@ -87,10 +87,10 @@ public static class DefinirFatosColetadosCommandHandler
             IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario) =
             await ResolverVocabularioAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
 
-        // O domínio dos fatos categóricos de escopo-processo (CONDICAO_ATENDIMENTO, …) vem da
-        // oferta do PRÓPRIO processo — uma pré-condição que os cite valida contra ela, nunca
-        // contra um catálogo global.
-        IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos = ResolverDominiosDinamicos(processo);
+        // O domínio dos fatos categóricos cuja fonte é o processo vem do PRÓPRIO processo — uma
+        // pré-condição que os cite valida contra ele, nunca contra um catálogo global.
+        IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos =
+            VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
 
         // Segunda passada: forma básica já confirmada para todos os fatos — resolve o
         // vocabulário e a semântica de cada um, parando no primeiro que falhar. Essas checagens
@@ -163,7 +163,8 @@ public static class DefinirFatosColetadosCommandHandler
         }
 
         return FatoColetado.Criar(
-            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, input.Obrigatorio, precondicoesResult.Value);
+            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, input.Obrigatorio, precondicoesResult.Value,
+            opcoesDoProcesso: VocabularioDeFatos.OpcoesDoProcesso(view));
     }
 
     /// <summary>
@@ -245,14 +246,7 @@ public static class DefinirFatosColetadosCommandHandler
         {
             catalogo[fato.Codigo] = fato;
 
-            TipoDominioFato? tipoDominio = fato switch
-            {
-                { Dominio: "BOOLEANO" } => TipoDominioFato.Booleano,
-                { Dominio: "NUMERICO" } => TipoDominioFato.Numerico,
-                { Dominio: "CATEGORICO", ValoresDominio.Count: > 0 } => TipoDominioFato.CategoricoEstatico,
-                { Dominio: "CATEGORICO", ValoresDominio: null } => TipoDominioFato.CategoricoDinamico,
-                _ => null,
-            };
+            TipoDominioFato? tipoDominio = VocabularioDeFatos.Classificar(fato);
 
             if (tipoDominio is not { } tipo)
             {
@@ -269,25 +263,6 @@ public static class DefinirFatosColetadosCommandHandler
         return (catalogo, vocabulario);
     }
 
-    /// <summary>
-    /// Domínio dinâmico dos fatos categóricos de escopo-processo (CONDICAO_ATENDIMENTO,
-    /// TIPO_DEFICIENCIA): o conjunto de valores que o PRÓPRIO processo oferece, para que uma
-    /// pré-condição que os cite seja validada contra a oferta e não contra um catálogo global.
-    /// </summary>
-    private static Dictionary<string, IReadOnlySet<string>> ResolverDominiosDinamicos(ProcessoSeletivo processo)
-    {
-        HashSet<string> condicoesAtendimento = [.. (processo.OfertaAtendimento?.Condicoes ?? [])
-            .Select(static c => c.CondicaoCodigo)];
-
-        HashSet<string> tiposDeficiencia = [.. (processo.OfertaAtendimento?.TiposDeficiencia ?? [])
-            .Select(static t => t.TipoDeficienciaCodigo)];
-
-        return new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            ["CONDICAO_ATENDIMENTO"] = condicoesAtendimento,
-            ["TIPO_DEFICIENCIA"] = tiposDeficiencia,
-        };
-    }
 }
 
 /// <summary>

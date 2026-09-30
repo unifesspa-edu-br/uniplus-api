@@ -1348,6 +1348,100 @@ public sealed class EnvelopeCodecRoundTripTests
             "a etapa reidratada declara a nota do ENEM pelo atributo que o envelope congelou");
     }
 
+    [Fact(DisplayName = "As opções que o processo declarou voltam na restauração, reconstruídas dos valores selecionáveis congelados")]
+    public void OpcoesDeclaradas_CongelarPublicarRestaurar_VoltamComRotuloEOrdem()
+    {
+        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
+        processo.DefinirFatosColetados(
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+                opcoesDoProcesso: true).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas(
+            "EDICAO_ENEM",
+            [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "ENEM 2025", 0).Value!,
+             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2024", "ENEM 2024", 1).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo) with
+        {
+            ValoresSelecionaveisCongelados = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+            {
+                ["EDICAO_ENEM"] = [.. processo.OpcoesDoProcesso("EDICAO_ENEM")
+                    .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))],
+            },
+        };
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
+        CorpusEnvelope.Publicar(processo, entrada);
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+
+        processo.LimparColetaEDerivacaoParaRestauracao();
+        processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
+
+        processo.OpcoesDoProcesso("EDICAO_ENEM").Should().Equal(
+            new OpcaoDoProcesso("2025", "ENEM 2025", 0),
+            new OpcaoDoProcesso("2024", "ENEM 2024", 1));
+    }
+
+    [Fact(DisplayName = "O descarte repõe as opções congeladas e preserva as de fato que a versão não coleta")]
+    public void OpcoesDeclaradas_EdicaoDaSessao_DescarteRepoeCongeladasEPreservaAsVivas()
+    {
+        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
+        processo.DefinirFatosColetados(
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+                opcoesDoProcesso: true).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas(
+            "EDICAO_ENEM",
+            [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "ENEM 2025", 0).Value!,
+             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2024", "ENEM 2024", 1).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas(
+            "LOCAL_PROVA", [OpcaoDeclaradaFato.Criar("LOCAL_PROVA", "MARABA", "Marabá", 0).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo) with
+        {
+            ValoresSelecionaveisCongelados = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+            {
+                ["EDICAO_ENEM"] = [.. processo.OpcoesDoProcesso("EDICAO_ENEM")
+                    .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))],
+            },
+        };
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
+        CorpusEnvelope.Publicar(processo, entrada);
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+
+        // A sessão de retificação edita o rótulo e a ordem, acrescenta uma opção e passa a
+        // coletar um fato cujas opções já estavam declaradas.
+        processo.AbrirRetificacao("Ajusta as opções", versao, identificadorDaVersaoBase: null, "teste", DateTimeOffset.UtcNow)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+                opcoesDoProcesso: true).Value!,
+             FatoColetado.Criar("LOCAL_PROVA", 1, "Local de prova", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+                opcoesDoProcesso: true).Value!],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas(
+            "EDICAO_ENEM",
+            [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2024", "ENEM 2024", 0).Value!,
+             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "Editado na sessão", 1).Value!,
+             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2023", "ENEM 2023", 2).Value!],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        processo.LimparColetaEDerivacaoParaRestauracao();
+        processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
+
+        processo.OpcoesDoProcesso("EDICAO_ENEM").Should().Equal(
+            new OpcaoDoProcesso("2025", "ENEM 2025", 0),
+            new OpcaoDoProcesso("2024", "ENEM 2024", 1));
+        processo.OpcoesDeclaradas.Should().Contain(static o => o.FatoCodigo == "LOCAL_PROVA" && o.Codigo == "MARABA",
+            "a versão não congela as opções de fato que não coleta: elas são configuração viva");
+    }
+
     /// <summary>Corpus mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
     private static ProcessoSeletivo ProcessoSemEliminacaoEnem(bool baseadoEmEnem) =>
         ProcessoMinimo(ConfiguracaoClassificacao.Criar(

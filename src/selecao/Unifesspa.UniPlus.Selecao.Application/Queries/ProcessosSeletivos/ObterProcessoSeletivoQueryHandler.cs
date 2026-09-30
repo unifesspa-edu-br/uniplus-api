@@ -92,7 +92,7 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. processo.DocumentosExigidos.OrderBy(d => d.Id).Select(ProjectDocumentoExigido)],
         [.. processo.RaizesDeExigencia.OrderBy(n => n.Ordem).ThenBy(n => n.Id).Select(ProjectNoExigencia)],
         ProjectReferenciaTemporalFatos(processo.ReferenciaTemporalFatos),
-        [.. processo.FatosColetados.OrderBy(f => f.Ordem).Select(ProjectFatoColetado)],
+        [.. processo.FatosColetados.OrderBy(f => f.Ordem).Select(f => ProjectFatoColetado(processo, f))],
         [.. processo.RegrasDerivacao.OrderBy(c => c.CodigoFato, StringComparer.Ordinal).Select(ProjectConfiguracaoDerivacao)],
         processo.FormularioTitulo,
         processo.FormularioTermoAceiteTexto,
@@ -103,14 +103,17 @@ public static class ObterProcessoSeletivoQueryHandler
             : null,
         processo.CreatedAt);
 
-    private static FatoColetadoDto ProjectFatoColetado(FatoColetado fato) => new(
+    private static FatoColetadoDto ProjectFatoColetado(ProcessoSeletivo processo, FatoColetado fato) => new(
         fato.FatoCodigo,
         fato.Ordem,
         fato.Rotulo,
         fato.TipoRenderizacao.ToCodigo(),
         fato.Obrigatorio,
         ProjectPredicado(fato.Precondicoes, static c => (c.Clausula, c.Fato, c.Operador, c.Valor),
-            static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)));
+            static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)),
+        fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo)
+            ? [.. processo.OpcoesDoProcesso(fato.FatoCodigo).Select(static o => new OpcaoDoProcessoDto(o.Codigo, o.Rotulo, o.Ordem))]
+            : null);
 
     private static ConfiguracaoDerivacaoDto ProjectConfiguracaoDerivacao(ConfiguracaoDerivacaoFato config) => new(
         config.CodigoFato,

@@ -224,13 +224,14 @@ public sealed partial class EnvelopeCodec
             JsonObject item = leitor.ItemObjeto(array, i, "fatosColetados");
             leitor.ExigirChaves(
                 item, path,
-                "fatoCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "precondicao", "valoresSelecionaveis");
+                "fatoCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "opcoesDoProcesso", "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             int ordem = leitor.Inteiro(item, "ordem", path);
             string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
             string tipoRenderizacaoCodigo = leitor.TextoNaoVazio(item, "tipoRenderizacao", path);
             bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
+            bool opcoesDoProcesso = leitor.Booleano(item, "opcoesDoProcesso", path);
             if (leitor.Falhou)
             {
                 return ([], valoresSelecionaveis);
@@ -265,7 +266,7 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes, opcoesDoProcesso);
             if (fatoColetado.IsFailure)
             {
                 return (leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [], valoresSelecionaveis);
@@ -280,6 +281,39 @@ public sealed partial class EnvelopeCodec
         }
 
         return (fatos, valoresSelecionaveis);
+    }
+
+    /// <summary>
+    /// As opções que o processo declarou (issue #1619), reconstruídas dos valores selecionáveis
+    /// congelados dos fatos coletados cuja fonte é o processo — o envelope não guarda uma segunda
+    /// cópia delas. As dos fatos de atendimento não entram: vêm da oferta, reposta à parte.
+    /// </summary>
+    private static Result<IReadOnlyList<OpcaoDeclaradaFato>> ReconstruirOpcoesDeclaradas(
+        IReadOnlyList<FatoColetado> fatos,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+    {
+        List<OpcaoDeclaradaFato> opcoes = [];
+        foreach (FatoColetado fato in fatos)
+        {
+            if (!fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo))
+            {
+                continue;
+            }
+
+            foreach (ValorDominioDeclaradoCongelado valor in valoresSelecionaveis.GetValueOrDefault(fato.FatoCodigo) ?? [])
+            {
+                Result<OpcaoDeclaradaFato> opcao = OpcaoDeclaradaFato.Criar(
+                    fato.FatoCodigo, valor.Codigo, valor.Descricao ?? string.Empty, valor.Ordem);
+                if (opcao.IsFailure)
+                {
+                    return Result<IReadOnlyList<OpcaoDeclaradaFato>>.Failure(opcao.Error!);
+                }
+
+                opcoes.Add(opcao.Value!);
+            }
+        }
+
+        return Result<IReadOnlyList<OpcaoDeclaradaFato>>.Success(opcoes);
     }
 
     /// <summary>

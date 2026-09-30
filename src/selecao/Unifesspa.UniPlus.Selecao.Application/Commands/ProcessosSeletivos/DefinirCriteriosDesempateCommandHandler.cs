@@ -162,13 +162,12 @@ public static class DefinirCriteriosDesempateCommandHandler
         Dictionary<string, DescritorFatoCandidato> vocabulario = [];
         foreach (FatoCandidatoView fato in fatos)
         {
-            TipoDominioFato? tipoDominio = fato switch
-            {
-                { Dominio: "BOOLEANO" } => TipoDominioFato.Booleano,
-                { Dominio: "NUMERICO" } => TipoDominioFato.Numerico,
-                { Dominio: "CATEGORICO", ValoresDominio.Count: > 0 } => TipoDominioFato.CategoricoEstatico,
-                _ => null,
-            };
+            // O desempate só cita fato de domínio conhecido no catálogo: o categórico cujos valores vêm
+            // do processo fica fora, como sempre ficou.
+            TipoDominioFato? tipoDominio = VocabularioDeFatos.Classificar(fato) is { } classificado
+                && classificado != TipoDominioFato.CategoricoDinamico
+                    ? classificado
+                    : null;
 
             if (tipoDominio is not { } tipo)
             {
