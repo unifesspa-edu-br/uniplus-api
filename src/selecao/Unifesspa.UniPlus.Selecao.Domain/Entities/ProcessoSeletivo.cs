@@ -1062,6 +1062,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     .ValidarItens(estrutura, ItensDaFinalidade(finalidade, _fatosColetados), secaoObrigatoria: false)
                     .Select(static recusa => recusa with { Field = "etapas" }));
             }
+
+            // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais.
+            FatoColetado[] itens = [.. _fatosColetados.Where(f => f.Finalidade == finalidade)];
+            DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, FatosDaInscricao(_fatosColetados));
+            for (int indice = 0; indice < etapas.Count; indice++)
+            {
+                if (CitacaoInvalidaDaSecao(etapas[indice], PosicaoDaSecao(etapas[indice], etapas, itens), dependencias) is { } recusa)
+                {
+                    recusas.Add(new($"etapas[{indice}].exibicao", recusa));
+                }
+            }
         }
 
         return recusas;
@@ -1920,7 +1931,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
             : FatosDaInscricao(_fatosColetados);
-        if (ValidarGrafoDeFatos(finalidade, fatosColetados, daInscricao, DependenciasDasDerivacoes()) is { } erro)
+        if (ValidarGrafoDeFatos(finalidade, formulario.Etapas, fatosColetados, daInscricao, DependenciasDasDerivacoes()) is { } erro)
         {
             return Result.Failure(erro);
         }
@@ -2051,13 +2062,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // Os itens novos ainda não têm a finalidade vinculada: valem pelo código.
         HashSet<string> novos = new(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-        foreach (FinalidadeFormulario outra in _formularios.Select(static f => f.Finalidade).Where(static f => f != FinalidadeFormulario.Inscricao))
+        foreach (FormularioProcesso formulario in _formularios.Where(static f => f.Finalidade != FinalidadeFormulario.Inscricao))
         {
+            FinalidadeFormulario outra = formulario.Finalidade;
             FatoColetado[] itens = [.. _fatosColetados.Where(f => f.Finalidade == outra)];
             DependenciasDoFormulario antes = DependenciasDe(outra, itens, atuais);
             DependenciasDoFormulario depois = DependenciasDe(outra, itens, novos);
             IEnumerable<(string Dono, long Posicao, string Citado)> citacoes = itens
                 .SelectMany(static item => item.FatosCitados.Select(c => ($"o item '{item.FatoCodigo}'", (long)item.Ordem, c)))
+                .Concat(formulario.Etapas.SelectMany(secao => secao.FatosCitados
+                    .Select(c => ($"a exibição da seção '{secao.Codigo}'", PosicaoDaSecao(secao, formulario.Etapas, itens), c))))
                 .Concat(_termosExigidos.Where(t => t.Finalidade == outra)
                     .SelectMany(static termo => termo.FatosCitados.Select(c => ($"o termo '{termo.Codigo}'", DependenciasDoFormulario.PosicaoDosTermos, c))));
             foreach ((string dono, long posicao, string citado) in citacoes)
@@ -2082,6 +2096,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private static DomainError? ValidarGrafoDeFatos(
         FinalidadeFormulario finalidade,
+        IReadOnlyCollection<EtapaFormulario> etapas,
         IReadOnlyList<FatoColetado> fatos,
         HashSet<string> daInscricao,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
@@ -2117,7 +2132,52 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"As regras dos campos formam um ciclo: {string.Join(" → ", caminho)}.");
         }
 
-        return CitacaoInvalidaDosItens(finalidade, fatos, DependenciasDe(finalidade, fatos, daInscricao, derivacoes));
+        DependenciasDoFormulario dependencias = DependenciasDe(finalidade, fatos, daInscricao, derivacoes);
+        return CitacaoInvalidaDosItens(finalidade, fatos, dependencias) ?? CitacaoInvalidaDasSecoes(etapas, fatos, dependencias);
+    }
+
+    /// <summary>
+    /// A exibição da seção cita só o que o formulário conhece antes dela: antes do primeiro item da
+    /// própria seção ou, se ela está vazia, das seções seguintes.
+    /// </summary>
+    private static DomainError? CitacaoInvalidaDasSecoes(
+        IReadOnlyCollection<EtapaFormulario> etapas, IEnumerable<FatoColetado> itens, DependenciasDoFormulario dependencias) =>
+        etapas.OrderBy(static e => e.Ordem)
+            .Select(secao => CitacaoInvalidaDaSecao(secao, PosicaoDaSecao(secao, etapas, itens), dependencias))
+            .FirstOrDefault(static e => e is not null);
+
+    private static DomainError? CitacaoInvalidaDaSecao(EtapaFormulario secao, long posicao, DependenciasDoFormulario dependencias)
+    {
+        foreach (string citado in secao.FatosCitados)
+        {
+            switch (dependencias.Conferir(citado, posicao))
+            {
+                case RecusaDeCitacao.FatoNaoConhecido:
+                    return new DomainError(
+                        FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+                        $"A exibição da seção '{secao.Codigo}' cita '{citado}', que o formulário não coleta nem deriva antes dela.");
+                case RecusaDeCitacao.FatoPosterior:
+                    return new DomainError(
+                        FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior,
+                        $"A exibição da seção '{secao.Codigo}' cita '{citado}', que só fica conhecido na própria seção ou depois dela.");
+                case null:
+                default:
+                    break;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>A posição da seção na ordem de coleta: a do primeiro item dela ou das seções seguintes.</summary>
+    private static long PosicaoDaSecao(EtapaFormulario secao, IEnumerable<EtapaFormulario> etapas, IEnumerable<FatoColetado> itens)
+    {
+        HashSet<string> daquiEmDiante = new(
+            etapas.Where(e => e.Ordem >= secao.Ordem).Select(static e => e.Codigo), StringComparer.Ordinal);
+        return itens.Where(i => i.EtapaCodigo is { } etapa && daquiEmDiante.Contains(etapa))
+            .Select(static i => (long)i.Ordem)
+            .DefaultIfEmpty(DependenciasDoFormulario.PosicaoDosTermos)
+            .Min();
     }
 
     /// <summary>A primeira regra de item que cita fato que o formulário não conhece antes do item.</summary>
@@ -2157,12 +2217,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// congelado.
     /// </summary>
     public static DomainError? CitacaoInvalidaNosFormularios(
-        IEnumerable<FinalidadeFormulario> finalidades,
+        IEnumerable<FormularioProcesso> formularios,
         IReadOnlyCollection<FatoColetado> fatos,
         IReadOnlyCollection<TermoExigidoFormulario> termos,
         IReadOnlyCollection<ConfiguracaoDerivacaoFato> derivacoes)
     {
-        ArgumentNullException.ThrowIfNull(finalidades);
+        ArgumentNullException.ThrowIfNull(formularios);
         ArgumentNullException.ThrowIfNull(fatos);
         ArgumentNullException.ThrowIfNull(termos);
         ArgumentNullException.ThrowIfNull(derivacoes);
@@ -2170,11 +2230,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         HashSet<string> daInscricao = FatosDaInscricao(fatos);
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
             derivacoes.ToDictionary(static c => c.CodigoFato, static c => c.FatosCitados, StringComparer.Ordinal);
-        foreach (FinalidadeFormulario finalidade in finalidades)
+        foreach (FormularioProcesso formulario in formularios)
         {
+            FinalidadeFormulario finalidade = formulario.Finalidade;
             FatoColetado[] itens = [.. fatos.Where(f => f.Finalidade == finalidade)];
             DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, daInscricao, dependenciasDasDerivacoes);
-            if (CitacaoInvalidaNoFormulario(finalidade, itens, termos.Where(t => t.Finalidade == finalidade), dependencias) is { } recusa)
+            if (CitacaoInvalidaNoFormulario(finalidade, formulario.Etapas, itens, termos.Where(t => t.Finalidade == finalidade), dependencias) is { } recusa)
             {
                 return recusa;
             }
@@ -2183,13 +2244,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return null;
     }
 
-    /// <summary>A primeira regra de item, e depois de termo, do formulário que cita fato que ele não conhece.</summary>
+    /// <summary>
+    /// A primeira regra do formulário — de item, de exibição de seção e de termo, nessa ordem — que
+    /// cita fato que ele não conhece.
+    /// </summary>
     private static DomainError? CitacaoInvalidaNoFormulario(
         FinalidadeFormulario finalidade,
-        IEnumerable<FatoColetado> itens,
+        IReadOnlyCollection<EtapaFormulario> etapas,
+        IReadOnlyCollection<FatoColetado> itens,
         IEnumerable<TermoExigidoFormulario> termos,
         DependenciasDoFormulario dependencias) =>
         CitacaoInvalidaDosItens(finalidade, itens, dependencias)
+            ?? CitacaoInvalidaDasSecoes(etapas, itens, dependencias)
             ?? termos.Select(t => CitacaoInvalidaDoTermo(t, dependencias)).FirstOrDefault(static e => e is not null);
 
     /// <summary>A condição do termo cita fato que o formulário dele não conhece.</summary>
@@ -3807,9 +3873,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        // As regras dos itens e as condições dos termos citam o que o formulário conhece; os itens
-        // e as derivações podem ter mudado depois da citação.
-        return CitacaoInvalidaNosFormularios(_formularios.Select(static f => f.Finalidade), _fatosColetados, _termosExigidos, _regrasDerivacao);
+        // As regras dos itens, a exibição das seções e as condições dos termos citam o que o
+        // formulário conhece; os itens e as derivações podem ter mudado depois da citação.
+        return CitacaoInvalidaNosFormularios(_formularios, _fatosColetados, _termosExigidos, _regrasDerivacao);
     }
 
     /// <summary>
@@ -4328,9 +4394,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _regrasDerivacao.SelectMany(static c => c.Regras.Select(r => (c.CodigoFato, r.Contribui))));
 
     /// <summary>
-    /// Todo predicado vivo que cita fato por valor: gatilhos de exigência, pré-condições da coleta,
-    /// condições das regras de derivação, critérios de desempate por fato e condições dos termos
-    /// do formulário.
+    /// Todo predicado vivo que cita fato por valor: gatilhos de exigência, regras dos itens,
+    /// condições das regras de derivação, critérios de desempate por fato, condições dos termos e
+    /// exibição das seções do formulário.
     /// </summary>
     private IEnumerable<(string Fato, JsonElement Valor)> CondicoesVivas() =>
         _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Valor))
@@ -4339,7 +4405,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 .Select(static c => (c.Fato, c.Valor)))
             .Concat(_criteriosDesempate.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
                 .Select(static a => (a.Condicao.Fato, a.Condicao.Valor)))
-            .Concat(_termosExigidos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor)));
+            .Concat(_termosExigidos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor)))
+            .Concat(_formularios.SelectMany(static f => f.Etapas).SelectMany(static e => e.Condicoes).Select(static c => (c.Fato, c.Valor)));
 
     /// <summary>
     /// CA-03 (Story #554, issue #892): um gatilho DNF sobre um

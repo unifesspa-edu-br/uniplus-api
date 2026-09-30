@@ -281,12 +281,13 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarStringOpcional(etapa, "bloco", out string? bloco)
                 || !TentarString(etapa, "titulo", out string titulo)
                 || !TentarStringOpcional(etapa, "descricao", out string? descricao)
-                || !TentarStringOpcional(etapa, "aviso", out string? aviso))
+                || !TentarStringOpcional(etapa, "aviso", out string? aviso)
+                || !TentarPredicado(etapa, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao))
             {
                 return false;
             }
 
-            etapas.Add(new EtapaFormularioDto(codigo, ordem, tipo, bloco, titulo, descricao, aviso));
+            etapas.Add(new EtapaFormularioDto(codigo, ordem, tipo, bloco, titulo, descricao, aviso, exibicao));
         }
 
         return true;

@@ -382,6 +382,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["titulo"] = HashCanonicalComputer.NormalizeNfc(e.Titulo),
                 ["descricao"] = e.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
                 ["aviso"] = e.Aviso is { } aviso ? HashCanonicalComputer.NormalizeNfc(aviso) : null,
+                ["exibicao"] = e.Exibicao is { } exibicao ? SerializarDnf(LinhasDoPredicado(exibicao)) : null,
             })]),
             ["termos"] = new JsonArray([.. processo.TermosExigidos
                 .Where(t => t.Finalidade == formulario.Finalidade)

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// O formulário do processo para uma finalidade (UNI-REQ-0144): a fase do cronograma em que é
@@ -161,12 +162,26 @@ public sealed class EtapaFormulario : EntityBase
 
     public string? Aviso { get; private set; }
 
+    /// <summary>
+    /// A condição em que a seção aparece, sobre fatos conhecidos antes dela (UNI-REQ-0145); nula
+    /// quando a seção sempre aparece. Seção oculta leva os seus itens a não aplicável. O bloco de
+    /// sistema não tem exibição condicional.
+    /// </summary>
+    public PredicadoDnf? Exibicao { get; private set; }
+
     private EtapaFormulario() { }
 
     public EtapaEstrutura Estrutura => new(Codigo, Ordem, Tipo, Bloco);
 
+    /// <summary>Os fatos que a exibição cita.</summary>
+    public IReadOnlyCollection<string> FatosCitados => Exibicao?.FatosCitados ?? [];
+
+    /// <summary>As condições da exibição, para os vínculos e as referências a valor do processo.</summary>
+    public IEnumerable<CondicaoDnf> Condicoes => (Exibicao?.Clausulas ?? []).SelectMany(static c => c.Condicoes);
+
     public static Result<EtapaFormulario> Criar(
-        string codigo, int ordem, TipoEtapaFormulario tipo, BlocoSistema bloco, string titulo, string? descricao, string? aviso)
+        string codigo, int ordem, TipoEtapaFormulario tipo, BlocoSistema bloco, string titulo, string? descricao, string? aviso,
+        PredicadoDnf? exibicao = null)
     {
         List<FieldError> erros = [];
         void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
@@ -204,6 +219,12 @@ public sealed class EtapaFormulario : EntityBase
                 $"O aviso da etapa tem no máximo {TextoMaxLength} caracteres.");
         }
 
+        if (exibicao is not null && tipo != TipoEtapaFormulario.Secao)
+        {
+            Recusar("exibicao", FormularioProcessoErrorCodes.ExibicaoForaDeSecao,
+                "Só a seção tem exibição condicional; o bloco de sistema aparece sempre.");
+        }
+
         if (erros.Count > 0)
         {
             return Result<EtapaFormulario>.ValidationFailure(erros);
@@ -218,6 +239,7 @@ public sealed class EtapaFormulario : EntityBase
             Titulo = tituloNormalizado,
             Descricao = descricaoNormalizada,
             Aviso = avisoNormalizado,
+            Exibicao = exibicao,
         });
     }
 
@@ -232,6 +254,7 @@ public static class FormularioProcessoErrorCodes
     public const string EtapaOrdemInvalida = "FormularioProcesso.EtapaOrdemInvalida";
     public const string EtapaTituloInvalido = "FormularioProcesso.EtapaTituloInvalido";
     public const string EtapaTextoTamanho = "FormularioProcesso.EtapaTextoTamanho";
+    public const string ExibicaoForaDeSecao = "FormularioProcesso.ExibicaoForaDeSecao";
 
     /// <summary>Formulário publicado sem a fase em que é respondido.</summary>
     public const string SemFase = "ProcessoSeletivo.FormularioSemFase";

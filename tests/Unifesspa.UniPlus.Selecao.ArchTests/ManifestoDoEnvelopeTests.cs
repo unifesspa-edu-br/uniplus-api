@@ -384,10 +384,12 @@ public sealed class ManifestoDoEnvelopeTests
             ]),
 
         [typeof(EtapaFormulario)] = (
-            ["Codigo", "Ordem", "Tipo", "Bloco", "Titulo", "Descricao", "Aviso"],
+            ["Codigo", "Ordem", "Tipo", "Bloco", "Titulo", "Descricao", "Aviso", "Exibicao"],
             [
                 ("FormularioProcessoId", "FK interna."),
                 ("Estrutura", "Derivada dos campos da etapa — recomputada, nunca persistida."),
+                ("FatosCitados", "Derivada da Exibicao — recomputada, nunca persistida."),
+                ("Condicoes", "Derivada da Exibicao — recomputada, nunca persistida."),
             ]),
 
         [typeof(TermoExigidoFormulario)] = (

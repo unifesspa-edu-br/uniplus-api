@@ -278,10 +278,10 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             return Result<EnvelopeReidratado>.Failure(malformado);
         }
 
-        // As regras dos itens e dos termos citam só o que o formulário delas conhece, pela mesma
-        // conferência da escrita e da publicação.
+        // As regras dos itens, das seções e dos termos citam só o que o formulário delas conhece,
+        // pela mesma conferência da escrita e da publicação.
         if (ProcessoSeletivo.CitacaoInvalidaNosFormularios(
-                formularios.Select(static f => f.Finalidade), fatosColetados, termosExigidos, regrasDerivacao) is { } citacaoInvalida)
+                formularios, fatosColetados, termosExigidos, regrasDerivacao) is { } citacaoInvalida)
         {
             return Result<EnvelopeReidratado>.Failure(new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {citacaoInvalida.Message}"));

@@ -111,7 +111,8 @@ public static class ObterProcessoSeletivoQueryHandler
         formulario.ModeloOrigemId,
         formulario.ModeloOrigemCodigo,
         [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(static e => new EtapaFormularioDto(
-            e.Codigo, e.Ordem, EstruturaFormulario.ParaToken(e.Tipo), EstruturaFormulario.ParaToken(e.Bloco), e.Titulo, e.Descricao, e.Aviso))],
+            e.Codigo, e.Ordem, EstruturaFormulario.ParaToken(e.Tipo), EstruturaFormulario.ParaToken(e.Bloco), e.Titulo, e.Descricao, e.Aviso,
+            e.Exibicao?.ToDto()))],
         [.. processo.FatosColetados.Where(f => f.Finalidade == formulario.Finalidade).OrderBy(static f => f.Ordem)
             .Select(f => ProjectFatoColetado(processo, f))],
         [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem)

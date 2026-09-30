@@ -242,6 +242,103 @@ public sealed class FormulariosPorFinalidadeTests
             .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 
+    private static IReadOnlyList<EtapaFormulario> EtapasComExibicao(string? citado) =>
+    [
+        EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
+        EtapaFormulario.Criar("RENDA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Renda", null, null,
+            citado is null
+                ? null
+                : PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!).Value!,
+        EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+    ];
+
+    private static FatoColetado ItemNaSecao(string codigo, int ordem, string secao) =>
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: secao).Value!;
+
+    [Fact(DisplayName = "Exibição de seção cita campo de seção anterior; campo da própria seção é recusado")]
+    public void Secao_ExibicaoCitaSoOQueVemAntes()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao,
+            [ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("TEM_RENDA"), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("RENDA_FORMAL"), PrecondicaoIfMatch.Ausente)
+            .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+            {
+                Field = "etapas[1].exibicao",
+                Error = new { Code = FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior },
+            });
+    }
+
+    [Fact(DisplayName = "Trocar os itens de modo que a seção passe a citar campo dela mesma é recusado")]
+    public void Secao_ItensQueQuebramAExibicao_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao,
+            [ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("TEM_RENDA"), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao,
+                [ItemNaSecao("RENDA_FORMAL", 0, "DADOS"), ItemNaSecao("TEM_RENDA", 1, "RENDA")], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+    }
+
+    [Fact(DisplayName = "A inscrição não perde fato que a exibição de uma seção de outra finalidade cita")]
+    public void Inscricao_NaoPerdeFatoCitadoPorSecaoDeOutraFinalidade()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, EtapasComExibicao("TEM_RENDA"), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+    }
+
+    [Fact(DisplayName = "A publicação recusa seção que cita derivado redefinido sobre campo da própria seção")]
+    public void Publicacao_SecaoCitaDerivadoRedefinido_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao,
+            [ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IReadOnlyList<EtapaFormulario> etapas =
+        [
+            EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
+            EtapaFormulario.Criar("RENDA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Renda", null, null,
+                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!)]).Value!).Value!,
+            EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+        ];
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, etapas, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("RENDA_FORMAL")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+    }
+
+    [Fact(DisplayName = "Bloco de sistema não tem exibição condicional")]
+    public void Bloco_ComExibicao_Recusa() =>
+        EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null,
+                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)
+            .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+            {
+                Field = "exibicao",
+                Error = new { Code = FormularioProcessoErrorCodes.ExibicaoForaDeSecao },
+            });
+
     private static FatoColetado ItemQueCitaModalidade(int ordem) =>
         FatoColetado.Criar(
             "CONCORRER_EP", ordem, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
