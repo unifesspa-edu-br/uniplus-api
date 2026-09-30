@@ -39,12 +39,20 @@ public static class ResolvedorEstadoFatos
     /// coletado é <b>ignorada</b>: o grafo é a autoridade sobre o que existe, e uma resposta órfã
     /// não deve criar um fato que a configuração não prevê.
     /// </param>
+    /// <param name="valoresOfertados">
+    /// Os valores que o processo oferta a cada fato categórico coletado, congelados no edital. Uma
+    /// resposta com valor fora da oferta <b>não vale</b>: o fato fica sem resposta e nunca satisfaz
+    /// uma condição, mesmo que a condição cite aquele valor — por exemplo, uma opção retirada numa
+    /// retificação ou um município que deixou a área do bônus.
+    /// </param>
     public static IReadOnlyDictionary<string, FatoResolvido> Resolver(
         IReadOnlyCollection<FatoColetado> fatosColetados,
-        IReadOnlyDictionary<string, JsonElement> respostasBrutas)
+        IReadOnlyDictionary<string, JsonElement> respostasBrutas,
+        IReadOnlyDictionary<string, IReadOnlySet<string>> valoresOfertados)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
         ArgumentNullException.ThrowIfNull(respostasBrutas);
+        ArgumentNullException.ThrowIfNull(valoresOfertados);
 
         DefinicaoEtapa coleta = new(
             EtapaDaColeta,
@@ -58,10 +66,19 @@ public static class ResolvedorEstadoFatos
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
             new DefinicaoFormulario([coleta], termos: [], derivacoes: []),
             new EntradaAvaliacaoFormulario(
-                respostasBrutas,
+                RespostasDentroDaOferta(respostasBrutas, valoresOfertados),
                 EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
                 FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
 
         return avaliacao.Fatos;
     }
+
+    private static Dictionary<string, JsonElement> RespostasDentroDaOferta(
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlySet<string>> valoresOfertados) =>
+        respostas
+            .Where(resposta => !valoresOfertados.TryGetValue(resposta.Key, out IReadOnlySet<string>? oferta)
+                || RespostaDeCampo.EstaVazia(resposta.Value)
+                || RespostaDeCampo.Codigos(resposta.Value) is { } codigos && codigos.All(oferta.Contains))
+            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
 }

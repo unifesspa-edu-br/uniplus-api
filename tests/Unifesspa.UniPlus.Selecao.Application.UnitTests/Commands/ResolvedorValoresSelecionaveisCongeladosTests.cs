@@ -40,7 +40,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirFatosColetados(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, true, null, opcoesDoProcesso: true).Value!],
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, true, null, origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM",
@@ -58,6 +58,31 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
 
         valores!.Select(static v => v.Codigo).Should().Equal("2025", "2024");
         valores![0].Descricao.Should().Be("ENEM 2025");
+    }
+
+    [Fact(DisplayName = "Resolver congela, para fato de fonte dos municípios do bônus, os municípios da área em ordem de nome")]
+    public void Resolver_FatoDosMunicipiosDoBonus_CongelaOsMunicipiosDaArea()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirBonusRegional(ConfiguracaoBonusRegional.Criar(
+            ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
+            1.20m, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+            [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(
+            [FatoColetado.Criar("MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, true, null,
+                origemValores: OrigemValoresColeta.MunicipiosDoBonus).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
+        {
+            ["MUNICIPIO_EM_AREA_BONUS"] = FatoCategoricoDeEscopoProcesso("MUNICIPIO_EM_AREA_BONUS") with { FonteValores = "MUNICIPIOS_BONUS" },
+        };
+
+        IReadOnlyList<ValorDominioDeclaradoCongelado>? valores =
+            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["MUNICIPIO_EM_AREA_BONUS"];
+
+        valores!.Select(static v => (v.Codigo, v.Descricao)).Should().Equal(
+            ("1500131", "Água Azul do Norte/PA"), ("1504208", "Marabá/PA"), ("1505536", "Parauapebas/PA"));
     }
 
     [Fact(DisplayName = "Resolver recusa CONDICAO_ATENDIMENTO coletável sem nenhuma condição ofertada")]

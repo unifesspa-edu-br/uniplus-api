@@ -1570,7 +1570,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
     private static FatoColetado FatoEdicaoEnem() => FatoColetado.Criar(
         "EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
-        opcoesDoProcesso: true).Value!;
+        origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!;
 
     private static OpcaoDeclaradaFato Opcao(string codigo, int ordem = 0) =>
         OpcaoDeclaradaFato.Criar("EDICAO_ENEM", codigo, $"ENEM {codigo}", ordem).Value!;
@@ -1624,4 +1624,80 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .Error!.Code.Should().Be("OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva");
     }
 
+    // ══════════════════════════════════════════════════════════════════════════════════════
+    // Municípios do bônus regional como opções (issue #1691)
+    // ══════════════════════════════════════════════════════════════════════════════════════
+
+    private static FatoColetado FatoMunicipioDoBonus() => FatoColetado.Criar(
+        "MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+        origemValores: OrigemValoresColeta.MunicipiosDoBonus).Value!;
+
+    private static ConfiguracaoBonusRegional Bonus(params (string CodigoIbge, string Nome, string Uf)[] municipios) =>
+        ConfiguracaoBonusRegional.Criar(
+            ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
+            1.20m, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+            municipios).Value!;
+
+    [Fact(DisplayName = "Fato coletado com os municípios do bônus num processo sem bônus: item vermelho; com bônus, liberado")]
+    public void FatoDosMunicipiosDoBonusSemBonus_RecusaAteHaverBonus()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados([FatoMunicipioDoBonus()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+
+        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Redefinir o bônus recusa tirar da área um município citado por exigência viva")]
+    public void DefinirBonusRegional_MunicipioCitadoPorExigencia_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados([FatoMunicipioDoBonus()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [CondicaoGatilho.Criar(0, "MUNICIPIO_EM_AREA_BONUS", Operador.Igual, JsonSerializer.SerializeToElement("1505536")).Value!],
+            basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
+        processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
+    }
+
+    [Fact(DisplayName = "Município citado fora da área do bônus é pendência de publicação mesmo quando o campo saiu da coleta ao redefinir o bônus")]
+    public void MunicipioCitadoForaDaArea_ContornandoPelaColeta_PendenciaDePublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados([FatoMunicipioDoBonus()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [CondicaoGatilho.Criar(0, "MUNICIPIO_EM_AREA_BONUS", Operador.Igual, JsonSerializer.SerializeToElement("1505536")).Value!],
+            basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados([FatoMunicipioDoBonus()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+            .Which.Codigo.Should().Be("fato_coletavel_municipio_citado_fora_da_area_do_bonus");
+    }
 }

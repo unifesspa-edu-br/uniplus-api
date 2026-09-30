@@ -57,10 +57,39 @@ public sealed class ResolvedorEstadoFatosTests
             Cond("BAIXA_RENDA", Operador.Igual, Sim)),
     ];
 
+    /// <summary>As cores ofertadas ao candidato: o vocabulário normativo inteiro.</summary>
+    private static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> CoresOfertadas =
+        new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
+        {
+            ["COR_RACA"] = new HashSet<string>(["AMARELA", "BRANCA", "INDIGENA", "NAO_INFORMADO", "PARDA", "PRETA"], StringComparer.Ordinal),
+        };
+
     private static IReadOnlyDictionary<string, FatoResolvido> Resolver(params (string Fato, JsonElement Valor)[] respostas) =>
+        ResolverComOferta(CoresOfertadas, respostas);
+
+    private static IReadOnlyDictionary<string, FatoResolvido> ResolverComOferta(
+        IReadOnlyDictionary<string, IReadOnlySet<string>> oferta, params (string Fato, JsonElement Valor)[] respostas) =>
         ResolvedorEstadoFatos.Resolver(
             TabelaNormativa(),
-            respostas.ToDictionary(static r => r.Fato, static r => r.Valor, StringComparer.Ordinal));
+            respostas.ToDictionary(static r => r.Fato, static r => r.Valor, StringComparer.Ordinal),
+            oferta);
+
+    [Fact(DisplayName = "Valor fora da oferta do processo não vale e nunca satisfaz condição")]
+    public void RespostaForaDaOferta_NaoSatisfazCondicao()
+    {
+        Dictionary<string, IReadOnlySet<string>> semIndigena = new(StringComparer.Ordinal)
+        {
+            ["COR_RACA"] = new HashSet<string>(["PARDA", "PRETA"], StringComparer.Ordinal),
+        };
+
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolverComOferta(
+            semIndigena,
+            ("EGRESSO_ESCOLA_PUBLICA", Sim), ("COR_RACA", Cor("INDIGENA")), ("CONCORRER_PPI", Sim));
+
+        estados["COR_RACA"].Estado.Should().Be(EstadoFato.Indeterminado, "a resposta fora da oferta não vale");
+        estados["CONCORRER_PPI"].Estado.Should().NotBe(
+            EstadoFato.Resolvido, "a condição cita INDIGENA, mas o valor não é ofertado e por isso não a satisfaz");
+    }
 
     [Fact(DisplayName = "Opt-in condicionado à elegibilidade não é coletado quando a autodeclaração é negativa")]
     public void OptIn_SemElegibilidade_NaoAplicavel()
@@ -193,7 +222,8 @@ public sealed class ResolvedorEstadoFatosTests
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
             embaralhado,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["PCD"] = Nao });
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["PCD"] = Nao },
+            CoresOfertadas);
 
         estados["CONCORRER_PCD"].Estado.Should().Be(
             EstadoFato.NaoAplicavel,

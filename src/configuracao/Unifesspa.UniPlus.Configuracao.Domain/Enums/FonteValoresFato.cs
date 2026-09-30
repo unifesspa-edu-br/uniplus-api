@@ -21,4 +21,10 @@ public enum FonteValoresFato
 
     /// <summary>Os valores são as modalidades ofertadas pelo processo (MODALIDADE).</summary>
     Modalidade,
+
+    /// <summary>
+    /// Os valores são os municípios da área do bônus regional que o processo configurou, pelo
+    /// código IBGE.
+    /// </summary>
+    MunicipiosBonus,
 }
