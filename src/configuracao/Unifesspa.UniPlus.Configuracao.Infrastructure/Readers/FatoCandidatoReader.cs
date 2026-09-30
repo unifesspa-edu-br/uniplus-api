@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 /// <summary>
 /// Implementação de <see cref="IFatoCandidatoReader"/> (ADR-0056, ADR-0111):
 /// leitura direta do catálogo <c>rol_de_fatos_candidato</c> (<c>AsNoTracking</c>). Sem
-/// cache — o catálogo é de baixo volume (nove fatos), imutável (seed-governado), e
-/// o congelamento por valor no consumidor (ADR-0061) dispensa releitura quente
+/// cache — o catálogo é de baixo volume, e o congelamento por valor no consumidor (ADR-0061)
+/// dispensa releitura quente
 /// (mesmo padrão do <c>TipoDocumentoReader</c>).
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -67,7 +67,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             DominiosFato.ParaTokenCanonico(f.Dominio),
             OrigensFato.ParaTokenCanonico(f.Origem),
             CardinalidadesFato.ParaTokenCanonico(f.Cardinalidade),
-            ParaValoresDominio(f.ValoresDominio, valoresDominioDeclarados),
+            valoresDominioDeclarados?.Select(static v => v.Codigo).ToList(),
             f.PontoResolucao,
             f.Binding,
             valoresDominioDeclarados,
@@ -82,15 +82,4 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
                 .OrderBy(v => v.Ordem)
                 .ThenBy(v => v.Codigo, StringComparer.Ordinal)
                 .Select(v => new FatoValorDominioViewItem(v.Codigo, v.Descricao, v.Ordem, v.Ativo))];
-
-    /// <summary>
-    /// Um categórico estático migrado para <c>FatoValorDominio</c> (ex.: <c>COR_RACA</c>,
-    /// <c>SEXO</c>, <c>NACIONALIDADE</c>) tem o <c>jsonb</c> legado nulo — projeta os
-    /// códigos declarados de volta para <see cref="FatoCandidatoView.ValoresDominio"/>
-    /// para que o consumidor cross-módulo continue classificando o fato como categórico
-    /// <b>estático</b> (não escopo-processo/dinâmico), preservando o contrato de leitura.
-    /// </summary>
-    private static IReadOnlyList<string>? ParaValoresDominio(
-        IReadOnlyList<string>? valoresDominio, IReadOnlyList<FatoValorDominioViewItem>? valoresDominioDeclarados) =>
-        valoresDominio ?? valoresDominioDeclarados?.Select(static v => v.Codigo).ToList();
 }

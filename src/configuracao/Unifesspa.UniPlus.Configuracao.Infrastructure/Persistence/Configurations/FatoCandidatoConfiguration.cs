@@ -1,10 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -18,23 +16,14 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A tabela é <strong>seed-governada e append-only</strong>: não há CRUD de
-/// administrador, a única escrita é o seed, e a entidade deriva de
-/// <c>EntityBase</c> puro (sem soft-delete). Por isso o índice único
-/// <c>ux_rol_de_fatos_candidato_codigo</c> é <strong>total</strong> (não parcial, como o
-/// dos cadastros editáveis) — o código é chave natural imutável de uma linha que
-/// nunca é logicamente removida. O append-only é imposto por convenção (ausência
-/// de API de mutação; leitura via <c>IFatoCandidatoReader</c>), não por gatilho.
+/// O fato é desativado, nunca apagado, e a entidade deriva de <c>EntityBase</c> puro (sem
+/// soft-delete). Por isso o índice único <c>ux_rol_de_fatos_candidato_codigo</c> é
+/// <strong>total</strong>: o código é chave natural imutável de uma linha que nunca é removida.
 /// </para>
 /// <para>
-/// <c>dominio</c>, <c>origem</c> e <c>cardinalidade</c> são enums persistidos
-/// como token canônico UPPER_SNAKE por value converter (reidratação fail-fast); um
-/// CHECK por coluna restringe o texto ao domínio fechado. <c>valores_dominio</c> é
-/// <c>jsonb</c> <strong>anulável</strong>: o nulo é significante (categórico de
-/// escopo-processo, ou booleano/numérico) e é preservado no round-trip — não há
-/// default <c>'[]'</c> que o mascare. Um CHECK garante a coerência do preenchimento
-/// com o domínio. <c>ponto_resolucao</c>/<c>binding</c> (ADR-0116) são referência
-/// por valor, sem FK.
+/// Os enums são persistidos como token canônico UPPER_SNAKE por value converter (reidratação
+/// fail-fast), cada um com um CHECK que restringe o texto ao domínio fechado.
+/// <c>ponto_resolucao</c>/<c>binding</c> (ADR-0116) são referência por valor, sem FK.
 /// </para>
 /// </remarks>
 [SuppressMessage(
@@ -49,11 +38,8 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
     private const int EnumTokenMaxLength = 20;
     private const int PontoResolucaoMaxLength = 50;
     private const int BindingMaxLength = 200;
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = false,
-    };
+    private const int FinalidadeTratamentoMaxLength = 500;
+    private const int HipoteseLegalMaxLength = 40;
 
     public void Configure(EntityTypeBuilder<FatoCandidato> builder)
     {
@@ -92,14 +78,31 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             .HasConversion(FonteValoresConverter)
             .HasMaxLength(EnumTokenMaxLength);
 
-        // valores_dominio: conjunto fechado de um categórico estático, serializado
-        // como jsonb anulável. Sem default '[]' — o nulo (escopo-processo, ou
-        // booleano/numérico) é significante e precisa sobreviver ao round-trip. O
-        // converter não-nulo é passado pelo overload não-genérico (a coluna
-        // anulável é encapsulada pelo EF: null → NULL, sem chamar o converter).
-        builder.Property(f => f.ValoresDominio)
-            .HasConversion((ValueConverter)ValoresDominioConverter, ValoresDominioComparer)
-            .HasColumnType("jsonb");
+        builder.Property(f => f.Escopo)
+            .HasConversion(EscopoConverter)
+            .HasMaxLength(EnumTokenMaxLength)
+            .IsRequired();
+
+        // Proteção de dados (ADR-0136): classificação na escala da ADR-0081, finalidade e
+        // hipótese legal do tratamento, obrigatórias em todo fato.
+        builder.Property(f => f.ClassificacaoProtecao)
+            .HasConversion(ClassificacaoProtecaoConverter)
+            .HasMaxLength(EnumTokenMaxLength)
+            .IsRequired();
+        builder.Property(f => f.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired();
+        builder.Property(f => f.HipoteseLegal)
+            .HasConversion(HipoteseLegalConverter)
+            .HasMaxLength(HipoteseLegalMaxLength)
+            .IsRequired();
+
+        builder.Property(f => f.Sistema).IsRequired();
+        builder.Property(f => f.Ativo).IsRequired();
+        builder.Property(f => f.CreatedBy).HasMaxLength(255);
+        builder.Property(f => f.UpdatedBy).HasMaxLength(255);
+
+        // Concorrência otimista pela coluna de sistema xmin (convenção do provider Npgsql, sem
+        // coluna própria): duas edições concorrentes do mesmo fato não se sobrescrevem.
+        builder.Property<uint>("Version").IsRowVersion();
 
         // ponto_resolucao/binding (ADR-0116): referência por valor, sem FK — mesmo
         // padrão de dominio/origem/cardinalidade (código como valor, não linha viva).
@@ -117,8 +120,8 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
         builder.Navigation(f => f.ValoresDominioDeclarados)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // UNIQUE total do código (chave natural imutável): o catálogo é append-only
-        // e sem soft-delete, então não há slot a liberar — a unicidade é absoluta.
+        // UNIQUE total do código (chave natural imutável): o fato é desativado, nunca apagado,
+        // então não há slot a liberar — a unicidade é absoluta.
         builder.HasIndex(f => f.Codigo)
             .IsUnique()
             .HasDatabaseName("ux_rol_de_fatos_candidato_codigo");
@@ -148,28 +151,17 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             $"(dominio = 'CATEGORICO' AND fonte_valores IN ({TokensSql(FontesValoresFato.TokensCanonicos)})) "
             + "OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
 
-        // Coerência valores_dominio × domínio (invariante da factory, replicada no
-        // banco): só categórico pode enumerar valores; quando enumera, é um array
-        // jsonb não vazio cujos elementos são todos strings não vazias (o jsonpath
-        // rejeita elemento de outro tipo, ex.: [1], e string em branco ASCII, ex.:
-        // ["  "] — que a factory recusa e que quebraria a desserialização do reader).
-        // Nulo é sempre válido (escopo-processo / não-categórico). O regex \s do
-        // jsonpath do Postgres cobre o whitespace ASCII; a paridade total com o
-        // char.IsWhiteSpace da factory (whitespace Unicode como NBSP) não é
-        // exprimível no like_regex (não há \p{Z}), então a factory permanece o guarda
-        // autoritativo — o CHECK é defesa em profundidade para os casos realistas de
-        // insert cru, e o seed jamais produz esses valores. A ausência de duplicatas,
-        // idem: garantida pela factory e pelo teste do seed.
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_valores_dominio_coerente",
-            """
-            valores_dominio IS NULL OR (
-                dominio = 'CATEGORICO'
-                AND jsonb_typeof(valores_dominio) = 'array'
-                AND valores_dominio <> '[]'::jsonb
-                AND NOT (valores_dominio @? '$[*] ? (@.type() != "string" || @ like_regex "^\\s*$")')
-            )
-            """);
+            "ck_rol_de_fatos_candidato_escopo",
+            $"escopo IN ({TokensSql(EscoposFato.TokensCanonicos)})");
+
+        table.HasCheckConstraint(
+            "ck_rol_de_fatos_candidato_classificacao_protecao",
+            $"classificacao_protecao IN ({TokensSql(ClassificacoesProtecaoDado.TokensCanonicos)})");
+
+        table.HasCheckConstraint(
+            "ck_rol_de_fatos_candidato_hipotese_legal",
+            $"hipotese_legal IN ({TokensSql(HipotesesLegaisTratamento.TokensCanonicos)})");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>
@@ -197,9 +189,14 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             item.Origem,
             item.Cardinalidade,
             item.FonteValores,
-            item.ValoresDominio,
             item.PontoResolucao,
             item.Binding,
+            Escopo = EscopoFato.Candidato,
+            item.ClassificacaoProtecao,
+            item.FinalidadeTratamento,
+            FatoCandidatoSeed.HipoteseLegal,
+            Sistema = true,
+            Ativo = true,
             CreatedAt = seedCriadoEm,
         });
     }
@@ -218,27 +215,12 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
     private static readonly ValueConverter<CardinalidadeFato, string> CardinalidadeConverter =
         new(cardinalidade => CardinalidadesFato.ParaTokenCanonico(cardinalidade), token => CardinalidadesFato.Analisar(token));
 
-    // Lista de códigos serializada como jsonb. Nulo é encapsulado pelo EF (o
-    // converter cobre apenas o valor não-nulo) e persiste como NULL na coluna.
-    private static readonly ValueConverter<IReadOnlyList<string>, string> ValoresDominioConverter =
-        new(
-            valores => JsonSerializer.Serialize(valores, JsonOptions),
-            json => DeserializarValores(json));
+    private static readonly ValueConverter<EscopoFato, string> EscopoConverter =
+        new(escopo => EscoposFato.ParaTokenCanonico(escopo), token => EscoposFato.Analisar(token));
 
-    // Null-aware: o nulo (escopo-processo / não-categórico) é distinto da lista
-    // vazia — nunca conflá-los, sob pena de o snapshot do change-tracker
-    // materializar um nulo como '[]' e violar a invariante da ADR-0111. Igualdade
-    // por sequência ordinal; snapshot preserva o nulo.
-    private static readonly ValueComparer<IReadOnlyList<string>> ValoresDominioComparer =
-        new(
-            (a, b) => a == null ? b == null : b != null && a.SequenceEqual(b, StringComparer.Ordinal),
-            v => v == null
-                ? 0
-                : v.Aggregate(0, (acc, item) => HashCode.Combine(acc, StringComparer.Ordinal.GetHashCode(item))),
-            v => v == null ? null! : v.ToList());
+    private static readonly ValueConverter<ClassificacaoProtecaoDado, string> ClassificacaoProtecaoConverter =
+        new(classificacao => ClassificacoesProtecaoDado.ParaTokenCanonico(classificacao), token => ClassificacoesProtecaoDado.Analisar(token));
 
-    private static List<string> DeserializarValores(string json) =>
-        string.IsNullOrEmpty(json)
-            ? []
-            : JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
+    private static readonly ValueConverter<HipoteseLegalTratamento, string> HipoteseLegalConverter =
+        new(hipotese => HipotesesLegaisTratamento.ParaTokenCanonico(hipotese), token => HipotesesLegaisTratamento.Analisar(token));
 }

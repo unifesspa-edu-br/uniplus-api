@@ -11,10 +11,10 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// <remarks>
 /// <para>
 /// <see cref="EntityBase"/> puro (sem soft-delete): assim como o
-/// <see cref="FatoCandidato"/> pai, é seed-governado e append-only.
+/// <see cref="FatoCandidato"/> pai, é desativado, nunca apagado.
 /// </para>
 /// <para>
-/// Só nasce por <see cref="FatoCandidato.AdicionarValorDominio"/> — o único que
+/// Fora do seed do fato de sistema, só nasce por <see cref="FatoCandidato.AdicionarValorDominio"/> — o único que
 /// conhece a <see cref="FatoCandidato.Origem"/> do pai (para exigir descrição) e os
 /// irmãos já adicionados (para a unicidade do <see cref="Codigo"/>). Por isso a
 /// validação de negócio vive no agregado pai; esta factory só recusa o que nenhum

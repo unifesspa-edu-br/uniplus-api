@@ -1,18 +1,16 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Domínio (tipo de dado) de um <see cref="Entities.FatoCandidato"/> — decide
-/// quais operadores e que forma de valor um predicado sobre o fato aceita
-/// (ADR-0111). São <b>três</b>, fechados: o "texto" não é um domínio, é a
-/// ausência de domínio decidível. A distinção estático × escopo-processo de um
-/// fato categórico não é um quarto domínio — é o <c>ValoresDominio</c> nulo.
+/// Domínio (tipo de dado) de um <see cref="Entities.FatoCandidato"/> — decide quais operadores e
+/// que forma de valor um predicado sobre o fato aceita (ADR-0111). De onde vêm os valores do
+/// categórico não é outro domínio: é a <see cref="FonteValoresFato"/> (ADR-0136).
 /// </summary>
 public enum DominioFato
 {
     /// <summary>Sentinela — domínio não informado; rejeitado na criação.</summary>
     Nenhum = 0,
 
-    /// <summary>Conjunto fechado de códigos (estático no catálogo, ou de escopo-processo quando os valores são nulos).</summary>
+    /// <summary>Conjunto fechado de códigos; de onde vêm os valores diz a fonte dos valores.</summary>
     Categorico,
 
     /// <summary>Verdadeiro/falso.</summary>

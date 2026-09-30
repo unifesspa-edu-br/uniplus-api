@@ -18,9 +18,9 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 /// não é a FK cross-schema que o ADR-0061/fitness test
 /// <c>FatoCandidatoCatalogoTests.Migrations_SemFkParaFatoCandidato</c> proíbe (essa
 /// regra mira outros módulos referenciando o catálogo por FK; aqui é o próprio
-/// agregado pai e seu filho, dentro do mesmo módulo). Assim como o pai, é
-/// seed-governada e append-only: sem CRUD, escrita só via
-/// <see cref="FatoCandidato.AdicionarValorDominio"/> no seed.
+/// agregado pai e seu filho, dentro do mesmo módulo). O valor é desativado, nunca apagado: o do
+/// fato de sistema nasce pelo seed, e o do fato do administrador, por
+/// <see cref="FatoCandidato.AdicionarValorDominio"/>.
 /// </remarks>
 [SuppressMessage(
     "Performance",
@@ -46,7 +46,7 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
         builder.Property(v => v.Ativo).IsRequired();
 
         // Unicidade (FatoCandidatoId, Codigo) — código normalizado (trim, ordinal),
-        // garantida também pela factory (FatoCandidato.AdicionarValorDominio).
+        // garantida também pelo agregado (FatoCandidato.AdicionarValorDominio) no fato do administrador.
         builder.HasIndex(v => new { v.FatoCandidatoId, v.Codigo })
             .IsUnique()
             .HasDatabaseName("ux_fato_valor_dominio_fato_codigo");

@@ -82,8 +82,8 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public DbSet<TermoConsentimentoVersao> VersoesTermoConsentimento => Set<TermoConsentimentoVersao>();
 
     /// <summary>
-    /// Catálogo seed-governado do vocabulário fechado de fatos do candidato
-    /// (UNI-REQ-0077, ADR-0111). Metadado de classificação, sem PII.
+    /// Catálogo de fatos do candidato (UNI-REQ-0077, ADR-0136). Metadado de classificação, sem
+    /// valor de candidato.
     /// </summary>
     public DbSet<FatoCandidato> FatosCandidato => Set<FatoCandidato>();
 

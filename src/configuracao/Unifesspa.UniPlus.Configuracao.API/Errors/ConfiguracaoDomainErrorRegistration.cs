@@ -624,23 +624,65 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.fonte_valores_fora_de_categorico",
                 "Só fato categórico declara a fonte dos seus valores")),
 
-        new(FatoCandidatoErrorCodes.ValoresDominioNaoPermitidosForaDeCategorico,
+        new(FatoCandidatoErrorCodes.EscopoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fato_candidato.valores_dominio_nao_permitidos_fora_de_categorico",
-                "Valores de domínio só são permitidos para fatos categóricos")),
+                "uniplus.configuracao.fato_candidato.escopo_obrigatorio",
+                "Escopo do fato é obrigatório")),
 
-        new(FatoCandidatoErrorCodes.ValoresDominioComItemEmBranco,
+        new(FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fato_candidato.valores_dominio_com_item_em_branco",
-                "Lista de valores de domínio com item em branco")),
+                "uniplus.configuracao.fato_candidato.classificacao_protecao_obrigatoria",
+                "Classificação de proteção de dados do fato é obrigatória")),
 
-        new(FatoCandidatoErrorCodes.ValoresDominioComDuplicata,
+        new(FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fato_candidato.valores_dominio_com_duplicata",
-                "Lista de valores de domínio com item duplicado")),
+                "uniplus.configuracao.fato_candidato.finalidade_tratamento_obrigatoria",
+                "Finalidade do tratamento do fato é obrigatória")),
+
+        new(FatoCandidatoErrorCodes.FinalidadeTratamentoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.finalidade_tratamento_tamanho",
+                "Finalidade do tratamento acima do tamanho máximo")),
+
+        new(FatoCandidatoErrorCodes.HipoteseLegalObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.hipotese_legal_obrigatoria",
+                "Hipótese legal de tratamento do fato é obrigatória")),
+
+        new(FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.hipotese_legal_incompativel_com_classificacao",
+                "A hipótese legal não cabe na classificação de proteção do fato")),
+
+        new(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.fato_de_sistema_so_edita_nome_e_descricao",
+                "Fato de sistema só tem o nome e a descrição editáveis")),
+
+        new(FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.vinculo_exclusivo_de_fato_de_sistema",
+                "Fato do administrador é declarado ou derivado por regra")),
+
+        new(FatoCandidatoErrorCodes.JaAtivo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.ja_ativo",
+                "O fato já está ativo")),
+
+        new(FatoCandidatoErrorCodes.JaDesativado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.ja_desativado",
+                "O fato já está desativado")),
 
         new(FatoCandidatoErrorCodes.PontoResolucaoObrigatorio,
             new DomainErrorMapping(

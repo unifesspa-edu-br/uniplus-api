@@ -18,8 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Integração ponta-a-ponta do catálogo <c>rol_de_fatos_candidato</c> contra Postgres real
 /// (UNI-REQ-0077, ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078): seed dos dezessete fatos, leitor
-/// cross-módulo, ordenação, resolução por chave natural, sobrevivência do
-/// <c>valores_dominio</c> nulo ao round-trip, CHECKs de domínio/coerência, índice
+/// cross-módulo, ordenação, resolução por chave natural, CHECKs de domínio/coerência, índice
 /// único total do código e o seed de <c>fato_valor_dominio</c>.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
@@ -57,9 +56,13 @@ public sealed class FatoCandidatoPersistenceTests
                 item.Origem,
                 item.Cardinalidade,
                 item.FonteValores,
-                item.ValoresDominio,
                 item.PontoResolucao,
-                item.Binding);
+                item.Binding,
+                EscopoFato.Candidato,
+                item.ClassificacaoProtecao,
+                item.FinalidadeTratamento,
+                FatoCandidatoSeed.HipoteseLegal,
+                sistema: true);
 
             resultado.IsSuccess.Should().BeTrue(
                 $"o item semeado {item.Codigo} deve satisfazer as invariantes de domínio; erro: {resultado.Error?.Code}");
@@ -148,7 +151,6 @@ public sealed class FatoCandidatoPersistenceTests
             ["BAIXA_RENDA", "CONCORRER_PCD", "CONCORRER_EP", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA"]);
         foreach (FatoCandidato fato in booleanos)
         {
-            fato.ValoresDominio.Should().BeNull($"{fato.Codigo} é booleano — domínio intrínseco SIM/NÃO");
             fato.ValoresDominioDeclarados.Should().BeEmpty(
                 $"{fato.Codigo} é booleano; FatoValorDominio só vale para categórico estático");
         }
@@ -174,15 +176,120 @@ public sealed class FatoCandidatoPersistenceTests
             persistido.PontoResolucao.Should().Be(item.PontoResolucao);
             persistido.Binding.Should().Be(item.Binding);
 
-            if (item.ValoresDominio is null)
-            {
-                persistido.ValoresDominio.Should().BeNull($"{item.Codigo} tem valores nulos na fonte");
-            }
-            else
-            {
-                persistido.ValoresDominio.Should().Equal(item.ValoresDominio);
-            }
+            persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
+            persistido.FinalidadeTratamento.Should().Be(item.FinalidadeTratamento);
+            persistido.Sistema.Should().BeTrue($"{item.Codigo} é semeado pelo sistema");
+            persistido.Ativo.Should().BeTrue();
+            persistido.Escopo.Should().Be(EscopoFato.Candidato);
         }
+    }
+
+    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e o que os revela são sensíveis; os demais, pessoais")]
+    public async Task Seed_ClassificacaoDeProtecao()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+
+        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Sensivel)
+            .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
+                "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONDICAO_ATENDIMENTO", "COR_RACA", "MODALIDADE",
+                "PCD", "QUILOMBOLA", "TIPO_DEFICIENCIA");
+        fatos.Where(f => f.ClassificacaoProtecao != ClassificacaoProtecaoDado.Sensivel)
+            .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Pessoal);
+    }
+
+    [Fact(DisplayName = "CHECK recusa classificação de proteção fora do domínio via SQL cru")]
+    public async Task Check_RecusaClassificacaoInvalida()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO configuracao.rol_de_fatos_candidato
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
+                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"NAO_PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+            """);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_rol_de_fatos_candidato_classificacao_protecao só admite a escala da ADR-0081");
+    }
+
+    [Fact(DisplayName = "Duas edições concorrentes do mesmo fato: a segunda é recusada pela concorrência otimista")]
+    public async Task EdicaoConcorrente_SegundaRecusada()
+    {
+        FatoCandidato fato = NovoFatoDoAdministrador();
+        try
+        {
+            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            {
+                ctx.FatosCandidato.Add(fato);
+                await ctx.SaveChangesAsync();
+            }
+
+            await using ConfiguracaoDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+            await using ConfiguracaoDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+            FatoCandidato noPrimeiro = await primeiro.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
+            FatoCandidato noSegundo = await segundo.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
+
+            noPrimeiro.AlterarDescritivo("Nome da primeira edição", null).IsSuccess.Should().BeTrue();
+            await primeiro.SaveChangesAsync();
+            noSegundo.AlterarDescritivo("Nome da segunda edição", null).IsSuccess.Should().BeTrue();
+
+            Func<Task> act = () => segundo.SaveChangesAsync();
+            await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+        }
+        finally
+        {
+            await RemoverAsync(fato.Id);
+        }
+    }
+
+    [Fact(DisplayName = "Cadastro e edição do fato registram quem criou e quem alterou")]
+    public async Task CadastroEEdicao_RegistramAutoria()
+    {
+        FatoCandidato fato = NovoFatoDoAdministrador();
+        try
+        {
+            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            {
+                ctx.FatosCandidato.Add(fato);
+                await ctx.SaveChangesAsync();
+            }
+
+            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-2"))
+            {
+                FatoCandidato rastreado = await ctx.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
+                rastreado.Desativar().IsSuccess.Should().BeTrue();
+                await ctx.SaveChangesAsync();
+            }
+
+            await using ConfiguracaoDbContext leitura = _fixture.CreateDbContext(userId: null);
+            FatoCandidato persistido = await leitura.FatosCandidato.AsNoTracking().SingleAsync(f => f.Id == fato.Id);
+            persistido.CreatedBy.Should().Be("admin-1");
+            persistido.UpdatedBy.Should().Be("admin-2");
+        }
+        finally
+        {
+            await RemoverAsync(fato.Id);
+        }
+    }
+
+    /// <summary>O banco é compartilhado pela coleção: o fato criado pelo teste sai no fim, para não mudar o seed que os outros contam.</summary>
+    private async Task RemoverAsync(Guid id)
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await ctx.FatosCandidato.Where(f => f.Id == id).ExecuteDeleteAsync();
+    }
+
+    private static FatoCandidato NovoFatoDoAdministrador()
+    {
+        string codigo = CodigoUnico();
+        return FatoCandidato.Criar(
+            codigo, "Fato do administrador", null, DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            fonteValores: null, "INSCRICAO", $"CAMPO_INSCRICAO:{codigo}", EscopoFato.Candidato,
+            ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
     }
 
     [Fact(DisplayName = "Origem: FAIXA_ETARIA, RENDA_PER_CAPITA e MODALIDADE são Derivado; todos os demais são Declarado (ADR-0116)")]
@@ -229,26 +336,6 @@ public sealed class FatoCandidatoPersistenceTests
         multivalorados.Should().Equal("CONDICAO_ATENDIMENTO", "MODALIDADE");
         fatos.Where(f => f.Cardinalidade != CardinalidadeFato.Multivalorado)
             .Should().OnlyContain(f => f.Cardinalidade == CardinalidadeFato.Escalar);
-    }
-
-    [Fact(DisplayName = "valores_dominio nulo sobrevive ao round-trip jsonb (≠ lista vazia) — inclusive para os categóricos que migraram para FatoValorDominio")]
-    public async Task ValoresDominioNulo_SobreviveRoundTrip()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        FatoCandidato booleano = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "QUILOMBOLA");
-        booleano.ValoresDominio.Should().BeNull("booleano nunca enumera valores — o nulo é significante");
-
-        FatoCandidato escopoProcesso = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "MODALIDADE");
-        escopoProcesso.ValoresDominio.Should().BeNull("categórico de escopo-processo tem valores nulos, não vazios");
-
-        FatoCandidato tipoDeficiencia = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "TIPO_DEFICIENCIA");
-        tipoDeficiencia.ValoresDominio.Should().BeNull(
-            "TIPO_DEFICIENCIA é categórico de escopo-processo — o domínio vem do cadastro TipoDeficiencia, não deste jsonb");
-
-        FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
-        corRaca.ValoresDominio.Should().BeNull(
-            "COR_RACA migrou o conjunto fechado para FatoValorDominio (ADR-0116) — o jsonb antigo fica nulo para não duplicar a informação");
     }
 
     [Fact(DisplayName = "Seed de FatoValorDominio: COR_RACA (6), SEXO (3) e NACIONALIDADE (3) têm os valores filhos esperados")]
@@ -320,10 +407,8 @@ public sealed class FatoCandidatoPersistenceTests
         corRaca.Cardinalidade.Should().Be("ESCALAR");
         corRaca.PontoResolucao.Should().Be("INSCRICAO");
         corRaca.Binding.Should().Be("CAMPO_INSCRICAO:COR_RACA");
-        // O jsonb legado é nulo na entidade (ADR-0116), mas a view projeta os códigos
-        // declarados de volta para ValoresDominio — do contrário o consumidor
-        // cross-módulo (PredicadoDnfValidador) classificaria COR_RACA como categórico
-        // de escopo-processo/dinâmico em vez de estático, rejeitando um gatilho válido.
+        // A view projeta os códigos dos valores declarados em ValoresDominio, que o consumidor
+        // cross-módulo (PredicadoDnfValidador) usa como domínio do categórico estático.
         corRaca.ValoresDominio.Should().Equal("BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO");
         corRaca.ValoresDominioDeclarados.Should().NotBeNull().And.HaveCount(6);
         corRaca.ValoresDominioDeclarados!.Select(v => v.Codigo).Should().Contain("PRETA");
@@ -361,9 +446,9 @@ public sealed class FatoCandidatoPersistenceTests
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, valores_dominio, ponto_resolucao, binding, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {"COR_RACA"}, {"Duplicata"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
-                NULL, {"INSCRICAO"}, {"CAMPO_INSCRICAO:DUPLICATA"}, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_INSCRICAO:DUPLICATA"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
         Npgsql.PostgresException ex = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
@@ -379,9 +464,9 @@ public sealed class FatoCandidatoPersistenceTests
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, valores_dominio, ponto_resolucao, binding, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"ESCALAR"},
-                NULL, {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>("o CHECK ck_rol_de_fatos_candidato_dominio bloqueia 'TEXTO'");
@@ -395,98 +480,13 @@ public sealed class FatoCandidatoPersistenceTests
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, valores_dominio, ponto_resolucao, binding, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"BRUTO_INFORMADO"}, {"ESCALAR"},
-                NULL, {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_rol_de_fatos_candidato_origem bloqueia o token legado 'BRUTO_INFORMADO' (ADR-0116 renomeou para DECLARADO)");
-    }
-
-    [Fact(DisplayName = "CHECK de coerência recusa valores em fato não-categórico via SQL cru")]
-    public async Task Check_RecusaValoresEmNaoCategorico()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, valores_dominio, ponto_resolucao, binding, created_at)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"[\"SIM\"]"}::jsonb, {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {DateTimeOffset.UtcNow})
-            """);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de coerência só admite valores em fato CATEGORICO");
-    }
-
-    [Fact(DisplayName = "CHECK de coerência recusa array vazio em fato categórico via SQL cru")]
-    public async Task Check_RecusaArrayVazioEmCategorico()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, valores_dominio, ponto_resolucao, binding, created_at)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"CATEGORICO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"[]"}::jsonb, {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {DateTimeOffset.UtcNow})
-            """);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de coerência exige array não vazio quando valores_dominio é informado");
-    }
-
-    [Fact(DisplayName = "CHECK de coerência recusa elemento não-string no array via SQL cru")]
-    public async Task Check_RecusaElementoNaoString()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, valores_dominio, ponto_resolucao, binding, created_at)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"CATEGORICO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"[1]"}::jsonb, {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {DateTimeOffset.UtcNow})
-            """);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "um elemento numérico quebraria a desserialização de IReadOnlyList<string> no reader");
-    }
-
-    [Fact(DisplayName = "CHECK de coerência recusa string em branco no array via SQL cru")]
-    public async Task Check_RecusaStringEmBranco()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, valores_dominio, ponto_resolucao, binding, created_at)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"CATEGORICO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"[\"  \"]"}::jsonb, {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {DateTimeOffset.UtcNow})
-            """);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "a factory recusa item em branco; o CHECK espelha a invariante");
-    }
-
-    [Fact(DisplayName = "ValueComparer distingue nulo de lista vazia e preserva o nulo no snapshot")]
-    public void ValueComparer_NuloDistintoDeVazio()
-    {
-        using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer comparer =
-            ctx.Model.FindEntityType(typeof(FatoCandidato))!
-                .FindProperty(nameof(FatoCandidato.ValoresDominio))!
-                .GetValueComparer();
-
-        IReadOnlyList<string> vazia = [];
-
-        comparer.Equals(null, vazia).Should().BeFalse("nulo (escopo-processo) nunca é igual à lista vazia (ADR-0111)");
-        comparer.Equals(null, null).Should().BeTrue();
-        comparer.Snapshot(null).Should().BeNull("o snapshot de um nulo não pode virar lista vazia");
     }
 
     [Fact(DisplayName = "Seed bate com o roster literal independente da ADR-0111/ADR-0116 (autoridade), não só com a própria fonte")]
