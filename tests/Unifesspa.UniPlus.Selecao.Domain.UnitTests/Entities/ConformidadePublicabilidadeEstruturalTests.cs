@@ -1711,6 +1711,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void DefinirOpcoesDeclaradas_OpcaoCitadaPorTermo_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirItensComFaseDeInscricao([FatoEdicaoEnem()]).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2024"))], PrecondicaoIfMatch.Ausente)

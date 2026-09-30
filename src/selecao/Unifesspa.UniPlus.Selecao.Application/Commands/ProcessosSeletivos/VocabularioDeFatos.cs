@@ -8,6 +8,7 @@ using Domain.Enums;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -64,6 +65,29 @@ internal static class VocabularioDeFatos
             .Select(static descritor => descritor!.Value!)
             .ToDictionary(static descritor => descritor.Codigo, StringComparer.Ordinal);
     }
+
+    public const string CitaAtributoDoCandidato = "FatoColetado.CitaAtributoDoCandidato";
+
+    /// <summary>
+    /// A recusa de citar, numa regra do formulário, um fato que o sistema calcula de atributos do
+    /// candidato, como a faixa etária: as dependências dele não são declaradas, e o formulário não
+    /// tem como saber em que ponto ele fica conhecido.
+    /// </summary>
+    public static DomainError? CitacaoDeAtributoDoCandidato(
+        IEnumerable<string> citados, IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(citados);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        return citados.FirstOrDefault(c => c is not null && catalogo.TryGetValue(c, out FatoCandidatoView? fato)
+                && fato.Binding.StartsWith(PrefixoBindingAtributo, StringComparison.Ordinal)) is { } atributo
+            ? new DomainError(
+                CitaAtributoDoCandidato,
+                $"O fato '{atributo}' é calculado pelo sistema a partir de atributos do candidato e ainda não pode ser citado em regra do formulário.")
+            : null;
+    }
+
+    private const string PrefixoBindingAtributo = "ATRIBUTO_CANDIDATO:";
 
     /// <summary>De onde vêm as opções do fato quando ele é coletado pelo processo.</summary>
     public static OrigemValoresColeta OrigemValores(FatoCandidatoView fato)

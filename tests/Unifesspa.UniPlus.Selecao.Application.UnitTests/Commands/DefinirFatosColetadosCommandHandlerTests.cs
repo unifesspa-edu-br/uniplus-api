@@ -62,6 +62,8 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_LISTA_ESPERA", null, "GLOBAL", Ativo: true),
         new(Guid.CreateVersion7(), "OPCAO_CURSO_2", "2ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
             ["MEDICINA"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_CURSO_2", null, "GLOBAL", Ativo: true),
+        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "CATEGORICO", "DERIVADO", "ESCALAR",
+            ["MENOR_DE_18", "DE_18_A_59", "60_OU_MAIS"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, "GLOBAL", Ativo: true),
     ];
 
     private static ProcessoSeletivo ProcessoEmRascunho()
@@ -550,5 +552,38 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+    }
+
+    [Fact(DisplayName = "Regra do item que cita fato calculado de atributos do candidato é recusada pelo nome")]
+    public async Task Handle_CitaAtributoDoCandidato_RecusaNomeada()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("FAIXA_ETARIA", "IGUAL", "DE_18_A_59")]]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "itens[0]",
+            Error = new { Code = VocabularioDeFatos.CitaAtributoDoCandidato },
+        });
+    }
+
+    [Fact(DisplayName = "Condição sem fato é recusada, nunca estoura")]
+    public async Task Handle_CondicaoSemFato_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+            [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao(null!, "IGUAL", true)]])],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
     }
 }

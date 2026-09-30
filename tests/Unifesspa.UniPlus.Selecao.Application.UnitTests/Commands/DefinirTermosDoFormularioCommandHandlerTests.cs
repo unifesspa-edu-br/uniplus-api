@@ -47,6 +47,8 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
                 ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null, "GLOBAL", Ativo: true),
             new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
                 null, "INSCRICAO", "CAMPO_INSCRICAO:BAIXA_RENDA", null, null, Ativo: true),
+            new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "CATEGORICO", "DERIVADO", "ESCALAR",
+                ["MENOR_DE_18", "DE_18_A_59"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, "GLOBAL", Ativo: true),
         ]);
         mocks.TermoReader.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
         [
@@ -119,6 +121,22 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("termos[0].exibicao");
         processo.TermosExigidos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Condição que cita fato calculado de atributos do candidato é recusada pelo nome, sem esconder a outra condição")]
+    public async Task Handle_CondicaoCitaAtributoDoCandidato_RecusaNomeadaEAcumula()
+    {
+        ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
+        Mocks mocks = NovosMocks(processo);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
+            new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("FAIXA_ETARIA", "DE_18_A_59"), "QUANDO", Quando("BAIXA_RENDA", true)));
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("termos[0].exibicao", VocabularioDeFatos.CitaAtributoDoCandidato),
+            ("termos[0].predicadoObrigatoriedade", "PredicadoDnf.FatoNaoColetadoPeloProcesso"),
+        ]);
     }
 
     [Fact(DisplayName = "Versão inexistente não esconde a condição inválida do mesmo termo: as duas recusas saem juntas")]

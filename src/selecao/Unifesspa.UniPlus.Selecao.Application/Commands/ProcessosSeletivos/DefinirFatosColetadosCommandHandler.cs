@@ -239,6 +239,14 @@ public static class DefinirFatosColetadosCommandHandler
 
         erros.AddRange(SemanticaDasRestricoes(view, tipoRenderizacao, regras.Restricoes, catalogo, vocabulario, dominiosDinamicos));
 
+        IEnumerable<string> citados = (input.Precondicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato)
+            .Concat(regras.Obrigatoriedade.FatosCitados)
+            .Concat(regras.Restricoes.SelectMany(static r => r.FatosCitados));
+        if (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(citados, catalogo) is { } atributo)
+        {
+            erros.Add(new(string.Empty, atributo));
+        }
+
         // As recusas do próprio item (coerência das restrições com o campo, autorreferência, ajuda)
         // saem junto das semânticas, no mesmo lote.
         Result<FatoColetado> fato = FatoColetado.Criar(
