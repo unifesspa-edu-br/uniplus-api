@@ -33,7 +33,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: $"CAMPO_INSCRICAO:{codigo}",
-        ValoresDominioDeclarados: null);
+        ValoresDominioDeclarados: null, FonteValores: "PROCESSO");
 
     [Fact(DisplayName = "Resolver recusa CONDICAO_ATENDIMENTO coletável sem nenhuma condição ofertada")]
     public void Resolver_CondicaoAtendimentoSemOferta_Recusa()

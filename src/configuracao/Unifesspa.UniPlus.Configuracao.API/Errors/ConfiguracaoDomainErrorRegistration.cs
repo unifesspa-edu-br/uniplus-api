@@ -612,6 +612,18 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.cardinalidade_invalida",
                 "Cardinalidade do fato fora do vocabulário fechado")),
 
+        new(FatoCandidatoErrorCodes.FonteValoresObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.fonte_valores_obrigatoria",
+                "Fato categórico precisa declarar a fonte dos seus valores")),
+
+        new(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.fonte_valores_fora_de_categorico",
+                "Só fato categórico declara a fonte dos seus valores")),
+
         new(FatoCandidatoErrorCodes.ValoresDominioNaoPermitidosForaDeCategorico,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -678,6 +690,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fato_valor_dominio.nao_permitido_fora_de_categorico",
                 "Valores de domínio só podem ser adicionados a um fato categórico")),
+
+        new(FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.nao_permitido_fora_de_fonte_global",
+                "Valores de domínio só são declarados no catálogo quando a fonte dos valores é global")),
 
         new(FatoValorDominioErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(

@@ -29,6 +29,8 @@ public static class FatoCandidatoErrorCodes
     public const string OrigemInvalida = "FatoCandidato.OrigemInvalida";
     public const string CardinalidadeObrigatoria = "FatoCandidato.CardinalidadeObrigatoria";
     public const string CardinalidadeInvalida = "FatoCandidato.CardinalidadeInvalida";
+    public const string FonteValoresObrigatoria = "FatoCandidato.FonteValoresObrigatoria";
+    public const string FonteValoresForaDeCategorico = "FatoCandidato.FonteValoresForaDeCategorico";
     public const string ValoresDominioNaoPermitidosForaDeCategorico =
         "FatoCandidato.ValoresDominioNaoPermitidosForaDeCategorico";
     public const string ValoresDominioComItemEmBranco = "FatoCandidato.ValoresDominioComItemEmBranco";

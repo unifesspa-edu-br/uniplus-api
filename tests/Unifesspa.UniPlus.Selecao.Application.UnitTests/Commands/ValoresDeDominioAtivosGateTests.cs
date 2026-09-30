@@ -45,7 +45,7 @@ public sealed class ValoresDeDominioAtivosGateTests
         ValoresDominio: [.. valores.Select(static v => v.Codigo)],
         PontoResolucao: "INSCRICAO",
         Binding: "CAMPO_INSCRICAO:COR_RACA",
-        ValoresDominioDeclarados: valores);
+        ValoresDominioDeclarados: valores, FonteValores: "GLOBAL");
 
     private static FatoColetado FatoColetadoCorRaca(IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes = null) =>
         FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, precondicoes).Value!;
@@ -164,7 +164,7 @@ public sealed class ValoresDeDominioAtivosGateTests
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO",
-            ValoresDominioDeclarados: null);
+            ValoresDominioDeclarados: null, FonteValores: "PROCESSO");
 
         // COR_RACA (não coletado, não citado) tem valor inativo no catálogo — irrelevante
         // para este processo, que não o usa em lugar nenhum.
@@ -191,7 +191,7 @@ public sealed class ValoresDeDominioAtivosGateTests
             Id: Guid.CreateVersion7(), Codigo: "BAIXA_RENDA", Nome: "Baixa renda", Descricao: null,
             Dominio: "BOOLEANO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:BAIXA_RENDA",
-            ValoresDominioDeclarados: null);
+            ValoresDominioDeclarados: null, FonteValores: null);
 
         // COR_RACA (não citado) tem valor inativo — irrelevante para este predicado booleano.
         IFatoCandidatoReader reader = ReaderCom(baixaRenda, FatoCorRaca(BrancaAtiva, PretaInativa));
@@ -238,7 +238,7 @@ public sealed class ValoresDeDominioAtivosGateTests
             Id: Guid.CreateVersion7(), Codigo: "SEXO", Nome: "Sexo", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: ["FEMININO", "MASCULINO"], PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:SEXO",
-            ValoresDominioDeclarados: [new("FEMININO", "Feminino.", 0, true), new("MASCULINO", "Masculino.", 1, false)]);
+            ValoresDominioDeclarados: [new("FEMININO", "Feminino.", 0, true), new("MASCULINO", "Masculino.", 1, false)], FonteValores: "GLOBAL");
 
         IFatoCandidatoReader reader = ReaderCom(sexo);
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
@@ -292,7 +292,7 @@ public sealed class ValoresDeDominioAtivosGateTests
             Id: Guid.CreateVersion7(), Codigo: "NOVO_CATEGORICO", Nome: "Novo categórico", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:NOVO_CATEGORICO",
-            ValoresDominioDeclarados: null);
+            ValoresDominioDeclarados: null, FonteValores: "PROCESSO");
 
         IFatoCandidatoReader reader = ReaderCom(novoCategoricoNoCatalogo);
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();

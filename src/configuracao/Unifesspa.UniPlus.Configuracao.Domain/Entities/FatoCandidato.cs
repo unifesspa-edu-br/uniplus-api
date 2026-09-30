@@ -73,6 +73,12 @@ public sealed class FatoCandidato : EntityBase
     public CardinalidadeFato Cardinalidade { get; private set; }
 
     /// <summary>
+    /// De onde vêm os valores de um fato categórico (ADR-0136) — <see langword="null"/> para
+    /// booleano e numérico. Quem consome o fato decide por ela, nunca pelo código do fato.
+    /// </summary>
+    public FonteValoresFato? FonteValores { get; private set; }
+
+    /// <summary>
     /// Código canônico da fase (<see cref="FaseCanonicaCatalogo"/>) em que o valor
     /// deste fato fica conhecido (ADR-0116). Não é FK — é referência por valor,
     /// como <see cref="Codigo"/> de <c>Modalidade</c>.
@@ -116,11 +122,13 @@ public sealed class FatoCandidato : EntityBase
         DominioFato dominio,
         OrigemFato origem,
         CardinalidadeFato cardinalidade,
+        FonteValoresFato? fonteValores,
         IReadOnlyList<string>? valoresDominio,
         string pontoResolucao,
         string binding)
     {
         Codigo = codigo;
+        FonteValores = fonteValores;
         Nome = nome;
         Descricao = descricao;
         Dominio = dominio;
@@ -144,6 +152,7 @@ public sealed class FatoCandidato : EntityBase
         DominioFato dominio,
         OrigemFato origem,
         CardinalidadeFato cardinalidade,
+        FonteValoresFato? fonteValores,
         IReadOnlyList<string>? valoresDominio,
         string pontoResolucao,
         string binding)
@@ -205,6 +214,21 @@ public sealed class FatoCandidato : EntityBase
             return Falha(FatoCandidatoErrorCodes.CardinalidadeInvalida, "Cardinalidade do fato fora do vocabulário fechado.");
         }
 
+        bool ehCategorico = dominio == DominioFato.Categorico;
+        if (ehCategorico && (fonteValores is null or FonteValoresFato.Nenhuma || !Enum.IsDefined(fonteValores.Value)))
+        {
+            return Falha(
+                FatoCandidatoErrorCodes.FonteValoresObrigatoria,
+                "Fato categórico precisa declarar a fonte dos seus valores.");
+        }
+
+        if (!ehCategorico && fonteValores is not null)
+        {
+            return Falha(
+                FatoCandidatoErrorCodes.FonteValoresForaDeCategorico,
+                "Só fato categórico declara a fonte dos seus valores.");
+        }
+
         Result<IReadOnlyList<string>?> valoresResult = ValidarValoresDominio(dominio, valoresDominio);
         if (valoresResult.IsFailure)
         {
@@ -230,6 +254,7 @@ public sealed class FatoCandidato : EntityBase
             dominio,
             origem,
             cardinalidade,
+            fonteValores,
             valoresResult.Value,
             pontoResolucaoResult.Value!,
             bindingResult.Value!));
@@ -250,6 +275,14 @@ public sealed class FatoCandidato : EntityBase
             return Result.Failure(new DomainError(
                 FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico,
                 "Valores de domínio só podem ser adicionados a um fato categórico."));
+        }
+
+        if (FonteValores != FonteValoresFato.Global)
+        {
+            return Result.Failure(new DomainError(
+                FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal,
+                "Valores de domínio só são declarados no catálogo quando a fonte dos valores é global; "
+                + "nas demais fontes, os valores vêm do processo."));
         }
 
         if (string.IsNullOrWhiteSpace(codigo))

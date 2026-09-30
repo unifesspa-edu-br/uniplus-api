@@ -16,6 +16,9 @@ public static class FatoValorDominioErrorCodes
     /// <summary>O fato pai não é categórico — só um categórico admite valores de domínio.</summary>
     public const string NaoPermitidoForaDeCategorico = "FatoValorDominio.NaoPermitidoForaDeCategorico";
 
+    /// <summary>O fato pai não tem fonte global — os valores dele vêm do processo, não do catálogo.</summary>
+    public const string NaoPermitidoForaDeFonteGlobal = "FatoValorDominio.NaoPermitidoForaDeFonteGlobal";
+
     public const string CodigoObrigatorio = "FatoValorDominio.CodigoObrigatorio";
     public const string CodigoTamanho = "FatoValorDominio.CodigoTamanho";
 
