@@ -62,6 +62,44 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         valores![0].Descricao.Should().Be("ENEM 2025");
     }
 
+    [Theory(DisplayName = "Resposta de campo que forma as opções de outro precisa ser opção desse outro na publicação")]
+    [InlineData(new[] { "MEDICINA" }, true)]
+    [InlineData(new[] { "MEDICINA", "DIREITO" }, false)]
+    public void Resolver_OpcoesDasRespostas_ExigemAsOpcoesDaFonteNoAlvo(string[] opcoesDaFonte, bool aceita)
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirItens(
+        [
+            FatoColetado.Criar("OPCAO_CURSO_1", 0, "1ª opção", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!,
+            FatoColetado.Criar("OPCAO_LISTA_ESPERA", 1, "Lista de espera", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null,
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso, restricoes: [new OpcoesDasRespostas(["OPCAO_CURSO_1"])]).Value!,
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas("OPCAO_CURSO_1",
+            [.. opcoesDaFonte.Select(static (o, i) => OpcaoDeclaradaFato.Criar("OPCAO_CURSO_1", o, o, i).Value!)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas("OPCAO_LISTA_ESPERA",
+            [OpcaoDeclaradaFato.Criar("OPCAO_LISTA_ESPERA", "MEDICINA", "MEDICINA", 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
+        {
+            ["OPCAO_CURSO_1"] = FatoCategoricoDeEscopoProcesso("OPCAO_CURSO_1"),
+            ["OPCAO_LISTA_ESPERA"] = FatoCategoricoDeEscopoProcesso("OPCAO_LISTA_ESPERA"),
+        };
+
+        Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> resultado =
+            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo);
+
+        if (aceita)
+        {
+            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        }
+        else
+        {
+            resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.OpcoesDeOutroDominio);
+        }
+    }
+
     [Fact(DisplayName = "Resolver congela, para fato de fonte dos municípios do bônus, os municípios da área em ordem de nome")]
     public void Resolver_FatoDosMunicipiosDoBonus_CongelaOsMunicipiosDaArea()
     {

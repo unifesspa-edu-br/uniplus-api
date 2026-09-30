@@ -20,6 +20,27 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed record CondicaoPrecondicaoInput(string Fato, string Operador, JsonElement Valor);
 
 /// <summary>
+/// Uma restrição sobre o valor respondido no item, pelo <see cref="Tipo"/>: <c>FAIXA_NUMERICA</c>
+/// e <c>TAMANHO_TEXTO</c> com <see cref="Minimo"/> e <see cref="Maximo"/> (ao menos um; inteiros no
+/// tamanho), <c>OPCOES_PERMITIDAS</c> com as <see cref="Entradas"/> e <c>OPCOES_DAS_RESPOSTAS</c> com
+/// os <see cref="Fatos"/> cujas respostas formam as opções.
+/// </summary>
+public sealed record RestricaoValorInput(
+    string Tipo,
+    decimal? Minimo = null,
+    decimal? Maximo = null,
+    IReadOnlyList<OpcoesCondicionadasInput>? Entradas = null,
+    IReadOnlyList<string>? Fatos = null);
+
+/// <summary>
+/// Um grupo de opções permitidas e a condição, sobre respostas anteriores, em que ele vale; sem
+/// condição, vale sempre.
+/// </summary>
+public sealed record OpcoesCondicionadasInput(
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando,
+    IReadOnlyList<string> Valores);
+
+/// <summary>
 /// Um fato que o processo coleta do candidato, com a sua posição na ordem de coleta, a
 /// apresentação do campo no formulário de inscrição e a pré-condição opcional que decide se o
 /// campo produtor é apresentado. A <see cref="Precondicao"/> é um predicado na forma normal
@@ -49,7 +70,8 @@ public sealed record FatoColetadoInput(
     string? EtapaCodigo = null,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade = null,
     string? Ajuda = null,
-    bool PedirConfirmacao = false);
+    bool PedirConfirmacao = false,
+    IReadOnlyList<RestricaoValorInput>? Restricoes = null);
 
 /// <summary>
 /// Substitui os itens do formulário de uma finalidade, os fatos que ele coleta do candidato (Story

@@ -31,6 +31,10 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
             .IsRequired();
         builder.Property(f => f.Ajuda).HasMaxLength(FatoColetado.AjudaMaxLength);
         builder.Property(f => f.PedirConfirmacao).IsRequired();
+        builder.Property(f => f.Restricoes)
+            .HasConversion(ConversoresDeRegras.Restricoes, ConversoresDeRegras.ComparadorDeRestricoes)
+            .HasColumnType("jsonb")
+            .IsRequired();
         builder.Property(f => f.OrigemValores).HasConversion<int>().IsRequired();
         builder.Property(f => f.Formato).HasMaxLength(FatoColetado.FormatoMaxLength);
         builder.Ignore(f => f.OpcoesDoProcesso);

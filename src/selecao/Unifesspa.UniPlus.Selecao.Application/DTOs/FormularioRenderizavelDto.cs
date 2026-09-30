@@ -34,7 +34,8 @@ public sealed record FatoFormularioRenderizavelDto(
     string? EtapaCodigo,
     string? Formato,
     string? Ajuda,
-    bool PedirConfirmacao);
+    bool PedirConfirmacao,
+    IReadOnlyList<RestricaoValorDto> Restricoes);
 
 /// <summary>
 /// Formulário de uma finalidade pronto para renderização (UNI-REQ-0144): título, etapas, termos

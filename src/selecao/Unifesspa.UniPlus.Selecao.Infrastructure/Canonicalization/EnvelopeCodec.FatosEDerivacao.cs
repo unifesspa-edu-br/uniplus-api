@@ -226,7 +226,7 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(
                 item, path,
                 "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatoriedade", "ajuda",
-                "pedirConfirmacao", "origemValores", "formato", "precondicao", "valoresSelecionaveis");
+                "pedirConfirmacao", "restricoes", "origemValores", "formato", "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -282,14 +282,15 @@ public sealed partial class EnvelopeCodec
                 return ([], valoresSelecionaveis);
             }
 
-            if (LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
+            if (LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade
+                || LerRestricoes(leitor, item, path) is not { } restricoes)
             {
                 return ([], valoresSelecionaveis);
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
                 fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, origemValores, etapaCodigo, finalidade, formato,
-                ajuda, pedirConfirmacao);
+                ajuda, pedirConfirmacao, restricoes);
             if (fatoColetado.IsFailure)
             {
                 return (leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [], valoresSelecionaveis);

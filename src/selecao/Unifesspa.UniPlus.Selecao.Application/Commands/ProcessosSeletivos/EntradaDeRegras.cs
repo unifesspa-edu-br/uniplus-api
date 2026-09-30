@@ -5,13 +5,14 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// A forma das regras do formulário vindas da escrita — predicado e obrigatoriedade —, a mesma
-/// para item e termo. A semântica (fatos citáveis, operador e valor do domínio) é conferida depois,
+/// A forma das regras do formulário vindas da escrita — predicado, obrigatoriedade e restrição de
+/// valor —, a mesma para item e termo. A semântica (fatos citáveis, operador e valor do domínio) é conferida depois,
 /// contra o catálogo.
 /// </summary>
 internal static class EntradaDeRegras
@@ -67,4 +68,47 @@ internal static class EntradaDeRegras
             (TipoObrigatoriedade.Quando, { } quando) => Regras.Formularios.Obrigatoriedade.Quando(quando),
             _ => null,
         };
+
+    /// <summary>A restrição de valor da entrada, pelo tipo; os valores e fatos citados são conferidos depois.</summary>
+    public static Result<RestricaoValor> Restricao(RestricaoValorInput input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return RestricaoValorJson.TipoDoToken(input.Tipo) switch
+        {
+            TipoRestricaoValor.FaixaNumerica => RestricoesDeValor.Faixa(input.Minimo, input.Maximo),
+            TipoRestricaoValor.TamanhoTexto => RestricaoValorJson.Inteiro(input.Minimo, out int? minimo)
+                    && RestricaoValorJson.Inteiro(input.Maximo, out int? maximo)
+                ? RestricoesDeValor.Tamanho(minimo, maximo)
+                : Result<RestricaoValor>.Failure(new DomainError(
+                    RestricaoValorErrorCodes.LimitesIncoerentes, "Os limites de tamanho de texto são números inteiros.")),
+            TipoRestricaoValor.OpcoesPermitidas => Opcoes(input.Entradas ?? []),
+            TipoRestricaoValor.OpcoesDasRespostas => RestricoesDeValor.DasRespostas(input.Fatos ?? []),
+            _ => Result<RestricaoValor>.Failure(new DomainError(
+                RestricaoValorErrorCodes.TipoDesconhecido,
+                "O tipo da restrição é FAIXA_NUMERICA, TAMANHO_TEXTO, OPCOES_PERMITIDAS ou OPCOES_DAS_RESPOSTAS.")),
+        };
+    }
+
+    private static Result<RestricaoValor> Opcoes(IReadOnlyList<OpcoesCondicionadasInput> entradas)
+    {
+        List<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lidas = [];
+        foreach (OpcoesCondicionadasInput? entrada in entradas)
+        {
+            if (entrada is null)
+            {
+                return Result<RestricaoValor>.Failure(new DomainError(
+                    RestricaoValorErrorCodes.OpcoesVazias, "As opções permitidas contêm um grupo nulo."));
+            }
+
+            Result<PredicadoDnf?> quando = Predicado(entrada.Quando);
+            if (quando.IsFailure)
+            {
+                return Result<RestricaoValor>.Failure(quando.Error!);
+            }
+
+            lidas.Add((quando.Value, entrada.Valores ?? []));
+        }
+
+        return RestricoesDeValor.Opcoes(lidas);
+    }
 }

@@ -21,8 +21,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// </para>
 /// <para>
 /// A avaliação é a do avaliador de formulário compartilhado (ADR-0135): cada formulário é uma
-/// etapa, na ordem das finalidades, com os fatos na ordem de coleta, a pré-condição como exibição
-/// e a obrigatoriedade do campo. Nenhuma etapa é dada como concluída, então um campo aplicável sem resposta fica pendente.
+/// etapa, na ordem das finalidades, com os fatos na ordem de coleta, a pré-condição como exibição,
+/// a obrigatoriedade e as restrições de valor do campo — a resposta que viola uma restrição não
+/// vale. Nenhuma etapa é dada como concluída, então um campo aplicável sem resposta fica pendente.
 /// </para>
 /// </remarks>
 public static class ResolvedorEstadoFatos
@@ -63,7 +64,7 @@ public static class ResolvedorEstadoFatos
                     fato.FatoCodigo,
                     fato.ParaPredicado(),
                     fato.Obrigatoriedade,
-                    restricoes: []))]))];
+                    fato.Restricoes))]))];
 
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
             new DefinicaoFormulario(etapas, termos: [], derivacoes: []),

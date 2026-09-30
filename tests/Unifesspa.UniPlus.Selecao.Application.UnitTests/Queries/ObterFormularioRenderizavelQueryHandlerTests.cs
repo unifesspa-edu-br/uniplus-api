@@ -201,45 +201,48 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     [Theory(DisplayName = "Envelope com valor de tipo/nulidade incoerente (só alcançável por linha adulterada) recusa com o mesmo erro nomeado, nunca estoura")]
     [InlineData(
         // Item sem "finalidade": não pode aparecer no formulário de uma finalidade qualquer.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":[]}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "pedirConfirmacao" como texto em vez de booleano.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":"true","precondicao":null,"valoresSelecionaveis":[]}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":"true","restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "rotulo" presente mas null — chave existe, valor não é o esperado.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":null,"tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":[]}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":null,"tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "precondicao" presente com tipo errado (objeto em vez de array) — não pode virar
         // silenciosamente "sem pré-condição", que mudaria a semântica do campo.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":{},"valoresSelecionaveis":[]}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":{},"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "valoresSelecionaveis" null num fato de seleção — descumpre a bicondicional (issue
         // #1059): SELECAO_UNICA/SELECAO_MULTIPLA exige array, nunca null.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
     [InlineData(
         // "valoresSelecionaveis" ausente — envelope congelado antes de a chave existir.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null}]}""")]
     [InlineData(
         // "tipoRenderizacao" fora do vocabulário, com valoresSelecionaveis null — o
         // decoder converteria o token em TipoRenderizacao.Nenhuma e FatoColetado.Criar recusaria;
         // sem esta guarda aqui, o token desconhecido cairia no ramo "não é seleção" por omissão.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"DATA_HORA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"DATA_HORA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
     [InlineData(
         // "ordem" negativa dentro de um item de valoresSelecionaveis — o decoder recusa.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":-1}]}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":-1}]}]}""")]
     [InlineData(
         // "valorCodigo" repetido no array — o decoder recusa (o encoder nunca emite duas entradas
         // para o mesmo valor).
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0},{"valorCodigo":"BRANCA","descricao":null,"ordem":1}]}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0},{"valorCodigo":"BRANCA","descricao":null,"ordem":1}]}]}""")]
     [InlineData(
         // "formato" ausente — o encoder sempre o emite, nulo fora do campo de texto.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
+    [InlineData(
+        // Restrição de tipo desconhecido — não pode ser descartada em silêncio, que liberaria o valor.
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[{"tipo":"REGEX"}],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
     [InlineData(
         // Campo de texto sem formato — o encoder sempre emite o formato do catálogo no campo de texto.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"NOME_SOCIAL","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Nome social","tipoRenderizacao":"TEXTO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"NOME_SOCIAL","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Nome social","tipoRenderizacao":"TEXTO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
     [InlineData(
         // Formato num campo que não é de texto.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"BAIXA_RENDA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":"CPF","ordem":0,"rotulo":"Baixa renda","tipoRenderizacao":"BOOLEANO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"BAIXA_RENDA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":"CPF","ordem":0,"rotulo":"Baixa renda","tipoRenderizacao":"BOOLEANO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
     public async Task Handle_EnvelopeComValorIncoerente_RecusaSemEstourar(string envelopeJson)
     {
         Guid processoId = Guid.CreateVersion7();
@@ -293,7 +296,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
 
         static string Item(string fato, string finalidade) => $$"""
             {"fatoCodigo": "{{fato}}", "finalidade": "{{finalidade}}", "etapaCodigo": "DADOS", "formato": null, "ordem": 0, "rotulo": "{{fato}}",
-             "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "precondicao": null, "valoresSelecionaveis": null}
+             "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
             """;
     }
 
@@ -311,7 +314,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                 {"fatoCodigo": "BAIXA_RENDA", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 1,
                  "rotulo": "Baixa renda", "tipoRenderizacao": "BOOLEANO",
                  "obrigatoriedade": {"tipo": "QUANDO", "predicado": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]]},
-                 "ajuda": "Renda por pessoa da família", "pedirConfirmacao": true, "precondicao": null, "valoresSelecionaveis": null}
+                 "ajuda": "Renda por pessoa da família", "pedirConfirmacao": true, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
               ]
             }
             """;
@@ -326,6 +329,42 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         fato.PedirConfirmacao.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "As restrições de valor congeladas são projetadas por tipo, com os limites e os grupos de opções")]
+    public async Task Handle_Restricoes_ProjetaPorTipo()
+    {
+        const string envelope = """
+            {
+              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+                "etapas": [
+                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
+                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
+                ]}],
+              "fatosColetados": [
+                {"fatoCodigo": "IDADE", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0,
+                 "rotulo": "Idade", "tipoRenderizacao": "NUMERO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
+                 "ajuda": null, "pedirConfirmacao": false, "precondicao": null, "valoresSelecionaveis": null,
+                 "restricoes": [{"tipo": "FAIXA_NUMERICA", "minimo": "16.0000", "maximo": null}]},
+                {"fatoCodigo": "COR_RACA", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 1,
+                 "rotulo": "Cor ou raça", "tipoRenderizacao": "SELECAO_UNICA", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
+                 "ajuda": null, "pedirConfirmacao": false, "precondicao": null,
+                 "valoresSelecionaveis": [{"valorCodigo": "PRETA", "descricao": null, "ordem": 0}],
+                 "restricoes": [{"tipo": "OPCOES_PERMITIDAS", "entradas": [
+                   {"quando": [[{"fato": "IDADE", "operador": "MAIOR_IGUAL", "valor": 18}]], "valores": ["PRETA"]}]}]}
+              ]
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        RestricaoValorDto faixa = resultado.Value!.FatosColetados[0].Restricoes.Should().ContainSingle().Which;
+        faixa.Should().BeEquivalentTo(new { Tipo = "FAIXA_NUMERICA", Minimo = 16m, Maximo = (decimal?)null });
+        OpcoesCondicionadasDto grupo = resultado.Value.FatosColetados[1].Restricoes.Should().ContainSingle().Which.Entradas.Should().ContainSingle().Which;
+        grupo.Valores.Should().Equal("PRETA");
+        grupo.Quando.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("IDADE");
+    }
+
     [Fact(DisplayName = "Campo de texto é projetado com o formato e sem valores selecionáveis")]
     public async Task Handle_CampoDeTexto_ProjetaFormato()
     {
@@ -338,7 +377,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                 ]}],
               "fatosColetados": [
                 {"fatoCodigo": "NOME_SOCIAL", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": "NOME_PESSOA", "ordem": 0,
-                 "rotulo": "Nome social", "tipoRenderizacao": "TEXTO", "obrigatoriedade": {"tipo": "NUNCA", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "precondicao": null, "valoresSelecionaveis": null}
+                 "rotulo": "Nome social", "tipoRenderizacao": "TEXTO", "obrigatoriedade": {"tipo": "NUNCA", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
               ]
             }
             """;
@@ -375,7 +414,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               "fatosColetados": [
                 {
                   "fatoCodigo": "COR_RACA", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0, "rotulo": "Cor ou raça",
-                  "tipoRenderizacao": "SELECAO_UNICA", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "precondicao": null,
+                  "tipoRenderizacao": "SELECAO_UNICA", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null,
                   "valoresSelecionaveis": [
                     {"valorCodigo": "BRANCA", "descricao": "Autodeclaração de cor/raça branca.", "ordem": 0},
                     {"valorCodigo": "PRETA", "descricao": "Autodeclaração de cor/raça preta.", "ordem": 1}

@@ -23,6 +23,8 @@ public abstract record RestricaoValor
     {
     }
 
+    public abstract TipoRestricaoValor Tipo { get; }
+
     /// <summary>Os fatos de que a restrição depende — entram como dependência do item no grafo.</summary>
     public virtual IReadOnlyCollection<string> FatosCitados => [];
 
@@ -37,19 +39,16 @@ public sealed record FaixaNumerica : RestricaoValor
 {
     public FaixaNumerica(decimal? minimo, decimal? maximo)
     {
-        if (minimo is null && maximo is null)
+        if (Violacao(minimo, maximo) is { } violacao)
         {
-            throw new ArgumentException("A faixa numérica precisa de ao menos um limite.");
-        }
-
-        if (minimo > maximo)
-        {
-            throw new ArgumentException($"O mínimo ({minimo}) é maior que o máximo ({maximo}).");
+            throw new ArgumentException(violacao);
         }
 
         Minimo = minimo;
         Maximo = maximo;
     }
+
+    public override TipoRestricaoValor Tipo => TipoRestricaoValor.FaixaNumerica;
 
     public decimal? Minimo { get; }
 
@@ -64,6 +63,13 @@ public sealed record FaixaNumerica : RestricaoValor
 
         return ComoTernario((Minimo is null || valor >= Minimo) && (Maximo is null || valor <= Maximo));
     }
+
+    internal static string? Violacao(decimal? minimo, decimal? maximo) => (minimo, maximo) switch
+    {
+        (null, null) => "A faixa numérica precisa de ao menos um limite.",
+        ({ } min, { } max) when min > max => $"O mínimo ({min}) é maior que o máximo ({max}).",
+        _ => null,
+    };
 }
 
 /// <summary>A resposta de texto tem de um mínimo a um máximo de caracteres; um dos limites pode faltar.</summary>
@@ -71,19 +77,16 @@ public sealed record TamanhoTexto : RestricaoValor
 {
     public TamanhoTexto(int? minimo, int? maximo)
     {
-        if (minimo is null && maximo is null)
+        if (Violacao(minimo, maximo) is { } violacao)
         {
-            throw new ArgumentException("O tamanho de texto precisa de ao menos um limite.");
-        }
-
-        if (minimo < 0 || maximo < 0 || minimo > maximo)
-        {
-            throw new ArgumentException($"Os limites de tamanho ({minimo}, {maximo}) são incoerentes.");
+            throw new ArgumentException(violacao);
         }
 
         Minimo = minimo;
         Maximo = maximo;
     }
+
+    public override TipoRestricaoValor Tipo => TipoRestricaoValor.TamanhoTexto;
 
     public int? Minimo { get; }
 
@@ -99,6 +102,13 @@ public sealed record TamanhoTexto : RestricaoValor
         int tamanho = resposta.GetString()!.Trim().Length;
         return ComoTernario((Minimo is null || tamanho >= Minimo) && (Maximo is null || tamanho <= Maximo));
     }
+
+    internal static string? Violacao(int? minimo, int? maximo) => (minimo, maximo) switch
+    {
+        (null, null) => "O tamanho de texto precisa de ao menos um limite.",
+        _ when minimo < 0 || maximo < 0 || minimo > maximo => $"Os limites de tamanho ({minimo}, {maximo}) são incoerentes.",
+        _ => null,
+    };
 }
 
 /// <summary>
@@ -118,6 +128,11 @@ public sealed record OpcoesPermitidas : RestricaoValor
 
         Entradas = [.. entradas];
     }
+
+    public override TipoRestricaoValor Tipo => TipoRestricaoValor.OpcoesPermitidas;
+
+    /// <summary>Todos os valores que alguma entrada pode permitir.</summary>
+    public IReadOnlySet<string> ValoresCitados => Entradas.SelectMany(static e => e.Valores).ToFrozenSet(StringComparer.Ordinal);
 
     public IReadOnlyList<OpcoesCondicionadas> Entradas { get; }
 
@@ -178,9 +193,9 @@ public sealed record OpcoesCondicionadas
     public OpcoesCondicionadas(PredicadoDnf? quando, IReadOnlyCollection<string> valores)
     {
         ArgumentNullException.ThrowIfNull(valores);
-        if (valores.Count == 0 || valores.Any(string.IsNullOrWhiteSpace))
+        if (Violacao(valores) is { } violacao)
         {
-            throw new ArgumentException("Um grupo de opções precisa de valores não vazios.", nameof(valores));
+            throw new ArgumentException(violacao, nameof(valores));
         }
 
         Quando = quando;
@@ -191,6 +206,9 @@ public sealed record OpcoesCondicionadas
     public PredicadoDnf? Quando { get; }
 
     public IReadOnlySet<string> Valores { get; }
+
+    internal static string? Violacao(IReadOnlyCollection<string> valores) =>
+        valores.Count == 0 || valores.Any(string.IsNullOrWhiteSpace) ? "Um grupo de opções precisa de valores não vazios." : null;
 }
 
 /// <summary>
@@ -207,14 +225,17 @@ public sealed record OpcoesDasRespostas : RestricaoValor
     public OpcoesDasRespostas(IReadOnlyCollection<string> fatos)
     {
         ArgumentNullException.ThrowIfNull(fatos);
-        if (fatos.Count == 0 || fatos.Any(string.IsNullOrWhiteSpace))
+        if (Violacao(fatos) is { } violacao)
         {
-            throw new ArgumentException("As opções formadas pelas respostas precisam citar ao menos um fato.", nameof(fatos));
+            throw new ArgumentException(violacao, nameof(fatos));
         }
 
-        Fatos = [.. fatos.Distinct(StringComparer.Ordinal)];
+        Fatos = [.. fatos.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
     }
 
+    public override TipoRestricaoValor Tipo => TipoRestricaoValor.OpcoesDasRespostas;
+
+    /// <summary>Os fatos cujas respostas formam as opções, sem repetição e em ordem ordinal.</summary>
     public IReadOnlyList<string> Fatos { get; }
 
     public override IReadOnlyCollection<string> FatosCitados => Fatos;
@@ -243,4 +264,7 @@ public sealed record OpcoesDasRespostas : RestricaoValor
             ? Ternario.Indeterminado
             : resultado;
     }
+
+    internal static string? Violacao(IReadOnlyCollection<string> fatos) =>
+        fatos.Count == 0 || fatos.Any(string.IsNullOrWhiteSpace) ? "As opções formadas pelas respostas precisam citar ao menos um fato." : null;
 }

@@ -8,6 +8,7 @@ using Domain.Enums;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Resolve, para cada <see cref="FatoColetado"/> do processo, os valores que o candidato pode
@@ -82,7 +83,43 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             valoresPorFato[fato.FatoCodigo] = valoresDoFato.Value;
         }
 
+        if (RespostaForaDasOpcoes(processo, valoresPorFato) is { } foraDasOpcoes)
+        {
+            return Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>>.Failure(foraDasOpcoes);
+        }
+
         return Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>>.Success(valoresPorFato);
+    }
+
+    /// <summary>
+    /// Toda resposta de um campo que forma as opções de outro precisa ser opção desse outro. As
+    /// opções que o processo declara podem mudar depois de os campos serem definidos, e é aqui que
+    /// as ofertas dos dois campos congelam juntas.
+    /// </summary>
+    private static DomainError? RespostaForaDasOpcoes(
+        ProcessoSeletivo processo,
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresPorFato)
+    {
+        foreach (FatoColetado alvo in processo.FatosColetados)
+        {
+            if (alvo.Restricoes.OfType<OpcoesDasRespostas>().SingleOrDefault() is not { } respostas)
+            {
+                continue;
+            }
+
+            HashSet<string> oferta = [.. (valoresPorFato[alvo.FatoCodigo] ?? []).Select(static v => v.Codigo)];
+            foreach (string fonte in respostas.Fatos)
+            {
+                if (valoresPorFato.GetValueOrDefault(fonte) is { } daFonte && daFonte.Any(v => !oferta.Contains(v.Codigo)))
+                {
+                    return new DomainError(
+                        FatoColetadoErrorCodes.OpcoesDeOutroDominio,
+                        $"As opções do campo '{fonte}' formam as opções do campo '{alvo.FatoCodigo}', mas nem todas são opções dele.");
+                }
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

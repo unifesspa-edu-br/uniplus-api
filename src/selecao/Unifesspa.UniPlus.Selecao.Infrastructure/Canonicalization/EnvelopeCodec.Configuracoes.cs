@@ -203,6 +203,101 @@ public sealed partial class EnvelopeCodec
         };
     }
 
+    /// <summary>
+    /// As restrições de valor de um item, cada uma com as chaves do seu tipo. Nulo quando a forma é
+    /// outra, com a recusa já propagada ao leitor.
+    /// </summary>
+    private static List<RestricaoValor>? LerRestricoes(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        JsonArray array = leitor.Array(item, "restricoes", path);
+        List<RestricaoValor> restricoes = [];
+        for (int i = 0; i < array.Count && !leitor.Falhou; i++)
+        {
+            JsonObject bloco = leitor.ItemObjeto(array, i, $"{path}.restricoes");
+            string pathRestricao = $"{path}.restricoes[{i}]";
+            string tipo = leitor.TextoNaoVazio(bloco, "tipo", pathRestricao);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            Result<RestricaoValor>? restricao = RestricaoValorJson.TipoDoToken(tipo) switch
+            {
+                TipoRestricaoValor.FaixaNumerica => LerFaixa(leitor, bloco, pathRestricao),
+                TipoRestricaoValor.TamanhoTexto => LerTamanho(leitor, bloco, pathRestricao),
+                TipoRestricaoValor.OpcoesPermitidas => LerOpcoesPermitidas(leitor, bloco, pathRestricao),
+                TipoRestricaoValor.OpcoesDasRespostas => LerOpcoesDasRespostas(leitor, bloco, pathRestricao),
+                _ => leitor.Propagar<Result<RestricaoValor>?>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{pathRestricao}.tipo' não é um tipo de restrição de valor.")),
+            };
+            if (leitor.Falhou || restricao is null)
+            {
+                return null;
+            }
+
+            if (restricao.IsFailure)
+            {
+                return leitor.Propagar<List<RestricaoValor>?>(restricao.Error!);
+            }
+
+            restricoes.Add(restricao.Value!);
+        }
+
+        return leitor.Falhou ? null : restricoes;
+    }
+
+    private static Result<RestricaoValor>? LerFaixa(LeitorEnvelope leitor, JsonObject bloco, string path)
+    {
+        leitor.ExigirChaves(bloco, path, "tipo", "minimo", "maximo");
+        decimal? minimo = leitor.DecimalOpcional(bloco, "minimo", FatoColetado.CasasDecimaisDaFaixa, path);
+        decimal? maximo = leitor.DecimalOpcional(bloco, "maximo", FatoColetado.CasasDecimaisDaFaixa, path);
+        return leitor.Falhou ? null : RestricoesDeValor.Faixa(minimo, maximo);
+    }
+
+    private static Result<RestricaoValor>? LerTamanho(LeitorEnvelope leitor, JsonObject bloco, string path)
+    {
+        leitor.ExigirChaves(bloco, path, "tipo", "minimo", "maximo");
+        int? minimo = leitor.InteiroOpcional(bloco, "minimo", path);
+        int? maximo = leitor.InteiroOpcional(bloco, "maximo", path);
+        return leitor.Falhou ? null : RestricoesDeValor.Tamanho(minimo, maximo);
+    }
+
+    private static Result<RestricaoValor>? LerOpcoesPermitidas(LeitorEnvelope leitor, JsonObject bloco, string path)
+    {
+        leitor.ExigirChaves(bloco, path, "tipo", "entradas");
+        JsonArray entradas = leitor.Array(bloco, "entradas", path);
+        List<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lidas = [];
+        for (int i = 0; i < entradas.Count && !leitor.Falhou; i++)
+        {
+            JsonObject entrada = leitor.ItemObjeto(entradas, i, $"{path}.entradas");
+            string pathEntrada = $"{path}.entradas[{i}]";
+            leitor.ExigirChaves(entrada, pathEntrada, "quando", "valores");
+            IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> quando = LerDnf(leitor, entrada, "quando", pathEntrada);
+            IReadOnlyList<string> valores = leitor.Textos(entrada, "valores", pathEntrada);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            Result<PredicadoDnf?> predicado = PredicadoOpcional(quando);
+            if (predicado.IsFailure)
+            {
+                return Result<RestricaoValor>.Failure(predicado.Error!);
+            }
+
+            lidas.Add((predicado.Value, valores));
+        }
+
+        return leitor.Falhou ? null : RestricoesDeValor.Opcoes(lidas);
+    }
+
+    private static Result<RestricaoValor>? LerOpcoesDasRespostas(LeitorEnvelope leitor, JsonObject bloco, string path)
+    {
+        leitor.ExigirChaves(bloco, path, "tipo", "fatos");
+        IReadOnlyList<string> fatos = leitor.Textos(bloco, "fatos", path);
+        return leitor.Falhou ? null : RestricoesDeValor.DasRespostas(fatos);
+    }
+
     private static TermoExigidoFormulario? LerTermoExigido(
         LeitorEnvelope leitor, JsonObject item, string path, FinalidadeFormulario finalidade)
     {

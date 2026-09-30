@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -32,14 +33,23 @@ public sealed class DefinirFatosColetadosEndpointTests
 
     public DefinirFatosColetadosEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "Coleta válida em rascunho é aceita com 204 sem ETag e persiste os fatos")]
+    [Fact(DisplayName = "Coleta válida em rascunho é aceita com 204 sem ETag e persiste os fatos e as restrições de valor")]
     public async Task Rascunho_ColetaValida_204SemEtag()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ColetaValida_204SemEtag));
 
         object[] corpo =
         [
-            new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null },
+            new
+            {
+                fatoCodigo = "COR_RACA",
+                ordem = 0,
+                rotulo = "Cor ou raça",
+                tipoRenderizacao = "SELECAO_UNICA",
+                obrigatoriedade = "NUNCA",
+                precondicao = (object?)null,
+                restricoes = new[] { new { tipo = "OPCOES_PERMITIDAS", entradas = new[] { new { quando = (object?)null, valores = new[] { "PRETA", "PARDA" } } } } },
+            },
             new
             {
                 fatoCodigo = "BAIXA_RENDA",
@@ -61,6 +71,8 @@ public sealed class DefinirFatosColetadosEndpointTests
         List<FatoColetado> fatos = await db.Set<FatoColetado>().AsNoTracking()
             .Where(f => f.ProcessoSeletivoId == ctx.ProcessoId).ToListAsync();
         fatos.Select(f => f.FatoCodigo).Should().BeEquivalentTo(["COR_RACA", "BAIXA_RENDA"]);
+        fatos.Single(f => f.FatoCodigo == "COR_RACA").Restricoes.Should().ContainSingle()
+            .Which.Should().BeOfType<OpcoesPermitidas>().Which.ValoresCitados.Should().BeEquivalentTo(["PARDA", "PRETA"]);
     }
 
     [Fact(DisplayName = "Fato fora do vocabulário é recusado com 422 sem tradução")]

@@ -6,7 +6,10 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 
-/// <summary>As regras do formulário — predicado e obrigatoriedade — na forma de leitura, a mesma para item e termo.</summary>
+/// <summary>
+/// As regras do formulário — predicado, obrigatoriedade e restrição de valor — na forma de leitura, a
+/// mesma para item e termo.
+/// </summary>
 internal static class RegrasMapping
 {
     public static ObrigatoriedadeDto ToDto(this Obrigatoriedade obrigatoriedade)
@@ -15,6 +18,21 @@ internal static class RegrasMapping
         return new ObrigatoriedadeDto(
             PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo),
             obrigatoriedade.Predicado?.ToDto());
+    }
+
+    public static RestricaoValorDto ToDto(this RestricaoValor restricao)
+    {
+        ArgumentNullException.ThrowIfNull(restricao);
+        string tipo = RestricaoValorJson.ParaToken(restricao.Tipo);
+        return restricao switch
+        {
+            FaixaNumerica faixa => new RestricaoValorDto(tipo, faixa.Minimo, faixa.Maximo, null, null),
+            TamanhoTexto tamanho => new RestricaoValorDto(tipo, tamanho.Minimo, tamanho.Maximo, null, null),
+            OpcoesPermitidas opcoes => new RestricaoValorDto(tipo, null, null, [.. opcoes.Entradas.Select(static e =>
+                new OpcoesCondicionadasDto(e.Quando?.ToDto(), [.. e.Valores.Order(StringComparer.Ordinal)]))], null),
+            OpcoesDasRespostas respostas => new RestricaoValorDto(tipo, null, null, null, respostas.Fatos),
+            _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Tipo de restrição sem forma de leitura."),
+        };
     }
 
     public static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>> ToDto(this PredicadoDnf predicado)

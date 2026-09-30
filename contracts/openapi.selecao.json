@@ -10889,7 +10889,8 @@
           "etapaCodigo",
           "formato",
           "ajuda",
-          "pedirConfirmacao"
+          "pedirConfirmacao",
+          "restricoes"
         ],
         "type": "object",
         "properties": {
@@ -10954,6 +10955,12 @@
           },
           "pedirConfirmacao": {
             "type": "boolean"
+          },
+          "restricoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RestricaoValorDto"
+            }
           }
         }
       },
@@ -11030,6 +11037,15 @@
           "pedirConfirmacao": {
             "type": "boolean",
             "default": false
+          },
+          "restricoes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RestricaoValorInput"
+            }
           }
         }
       },
@@ -11045,7 +11061,8 @@
           "etapaCodigo",
           "formato",
           "ajuda",
-          "pedirConfirmacao"
+          "pedirConfirmacao",
+          "restricoes"
         ],
         "type": "object",
         "properties": {
@@ -11111,6 +11128,12 @@
           },
           "pedirConfirmacao": {
             "type": "boolean"
+          },
+          "restricoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RestricaoValorDto"
+            }
           }
         }
       },
@@ -12153,6 +12176,60 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "OpcoesCondicionadasDto": {
+        "required": [
+          "quando",
+          "valores"
+        ],
+        "type": "object",
+        "properties": {
+          "quando": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          },
+          "valores": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OpcoesCondicionadasInput": {
+        "required": [
+          "quando",
+          "valores"
+        ],
+        "type": "object",
+        "properties": {
+          "quando": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "valores": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -13417,6 +13494,104 @@
                 "$ref": "#/components/schemas/UnidadePrazo"
               }
             ]
+          }
+        }
+      },
+      "RestricaoValorDto": {
+        "required": [
+          "tipo",
+          "minimo",
+          "maximo",
+          "entradas",
+          "fatos"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maximo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "entradas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/OpcoesCondicionadasDto"
+            }
+          },
+          "fatos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RestricaoValorInput": {
+        "required": [
+          "tipo"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maximo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "entradas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/OpcoesCondicionadasInput"
+            }
+          },
+          "fatos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

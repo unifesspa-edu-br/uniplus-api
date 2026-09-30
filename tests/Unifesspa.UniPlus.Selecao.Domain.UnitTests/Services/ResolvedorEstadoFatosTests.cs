@@ -92,6 +92,26 @@ public sealed class ResolvedorEstadoFatosTests
             EstadoFato.Resolvido, "a condição cita INDIGENA, mas o valor não é ofertado e por isso não a satisfaz");
     }
 
+    [Fact(DisplayName = "Resposta fora das opções vigentes, condicionadas à resposta anterior, não vale")]
+    public void RespostaForaDasOpcoesVigentes_NaoVale()
+    {
+        PredicadoDnf egresso = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim).Value!)]).Value!;
+        FatoColetado[] fatos =
+        [
+            Fato("EGRESSO_ESCOLA_PUBLICA", 0),
+            FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null,
+                restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(egresso, ["PRETA"]), new OpcoesCondicionadas(null, ["BRANCA"])])]).Value!,
+        ];
+
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
+            fatos,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao, ["COR_RACA"] = Cor("PRETA") },
+            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
+
+        estados["COR_RACA"].Estado.Should().Be(EstadoFato.Indeterminado, "PRETA só é opção para quem é egresso de escola pública");
+    }
+
     [Fact(DisplayName = "Itens de dois formulários, com a mesma ordem, resolvem juntos, e o de um cita o fato do outro")]
     public void DoisFormularios_ResolvemJuntos()
     {
