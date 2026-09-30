@@ -10329,7 +10329,8 @@
           "bloco",
           "titulo",
           "descricao",
-          "aviso"
+          "aviso",
+          "exibicao"
         ],
         "type": "object",
         "properties": {
@@ -10367,6 +10368,18 @@
               "null",
               "string"
             ]
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
           }
         }
       },
@@ -10416,6 +10429,18 @@
               "null",
               "string"
             ]
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
           }
         }
       },

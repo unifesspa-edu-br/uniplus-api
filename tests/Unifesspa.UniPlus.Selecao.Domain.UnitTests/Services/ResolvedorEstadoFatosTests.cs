@@ -71,6 +71,7 @@ public sealed class ResolvedorEstadoFatosTests
     private static IReadOnlyDictionary<string, FatoResolvido> ResolverComOferta(
         IReadOnlyDictionary<string, IReadOnlySet<string>> oferta, params (string Fato, JsonElement Valor)[] respostas) =>
         ResolvedorEstadoFatos.Resolver(
+            [],
             TabelaNormativa(),
             [],
             respostas.ToDictionary(static r => r.Fato, static r => r.Valor, StringComparer.Ordinal),
@@ -106,6 +107,7 @@ public sealed class ResolvedorEstadoFatosTests
         ];
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
+            [],
             fatos,
             [],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao, ["COR_RACA"] = Cor("PRETA") },
@@ -127,6 +129,7 @@ public sealed class ResolvedorEstadoFatosTests
         ];
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
+            [],
             fatos,
             [modalidade],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao },
@@ -134,6 +137,39 @@ public sealed class ResolvedorEstadoFatosTests
 
         estados["CONCORRER_EP"].Estado.Should().Be(EstadoFato.NaoAplicavel, "quem não é egresso de escola pública não deriva LB_EP");
         estados.Keys.Should().BeEquivalentTo(["EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP"], "o derivado é avaliado, mas não é fato coletado");
+    }
+
+    [Fact(DisplayName = "Seção oculta pela exibição leva os seus campos a não aplicável")]
+    public void SecaoOculta_CamposNaoAplicaveis()
+    {
+        FormularioProcesso formulario = FormularioComSecaoDeCotas();
+        FatoColetado[] fatos =
+        [
+            FatoColetado.Criar("EGRESSO_ESCOLA_PUBLICA", 0, "Egresso", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: "DADOS", finalidade: FinalidadeFormulario.Inscricao).Value!,
+            FatoColetado.Criar("CONCORRER_EP", 1, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: "COTAS", finalidade: FinalidadeFormulario.Inscricao).Value!,
+        ];
+
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
+            [formulario],
+            fatos,
+            [],
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao, ["CONCORRER_EP"] = Sim },
+            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
+
+        estados["CONCORRER_EP"].Estado.Should().Be(EstadoFato.NaoAplicavel, "a seção de cotas só aparece para quem é egresso de escola pública");
+    }
+
+    private static FormularioProcesso FormularioComSecaoDeCotas()
+    {
+        PredicadoDnf egresso = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim).Value!)]).Value!;
+        return FormularioProcesso.Criar(
+            FinalidadeFormulario.Inscricao, null, null,
+            [
+                EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
+                EtapaFormulario.Criar("COTAS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Cotas", null, null, egresso).Value!,
+                EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+            ]).Value!;
     }
 
     [Fact(DisplayName = "Itens de dois formulários, com a mesma ordem, resolvem juntos, e o de um cita o fato do outro")]
@@ -146,6 +182,7 @@ public sealed class ResolvedorEstadoFatosTests
             [Cond("COR_RACA", Operador.Igual, Cor("PRETA"))], finalidade: FinalidadeFormulario.Habilitacao).Value!;
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
+            [],
             [declaracao, corRaca],
             [],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["COR_RACA"] = Cor("BRANCA") },
@@ -286,6 +323,7 @@ public sealed class ResolvedorEstadoFatosTests
         ];
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
+            [],
             embaralhado,
             [],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["PCD"] = Nao },

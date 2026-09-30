@@ -381,6 +381,18 @@ internal static class CorpusEnvelope
             [Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta))],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // Seção com exibição condicional: aparece só para quem se declarou preto — o decoder remonta
+        // a exibição da seção junto das demais etapas.
+        FormularioProcesso inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
+        processo.DefinirFormulario(
+            FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
+            [
+                EtapaFormulario.Criar(FormularioDeTeste.Secao, 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
+                EtapaFormulario.Criar("PERTENCIMENTO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Pertencimento", null, null, corPreta).Value!,
+                EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+            ],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         processo.DefinirRegrasDerivacao(Ordem([
             ConfiguracaoDerivacaoFato.Criar("MODALIDADE", Ordem([
                 RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!,

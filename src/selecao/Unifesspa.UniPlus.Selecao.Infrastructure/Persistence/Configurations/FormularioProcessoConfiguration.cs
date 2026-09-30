@@ -55,7 +55,12 @@ public sealed class EtapaFormularioConfiguration : IEntityTypeConfiguration<Etap
         builder.Property(e => e.Titulo).HasMaxLength(EtapaFormulario.TituloMaxLength).IsRequired();
         builder.Property(e => e.Descricao).HasMaxLength(EtapaFormulario.TextoMaxLength);
         builder.Property(e => e.Aviso).HasMaxLength(EtapaFormulario.TextoMaxLength);
+        builder.Property(e => e.Exibicao)
+            .HasConversion(ConversoresDeRegras.Predicado, ConversoresDeRegras.ComparadorDePredicado)
+            .HasColumnType("jsonb");
         builder.Ignore(e => e.Estrutura);
+        builder.Ignore(e => e.FatosCitados);
+        builder.Ignore(e => e.Condicoes);
 
         builder.HasIndex(e => new { e.FormularioProcessoId, e.Codigo })
             .IsUnique()

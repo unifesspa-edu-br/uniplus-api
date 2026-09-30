@@ -1,8 +1,18 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
-/// <summary>Uma etapa do formulário: seção ou bloco de sistema, em token canônico.</summary>
+/// <summary>
+/// Uma etapa do formulário: seção ou bloco de sistema, em token canônico, com a exibição
+/// condicional da seção — nula quando ela sempre aparece.
+/// </summary>
 public sealed record EtapaFormularioDto(
-    string Codigo, int Ordem, string Tipo, string? Bloco, string Titulo, string? Descricao, string? Aviso);
+    string Codigo,
+    int Ordem,
+    string Tipo,
+    string? Bloco,
+    string Titulo,
+    string? Descricao,
+    string? Aviso,
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao);
 
 /// <summary>
 /// O formulário de uma finalidade (UNI-REQ-0144): a fase, o título, o modelo de origem, as etapas,

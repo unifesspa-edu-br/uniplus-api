@@ -129,7 +129,7 @@ public sealed partial class EnvelopeCodec
         {
             string pathEtapa = $"{path}.etapas[{i}]";
             JsonObject item = leitor.ItemObjeto(itens, i, $"{path}.etapas");
-            leitor.ExigirChaves(item, pathEtapa, "codigo", "ordem", "tipo", "bloco", "titulo", "descricao", "aviso");
+            leitor.ExigirChaves(item, pathEtapa, "codigo", "ordem", "tipo", "bloco", "titulo", "descricao", "aviso", "exibicao");
             string codigo = leitor.TextoNaoVazio(item, "codigo", pathEtapa, LimitesDoEnvelope.CodigoEtapaFormulario);
             int ordem = leitor.Inteiro(item, "ordem", pathEtapa);
             string tipo = leitor.TextoNaoVazio(item, "tipo", pathEtapa);
@@ -137,9 +137,16 @@ public sealed partial class EnvelopeCodec
             string titulo = leitor.TextoNaoVazio(item, "titulo", pathEtapa, LimitesDoEnvelope.TituloEtapaFormulario);
             string? descricao = leitor.TextoOpcional(item, "descricao", pathEtapa, LimitesDoEnvelope.TextoEtapaFormulario);
             string? aviso = leitor.TextoOpcional(item, "aviso", pathEtapa, LimitesDoEnvelope.TextoEtapaFormulario);
+            IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> exibicao = LerDnf(leitor, item, "exibicao", pathEtapa);
             if (leitor.Falhou)
             {
                 return [];
+            }
+
+            Result<PredicadoDnf?> exibicaoLida = PredicadoOpcional(exibicao);
+            if (exibicaoLida.IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<EtapaFormulario>>(exibicaoLida.Error!) ?? [];
             }
 
             // O encoder emite as etapas em ordem estritamente crescente; outra forma só vem de
@@ -152,7 +159,8 @@ public sealed partial class EnvelopeCodec
 
             ordemAnterior = ordem;
             Result<EtapaFormulario> etapa = EtapaFormulario.Criar(
-                codigo, ordem, EstruturaFormulario.TipoDoToken(tipo), EstruturaFormulario.BlocoDoToken(blocoDeSistema), titulo, descricao, aviso);
+                codigo, ordem, EstruturaFormulario.TipoDoToken(tipo), EstruturaFormulario.BlocoDoToken(blocoDeSistema), titulo, descricao, aviso,
+                exibicaoLida.Value);
             if (etapa.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<EtapaFormulario>>(etapa.Error!) ?? [];
