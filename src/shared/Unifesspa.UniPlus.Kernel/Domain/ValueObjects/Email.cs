@@ -24,6 +24,9 @@ public sealed partial record Email
         return Result<Email>.Success(new Email(normalizado));
     }
 
+    /// <summary>A primeira letra do usuário e o domínio, como em <c>j***@unifesspa.edu.br</c>.</summary>
+    public string Mascarado => $"{Valor[0]}***{Valor[Valor.IndexOf('@', StringComparison.Ordinal)..]}";
+
     public override string ToString() => Valor;
 
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]

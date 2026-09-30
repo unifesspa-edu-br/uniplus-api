@@ -78,6 +78,11 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             .HasConversion(FonteValoresConverter)
             .HasMaxLength(EnumTokenMaxLength);
 
+        // formato (ADR-0136): anulável — só o fato de domínio texto tem formato.
+        builder.Property(f => f.Formato)
+            .HasConversion(FormatoConverter)
+            .HasMaxLength(EnumTokenMaxLength);
+
         builder.Property(f => f.Escopo)
             .HasConversion(EscopoConverter)
             .HasMaxLength(EnumTokenMaxLength)
@@ -148,8 +153,18 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
         // categórico declara uma das fontes; os demais domínios não têm fonte.
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_fonte_valores_coerente",
-            $"(dominio = 'CATEGORICO' AND fonte_valores IN ({TokensSql(FontesValoresFato.TokensCanonicos)})) "
+            $"(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ({TokensSql(FontesValoresFato.TokensCanonicos)})) "
             + "OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
+
+        table.HasCheckConstraint(
+            "ck_rol_de_fatos_candidato_formato_coerente",
+            $"(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ({TokensSql(FormatosTexto.TokensCanonicos)})) "
+            + "OR (dominio <> 'TEXTO' AND formato IS NULL)");
+
+        // Texto, data e endereço nunca são menos que dado pessoal (invariante da factory).
+        table.HasCheckConstraint(
+            "ck_rol_de_fatos_candidato_classificacao_minima_do_dominio",
+            "dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') OR classificacao_protecao IN ('PESSOAL', 'SENSIVEL')");
 
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_escopo",
@@ -214,6 +229,9 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
 
     private static readonly ValueConverter<CardinalidadeFato, string> CardinalidadeConverter =
         new(cardinalidade => CardinalidadesFato.ParaTokenCanonico(cardinalidade), token => CardinalidadesFato.Analisar(token));
+
+    private static readonly ValueConverter<FormatoTexto, string> FormatoConverter =
+        new(formato => FormatosTexto.ParaTokenCanonico(formato), token => FormatosTexto.Analisar(token));
 
     private static readonly ValueConverter<EscopoFato, string> EscopoConverter =
         new(escopo => EscoposFato.ParaTokenCanonico(escopo), token => EscoposFato.Analisar(token));

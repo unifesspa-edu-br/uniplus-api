@@ -13,6 +13,9 @@ public static class DominiosFato
         [DominioFato.Categorico] = "CATEGORICO",
         [DominioFato.Booleano] = "BOOLEANO",
         [DominioFato.Numerico] = "NUMERICO",
+        [DominioFato.Texto] = "TEXTO",
+        [DominioFato.Data] = "DATA",
+        [DominioFato.Endereco] = "ENDERECO",
     };
 
     private static readonly Dictionary<string, DominioFato> DeToken =

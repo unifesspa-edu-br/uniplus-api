@@ -105,7 +105,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null;
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
         IReadOnlySet<string>? fatosResolviveis = null;
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos = null;
+        IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos = null;
         if (existeGatilho)
         {
             IReadOnlySet<string> resolvidosPorAtributo;
@@ -304,7 +304,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         ITipoDocumentoReader tipoDocumentoReader,
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato,
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos,
+        IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos,
         IReadOnlySet<string>? fatosResolviveis,
         TipoEntidade? tipoEntidadeRepeticao,
         CancellationToken cancellationToken)
@@ -416,7 +416,7 @@ public static class DefinirDocumentosExigidosCommandHandler
     private static Result<IReadOnlyList<CondicaoGatilho>> ResolverCondicoes(
         IReadOnlyList<CondicaoGatilhoInput> inputs,
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos,
+        IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos,
         IReadOnlySet<string>? fatosResolviveis)
     {
         if (inputs.Count == 0)

@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Integração ponta-a-ponta do catálogo <c>rol_de_fatos_candidato</c> contra Postgres real
-/// (UNI-REQ-0077, ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078): seed dos dezessete fatos, leitor
+/// (UNI-REQ-0077, ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078): seed dos fatos de sistema, leitor
 /// cross-módulo, ordenação, resolução por chave natural, CHECKs de domínio/coerência, índice
 /// único total do código e o seed de <c>fato_valor_dominio</c>.
 /// </summary>
@@ -56,6 +56,7 @@ public sealed class FatoCandidatoPersistenceTests
                 item.Origem,
                 item.Cardinalidade,
                 item.FonteValores,
+                formato: null,
                 item.PontoResolucao,
                 item.Binding,
                 EscopoFato.Candidato,
@@ -156,14 +157,14 @@ public sealed class FatoCandidatoPersistenceTests
         }
     }
 
-    [Fact(DisplayName = "Seed materializa exatamente os dezessete fatos do vocabulário, batendo com a fonte única")]
+    [Fact(DisplayName = "Seed materializa exatamente os fatos de sistema, batendo com a fonte única")]
     public async Task Seed_MaterializaTodosOsFatosDaFonteUnica()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(17);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(21);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -197,6 +198,25 @@ public sealed class FatoCandidatoPersistenceTests
                 "PCD", "QUILOMBOLA", "TIPO_DEFICIENCIA");
         fatos.Where(f => f.ClassificacaoProtecao != ClassificacaoProtecaoDado.Sensivel)
             .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Pessoal);
+    }
+
+    [Theory(DisplayName = "CHECK recusa categórico sem fonte e texto sem formato via SQL cru")]
+    [InlineData("CATEGORICO")]
+    [InlineData("TEXTO")]
+    public async Task Check_RecusaCategoricoSemFonteETextoSemFormato(string dominio)
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO configuracao.rol_de_fatos_candidato
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {dominio}, {"DECLARADO"}, {"ESCALAR"},
+                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+            """);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "a fonte do categórico e o formato do texto são obrigatórios também no banco — NULL não pode passar pelo IN");
     }
 
     [Fact(DisplayName = "CHECK recusa classificação de proteção fora do domínio via SQL cru")]
@@ -288,7 +308,7 @@ public sealed class FatoCandidatoPersistenceTests
         string codigo = CodigoUnico();
         return FatoCandidato.Criar(
             codigo, "Fato do administrador", null, DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
-            fonteValores: null, "INSCRICAO", $"CAMPO_INSCRICAO:{codigo}", EscopoFato.Candidato,
+            fonteValores: null, formato: null, "INSCRICAO", $"CAMPO_INSCRICAO:{codigo}", EscopoFato.Candidato,
             ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
     }
 
@@ -306,12 +326,12 @@ public sealed class FatoCandidatoPersistenceTests
 
         // MODALIDADE passou a Derivado: não é resposta do candidato, e sim resultado da avaliação
         // dos fatos declarados contra as regras congeladas do processo (ADR-0116, emenda 2026-07-22).
-        derivados.Should().Equal("FAIXA_ETARIA", "MODALIDADE", "RENDA_PER_CAPITA");
+        derivados.Should().Equal("FAIXA_ETARIA", "MODALIDADE", "MUNICIPIO_RESIDENCIA", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
         fatos.Where(f => f.Origem != OrigemFato.Derivado)
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
 
-    [Fact(DisplayName = "PontoResolucao: todos os dezessete fatos resolvem em INSCRICAO")]
+    [Fact(DisplayName = "PontoResolucao: todos os fatos de sistema resolvem em INSCRICAO")]
     public async Task Seed_PontoResolucaoInscricaoParaTodos()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -398,7 +418,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
 
-        views.Should().HaveCount(17);
+        views.Should().HaveCount(21);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -465,7 +485,7 @@ public sealed class FatoCandidatoPersistenceTests
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"ESCALAR"},
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTRO"}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
@@ -515,6 +535,10 @@ public sealed class FatoCandidatoPersistenceTests
             ("CONCORRER_PPI", "015", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PPI"),
             ("CONCORRER_Q", "016", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_Q"),
             ("CONCORRER_RENDA", "017", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_RENDA"),
+            ("ENDERECO_RESIDENCIAL", "018", DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:ENDERECO_RESIDENCIAL"),
+            ("DATA_NASCIMENTO", "019", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DATA_NASCIMENTO"),
+            ("UF_RESIDENCIA", "020", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA"),
+            ("MUNICIPIO_RESIDENCIA", "021", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

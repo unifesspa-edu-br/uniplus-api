@@ -11,7 +11,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="Codigo">Código do fato, chave natural (ex.: "COR_RACA", "MODALIDADE").</param>
 /// <param name="Nome">Rótulo legível do fato.</param>
 /// <param name="Descricao">Descrição opcional (cosmética).</param>
-/// <param name="Dominio">Tipo de dado — token canônico UPPER_SNAKE (CATEGORICO, BOOLEANO, NUMERICO).</param>
+/// <param name="Dominio">Tipo de dado — token canônico UPPER_SNAKE (CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA, ENDERECO).</param>
 /// <param name="Origem">Origem do dado — token canônico (DERIVADO, DECLARADO, INTEGRACAO).</param>
 /// <param name="Cardinalidade">Cardinalidade — token canônico (ESCALAR, MULTIVALORADO).</param>
 /// <param name="ValoresDominio">
@@ -28,7 +28,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// </param>
 /// <param name="FonteValores">
 /// De onde vêm os valores de um categórico (ADR-0136) — token canônico (GLOBAL, PROCESSO,
-/// MODALIDADE, MUNICIPIOS_BONUS), ou <see langword="null"/> para booleano e numérico. O consumidor decide por ela,
+/// MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO), ou <see langword="null"/> em todo domínio que não é categórico. O consumidor decide por ela,
 /// nunca pelo código do fato.
 /// </param>
 public sealed record FatoCandidatoView(

@@ -93,10 +93,10 @@ public static class DefinirRegrasDerivacaoCommandHandler
             IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario) =
             await ResolverVocabularioAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
 
-        Dictionary<string, IReadOnlySet<string>> dominiosDinamicos =
+        Dictionary<string, DominioDeValores> dominiosDinamicos =
             VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
         IReadOnlyCollection<string> modalidadesOfertadas =
-            [.. dominiosDinamicos.GetValueOrDefault(RegrasDerivacaoModalidadeLei12711.CodigoFato) ?? new HashSet<string>()];
+            [.. dominiosDinamicos.GetValueOrDefault(RegrasDerivacaoModalidadeLei12711.CodigoFato)?.Valores ?? new HashSet<string>()];
 
         // Universo dos fatos disponíveis na configuração final: os coletados pelo processo mais os
         // derivados definidos neste mesmo comando (a substituição é integral). Uma condição só pode
@@ -142,7 +142,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
         IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
         IReadOnlySet<string> universo,
-        IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos,
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos,
         IReadOnlyCollection<string> modalidadesOfertadas)
     {
         // Alvo: o fato tem de existir e ser derivado com o binding da própria regra de derivação
@@ -208,7 +208,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
         RegraDerivacaoInput regraInput,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
         IReadOnlySet<string> universo,
-        IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos)
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
         List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
         List<CondicaoRegraDerivacao> condicoes = [];

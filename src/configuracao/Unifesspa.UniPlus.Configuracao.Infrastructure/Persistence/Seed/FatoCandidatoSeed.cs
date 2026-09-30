@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Fonte única do seed do catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0077,
-/// ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078): os dezessete
+/// ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078 e pela ADR-0136): os
 /// fatos do vocabulário fechado do candidato. Consumida tanto pela configuração EF Core (que materializa as linhas
 /// via <c>HasData</c> na migration) quanto pelos testes (que conferem o seed do
 /// banco contra esta lista), garantindo uma única definição por fato.
@@ -40,7 +40,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// fase posterior.
 /// </para>
 /// <para>
-/// Todos os dezessete fatos resolvem em <c>PontoResolucao = "INSCRICAO"</c> — são
+/// Todos os fatos semeados resolvem em <c>PontoResolucao = "INSCRICAO"</c> — são
 /// respondidos/derivados no cadastro de inscrição do candidato, nenhum depende de
 /// fase posterior (o gate que recusaria isso é a Story #916/PR2).
 /// </para>
@@ -61,6 +61,9 @@ public static class FatoCandidatoSeed
     private const string FinalidadeAtendimento =
         "Oferta de atendimento especializado ao candidato na realização das etapas do processo seletivo.";
 
+    private const string FinalidadeResidencia =
+        "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.";
+
     private const string FinalidadeRequisitos =
         "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.";
 
@@ -69,7 +72,7 @@ public static class FatoCandidatoSeed
     private static Guid SeedId(int n) =>
         Guid.Parse($"fa700000-0000-7000-8000-{n:D12}");
 
-    /// <summary>Os dezessete fatos do vocabulário, na ordem canônica de semeadura.</summary>
+    /// <summary>Os fatos de sistema, na ordem canônica de semeadura.</summary>
     public static IReadOnlyList<FatoCandidatoSeedItem> Itens { get; } =
     [
         new(SeedId(1), "COR_RACA", "Cor ou raça", null,
@@ -165,6 +168,29 @@ public static class FatoCandidatoSeed
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_RENDA",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeReservaDeVagas),
+
+        // ── Residência e nascimento (ADR-0136) ──
+        // O endereço e a data de nascimento são declarados; a UF e o município de residência
+        // derivam do endereço e são os que uma regra pode citar — o endereço e a data, não.
+        new(SeedId(18), "ENDERECO_RESIDENCIAL", "Endereço residencial", null,
+            DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, "CAMPO_INSCRICAO:ENDERECO_RESIDENCIAL",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeResidencia),
+
+        new(SeedId(19), "DATA_NASCIMENTO", "Data de nascimento", null,
+            DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, "CAMPO_INSCRICAO:DATA_NASCIMENTO",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeRequisitos),
+
+        new(SeedId(20), "UF_RESIDENCIA", "UF de residência", null,
+            DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.GeoUf,
+            PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeResidencia),
+
+        new(SeedId(21), "MUNICIPIO_RESIDENCIA", "Município de residência", null,
+            DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.GeoMunicipio,
+            PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeResidencia),
     ];
 }
 

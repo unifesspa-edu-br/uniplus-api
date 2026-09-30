@@ -41,7 +41,7 @@ public static class PredicadoDnfValidador
         PredicadoDnf predicado,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioFechado,
         IReadOnlySet<string>? fatosColetadosPeloProcesso = null,
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos = null)
+        IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos = null)
     {
         ArgumentNullException.ThrowIfNull(predicado);
         ArgumentNullException.ThrowIfNull(vocabularioFechado);
@@ -65,7 +65,7 @@ public static class PredicadoDnfValidador
         CondicaoDnf condicao,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioFechado,
         IReadOnlySet<string>? fatosColetadosPeloProcesso,
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos)
+        IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos)
     {
         if (!vocabularioFechado.TryGetValue(condicao.Fato, out DescritorFatoCandidato? descritor))
         {
@@ -110,11 +110,12 @@ public static class PredicadoDnfValidador
     private static Result ValidarValor(
         CondicaoDnf condicao,
         DescritorFatoCandidato descritor,
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos) => descritor.TipoDominio switch
+        IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos) => descritor.TipoDominio switch
         {
             TipoDominioFato.Booleano => ValidarValorBooleano(condicao),
             TipoDominioFato.Numerico => ValidarValorNumerico(condicao),
-            TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(condicao, descritor.ValoresDominio!),
+            TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(
+                condicao, valor => descritor.ValoresDominio!.Contains(valor, StringComparer.Ordinal)),
             TipoDominioFato.CategoricoDinamico => ValidarValorCategoricoDinamico(condicao, dominiosDinamicos),
             _ => Result.Failure(new DomainError(PredicadoDnfErrorCodes.ValorIncompativelComTipo, "Domínio do fato desconhecido.")),
         };
@@ -127,16 +128,16 @@ public static class PredicadoDnfValidador
     /// confia silenciosamente), distinto de "valor fora do domínio".
     /// </summary>
     private static Result ValidarValorCategoricoDinamico(
-        CondicaoDnf condicao, IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos)
+        CondicaoDnf condicao, IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos)
     {
-        if (dominiosDinamicos is null || !dominiosDinamicos.TryGetValue(condicao.Fato, out IReadOnlySet<string>? dominio))
+        if (dominiosDinamicos is null || !dominiosDinamicos.TryGetValue(condicao.Fato, out DominioDeValores? dominio))
         {
             return Result.Failure(new DomainError(
                 "PredicadoDnf.DominioDinamicoNaoFornecido",
                 $"O domínio dinâmico do fato '{condicao.Fato}' não foi fornecido — o chamador precisa derivá-lo da oferta do processo."));
         }
 
-        return ValidarValorCategorico(condicao, [.. dominio]);
+        return ValidarValorCategorico(condicao, dominio.Contem);
     }
 
     private static Result ValidarValorBooleano(CondicaoDnf condicao) =>
@@ -162,13 +163,13 @@ public static class PredicadoDnfValidador
                 $"O valor da condição sobre '{condicao.Fato}' deve ser um número inteiro (decimal é rejeitado)."));
     }
 
-    private static Result ValidarValorCategorico(CondicaoDnf condicao, IReadOnlyList<string> dominio)
+    private static Result ValidarValorCategorico(CondicaoDnf condicao, Func<string, bool> pertence)
     {
         // NAO_EM (Story #916) segue a mesma forma de lista de EM — negação, não muda a
         // validação de valor × domínio.
         if (condicao.Operador is Operador.Em or Operador.NaoEm)
         {
-            return ValidarValorCategoricoEm(condicao, dominio);
+            return ValidarValorCategoricoEm(condicao, pertence);
         }
 
         if (condicao.Valor.ValueKind != JsonValueKind.String)
@@ -178,14 +179,14 @@ public static class PredicadoDnfValidador
                 $"O valor da condição sobre '{condicao.Fato}' deve ser uma string JSON."));
         }
 
-        return dominio.Contains(condicao.Valor.GetString(), StringComparer.Ordinal)
+        return pertence(condicao.Valor.GetString()!)
             ? Result.Success()
             : Result.Failure(new DomainError(
                 PredicadoDnfErrorCodes.ValorForaDoDominio,
                 $"O valor da condição sobre '{condicao.Fato}' não pertence ao domínio declarado."));
     }
 
-    private static Result ValidarValorCategoricoEm(CondicaoDnf condicao, IReadOnlyList<string> dominio)
+    private static Result ValidarValorCategoricoEm(CondicaoDnf condicao, Func<string, bool> pertence)
     {
         bool possuiItemNaoString = condicao.Valor.EnumerateArray()
             .Any(static item => item.ValueKind != JsonValueKind.String);
@@ -198,8 +199,8 @@ public static class PredicadoDnfValidador
         }
 
         string? foraDoDominio = condicao.Valor.EnumerateArray()
-            .Select(static item => item.GetString())
-            .FirstOrDefault(valor => !dominio.Contains(valor, StringComparer.Ordinal));
+            .Select(static item => item.GetString()!)
+            .FirstOrDefault(valor => !pertence(valor));
 
         return foraDoDominio is null
             ? Result.Success()
