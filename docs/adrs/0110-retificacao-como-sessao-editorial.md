@@ -303,3 +303,5 @@ encoders não são aposentados e cada mudança de forma recebe avanço próprio.
 Assim, a prova de fidelidade de uma configuração congelada permanece possível durante toda a
 vida de cada versão publicada; versões anteriores à primeira publicação permanecem
 deliberadamente fora desse compromisso.
+
+> **Emendada pela ADR-0137:** o regime transitório vale até a primeira publicação em produção, e não em qualquer ambiente; processos de homologação são recriados quando a forma muda.
