@@ -5,7 +5,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// inscrição. Conjunto fechado por design, coerente com o domínio do fato no catálogo do
 /// candidato: <see cref="Booleano"/> só para domínio <c>BOOLEANO</c>, <see cref="Numero"/> só
 /// para <c>NUMERICO</c>, <see cref="SelecaoUnica"/>/<see cref="SelecaoMultipla"/> para
-/// <c>CATEGORICO</c> conforme a cardinalidade do fato no catálogo.
+/// <c>CATEGORICO</c> conforme a cardinalidade do fato no catálogo, <see cref="Texto"/> para
+/// <c>TEXTO</c>.
 /// </summary>
 /// <remarks>
 /// A numeração dos membros é identidade de persistência, não peso de ordenação — mesmo raciocínio
@@ -32,4 +33,10 @@ public enum TipoRenderizacao
     /// multivalorada.
     /// </summary>
     SelecaoMultipla = 4,
+
+    /// <summary>
+    /// Campo de texto — só aceito quando o fato tem domínio <c>TEXTO</c>; o formato do fato no
+    /// catálogo (livre, CPF, e-mail…) diz como a resposta é conferida.
+    /// </summary>
+    Texto = 5,
 }

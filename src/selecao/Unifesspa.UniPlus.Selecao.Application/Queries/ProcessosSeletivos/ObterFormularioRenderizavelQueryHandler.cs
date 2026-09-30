@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 
 using DTOs;
@@ -183,18 +184,20 @@ public static class ObterFormularioRenderizavelQueryHandler
             if (item is not JsonObject fato
                 || !TentarString(fato, "fatoCodigo", out string fatoCodigo)
                 || !TentarStringOpcional(fato, "etapaCodigo", out string? etapaCodigo)
+                || !TentarStringOpcional(fato, "formato", out string? formato)
                 || !TentarInt(fato, "ordem", out int ordem)
                 || !TentarString(fato, "rotulo", out string rotulo)
                 || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
                 || !TentarBool(fato, "obrigatorio", out bool obrigatorio)
                 || !TentarPredicado(fato, "precondicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
-                || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis))
+                || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
+                || !FormatoCoerente(tipoRenderizacao, formato))
             {
                 return VersaoSemApresentacao();
             }
 
             fatos.Add(new FatoFormularioRenderizavelDto(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicao, valoresSelecionaveis, etapaCodigo));
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicao, valoresSelecionaveis, etapaCodigo, formato));
         }
 
         return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos));
@@ -378,11 +381,15 @@ public static class ObterFormularioRenderizavelQueryHandler
         return true;
     }
 
+    /// <summary>O formato existe se, e só se, o campo é de texto.</summary>
+    private static bool FormatoCoerente(string tipoRenderizacao, string? formato) =>
+        (TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacao) == TipoRenderizacao.Texto) == !string.IsNullOrWhiteSpace(formato);
+
     /// <summary>
     /// Chave presente e coerente com a bicondicional (issue #1059, UNI-REQ-0072):
     /// <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> exige um array com cardinalidade mínima 1 (issue #1077);
-    /// <c>BOOLEANO</c>/<c>NUMERO</c> exige <c>null</c> explícito. <paramref name="tipoRenderizacao"/>
-    /// fora dos QUATRO tokens fechados falha aqui — sem isso, um token desconhecido cairia no
+    /// os demais tipos exigem <c>null</c> explícito. <paramref name="tipoRenderizacao"/>
+    /// fora do vocabulário fechado falha aqui — sem isso, um token desconhecido cairia no
     /// ramo "não é seleção" por omissão e aceitaria <c>valoresSelecionaveis: null</c> em silêncio,
     /// a mesma forma que <c>EnvelopeCodec.LerFatosColetados</c> recusa (o decoder converte um
     /// token não reconhecido em <c>TipoRenderizacao.Nenhuma</c>, que <c>FatoColetado.Criar</c>
@@ -395,34 +402,24 @@ public static class ObterFormularioRenderizavelQueryHandler
         JsonObject fato, string tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
     {
         valoresSelecionaveis = null;
-
-        bool? ehFatoDeSelecao = tipoRenderizacao switch
-        {
-            "SELECAO_UNICA" or "SELECAO_MULTIPLA" => true,
-            "BOOLEANO" or "NUMERO" => false,
-            _ => null,
-        };
-
-        if (ehFatoDeSelecao is not { } fatoDeSelecao)
-        {
-            return false;
-        }
-
         if (!fato.TryGetPropertyValue("valoresSelecionaveis", out JsonNode? node))
         {
             return false;
         }
 
-        if (node is null)
+        return (TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacao), node) switch
         {
-            return !fatoDeSelecao;
-        }
+            (TipoRenderizacao.Nenhuma, _) => false,
+            (TipoRenderizacao tipo, null) => !tipo.EhSelecao(),
+            (TipoRenderizacao tipo, JsonArray array) when tipo.EhSelecao() => TentarValores(array, out valoresSelecionaveis),
+            _ => false,
+        };
+    }
 
-        if (node is not JsonArray array || !fatoDeSelecao)
-        {
-            return false;
-        }
-
+    /// <summary>Os valores de um fato de seleção: ao menos um, cada código uma vez, ordem não negativa.</summary>
+    private static bool TentarValores(JsonArray array, out List<ValorSelecionavelDto>? valoresSelecionaveis)
+    {
+        valoresSelecionaveis = null;
         List<ValorSelecionavelDto> valores = [];
         HashSet<string> codigos = new(StringComparer.Ordinal);
         foreach (JsonNode? item in array)

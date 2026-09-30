@@ -14858,6 +14858,12 @@
           },
           "ativo": {
             "type": "boolean"
+          },
+          "formato": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

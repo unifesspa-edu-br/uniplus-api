@@ -54,6 +54,8 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true),
         new(Guid.CreateVersion7(), "RENDA_PER_CAPITA", "Renda per capita", null, "NUMERICO", "DERIVADO", "ESCALAR",
             null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true),
+        new(Guid.CreateVersion7(), "NOME_SOCIAL", "Nome social", null, "TEXTO", "DECLARADO", "ESCALAR",
+            null, "INSCRICAO", "CAMPO_INSCRICAO:NOME_SOCIAL", null, null, Ativo: true, Formato: "NOME_PESSOA"),
     ];
 
     private static ProcessoSeletivo ProcessoEmRascunho()
@@ -218,6 +220,8 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     [InlineData("COR_RACA", "SELECAO_MULTIPLA", "COR_RACA é ESCALAR, não MULTIVALORADO — só SELECAO_UNICA é coerente")]
     [InlineData("BAIXA_RENDA", "SELECAO_UNICA", "BAIXA_RENDA é BOOLEANO — só BOOLEANO é coerente")]
     [InlineData("BAIXA_RENDA", "NUMERO", "BAIXA_RENDA é BOOLEANO — NUMERO não é coerente")]
+    [InlineData("NOME_SOCIAL", "SELECAO_UNICA", "NOME_SOCIAL é TEXTO — só TEXTO é coerente")]
+    [InlineData("BAIXA_RENDA", "TEXTO", "BAIXA_RENDA é BOOLEANO — TEXTO não é coerente")]
     public async Task Handle_TipoRenderizacaoIncoerente_RetornaErroDeCoerencia(
         string fatoCodigo, string tipoRenderizacaoIncoerente, string motivo)
     {
@@ -229,6 +233,33 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue(motivo);
         resultado.Error!.Code.Should().Be("FatoColetado.TipoRenderizacaoIncoerenteComDominio");
+    }
+
+    [Fact(DisplayName = "Fato de texto multivalorado não é coletável como campo de texto")]
+    public async Task Handle_TextoMultivalorado_RecusaPelaCoerencia()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+            [.. VocabularioSeed().Select(static f => f.Codigo == "NOME_SOCIAL" ? f with { Cardinalidade = "MULTIVALORADO" } : f)]);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+            [new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", false, null)], PrecondicaoIfMatch.Ausente);
+
+        (await HandleAsync(mocks, command)).Error!.Code.Should().Be("FatoColetado.TipoRenderizacaoIncoerenteComDominio");
+    }
+
+    [Fact(DisplayName = "Campo de texto é aceito e congela o formato do fato no catálogo")]
+    public async Task Handle_CampoDeTexto_CongelaOFormatoDoCatalogo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+            [new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", false, null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.FatosColetados.Single().Formato.Should().Be("NOME_PESSOA");
     }
 
     [Fact(DisplayName = "ADR-0125: violações de forma de FatoColetado.Criar acumulam entre fatos, com o índice prefixado ao field")]

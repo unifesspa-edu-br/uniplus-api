@@ -11,6 +11,7 @@ public static class TipoRenderizacaoCodigo
     public const string Booleano = "BOOLEANO";
     public const string SelecaoUnica = "SELECAO_UNICA";
     public const string SelecaoMultipla = "SELECAO_MULTIPLA";
+    public const string Texto = "TEXTO";
 
     /// <summary>
     /// Converte para o código canônico. O <c>switch</c> é exaustivo: um 5º valor quebra a build
@@ -22,6 +23,7 @@ public static class TipoRenderizacaoCodigo
         TipoRenderizacao.Booleano => Booleano,
         TipoRenderizacao.SelecaoUnica => SelecaoUnica,
         TipoRenderizacao.SelecaoMultipla => SelecaoMultipla,
+        TipoRenderizacao.Texto => Texto,
         TipoRenderizacao.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(tipo), tipo, "TipoRenderizacao.Nenhuma é sentinela e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoRenderizacao desconhecido."),
@@ -39,6 +41,7 @@ public static class TipoRenderizacaoCodigo
         Booleano => TipoRenderizacao.Booleano,
         SelecaoUnica => TipoRenderizacao.SelecaoUnica,
         SelecaoMultipla => TipoRenderizacao.SelecaoMultipla,
+        Texto => TipoRenderizacao.Texto,
         _ => TipoRenderizacao.Nenhuma,
     };
 }

@@ -3746,7 +3746,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         foreach (FatoColetado fato in _fatosColetados)
         {
-            if (fato.TipoRenderizacao is not (TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla))
+            if (!fato.TipoRenderizacao.EhSelecao())
             {
                 continue;
             }

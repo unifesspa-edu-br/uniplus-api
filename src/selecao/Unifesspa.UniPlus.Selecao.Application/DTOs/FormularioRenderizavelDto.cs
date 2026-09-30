@@ -12,6 +12,8 @@ public sealed record ValorSelecionavelDto(string Codigo, string? Descricao, int 
 /// de <see cref="FatoColetadoDto"/> mais <see cref="ValoresSelecionaveis"/> — as opções que o
 /// candidato pode escolher. Presente com cardinalidade mínima 1 (issue #1077: nunca vazio) quando
 /// <see cref="TipoRenderizacao"/> é de seleção, <see langword="null"/> quando não é.
+/// <see cref="Formato"/> diz como a resposta do campo de texto é conferida; <see langword="null"/>
+/// nos demais campos.
 /// </summary>
 /// <remarks>
 /// DTO PRÓPRIO, e não reaproveitamento de <see cref="FatoColetadoDto"/>: aquele é o read-back
@@ -29,7 +31,8 @@ public sealed record FatoFormularioRenderizavelDto(
     bool Obrigatorio,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao,
     IReadOnlyList<ValorSelecionavelDto>? ValoresSelecionaveis,
-    string? EtapaCodigo);
+    string? EtapaCodigo,
+    string? Formato);
 
 /// <summary>
 /// Formulário de uma finalidade pronto para renderização (UNI-REQ-0144): título, etapas, termos

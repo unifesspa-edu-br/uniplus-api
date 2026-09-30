@@ -226,7 +226,7 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(
                 item, path,
                 "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "origemValores",
-                "precondicao", "valoresSelecionaveis");
+                "formato", "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -236,6 +236,7 @@ public sealed partial class EnvelopeCodec
             string tipoRenderizacaoCodigo = leitor.TextoNaoVazio(item, "tipoRenderizacao", path);
             bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
             OrigemValoresColeta origemValores = leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path);
+            string? formato = leitor.TextoOpcional(item, "formato", path, LimitesDoEnvelope.Token);
             if (leitor.Falhou)
             {
                 return ([], valoresSelecionaveis);
@@ -248,6 +249,11 @@ public sealed partial class EnvelopeCodec
             }
 
             TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacaoCodigo);
+            if (tipoRenderizacao is TipoRenderizacao.Nenhuma)
+            {
+                return (leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.tipoRenderizacao' fora do vocabulário de tipos de renderização.")) ?? [], valoresSelecionaveis);
+            }
 
             IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> condicoes =
                 LerDnf(leitor, item, "precondicao", path);
@@ -276,7 +282,7 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes, origemValores, etapaCodigo, finalidade);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes, origemValores, etapaCodigo, finalidade, formato);
             if (fatoColetado.IsFailure)
             {
                 return (leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [], valoresSelecionaveis);
@@ -341,7 +347,7 @@ public sealed partial class EnvelopeCodec
         LeitorEnvelope leitor, JsonObject item, string pathPai, TipoRenderizacao tipoRenderizacao)
     {
         string path = $"{pathPai}.valoresSelecionaveis";
-        bool ehFatoDeSelecao = tipoRenderizacao is TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla;
+        bool ehFatoDeSelecao = tipoRenderizacao.EhSelecao();
 
         if (item["valoresSelecionaveis"] is not JsonNode node)
         {

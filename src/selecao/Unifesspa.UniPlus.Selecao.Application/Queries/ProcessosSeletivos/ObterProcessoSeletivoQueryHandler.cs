@@ -128,7 +128,8 @@ public static class ObterProcessoSeletivoQueryHandler
         fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo)
             ? [.. processo.OpcoesDoProcesso(fato.FatoCodigo).Select(static o => new OpcaoDoProcessoDto(o.Codigo, o.Rotulo, o.Ordem))]
             : null,
-        fato.EtapaCodigo);
+        fato.EtapaCodigo,
+        fato.Formato);
 
     private static ConfiguracaoDerivacaoDto ProjectConfiguracaoDerivacao(ConfiguracaoDerivacaoFato config) => new(
         config.CodigoFato,

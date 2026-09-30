@@ -175,7 +175,7 @@ public static class DefinirFatosColetadosCommandHandler
 
         return FatoColetado.Criar(
             input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, input.Obrigatorio, precondicoesResult.Value,
-            origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo);
+            origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato);
     }
 
     /// <summary>
@@ -315,6 +315,7 @@ internal static class CoerenciaDeRenderizacao
     private const string DominioBooleano = "BOOLEANO";
     private const string DominioNumerico = "NUMERICO";
     private const string DominioCategorico = "CATEGORICO";
+    private const string DominioTexto = "TEXTO";
     private const string CardinalidadeMultivalorado = "MULTIVALORADO";
 
     public static DomainError? Validar(TipoRenderizacao tipoRenderizacao, FatoCandidatoView fato)
@@ -325,6 +326,9 @@ internal static class CoerenciaDeRenderizacao
         {
             DominioBooleano => tipoRenderizacao == TipoRenderizacao.Booleano,
             DominioNumerico => tipoRenderizacao == TipoRenderizacao.Numero,
+            // O campo de texto recolhe uma resposta só: não há renderização de várias respostas de texto.
+            DominioTexto => tipoRenderizacao == TipoRenderizacao.Texto
+                && !string.Equals(fato.Cardinalidade, CardinalidadeMultivalorado, StringComparison.Ordinal),
             DominioCategorico => tipoRenderizacao == (string.Equals(fato.Cardinalidade, CardinalidadeMultivalorado, StringComparison.Ordinal)
                 ? TipoRenderizacao.SelecaoMultipla
                 : TipoRenderizacao.SelecaoUnica),

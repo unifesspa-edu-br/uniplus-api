@@ -34,6 +34,10 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="Ativo">
 /// Fato inativo não aceita vínculo novo; o processo que já o usa continua com ele (ADR-0136).
 /// </param>
+/// <param name="Formato">
+/// Formato da resposta do fato de texto — token canônico (LIVRE, CPF, EMAIL, TELEFONE, CEP,
+/// NOME_PESSOA) —, ou <see langword="null"/> quando o fato não é de texto.
+/// </param>
 public sealed record FatoCandidatoView(
     Guid Id,
     string Codigo,
@@ -47,7 +51,8 @@ public sealed record FatoCandidatoView(
     string Binding,
     IReadOnlyList<FatoValorDominioViewItem>? ValoresDominioDeclarados,
     string? FonteValores,
-    bool Ativo);
+    bool Ativo,
+    string? Formato = null);
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidatoView"/> categórico

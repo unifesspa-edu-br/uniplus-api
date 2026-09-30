@@ -95,6 +95,28 @@ public sealed class EnvelopeCodecRoundTripTests
             .Should().Equal("INSCRICAO", "HABILITACAO");
     }
 
+    [Fact(DisplayName = "Campo de texto com formato reproduz os bytes")]
+    public void RoundTrip_CampoDeTexto()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        processo.DefinirItens(
+        [
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [
+                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+            ]).Value!,
+            FatoColetado.Criar("NOME_SOCIAL", 2, "Nome social", TipoRenderizacao.Texto, obrigatorio: false, null, formato: "NOME_PESSOA").Value!,
+        ]).IsSuccess.Should().BeTrue();
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        AssertRoundTrip(processo, CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        Envelope(congelado)["fatosColetados"]!.AsArray()
+            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "NOME_SOCIAL")!["formato"]!.GetValue<string>()
+            .Should().Be("NOME_PESSOA");
+    }
+
     [Fact(DisplayName = "A versão N>1 tem o bloco retificacao: o round-trip usa a RetificacaoInfo ORIGINAL, recuperada do próprio envelope")]
     public void RoundTrip_VersaoRetificada()
     {
