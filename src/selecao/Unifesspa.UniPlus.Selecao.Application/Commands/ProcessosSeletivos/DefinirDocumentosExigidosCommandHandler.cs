@@ -109,13 +109,12 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyDictionary<string, FatoCandidatoView>? catalogoFatos = null;
         if (existeGatilho)
         {
-            IReadOnlySet<string> resolvidosPorAtributo;
             IReadOnlyList<FatoCandidatoView> catalogo;
-            (vocabularioFatos, pontoResolucaoPorFato, resolvidosPorAtributo, catalogo) =
-                await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken)
-                    .ConfigureAwait(false);
+            (vocabularioFatos, catalogo) = await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken)
+                .ConfigureAwait(false);
 
-            fatosResolviveis = FatosQueOProcessoResolve(processo, resolvidosPorAtributo);
+            pontoResolucaoPorFato = VocabularioDeFatos.PontoResolucaoPorFato(catalogo);
+            fatosResolviveis = VocabularioDeFatos.QueOProcessoResolve(processo, catalogo);
             dominiosDinamicos = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
             catalogoFatos = catalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
         }
@@ -495,53 +494,21 @@ public static class DefinirDocumentosExigidosCommandHandler
     }
 
     /// <summary>
-    /// Gate de fase (Story #916): recusa uma condição de gatilho cujo fato só é conhecido
-    /// (<c>PontoResolucao</c>) numa fase posterior à fase em que o documento é exigido — o
-    /// gatilho nunca teria como ter sido resolvido para o candidato a essa altura do
-    /// certame. A fase da PRÓPRIA exigência é localizada com <c>SingleOrDefault</c> (nunca
-    /// <c>Single</c>, para não estourar exceção em vez de 500): quando não encontrada, este
-    /// método não recusa de novo — <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/>
-    /// já garante, eagerly, que toda fase referenciada pertence ao cronograma
-    /// (<c>DocumentoExigido.FaseNaoPertenceAoProcesso</c>), e é essa checagem que decide o caso.
+    /// Gate de fase (UNI-REQ-0077, UNI-REQ-0144): recusa a condição de gatilho cujo fato só é
+    /// conhecido numa fase posterior à fase em que o documento é exigido — a fase efetiva do fato
+    /// no processo, conferida por <see cref="ProcessoSeletivo.RecusaDeFaseDoGatilho"/>. A fase da
+    /// própria exigência fora do cronograma não é recusada aqui:
+    /// <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/> já decide esse caso.
     /// </summary>
     private static Result ValidarGateDeFase(
         IReadOnlyList<CondicaoGatilho> condicoes,
         Guid exigidoNaFaseId,
         ProcessoSeletivo processo,
-        IReadOnlyDictionary<string, string> pontoResolucaoPorFato)
-    {
-        FaseCronograma? faseDaExigencia = processo.CronogramaFases.SingleOrDefault(f => f.Id == exigidoNaFaseId);
-
-        foreach (CondicaoGatilho condicao in condicoes)
-        {
-            if (!pontoResolucaoPorFato.TryGetValue(condicao.Fato, out string? pontoResolucao))
-            {
-                // O fato já passou por PredicadoDnfValidador (vocabulário fechado) antes de
-                // chegar aqui — não deveria faltar no mapa construído junto do mesmo
-                // vocabulário. Defensivo: nada a comparar, não bloqueia.
-                continue;
-            }
-
-            FaseCronograma? faseDoPontoResolucao = processo.CronogramaFases
-                .SingleOrDefault(f => string.Equals(f.Codigo, pontoResolucao, StringComparison.Ordinal));
-
-            if (faseDoPontoResolucao is null)
-            {
-                return Result.Failure(new DomainError(
-                    "DocumentoExigido.PontoResolucaoForaDoCronograma",
-                    $"O fato '{condicao.Fato}' resolve na fase '{pontoResolucao}', que não pertence ao cronograma deste processo."));
-            }
-
-            if (faseDaExigencia is not null && faseDoPontoResolucao.Ordem > faseDaExigencia.Ordem)
-            {
-                return Result.Failure(new DomainError(
-                    "DocumentoExigido.FatoResolvidoEmFasePosterior",
-                    $"O fato '{condicao.Fato}' só é conhecido na fase '{pontoResolucao}' (ordem {faseDoPontoResolucao.Ordem}), posterior à fase em que o documento é exigido (ordem {faseDaExigencia.Ordem})."));
-            }
-        }
-
-        return Result.Success();
-    }
+        IReadOnlyDictionary<string, string> pontoResolucaoPorFato) =>
+        condicoes.Select(c => processo.RecusaDeFaseDoGatilho(c.Fato, exigidoNaFaseId, pontoResolucaoPorFato))
+            .FirstOrDefault(static r => r is not null) is { } recusa
+            ? Result.Failure(recusa)
+            : Result.Success();
 
     /// <summary>
     /// Resolve as bases legais de uma folha (Story #554, PR #898, issue #549) — só a forma de
@@ -676,12 +643,10 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// Mapeia <see cref="FatoCandidatoView"/> para <see cref="DescritorFatoCandidato"/>,
     /// estendendo <c>DefinirCriteriosDesempateCommandHandler.ResolverVocabularioFatosAsync</c>
     /// (#846/#847) para incluir os fatos categóricos de escopo-processo (Story #554, PR #896) —
-    /// antes deliberadamente fora do vocabulário fechado. Devolve, na mesma passada, a projeção
-    /// <c>PontoResolucao</c> por fato (Story #916) que o gate de fase usa — vive como projeção
-    /// própria deste handler, e não em <see cref="DescritorFatoCandidato"/> (VO mínimo
-    /// compartilhado com <c>DefinirCriteriosDesempateCommandHandler</c>, que não precisa dela).
+    /// antes deliberadamente fora do vocabulário fechado. Devolve também o catálogo lido, de onde
+    /// saem o universo de fatos do processo e a fase de cada fato.
     /// </summary>
-    private static async Task<(IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyDictionary<string, string> PontoResolucaoPorFato, IReadOnlySet<string> ResolvidosPorAtributo, IReadOnlyList<FatoCandidatoView> Catalogo)> ResolverVocabularioFatosAsync(
+    private static async Task<(IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyList<FatoCandidatoView> Catalogo)> ResolverVocabularioFatosAsync(
         IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader
@@ -689,8 +654,6 @@ public static class DefinirDocumentosExigidosCommandHandler
             .ConfigureAwait(false);
 
         Dictionary<string, DescritorFatoCandidato> vocabulario = [];
-        Dictionary<string, string> pontoResolucaoPorFato = new(StringComparer.Ordinal);
-        HashSet<string> resolvidosPorAtributo = new(StringComparer.Ordinal);
         foreach (FatoCandidatoView fato in fatos)
         {
             TipoDominioFato? tipoDominio = VocabularioDeFatos.Classificar(fato);
@@ -704,54 +667,10 @@ public static class DefinirDocumentosExigidosCommandHandler
             if (descritorResult.IsSuccess)
             {
                 vocabulario[fato.Codigo] = descritorResult.Value!;
-                pontoResolucaoPorFato[fato.Codigo] = fato.PontoResolucao;
-
-                // Derivado tem DOIS mecanismos, e só um deles passa por regra declarada no
-                // processo. O que resolve por atributo do candidato — faixa etária, renda per
-                // capita — não tem nem pode ter regra: o processo o obtém do próprio candidato.
-                // Tratar os dois como um só recusaria justamente o gatilho por idade.
-                if (fato.Binding is { } binding
-                    && binding.StartsWith(BindingPorAtributo, StringComparison.Ordinal))
-                {
-                    resolvidosPorAtributo.Add(fato.Codigo);
-                }
             }
         }
 
-        return (vocabulario, pontoResolucaoPorFato, resolvidosPorAtributo, fatos);
-    }
-
-    /// <summary>Prefixo de binding do fato que o processo obtém direto do candidato.</summary>
-    private const string BindingPorAtributo = "ATRIBUTO_CANDIDATO:";
-
-    /// <summary>
-    /// Os fatos que ESTE processo consegue resolver para um candidato — o universo contra o
-    /// qual um gatilho é conferido.
-    /// </summary>
-    /// <remarks>
-    /// São três conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
-    /// coleta no formulário de inscrição; o que ele deriva por regra declarada (a modalidade de
-    /// concorrência); e o que o candidato traz consigo, resolvido por atributo (faixa etária,
-    /// renda per capita) — este último nunca aparece nas regras de derivação, porque não há o
-    /// que declarar sobre ele.
-    /// </remarks>
-    private static HashSet<string> FatosQueOProcessoResolve(
-        ProcessoSeletivo processo,
-        IReadOnlySet<string> resolvidosPorAtributo)
-    {
-        HashSet<string> universo = new(resolvidosPorAtributo, StringComparer.Ordinal);
-
-        foreach (FatoColetado coletado in processo.FatosColetados)
-        {
-            universo.Add(coletado.FatoCodigo);
-        }
-
-        foreach (ConfiguracaoDerivacaoFato derivado in processo.RegrasDerivacao)
-        {
-            universo.Add(derivado.CodigoFato);
-        }
-
-        return universo;
+        return (vocabulario, fatos);
     }
 
     /// <summary>

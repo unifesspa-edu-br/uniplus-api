@@ -220,6 +220,13 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(metadadosFatosResult.Error!), []);
         }
 
+        // Os fatos dos gatilhos continuam no processo e conhecidos até a fase de cada exigência:
+        // itens, formulários e derivações mudam depois que a exigência os citou.
+        if (ConferenciaDosFatosDosGatilhos.Conferir(processo, catalogoPorCodigo) is { } gatilhoIncoerente)
+        {
+            return (Result.Failure(gatilhoIncoerente), []);
+        }
+
         // Story #1059 (UNI-REQ-0072): os valores que o candidato pode escolher para cada fato de
         // seleção coletado — do domínio estático do catálogo ou da oferta do próprio processo.
         Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> valoresSelecionaveisResult =

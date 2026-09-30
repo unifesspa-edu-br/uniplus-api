@@ -460,3 +460,11 @@ public sealed class DocumentoExigido : EntityBase
         return null;
     }
 }
+
+/// <summary>Códigos de recusa da coerência de fase do gatilho de uma exigência.</summary>
+public static class DocumentoExigidoErrorCodes
+{
+    public const string FatoResolvidoEmFasePosterior = "DocumentoExigido.FatoResolvidoEmFasePosterior";
+    public const string PontoResolucaoForaDoCronograma = "DocumentoExigido.PontoResolucaoForaDoCronograma";
+    public const string FatoDaIsencaoForaDaFaseDeIsencao = "DocumentoExigido.FatoDaIsencaoForaDaFaseDeIsencao";
+}

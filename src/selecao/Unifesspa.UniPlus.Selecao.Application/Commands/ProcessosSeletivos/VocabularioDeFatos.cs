@@ -80,7 +80,7 @@ internal static class VocabularioDeFatos
         ArgumentNullException.ThrowIfNull(catalogo);
 
         return citados.FirstOrDefault(c => c is not null && catalogo.TryGetValue(c, out FatoCandidatoView? fato)
-                && fato.Binding.StartsWith(PrefixoBindingAtributo, StringComparison.Ordinal)) is { } atributo
+                && CalculadoDeAtributo(fato.Binding)) is { } atributo
             ? new DomainError(
                 CitaAtributoDoCandidato,
                 $"O fato '{atributo}' é calculado pelo sistema a partir de atributos do candidato e ainda não pode ser citado em regra do formulário.")
@@ -88,6 +88,43 @@ internal static class VocabularioDeFatos
     }
 
     private const string PrefixoBindingAtributo = "ATRIBUTO_CANDIDATO:";
+
+    /// <summary>Se o vínculo é de fato que o sistema calcula de atributos do candidato, como a faixa etária.</summary>
+    public static bool CalculadoDeAtributo(string binding)
+    {
+        ArgumentNullException.ThrowIfNull(binding);
+        return binding.StartsWith(PrefixoBindingAtributo, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Os fatos que o processo resolve para um candidato — o universo contra o qual um gatilho é
+    /// conferido.
+    /// </summary>
+    /// <remarks>
+    /// São três conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
+    /// coleta nos formulários; o que ele deriva por regra declarada (a modalidade de
+    /// concorrência); e o que o sistema calcula de atributos do candidato (faixa etária, renda
+    /// per capita) — este último nunca aparece nas regras de derivação, porque não há o que
+    /// declarar sobre ele.
+    /// </remarks>
+    public static HashSet<string> QueOProcessoResolve(ProcessoSeletivo processo, IEnumerable<FatoCandidatoView> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        return new(
+            processo.FatosColetados.Select(static f => f.FatoCodigo)
+                .Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato))
+                .Concat(catalogo.Where(static f => f.Binding is { } binding && CalculadoDeAtributo(binding)).Select(static f => f.Codigo)),
+            StringComparer.Ordinal);
+    }
+
+    /// <summary>A fase canônica em que o catálogo situa cada fato, base da fase efetiva do fato no processo.</summary>
+    public static Dictionary<string, string> PontoResolucaoPorFato(IEnumerable<FatoCandidatoView> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+        return catalogo.ToDictionary(static f => f.Codigo, static f => f.PontoResolucao, StringComparer.Ordinal);
+    }
 
     /// <summary>De onde vêm as opções do fato quando ele é coletado pelo processo.</summary>
     public static OrigemValoresColeta OrigemValores(FatoCandidatoView fato)
