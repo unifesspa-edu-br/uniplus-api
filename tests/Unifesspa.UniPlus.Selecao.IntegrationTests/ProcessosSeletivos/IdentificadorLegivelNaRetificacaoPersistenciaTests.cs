@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -69,7 +70,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
             Result<VersaoConfiguracao> fechar = tracked.FecharRetificacao(
                 CorpusEnvelope.DadosRicos(), versao, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
                 CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, PrecondicaoIfMatch.Curinga, TimeProvider.System,
-                CorpusEnvelope.ContextoRico());
+                CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
             fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
             nova = fechar.Value!;
             fechamento.Add(nova);

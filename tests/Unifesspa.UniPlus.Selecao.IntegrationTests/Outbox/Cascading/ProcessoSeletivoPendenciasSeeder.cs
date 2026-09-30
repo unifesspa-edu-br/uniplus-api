@@ -246,7 +246,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         }
 
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoEfetiva = distribuicao ?? [DistribuicaoAmplaPadrao()];
-        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas(distribuicaoEfetiva, PrecondicaoIfMatch.Ausente);
+        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas(distribuicaoEfetiva, FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(

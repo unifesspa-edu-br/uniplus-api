@@ -67,7 +67,7 @@ internal static class ProcessoConformeFactory
                         baseLegal: "Res. Unifesspa 532/2021",
                         quantidadeDeclarada: 40).Value!,
                 ]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),

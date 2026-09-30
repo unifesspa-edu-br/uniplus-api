@@ -70,4 +70,13 @@ public sealed class VocabularioDeFatosTests
         VocabularioDeFatos.DominioDeContribuicao(Derivado("MODALIDADE", "MODALIDADE"), dinamicos)
             .Should().BeEquivalentTo(["AC", "LB_PPI"]);
     }
+
+    [Fact(DisplayName = "Os fatos cujos valores são modalidades são escolhidos pela fonte, não pelo código")]
+    public void ComValoresDeModalidade_PelaFonte()
+    {
+        FatosDeModalidade fatos = VocabularioDeFatos.ComValoresDeModalidade(
+            [Derivado("GRUPO_DE_COTA", "MODALIDADE"), Derivado("MODALIDADE", "GLOBAL"), Derivado("UF_RESIDENCIA", "GEO_UF")]);
+
+        fatos.Codigos.Should().BeEquivalentTo(["GRUPO_DE_COTA"]);
+    }
 }

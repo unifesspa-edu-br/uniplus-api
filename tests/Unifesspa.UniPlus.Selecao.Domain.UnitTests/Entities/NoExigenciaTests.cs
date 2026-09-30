@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="NoExigencia"/> (Story #920): fábricas (<see cref="NoExigencia.CriarFolha"/>/
@@ -535,6 +536,6 @@ public sealed class NoExigenciaTests
         NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folha]).Value!;
 
         // Aplicabilidade GERAL alcança qualquer modalidade (DocumentoExigido.PodeAlcancarModalidade).
-        grupo.PodeAlcancarModalidade("AC").Should().BeTrue();
+        grupo.PodeAlcancarModalidade("AC", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeTrue();
     }
 }

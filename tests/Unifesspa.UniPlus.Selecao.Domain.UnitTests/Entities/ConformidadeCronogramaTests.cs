@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura do gate de publicação para as pendências do cronograma que só afloram no
@@ -56,7 +57,7 @@ public sealed class ConformidadeCronogramaTests
         "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
+        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
     /// <summary>
     /// Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada em
@@ -75,7 +76,7 @@ public sealed class ConformidadeCronogramaTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente);
@@ -103,7 +104,7 @@ public sealed class ConformidadeCronogramaTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", tipo, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente);
@@ -123,7 +124,7 @@ public sealed class ConformidadeCronogramaTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente);
@@ -146,7 +147,7 @@ public sealed class ConformidadeCronogramaTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'd'), 2,
@@ -170,7 +171,7 @@ public sealed class ConformidadeCronogramaTests
         processo.DefinirEtapas([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "Story #851 §3.5: lista vazia é estado válido — um processo sem prova (SiSU) não tem etapa");
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente);

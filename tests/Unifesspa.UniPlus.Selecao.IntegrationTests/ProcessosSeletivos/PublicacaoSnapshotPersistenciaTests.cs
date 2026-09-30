@@ -87,7 +87,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
@@ -149,7 +149,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "integration-test-user",
-            TimeProvider.System, CorpusEnvelope.ContextoRico());
+            TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
@@ -313,7 +313,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "integration-test-user",
-            TimeProvider.System, CorpusEnvelope.ContextoRico());
+            TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
         VersaoConfiguracao versaoAbertura = publicarResult.Value!;
         string hashOriginal = versaoAbertura.HashConfiguracao;

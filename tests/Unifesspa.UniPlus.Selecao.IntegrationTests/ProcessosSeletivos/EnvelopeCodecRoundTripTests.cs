@@ -272,7 +272,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             CorpusEnvelope.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico());
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(publicacao.Value!);
@@ -848,7 +848,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            entrada.HashDocumento, "user-sub-123", TimeProvider.System, CorpusEnvelope.ContextoRico());
+            entrada.HashDocumento, "user-sub-123", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 
@@ -926,7 +926,7 @@ public sealed class EnvelopeCodecRoundTripTests
                     baseLegal: "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
             ]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
@@ -998,7 +998,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-sub-arvore", TimeProvider.System, CorpusEnvelope.ContextoRico());
+            hashDocumento, "user-sub-arvore", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 
@@ -1103,7 +1103,7 @@ public sealed class EnvelopeCodecRoundTripTests
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
@@ -1209,7 +1209,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-sub-sete-conjuntos", TimeProvider.System, CorpusEnvelope.ContextoRico());
+            hashDocumento, "user-sub-sete-conjuntos", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 
@@ -1575,7 +1575,7 @@ public sealed class EnvelopeCodecRoundTripTests
                     null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
             ],
             grupoAreaEnem: ("TECNOLOGICA", "Tecnológica")).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

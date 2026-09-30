@@ -580,9 +580,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// modalidades federais) já foram validadas em
     /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/>.
     /// </summary>
-    public Result DefinirDistribuicaoVagas(IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas, PrecondicaoIfMatch precondicao)
+    public Result DefinirDistribuicaoVagas(
+        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas,
+        FatosDeModalidade fatosDeModalidade,
+        PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(distribuicaoVagas);
+        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
@@ -618,12 +622,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo."));
         }
 
-        // Story #554/issue #892 (CA-03): mesmo raciocínio do
-        // guard de CONDICAO_ATENDIMENTO em DefinirOfertaAtendimento — MODALIDADE referencia
-        // por código, então a checagem é precisa (só recusa se um código hoje referenciado
-        // por condição viva deixaria de existir na nova distribuição).
+        // Story #554/issue #892 (CA-03): mesmo raciocínio do guard de CONDICAO_ATENDIMENTO em
+        // DefinirOfertaAtendimento — todo fato cujos valores são modalidades (a de concorrência,
+        // o grupo da convocação) referencia por código, então a checagem é precisa: só recusa se
+        // um código hoje referenciado por condição viva deixaria de existir na nova distribuição.
         HashSet<string> novosCodigos = [.. distribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)];
-        if (ReferenciaDinamicaSeriaInvalidada("MODALIDADE", novosCodigos))
+        if (fatosDeModalidade.Codigos.Any(fato => ReferenciaDinamicaSeriaInvalidada(fato, novosCodigos)))
         {
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.ModalidadeReferenciadaPorExigenciaViva",
@@ -2866,9 +2870,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// pendência que vai bloquear a publicação antes das que só apareceriam depois dela.
     /// </para>
     /// </remarks>
-    public IReadOnlyList<ItemConformidade> AvaliarConformidade(ContextoDeContagemDePrazos contexto)
+    public IReadOnlyList<ItemConformidade> AvaliarConformidade(ContextoDeContagemDePrazos contexto, FatosDeModalidade fatosDeModalidade)
     {
         ArgumentNullException.ThrowIfNull(contexto);
+        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
         List<ViolacaoDoDesempatePorArea> desempate = ViolacoesDoDesempatePorAreaDoEnem();
 
@@ -2914,9 +2919,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
         new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
         new ItemConformidade("exigencia_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ExisteExigenciaRemoveVantagemSemVantagemViva()),
-        new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga()),
+        new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
         new ItemConformidade("grupo_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ExisteGrupoRemoveVantagemSemVantagemViva()),
-        new ItemConformidade("grupo_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga()),
+        new ItemConformidade("grupo_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
         new ItemConformidade("referencia_temporal_ausente_com_gatilho_etario", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: configurada quando há gatilho por faixa etária", !ReferenciaTemporalFatosAusenteQuandoExigida()),
         new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
@@ -3735,14 +3740,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <see cref="Publicar"/>/<see cref="SucederVersao"/> devolveriam depois, se a
     /// exceção não tivesse interrompido o fluxo antes.
     /// </remarks>
-    public DomainError? PendenciaPreCanonicalizacao()
+    public DomainError? PendenciaPreCanonicalizacao(FatosDeModalidade fatosDeModalidade)
     {
+        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
+
         if (PendenciaDasExigenciasDocumentais() is { } exigencias)
         {
             return exigencias;
         }
 
-        if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento() is { } coerencia)
+        if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(fatosDeModalidade) is { } coerencia)
         {
             return coerencia;
         }
@@ -4210,13 +4217,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <item><c>REMOVE_VANTAGEM</c> exige vantagem viva no processo — hoje a única
     /// vantagem modelada é <see cref="BonusRegional"/> (RN05, toggle por presença:
     /// ausência da entidade já significa sem bônus).</item>
-    /// <item>Para cada modalidade que a exigência alcança (mesmo fato sintético
-    /// <c>MODALIDADE</c> usado pelo gate real, <see cref="Services.AvaliadorConformidadeLegal"/>),
+    /// <item>Para cada modalidade que a exigência alcança pelas condições sobre os fatos cujos
+    /// valores são modalidades (os mesmos do gate real, <see cref="Services.AvaliadorConformidadeLegal"/>),
     /// quando essa modalidade declara <c>AcaoQuandoIndeferido</c>, a consequência precisa
     /// ser idêntica — mesmo vocabulário fechado dos dois lados.</item>
     /// </list>
     /// </remarks>
-    private DomainError? PendenciaDeCoerenciaDaConsequenciaDeIndeferimento()
+    private DomainError? PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(FatosDeModalidade fatosDeModalidade)
     {
         foreach (DocumentoExigido exigencia in _documentosExigidos)
         {
@@ -4232,7 +4239,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"A exigência '{exigencia.TipoDocumentoCodigo}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
             }
 
-            if (ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(exigencia)) is { } modalidadeIncoerente)
+            if (ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(exigencia, fatosDeModalidade)) is { } modalidadeIncoerente)
             {
                 return new DomainError(
                     "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
@@ -4254,7 +4261,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"O grupo '{grupo.Id}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
             }
 
-            if (ModalidadeIncoerenteComConsequencia(consequenciaDoGrupo, ModalidadesAlcancadasPor(grupo)) is { } modalidadeIncoerenteDoGrupo)
+            if (ModalidadeIncoerenteComConsequencia(consequenciaDoGrupo, ModalidadesAlcancadasPor(grupo, fatosDeModalidade)) is { } modalidadeIncoerenteDoGrupo)
             {
                 return new DomainError(
                     "NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga",
@@ -4288,18 +4295,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _documentosExigidos.Any(e => ConsequenciaRemoveVantagemSemVantagemViva(e.ConsequenciaIndeferimento));
 
     /// <summary>Existe <see cref="DocumentoExigido"/> (folha) com consequência incoerente com a ação de alguma modalidade alcançada.</summary>
-    private bool ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga() =>
+    private bool ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(FatosDeModalidade fatosDeModalidade) =>
         _documentosExigidos.Any(e => e.ConsequenciaIndeferimento is { } c
-            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(e)) is not null);
+            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(e, fatosDeModalidade)) is not null);
 
     /// <summary>Existe grupo OU/N-de com consequência própria REMOVE_VANTAGEM sem vantagem viva (Story #920).</summary>
     private bool ExisteGrupoRemoveVantagemSemVantagemViva() =>
         _nosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && ConsequenciaRemoveVantagemSemVantagemViva(no.Consequencia));
 
     /// <summary>Existe grupo OU/N-de com consequência própria incoerente com a ação de alguma modalidade alcançada (Story #920).</summary>
-    private bool ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga() =>
+    private bool ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(FatosDeModalidade fatosDeModalidade) =>
         _nosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is { } c
-            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(no)) is not null);
+            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(no, fatosDeModalidade)) is not null);
 
     /// <summary>
     /// Ponte entre os dois vocabulários fechados de "ação de indeferimento" — Story #554
@@ -4325,16 +4332,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// revisão P2: <c>AplicavelPara</c> trataria qualquer gatilho não-modal, ex. só
     /// <c>FAIXA_ETARIA</c>, como nunca alcançando nenhuma modalidade).
     /// </summary>
-    private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(DocumentoExigido exigencia) =>
+    private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(DocumentoExigido exigencia, FatosDeModalidade fatosDeModalidade) =>
         _distribuicaoVagas
             .SelectMany(static d => d.Modalidades)
-            .Where(modalidade => exigencia.PodeAlcancarModalidade(modalidade.Codigo));
+            .Where(modalidade => exigencia.PodeAlcancarModalidade(modalidade.Codigo, fatosDeModalidade));
 
     /// <summary>Mesma checagem estrutural acima, para um nó de grupo (Story #920) — <see cref="NoExigencia.PodeAlcancarModalidade"/> é a união (OR) das folhas descendentes.</summary>
-    private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(NoExigencia no) =>
+    private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(NoExigencia no, FatosDeModalidade fatosDeModalidade) =>
         _distribuicaoVagas
             .SelectMany(static d => d.Modalidades)
-            .Where(modalidade => no.PodeAlcancarModalidade(modalidade.Codigo));
+            .Where(modalidade => no.PodeAlcancarModalidade(modalidade.Codigo, fatosDeModalidade));
 
     /// <summary>
     /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR #896 — B-03 do
@@ -4620,7 +4627,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string hashDocumento,
         string atorUsuarioSub,
         TimeProvider clock,
-        ContextoDeContagemDePrazos contexto)
+        ContextoDeContagemDePrazos contexto,
+        FatosDeModalidade fatosDeModalidade)
     {
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
@@ -4681,7 +4689,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaCascata);
         }
 
-        if (PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
+        if (PendenciaPreCanonicalizacao(fatosDeModalidade) is { } pendenciaPreCanonicalizacao)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaPreCanonicalizacao);
         }
@@ -4758,7 +4766,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string atorUsuarioSub,
         string motivo,
         TimeProvider clock,
-        ContextoDeContagemDePrazos contexto)
+        ContextoDeContagemDePrazos contexto,
+        FatosDeModalidade fatosDeModalidade)
     {
         // A ordem é a de sempre, e ela importa: os contratos do método (argumentos não nulos)
         // e o estado do certame são conferidos ANTES da sessão editorial. Antepor a recusa por
@@ -4789,7 +4798,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return SucederVersao(
             dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
-            hashDocumento, atorUsuarioSub, motivo, clock, contexto);
+            hashDocumento, atorUsuarioSub, motivo, clock, contexto, fatosDeModalidade);
     }
 
     /// <summary>
@@ -4824,7 +4833,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string atorUsuarioSub,
         PrecondicaoIfMatch precondicao,
         TimeProvider clock,
-        ContextoDeContagemDePrazos contexto)
+        ContextoDeContagemDePrazos contexto,
+        FatosDeModalidade fatosDeModalidade)
     {
         ArgumentNullException.ThrowIfNull(precondicao);
 
@@ -4835,7 +4845,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         Result<VersaoConfiguracao> versao = SucederVersao(
             dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
-            hashDocumento, atorUsuarioSub, Rascunho!.Motivo, clock, contexto);
+            hashDocumento, atorUsuarioSub, Rascunho!.Motivo, clock, contexto, fatosDeModalidade);
         if (versao.IsFailure)
         {
             return versao;
@@ -4959,7 +4969,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string atorUsuarioSub,
         string motivo,
         TimeProvider clock,
-        ContextoDeContagemDePrazos contexto)
+        ContextoDeContagemDePrazos contexto,
+        FatosDeModalidade fatosDeModalidade)
     {
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentNullException.ThrowIfNull(versaoAtual);
@@ -5042,7 +5053,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaCascata);
         }
 
-        if (PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
+        if (PendenciaPreCanonicalizacao(fatosDeModalidade) is { } pendenciaPreCanonicalizacao)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaPreCanonicalizacao);
         }

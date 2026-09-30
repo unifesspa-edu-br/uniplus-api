@@ -141,11 +141,11 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0), ItemQueCitaModalidade(1), Item("TEM_BOLSA", 2)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();
 
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_BOLSA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
     }
 
     [Fact(DisplayName = "Termo cita os campos do próprio formulário e os da inscrição, nunca os de outra finalidade")]
@@ -322,11 +322,11 @@ public sealed class FormulariosPorFinalidadeTests
             EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
         ];
         processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, etapas, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();
 
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("RENDA_FORMAL")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
     }
 
     private static FatoColetado Opcional(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
@@ -339,10 +339,10 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Opcional("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.OpcionalQueAlimentaRegra);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FatoColetadoErrorCodes.OpcionalQueAlimentaRegra);
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();
     }
 
     [Fact(DisplayName = "Campo opcional citado por DIFERENTE em regra de outro campo recusa a publicação")]
@@ -355,7 +355,7 @@ public sealed class FormulariosPorFinalidadeTests
             Opcional("COMPROVANTE", 1, CondicaoPrecondicaoFato.Criar(0, "NACIONALIDADE_BR", Operador.Diferente, JsonSerializer.SerializeToElement(true)).Value!),
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao()!.Message.Should().Contain("'NACIONALIDADE_BR'");
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Message.Should().Contain("'NACIONALIDADE_BR'");
     }
 
     [Fact(DisplayName = "Bloco de sistema não tem exibição condicional")]
@@ -444,8 +444,8 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemFormulario);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(static i => i.Codigo == "formulario_inscricao_ausente" && !i.Ok);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemFormulario);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(static i => i.Codigo == "formulario_inscricao_ausente" && !i.Ok);
     }
 
     [Fact(DisplayName = "Formulário sem fase é aceito no rascunho e recusado na publicação")]
@@ -453,8 +453,8 @@ public sealed class FormulariosPorFinalidadeTests
     {
         ProcessoSeletivo processo = ComHabilitacao();
 
-        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FormularioProcessoErrorCodes.SemFase);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(static i => i.Codigo == "formulario_fase_incoerente" && !i.Ok);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.SemFase);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(static i => i.Codigo == "formulario_fase_incoerente" && !i.Ok);
     }
 
     [Fact(DisplayName = "Formulário de isenção só em processo que cobra taxa")]
@@ -464,7 +464,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, null, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(static i => i.Codigo == "formulario_isencao_sem_taxa" && !i.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(static i => i.Codigo == "formulario_isencao_sem_taxa" && !i.Ok);
     }
 
     [Fact(DisplayName = "Item sem seção é aceito no rascunho e recusado na publicação")]
@@ -474,8 +474,8 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0, etapa: null)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FormularioProcessoErrorCodes.ItemForaDeSecao);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(static i => i.Codigo == "formulario_item_fora_de_secao" && !i.Ok);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.ItemForaDeSecao);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(static i => i.Codigo == "formulario_item_fora_de_secao" && !i.Ok);
     }
 
     [Fact(DisplayName = "Remover o formulário em rascunho remove os itens e os termos dele")]

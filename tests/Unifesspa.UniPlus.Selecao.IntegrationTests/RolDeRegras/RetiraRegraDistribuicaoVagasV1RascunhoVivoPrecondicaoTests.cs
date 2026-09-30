@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Prova executável de que a precondição ADR-0112 da migration
@@ -148,7 +149,7 @@ public sealed class RetiraRegraDistribuicaoVagasV1RascunhoVivoPrecondicaoTests :
             modalidades: [modalidade]);
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
 
-        Result definirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], PrecondicaoIfMatch.Ausente);
+        Result definirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
 
         context.ProcessosSeletivos.Add(processo);

@@ -349,8 +349,8 @@ public sealed class DocumentoExigido : EntityBase
     /// <see cref="Ternario.Indeterminado"/>, nunca <see cref="Ternario.Falso"/> (fail-closed).
     /// Usado tanto pelo resolvedor de exigências documentais (PR #903, por candidato real)
     /// quanto pelo gate de conformidade legal (PR #903, <see cref="Services.AvaliadorConformidadeLegal"/>
-    /// — por um fato sintético fixo, ex. só <c>MODALIDADE</c>, para provar cobertura
-    /// incondicional de uma modalidade inteira).
+    /// — só com os fatos cujos valores são modalidades, para provar cobertura incondicional
+    /// de uma modalidade inteira).
     /// </summary>
     public Ternario AplicavelPara(IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
     {
@@ -385,20 +385,20 @@ public sealed class DocumentoExigido : EntityBase
     /// <remarks>
     /// <see cref="AplicavelPara"/> avalia contra um dicionário de fatos completo — qualquer
     /// fato ausente vira <see langword="false"/> (<c>PredicadoDnf.Avaliar</c>). No momento da
-    /// publicação, só o fato sintético <c>MODALIDADE</c> é conhecido (não há candidato real
-    /// ainda); um gatilho misto como <c>FAIXA_ETARIA &gt;= 18 E MODALIDADE = PCD</c> teria a
-    /// condição de <c>FAIXA_ETARIA</c> avaliada como falsa por <see cref="AplicavelPara"/>,
-    /// reprovando a cláusula inteira e escondendo a modalidade PCD do gate — e, pior, um
-    /// gatilho <b>só</b> sobre <c>FAIXA_ETARIA</c> (sem nenhuma condição de
-    /// <c>MODALIDADE</c>) nunca alcançaria NENHUMA modalidade, isentando silenciosamente
-    /// todo gatilho não-modal do CA-05. Aqui as condições sobre outros fatos são
-    /// IGNORADAS (não tratadas como falsas) — só as condições sobre <c>MODALIDADE</c>
-    /// decidem, por cláusula; uma cláusula sem nenhuma condição de <c>MODALIDADE</c> é
-    /// modalidade-agnóstica e alcança qualquer uma.
+    /// publicação, só a modalidade é conhecida (não há candidato real ainda); um gatilho misto
+    /// como <c>FAIXA_ETARIA &gt;= 18 E MODALIDADE = PCD</c> teria a condição de
+    /// <c>FAIXA_ETARIA</c> avaliada como falsa por <see cref="AplicavelPara"/>, reprovando a
+    /// cláusula inteira e escondendo a modalidade PCD do gate — e, pior, um gatilho <b>só</b>
+    /// sobre <c>FAIXA_ETARIA</c> nunca alcançaria NENHUMA modalidade, isentando silenciosamente
+    /// todo gatilho não-modal do CA-05. Aqui as condições sobre outros fatos são IGNORADAS (não
+    /// tratadas como falsas) — só as condições sobre fato cujos valores são modalidades (a de
+    /// concorrência, o grupo da convocação) decidem, por cláusula e por fato; uma cláusula sem
+    /// nenhuma delas é modalidade-agnóstica e alcança qualquer uma.
     /// </remarks>
-    public bool PodeAlcancarModalidade(string modalidadeCodigo)
+    public bool PodeAlcancarModalidade(string modalidadeCodigo, FatosDeModalidade fatosDeModalidade)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modalidadeCodigo);
+        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
         if (Aplicabilidade == Aplicabilidade.Geral)
         {
@@ -412,9 +412,25 @@ public sealed class DocumentoExigido : EntityBase
 
         return _condicoes
             .GroupBy(static c => c.Clausula)
-            .Any(clausula => clausula
-                .Where(static c => string.Equals(c.Fato, "MODALIDADE", StringComparison.Ordinal))
-                .All(c => CondicaoDeModalidadeSatisfeitaPor(c.ParaCondicaoDnf(), modalidadeCodigo)));
+            .Any(clausula => ClausulaPodeAlcancar(clausula, modalidadeCodigo, fatosDeModalidade));
+    }
+
+    /// <summary>
+    /// Cada fato de modalidade é uma dimensão própria do candidato — ele concorre numa e pode ser
+    /// convocado noutra —, então as condições sobre fatos diferentes não se confrontam entre si:
+    /// a cláusula alcança a modalidade quando não cita fato de modalidade algum, ou quando as
+    /// condições de algum desses fatos a aceitam. Superestimar o alcance mantém a exigência sob o
+    /// gate; subestimá-lo a isentaria em silêncio.
+    /// </summary>
+    private static bool ClausulaPodeAlcancar(
+        IEnumerable<CondicaoGatilho> clausula, string modalidadeCodigo, FatosDeModalidade fatosDeModalidade)
+    {
+        List<IGrouping<string, CondicaoGatilho>> porFatoDeModalidade = [.. clausula
+            .Where(c => fatosDeModalidade.Contem(c.Fato))
+            .GroupBy(static c => c.Fato, StringComparer.Ordinal)];
+
+        return porFatoDeModalidade.Count == 0
+            || porFatoDeModalidade.Any(fato => fato.All(c => CondicaoDeModalidadeSatisfeitaPor(c.ParaCondicaoDnf(), modalidadeCodigo)));
     }
 
     /// <summary>

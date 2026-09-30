@@ -90,7 +90,6 @@ public static class PublicarProcessoSeletivoCommandHandler
                 "Somente um documento confirmado pode ser referenciado na publicação.")), []);
         }
 
-
         // O ato é registrado depois, por mensagem durável (ADR-0108). O que o catálogo de
         // Publicações recusaria tem de ser recusado AQUI, com 422, antes de qualquer escrita
         // — senão o Edital sai publicado, o cliente recebe 204, e a recusa vira dead letter.
@@ -141,7 +140,6 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCascata), []);
         }
 
-
         // Antecipado: a conferência legal abaixo precisa do fuso para derivar o dia civil do
         // início da inscrição. Falha aqui é defeito de instalação (500), não gate (issue #1350).
         Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
@@ -172,9 +170,19 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         DadosEdital dados = dadosResult.Value!;
 
+        // Uma leitura só do catálogo (D4-bis), compartilhada pelos gates que dependem dos fatos
+        // cujos valores são modalidades, pela reconferência de coletabilidade e pelos resolvedores
+        // que congelam vocabulário de fato — duas leituras abririam janela para uma conferência
+        // aprovar sobre um catálogo e um resolvedor congelar sobre outro.
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader
+            .ListarAsync(cancellationToken)
+            .ConfigureAwait(false);
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo =
+            catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
+        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
 
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
-            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.DiaDeReferenciaLegal(fusoInstitucional), modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
+            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.DiaDeReferenciaLegal(fusoInstitucional), modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatosDeModalidade, cancellationToken)
             .ConfigureAwait(false);
         if (conformidadeLegal.IsFailure)
         {
@@ -186,19 +194,10 @@ public static class PublicarProcessoSeletivoCommandHandler
         // fatos. A canonicalização abaixo resolve dataReferenciaFatos internamente e LANÇA
         // quando a política não resolve — sem este guard antes dela, um processo inválido
         // vira exceção não tratada em vez do DomainError que o contrato HTTP promete.
-        if (processo.PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
+        if (processo.PendenciaPreCanonicalizacao(fatosDeModalidade) is { } pendenciaPreCanonicalizacao)
         {
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
-
-        // Uma leitura só do catálogo (D4-bis), compartilhada pela reconferência de coletabilidade
-        // abaixo e pelos dois resolvedores que congelam vocabulário de fato — duas leituras abririam
-        // janela para a conferência aprovar sobre um catálogo e um resolvedor congelar sobre outro.
-        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader
-            .ListarAsync(cancellationToken)
-            .ConfigureAwait(false);
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo =
-            catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
 
 
         // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
@@ -274,7 +273,8 @@ public static class PublicarProcessoSeletivoCommandHandler
             documento.HashSha256!,
             atorUsuarioSub,
             timeProvider,
-            contexto);
+            contexto,
+            fatosDeModalidade);
         if (publicarResult.IsFailure)
         {
             return (Result.Failure(publicarResult.Error!), []);

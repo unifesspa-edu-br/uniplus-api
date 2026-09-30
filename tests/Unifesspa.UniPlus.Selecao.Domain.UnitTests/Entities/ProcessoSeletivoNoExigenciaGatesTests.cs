@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura dos gates de publicação/escrita ESTENDIDOS ao nó de grupo <c>OU</c>/<c>N-de</c>
@@ -48,7 +49,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("NoExigencia.RemoveVantagemSemVantagemViva");
@@ -67,7 +68,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && !item.Ok);
     }
 
@@ -84,7 +85,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && item.Ok);
     }
 
@@ -139,7 +140,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -156,7 +157,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
             chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -171,7 +172,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
 
         pendencia.Should().BeNull();
     }
@@ -187,7 +188,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
             DocumentoQualquer(fase.Id), 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -204,7 +205,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
             TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }

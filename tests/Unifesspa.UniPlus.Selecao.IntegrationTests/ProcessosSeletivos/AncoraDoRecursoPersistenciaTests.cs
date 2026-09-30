@@ -62,7 +62,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             fase.Produtos.Single(p => p.AtoCodigo == "RESULTADO_FINAL").Id,
             "pré-condição: o EF hidratou a âncora incoerente sem passar por fábrica nenhuma");
 
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ComCalendario());
+        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo);
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeFalse(
@@ -88,7 +88,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ComCalendario())
+        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeFalse();
 
@@ -104,7 +104,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ComCalendario())
+        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeTrue();
 
@@ -136,7 +136,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         HashFixo,
         "teste",
         TimeProvider.System,
-        ComCalendario());
+        ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo);
 
     /// <summary>
     /// Processo estruturalmente publicável cuja única fase publica o preliminar e o definitivo
@@ -170,7 +170,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                null, null, [modalidade]).Value!],
+                null, null, [modalidade]).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(

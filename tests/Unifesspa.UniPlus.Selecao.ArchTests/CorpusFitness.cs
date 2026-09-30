@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Agregado mínimo e conforme, só para que os codecs tenham o que codificar nos fitness
@@ -64,7 +65,7 @@ internal static class CorpusFitness
                         RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                         [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
                 ]).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+        ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),

@@ -12,6 +12,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 // Handler do cenário de rollback (V9): semeia um processo conforme, publica
 // de verdade (mesma orquestração de ProcessoSeletivo.Publicar do handler
@@ -60,7 +61,7 @@ public sealed class FalharAposPublicarCascadingHandler
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "cascading-v9-test",
-            timeProvider, CorpusEnvelope.ContextoRico());
+            timeProvider, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
 
         db.VersoesConfiguracao.Add(publicarResult.Value!);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

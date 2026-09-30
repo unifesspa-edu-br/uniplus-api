@@ -165,7 +165,7 @@ public sealed class PoliticaDeOrdenacaoTests
             ofertaAtendimento ?? OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoMinima()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoMinima()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         if (criteriosDesempate is not null)
         {

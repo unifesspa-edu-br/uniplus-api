@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O descarte de uma sessão editorial que <b>deslocou as ordens do cronograma</b>, contra
@@ -375,7 +376,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([Distribuicao()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([Distribuicao()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(Classificacao(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
@@ -424,7 +425,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         HashFixo,
         "teste",
         TimeProvider.System,
-        contexto ?? ContextoDeContagemDePrazos.SemCalendario);
+        contexto ?? ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
     private static ProdutoDaFase ProdutoDe(ProcessoSeletivo processo, string atoCodigo) =>
         processo.CronogramaFases.SelectMany(f => f.Produtos).Single(p => p.AtoCodigo == atoCodigo);

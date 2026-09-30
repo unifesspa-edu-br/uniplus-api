@@ -10,6 +10,7 @@ using DTOs;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
 /// Handler da <see cref="ObterConformidadeProcessoSeletivoQuery"/>: leitura
@@ -44,12 +45,14 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorFusoInstitucional resolvedorFuso,
+        IFatoCandidatoReader fatoCandidatoReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken)
@@ -75,7 +78,10 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
                         FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
             FusoInstitucional: fuso.IsSuccess ? fuso.Value : null);
 
-        ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto)
+        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
+            await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false));
+
+        ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
 
         return new ConformidadeProcessoSeletivoDto(processo.Id, itens);

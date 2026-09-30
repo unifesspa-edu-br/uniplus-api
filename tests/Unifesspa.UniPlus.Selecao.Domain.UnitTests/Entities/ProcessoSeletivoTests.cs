@@ -268,7 +268,7 @@ public sealed class ProcessoSeletivoTests
         ProcessoSeletivo processo = NovoProcesso();
         ConfiguracaoDistribuicaoVagas configuracao = NovaDistribuicao(Guid.CreateVersion7());
 
-        Result result = processo.DefinirDistribuicaoVagas([configuracao], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirDistribuicaoVagas([configuracao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
         processo.DistribuicaoVagas.Should().ContainSingle();
@@ -296,7 +296,7 @@ public sealed class ProcessoSeletivoTests
             Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
             [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)]).Value!;
 
-        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.AcaoQuandoIndeferidoDivergente");
@@ -307,7 +307,7 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirDistribuicaoVagas([], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia");
@@ -323,7 +323,7 @@ public sealed class ProcessoSeletivoTests
         [
             NovaDistribuicao(ofertaCursoId),
             NovaDistribuicao(ofertaCursoId),
-        ], PrecondicaoIfMatch.Ausente);
+        ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OfertaCursoDuplicada");
@@ -587,7 +587,7 @@ public sealed class ProcessoSeletivoTests
     public void ConcorrenciaDuplaAplicavel_SemCotaReservada_Falsa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirDistribuicaoVagas([NovaDistribuicao(Guid.CreateVersion7())], PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([NovaDistribuicao(Guid.CreateVersion7())], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         processo.ConcorrenciaDuplaAplicavel().Should().BeFalse();
     }
@@ -614,7 +614,7 @@ public sealed class ProcessoSeletivoTests
             regraAjuste: null,
             referenciaDemografica: null, [ampla, cotaReservada]).Value!;
 
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         processo.ConcorrenciaDuplaAplicavel().Should().BeTrue();
     }

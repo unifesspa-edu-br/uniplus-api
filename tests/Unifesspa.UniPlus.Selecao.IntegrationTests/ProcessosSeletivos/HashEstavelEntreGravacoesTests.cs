@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -189,7 +190,7 @@ public sealed class HashEstavelEntreGravacoesTests
         processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(
             DistribuicaoOrigem, 40, 1m,
             ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            null, null, [modalidade]).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            null, null, [modalidade]).Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!, null, null,

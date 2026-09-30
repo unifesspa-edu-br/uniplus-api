@@ -5,6 +5,7 @@ using System.Text;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
@@ -96,16 +97,26 @@ internal static class VocabularioDeFatos
         return binding.StartsWith(PrefixoBindingAtributo, StringComparison.Ordinal);
     }
 
+    private const string PrefixoBindingClassificacao = "CLASSIFICACAO:";
+
+    /// <summary>Se o vínculo é de fato que a classificação produz, como o grupo em que o candidato foi convocado.</summary>
+    public static bool ProduzidoPelaClassificacao(string binding)
+    {
+        ArgumentNullException.ThrowIfNull(binding);
+        return binding.StartsWith(PrefixoBindingClassificacao, StringComparison.Ordinal);
+    }
+
     /// <summary>
     /// Os fatos que o processo resolve para um candidato — o universo contra o qual um gatilho é
     /// conferido.
     /// </summary>
     /// <remarks>
-    /// São três conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
+    /// São quatro conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
     /// coleta nos formulários; o que ele deriva por regra declarada (a modalidade de
-    /// concorrência); e o que o sistema calcula de atributos do candidato (faixa etária, renda
-    /// per capita) — este último nunca aparece nas regras de derivação, porque não há o que
-    /// declarar sobre ele.
+    /// concorrência); o que o sistema calcula de atributos do candidato (faixa etária, renda per
+    /// capita); e o que a classificação produz (o grupo em que o candidato foi convocado). Os dois
+    /// últimos nunca aparecem nas regras de derivação, porque não há o que declarar sobre eles; a
+    /// fase em que ficam conhecidos é a do catálogo.
     /// </remarks>
     public static HashSet<string> QueOProcessoResolve(ProcessoSeletivo processo, IEnumerable<FatoCandidatoView> catalogo)
     {
@@ -115,8 +126,17 @@ internal static class VocabularioDeFatos
         return new(
             processo.FatosColetados.Select(static f => f.FatoCodigo)
                 .Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato))
-                .Concat(catalogo.Where(static f => f.Binding is { } binding && CalculadoDeAtributo(binding)).Select(static f => f.Codigo)),
+                .Concat(catalogo
+                    .Where(static f => f.Binding is { } binding && (CalculadoDeAtributo(binding) || ProduzidoPelaClassificacao(binding)))
+                    .Select(static f => f.Codigo)),
             StringComparer.Ordinal);
+    }
+
+    /// <summary>Os fatos do catálogo cujos valores são as modalidades que o processo oferta.</summary>
+    public static FatosDeModalidade ComValoresDeModalidade(IEnumerable<FatoCandidatoView> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+        return new FatosDeModalidade(catalogo.Where(static f => f.FonteValores == FonteModalidade).Select(static f => f.Codigo));
     }
 
     /// <summary>A fase canônica em que o catálogo situa cada fato, base da fase efetiva do fato no processo.</summary>

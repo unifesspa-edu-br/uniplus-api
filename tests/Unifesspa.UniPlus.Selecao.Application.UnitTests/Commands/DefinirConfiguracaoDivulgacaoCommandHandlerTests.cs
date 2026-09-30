@@ -155,7 +155,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo).Value!;
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", hashFixo).Value!;
@@ -199,7 +199,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
         byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(
             new System.Text.Json.Nodes.JsonObject { ["status"] = "ok" }.ToJsonString());
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario)
+        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
 
         return processo;

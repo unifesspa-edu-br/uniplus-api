@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A matriz normativa de derivação de modalidade publicada por leitura: recortada para o que o
@@ -223,7 +224,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
                 modalidades: modalidades);
             quadro.IsSuccess.Should().BeTrue(quadro.Error?.Message);
 
-            processo.DefinirDistribuicaoVagas([quadro.Value!], PrecondicaoIfMatch.Ausente)
+            processo.DefinirDistribuicaoVagas([quadro.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
                 .IsSuccess.Should().BeTrue();
             await db.SaveChangesAsync();
         }

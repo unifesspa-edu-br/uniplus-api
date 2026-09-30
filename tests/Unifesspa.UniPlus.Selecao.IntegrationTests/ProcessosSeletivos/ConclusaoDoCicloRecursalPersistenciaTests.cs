@@ -53,7 +53,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
             .Which.Produtos.Should().ContainSingle()
             .Which.Papel.Should().Be(PapelProdutoFase.Preliminar);
 
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario);
+        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_conclusao_do_ciclo_recursal")
             .Which.Ok.Should().BeFalse(
@@ -77,7 +77,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(i => i.Codigo == "cronograma_conclusao_do_ciclo_recursal")
             .Which.Ok.Should().BeTrue();
 
@@ -98,7 +98,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         HashFixo,
         "teste",
         TimeProvider.System,
-        ContextoDeContagemDePrazos.SemCalendario);
+        ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
     /// <summary>
     /// Processo estruturalmente publicável cuja fase publica a definitiva da matéria — o único
@@ -131,7 +131,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                null, null, [modalidade]).Value!],
+                null, null, [modalidade]).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(

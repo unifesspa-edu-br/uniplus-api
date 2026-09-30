@@ -973,7 +973,7 @@ public sealed class EnvelopeCodecRecusaTests
                     null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
             ]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
@@ -1020,7 +1020,7 @@ public sealed class EnvelopeCodecRecusaTests
         adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a adulteração tem de mudar os bytes");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, adulterados, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento, "testes", TimeProvider.System, CorpusEnvelope.ContextoRico());
+            dados, adulterados, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento, "testes", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         Result<EnvelopeReidratado> resultado = new RegistroCodecsEnvelope().Reidratar(publicacao.Value!);
@@ -2222,7 +2222,7 @@ public sealed class EnvelopeCodecRecusaTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, adulterados, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            EnvelopeCanonicoGoldenTests.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico());
+            EnvelopeCanonicoGoldenTests.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
 

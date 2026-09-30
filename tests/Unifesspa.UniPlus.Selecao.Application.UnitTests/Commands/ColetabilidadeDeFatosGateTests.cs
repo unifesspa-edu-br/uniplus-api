@@ -316,7 +316,7 @@ public sealed class ColetabilidadeDeFatosGateTests
 
         VersaoConfiguracao versao = processo.Publicar(
             dados, "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario).Value!;
+            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Value!;
         processo.DequeueDomainEvents();
 
         return (processo, versao);

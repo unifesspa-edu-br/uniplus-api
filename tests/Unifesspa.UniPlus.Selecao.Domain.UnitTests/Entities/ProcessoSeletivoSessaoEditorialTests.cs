@@ -506,7 +506,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         // faria o atalho mudar de comportamento — e ele prometeu não mudar.
         Action nulo = () => processo.Retificar(
             dados: null!, VersaoQualquerDoProcesso(processo), BytesCanonicos, "1.1",
-            "canonical-json/sha256@v1", HashFixo, "user-sub-1", "motivo", new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario);
+            "canonical-json/sha256@v1", HashFixo, "user-sub-1", "motivo", new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
         nulo.Should().Throw<ArgumentNullException>();
     }
@@ -519,7 +519,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
-            "user-sub-2", motivo: "Atalho concorrente", clock: new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario);
+            "user-sub-2", motivo: "Atalho concorrente", clock: new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
         resultado.IsFailure.Should().BeTrue(
             "os dois caminhos retificam o MESMO ato — o atalho publicaria a versão N+1 a partir da configuração que a sessão está no meio de editar, e o rascunho sobreviveria apontando para uma base que deixou de ser o topo da cadeia");
@@ -587,7 +587,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             NovosDados(), BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario);
+            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         versao = publicacao.Value!;
         processo.DequeueDomainEvents();
@@ -630,7 +630,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(

@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="DocumentoExigido"/> (Story #554, PR #895): fábrica, guard de
@@ -272,8 +273,8 @@ public sealed class DocumentoExigidoTests
         DocumentoExigido exigencia = Exigencia(
             Aplicabilidade.Condicional, condicoes: [CondicaoDe("MODALIDADE", Operador.Diferente, "\"LB_PPI\"")]).Value!;
 
-        exigencia.PodeAlcancarModalidade("AC").Should().BeTrue();
-        exigencia.PodeAlcancarModalidade("LB_PPI").Should().BeFalse();
+        exigencia.PodeAlcancarModalidade("AC", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeTrue();
+        exigencia.PodeAlcancarModalidade("LB_PPI", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeFalse();
     }
 
     [Fact(DisplayName = "PodeAlcancarModalidade: MODALIDADE NAO_EM [...] alcança qualquer modalidade fora da lista")]
@@ -283,9 +284,9 @@ public sealed class DocumentoExigidoTests
             Aplicabilidade.Condicional,
             condicoes: [CondicaoDe("MODALIDADE", Operador.NaoEm, "[\"LB_PPI\",\"LB_Q\"]")]).Value!;
 
-        exigencia.PodeAlcancarModalidade("AC").Should().BeTrue();
-        exigencia.PodeAlcancarModalidade("LB_PPI").Should().BeFalse();
-        exigencia.PodeAlcancarModalidade("LB_Q").Should().BeFalse();
+        exigencia.PodeAlcancarModalidade("AC", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeTrue();
+        exigencia.PodeAlcancarModalidade("LB_PPI", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeFalse();
+        exigencia.PodeAlcancarModalidade("LB_Q", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeFalse();
     }
 
     // ── Story #918 §4 — não-expiração do laudo de deficiência permanente sai de GATILHO,

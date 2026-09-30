@@ -7,6 +7,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Nó da árvore de satisfação de documentos exigidos (Story #920) — substitui o antigo
@@ -618,13 +619,13 @@ public sealed class NoExigencia : EntityBase
     /// descendentes, cada uma avaliada por <see cref="DocumentoExigido.PodeAlcancarModalidade"/>
     /// (mesma checagem estrutural do gate CA-05, estendida ao nó de grupo).
     /// </summary>
-    public bool PodeAlcancarModalidade(string modalidadeCodigo)
+    public bool PodeAlcancarModalidade(string modalidadeCodigo, FatosDeModalidade fatosDeModalidade)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modalidadeCodigo);
 
         return Tipo == TipoNo.Folha
-            ? DocumentoExigido?.PodeAlcancarModalidade(modalidadeCodigo) ?? false
-            : _filhos.Any(filho => filho.PodeAlcancarModalidade(modalidadeCodigo));
+            ? DocumentoExigido?.PodeAlcancarModalidade(modalidadeCodigo, fatosDeModalidade) ?? false
+            : _filhos.Any(filho => filho.PodeAlcancarModalidade(modalidadeCodigo, fatosDeModalidade));
     }
 
     private static Guid? FaseComumDosFilhos(IReadOnlyList<NoExigencia> filhos)

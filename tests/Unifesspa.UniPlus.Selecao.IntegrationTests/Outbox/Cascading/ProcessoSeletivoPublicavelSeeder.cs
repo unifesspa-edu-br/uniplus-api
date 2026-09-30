@@ -76,7 +76,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             referenciaDemografica: null,
             modalidades: [modalidade]);
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
-        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], PrecondicaoIfMatch.Ausente);
+        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(

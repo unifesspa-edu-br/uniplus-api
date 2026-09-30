@@ -347,7 +347,7 @@ public sealed class RestauradorDeConfiguracaoTests
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
@@ -414,7 +414,7 @@ public sealed class RestauradorDeConfiguracaoTests
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico()));
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashFixo, "user-sub-123", TimeProvider.System, CorpusEnvelope.ContextoRico());
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashFixo, "user-sub-123", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao versao = publicacao.Value!;
 
@@ -508,7 +508,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico());
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao versao = publicacao.Value!;
 
@@ -565,7 +565,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico());
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         Result<GrafoConfiguracao> resultado = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope())
@@ -624,7 +624,7 @@ public sealed class RestauradorDeConfiguracaoTests
         // e produziria um envelope diferente do que este teste está provando.
         processo.Publicar(
             CorpusEnvelope.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico()).IsSuccess.Should().BeTrue();
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         processo.ClearDomainEvents();
 
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);

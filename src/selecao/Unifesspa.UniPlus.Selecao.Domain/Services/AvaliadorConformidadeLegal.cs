@@ -49,23 +49,30 @@ public static class AvaliadorConformidadeLegal
     /// cadastro. Um código ausente do mapa não designa item vivo algum — a conferência de
     /// referências já recusa a regra antes de chegar aqui.
     /// </param>
+    /// <param name="fatosDeModalidade">
+    /// Os fatos cujos valores são modalidades: a cobertura de um documento por modalidade vale
+    /// tanto para o gatilho sobre a modalidade de concorrência quanto para o gatilho sobre o grupo
+    /// da convocação.
+    /// </param>
     public static ResultadoConformidade Avaliar(
         ProcessoSeletivo processo,
         string tipoProcessoCodigoAvaliado,
         IReadOnlyList<ObrigatoriedadeLegal> regras,
-        IdentidadesDeCadastro identidades)
+        IdentidadesDeCadastro identidades,
+        FatosDeModalidade fatosDeModalidade)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoProcessoCodigoAvaliado);
         ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(identidades);
+        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
         List<RegraAvaliada> avaliadas = new(regras.Count);
         List<string> avisos = [];
 
         foreach (ObrigatoriedadeLegal regra in regras)
         {
-            (bool aprovada, string? motivo, string? aviso) = AvaliarPredicado(processo, identidades, regra.Predicado);
+            (bool aprovada, string? motivo, string? aviso) = AvaliarPredicado(processo, identidades, fatosDeModalidade, regra.Predicado);
 
             avaliadas.Add(new RegraAvaliada(
                 regra.Id,
@@ -101,12 +108,13 @@ public static class AvaliadorConformidadeLegal
     private static (bool Aprovada, string? Motivo, string? Aviso) AvaliarPredicado(
         ProcessoSeletivo processo,
         IdentidadesDeCadastro identidades,
+        FatosDeModalidade fatosDeModalidade,
         PredicadoObrigatoriedade predicado) => predicado switch
         {
             EtapaObrigatoria p => AvaliarEtapaObrigatoria(processo, identidades, p),
             ModalidadesMinimas p => AvaliarModalidadesMinimas(processo, identidades, p),
             DesempateDeveIncluir p => AvaliarDesempateDeveIncluir(processo, p),
-            DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, identidades, p),
+            DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, identidades, fatosDeModalidade, p),
             AtendimentoDisponivel p => AvaliarAtendimentoDisponivel(processo, identidades, p),
             ConcorrenciaDuplaObrigatoria => AvaliarConcorrenciaDuplaObrigatoria(processo),
             Customizado => (true, null, "predicado customizado — aprovado por padrão, sem verificação automática"),
@@ -269,8 +277,9 @@ public static class AvaliadorConformidadeLegal
     /// exigências documentais (que avalia contra um candidato REAL, com todos os fatos
     /// dele resolvidos): aqui não há candidato — só a modalidade em si. Uma exigência
     /// GERAL cobre qualquer modalidade, por definição. Uma CONDICIONAL só cobre a
-    /// modalidade avaliada se o predicado DNF casar usando <b>somente</b> o fato sintético
-    /// <c>MODALIDADE = predicado.Modalidade</c> — se a exigência também depender de outro
+    /// modalidade avaliada se o predicado DNF casar usando <b>somente</b> os fatos cujos
+    /// valores são modalidades, todos iguais a <c>predicado.Modalidade</c> (a modalidade de
+    /// concorrência e o grupo da convocação) — se a exigência também depender de outro
     /// fato (ex.: <c>FAIXA_ETARIA</c>), <see cref="PredicadoDnf.Avaliar"/> trata esse fato
     /// como ausente e reprova a cláusula (conservador, nunca lança): nem todo candidato da
     /// modalidade seria coberto, e é exatamente essa parcialidade que a obrigação legal —
@@ -285,6 +294,7 @@ public static class AvaliadorConformidadeLegal
     private static (bool, string?, string?) AvaliarDocumentoObrigatorioParaModalidade(
         ProcessoSeletivo processo,
         IdentidadesDeCadastro identidades,
+        FatosDeModalidade fatosDeModalidade,
         DocumentoObrigatorioParaModalidade predicado)
     {
         // Sem oferta da modalidade exigida não há o que exigir. Vale também para o código
@@ -336,14 +346,14 @@ public static class AvaliadorConformidadeLegal
 
         bool cobertaIncondicionalmente = codigosCongelados.Any(codigo =>
         {
-            // Só MODALIDADE entra: na publicação não há candidato, e todo outro fato é
-            // legitimamente desconhecido. Ausência resolve INDETERMINADO, que aqui significa
-            // "cobertura não provada" — o que se quer. Materializá-los como NAO_APLICAVEL faria
-            // a cláusula colapsar em FALSO e afirmaria algo que não se sabe.
-            Dictionary<string, FatoResolvido> fatoDaModalidade = new(StringComparer.Ordinal)
-            {
-                ["MODALIDADE"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(codigo)),
-            };
+            // Só os fatos cujos valores são modalidades entram, todos com a modalidade avaliada:
+            // quem foi convocado nela também concorre nela. Na publicação não há candidato, e
+            // todo outro fato é legitimamente desconhecido. Ausência resolve INDETERMINADO, que
+            // aqui significa "cobertura não provada" — o que se quer. Materializá-los como
+            // NAO_APLICAVEL faria a cláusula colapsar em FALSO e afirmaria algo que não se sabe.
+            FatoResolvido modalidade = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(codigo));
+            Dictionary<string, FatoResolvido> fatoDaModalidade = fatosDeModalidade.Codigos
+                .ToDictionary(static fato => fato, _ => modalidade, StringComparer.Ordinal);
 
             return processo.DocumentosExigidos.Any(e =>
                 e.TipoDocumentoOrigemId == identidadeExigida
