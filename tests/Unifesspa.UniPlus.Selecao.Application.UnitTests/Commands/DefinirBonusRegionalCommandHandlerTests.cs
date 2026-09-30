@@ -234,7 +234,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Domain.ValueObjects.ReferenciaRegra regraCalculo = Domain.ValueObjects.ReferenciaRegra.Criar(
             RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo).Value!;
@@ -280,7 +280,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(
             new JsonObject { ["status"] = "ok" }.ToJsonString());
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario)
+        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
 
         return processo;

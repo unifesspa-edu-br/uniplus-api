@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Abertura da sessão editorial (Story #860). O que só existe <b>aqui</b>, e não no
@@ -165,7 +166,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
             ProcessoSeletivo processo = NovoProcessoConforme();
             VersaoConfiguracao versao = processo.Publicar(
                 NovosDados(), Bytes, schemaVersion, "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-                new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario).Value!;
+                new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Value!;
             processo.DequeueDomainEvents();
 
             IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();

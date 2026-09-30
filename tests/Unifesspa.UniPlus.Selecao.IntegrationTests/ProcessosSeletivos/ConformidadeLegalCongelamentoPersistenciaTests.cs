@@ -82,7 +82,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
@@ -160,7 +160,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         ObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = new(readContext, TimeProvider.System);
         IReadOnlyList<ObrigatoriedadeLegal> vigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(processo.Tipo.ToString(), DataDeCorte, CancellationToken.None);
-        ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.Tipo.ToString(), vigentes, IdentidadesDe(processo));
+        ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.Tipo.ToString(), vigentes, IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo);
         conformidade.Regras.Should().OnlyContain(static r => r.Aprovada, "pré-condição do teste — o processo satisfaz a regra semeada");
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
@@ -173,7 +173,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "integration-test-user",
-            TimeProvider.System, CorpusEnvelope.ContextoRico());
+            TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
@@ -221,7 +221,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         IReadOnlyList<ObrigatoriedadeLegal> vigentesAgora = await freshRepository
             .ObterVigentesParaTipoProcessoAsync(processoVivo.Tipo.ToString(), DataDeCorte, CancellationToken.None);
         ResultadoConformidade recomputado = AvaliadorConformidadeLegal.Avaliar(
-            processoVivo, processoVivo.Tipo.ToString(), vigentesAgora, IdentidadesDe(processoVivo));
+            processoVivo, processoVivo.Tipo.ToString(), vigentesAgora, IdentidadesDe(processoVivo), FatosDeModalidadeDeTeste.DoCatalogo);
 
         (Guid RegraId, string Hash)[] recomputadoSet = [.. recomputado.Regras
             .Select(r => (r.RegraId, r.Hash))

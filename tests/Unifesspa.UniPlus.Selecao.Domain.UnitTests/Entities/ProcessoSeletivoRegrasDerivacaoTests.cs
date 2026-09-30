@@ -75,7 +75,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             referenciaDemografica: null,
             modalidades: modalidades).Value!;
 
-        processo.DefinirDistribuicaoVagas([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([config], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
     /// <summary>
@@ -96,8 +96,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirRegrasDerivacao([d1, d2], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
 
-        processo.PendenciaPreCanonicalizacao().Should().NotBeNull();
-        processo.PendenciaPreCanonicalizacao()!.Code
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().NotBeNull();
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code
             .Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
     }
 
@@ -112,8 +112,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirRegrasDerivacao([ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [Ancora(0, "V")]).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue("a definição isolada não conhece o domínio de modalidades ofertadas");
 
-        processo.PendenciaPreCanonicalizacao().Should().NotBeNull();
-        processo.PendenciaPreCanonicalizacao()!.Code
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().NotBeNull();
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code
             .Should().Be(RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio);
     }
 
@@ -126,7 +126,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirRegrasDerivacao([ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [Ancora(0, "AC")]).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao().Should().BeNull(
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull(
             "AC está entre as modalidades ofertadas — o gate de domínio de contribuição não barra");
     }
 
@@ -140,8 +140,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirRegrasDerivacao([d1], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
 
-        processo.PendenciaPreCanonicalizacao().Should().NotBeNull();
-        processo.PendenciaPreCanonicalizacao()!.Code
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().NotBeNull();
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code
             .Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 

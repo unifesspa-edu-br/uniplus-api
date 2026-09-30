@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -972,5 +973,54 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.PontoResolucaoForaDoCronograma");
+    }
+
+    // ── Grupo da convocação (UNI-REQ-0144): os documentos da habilitação seguem o grupo em que o
+    // candidato foi convocado, e não todas as modalidades a que concorreu ──
+
+    [Fact(DisplayName = "Exigência da habilitação cita o grupo em que o candidato foi convocado")]
+    public async Task Handle_GatilhoPeloGrupoDaConvocacaoNaHabilitacao_Aceita()
+    {
+        (ProcessoSeletivo processo, Mocks mocks, Guid tipoDocumentoId) = ProcessoComAmplaConcorrencia(
+            FaseComOrdemECodigo(1, "RESULTADO_FINAL"), FaseComOrdemECodigo(2, "HABILITACAO"));
+        Guid habilitacao = processo.CronogramaFases.Single(f => f.Codigo == "HABILITACAO").Id;
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ExigenciaPeloGrupoDaConvocacao(processo, habilitacao, tipoDocumentoId));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Sem a fase do resultado final no cronograma, o grupo da convocação não é citado")]
+    public async Task Handle_GatilhoPeloGrupoDaConvocacaoSemResultadoFinal_Recusa()
+    {
+        (ProcessoSeletivo processo, Mocks mocks, Guid tipoDocumentoId) = ProcessoComAmplaConcorrencia(FaseComOrdemECodigo(1, "HABILITACAO"));
+
+        Result<MutacaoAceita> resultado = await HandleAsync(
+            mocks, ExigenciaPeloGrupoDaConvocacao(processo, processo.CronogramaFases.Single().Id, tipoDocumentoId));
+
+        resultado.Error!.Code.Should().Be("DocumentoExigido.PontoResolucaoForaDoCronograma");
+    }
+
+    private static (ProcessoSeletivo Processo, Mocks Mocks, Guid TipoDocumentoId) ProcessoComAmplaConcorrencia(params FaseCronograma[] fases)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convocação", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        processo.DefinirDistribuicaoVagas([ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns(CadastrosVivos.FatosDeModalidade());
+        return (processo, mocks, tipoDocumentoId);
+    }
+
+    private static DefinirDocumentosExigidosCommand ExigenciaPeloGrupoDaConvocacao(ProcessoSeletivo processo, Guid faseId, Guid tipoDocumentoId)
+    {
+        CondicaoGatilhoInput condicao = new(0, "MODALIDADE_CONVOCACAO", "IGUAL", "\"AC\"");
+        ItemDocumentoExigidoInput item = new(faseId, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        return new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
     }
 }

@@ -63,7 +63,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             .Should().Contain(b => b.RecorteDeCompetencia.Count == 0,
                 "pré-condição: o EF hidratou a banca sem recorte sem passar por fábrica nenhuma");
 
-        processo.AvaliarConformidade(ComCalendario())
+        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
             .Which.Ok.Should().BeFalse(
                 "quem monta o edital precisa ver a pendência; invariante que só existe no domínio não aparece no checklist");
@@ -91,7 +91,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             .Should().OnlyContain(b => b.RecorteDeCompetencia.Count == 1,
                 "pré-condição: as duas bancas seguem com recorte declarado — o que mudou foi ele ser o mesmo");
 
-        processo.AvaliarConformidade(ComCalendario())
+        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
             .Which.Ok.Should().BeFalse();
 
@@ -109,7 +109,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ComCalendario())
+        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
             .Which.Ok.Should().BeTrue();
 
@@ -172,7 +172,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         HashFixo,
         "teste",
         TimeProvider.System,
-        ComCalendario());
+        ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo);
 
     /// <summary>
     /// Processo estruturalmente publicável cuja única fase publica o preliminar e o definitivo
@@ -206,7 +206,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                null, null, [modalidade]).Value!],
+                null, null, [modalidade]).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(

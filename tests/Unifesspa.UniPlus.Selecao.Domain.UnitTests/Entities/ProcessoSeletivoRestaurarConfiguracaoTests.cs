@@ -1206,7 +1206,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             EtapaProcesso.Reidratar(EtapaOriginal, "Prova Original", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1),
         ], PrecondicaoIfMatch.Ausente);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao()], PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Distribuicao()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(Classificacao([]), PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente);
 
@@ -1229,7 +1229,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: new string('a', 64),
             atorUsuarioSub: "testes",
-            clock: TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario).IsSuccess.Should().BeTrue();
+            clock: TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
         processo.ClearDomainEvents();
         return processo;

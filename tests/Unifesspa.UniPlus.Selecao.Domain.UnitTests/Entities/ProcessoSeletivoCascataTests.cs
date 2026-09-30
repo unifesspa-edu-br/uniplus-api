@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="ProcessoSeletivo.PendenciaDaCascata"/> e do item
@@ -125,7 +126,7 @@ public sealed class ProcessoSeletivoCascataTests
     private static ProcessoSeletivo NovoProcessoComOferta(ConfiguracaoDistribuicaoVagas oferta)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
-        processo.DefinirDistribuicaoVagas([oferta], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -290,7 +291,7 @@ public sealed class ProcessoSeletivoCascataTests
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
 
         processo.PendenciaDaCascata().Should().BeNull();
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
     }
 
     [Fact(DisplayName = "AvaliarConformidade com oferta federal sem cascata tem o item Cascata de remanejamento não-Ok")]
@@ -298,7 +299,7 @@ public sealed class ProcessoSeletivoCascataTests
     {
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 
     [Fact(DisplayName = "PendenciaDeConformidade (agregador genérico) fica Ok mesmo com a cascata pendente — só PendenciaDaCascata recusa")]
@@ -316,7 +317,7 @@ public sealed class ProcessoSeletivoCascataTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
                 regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
@@ -339,6 +340,6 @@ public sealed class ProcessoSeletivoCascataTests
 
         processo.PendenciaDeConformidade().Should().BeNull("os itens estruturais estão todos completos — a cascata não é um deles");
         processo.PendenciaDaCascata().Should().NotBeNull("a oferta federal tem SegueCascata sem cascata configurada");
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 }

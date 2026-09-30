@@ -38,32 +38,8 @@ internal static class ProcessoSeletivoConformeBuilder
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            criteriosCumulativos: [],
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-
-        processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoOrigemId: Guid.CreateVersion7(),
-                voBase: 40,
-                pr: 1m,
-                regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-                regraAjuste: null,
-                referenciaDemografica: null,
-                modalidades: [modalidade]).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoAmplaConcorrencia()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
@@ -104,4 +80,33 @@ internal static class ProcessoSeletivoConformeBuilder
     }
 
     public static ProcessoSeletivo Criar(string nome) => Criar(nome, out _);
+
+    /// <summary>Uma oferta com as 40 vagas na ampla concorrência (AC).</summary>
+    public static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaConcorrencia()
+    {
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(),
+            codigo: "AC",
+            descricao: null,
+            naturezaLegal: NaturezaLegalModalidade.Ampla,
+            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoOrigemCodigo: null,
+            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null,
+            remanejamentoPar: null,
+            remanejamentoFallback: null,
+            criteriosCumulativos: [],
+            acaoQuandoIndeferido: null,
+            baseLegal: "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
+
+        return ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [modalidade]).Value!;
+    }
 }

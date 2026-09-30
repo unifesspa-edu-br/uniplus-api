@@ -94,6 +94,25 @@ internal static class CadastrosVivos
         return reader;
     }
 
+    /// <summary>O catálogo de fatos com os dois cujos valores são modalidades: a de concorrência e o grupo da convocação.</summary>
+    public static IFatoCandidatoReader CatalogoDeFatos()
+    {
+        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
+        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(FatosDeModalidade());
+        return reader;
+    }
+
+    /// <summary>A modalidade de concorrência e o grupo em que o candidato foi convocado, como o seed os publica.</summary>
+    public static IReadOnlyList<FatoCandidatoView> FatosDeModalidade() =>
+    [
+        FatoDeModalidade("MODALIDADE", "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE"),
+        FatoDeModalidade("MODALIDADE_CONVOCACAO", "RESULTADO_FINAL", "CLASSIFICACAO:MODALIDADE_CONVOCACAO"),
+    ];
+
+    private static FatoCandidatoView FatoDeModalidade(string codigo, string pontoResolucao, string binding) => new(
+        IdentidadeDe(codigo), codigo, codigo, null, "CATEGORICO", "DERIVADO", "ESCALAR", null,
+        pontoResolucao, binding, null, "MODALIDADE", Ativo: true);
+
     public static ITipoDocumentoReader TiposDocumento(params string[] codigos)
     {
         string[] vivos = codigos.Length == 0 ? TiposDocumentoDaSuite : codigos;

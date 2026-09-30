@@ -136,7 +136,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         processo.Publicar(
             dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo,
-            "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario).IsSuccess.Should().BeTrue();
+            "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
         return processo;
     }

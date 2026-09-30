@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -39,7 +40,7 @@ public sealed class GateDeConformidadeTests
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         return publicar.Value!;
@@ -99,7 +100,7 @@ public sealed class GateDeConformidadeTests
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
             motivo: "Correção do prazo",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
         retificar.IsFailure.Should().BeTrue(
             "retificar também congela uma versão append-only e vinculante — congelar configuração incompleta " +
@@ -122,7 +123,7 @@ public sealed class GateDeConformidadeTests
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -154,7 +155,7 @@ public sealed class GateDeConformidadeTests
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
         publicar.IsFailure.Should().BeTrue(
             "as outras cinco dimensões estão conformes — só a ausência de declaração de taxa pode estar bloqueando");

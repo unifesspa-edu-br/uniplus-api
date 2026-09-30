@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da árvore de satisfação
@@ -98,7 +99,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         // Story #923: a árvore com grupos E/OU já é publicável — sem pendência estrutural
         // remanescente para esta configuração mínima (sem REMOVE_VANTAGEM/modalidade
         // incoerente, sem exigência CONDICIONAL vazia, sem gatilho por FAIXA_ETARIA).
-        DomainError? pendencia = recarregado.PendenciaPreCanonicalizacao();
+        DomainError? pendencia = recarregado.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
         pendencia.Should().BeNull(pendencia?.Message);
     }
 

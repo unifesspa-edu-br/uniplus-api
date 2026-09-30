@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A identidade dos itens do checklist estrutural é contrato: um cliente liga a navegação
@@ -17,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class IdentidadeDosItensDeConformidadeTests
 {
     private static IReadOnlyList<ItemConformidade> Checklist() =>
-        ProcessoConformeFactory.Criar().AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario);
+        ProcessoConformeFactory.Criar().AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
 
     private static IReadOnlyList<string> DimensoesDeclaradas() =>
     [

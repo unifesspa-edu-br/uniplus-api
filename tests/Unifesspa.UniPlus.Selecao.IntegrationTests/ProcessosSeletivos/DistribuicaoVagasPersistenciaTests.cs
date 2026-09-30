@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da distribuição
@@ -67,7 +68,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             ofertaCursoId, voBase: 50, pr: 0.5m, regra, regraAjuste, demografica, modalidades,
             grupoAreaEnem: ("HUMANISTICA_I", "Humanística I"));
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([configResult.Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([configResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -124,7 +125,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             Guid.CreateVersion7(), voBase: 60, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
             [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)]);
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([configResult.Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([configResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -156,7 +157,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             Guid.CreateVersion7(), voBase: 60, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
             [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)],
             grupoAreaEnem: ("TECNOLOGICA", "Tecnológica")).Value!;
-        processo.DefinirDistribuicaoVagas([oferta], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
             await new ProcessoSeletivoRepository(writeContext, TimeProvider.System).AdicionarAsync(processo, CancellationToken.None);
@@ -189,7 +190,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         ConfiguracaoDistribuicaoVagas original = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoId, voBase: 40, pr: 1m, regra, null, null,
             [NovaModalidade("QUIL", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 40)]).Value!;
-        processo.DefinirDistribuicaoVagas([original], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([original], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -210,7 +211,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
                     NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 25),
                 ]).Value!;
 
-            Result result = carregado.DefinirDistribuicaoVagas([nova], PrecondicaoIfMatch.Ausente);
+            Result result = carregado.DefinirDistribuicaoVagas([nova], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);

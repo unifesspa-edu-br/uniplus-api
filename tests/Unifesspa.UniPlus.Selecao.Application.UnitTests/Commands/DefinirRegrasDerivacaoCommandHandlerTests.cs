@@ -92,7 +92,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [ac]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

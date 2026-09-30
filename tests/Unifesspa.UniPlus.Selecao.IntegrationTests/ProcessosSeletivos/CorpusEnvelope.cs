@@ -308,7 +308,7 @@ internal static class CorpusEnvelope
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
             ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional(("HUMANISTICA_I", "Humanística I"))], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional(("HUMANISTICA_I", "Humanística I"))], permutar), FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirBonusRegional(ConfiguracaoBonusRegional.Criar(
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
@@ -914,7 +914,7 @@ internal static class CorpusEnvelope
             snapshot.AlgoritmoHash,
             HashDocumento,
             Ator,
-            TimeProvider.System, ContextoRico()).IsSuccess.Should().BeTrue();
+            TimeProvider.System, ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         processo.ClearDomainEvents();
     }
 

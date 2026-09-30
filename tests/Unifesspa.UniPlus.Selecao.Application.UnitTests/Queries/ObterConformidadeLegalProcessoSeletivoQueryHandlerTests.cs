@@ -68,7 +68,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(),
+            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
             CancellationToken.None);
 
         resultadoDaConsulta.IsSuccess.Should().BeTrue();
@@ -87,7 +87,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // MESMO avaliador (Domain, chamado pelo gate na Application) produz para o mesmo
         // processo/regras/data — a consulta não tem lógica própria de decisão.
         Dictionary<Guid, (bool Aprovada, string? Motivo)> avaliacaoDireta = AvaliadorConformidadeLegal
-            .Avaliar(processo, processo.Tipo.ToString(), [regraAprovada, regraReprovada], IdentidadesDe(processo))
+            .Avaliar(processo, processo.Tipo.ToString(), [regraAprovada, regraReprovada], IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo)
             .Regras.ToDictionary(r => r.RegraId, r => (r.Aprovada, r.Motivo));
 
         foreach (RegraAvaliadaDto regraDaConsulta in dto.Regras)
@@ -131,7 +131,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(),
+            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
             CancellationToken.None);
 
         resultadoDaConsulta.IsSuccess.Should().BeTrue();
@@ -174,7 +174,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(),
+            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
             CancellationToken.None);
 
         resultadoDaConsulta.IsSuccess.Should().BeTrue(
@@ -211,7 +211,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoIndisponivelDeTeste(),
+            new ResolvedorFusoIndisponivelDeTeste(), CadastrosVivos.CatalogoDeFatos(),
             CancellationToken.None);
 
         await consulta.Should().ThrowAsync<InvalidOperationException>(
@@ -235,7 +235,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(),
+            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
             CancellationToken.None);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();
@@ -271,7 +271,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
                 CadastrosVivos.TiposEtapa(),
                 CadastrosVivos.TiposDeficiencia(),
                 CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(),
+                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
                 CancellationToken.None);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();
@@ -312,7 +312,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
                 CadastrosVivos.TiposEtapa(),
                 CadastrosVivos.TiposDeficiencia(),
                 CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(),
+                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
                 CancellationToken.None);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();
@@ -356,7 +356,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
                 CadastrosVivos.TiposEtapa(),
                 CadastrosVivos.TiposDeficiencia(),
                 CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(),
+                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
                 CancellationToken.None);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue(
@@ -395,7 +395,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
                 CadastrosVivos.TiposEtapa(),
                 CadastrosVivos.TiposDeficiencia(),
                 CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(),
+                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
                 CancellationToken.None);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();

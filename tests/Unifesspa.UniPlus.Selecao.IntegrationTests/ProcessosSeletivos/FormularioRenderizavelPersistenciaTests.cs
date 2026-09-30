@@ -85,7 +85,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), null, null,
-                [modalidade]).Value!],
+                [modalidade]).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
@@ -159,7 +159,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico());
+            hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         Guid processoId = processo.Id;

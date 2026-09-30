@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using DTOs;
 
@@ -33,6 +34,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
         IOfertaCursoReader ofertaCursoReader,
         IModalidadeReader modalidadeReader,
         IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader,
+        IFatoCandidatoReader fatoCandidatoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -42,6 +44,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
         ArgumentNullException.ThrowIfNull(ofertaCursoReader);
         ArgumentNullException.ThrowIfNull(modalidadeReader);
         ArgumentNullException.ThrowIfNull(referenciaReservaDemograficaReader);
+        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -111,7 +114,12 @@ public static class DefinirDistribuicaoVagasCommandHandler
             distribuicoes.Add(resultado.Value!);
         }
 
-        Result result = processo.DefinirDistribuicaoVagas(distribuicoes, command.Precondicao);
+        // Uma modalidade retirada da oferta não pode deixar sem valor válido a condição viva sobre
+        // qualquer fato cujos valores são modalidades — a fonte vem do catálogo, não do código.
+        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
+            await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false));
+
+        Result result = processo.DefinirDistribuicaoVagas(distribuicoes, fatosDeModalidade, command.Precondicao);
         if (result.IsFailure)
         {
             return Result<MutacaoComDistribuicaoVagasDto>.Failure(result.Error!);

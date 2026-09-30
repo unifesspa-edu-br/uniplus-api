@@ -42,7 +42,7 @@ public sealed class GateDoCalendarioVigenteTests
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto) =>
         processo.Publicar(
             Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste",
-            TimeProvider.System, contexto);
+            TimeProvider.System, contexto, FatosDeModalidadeDeTeste.DoCatalogo);
 
     /// <summary>Produto preliminar da fase 2 — a âncora que a regra de recurso declara.</summary>
     private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000002");
@@ -150,7 +150,7 @@ public sealed class GateDoCalendarioVigenteTests
             .IsSuccess.Should().BeTrue();
 
         // Sem declarar a convenção: as duas causas coexistem, e o checklist mostra as duas.
-        string[] vermelhos = [.. processo.AvaliarConformidade(SemCalendario)
+        string[] vermelhos = [.. processo.AvaliarConformidade(SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
             .Where(static i => !i.Ok).Select(static i => i.Codigo)];
         vermelhos.Should().Contain("algoritmo_contagem_prazo_nao_declarado")
             .And.Contain("calendario_vigente_ausente",
@@ -190,7 +190,7 @@ public sealed class GateDoCalendarioVigenteTests
         Publicar(comRecurso, contexto).Error!.Code.Should().Be("CalendarioVigente.FormaTerritorialInvalida",
             "quem depende do calendário é barrado pela causa real — dizer que não há calendário mandaria cadastrar um que já está lá");
 
-        comRecurso.AvaliarConformidade(contexto)
+        comRecurso.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(static i => i.Codigo == "calendario_vigente_ausente" && !i.Ok,
                 "o checklist acusa a mesma pendência que bloqueia a publicação");
     }
@@ -208,7 +208,7 @@ public sealed class GateDoCalendarioVigenteTests
         Publicar(semRecurso, contexto).IsSuccess.Should().BeTrue(
             "o processo não tem contagem que distinga dia útil — o dado quebrado não é dele");
 
-        semRecurso.AvaliarConformidade(contexto)
+        semRecurso.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(static i => i.Codigo == "calendario_vigente_ausente" && i.Ok,
                 "e o checklist concorda com a publicação, que é a bicondicionalidade");
     }
@@ -218,11 +218,11 @@ public sealed class GateDoCalendarioVigenteTests
     {
         ProcessoSeletivo processo = ProcessoComRecurso(UnidadePrazo.DiasUteis);
 
-        processo.AvaliarConformidade(SemCalendario)
+        processo.AvaliarConformidade(SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(static i => i.Codigo == "calendario_vigente_ausente" && !i.Ok)
             .Which.Dimensao.Should().Be(DimensaoConformidade.ContagemDePrazos);
 
-        processo.AvaliarConformidade(ComCalendario())
+        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(static i => i.Codigo == "calendario_vigente_ausente" && i.Ok);
 
         // O fuso não é gate — é defeito de instalação, com recusa 500 no handler —, mas o
@@ -231,7 +231,7 @@ public sealed class GateDoCalendarioVigenteTests
         var ambienteQuebrado = new ContextoDeContagemDePrazos(
             ComCalendario().CalendarioVigente, FusoInstitucional: null);
 
-        processo.AvaliarConformidade(ambienteQuebrado)
+        processo.AvaliarConformidade(ambienteQuebrado, FatosDeModalidadeDeTeste.DoCatalogo)
             .Should().ContainSingle(static i => i.Codigo == "fuso_institucional_nao_reconhecido" && !i.Ok);
 
         Publicar(processo, ambienteQuebrado).IsSuccess.Should().BeTrue(

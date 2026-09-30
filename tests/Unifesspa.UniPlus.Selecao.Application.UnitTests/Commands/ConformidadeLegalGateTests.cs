@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Story #853: o gate legal — segunda dimensão de conformidade, ao lado da estrutural
@@ -499,7 +500,7 @@ public sealed class ConformidadeLegalGateTests
 
         VersaoConfiguracao versao = processo.Publicar(
             dados, "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario).Value!;
+            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Value!;
         processo.DequeueDomainEvents();
 
         return (processo, versao);
