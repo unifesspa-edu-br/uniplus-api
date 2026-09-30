@@ -32,8 +32,8 @@ public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 /// <param name="Descricao">Descrição do valor — obrigatória quando o fato pai é DECLARADO.</param>
 /// <param name="Ordem">
 /// Ordem de apresentação (<see cref="Domain.Entities.FatoValorDominio.Ordem"/> quando o valor
-/// vem do catálogo). <c>Ativo</c> continua fora daqui — o gate de valor inativo do congelamento
-/// garante que só valor ativo na publicação chega a ser congelado.
+/// vem do catálogo). <c>Ativo</c> continua fora daqui: o congelamento já filtra os valores
+/// ativos mais os desativados que o processo cita.
 /// </param>
 public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descricao, int Ordem);
 

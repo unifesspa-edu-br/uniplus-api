@@ -109,6 +109,17 @@ public static class DefinirFatosColetadosCommandHandler
             fatos.Add(fatoResult.Value!);
         }
 
+        Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
+            catalogo,
+            processo.Vinculos(),
+            VinculosDeFatos.De(
+                fatos.Select(static f => f.FatoCodigo),
+                fatos.SelectMany(static f => f.Precondicoes).Select(static c => (c.Fato, c.Valor))));
+        if (vinculoNovo.IsFailure)
+        {
+            return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+        }
+
         Result result = processo.DefinirFatosColetados(fatos, command.Precondicao);
         if (result.IsFailure)
         {

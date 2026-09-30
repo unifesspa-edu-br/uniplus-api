@@ -106,6 +106,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
         IReadOnlySet<string>? fatosResolviveis = null;
         IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos = null;
+        IReadOnlyDictionary<string, FatoCandidatoView>? catalogoFatos = null;
         if (existeGatilho)
         {
             IReadOnlySet<string> resolvidosPorAtributo;
@@ -116,6 +117,7 @@ public static class DefinirDocumentosExigidosCommandHandler
 
             fatosResolviveis = FatosQueOProcessoResolve(processo, resolvidosPorAtributo);
             dominiosDinamicos = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
+            catalogoFatos = catalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
         }
 
         // Folha primeiro, bottom-up: NoExigencia.CriarGrupo recebe os filhos já prontos. A
@@ -214,6 +216,24 @@ public static class DefinirDocumentosExigidosCommandHandler
 
             raizes.Add(raizResult.Value!);
             ordemRaiz++;
+        }
+
+        if (catalogoFatos is not null)
+        {
+            Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
+                catalogoFatos,
+                processo.Vinculos(),
+                VinculosDeFatos.De(
+                    [],
+                    raizes.SelectMany(static r => r.AchatarComDescendentes())
+                        .Select(static n => n.DocumentoExigido)
+                        .OfType<DocumentoExigido>()
+                        .SelectMany(static d => d.Condicoes)
+                        .Select(static c => (c.Fato, c.Valor))));
+            if (vinculoNovo.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+            }
         }
 
         Result definirResult = processo.DefinirDocumentosExigidos(raizes, command.Precondicao);

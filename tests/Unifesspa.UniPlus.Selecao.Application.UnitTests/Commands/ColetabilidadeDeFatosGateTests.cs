@@ -40,7 +40,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
-        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE");
+        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true);
 
     // Story #1059 (UNI-REQ-0072): categórico ESTÁTICO — os valores selecionáveis do fato
     // coletado vêm de ValoresDominioDeclarados (FatoValorDominio no catálogo real), nunca do
@@ -65,7 +65,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         ValoresDominio: [.. ValoresCorRaca.Select(static v => v.Codigo)],
         PontoResolucao: "INSCRICAO",
         Binding: "CAMPO_INSCRICAO:COR_RACA",
-        ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL");
+        ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL", Ativo: true);
 
     private static FatoColetado FatoColetadoModalidade() =>
         FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!;

@@ -13276,7 +13276,8 @@
           "pontoResolucao",
           "binding",
           "valoresDominioDeclarados",
-          "fonteValores"
+          "fonteValores",
+          "ativo"
         ],
         "type": "object",
         "properties": {
@@ -13334,6 +13335,9 @@
               "null",
               "string"
             ]
+          },
+          "ativo": {
+            "type": "boolean"
           }
         }
       },

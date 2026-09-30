@@ -31,6 +31,9 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO), ou <see langword="null"/> em todo domínio que não é categórico. O consumidor decide por ela,
 /// nunca pelo código do fato.
 /// </param>
+/// <param name="Ativo">
+/// Fato inativo não aceita vínculo novo; o processo que já o usa continua com ele (ADR-0136).
+/// </param>
 public sealed record FatoCandidatoView(
     Guid Id,
     string Codigo,
@@ -43,7 +46,8 @@ public sealed record FatoCandidatoView(
     string PontoResolucao,
     string Binding,
     IReadOnlyList<FatoValorDominioViewItem>? ValoresDominioDeclarados,
-    string? FonteValores);
+    string? FonteValores,
+    bool Ativo);
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidatoView"/> categórico

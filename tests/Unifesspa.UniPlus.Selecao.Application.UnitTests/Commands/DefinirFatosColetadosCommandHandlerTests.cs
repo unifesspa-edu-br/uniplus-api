@@ -45,13 +45,13 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     private static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
     [
         new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null, "GLOBAL"),
+            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null, "GLOBAL", Ativo: true),
         new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_INSCRICAO:BAIXA_RENDA", null, null),
+            null, "INSCRICAO", "CAMPO_INSCRICAO:BAIXA_RENDA", null, null, Ativo: true),
         new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE"),
+            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true),
         new(Guid.CreateVersion7(), "RENDA_PER_CAPITA", "Renda per capita", null, "NUMERICO", "DERIVADO", "ESCALAR",
-            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null),
+            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true),
     ];
 
     private static ProcessoSeletivo ProcessoEmRascunho() =>
@@ -91,6 +91,24 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Value!.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
         processo.FatosColetados.Select(f => f.FatoCodigo).Should().BeEquivalentTo(["COR_RACA", "BAIXA_RENDA"]);
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Coletar fato desativado no catálogo é recusado quando o processo ainda não o coletava; já coletado, continua")]
+    public async Task Handle_FatoDesativado_RecusaSoVinculoNovo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+            [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Ativo = false } : f)]);
+        DefinirFatosColetadosCommand coletaBaixaRenda = new(
+            processo.Id, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", false, null)], PrecondicaoIfMatch.Ausente);
+
+        (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be("ProcessoSeletivo.FatoDesativado");
+
+        processo.DefinirFatosColetados(
+            [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, false, null).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        (await HandleAsync(mocks, coletaBaixaRenda)).IsSuccess.Should().BeTrue("o fato já era coletado pelo processo");
     }
 
     [Fact(DisplayName = "Coletar um fato derivado (MODALIDADE) é recusado como não coletável")]
