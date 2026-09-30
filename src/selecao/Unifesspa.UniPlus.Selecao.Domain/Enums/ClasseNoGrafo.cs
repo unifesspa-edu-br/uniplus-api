@@ -15,4 +15,10 @@ public enum ClasseNoGrafo
 
     /// <summary>Uma exigência de documento — consumidora de fatos pelo gatilho.</summary>
     Exigencia = 2,
+
+    /// <summary>A seção do formulário com exibição condicional — consome os fatos que a exibição cita e gata os seus campos.</summary>
+    Secao = 3,
+
+    /// <summary>O termo de consentimento com condição — consumidor dos fatos que a condição cita.</summary>
+    Termo = 4,
 }

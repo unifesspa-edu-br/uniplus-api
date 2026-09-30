@@ -272,7 +272,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         // domínio de modalidades, feche ciclo no grafo conjunto, ou cujo grafo/modalidades congelados
         // divirjam do recomputado, é recusado como malformado — nunca reidratado como se fosse íntegro.
         if (ValidarBlocoDeFatosEDerivacao(
-            fatosColetados, regrasDerivacao, documentosExigidos,
+            fatosColetados, regrasDerivacao, documentosExigidos, formularios, termosExigidos,
             versaoInterpretador, modalidadesOfertadas, distribuicao, payload) is { } malformado)
         {
             return Result<EnvelopeReidratado>.Failure(malformado);

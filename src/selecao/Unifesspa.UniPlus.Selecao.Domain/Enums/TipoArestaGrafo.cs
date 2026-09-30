@@ -19,7 +19,10 @@ public enum TipoArestaGrafo
     /// </summary>
     Producao = 0,
 
-    /// <summary><c>fato → campo/fato</c>: a aplicabilidade condicional (a pré-condição do §2).</summary>
+    /// <summary>
+    /// <c>fato → campo/seção/termo</c> e <c>seção → campo</c>: a aplicabilidade condicional — as
+    /// regras do item, a exibição da seção, que gata os seus campos, e a condição do termo.
+    /// </summary>
     Precondicao = 1,
 
     /// <summary><c>fato declarado → fato derivado</c>: a lista de dependências da regra de derivação.</summary>

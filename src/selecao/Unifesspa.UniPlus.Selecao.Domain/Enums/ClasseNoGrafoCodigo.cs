@@ -14,17 +14,20 @@ public static class ClasseNoGrafoCodigo
     public const string Campo = "CAMPO";
     public const string Fato = "FATO";
     public const string Exigencia = "EXIGENCIA";
+    public const string Secao = "SECAO";
+    public const string Termo = "TERMO";
 
     /// <summary>
-    /// Converte a classe do nó para o token de <c>tipoDeNo</c>. O <c>switch</c> é exaustivo: uma 4ª
-    /// classe quebra a build (CS8509 promovido a erro por <c>TreatWarningsAsErrors</c>) até este
-    /// mapeamento absorvê-la.
+    /// Converte a classe do nó para o token de <c>tipoDeNo</c>. Classe nova exige atualizar este
+    /// mapeamento e o de <c>IdCanonico</c>; sem isso, a canonicalização lança ao encontrá-la.
     /// </summary>
     public static string ToCodigo(this ClasseNoGrafo classe) => classe switch
     {
         ClasseNoGrafo.Campo => Campo,
         ClasseNoGrafo.Fato => Fato,
         ClasseNoGrafo.Exigencia => Exigencia,
+        ClasseNoGrafo.Secao => Secao,
+        ClasseNoGrafo.Termo => Termo,
         _ => throw new ArgumentOutOfRangeException(nameof(classe), classe, "Classe de nó do grafo desconhecida."),
     };
 }

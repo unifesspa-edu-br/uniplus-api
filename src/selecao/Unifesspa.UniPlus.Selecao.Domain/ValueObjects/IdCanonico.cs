@@ -77,6 +77,8 @@ public sealed class IdCanonico : IComparable<IdCanonico>, IEquatable<IdCanonico>
         ClasseNoGrafo.Campo => "CAMPO",
         ClasseNoGrafo.Fato => "FATO",
         ClasseNoGrafo.Exigencia => "EXIGENCIA",
+        ClasseNoGrafo.Secao => "SECAO",
+        ClasseNoGrafo.Termo => "TERMO",
         _ => throw new ArgumentOutOfRangeException(nameof(classe), classe, "Classe de nó do grafo desconhecida."),
     };
 

@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -45,8 +46,16 @@ public sealed class GrafoDependenciaConjuntaTests
     private static Result<GrafoDependenciaConjunta> Construir(
         IReadOnlyCollection<FatoColetado>? fatos = null,
         IReadOnlyCollection<ConfiguracaoDerivacaoFato>? derivacoes = null,
-        IReadOnlyCollection<DocumentoExigido>? exigencias = null) =>
-        GrafoDependenciaConjunta.Construir(fatos ?? [], derivacoes ?? [], exigencias ?? []);
+        IReadOnlyCollection<DocumentoExigido>? exigencias = null,
+        IReadOnlyCollection<FormularioProcesso>? formularios = null,
+        IReadOnlyCollection<TermoExigidoFormulario>? termos = null) =>
+        GrafoDependenciaConjunta.Construir(fatos ?? [], derivacoes ?? [], exigencias ?? [], formularios ?? [], termos ?? []);
+
+    private static PredicadoDnf Cita(string fato) =>
+        PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
+
+    private static FatoColetado NaFinalidade(FinalidadeFormulario finalidade, string codigo, int ordem, string secao) =>
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: secao, finalidade: finalidade).Value!;
 
     private static int Posicao(GrafoDependenciaConjunta grafo, ClasseNoGrafo classe, string codigo) =>
         grafo.OrdemTopologica.ToList().FindIndex(n => n.Classe == classe && n.Codigo == codigo);
@@ -210,5 +219,86 @@ public sealed class GrafoDependenciaConjuntaTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Arestas.Should().NotContain(a => a.Tipo == TipoArestaGrafo.Gatilho);
+    }
+
+    [Fact(DisplayName = "Seção com exibição é nó do grafo: o fato citado vem antes dela, e ela antes dos seus campos")]
+    public void SecaoCondicional_EntraNoGrafo()
+    {
+        FormularioProcesso inscricao = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
+        [
+            EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
+            EtapaFormulario.Criar("COTAS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Cotas", null, null, Cita("EGRESSO")).Value!,
+            EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
+        ]).Value!;
+
+        GrafoDependenciaConjunta grafo = Construir(
+            [NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS"), NaFinalidade(FinalidadeFormulario.Inscricao, "CONCORRER_EP", 1, "COTAS")],
+            formularios: [inscricao]).Value!;
+
+        grafo.Arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Precondicao
+            && a.Origem == new NoGrafoDependencia(ClasseNoGrafo.Fato, "EGRESSO") && a.Destino == new NoGrafoDependencia(ClasseNoGrafo.Secao, "INSCRICAO.COTAS"));
+        Posicao(grafo, ClasseNoGrafo.Fato, "EGRESSO").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Secao, "INSCRICAO.COTAS"));
+        Posicao(grafo, ClasseNoGrafo.Secao, "INSCRICAO.COTAS").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "CONCORRER_EP"));
+    }
+
+    [Fact(DisplayName = "Termo com condição é nó do grafo, consumidor do fato que cita")]
+    public void TermoCondicional_EntraNoGrafo()
+    {
+        TermoExigidoFormulario termo = TermoExigidoFormulario.Criar(
+            "CONSULTA", 0,
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Consulta", "Texto", "Base", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
+
+        GrafoDependenciaConjunta grafo = Construir([NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS")], termos: [termo]).Value!;
+
+        grafo.Arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Precondicao
+            && a.Origem == new NoGrafoDependencia(ClasseNoGrafo.Fato, "EGRESSO") && a.Destino == new NoGrafoDependencia(ClasseNoGrafo.Termo, "INSCRICAO.CONSULTA"));
+    }
+
+    [Fact(DisplayName = "A ordem de coleta segue a finalidade antes da ordem: formulários com a mesma ordem não se intercalam")]
+    public void OrdemPorFinalidade_NaoIntercala()
+    {
+        GrafoDependenciaConjunta grafo = Construir(
+        [
+            NaFinalidade(FinalidadeFormulario.Habilitacao, "COMPROVANTE", 0, "DADOS"),
+            NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS"),
+            NaFinalidade(FinalidadeFormulario.Inscricao, "CONCORRER_EP", 1, "DADOS"),
+        ]).Value!;
+
+        Posicao(grafo, ClasseNoGrafo.Campo, "CONCORRER_EP").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "COMPROVANTE"),
+            "todo campo da inscrição vem antes dos da habilitação");
+    }
+
+    [Fact(DisplayName = "Seção condicional vazia fica na posição do primeiro campo das seções seguintes")]
+    public void SecaoCondicionalVazia_FicaAntesDasSecoesSeguintes()
+    {
+        FormularioProcesso inscricao = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
+        [
+            EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
+            EtapaFormulario.Criar("AVISO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Aviso", null, null, Cita("EGRESSO")).Value!,
+            EtapaFormulario.Criar("FINAL", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Final", null, null).Value!,
+            EtapaFormulario.Criar("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
+        ]).Value!;
+
+        GrafoDependenciaConjunta grafo = Construir(
+            [NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS"), NaFinalidade(FinalidadeFormulario.Inscricao, "CONCLUSAO", 1, "FINAL")],
+            formularios: [inscricao]).Value!;
+
+        Posicao(grafo, ClasseNoGrafo.Secao, "INSCRICAO.AVISO").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "CONCLUSAO"));
+    }
+
+    [Fact(DisplayName = "Termos condicionados mantêm a ordem declarada entre si, depois dos campos")]
+    public void TermosCondicionados_NaOrdemDeclarada()
+    {
+        VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "Termo", "Texto", "Base", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64));
+        TermoExigidoFormulario primeiro = TermoExigidoFormulario.Criar("Z_PRIMEIRO", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
+        TermoExigidoFormulario segundo = TermoExigidoFormulario.Criar("A_SEGUNDO", 1, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
+
+        GrafoDependenciaConjunta grafo = Construir(
+            [NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS"), NaFinalidade(FinalidadeFormulario.Inscricao, "ULTIMO", 1, "DADOS")],
+            termos: [segundo, primeiro]).Value!;
+
+        Posicao(grafo, ClasseNoGrafo.Termo, "INSCRICAO.Z_PRIMEIRO").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Termo, "INSCRICAO.A_SEGUNDO"));
+        Posicao(grafo, ClasseNoGrafo.Campo, "ULTIMO").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Termo, "INSCRICAO.Z_PRIMEIRO"));
     }
 }

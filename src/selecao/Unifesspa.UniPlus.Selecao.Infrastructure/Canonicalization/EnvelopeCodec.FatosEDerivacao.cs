@@ -611,6 +611,8 @@ public sealed partial class EnvelopeCodec
         IReadOnlyList<FatoColetado> fatos,
         IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao,
         IReadOnlyList<DocumentoExigido> documentosExigidos,
+        IReadOnlyList<FormularioProcesso> formularios,
+        IReadOnlyList<TermoExigidoFormulario> termos,
         string versaoInterpretador,
         IReadOnlyList<string> modalidadesOfertadas,
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao,
@@ -699,7 +701,7 @@ public sealed partial class EnvelopeCodec
         // Aciclicidade do grafo conjunto + testemunho: o grafo/modalidades congelados têm de reproduzir
         // exatamente o recomputado das partes reidratadas (byte a byte, pela mesma projeção canônica).
         Result<GrafoDependenciaConjunta> grafo =
-            GrafoDependenciaConjunta.Construir(fatos, regrasDerivacao, documentosExigidos);
+            GrafoDependenciaConjunta.Construir(fatos, regrasDerivacao, documentosExigidos, formularios, termos);
         if (grafo.IsFailure)
         {
             return grafo.Error;

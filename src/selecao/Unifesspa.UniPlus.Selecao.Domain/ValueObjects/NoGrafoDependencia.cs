@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// Para campo e fato, <see cref="Codigo"/> é o código do fato no vocabulário; para exigência, é a
-/// identidade estável da exigência no processo. A identidade canônica de serialização
+/// identidade estável da exigência no processo; para seção e termo, é <c>FINALIDADE.codigo</c>,
+/// porque o código só é único dentro do formulário. A identidade canônica de serialização
 /// (<c>tipoDeNo/escopo/codigo</c> em UTF-8 NFC) é da fatia de congelamento (§7); aqui o par
 /// <c>(Classe, Codigo)</c> basta como identidade de runtime para a detecção de ciclo e a ordem.
 /// </remarks>
