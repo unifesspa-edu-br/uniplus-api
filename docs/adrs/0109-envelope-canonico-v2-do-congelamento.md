@@ -257,3 +257,5 @@ O retorno ao regime de preservação por versão quando o primeiro certame for p
 qualquer ambiente, previsto no fecho da Emenda 2, **não** é alterado aqui. A partir dele, cada
 versão publicada terá a sua golden fixture preservada, e a identidade volta a precisar de
 artefato próprio por versão.
+
+> **Emendada pela ADR-0137:** o codec único e a golden fixture só da forma corrente valem até a primeira publicação em produção, e não em qualquer ambiente; processos de homologação são recriados quando a forma muda.

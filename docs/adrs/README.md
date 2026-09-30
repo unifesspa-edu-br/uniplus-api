@@ -137,8 +137,8 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0106](0106-orquestracao-sincrona-selecao-publicacoes-ato-primeiro.md) | Publicar um Edital registra o ato em Publicações de forma síncrona, antes de concluir | superseded by ADR-0108 | 2026-07-10 |
 | [0107](0107-vaga-de-linhagem-unica-por-objeto.md) | A unicidade de ato por objeto é uma vaga que a linhagem reserva, não um índice sobre o ato | accepted | 2026-07-11 |
 | [0108](0108-registro-do-ato-por-mensagem-duravel.md) | O domínio registra o ato por mensagem durável, não por chamada síncrona (supersede a 0106 no mecanismo) | accepted | 2026-07-12 |
-| [0109](0109-envelope-canonico-v2-do-congelamento.md) | Contrato do envelope canônico do congelamento (v2) | accepted | 2026-07-13 |
-| [0110](0110-retificacao-como-sessao-editorial.md) | A retificação é uma sessão editorial sobre a configuração, não um estado do certame | accepted | 2026-07-13 |
+| [0109](0109-envelope-canonico-v2-do-congelamento.md) | Contrato do envelope canônico do congelamento (v2) — emendada pela ADR-0137: codec único até a primeira publicação em produção | accepted | 2026-07-13 |
+| [0110](0110-retificacao-como-sessao-editorial.md) | A retificação é uma sessão editorial sobre a configuração, não um estado do certame — emendada pela ADR-0137: regime transitório até a primeira publicação em produção | accepted | 2026-07-13 |
 | [0111](0111-vocabulario-fechado-de-fatos-do-candidato.md) | Vocabulário fechado de fatos do candidato (catálogo seed-governado em Configuração, identidade imutável) — emendada em 2026-07-22: operadores de exclusão, semântica sobre fato multivalorado e ordem canônica; sucedida em parte pela ADR-0136: governança por seed só para fatos de sistema, domínios texto, data e endereço, fonte dos valores, derivado categórico multivalorado e marcos de imutabilidade | accepted | 2026-07-15 |
 | [0112](0112-fronteira-append-only-do-catalogo-de-regras.md) | Fronteira do append-only na correção do catálogo de regras (substituível enquanto nada congelado referenciar) | accepted | 2026-07-14 |
 | [0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) | Fase × Etapa — eixo temporal (cronograma) e eixo de pontuação são agregados distintos, ligados por bicondicional; precedência entre fases é dado de cadastro | accepted | 2026-07-15 |
@@ -165,8 +165,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0134](0134-conflito-retentavel-declarado-nao-ocupa-a-chave-de-idempotencia.md) | O conflito declarado retentável não ocupa a chave de idempotência — 409 de corrida não é 409 de estado | proposed | 2026-09-19 |
 | [0135](0135-projeto-compartilhado-de-regras-sobre-fatos.md) | As regras sobre fatos do candidato (predicado, validador, derivação e avaliação de formulário) vivem no projeto compartilhado `Unifesspa.UniPlus.Regras`, fora do Kernel, dependente só dele | accepted | 2026-09-29 |
 | [0136](0136-catalogo-de-fatos-do-candidato-administravel.md) | O catálogo de fatos do candidato é administrável: o administrador cadastra fatos declarados e derivados por regra, e os fatos de sistema continuam protegidos | accepted | 2026-09-29 |
+| [0137](0137-formularios-por-finalidade-e-modelos-por-tipo-de-processo.md) | O processo tem um formulário por finalidade (inscrição, isenção, habilitação), com regras no item e modelos por tipo de processo aplicados por cópia — emenda as ADRs 0109 e 0110: codec único até a primeira publicação em produção | accepted | 2026-09-29 |
 
-> **Nota de numeração:** a sequência de `0001` a `0136` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0137+`.
+> **Nota de numeração:** a sequência de `0001` a `0137` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0138+`.
 
 ## Como adicionar um novo ADR
 
