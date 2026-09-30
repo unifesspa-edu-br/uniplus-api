@@ -32,7 +32,25 @@ public sealed record FatoColetadoDto(
     string? EtapaCodigo,
     string? Formato,
     string? Ajuda,
-    bool PedirConfirmacao);
+    bool PedirConfirmacao,
+    IReadOnlyList<RestricaoValorDto> Restricoes);
+
+/// <summary>
+/// Uma restrição sobre o valor respondido no item, pelo <see cref="Tipo"/>: <c>FAIXA_NUMERICA</c>
+/// e <c>TAMANHO_TEXTO</c> com os limites, <c>OPCOES_PERMITIDAS</c> com os grupos de opções e
+/// <c>OPCOES_DAS_RESPOSTAS</c> com os fatos cujas respostas formam as opções.
+/// </summary>
+public sealed record RestricaoValorDto(
+    string Tipo,
+    decimal? Minimo,
+    decimal? Maximo,
+    IReadOnlyList<OpcoesCondicionadasDto>? Entradas,
+    IReadOnlyList<string>? Fatos);
+
+/// <summary>Um grupo de opções permitidas e a condição em que ele vale; nula quando vale sempre.</summary>
+public sealed record OpcoesCondicionadasDto(
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Quando,
+    IReadOnlyList<string> Valores);
 
 /// <summary>Uma opção que o processo oferece a um fato (issue #1619).</summary>
 public sealed record OpcaoDoProcessoDto(string Codigo, string Rotulo, int Ordem);

@@ -1,9 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Text.Json;
+
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -43,6 +47,9 @@ public sealed class FatoColetado : EntityBase
     public const int FormatoMaxLength = 30;
     public const int AjudaMaxLength = 1000;
 
+    /// <summary>As casas decimais dos limites da faixa numérica, as mesmas com que o edital os congela.</summary>
+    public const int CasasDecimaisDaFaixa = 4;
+
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -79,6 +86,12 @@ public sealed class FatoColetado : EntityBase
 
     /// <summary>Se o formulário pede a resposta duas vezes para conferir a digitação.</summary>
     public bool PedirConfirmacao { get; private set; }
+
+    /// <summary>
+    /// As restrições sobre o valor respondido (UNI-REQ-0145), no máximo uma de cada tipo e na ordem
+    /// do tipo: faixa no campo numérico, tamanho no de texto, opções no de seleção.
+    /// </summary>
+    public IReadOnlyList<RestricaoValor> Restricoes { get; private set; } = [];
 
     /// <summary>
     /// De onde vêm as opções do campo no processo (ADR-0136). Copiada da fonte dos valores do
@@ -123,9 +136,11 @@ public sealed class FatoColetado : EntityBase
         FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
         string? formato = null,
         string? ajuda = null,
-        bool pedirConfirmacao = false)
+        bool pedirConfirmacao = false,
+        IReadOnlyList<RestricaoValor>? restricoes = null)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
 
         List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
 
@@ -167,6 +182,8 @@ public sealed class FatoColetado : EntityBase
                 "A obrigatoriedade cita o próprio fato.")));
         }
 
+        erros.AddRange(ConferirRestricoes(codigo, tipoRenderizacao, restricoesDoItem));
+
         if (erros.Count > 0)
         {
             return Result<FatoColetado>.ValidationFailure(erros);
@@ -181,6 +198,7 @@ public sealed class FatoColetado : EntityBase
             Obrigatoriedade = obrigatoriedade,
             Ajuda = ajudaNormalizada,
             PedirConfirmacao = pedirConfirmacao,
+            Restricoes = [.. restricoesDoItem.OrderBy(static r => r.Tipo)],
             OrigemValores = origemValores,
             Formato = formatoNormalizado,
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
@@ -196,6 +214,55 @@ public sealed class FatoColetado : EntityBase
 
         return Result<FatoColetado>.Success(fato);
     }
+
+    /// <summary>
+    /// As restrições cabem no tipo do campo — faixa só no numérico, tamanho só no de texto, opções só
+    /// no de seleção —, não se repetem por tipo, não citam o próprio fato, e os limites da faixa
+    /// cabem nas casas decimais do edital.
+    /// </summary>
+    private static IEnumerable<FieldError> ConferirRestricoes(
+        string codigo, TipoRenderizacao tipoRenderizacao, IReadOnlyList<RestricaoValor> restricoes)
+    {
+        if (RestricoesDeValor.TipoRepetido(restricoes) is { } repetido)
+        {
+            yield return new("restricoes", repetido);
+        }
+
+        for (int indice = 0; indice < restricoes.Count; indice++)
+        {
+            if (!RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
+            {
+                yield return new($"restricoes[{indice}]", new DomainError(
+                    FatoColetadoErrorCodes.RestricaoIncoerente,
+                    "A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto e as opções só ao de seleção."));
+            }
+
+            if (restricoes[indice] is FaixaNumerica faixa
+                && new[] { faixa.Minimo, faixa.Maximo }.Any(static limite => limite is { } v && Math.Round(v, CasasDecimaisDaFaixa) != v))
+            {
+                yield return new($"restricoes[{indice}]", new DomainError(
+                    RestricaoValorErrorCodes.LimitesIncoerentes,
+                    $"Os limites da faixa numérica têm no máximo {CasasDecimaisDaFaixa} casas decimais."));
+            }
+
+            if (restricoes[indice].FatosCitados.Contains(codigo, StringComparer.Ordinal))
+            {
+                yield return new($"restricoes[{indice}]", new DomainError(
+                    FatoColetadoErrorCodes.PrecondicaoAutorreferente, "A restrição cita o próprio fato."));
+            }
+        }
+    }
+
+    /// <summary>Se o tipo de restrição se aplica ao tipo de campo.</summary>
+    public static bool RestricaoCabeNoCampo(TipoRestricaoValor restricao, TipoRenderizacao campo) =>
+        campo != TipoRenderizacao.Nenhuma && restricao switch
+        {
+            TipoRestricaoValor.FaixaNumerica => campo == TipoRenderizacao.Numero,
+            TipoRestricaoValor.TamanhoTexto => campo == TipoRenderizacao.Texto,
+            TipoRestricaoValor.OpcoesPermitidas or TipoRestricaoValor.OpcoesDasRespostas => campo.EhSelecao(),
+            TipoRestricaoValor.Nenhuma => false,
+            _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao, "Tipo de restrição desconhecido."),
+        };
 
     /// <summary>
     /// Os quatro campos que não dependem do vocabulário cross-módulo nem de a pré-condição já
@@ -256,14 +323,33 @@ public sealed class FatoColetado : EntityBase
     /// <summary>Indica se o fato é coletado incondicionalmente.</summary>
     public bool SemPrecondicao => _precondicoes.Count == 0;
 
-    /// <summary>Códigos dos fatos citados pela pré-condição e pela obrigatoriedade, sem repetição.</summary>
+    /// <summary>Códigos dos fatos citados pela pré-condição, pela obrigatoriedade e pelas restrições, sem repetição.</summary>
     public IReadOnlyCollection<string> FatosCitados =>
-        [.. _precondicoes.Select(static c => c.Fato).Concat(Obrigatoriedade.FatosCitados).Distinct(StringComparer.Ordinal)];
+        [.. _precondicoes.Select(static c => c.Fato)
+            .Concat(Obrigatoriedade.FatosCitados)
+            .Concat(Restricoes.SelectMany(static r => r.FatosCitados))
+            .Distinct(StringComparer.Ordinal)];
 
-    /// <summary>As condições da pré-condição e da obrigatoriedade, para os vínculos e as referências a valor do processo.</summary>
-    public IEnumerable<CondicaoDnf> Condicoes =>
-        _precondicoes.Select(static c => c.ParaCondicaoDnf())
-            .Concat((Obrigatoriedade.Predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes));
+    /// <summary>
+    /// As condições das regras do item, para os vínculos e as referências a valor do processo: a
+    /// pré-condição, a obrigatoriedade, as condições das opções e, porque as opções permitidas citam
+    /// valores do próprio fato, a pertinência do fato a esses valores.
+    /// </summary>
+    public IEnumerable<CondicaoDnf> Condicoes
+    {
+        get
+        {
+            OpcoesPermitidas? opcoes = Restricoes.OfType<OpcoesPermitidas>().SingleOrDefault();
+            IEnumerable<CondicaoDnf> dasOpcoes = opcoes is null
+                ? []
+                : opcoes.Entradas.SelectMany(static e => e.Quando?.Clausulas ?? []).SelectMany(static c => c.Condicoes)
+                    .Append(CondicaoDnf.Criar(
+                        FatoCodigo, Operador.Em, JsonSerializer.SerializeToElement(opcoes.ValoresCitados.Order(StringComparer.Ordinal))).Value!);
+            return _precondicoes.Select(static c => c.ParaCondicaoDnf())
+                .Concat((Obrigatoriedade.Predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes))
+                .Concat(dasOpcoes);
+        }
+    }
 
     internal void VincularProcessoSeletivo(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
@@ -294,6 +380,8 @@ public static class FatoColetadoErrorCodes
     public const string TipoRenderizacaoObrigatorio = "FatoColetado.TipoRenderizacaoObrigatorio";
     public const string FormatoIncoerente = "FatoColetado.FormatoIncoerente";
     public const string AjudaTamanho = "FatoColetado.AjudaTamanho";
+    public const string RestricaoIncoerente = "FatoColetado.RestricaoIncoerente";
+    public const string OpcoesDeOutroDominio = "FatoColetado.OpcoesDeOutroDominio";
     public const string ObrigatoriedadeInvalida = "FatoColetado.ObrigatoriedadeInvalida";
     public const string PrecondicaoAutorreferente = "FatoColetado.PrecondicaoAutorreferente";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";

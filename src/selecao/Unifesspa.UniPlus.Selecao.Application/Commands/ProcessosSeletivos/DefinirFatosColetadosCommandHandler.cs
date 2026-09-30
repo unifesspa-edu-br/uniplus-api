@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.Text.Json;
+
 using Abstractions;
 
 using Domain.Entities;
@@ -12,6 +14,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -66,7 +69,7 @@ public static class DefinirFatosColetadosCommandHandler
         // é tomada num ponto só. A forma vem antes da leitura, sem I/O; o item de forma inválida só
         // não segue para a conferência contra o catálogo.
         List<FieldError> erros = [];
-        Obrigatoriedade?[] obrigatoriedades = new Obrigatoriedade?[command.Itens.Count];
+        RegrasDoItem?[] regras = new RegrasDoItem?[command.Itens.Count];
         for (int indice = 0; indice < command.Itens.Count; indice++)
         {
             FatoColetadoInput input = command.Itens[indice];
@@ -77,7 +80,8 @@ public static class DefinirFatosColetadosCommandHandler
                 .Select(erro => erro with { Field = $"{campo}.{erro.Field}" }));
 
             Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input, campo, erros);
-            obrigatoriedades[indice] = erros.Count == recusasAntes ? obrigatoriedade : null;
+            IReadOnlyList<RestricaoValor> restricoes = ConferirRestricoes(input, campo, erros);
+            regras[indice] = erros.Count == recusasAntes ? new RegrasDoItem(obrigatoriedade!, restricoes) : null;
         }
 
         IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
@@ -92,13 +96,13 @@ public static class DefinirFatosColetadosCommandHandler
         List<FatoColetado> fatos = [];
         for (int indice = 0; indice < command.Itens.Count; indice++)
         {
-            if (obrigatoriedades[indice] is not { } obrigatoriedade)
+            if (regras[indice] is not { } regrasDoItem)
             {
                 continue;
             }
 
             string campo = $"itens[{indice}]";
-            Result<FatoColetado> fato = ResolverFato(command.Itens[indice], obrigatoriedade, catalogo, vocabulario, dominiosDinamicos);
+            Result<FatoColetado> fato = ResolverFato(command.Itens[indice], regrasDoItem, catalogo, vocabulario, dominiosDinamicos);
             if (fato.IsSuccess)
             {
                 fatos.Add(fato.Value!);
@@ -164,9 +168,32 @@ public static class DefinirFatosColetadosCommandHandler
         return null;
     }
 
+    /// <summary>A forma das restrições de valor do item; os valores e fatos citados são conferidos contra o catálogo, depois.</summary>
+    private static List<RestricaoValor> ConferirRestricoes(FatoColetadoInput input, string campo, List<FieldError> erros)
+    {
+        List<RestricaoValor> restricoes = [];
+        IReadOnlyList<RestricaoValorInput> entradas = input.Restricoes ?? [];
+        for (int indice = 0; indice < entradas.Count; indice++)
+        {
+            Result<RestricaoValor> restricao = entradas[indice] is { } entrada
+                ? EntradaDeRegras.Restricao(entrada)
+                : Result<RestricaoValor>.Failure(new DomainError(RestricaoValorErrorCodes.TipoDesconhecido, "A restrição de valor é nula."));
+            if (restricao.IsSuccess)
+            {
+                restricoes.Add(restricao.Value!);
+            }
+            else
+            {
+                erros.Add(new($"{campo}.restricoes[{indice}]", restricao.Error!));
+            }
+        }
+
+        return restricoes;
+    }
+
     private static Result<FatoColetado> ResolverFato(
         FatoColetadoInput input,
-        Obrigatoriedade obrigatoriedade,
+        RegrasDoItem regras,
         Dictionary<string, FatoCandidatoView> catalogo,
         Dictionary<string, DescritorFatoCandidato> vocabulario,
         IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
@@ -196,24 +223,112 @@ public static class DefinirFatosColetadosCommandHandler
             return Result<FatoColetado>.ValidationFailure([new("tipoRenderizacao", incoerencia)]);
         }
 
+        List<FieldError> erros = [];
         Result<IReadOnlyList<CondicaoPrecondicaoFato>?> precondicoesResult =
             ResolverPrecondicao(input.Precondicao, vocabulario, dominiosDinamicos);
         if (precondicoesResult.IsFailure)
         {
-            return Result<FatoColetado>.ValidationFailure([new("precondicao", precondicoesResult.Error!)]);
+            erros.Add(new("precondicao", precondicoesResult.Error!));
         }
 
-        if (obrigatoriedade.Predicado is { } predicado
+        if (regras.Obrigatoriedade.Predicado is { } predicado
             && PredicadoDnfValidador.Validar(predicado, vocabulario, null, dominiosDinamicos) is { IsFailure: true } semantica)
         {
-            return Result<FatoColetado>.ValidationFailure([new("predicadoObrigatoriedade", semantica.Error!)]);
+            erros.Add(new("predicadoObrigatoriedade", semantica.Error!));
         }
 
-        return FatoColetado.Criar(
-            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, obrigatoriedade, precondicoesResult.Value,
+        erros.AddRange(SemanticaDasRestricoes(view, tipoRenderizacao, regras.Restricoes, catalogo, vocabulario, dominiosDinamicos));
+
+        // As recusas do próprio item (coerência das restrições com o campo, autorreferência, ajuda)
+        // saem junto das semânticas, no mesmo lote.
+        Result<FatoColetado> fato = FatoColetado.Criar(
+            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, regras.Obrigatoriedade,
+            precondicoesResult.IsSuccess ? precondicoesResult.Value : null,
             origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato,
-            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao);
+            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: regras.Restricoes);
+        return erros.Count == 0
+            ? fato
+            : Result<FatoColetado>.ValidationFailure([.. erros, .. fato.IsFailure ? fato.Errors : []]);
     }
+
+    /// <summary>
+    /// As restrições contra o catálogo: a condição de cada grupo de opções valida como qualquer
+    /// predicado; os valores permitidos são do domínio do próprio fato, conferidos como a condição
+    /// <c>FATO EM [valores]</c>; e as respostas que formam as opções vêm de campos categóricos cujas
+    /// opções são todas opções do campo, para que toda resposta anterior seja uma opção válida.
+    /// A restrição que não cabe no tipo do campo fica para a recusa de coerência do item.
+    /// </summary>
+    private static IEnumerable<FieldError> SemanticaDasRestricoes(
+        FatoCandidatoView alvo,
+        TipoRenderizacao tipoRenderizacao,
+        IReadOnlyList<RestricaoValor> restricoes,
+        Dictionary<string, FatoCandidatoView> catalogo,
+        Dictionary<string, DescritorFatoCandidato> vocabulario,
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
+    {
+        for (int indice = 0; indice < restricoes.Count; indice++)
+        {
+            if (!FatoColetado.RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
+            {
+                continue;
+            }
+
+            string campo = $"restricoes[{indice}]";
+            switch (restricoes[indice])
+            {
+                case OpcoesPermitidas opcoes:
+                    for (int entrada = 0; entrada < opcoes.Entradas.Count; entrada++)
+                    {
+                        OpcoesCondicionadas grupo = opcoes.Entradas[entrada];
+                        if (grupo.Quando is { } quando
+                            && PredicadoDnfValidador.Validar(quando, vocabulario, null, dominiosDinamicos) is { IsFailure: true } condicao)
+                        {
+                            yield return new($"{campo}.entradas[{entrada}].quando", condicao.Error!);
+                        }
+
+                        PredicadoDnf pertinencia = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(
+                            alvo.Codigo, Operador.Em, JsonSerializer.SerializeToElement(grupo.Valores.Order(StringComparer.Ordinal))).Value!)]).Value!;
+                        if (PredicadoDnfValidador.Validar(pertinencia, vocabulario, null, dominiosDinamicos) is { IsFailure: true } valores)
+                        {
+                            yield return new($"{campo}.entradas[{entrada}].valores", valores.Error!);
+                        }
+                    }
+
+                    break;
+                case OpcoesDasRespostas respostas
+                    when respostas.Fatos.Any(f => !catalogo.TryGetValue(f, out FatoCandidatoView? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominiosDinamicos)):
+                    yield return new($"{campo}.fatos", new DomainError(
+                        FatoColetadoErrorCodes.OpcoesDeOutroDominio,
+                        "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."));
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Toda resposta possível da fonte é opção do alvo: os valores da fonte cabem nos do alvo; no
+    /// domínio por formato, que não enumera valores, a fonte dos valores é a mesma.
+    /// </summary>
+    private static bool OpcoesDaFonteCabemNoAlvo(
+        FatoCandidatoView alvo, FatoCandidatoView fonte, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos) =>
+        string.Equals(fonte.Dominio, alvo.Dominio, StringComparison.Ordinal)
+        && (ValoresDoDominio(fonte, dominiosDinamicos), ValoresDoDominio(alvo, dominiosDinamicos)) switch
+        {
+            (null, null) => string.Equals(fonte.FonteValores, alvo.FonteValores, StringComparison.Ordinal),
+            ({ } daFonte, { } doAlvo) => daFonte.IsSubsetOf(doAlvo),
+            _ => false,
+        };
+
+    /// <summary>Os valores enumerados do domínio do fato — do catálogo ou do processo —; nulo no domínio por formato.</summary>
+    private static IReadOnlySet<string>? ValoresDoDominio(FatoCandidatoView fato, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos) =>
+        fato.ValoresDominio is { Count: > 0 } estaticos
+            ? estaticos.ToHashSet(StringComparer.Ordinal)
+            : dominiosDinamicos.TryGetValue(fato.Codigo, out DominioDeValores? dinamico) ? dinamico.Valores : null;
+
+    /// <summary>A obrigatoriedade e as restrições de um item cuja forma foi aceita.</summary>
+    private sealed record RegrasDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes);
 
     /// <summary>
     /// Monta e valida a pré-condição de um fato. Primeiro a <b>forma</b> de cada condição

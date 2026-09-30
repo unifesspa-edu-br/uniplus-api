@@ -56,6 +56,12 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true),
         new(Guid.CreateVersion7(), "NOME_SOCIAL", "Nome social", null, "TEXTO", "DECLARADO", "ESCALAR",
             null, "INSCRICAO", "CAMPO_INSCRICAO:NOME_SOCIAL", null, null, Ativo: true, Formato: "NOME_PESSOA"),
+        new(Guid.CreateVersion7(), "OPCAO_CURSO_1", "1ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_CURSO_1", null, "GLOBAL", Ativo: true),
+        new(Guid.CreateVersion7(), "OPCAO_LISTA_ESPERA", "Opção da lista de espera", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_LISTA_ESPERA", null, "GLOBAL", Ativo: true),
+        new(Guid.CreateVersion7(), "OPCAO_CURSO_2", "2ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+            ["MEDICINA"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_CURSO_2", null, "GLOBAL", Ativo: true),
     ];
 
     private static ProcessoSeletivo ProcessoEmRascunho()
@@ -391,5 +397,158 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FatoColetado.FatoNaoColetavel");
+    }
+
+    [Theory(DisplayName = "Restrição de tipo desconhecido ou de limites incoerentes é recusada no campo dela")]
+    [InlineData("REGEX", null, null, "RestricaoValor.TipoDesconhecido")]
+    [InlineData("TAMANHO_TEXTO", 1.5, null, "RestricaoValor.LimitesIncoerentes")]
+    [InlineData("TAMANHO_TEXTO", 10.0, 2.0, "RestricaoValor.LimitesIncoerentes")]
+    public async Task Handle_RestricaoDeFormaInvalida_Recusa(string tipo, double? minimo, double? maximo, string codigo)
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null,
+                Restricoes: [new RestricaoValorInput(tipo, (decimal?)minimo, (decimal?)maximo)]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "itens[0].restricoes[0]",
+            Error = new { Code = codigo },
+        });
+    }
+
+    [Fact(DisplayName = "Opção permitida fora do domínio do próprio fato é recusada no grupo dela")]
+    public async Task Handle_OpcaoForaDoDominio_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
+                Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["PRETA", "ROXA"])])]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "itens[0].restricoes[0].entradas[0].valores",
+            Error = new { Code = "PredicadoDnf.ValorForaDoDominio" },
+        });
+    }
+
+    [Fact(DisplayName = "Opções permitidas em campo que não é de seleção são recusadas pela coerência com o tipo do campo")]
+    public async Task Handle_OpcoesEmCampoBooleano_RecusaPelaCoerencia()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null,
+                Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["SIM"])])]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "itens[0].restricoes[0]",
+            Error = new { Code = FatoColetadoErrorCodes.RestricaoIncoerente },
+        });
+    }
+
+    [Fact(DisplayName = "ADR-0125: recusa semântica da restrição e recusa do próprio item saem no mesmo lote")]
+    public async Task Handle_RecusaSemanticaERecusaDoItem_Acumulam()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
+                Restricoes:
+                [
+                    new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["ROXA"])]),
+                    new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["PRETA"])]),
+                ]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
+            ["PredicadoDnf.ValorForaDoDominio", "RestricaoValor.TipoRepetido"]);
+    }
+
+    [Fact(DisplayName = "Opção permitida desativada no catálogo é recusada como vínculo novo")]
+    public async Task Handle_OpcaoDesativada_RecusaVinculoNovo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+            [.. VocabularioSeed().Select(static f => f.Codigo == "COR_RACA"
+                ? f with { ValoresDominioDeclarados = [new FatoValorDominioViewItem("AMARELA", null, 0, Ativo: false)] }
+                : f)]);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
+                Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["AMARELA"])])]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        (await HandleAsync(mocks, command)).Error!.Code.Should().Be("ProcessoSeletivo.ValorDeDominioDesativado");
+    }
+
+    [Theory(DisplayName = "Opções formadas pelas respostas só vêm de campo cujas opções são todas opções do campo")]
+    [InlineData("OPCAO_CURSO_1", true)]
+    [InlineData("OPCAO_CURSO_2", true)]
+    [InlineData("COR_RACA", false)]
+    public async Task Handle_OpcoesDasRespostas_ExigemOpcoesContidasNoAlvo(string fonte, bool aceita)
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        string rotulo = fonte == "COR_RACA" ? "Cor ou raça" : "1ª opção de curso";
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput(fonte, 0, rotulo, "SELECAO_UNICA", "SEMPRE", null),
+            new FatoColetadoInput("OPCAO_LISTA_ESPERA", 1, "Lista de espera", "SELECAO_UNICA", "NUNCA", null,
+                Restricoes: [new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: [fonte])]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        if (aceita)
+        {
+            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+            processo.FatosColetados.Single(static f => f.FatoCodigo == "OPCAO_LISTA_ESPERA").FatosCitados.Should().Equal(fonte);
+        }
+        else
+        {
+            resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+            {
+                Field = "itens[1].restricoes[0].fatos",
+                Error = new { Code = FatoColetadoErrorCodes.OpcoesDeOutroDominio },
+            });
+        }
+    }
+
+    [Fact(DisplayName = "Grupo de opções condicionado a campo posterior é recusado")]
+    public async Task Handle_CondicaoDasOpcoesSobreCampoPosterior_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
+                Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS",
+                    Entradas: [new OpcoesCondicionadasInput([[Condicao("BAIXA_RENDA", "IGUAL", true)]], ["PRETA"])])]),
+            new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", "NUNCA", null),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
     }
 }

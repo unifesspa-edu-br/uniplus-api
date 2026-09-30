@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -80,6 +81,62 @@ public sealed class FatoColetadoTests
     public void Criar_AjudaLonga_Recusa() =>
         FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, ajuda: new string('a', FatoColetado.AjudaMaxLength + 1))
             .Errors.Should().ContainSingle().Which.Field.Should().Be("ajuda");
+
+    public static TheoryData<TipoRenderizacao, RestricaoValor, bool> RestricoesPorTipoDeCampo => new()
+    {
+        { TipoRenderizacao.Numero, new FaixaNumerica(0, 10), true },
+        { TipoRenderizacao.Texto, new FaixaNumerica(0, 10), false },
+        { TipoRenderizacao.Texto, new TamanhoTexto(1, 10), true },
+        { TipoRenderizacao.Numero, new TamanhoTexto(1, 10), false },
+        { TipoRenderizacao.SelecaoMultipla, new OpcoesDasRespostas(["OPCAO_CURSO_1"]), true },
+        { TipoRenderizacao.Booleano, new OpcoesPermitidas([new OpcoesCondicionadas(null, ["SIM"])]), false },
+    };
+
+    [Theory(DisplayName = "A restrição cabe no tipo do campo: faixa no numérico, tamanho no de texto, opções no de seleção")]
+    [MemberData(nameof(RestricoesPorTipoDeCampo))]
+    public void Criar_RestricaoPorTipoDeCampo(TipoRenderizacao tipo, RestricaoValor restricao, bool aceita)
+    {
+        string? formato = tipo == TipoRenderizacao.Texto ? "LIVRE" : null;
+        Result<FatoColetado> resultado = FatoColetado.Criar("CAMPO", 0, "Campo", tipo, Obrigatoriedade.Nunca, null, formato: formato, restricoes: [restricao]);
+
+        if (aceita)
+        {
+            resultado.Value!.Restricoes.Should().Equal(restricao);
+        }
+        else
+        {
+            resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+            {
+                Field = "restricoes[0]",
+                Error = new { Code = FatoColetadoErrorCodes.RestricaoIncoerente },
+            });
+        }
+    }
+
+    [Fact(DisplayName = "Duas restrições do mesmo tipo no item são recusadas")]
+    public void Criar_RestricaoRepetida_Recusa() =>
+        FatoColetado.Criar("IDADE", 0, "Idade", TipoRenderizacao.Numero, Obrigatoriedade.Nunca, null,
+                restricoes: [new FaixaNumerica(0, null), new FaixaNumerica(null, 100)])
+            .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(RestricaoValorErrorCodes.TipoRepetido);
+
+    [Theory(DisplayName = "Limite da faixa com mais casas decimais do que o edital congela é recusado")]
+    [InlineData("0.0001", true)]
+    [InlineData("0.00001", false)]
+    public void Criar_LimiteDaFaixaAlemDasCasasDecimais(string minimo, bool aceita) =>
+        FatoColetado.Criar("NOTA", 0, "Nota", TipoRenderizacao.Numero, Obrigatoriedade.Nunca, null,
+                restricoes: [new FaixaNumerica(decimal.Parse(minimo, System.Globalization.CultureInfo.InvariantCulture), null)])
+            .IsSuccess.Should().Be(aceita);
+
+    [Fact(DisplayName = "As opções permitidas entram nas condições do item como pertinência do próprio fato, para os vínculos de valor")]
+    public void Condicoes_OpcoesPermitidas_CitamOsValoresDoProprioFato()
+    {
+        FatoColetado fato = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null,
+            restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(null, ["PRETA", "PARDA"])])]).Value!;
+
+        CondicaoDnf pertinencia = fato.Condicoes.Should().ContainSingle().Which;
+        pertinencia.Fato.Should().Be("COR_RACA");
+        pertinencia.Valor.EnumerateArray().Select(static v => v.GetString()).Should().Equal("PARDA", "PRETA");
+    }
 
     [Fact(DisplayName = "Rótulo com espaços nas bordas é aparado")]
     public void Criar_RotuloComEspacos_EAparado()

@@ -131,7 +131,8 @@ public static class ObterProcessoSeletivoQueryHandler
         fato.EtapaCodigo,
         fato.Formato,
         fato.Ajuda,
-        fato.PedirConfirmacao);
+        fato.PedirConfirmacao,
+        [.. fato.Restricoes.Select(static r => r.ToDto())]);
 
     private static ConfiguracaoDerivacaoDto ProjectConfiguracaoDerivacao(ConfiguracaoDerivacaoFato config) => new(
         config.CodigoFato,

@@ -416,6 +416,49 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["predicado"] = obrigatoriedade.Predicado is { } predicado ? SerializarDnf(LinhasDoPredicado(predicado)) : null,
     };
 
+    /// <summary>
+    /// As restrições de valor do item na ordem do tipo: os limites da faixa como decimais canônicos,
+    /// os grupos de opções, os valores e os fatos em ordem canônica.
+    /// </summary>
+    private static JsonArray SerializarRestricoes(IReadOnlyList<RestricaoValor> restricoes) =>
+        new([.. restricoes.OrderBy(static r => r.Tipo).Select(static r => (JsonNode)SerializarRestricao(r))]);
+
+    private static JsonObject SerializarRestricao(RestricaoValor restricao)
+    {
+        JsonObject json = new() { ["tipo"] = RestricaoValorJson.ParaToken(restricao.Tipo) };
+        switch (restricao)
+        {
+            case FaixaNumerica faixa:
+                json["minimo"] = LimiteDaFaixa(faixa.Minimo);
+                json["maximo"] = LimiteDaFaixa(faixa.Maximo);
+                break;
+            case TamanhoTexto tamanho:
+                json["minimo"] = tamanho.Minimo;
+                json["maximo"] = tamanho.Maximo;
+                break;
+            case OpcoesPermitidas opcoes:
+                json["entradas"] = OrdenarPorConteudo(opcoes.Entradas.Select(static e => new JsonObject
+                {
+                    ["quando"] = e.Quando is { } quando ? SerializarDnf(LinhasDoPredicado(quando)) : null,
+                    ["valores"] = CodigosEmOrdem(e.Valores),
+                }));
+                break;
+            case OpcoesDasRespostas respostas:
+                json["fatos"] = CodigosEmOrdem(respostas.Fatos);
+                break;
+            default:
+                throw new InvalidOperationException($"Restrição de valor sem forma canônica: {restricao.Tipo}.");
+        }
+
+        return json;
+    }
+
+    private static string? LimiteDaFaixa(decimal? limite) =>
+        limite is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, FatoColetado.CasasDecimaisDaFaixa) : null;
+
+    private static JsonArray CodigosEmOrdem(IEnumerable<string> codigos) =>
+        new([.. codigos.Select(HashCanonicalComputer.NormalizeNfc).Order(StringComparer.Ordinal).Select(static c => (JsonNode)c)]);
+
     private static IEnumerable<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> LinhasDoPredicado(PredicadoDnf predicado) =>
         predicado.Clausulas.SelectMany(static (clausula, indice) =>
             clausula.Condicoes.Select(condicao => (indice, condicao.Fato, condicao.Operador, condicao.Valor)));
@@ -1833,6 +1876,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["obrigatoriedade"] = SerializarObrigatoriedade(fato.Obrigatoriedade),
                 ["ajuda"] = fato.Ajuda is { } ajuda ? HashCanonicalComputer.NormalizeNfc(ajuda) : null,
                 ["pedirConfirmacao"] = fato.PedirConfirmacao,
+                ["restricoes"] = SerializarRestricoes(fato.Restricoes),
                 ["origemValores"] = fato.OrigemValores.ToString(),
                 ["formato"] = fato.Formato,
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(

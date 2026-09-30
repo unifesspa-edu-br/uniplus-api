@@ -11,9 +11,9 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Predicado e obrigatoriedade das regras do formulário gravados em <c>jsonb</c>, na mesma forma
-/// do envelope (<see cref="PredicadoDnfJson"/>): são lidos e gravados sempre inteiros, junto do
-/// item ou do termo que os declara.
+/// Predicado, obrigatoriedade e restrições de valor das regras do formulário gravados em
+/// <c>jsonb</c>, na forma de <see cref="PredicadoDnfJson"/> e <see cref="RestricaoValorJson"/>: são
+/// lidos e gravados sempre inteiros, junto do item ou do termo que os declara.
 /// </summary>
 internal static class ConversoresDeRegras
 {
@@ -35,6 +35,24 @@ internal static class ConversoresDeRegras
             (a, b) => SerializarObrigatoriedade(a!) == SerializarObrigatoriedade(b!),
             o => SerializarObrigatoriedade(o).GetHashCode(StringComparison.Ordinal),
             o => LerObrigatoriedade(SerializarObrigatoriedade(o)));
+
+    public static readonly ValueConverter<IReadOnlyList<RestricaoValor>, string> Restricoes =
+        new(restricoes => SerializarRestricoes(restricoes), json => LerRestricoes(json));
+
+    public static readonly ValueComparer<IReadOnlyList<RestricaoValor>> ComparadorDeRestricoes =
+        new(
+            (a, b) => SerializarRestricoes(a!) == SerializarRestricoes(b!),
+            r => SerializarRestricoes(r).GetHashCode(StringComparison.Ordinal),
+            r => LerRestricoes(SerializarRestricoes(r)));
+
+    private static string SerializarRestricoes(IReadOnlyList<RestricaoValor> restricoes) =>
+        RestricaoValorJson.ParaJson(restricoes).ToJsonString();
+
+    private static IReadOnlyList<RestricaoValor> LerRestricoes(string json)
+    {
+        using JsonDocument documento = JsonDocument.Parse(json);
+        return Exigir(RestricaoValorJson.ListaDeJson(documento.RootElement));
+    }
 
     private static string SerializarPredicado(PredicadoDnf predicado) => PredicadoDnfJson.ParaJson(predicado).ToJsonString();
 

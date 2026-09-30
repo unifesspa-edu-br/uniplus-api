@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -13,7 +14,9 @@ using Domain.Interfaces;
 using DTOs;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Serializacao;
 
 /// <summary>
 /// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (RN08, UNI-REQ-0072): projeta os
@@ -191,6 +194,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarObrigatoriedade(fato, out ObrigatoriedadeDto? obrigatoriedade)
                 || !TentarStringOpcional(fato, "ajuda", out string? ajuda)
                 || !TentarBool(fato, "pedirConfirmacao", out bool pedirConfirmacao)
+                || !TentarRestricoes(fato, out List<RestricaoValorDto>? restricoes)
                 || !TentarPredicado(fato, "precondicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
                 || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
                 || !FormatoCoerente(tipoRenderizacao, formato))
@@ -200,7 +204,7 @@ public static class ObterFormularioRenderizavelQueryHandler
 
             fatos.Add(new FatoFormularioRenderizavelDto(
                 fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade!, precondicao, valoresSelecionaveis, etapaCodigo, formato,
-                ajuda, pedirConfirmacao));
+                ajuda, pedirConfirmacao, restricoes!));
         }
 
         return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos));
@@ -338,6 +342,135 @@ public static class ObterFormularioRenderizavelQueryHandler
         }
 
         obrigatoriedade = new ObrigatoriedadeDto(tipo, predicado);
+        return true;
+    }
+
+    /// <summary>As restrições de valor congeladas do item, cada uma com as chaves do seu tipo.</summary>
+    private static bool TentarRestricoes(JsonObject fato, out List<RestricaoValorDto>? restricoes)
+    {
+        restricoes = null;
+        if (!fato.TryGetPropertyValue("restricoes", out JsonNode? node) || node is not JsonArray array)
+        {
+            return false;
+        }
+
+        List<RestricaoValorDto> lidas = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject restricao
+                || !TentarString(restricao, "tipo", out string tipo)
+                || !TentarRestricao(restricao, tipo, out RestricaoValorDto? lida))
+            {
+                return false;
+            }
+
+            lidas.Add(lida!);
+        }
+
+        restricoes = lidas;
+        return true;
+    }
+
+    private static bool TentarRestricao(JsonObject restricao, string tipo, out RestricaoValorDto? lida)
+    {
+        lida = RestricaoValorJson.TipoDoToken(tipo) switch
+        {
+            TipoRestricaoValor.FaixaNumerica
+                when TentarDecimalOpcional(restricao, "minimo", out decimal? minimo) && TentarDecimalOpcional(restricao, "maximo", out decimal? maximo)
+                => new RestricaoValorDto(tipo, minimo, maximo, null, null),
+            TipoRestricaoValor.TamanhoTexto
+                when TentarIntOpcional(restricao, "minimo", out int? minimo) && TentarIntOpcional(restricao, "maximo", out int? maximo)
+                => new RestricaoValorDto(tipo, minimo, maximo, null, null),
+            TipoRestricaoValor.OpcoesPermitidas when TentarEntradas(restricao, out List<OpcoesCondicionadasDto>? entradas)
+                => new RestricaoValorDto(tipo, null, null, entradas, null),
+            TipoRestricaoValor.OpcoesDasRespostas when TentarTextos(restricao, "fatos", out List<string>? fatos)
+                => new RestricaoValorDto(tipo, null, null, null, fatos),
+            _ => null,
+        };
+        return lida is not null;
+    }
+
+    private static bool TentarEntradas(JsonObject restricao, out List<OpcoesCondicionadasDto>? entradas)
+    {
+        entradas = null;
+        if (!restricao.TryGetPropertyValue("entradas", out JsonNode? node) || node is not JsonArray array)
+        {
+            return false;
+        }
+
+        List<OpcoesCondicionadasDto> lidas = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject entrada
+                || !TentarPredicado(entrada, "quando", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? quando)
+                || !TentarTextos(entrada, "valores", out List<string>? valores))
+            {
+                return false;
+            }
+
+            lidas.Add(new OpcoesCondicionadasDto(quando, valores!));
+        }
+
+        entradas = lidas;
+        return true;
+    }
+
+    private static bool TentarTextos(JsonObject objeto, string chave, out List<string>? textos)
+    {
+        textos = null;
+        if (!objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is not JsonArray array)
+        {
+            return false;
+        }
+
+        List<string> lidos = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonValue valor || !valor.TryGetValue(out string? texto))
+            {
+                return false;
+            }
+
+            lidos.Add(texto);
+        }
+
+        textos = lidos;
+        return true;
+    }
+
+    /// <summary>Chave ausente ou nula: sucesso, sem valor. Presente: o decimal canônico em texto.</summary>
+    private static bool TentarDecimalOpcional(JsonObject objeto, string chave, out decimal? valor)
+    {
+        valor = null;
+        if (!objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is null)
+        {
+            return true;
+        }
+
+        if (node is not JsonValue texto || !texto.TryGetValue(out string? bruto)
+            || !decimal.TryParse(bruto, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal lido))
+        {
+            return false;
+        }
+
+        valor = lido;
+        return true;
+    }
+
+    private static bool TentarIntOpcional(JsonObject objeto, string chave, out int? valor)
+    {
+        valor = null;
+        if (!objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is null)
+        {
+            return true;
+        }
+
+        if (node is not JsonValue numero || !numero.TryGetValue(out int lido))
+        {
+            return false;
+        }
+
+        valor = lido;
         return true;
     }
 
