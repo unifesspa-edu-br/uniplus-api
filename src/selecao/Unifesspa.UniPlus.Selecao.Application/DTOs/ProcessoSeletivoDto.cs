@@ -43,7 +43,7 @@ public sealed record ProcessoSeletivoDto(
     // publicação — o GET público (FormularioInscricaoController) projeta só da VersaoConfiguracao
     // vigente e devolve 422 para processo em rascunho, então não serve para reler a tela de edição.
     string? FormularioTitulo,
-    string? FormularioTermoAceiteTexto,
+    IReadOnlyList<TermoExigidoDto> TermosExigidos,
     // Divulgação pública (UNI-REQ-0050, issue #563): read-back administrativo pelo mesmo motivo
     // do formulário acima — sem ele, a tela de edição (uniplus-web#504) não conseguiria reler a
     // configuração salva e poderia sobrescrevê-la com o default ao reenviar. A regra de

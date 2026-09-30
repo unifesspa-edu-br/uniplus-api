@@ -211,13 +211,11 @@ public sealed class EnvelopeCanonicoGoldenTests
             ]).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        // Formulário de inscrição (Story #559): título e termo de aceite presentes — o bloco
-        // "formulario" deixou de ser stub nesta Story, e a fixture precisa congelar a forma real,
-        // não só o caso degenerado dos dois campos nulos.
-        processo.DefinirFormulario(
-            "Formulário de Inscrição",
-            "Declaro que as informações prestadas são verdadeiras.",
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo exigido — a
+        // fixture congela a forma real do bloco "formulario", não só o caso sem termos.
+        processo.DefinirFormulario("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao([
             ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [

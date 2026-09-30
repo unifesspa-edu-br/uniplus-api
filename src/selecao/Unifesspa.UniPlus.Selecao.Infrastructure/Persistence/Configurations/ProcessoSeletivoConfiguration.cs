@@ -74,14 +74,11 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // Story #851 §3.4: NOT NULL, exigido na criação — sem produção, migration direta.
         builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired();
 
-        // Story #559: título e termo de aceite do formulário de inscrição — nuláveis, ausência
-        // = sem título/termo configurado. Maxlengths espelhados em
-        // LimitesDoEnvelope.NomeDeCadastro/TermoDeAceite (o decoder do envelope reidrata com o
-        // mesmo limite).
+        // Story #559: título do formulário de inscrição — nulável, ausência = sem título
+        // configurado. Maxlength espelhado em LimitesDoEnvelope.NomeDeCadastro (o decoder do
+        // envelope reidrata com o mesmo limite).
         builder.Property(p => p.FormularioTitulo).HasMaxLength(300)
             .HasComment("Título do formulário de inscrição apresentado ao candidato. Ausência = sem título configurado.");
-        builder.Property(p => p.FormularioTermoAceiteTexto).HasMaxLength(4000)
-            .HasComment("Texto do termo de aceite do formulário de inscrição. Ausência = sem termo configurado.");
 
         // Issue #849 (CA-04 da Feature #40): quem responde pelo certame — NOT NULL, exigido
         // na criação, imutável depois. Escalar de topo sem FK cross-schema (ADR-0061) + owned
@@ -241,6 +238,15 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.FatosColetados)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // Termos exigidos pelo formulário (UNI-REQ-0086) — mesma disciplina de FatosColetados.
+        builder.HasMany(p => p.TermosExigidos)
+            .WithOne()
+            .HasForeignKey(t => t.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.TermosExigidos)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // Opções declaradas pelo processo (issue #1619) — mesma disciplina de FatosColetados.

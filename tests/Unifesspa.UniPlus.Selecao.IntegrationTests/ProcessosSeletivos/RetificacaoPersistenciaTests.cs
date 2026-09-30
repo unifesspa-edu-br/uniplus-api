@@ -405,15 +405,17 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         versoes.Should().ContainSingle("descartar não cria versão nova — só a abertura persiste");
     }
 
-    [Theory(DisplayName = "Descartar a retificação após editar o formulário de inscrição restaura exatamente o título/termo da versão anterior (Story #559)")]
-    [InlineData("Formulário publicado", "Termo publicado", "Formulário editado", "Termo editado")]
-    [InlineData(null, null, "Formulário editado", "Termo editado")]
+    [Theory(DisplayName = "Descartar a retificação após editar o formulário de inscrição restaura exatamente o título e os termos da versão anterior")]
+    [InlineData("Formulário publicado", "TERMO_PUBLICADO", "Formulário editado", "TERMO_EDITADO")]
+    [InlineData(null, null, "Formulário editado", "TERMO_EDITADO")]
     public async Task Retificacao_DescartadaAposEditarFormulario_RestauraFormularioDaVersaoAnterior(
         string? tituloPublicado, string? termoPublicado, string tituloEditado, string termoEditado)
     {
         string nome = $"{nameof(Retificacao_DescartadaAposEditarFormulario_RestauraFormularioDaVersaoAnterior)}-{Guid.CreateVersion7()}";
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(nome);
-        processo.DefinirFormulario(tituloPublicado, termoPublicado, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(tituloPublicado, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario(
+            termoPublicado is null ? [] : [CorpusEnvelope.Termo(termoPublicado, 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
@@ -443,7 +445,10 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
                 "Testar edição e descarte do formulário", versaoAbertura, identificadorDaVersaoBase: null, "integration-test-user", TimeProvider.System.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
-            tracked.DefinirFormulario(tituloEditado, termoEditado, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            tracked.DefinirFormulario(tituloEditado, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            // A ordem 0 do termo editado colide com a do publicado: a restauração tem de limpar
+            // antes de repor, senão bateria no índice único.
+            tracked.DefinirTermosDoFormulario([CorpusEnvelope.Termo(termoEditado, 0)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
             tracked.FormularioTitulo.Should().Be(tituloEditado, "pré-condição: a sessão editorial trocou o título");
 
             // O DESCARTE — com a prova de fidelidade, exatamente como em produção.
@@ -465,8 +470,9 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         relido.Rascunho.Should().BeNull("a sessão foi descartada — não há mais retificação em curso");
         relido.FormularioTitulo.Should().Be(
             tituloPublicado, "o descarte restaurou o título que a versão N congelou — não o título editado na sessão abandonada");
-        relido.FormularioTermoAceiteTexto.Should().Be(
-            termoPublicado, "o descarte restaurou o termo que a versão N congelou — não o termo editado na sessão abandonada");
+        relido.TermosExigidos.Select(static t => t.Codigo).Should().Equal(
+            termoPublicado is null ? [] : [termoPublicado],
+            "o descarte restaurou os termos que a versão N congelou — não os editados na sessão abandonada");
     }
 
     // ── issue #563 — a regra de abreviação de nome é DERIVADA no congelamento, não uma

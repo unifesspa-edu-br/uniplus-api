@@ -162,6 +162,9 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // Opções declaradas (issue #1619) — mesmo raciocínio: sem o Include, a substituição
             // por fato não veria as linhas antigas e a pendência de publicação veria zero opções.
             .Include(p => p.OpcoesDeclaradas)
+            // Termos exigidos (UNI-REQ-0086) — mesmo raciocínio: sem o Include, a substituição e a
+            // pendência de forma de aceite veriam zero termos.
+            .Include(p => p.TermosExigidos)
             // Regras de derivação (Story #927) — MESMO raciocínio, nos três níveis: sem os Include, a
             // configuração reidrataria sem regra nenhuma (ou sem as condições/o predicado de cada
             // regra), e a substituição por inteiro faria Clear() num backing list vazio, deixando as

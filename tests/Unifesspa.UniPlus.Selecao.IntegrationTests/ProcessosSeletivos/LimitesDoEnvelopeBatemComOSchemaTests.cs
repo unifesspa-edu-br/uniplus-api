@@ -101,7 +101,12 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // NomeDeCadastro (mesma grandeza: rótulo curto legível).
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(FatoColetado), nameof(FatoColetado.Rotulo)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.FormularioTitulo)),
-        ("TermoDeAceite", LimitesDoEnvelope.TermoDeAceite, typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.FormularioTermoAceiteTexto)),
+        ("CodigoTermoExigido", LimitesDoEnvelope.CodigoTermoExigido, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Codigo)),
+        ("NomeDoTermo", LimitesDoEnvelope.NomeDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Nome)),
+        ("TextoDoTermo", LimitesDoEnvelope.TextoDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Texto)),
+        ("BaseLegalDoTermo", LimitesDoEnvelope.BaseLegalDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.BaseLegal)),
+        ("FormaAceiteDoTermo", LimitesDoEnvelope.FormaAceiteDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.FormaAceite)),
+        ("HashDaVersaoDoTermo", LimitesDoEnvelope.HashDaVersaoDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.HashVersao)),
 
         // Issue #563 — divulgação pública.
         ("Justificativa", LimitesDoEnvelope.Justificativa, typeof(ConfiguracaoDivulgacao), nameof(ConfiguracaoDivulgacao.Justificativa)),

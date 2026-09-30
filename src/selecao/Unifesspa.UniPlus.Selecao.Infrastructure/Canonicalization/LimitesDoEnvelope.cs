@@ -172,13 +172,24 @@ public static class LimitesDoEnvelope
     /// <summary><c>UnidadeAdministradoraSnapshot.CidadeUf</c> — espelha <c>ProcessoSeletivoConfiguration</c> (owned).</summary>
     public const int UnidadeAdministradoraCidadeUf = ReferenciaCidadeGeo.UfLength;
 
-    // Story #559 — formulário de inscrição.
-    /// <summary>
-    /// Texto do termo de aceite do formulário de inscrição (<c>ProcessoSeletivo.FormularioTermoAceiteTexto</c>) —
-    /// grandeza própria, maior que <see cref="ObservacaoBaseLegal"/>: é o texto legal completo
-    /// apresentado ao candidato, não uma observação interna.
-    /// </summary>
-    public const int TermoDeAceite = 4000;
+    // UNI-REQ-0086 — termos exigidos pelo formulário, copiados da versão do catálogo.
+    /// <summary><c>TermoExigidoFormulario.Codigo</c>.</summary>
+    public const int CodigoTermoExigido = Domain.Entities.TermoExigidoFormulario.CodigoMaxLength;
+
+    /// <summary>Nome do termo no catálogo de termos de consentimento.</summary>
+    public const int NomeDoTermo = 200;
+
+    /// <summary>Texto da versão do termo, o texto legal completo apresentado ao candidato.</summary>
+    public const int TextoDoTermo = 20_000;
+
+    /// <summary>Base legal da versão do termo.</summary>
+    public const int BaseLegalDoTermo = 500;
+
+    /// <summary>Token da forma de aceite da versão do termo.</summary>
+    public const int FormaAceiteDoTermo = 40;
+
+    /// <summary>Hash SHA-256 em hexadecimal da versão do termo.</summary>
+    public const int HashDaVersaoDoTermo = 64;
 
     // Issue #563 — divulgação pública.
     /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — mesma grandeza de <c>RascunhoRetificacao.MotivoMaxLength</c>: texto de negócio livre, não um rótulo curto.</summary>

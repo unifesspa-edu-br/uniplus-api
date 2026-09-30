@@ -74,6 +74,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
         services.AddScoped<ICalendarioVigenteReader, CalendarioVigenteReader>();
         services.AddScoped<IBaseLegalBonusRegionalReader, BaseLegalBonusRegionalReader>();
+        services.AddScoped<ITermoConsentimentoReader, TermoConsentimentoReader>();
 
         return services;
     }

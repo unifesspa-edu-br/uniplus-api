@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
+using System.Text;
+
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
@@ -48,7 +50,9 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
     /// nunca aceito como parâmetro do chamador. Sendo a factory pública (exigência
     /// do fitness test de entidades forenses), um hash passado por fora seria um
     /// convite a gravar uma versão cujo SHA-256 anunciado não corresponde ao
-    /// conteúdo real, corrompendo o registro forense sem erro nenhum.
+    /// conteúdo real, corrompendo o registro forense sem erro nenhum. Texto e base
+    /// legal entram em NFC, a forma que o processo seletivo congela: o hash tem de
+    /// reproduzir o conteúdo que a publicação carrega.
     /// </remarks>
     public static TermoConsentimentoVersao Promover(
         Guid termoConsentimentoId,
@@ -62,6 +66,8 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
         ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
         ArgumentException.ThrowIfNullOrWhiteSpace(promovidaPor);
 
+        texto = texto.Normalize(NormalizationForm.FormC);
+        baseLegal = baseLegal.Normalize(NormalizationForm.FormC);
         string formaAceiteToken = FormasAceite.ParaTokenCanonico(formaAceite);
         string hash = CalcularHash(texto, baseLegal, formaAceiteToken);
 

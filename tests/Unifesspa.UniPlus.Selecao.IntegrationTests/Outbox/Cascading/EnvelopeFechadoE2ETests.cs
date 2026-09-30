@@ -239,7 +239,7 @@ public sealed class EnvelopeFechadoE2ETests
         // ══════════════════════════════════════════════════════════════════════════════
 
         await ExecutarPassoAsync(
-            () => ctx.PutFormularioAsync("Formulário de Inscrição — PS Rico E2E", "Declaro que as informações prestadas são verdadeiras.", ifMatch: null),
+            () => ctx.PutFormularioAsync("Formulário de Inscrição — PS Rico E2E", ifMatch: null),
             HttpStatusCode.NoContent, "PUT formulario", "admin/processos-seletivos/{id}/formulario");
 
         // ══════════════════════════════════════════════════════════════════════════════
@@ -322,6 +322,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "derivacao_fatos_citados_inexistentes",
                 "fato_coletavel_sem_valores_ofertados",
                 "fato_coletavel_municipio_citado_fora_da_area_do_bonus",
+                "termo_exigido_sem_forma_de_aceite",
                 "derivacao_dominio_de_contribuicao_invalido",
                 "derivacao_cota_e_acao_afirmativa_juntas",
                 "grafo_dependencia_com_ciclo",
@@ -774,10 +775,10 @@ public sealed class EnvelopeFechadoE2ETests
         public Task<HttpResponseMessage> PutDocumentosExigidosAsync(object[] raizes) =>
             EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/documentos-exigidos", raizes, ifMatch: null);
 
-        public Task<HttpResponseMessage> PutFormularioAsync(string titulo, string termoAceiteTexto, string? ifMatch) =>
+        public Task<HttpResponseMessage> PutFormularioAsync(string titulo, string? ifMatch) =>
             EnviarAsync(
                 HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{ProcessoId}/formulario",
-                new { titulo, termoAceiteTexto }, ifMatch);
+                new { titulo }, ifMatch);
 
         public Task<HttpResponseMessage> PutDivulgacaoAsync(IReadOnlyList<string>? camposPublicos, string? justificativa, string? ifMatch) =>
             EnviarAsync(

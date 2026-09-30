@@ -207,7 +207,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         LerIdentidadesUnidade(leitor, payload);
         (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentosExigidos, ReferenciaTemporalFatos? referenciaTemporalFatos,
             IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) = LerDocumentosExigidos(leitor, payload);
-        (string? formularioTitulo, string? formularioTermoAceiteTexto) = LerFormulario(leitor, payload);
+        (string? formularioTitulo, IReadOnlyList<TermoExigidoFormulario> termosExigidos) = LerFormulario(leitor, payload);
         ConfiguracaoDivulgacao? configuracaoDivulgacao = LerDivulgacao(leitor, payload);
         ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = LerTaxaInscricao(leitor, payload);
         (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
@@ -284,7 +284,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             documentosExigidos, todosOsNos, referenciaTemporalFatos, fatosColetados, regrasDerivacao,
             cascataRemanejamento: cascata,
             formularioTitulo: formularioTitulo,
-            formularioTermoAceiteTexto: formularioTermoAceiteTexto,
+            termosExigidos: termosExigidos,
             configuracaoDivulgacao: configuracaoDivulgacao,
             configuracaoTaxaInscricao: configuracaoTaxaInscricao,
             localidade: localidade,

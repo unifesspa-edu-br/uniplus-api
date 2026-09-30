@@ -8,8 +8,8 @@ using Domain.Interfaces;
 using Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="DefinirFormularioCommand"/> (Story #559): substitui título e termo de
-/// aceite do formulário de inscrição. Sem catálogo cross-módulo nem invariante cruzando outra
+/// Handler do <see cref="DefinirFormularioCommand"/> (Story #559): substitui o título do
+/// formulário de inscrição. Sem catálogo cross-módulo nem invariante cruzando outra
 /// dimensão do agregado — toda a regra é <see cref="ProcessoSeletivo.DefinirFormulario"/>.
 /// </summary>
 public static class DefinirFormularioCommandHandler
@@ -34,7 +34,7 @@ public static class DefinirFormularioCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        Result result = processo.DefinirFormulario(command.Titulo, command.TermoAceiteTexto, command.Precondicao);
+        Result result = processo.DefinirFormulario(command.Titulo, command.Precondicao);
         if (result.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(result.Errors);
