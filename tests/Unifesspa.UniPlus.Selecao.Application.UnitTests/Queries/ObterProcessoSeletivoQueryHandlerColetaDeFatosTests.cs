@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -45,8 +46,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         // BAIXA_RENDA na ordem 0 (sem pré-condição); COR_RACA na ordem 1 com pré-condição citando o anterior.
-        FatoColetado baixaRenda = FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, obrigatorio: true, null).Value!;
-        FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: false,
+        FatoColetado baixaRenda = FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!;
+        FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca,
             [Precondicao(0, "BAIXA_RENDA", Operador.Igual, true)]).Value!;
         // Passa fora de ordem de propósito — a projeção é quem ordena.
         processo.DefinirItens([corRaca, baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -57,7 +58,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         fatos.Select(f => f.FatoCodigo).Should().ContainInOrder("BAIXA_RENDA", "COR_RACA");
         fatos[0].Rotulo.Should().Be("Baixa renda");
         fatos[0].TipoRenderizacao.Should().Be("BOOLEANO", "o wire de leitura usa o mesmo código canônico do wire de escrita");
-        fatos[0].Obrigatorio.Should().BeTrue();
+        fatos[0].Obrigatoriedade.Tipo.Should().Be("SEMPRE");
         fatos[0].Precondicao.Should().BeNull("fato sem pré-condição projeta null, nunca lista vazia");
 
         IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao = fatos[1].Precondicao;

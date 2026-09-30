@@ -10883,11 +10883,13 @@
           "ordem",
           "rotulo",
           "tipoRenderizacao",
-          "obrigatorio",
+          "obrigatoriedade",
           "precondicao",
           "opcoes",
           "etapaCodigo",
-          "formato"
+          "formato",
+          "ajuda",
+          "pedirConfirmacao"
         ],
         "type": "object",
         "properties": {
@@ -10908,8 +10910,8 @@
           "tipoRenderizacao": {
             "type": "string"
           },
-          "obrigatorio": {
-            "type": "boolean"
+          "obrigatoriedade": {
+            "$ref": "#/components/schemas/ObrigatoriedadeDto"
           },
           "precondicao": {
             "type": [
@@ -10943,6 +10945,15 @@
               "null",
               "string"
             ]
+          },
+          "ajuda": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pedirConfirmacao": {
+            "type": "boolean"
           }
         }
       },
@@ -10952,7 +10963,7 @@
           "ordem",
           "rotulo",
           "tipoRenderizacao",
-          "obrigatorio",
+          "obrigatoriedade",
           "precondicao"
         ],
         "type": "object",
@@ -10974,8 +10985,11 @@
           "tipoRenderizacao": {
             "type": "string"
           },
-          "obrigatorio": {
-            "type": "boolean"
+          "obrigatoriedade": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "precondicao": {
             "type": [
@@ -10994,6 +11008,28 @@
               "null",
               "string"
             ]
+          },
+          "predicadoObrigatoriedade": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "ajuda": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pedirConfirmacao": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -11003,11 +11039,13 @@
           "ordem",
           "rotulo",
           "tipoRenderizacao",
-          "obrigatorio",
+          "obrigatoriedade",
           "precondicao",
           "valoresSelecionaveis",
           "etapaCodigo",
-          "formato"
+          "formato",
+          "ajuda",
+          "pedirConfirmacao"
         ],
         "type": "object",
         "properties": {
@@ -11028,8 +11066,8 @@
           "tipoRenderizacao": {
             "type": "string"
           },
-          "obrigatorio": {
-            "type": "boolean"
+          "obrigatoriedade": {
+            "$ref": "#/components/schemas/ObrigatoriedadeDto"
           },
           "precondicao": {
             "type": [
@@ -11064,6 +11102,15 @@
               "null",
               "string"
             ]
+          },
+          "ajuda": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pedirConfirmacao": {
+            "type": "boolean"
           }
         }
       },

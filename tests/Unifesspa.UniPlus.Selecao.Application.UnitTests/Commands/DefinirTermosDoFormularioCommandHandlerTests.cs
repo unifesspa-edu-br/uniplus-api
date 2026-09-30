@@ -68,7 +68,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         processo.DefinirItens(
-            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!],
+            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }

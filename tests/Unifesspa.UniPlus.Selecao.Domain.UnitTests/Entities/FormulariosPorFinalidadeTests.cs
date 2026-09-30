@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class FormulariosPorFinalidadeTests
 {
     private static FatoColetado Item(string codigo, int ordem, string? etapa = FormularioDeTeste.Secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, obrigatorio: false, null, etapaCodigo: etapa).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: etapa).Value!;
 
     private static ProcessoSeletivo ComHabilitacao()
     {
@@ -85,7 +85,7 @@ public sealed class FormulariosPorFinalidadeTests
 
     private static FatoColetado ItemQueCita(string codigo, int ordem, string citado) =>
         FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.Booleano, obrigatorio: false,
+            codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
             [CondicaoPrecondicaoFato.Criar(0, citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
             etapaCodigo: FormularioDeTeste.Secao).Value!;
 

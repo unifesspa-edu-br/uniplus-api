@@ -62,7 +62,7 @@ public static class ResolvedorEstadoFatos
                 [.. g.OrderBy(static f => f.Ordem).Select(static fato => new DefinicaoItem(
                     fato.FatoCodigo,
                     fato.ParaPredicado(),
-                    fato.Obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca,
+                    fato.Obrigatoriedade,
                     restricoes: []))]))];
 
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(

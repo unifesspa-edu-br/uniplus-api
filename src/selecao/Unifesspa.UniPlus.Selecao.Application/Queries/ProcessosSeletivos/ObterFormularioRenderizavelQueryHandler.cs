@@ -188,7 +188,9 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarInt(fato, "ordem", out int ordem)
                 || !TentarString(fato, "rotulo", out string rotulo)
                 || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
-                || !TentarBool(fato, "obrigatorio", out bool obrigatorio)
+                || !TentarObrigatoriedade(fato, out ObrigatoriedadeDto? obrigatoriedade)
+                || !TentarStringOpcional(fato, "ajuda", out string? ajuda)
+                || !TentarBool(fato, "pedirConfirmacao", out bool pedirConfirmacao)
                 || !TentarPredicado(fato, "precondicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
                 || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
                 || !FormatoCoerente(tipoRenderizacao, formato))
@@ -197,7 +199,8 @@ public static class ObterFormularioRenderizavelQueryHandler
             }
 
             fatos.Add(new FatoFormularioRenderizavelDto(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicao, valoresSelecionaveis, etapaCodigo, formato));
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade!, precondicao, valoresSelecionaveis, etapaCodigo, formato,
+                ajuda, pedirConfirmacao));
         }
 
         return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos));
@@ -310,19 +313,31 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarString(termo, "formaAceite", out string formaAceite)
                 || !TentarString(termo, "hashVersao", out string hashVersao)
                 || !TentarPredicado(termo, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao)
-                || !termo.TryGetPropertyValue("obrigatoriedade", out JsonNode? obrigatoriedadeNode)
-                || obrigatoriedadeNode is not JsonObject obrigatoriedade
-                || !TentarString(obrigatoriedade, "tipo", out string tipo)
-                || !TentarPredicado(obrigatoriedade, "predicado", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? predicado))
+                || !TentarObrigatoriedade(termo, out ObrigatoriedadeDto? obrigatoriedade))
             {
                 return false;
             }
 
             termos.Add(new TermoExigidoDto(
-                codigo, ordem, termoId, versaoId, nome, texto, baseLegal, formaAceite, hashVersao, exibicao,
-                new ObrigatoriedadeDto(tipo, predicado)));
+                codigo, ordem, termoId, versaoId, nome, texto, baseLegal, formaAceite, hashVersao, exibicao, obrigatoriedade!));
         }
 
+        return true;
+    }
+
+    /// <summary>A obrigatoriedade congelada de um item ou de um termo: tipo e predicado.</summary>
+    private static bool TentarObrigatoriedade(JsonObject pai, out ObrigatoriedadeDto? obrigatoriedade)
+    {
+        obrigatoriedade = null;
+        if (!pai.TryGetPropertyValue("obrigatoriedade", out JsonNode? node)
+            || node is not JsonObject objeto
+            || !TentarString(objeto, "tipo", out string tipo)
+            || !TentarPredicado(objeto, "predicado", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? predicado))
+        {
+            return false;
+        }
+
+        obrigatoriedade = new ObrigatoriedadeDto(tipo, predicado);
         return true;
     }
 

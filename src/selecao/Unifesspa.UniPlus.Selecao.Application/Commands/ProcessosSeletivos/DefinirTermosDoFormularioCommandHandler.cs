@@ -174,26 +174,20 @@ public static class DefinirTermosDoFormularioCommandHandler
         erros.AddRange(TermoExigidoFormulario.ValidarFormaBasica(entrada.Codigo, entrada.Ordem)
             .Select(e => new FieldError($"{campo}.{e.Field}", e.Error)));
 
-        Result<PredicadoDnf?> exibicao = Montar(entrada.Exibicao);
+        Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(entrada.Exibicao);
         if (exibicao.IsFailure)
         {
             erros.Add(new($"{campo}.exibicao", exibicao.Error!));
         }
 
-        Result<PredicadoDnf?> predicado = Montar(entrada.PredicadoObrigatoriedade);
+        Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(entrada.PredicadoObrigatoriedade);
         if (predicado.IsFailure)
         {
             erros.Add(new($"{campo}.predicadoObrigatoriedade", predicado.Error!));
             return (exibicao.Value, null);
         }
 
-        Obrigatoriedade? obrigatoriedade = (PredicadoDnfJson.TipoDoToken(entrada.Obrigatoriedade), predicado.Value) switch
-        {
-            (TipoObrigatoriedade.Sempre, null) => Obrigatoriedade.Sempre,
-            (TipoObrigatoriedade.Nunca, null) => Obrigatoriedade.Nunca,
-            (TipoObrigatoriedade.Quando, { } quando) => Obrigatoriedade.Quando(quando),
-            _ => null,
-        };
+        Obrigatoriedade? obrigatoriedade = EntradaDeRegras.Obrigatoriedade(entrada.Obrigatoriedade, predicado.Value);
         if (obrigatoriedade is null)
         {
             erros.Add(new($"{campo}.obrigatoriedade", new DomainError(
@@ -202,44 +196,6 @@ public static class DefinirTermosDoFormularioCommandHandler
         }
 
         return (exibicao.Value, obrigatoriedade);
-    }
-
-    /// <summary>O predicado da entrada; nulo ou sem cláusula é ausência de condição.</summary>
-    private static Result<PredicadoDnf?> Montar(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? clausulas)
-    {
-        if (clausulas is null || clausulas.Count == 0)
-        {
-            return Result<PredicadoDnf?>.Success(null);
-        }
-
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        for (int c = 0; c < clausulas.Count; c++)
-        {
-            if (clausulas[c] is not { Count: > 0 } condicoes)
-            {
-                return Result<PredicadoDnf?>.Failure(new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."));
-            }
-
-            foreach (CondicaoPrecondicaoInput? condicao in condicoes)
-            {
-                if (condicao is null)
-                {
-                    return Result<PredicadoDnf?>.Failure(new DomainError(
-                        CondicaoPrecondicaoFatoErrorCodes.ClausulaInvalida, "O predicado contém uma condição nula."));
-                }
-
-                Result<CondicaoDnf> criada = CondicaoDnf.Criar(condicao.Fato, OperadorCodigo.FromCodigo(condicao.Operador), condicao.Valor);
-                if (criada.IsFailure)
-                {
-                    return Result<PredicadoDnf?>.Failure(criada.Error!);
-                }
-
-                linhas.Add((c, criada.Value!));
-            }
-        }
-
-        Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
-        return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.Failure(predicado.Error!);
     }
 
     private static DomainError? ValidarPredicado(

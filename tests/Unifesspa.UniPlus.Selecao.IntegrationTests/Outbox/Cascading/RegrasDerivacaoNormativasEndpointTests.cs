@@ -239,7 +239,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
                     ordem,
                     rotulo = codigo,
                     tipoRenderizacao = "BOOLEANO",
-                    obrigatorio = true,
+                    obrigatoriedade = "SEMPRE",
                     precondicao = (object?)null,
                 }),
             ];

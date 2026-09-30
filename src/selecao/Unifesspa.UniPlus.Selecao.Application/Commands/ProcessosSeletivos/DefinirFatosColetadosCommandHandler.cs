@@ -12,21 +12,21 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Handler do <see cref="DefinirFatosColetadosCommand"/> (Story #984): substitui integralmente
-/// a coleta de fatos de um processo em rascunho, em duas passadas. A primeira confirma a
-/// <b>forma básica</b> de TODOS os fatos (<see cref="FatoColetado.ValidarFormaBasica"/>) sem
-/// tocar o vocabulário cross-módulo, acumulando (ADR-0125) através da lista inteira. Só então a
-/// segunda resolve <b>coletabilidade</b> (só se coleta fato <c>Origem = DECLARADO</c> com
-/// binding de campo de inscrição) e a validação <b>semântica</b> das pré-condições (operador ×
+/// os itens do formulário de uma finalidade, em duas passadas que acumulam no mesmo
+/// <c>errors[]</c> (ADR-0125). A primeira confirma a <b>forma</b> de todos os itens — campos
+/// básicos e obrigatoriedade — sem tocar o vocabulário cross-módulo. A segunda resolve, para os
+/// itens de forma válida, a <b>coletabilidade</b> (só se coleta fato <c>Origem = DECLARADO</c>
+/// com binding de campo de inscrição) e a validação <b>semântica</b> das regras (operador ×
 /// domínio × valor do fato citado, contra a oferta do próprio processo para os domínios
-/// dinâmicos), que tem acesso ao vocabulário cross-módulo (<see cref="IFatoCandidatoReader"/>,
-/// ADR-0056) — parando no primeiro fato que falhar, granularidade nunca coberta pelo
-/// FluentValidation. A validação <b>estrutural</b> do grafo (ordem única, pré-condição cita
-/// fato coletado e anterior, aciclicidade) e o guard de rascunho são do agregado
+/// dinâmicos), com o vocabulário cross-módulo (<see cref="IFatoCandidatoReader"/>, ADR-0056).
+/// A validação <b>estrutural</b> do grafo (ordem única, regra cita fato coletado e anterior,
+/// aciclicidade) e o guard de rascunho são do agregado
 /// (<see cref="ProcessoSeletivo.DefinirFatosColetados"/>).
 /// </summary>
 public static class DefinirFatosColetadosCommandHandler
@@ -62,51 +62,56 @@ public static class DefinirFatosColetadosCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
-        // Acumula (ADR-0125) a forma básica de TODOS os fatos (fatoCodigo/ordem/rotulo/
-        // tipoRenderizacao) numa primeira passada, ANTES de resolver o vocabulário cross-módulo
-        // — o FluentValidation removido já garantia essa granularidade via RuleForEach, rodando
-        // como middleware antes do handler. Rodar depois da resolução semântica (achado de
-        // revisão) trocaria um fatoCodigo vazio pelo FatoDesconhecido menos específico da busca
-        // no catálogo, e uma violação de forma de um fato podia ser mascarada pelo erro
-        // semântico de outro fato da mesma lista.
-        List<FieldError> formaErros = [];
+        // Forma, leitura do catálogo e semântica acumulam no mesmo errors[] (ADR-0125), e a decisão
+        // é tomada num ponto só. A forma vem antes da leitura, sem I/O; o item de forma inválida só
+        // não segue para a conferência contra o catálogo.
+        List<FieldError> erros = [];
+        Obrigatoriedade?[] obrigatoriedades = new Obrigatoriedade?[command.Itens.Count];
         for (int indice = 0; indice < command.Itens.Count; indice++)
         {
             FatoColetadoInput input = command.Itens[indice];
-            List<FieldError> itemErros = FatoColetado.ValidarFormaBasica(
-                input.FatoCodigo, input.Ordem, input.Rotulo, TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao));
-            formaErros.AddRange(itemErros.Select(erro => erro with { Field = $"itens[{indice}].{erro.Field}" }));
+            string campo = $"itens[{indice}]";
+            int recusasAntes = erros.Count;
+            erros.AddRange(FatoColetado.ValidarFormaBasica(
+                    input.FatoCodigo, input.Ordem, input.Rotulo, TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao))
+                .Select(erro => erro with { Field = $"{campo}.{erro.Field}" }));
+
+            Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input, campo, erros);
+            obrigatoriedades[indice] = erros.Count == recusasAntes ? obrigatoriedade : null;
         }
 
-        if (formaErros.Count > 0)
-        {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
-        }
-
-        (IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
-            IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario) =
-            await ResolverVocabularioAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
+        Dictionary<string, FatoCandidatoView> catalogo = fatosDoCatalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
+        Dictionary<string, DescritorFatoCandidato> vocabulario = VocabularioDeFatos.Descritores(fatosDoCatalogo);
 
         // O domínio dos fatos categóricos cuja fonte é o processo vem do PRÓPRIO processo — uma
-        // pré-condição que os cite valida contra ele, nunca contra um catálogo global.
+        // regra que os cite valida contra ele, nunca contra um catálogo global.
         IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos =
-            VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
+            VocabularioDeFatos.DominiosDinamicos(processo, fatosDoCatalogo);
 
-        // Segunda passada: forma básica já confirmada para todos os fatos — resolve o
-        // vocabulário e a semântica de cada um, parando no primeiro que falhar. Essas checagens
-        // (catálogo, coerência de renderização, semântica de pré-condição, autorreferência)
-        // nunca foram cobertas pelo FluentValidation e continuam com essa granularidade, como já
-        // acontecia antes desta migração.
         List<FatoColetado> fatos = [];
-        foreach (FatoColetadoInput input in command.Itens)
+        for (int indice = 0; indice < command.Itens.Count; indice++)
         {
-            Result<FatoColetado> fatoResult = ResolverFato(input, catalogo, vocabulario, dominiosDinamicos);
-            if (fatoResult.IsFailure)
+            if (obrigatoriedades[indice] is not { } obrigatoriedade)
             {
-                return Result<MutacaoAceita>.Failure(fatoResult.Error!);
+                continue;
             }
 
-            fatos.Add(fatoResult.Value!);
+            string campo = $"itens[{indice}]";
+            Result<FatoColetado> fato = ResolverFato(command.Itens[indice], obrigatoriedade, catalogo, vocabulario, dominiosDinamicos);
+            if (fato.IsSuccess)
+            {
+                fatos.Add(fato.Value!);
+            }
+            else
+            {
+                erros.AddRange(fato.Errors.Select(erro => erro with { Field = string.IsNullOrEmpty(erro.Field) ? campo : $"{campo}.{erro.Field}" }));
+            }
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(erros);
         }
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
@@ -114,7 +119,7 @@ public static class DefinirFatosColetadosCommandHandler
             processo.Vinculos(),
             VinculosDeFatos.De(
                 fatos.Select(static f => f.FatoCodigo),
-                fatos.SelectMany(static f => f.Precondicoes).Select(static c => (c.Fato, c.Valor))));
+                fatos.SelectMany(static f => f.Condicoes).Select(static c => (c.Fato, c.Valor))));
         if (vinculoNovo.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
@@ -135,10 +140,35 @@ public static class DefinirFatosColetadosCommandHandler
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 
+    /// <summary>
+    /// A obrigatoriedade do item na forma do termo: <c>SEMPRE</c> ou <c>NUNCA</c> sem predicado,
+    /// <c>QUANDO</c> com ele. A semântica do predicado é conferida contra o catálogo, depois.
+    /// </summary>
+    private static Obrigatoriedade? ConferirObrigatoriedade(FatoColetadoInput input, string campo, List<FieldError> erros)
+    {
+        Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(input.PredicadoObrigatoriedade);
+        if (predicado.IsFailure)
+        {
+            erros.Add(new($"{campo}.predicadoObrigatoriedade", predicado.Error!));
+            return null;
+        }
+
+        if (EntradaDeRegras.Obrigatoriedade(input.Obrigatoriedade, predicado.Value) is { } obrigatoriedade)
+        {
+            return obrigatoriedade;
+        }
+
+        erros.Add(new($"{campo}.obrigatoriedade", new DomainError(
+            FatoColetadoErrorCodes.ObrigatoriedadeInvalida,
+            "A obrigatoriedade é SEMPRE ou NUNCA, sem predicado, ou QUANDO, com predicado.")));
+        return null;
+    }
+
     private static Result<FatoColetado> ResolverFato(
         FatoColetadoInput input,
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
-        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
+        Obrigatoriedade obrigatoriedade,
+        Dictionary<string, FatoCandidatoView> catalogo,
+        Dictionary<string, DescritorFatoCandidato> vocabulario,
         IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
         // Coletabilidade: o fato existe no vocabulário e é DECLARADO com binding de campo de
@@ -147,35 +177,42 @@ public static class DefinirFatosColetadosCommandHandler
         // responde num campo.
         if (!catalogo.TryGetValue(input.FatoCodigo, out FatoCandidatoView? view))
         {
-            return Result<FatoColetado>.Failure(new DomainError(
+            return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", new DomainError(
                 ColetabilidadeDeFato.FatoDesconhecido,
-                $"O fato '{input.FatoCodigo}' não pertence ao vocabulário de fatos do candidato."));
+                $"O fato '{input.FatoCodigo}' não pertence ao vocabulário de fatos do candidato."))]);
         }
 
         if (!ColetabilidadeDeFato.EhColetavel(view))
         {
-            return Result<FatoColetado>.Failure(new DomainError(
+            return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", new DomainError(
                 ColetabilidadeDeFato.FatoNaoColetavel,
                 $"O fato '{input.FatoCodigo}' não é coletável — só um fato declarado, respondido em campo de "
-                + "inscrição, pode ser coletado (derivados e computados não)."));
+                + "inscrição, pode ser coletado (derivados e computados não)."))]);
         }
 
         TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao);
         if (CoerenciaDeRenderizacao.Validar(tipoRenderizacao, view) is { } incoerencia)
         {
-            return Result<FatoColetado>.Failure(incoerencia);
+            return Result<FatoColetado>.ValidationFailure([new("tipoRenderizacao", incoerencia)]);
         }
 
         Result<IReadOnlyList<CondicaoPrecondicaoFato>?> precondicoesResult =
             ResolverPrecondicao(input.Precondicao, vocabulario, dominiosDinamicos);
         if (precondicoesResult.IsFailure)
         {
-            return Result<FatoColetado>.Failure(precondicoesResult.Error!);
+            return Result<FatoColetado>.ValidationFailure([new("precondicao", precondicoesResult.Error!)]);
+        }
+
+        if (obrigatoriedade.Predicado is { } predicado
+            && PredicadoDnfValidador.Validar(predicado, vocabulario, null, dominiosDinamicos) is { IsFailure: true } semantica)
+        {
+            return Result<FatoColetado>.ValidationFailure([new("predicadoObrigatoriedade", semantica.Error!)]);
         }
 
         return FatoColetado.Criar(
-            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, input.Obrigatorio, precondicoesResult.Value,
-            origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato);
+            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, obrigatoriedade, precondicoesResult.Value,
+            origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato,
+            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao);
     }
 
     /// <summary>
@@ -234,44 +271,6 @@ public static class DefinirFatosColetadosCommandHandler
         return validacao.IsFailure
             ? Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Failure(validacao.Error!)
             : Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Success(condicoes);
-    }
-
-    /// <summary>
-    /// Resolve o vocabulário fechado de fatos do candidato numa única passada do reader
-    /// cross-módulo: o catálogo cru por código (para a coletabilidade) e a projeção
-    /// <see cref="DescritorFatoCandidato"/> (para o validador de predicado), incluindo os
-    /// categóricos de escopo-processo como <see cref="TipoDominioFato.CategoricoDinamico"/>.
-    /// </summary>
-    private static async Task<(
-        IReadOnlyDictionary<string, FatoCandidatoView> Catalogo,
-        IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario)> ResolverVocabularioAsync(
-        IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader
-            .ListarAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal);
-        Dictionary<string, DescritorFatoCandidato> vocabulario = new(StringComparer.Ordinal);
-        foreach (FatoCandidatoView fato in fatos)
-        {
-            catalogo[fato.Codigo] = fato;
-
-            TipoDominioFato? tipoDominio = VocabularioDeFatos.Classificar(fato);
-
-            if (tipoDominio is not { } tipo)
-            {
-                continue;
-            }
-
-            Result<DescritorFatoCandidato> descritorResult = DescritorFatoCandidato.Criar(fato.Codigo, tipo, fato.ValoresDominio);
-            if (descritorResult.IsSuccess)
-            {
-                vocabulario[fato.Codigo] = descritorResult.Value!;
-            }
-        }
-
-        return (catalogo, vocabulario);
     }
 
 }

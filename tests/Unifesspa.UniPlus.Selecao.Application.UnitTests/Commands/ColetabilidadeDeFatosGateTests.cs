@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -69,10 +70,10 @@ public sealed class ColetabilidadeDeFatosGateTests
         ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL", Ativo: true);
 
     private static FatoColetado FatoColetadoModalidade() =>
-        FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!;
+        FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!;
 
     private static FatoColetado FatoColetadoCorRaca() =>
-        FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!;
+        FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!;
 
     [Fact(DisplayName = "Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar — o gate precede a canonicalização")]
     public async Task Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar()

@@ -6,6 +6,8 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -27,7 +29,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         CondicaoPrecondicaoFato.Criar(0, fato, Operador.Igual, Sim).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, params string[] cita) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, obrigatorio: false, [.. cita.Select(Cond)]).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. cita.Select(Cond)]).Value!;
 
     [Fact(DisplayName = "Grafo válido é aceito: cada pré-condição cita apenas fatos anteriores")]
     public void GrafoValido_Aceito()
@@ -53,6 +55,31 @@ public sealed class ProcessoSeletivoFatosColetadosTests
 
         resultado.IsFailure.Should().BeTrue("aciclicidade sozinha não garante que a dependência venha antes");
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+    }
+
+    private static FatoColetado ObrigatorioQuando(string codigo, int ordem, string citado, JsonElement? valor = null) =>
+        FatoColetado.Criar(
+            codigo, ordem, codigo, TipoRenderizacao.Booleano,
+            Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, valor ?? Sim).Value!)]).Value!),
+            null).Value!;
+
+    [Fact(DisplayName = "Obrigatoriedade QUANDO que cita campo posterior é recusada, como a pré-condição")]
+    public void ObrigatoriedadeCitaFatoPosterior_Recusada()
+    {
+        Result resultado = NovoProcesso().DefinirItens([ObrigatorioQuando("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)], PrecondicaoIfMatch.Ausente);
+
+        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+    }
+
+    [Fact(DisplayName = "O valor citado pela obrigatoriedade entra nos vínculos do processo")]
+    public void ObrigatoriedadeEntraNosVinculos()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirItens(
+            [Fato("COR_RACA", 0), ObrigatorioQuando("CONCORRER_PPI", 1, "COR_RACA", JsonSerializer.SerializeToElement("PRETA"))],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.Vinculos().Valores.Should().Contain(("COR_RACA", "PRETA"));
     }
 
     [Fact(DisplayName = "Ciclo é recusado com erro nomeado que mostra o caminho")]
@@ -111,7 +138,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     [Fact(DisplayName = "Fato citando a si mesmo é recusado na criação, antes de chegar ao grafo")]
     public void Autorreferencia_Recusada()
     {
-        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [Cond("PCD")]);
+        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Cond("PCD")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoAutorreferente);

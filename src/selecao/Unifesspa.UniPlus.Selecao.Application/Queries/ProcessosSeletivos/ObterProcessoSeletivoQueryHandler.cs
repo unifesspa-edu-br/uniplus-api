@@ -122,14 +122,16 @@ public static class ObterProcessoSeletivoQueryHandler
         fato.Ordem,
         fato.Rotulo,
         fato.TipoRenderizacao.ToCodigo(),
-        fato.Obrigatorio,
+        fato.Obrigatoriedade.ToDto(),
         ProjectPredicado(fato.Precondicoes, static c => (c.Clausula, c.Fato, c.Operador, c.Valor),
             static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)),
         fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo)
             ? [.. processo.OpcoesDoProcesso(fato.FatoCodigo).Select(static o => new OpcaoDoProcessoDto(o.Codigo, o.Rotulo, o.Ordem))]
             : null,
         fato.EtapaCodigo,
-        fato.Formato);
+        fato.Formato,
+        fato.Ajuda,
+        fato.PedirConfirmacao);
 
     private static ConfiguracaoDerivacaoDto ProjectConfiguracaoDerivacao(ConfiguracaoDerivacaoFato config) => new(
         config.CodigoFato,

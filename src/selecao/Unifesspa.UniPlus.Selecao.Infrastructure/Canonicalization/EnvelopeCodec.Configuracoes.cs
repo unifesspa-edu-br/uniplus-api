@@ -164,6 +164,45 @@ public sealed partial class EnvelopeCodec
         return etapas;
     }
 
+    /// <summary>
+    /// A obrigatoriedade de um item ou de um termo: <c>SEMPRE</c> ou <c>NUNCA</c> sem predicado,
+    /// <c>QUANDO</c> com ele. Nulo quando a forma é outra, com a recusa já propagada ao leitor.
+    /// </summary>
+    private static Obrigatoriedade? LerObrigatoriedade(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        JsonObject bloco = leitor.Objeto(item, "obrigatoriedade", path);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        string pathObrigatoriedade = $"{path}.obrigatoriedade";
+        leitor.ExigirChaves(bloco, pathObrigatoriedade, "tipo", "predicado");
+        string tipo = leitor.TextoNaoVazio(bloco, "tipo", pathObrigatoriedade);
+        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> linhas =
+            LerDnf(leitor, bloco, "predicado", pathObrigatoriedade);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        Result<PredicadoDnf?> predicado = PredicadoOpcional(linhas);
+        if (predicado.IsFailure)
+        {
+            return leitor.Propagar<Obrigatoriedade>(predicado.Error!);
+        }
+
+        return (PredicadoDnfJson.TipoDoToken(tipo), predicado.Value) switch
+        {
+            (TipoObrigatoriedade.Sempre, null) => Obrigatoriedade.Sempre,
+            (TipoObrigatoriedade.Nunca, null) => Obrigatoriedade.Nunca,
+            (TipoObrigatoriedade.Quando, { } quando) => Obrigatoriedade.Quando(quando),
+            _ => leitor.Propagar<Obrigatoriedade>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'{pathObrigatoriedade}' tem tipo SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado.")),
+        };
+    }
+
     private static TermoExigidoFormulario? LerTermoExigido(
         LeitorEnvelope leitor, JsonObject item, string path, FinalidadeFormulario finalidade)
     {
@@ -180,41 +219,20 @@ public sealed partial class EnvelopeCodec
         string formaAceite = leitor.TextoNaoVazio(item, "formaAceite", path, LimitesDoEnvelope.FormaAceiteDoTermo);
         string hash = leitor.TextoNaoVazio(item, "hashVersao", path, LimitesDoEnvelope.HashDaVersaoDoTermo);
         IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> exibicao = LerDnf(leitor, item, "exibicao", path);
-        JsonObject obrigatoriedadeBloco = leitor.Objeto(item, "obrigatoriedade", path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        string obrigatoriedadePath = $"{path}.obrigatoriedade";
-        leitor.ExigirChaves(obrigatoriedadeBloco, obrigatoriedadePath, "tipo", "predicado");
-        string tipo = leitor.TextoNaoVazio(obrigatoriedadeBloco, "tipo", obrigatoriedadePath);
-        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> predicado =
-            LerDnf(leitor, obrigatoriedadeBloco, "predicado", obrigatoriedadePath);
         if (leitor.Falhou)
         {
             return null;
         }
 
         Result<PredicadoDnf?> exibicaoLida = PredicadoOpcional(exibicao);
-        Result<PredicadoDnf?> predicadoLido = PredicadoOpcional(predicado);
-        if (exibicaoLida.IsFailure || predicadoLido.IsFailure)
+        if (exibicaoLida.IsFailure)
         {
-            return leitor.Propagar<TermoExigidoFormulario>((exibicaoLida.IsFailure ? exibicaoLida : predicadoLido).Error!);
+            return leitor.Propagar<TermoExigidoFormulario>(exibicaoLida.Error!);
         }
 
-        Obrigatoriedade? obrigatoriedade = (PredicadoDnfJson.TipoDoToken(tipo), predicadoLido.Value) switch
+        if (LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
         {
-            (TipoObrigatoriedade.Sempre, null) => Obrigatoriedade.Sempre,
-            (TipoObrigatoriedade.Nunca, null) => Obrigatoriedade.Nunca,
-            (TipoObrigatoriedade.Quando, { } quando) => Obrigatoriedade.Quando(quando),
-            _ => null,
-        };
-        if (obrigatoriedade is null)
-        {
-            return leitor.Propagar<TermoExigidoFormulario>(new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                $"'{obrigatoriedadePath}' tem tipo SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado."));
+            return null;
         }
 
         Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(

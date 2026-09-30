@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -41,7 +42,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, true, null, origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM",
@@ -70,7 +71,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             1.20m, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, true, null,
+            [FatoColetado.Criar("MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.MunicipiosDoBonus).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -93,7 +94,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, false, null).Value!],
+            [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
@@ -117,7 +118,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
                 [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, false, null).Value!],
+            [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)

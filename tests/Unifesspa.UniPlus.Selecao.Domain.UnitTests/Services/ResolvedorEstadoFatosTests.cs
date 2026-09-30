@@ -29,7 +29,7 @@ public sealed class ResolvedorEstadoFatosTests
         CondicaoPrecondicaoFato.Criar(0, fato, operador, valor).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, obrigatorio: false, precondicoes).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes).Value!;
 
     /// <summary>
     /// A tabela normativa de coleta. O gate de escola pública abre as subcotas; a dimensão PcD é a
@@ -96,9 +96,9 @@ public sealed class ResolvedorEstadoFatosTests
     public void DoisFormularios_ResolvemJuntos()
     {
         FatoColetado corRaca = FatoColetado.Criar(
-            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         FatoColetado declaracao = FatoColetado.Criar(
-            "DECLARACAO_PERTENCIMENTO", 0, "Declaração", TipoRenderizacao.Booleano, obrigatorio: true,
+            "DECLARACAO_PERTENCIMENTO", 0, "Declaração", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre,
             [Cond("COR_RACA", Operador.Igual, Cor("PRETA"))], finalidade: FinalidadeFormulario.Habilitacao).Value!;
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(

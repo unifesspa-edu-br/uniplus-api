@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -254,7 +255,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     /// </summary>
     private static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.SelecaoUnica)
     {
-        FatoColetado fato = FatoColetado.Criar(codigo, 0, codigo, renderizacao, true, null).Value!;
+        FatoColetado fato = FatoColetado.Criar(codigo, 0, codigo, renderizacao, Obrigatoriedade.Sempre, null).Value!;
         processo.DefinirItens([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 

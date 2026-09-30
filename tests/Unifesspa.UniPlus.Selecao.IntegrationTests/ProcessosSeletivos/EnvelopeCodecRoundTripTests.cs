@@ -12,6 +12,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -80,7 +81,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, obrigatorio: true, [
+            [FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
@@ -95,17 +96,41 @@ public sealed class EnvelopeCodecRoundTripTests
             .Should().Equal("INSCRICAO", "HABILITACAO");
     }
 
+    [Fact(DisplayName = "Item com obrigatoriedade QUANDO, ajuda e confirmação reproduz os bytes")]
+    public void RoundTrip_RegrasDoItem()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        processo.DefinirItens(
+        [
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+            FatoColetado.Criar(
+                "RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica,
+                Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas(
+                    [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!),
+                null, ajuda: "Renda por pessoa da família", pedirConfirmacao: true).Value!,
+        ]).IsSuccess.Should().BeTrue();
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        AssertRoundTrip(processo, CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        JsonObject renda = Envelope(congelado)["fatosColetados"]!.AsArray()
+            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "RENDA")!.AsObject();
+        renda["obrigatoriedade"]!["tipo"]!.GetValue<string>().Should().Be("QUANDO");
+        renda["pedirConfirmacao"]!.GetValue<bool>().Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Campo de texto com formato reproduz os bytes")]
     public void RoundTrip_CampoDeTexto()
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         processo.DefinirItens(
         [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
-            FatoColetado.Criar("NOME_SOCIAL", 2, "Nome social", TipoRenderizacao.Texto, obrigatorio: false, null, formato: "NOME_PESSOA").Value!,
+            FatoColetado.Criar("NOME_SOCIAL", 2, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, formato: "NOME_PESSOA").Value!,
         ]).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
@@ -1413,7 +1438,7 @@ public sealed class EnvelopeCodecRoundTripTests
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         processo.DefinirItens(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
@@ -1449,7 +1474,7 @@ public sealed class EnvelopeCodecRoundTripTests
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         processo.DefinirItens(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
@@ -1480,9 +1505,9 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.AbrirRetificacao("Ajusta as opções", versao, identificadorDaVersaoBase: null, "teste", DateTimeOffset.UtcNow)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!,
-             FatoColetado.Criar("LOCAL_PROVA", 1, "Local de prova", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+             FatoColetado.Criar("LOCAL_PROVA", 1, "Local de prova", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(

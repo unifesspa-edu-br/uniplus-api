@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -30,7 +31,7 @@ public sealed class FatoColetavelDeEscopoGateTests
 
     private static FatoColetado FatoCondicaoAtendimentoSemOferta() => FatoColetado.Criar(
         "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-        TipoRenderizacao.SelecaoMultipla, obrigatorio: false, null).Value!;
+        TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!;
 
     [Fact(DisplayName = "Publicar_ComFatoColetavelSemOferta_RecusaSemCanonicalizar — o gate precede a canonicalização")]
     public async Task Publicar_ComFatoColetavelSemOferta_RecusaSemCanonicalizar()

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -24,7 +25,7 @@ public sealed class GrafoDependenciaConjuntaTests
         CondicaoPrecondicaoFato.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
     private static FatoColetado Declarado(string codigo, int ordem, params string[] citados) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, obrigatorio: false, [.. citados.Select(Precond)]).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. citados.Select(Precond)]).Value!;
 
     private static ConfiguracaoDerivacaoFato Derivado(string codigo, params string[] citados) =>
         ConfiguracaoDerivacaoFato.Criar(codigo,

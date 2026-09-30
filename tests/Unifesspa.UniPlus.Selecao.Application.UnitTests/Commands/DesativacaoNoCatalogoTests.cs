@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -78,7 +79,7 @@ public sealed class DesativacaoNoCatalogoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         processo.DefinirItens(
-            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, true, null).Value!],
+            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = Catalogo(CorRaca());
 
@@ -86,8 +87,8 @@ public sealed class DesativacaoNoCatalogoTests
             .Select(static v => v.Codigo).Should().Equal("BRANCA", "PARDA");
 
         processo.DefinirItens(
-            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, true, null).Value!,
-             FatoColetado.Criar("BAIXA_RENDA", 1, "Baixa renda", TipoRenderizacao.Booleano, false,
+            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+             FatoColetado.Criar("BAIXA_RENDA", 1, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
                  [CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!]).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         catalogo["BAIXA_RENDA"] = new FatoCandidatoView(
