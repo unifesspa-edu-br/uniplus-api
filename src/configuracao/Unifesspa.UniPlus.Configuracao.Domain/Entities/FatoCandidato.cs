@@ -4,49 +4,31 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Entrada do vocabulário fechado de fatos do candidato — o catálogo
-/// <c>rol_de_fatos_candidato</c> (UNI-REQ-0077, ADR-0111, refinada pela ADR-0116).
-/// Descreve o que o sistema <em>sabe perguntar</em> sobre um candidato: para cada
-/// fato, o seu <see cref="Dominio"/> (tipo de dado), a sua <see cref="Origem"/>
-/// (como o valor chega ao sistema), a sua <see cref="Cardinalidade"/> (um valor ou
-/// um conjunto), o seu <see cref="PontoResolucao"/> (a fase em que o valor fica
-/// conhecido), o seu <see cref="Binding"/> (de onde/como o valor é produzido) e,
-/// quando aplicável, o conjunto fechado de <see cref="ValoresDominio"/> ou de
-/// <see cref="ValoresDominioDeclarados"/>. Não armazena o valor de nenhum
-/// candidato — é metadado de classificação, sem PII.
+/// Um fato do candidato no catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0143, ADR-0136):
+/// o que o sistema sabe perguntar ou derivar sobre um candidato. Para cada fato, o seu
+/// <see cref="Dominio"/>, a sua <see cref="Origem"/>, a sua <see cref="Cardinalidade"/>, a
+/// <see cref="FonteValores"/> do categórico, o <see cref="PontoResolucao"/>, o
+/// <see cref="Binding"/>, o <see cref="Escopo"/> e a proteção de dados que o tratamento exige.
+/// Não armazena o valor de nenhum candidato.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>Seed-governado e append-only</strong> (molde de <c>RegraCatalogo</c>):
-/// não é CRUD de administrador — as entradas são semeadas por código, e a entidade
-/// deriva de <see cref="EntityBase"/> puro (sem soft-delete). A evolução do
-/// catálogo é feita por <em>seed + nova migration</em>, não por API: a ADR-0111
-/// permite corrigir a <see cref="Descricao"/> (cosmética) e <strong>crescer</strong>
-/// (nunca remover nem renomear) os <see cref="ValoresDominio"/>/
-/// <see cref="ValoresDominioDeclarados"/> de um categórico estático — porque
-/// remover um valor já citado orfanaria um predicado congelado (RN08). A única
-/// mutação de instância é <see cref="AdicionarValorDominio"/>, exercida pelo
-/// próprio seed para montar os <see cref="ValoresDominioDeclarados"/> — nunca em
-/// runtime de requisição.
-/// </para>
-/// <para>
-/// <strong>Estático × escopo-processo</strong> é a nulidade de
-/// <see cref="ValoresDominio"/>/<see cref="ValoresDominioDeclarados"/>, não um
-/// campo próprio: um categórico com valores é de conjunto <em>global</em> (ex.:
-/// <c>COR_RACA</c>); um categórico com valores nulos é de <em>escopo-processo</em>
-/// (ex.: <c>MODALIDADE</c>, <c>TIPO_DEFICIENCIA</c>) — os valores válidos são os
-/// ofertados pelo processo, e quem os resolve é o consumidor, contra a oferta
-/// congelada no snapshot (ADR-0061).
+/// Dois regimes no mesmo cadastro: o fato de <b>sistema</b> é semeado por código e só tem nome e
+/// descrição editáveis, porque o sistema depende da sua forma; o fato do <b>administrador</b> é
+/// cadastrado em tempo de execução. Em nenhum dos dois o fato é apagado: desativar bloqueia só
+/// vínculos novos, e o processo que já o usa continua com a cópia que congelou (ADR-0061).
 /// </para>
 /// </remarks>
-public sealed class FatoCandidato : EntityBase
+public sealed class FatoCandidato : EntityBase, IAuditableEntity
 {
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     private const int BindingMaxLength = 200;
+    private const int FinalidadeTratamentoMaxLength = 500;
 
     private const string PrefixoBindingDerivadoAtributo = "ATRIBUTO_CANDIDATO";
     private const string PrefixoBindingDerivadoRegra = "REGRA_DERIVACAO";
@@ -91,19 +73,32 @@ public sealed class FatoCandidato : EntityBase
     /// </summary>
     public string Binding { get; private set; } = null!;
 
-    /// <summary>
-    /// Conjunto fechado de valores de um categórico <em>estático</em>. Nulo é
-    /// significante: para categórico, nulo = escopo-processo; para booleano/numérico,
-    /// é sempre nulo. Não confundir com lista vazia (proibida).
-    /// </summary>
-    public IReadOnlyList<string>? ValoresDominio { get; private set; }
+    /// <summary>Sobre quem o fato é respondido: o candidato ou cada membro de um grupo repetível.</summary>
+    public EscopoFato Escopo { get; private set; }
+
+    /// <summary>Classificação de proteção de dados na escala da ADR-0081.</summary>
+    public ClassificacaoProtecaoDado ClassificacaoProtecao { get; private set; }
+
+    /// <summary>Para que o dado é tratado.</summary>
+    public string FinalidadeTratamento { get; private set; } = null!;
+
+    /// <summary>Hipótese legal de tratamento, do art. 7º ou do art. 11 da LGPD conforme a classificação.</summary>
+    public HipoteseLegalTratamento HipoteseLegal { get; private set; }
+
+    /// <summary>Fato semeado pelo sistema: só nome e descrição são editáveis.</summary>
+    public bool Sistema { get; private set; }
+
+    /// <summary>Fato inativo não recebe vínculo novo; os existentes continuam.</summary>
+    public bool Ativo { get; private set; }
+
+    public string? CreatedBy { get; private set; }
+    public string? UpdatedBy { get; private set; }
 
     private readonly List<FatoValorDominio> _valoresDominioDeclarados = [];
 
     /// <summary>
-    /// Descrição por valor de um categórico estático (ADR-0116) — complementa
-    /// <see cref="ValoresDominio"/> com a descrição que orienta a escolha do
-    /// candidato quando <see cref="Origem"/> é <see cref="OrigemFato.Declarado"/>.
+    /// Os valores de um categórico de fonte global, com a descrição que orienta a escolha do
+    /// candidato quando <see cref="Origem"/> é <see cref="OrigemFato.Declarado"/> (ADR-0116).
     /// Não ordenada aqui (mesmo padrão de <c>OfertaAtendimentoEspecializado.Condicoes</c>)
     /// — a ordenação por <c>Ordem</c>/<c>Codigo</c> é responsabilidade de quem
     /// projeta a leitura (<c>FatoCandidatoReader</c>), não do agregado.
@@ -123,9 +118,11 @@ public sealed class FatoCandidato : EntityBase
         OrigemFato origem,
         CardinalidadeFato cardinalidade,
         FonteValoresFato? fonteValores,
-        IReadOnlyList<string>? valoresDominio,
         string pontoResolucao,
-        string binding)
+        string binding,
+        EscopoFato escopo,
+        ProtecaoValidada protecao,
+        bool sistema)
     {
         Codigo = codigo;
         FonteValores = fonteValores;
@@ -134,16 +131,19 @@ public sealed class FatoCandidato : EntityBase
         Dominio = dominio;
         Origem = origem;
         Cardinalidade = cardinalidade;
-        ValoresDominio = valoresDominio;
         PontoResolucao = pontoResolucao;
         Binding = binding;
+        Escopo = escopo;
+        ClassificacaoProtecao = protecao.Classificacao;
+        FinalidadeTratamento = protecao.Finalidade;
+        HipoteseLegal = protecao.Hipotese;
+        Sistema = sistema;
+        Ativo = true;
     }
 
     /// <summary>
-    /// Factory canônica (usada pelo seed): valida o código, o domínio, a origem,
-    /// a cardinalidade, o ponto de resolução, o binding e a coerência de
-    /// <paramref name="valoresDominio"/> com o domínio. A única mutação após a
-    /// criação é <see cref="AdicionarValorDominio"/>.
+    /// Factory canônica: valida o código, o nome, o domínio, a origem, a cardinalidade, a fonte
+    /// dos valores, o ponto de resolução, o binding, o escopo e a proteção de dados.
     /// </summary>
     public static Result<FatoCandidato> Criar(
         string codigo,
@@ -153,9 +153,13 @@ public sealed class FatoCandidato : EntityBase
         OrigemFato origem,
         CardinalidadeFato cardinalidade,
         FonteValoresFato? fonteValores,
-        IReadOnlyList<string>? valoresDominio,
         string pontoResolucao,
-        string binding)
+        string binding,
+        EscopoFato escopo,
+        ClassificacaoProtecaoDado classificacaoProtecao,
+        string finalidadeTratamento,
+        HipoteseLegalTratamento hipoteseLegal,
+        bool sistema)
     {
         Result<CodigoFatoCandidato> codigoResult = CodigoFatoCandidato.Criar(codigo);
         if (codigoResult.IsFailure)
@@ -163,25 +167,10 @@ public sealed class FatoCandidato : EntityBase
             return Result<FatoCandidato>.Failure(codigoResult.Error!);
         }
 
-        if (string.IsNullOrWhiteSpace(nome))
+        Result<(string Nome, string? Descricao)> descritivo = ValidarDescritivo(nome, descricao);
+        if (descritivo.IsFailure)
         {
-            return Falha(FatoCandidatoErrorCodes.NomeObrigatorio, "Nome do fato é obrigatório.");
-        }
-
-        string nomeNormalizado = nome.Trim();
-        if (nomeNormalizado.Length > NomeMaxLength)
-        {
-            return Falha(
-                FatoCandidatoErrorCodes.NomeTamanho,
-                $"Nome do fato deve ter no máximo {NomeMaxLength} caracteres.");
-        }
-
-        string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
-        if (descricaoNormalizada is { Length: > DescricaoMaxLength })
-        {
-            return Falha(
-                FatoCandidatoErrorCodes.DescricaoTamanho,
-                $"Descrição do fato deve ter no máximo {DescricaoMaxLength} caracteres.");
+            return Result<FatoCandidato>.Failure(descritivo.Error!);
         }
 
         if (dominio == DominioFato.Nenhum)
@@ -229,12 +218,6 @@ public sealed class FatoCandidato : EntityBase
                 "Só fato categórico declara a fonte dos seus valores.");
         }
 
-        Result<IReadOnlyList<string>?> valoresResult = ValidarValoresDominio(dominio, valoresDominio);
-        if (valoresResult.IsFailure)
-        {
-            return Result<FatoCandidato>.Failure(valoresResult.Error!);
-        }
-
         Result<string> pontoResolucaoResult = ValidarPontoResolucao(pontoResolucao);
         if (pontoResolucaoResult.IsFailure)
         {
@@ -247,17 +230,94 @@ public sealed class FatoCandidato : EntityBase
             return Result<FatoCandidato>.Failure(bindingResult.Error!);
         }
 
+        // O fato do administrador não tem código que calcule ou traga o valor: é declarado, ou
+        // derivado pela regra que ele mesmo cadastra. Atributo do candidato e integração só existem
+        // em fato de sistema.
+        if (!sistema && (origem == OrigemFato.Integracao || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoAtributo + ":", StringComparison.Ordinal)))
+        {
+            return Falha(
+                FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
+                "Fato do administrador é declarado ou derivado por regra; atributo do candidato e integração só existem em fato de sistema.");
+        }
+
+        if (escopo == EscopoFato.Nenhum || !Enum.IsDefined(escopo))
+        {
+            return Falha(FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.");
+        }
+
+        Result<ProtecaoValidada> protecao = ValidarProtecao(classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
+        if (protecao.IsFailure)
+        {
+            return Result<FatoCandidato>.Failure(protecao.Error!);
+        }
+
         return Result<FatoCandidato>.Success(new FatoCandidato(
             codigoResult.Value!.Valor,
-            nomeNormalizado,
-            descricaoNormalizada,
+            descritivo.Value.Nome,
+            descritivo.Value.Descricao,
             dominio,
             origem,
             cardinalidade,
             fonteValores,
-            valoresResult.Value,
             pontoResolucaoResult.Value!,
-            bindingResult.Value!));
+            bindingResult.Value!,
+            escopo,
+            protecao.Value,
+            sistema));
+    }
+
+    /// <summary>
+    /// Altera o nome e a descrição. Os eixos do fato — domínio, origem, cardinalidade, escopo,
+    /// fonte, ponto de resolução, vínculo e proteção de dados — não se editam depois do cadastro:
+    /// mudança num eixo é um fato novo (ADR-0136).
+    /// </summary>
+    public Result AlterarDescritivo(string nome, string? descricao)
+    {
+        Result<(string Nome, string? Descricao)> descritivo = ValidarDescritivo(nome, descricao);
+        if (descritivo.IsFailure)
+        {
+            return Result.Failure(descritivo.Error!);
+        }
+
+        (Nome, Descricao) = descritivo.Value;
+        return Result.Success();
+    }
+
+    /// <summary>Reativa o fato do administrador, que volta a aceitar vínculos novos.</summary>
+    public Result Ativar()
+    {
+        if (RecusaSeSistema() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        if (Ativo)
+        {
+            return Result.Failure(new DomainError(FatoCandidatoErrorCodes.JaAtivo, "O fato já está ativo."));
+        }
+
+        Ativo = true;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Desativa o fato do administrador: vínculos novos são recusados, os existentes continuam. O
+    /// fato de sistema não é desativado.
+    /// </summary>
+    public Result Desativar()
+    {
+        if (RecusaSeSistema() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        if (!Ativo)
+        {
+            return Result.Failure(new DomainError(FatoCandidatoErrorCodes.JaDesativado, "O fato já está desativado."));
+        }
+
+        Ativo = false;
+        return Result.Success();
     }
 
     /// <summary>
@@ -270,6 +330,11 @@ public sealed class FatoCandidato : EntityBase
     /// </summary>
     public Result AdicionarValorDominio(string codigo, string? descricao, int ordem, bool ativo)
     {
+        if (RecusaSeSistema() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
         if (Dominio != DominioFato.Categorico)
         {
             return Result.Failure(new DomainError(
@@ -333,40 +398,78 @@ public sealed class FatoCandidato : EntityBase
         return Result.Success();
     }
 
-    private static Result<IReadOnlyList<string>?> ValidarValoresDominio(
-        DominioFato dominio,
-        IReadOnlyList<string>? valoresDominio)
+    private DomainError? RecusaSeSistema() =>
+        Sistema
+            ? new DomainError(
+                FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao,
+                "Fato de sistema só tem o nome e a descrição editáveis.")
+            : null;
+
+    private static Result<(string Nome, string? Descricao)> ValidarDescritivo(string nome, string? descricao)
     {
-        if (valoresDominio is null)
+        if (string.IsNullOrWhiteSpace(nome))
         {
-            return Result<IReadOnlyList<string>?>.Success(null);
+            return Result<(string, string?)>.Failure(new DomainError(
+                FatoCandidatoErrorCodes.NomeObrigatorio, "Nome do fato é obrigatório."));
         }
 
-        if (dominio != DominioFato.Categorico)
+        string nomeNormalizado = nome.Trim();
+        if (nomeNormalizado.Length > NomeMaxLength)
         {
-            return Result<IReadOnlyList<string>?>.Failure(new DomainError(
-                FatoCandidatoErrorCodes.ValoresDominioNaoPermitidosForaDeCategorico,
-                "Valores de domínio só são permitidos para fatos categóricos; "
-                + "booleano e numérico têm valores nulos."));
+            return Result<(string, string?)>.Failure(new DomainError(
+                FatoCandidatoErrorCodes.NomeTamanho, $"Nome do fato deve ter no máximo {NomeMaxLength} caracteres."));
         }
 
-        if (valoresDominio.Count == 0 || valoresDominio.Any(string.IsNullOrWhiteSpace))
+        string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
+        if (descricaoNormalizada is { Length: > DescricaoMaxLength })
         {
-            return Result<IReadOnlyList<string>?>.Failure(new DomainError(
-                FatoCandidatoErrorCodes.ValoresDominioComItemEmBranco,
-                "A lista de valores de domínio, quando presente, deve ser não vazia e sem itens em branco."));
+            return Result<(string, string?)>.Failure(new DomainError(
+                FatoCandidatoErrorCodes.DescricaoTamanho, $"Descrição do fato deve ter no máximo {DescricaoMaxLength} caracteres."));
         }
 
-        string[] normalizados = [.. valoresDominio.Select(v => v.Trim())];
-        if (normalizados.Distinct(StringComparer.Ordinal).Count() != normalizados.Length)
-        {
-            return Result<IReadOnlyList<string>?>.Failure(new DomainError(
-                FatoCandidatoErrorCodes.ValoresDominioComDuplicata,
-                "A lista de valores de domínio não pode conter duplicatas."));
-        }
-
-        return Result<IReadOnlyList<string>?>.Success(normalizados);
+        return Result<(string, string?)>.Success((nomeNormalizado, descricaoNormalizada));
     }
+
+    private static Result<ProtecaoValidada> ValidarProtecao(
+        ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese)
+    {
+        if (classificacao == ClassificacaoProtecaoDado.Nenhuma || !Enum.IsDefined(classificacao))
+        {
+            return FalhaProtecao(
+                FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria, "Classificação de proteção de dados do fato é obrigatória.");
+        }
+
+        if (string.IsNullOrWhiteSpace(finalidade))
+        {
+            return FalhaProtecao(
+                FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria, "Finalidade do tratamento do fato é obrigatória.");
+        }
+
+        string finalidadeNormalizada = finalidade.Trim();
+        if (finalidadeNormalizada.Length > FinalidadeTratamentoMaxLength)
+        {
+            return FalhaProtecao(
+                FatoCandidatoErrorCodes.FinalidadeTratamentoTamanho,
+                $"Finalidade do tratamento deve ter no máximo {FinalidadeTratamentoMaxLength} caracteres.");
+        }
+
+        if (hipotese == HipoteseLegalTratamento.Nenhuma || !Enum.IsDefined(hipotese))
+        {
+            return FalhaProtecao(FatoCandidatoErrorCodes.HipoteseLegalObrigatoria, "Hipótese legal de tratamento do fato é obrigatória.");
+        }
+
+        if (!HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, classificacao))
+        {
+            return FalhaProtecao(
+                FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao,
+                "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.");
+        }
+
+        return Result<ProtecaoValidada>.Success(new ProtecaoValidada(classificacao, finalidadeNormalizada, hipotese));
+    }
+
+    private static Result<ProtecaoValidada> FalhaProtecao(string codigo, string mensagem) =>
+        Result<ProtecaoValidada>.Failure(new DomainError(codigo, mensagem));
 
     private static Result<string> ValidarPontoResolucao(string pontoResolucao)
     {
@@ -450,4 +553,8 @@ public sealed class FatoCandidato : EntityBase
 
     private static Result<FatoCandidato> Falha(string codigo, string mensagem) =>
         Result<FatoCandidato>.Failure(new DomainError(codigo, mensagem));
+
+    /// <summary>A proteção de dados já validada, aplicada na criação.</summary>
+    private readonly record struct ProtecaoValidada(
+        ClassificacaoProtecaoDado Classificacao, string Finalidade, HipoteseLegalTratamento Hipotese);
 }

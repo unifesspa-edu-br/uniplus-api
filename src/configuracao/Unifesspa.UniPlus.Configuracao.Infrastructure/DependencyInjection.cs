@@ -68,8 +68,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ITipoProcessoReader, TipoProcessoReader>();
         services.AddScoped<ITipoEtapaReader, TipoEtapaReader>();
         services.AddScoped<IOfertaCursoReader, OfertaCursoReader>();
-        // Catálogo seed-governado de fatos do candidato (ADR-0111): só leitura,
-        // sem repositório (não há escrita em runtime).
+        // Leitura cross-módulo do catálogo de fatos do candidato (ADR-0056).
         services.AddScoped<IFatoCandidatoReader, FatoCandidatoReader>();
         services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
         services.AddScoped<ICalendarioVigenteReader, CalendarioVigenteReader>();

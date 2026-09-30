@@ -9,13 +9,6 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 ///   <item><description>demais → 422 Unprocessable Entity</description></item>
 /// </list>
 /// </summary>
-/// <remarks>
-/// Não há <c>CodigoJaExiste</c> (409): o catálogo é seed-governado e append-only —
-/// não há caminho de escrita em runtime que possa colidir. A unicidade é garantida
-/// pelo índice único total e por teste sobre a fonte do seed. Os erros de validação
-/// são alcançáveis apenas pela semeadura em desenvolvimento (defesa em profundidade
-/// da factory), nunca por requisição de usuário.
-/// </remarks>
 public static class FatoCandidatoErrorCodes
 {
     public const string CodigoObrigatorio = "FatoCandidato.CodigoObrigatorio";
@@ -31,10 +24,23 @@ public static class FatoCandidatoErrorCodes
     public const string CardinalidadeInvalida = "FatoCandidato.CardinalidadeInvalida";
     public const string FonteValoresObrigatoria = "FatoCandidato.FonteValoresObrigatoria";
     public const string FonteValoresForaDeCategorico = "FatoCandidato.FonteValoresForaDeCategorico";
-    public const string ValoresDominioNaoPermitidosForaDeCategorico =
-        "FatoCandidato.ValoresDominioNaoPermitidosForaDeCategorico";
-    public const string ValoresDominioComItemEmBranco = "FatoCandidato.ValoresDominioComItemEmBranco";
-    public const string ValoresDominioComDuplicata = "FatoCandidato.ValoresDominioComDuplicata";
+    public const string EscopoObrigatorio = "FatoCandidato.EscopoObrigatorio";
+    public const string ClassificacaoProtecaoObrigatoria = "FatoCandidato.ClassificacaoProtecaoObrigatoria";
+    public const string FinalidadeTratamentoObrigatoria = "FatoCandidato.FinalidadeTratamentoObrigatoria";
+    public const string FinalidadeTratamentoTamanho = "FatoCandidato.FinalidadeTratamentoTamanho";
+    public const string HipoteseLegalObrigatoria = "FatoCandidato.HipoteseLegalObrigatoria";
+
+    /// <summary>Hipótese do art. 7º em fato sensível, ou do art. 11 em fato não sensível.</summary>
+    public const string HipoteseLegalIncompativelComClassificacao = "FatoCandidato.HipoteseLegalIncompativelComClassificacao";
+
+    /// <summary>Fato de sistema só tem nome e descrição editáveis.</summary>
+    public const string FatoDeSistemaSoEditaNomeEDescricao = "FatoCandidato.FatoDeSistemaSoEditaNomeEDescricao";
+
+    /// <summary>Fato do administrador com vínculo de atributo do candidato ou de integração.</summary>
+    public const string VinculoExclusivoDeFatoDeSistema = "FatoCandidato.VinculoExclusivoDeFatoDeSistema";
+
+    public const string JaAtivo = "FatoCandidato.JaAtivo";
+    public const string JaDesativado = "FatoCandidato.JaDesativado";
 
     /// <summary>Fase em que o valor do fato fica conhecido (ADR-0116) ausente.</summary>
     public const string PontoResolucaoObrigatorio = "FatoCandidato.PontoResolucaoObrigatorio";

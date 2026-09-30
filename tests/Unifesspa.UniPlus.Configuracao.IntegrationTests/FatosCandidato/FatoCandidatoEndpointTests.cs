@@ -63,10 +63,8 @@ public sealed class FatoCandidatoEndpointTests
         fato.Should().NotBeNull();
         fato!.Codigo.Should().Be("COR_RACA");
         fato.Dominio.Should().Be("CATEGORICO");
-        // O jsonb legado migrou para ValoresDominioDeclarados (ADR-0116), mas a view
-        // projeta os códigos de volta para ValoresDominio — o consumidor cross-módulo
-        // (PredicadoDnfValidador) depende disso para classificar COR_RACA como
-        // categórico estático, não escopo-processo/dinâmico.
+        // A view projeta os códigos dos valores declarados em ValoresDominio, que o consumidor
+        // cross-módulo (PredicadoDnfValidador) usa como domínio do categórico estático.
         fato.ValoresDominio.Should().Contain("PRETA");
         fato.ValoresDominioDeclarados.Should().NotBeNull().And.Contain(v => v.Codigo == "PRETA");
     }

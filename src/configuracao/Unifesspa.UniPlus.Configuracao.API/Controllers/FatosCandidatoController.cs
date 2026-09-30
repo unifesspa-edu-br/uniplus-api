@@ -12,10 +12,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 
 /// <summary>
 /// Endpoints públicos de leitura do catálogo <c>rol_de_fatos_candidato</c> — o
-/// vocabulário fechado de fatos do candidato (UNI-REQ-0077, ADR-0111).
-/// <strong>Somente leitura</strong>: o catálogo é seed-governado e append-only
-/// (adicionar um fato é um PR de desenvolvimento, nunca uma operação de tela), por
-/// isso não há rota admin de escrita.
+/// catálogo de fatos do candidato (UNI-REQ-0077, UNI-REQ-0143, ADR-0136). Este controller só
+/// lê o catálogo.
 /// </summary>
 [ApiController]
 [SuppressMessage(

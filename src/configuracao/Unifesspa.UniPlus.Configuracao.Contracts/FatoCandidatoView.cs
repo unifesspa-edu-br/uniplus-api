@@ -15,10 +15,9 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="Origem">Origem do dado — token canônico (DERIVADO, DECLARADO, INTEGRACAO).</param>
 /// <param name="Cardinalidade">Cardinalidade — token canônico (ESCALAR, MULTIVALORADO).</param>
 /// <param name="ValoresDominio">
-/// Conjunto fechado de valores de um categórico estático, ou <see langword="null"/>
-/// quando não há enumeração estática — booleano/numérico, ou categórico de
-/// escopo-processo (cujos valores válidos vêm da oferta congelada do processo). O
-/// <see langword="null"/> é significante e sobrevive ao round-trip (não é lista vazia).
+/// Os códigos dos valores de um categórico de fonte global, na ordem de
+/// <paramref name="ValoresDominioDeclarados"/>, ou <see langword="null"/> quando o fato não tem
+/// valores no catálogo.
 /// </param>
 /// <param name="PontoResolucao">Código canônico da fase (<c>FaseCanonicaCatalogo</c>) em que o valor do fato fica conhecido.</param>
 /// <param name="Binding">Referência de onde/como o valor é produzido, no formato <c>"{PREFIXO}:{REFERENCIA}"</c>.</param>

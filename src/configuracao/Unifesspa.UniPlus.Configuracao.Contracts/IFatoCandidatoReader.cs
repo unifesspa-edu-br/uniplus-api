@@ -5,7 +5,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// Expõe o vocabulário fechado de fatos do candidato para consumo por outros
 /// bounded contexts (ex.: o validador de predicado de desempate e o gatilho de
 /// exigência documental do Módulo Seleção) sem acesso direto ao banco de
-/// Configuração. Somente leitura — o catálogo é seed-governado e append-only.
+/// Configuração. Somente leitura.
 /// </summary>
 public interface IFatoCandidatoReader
 {

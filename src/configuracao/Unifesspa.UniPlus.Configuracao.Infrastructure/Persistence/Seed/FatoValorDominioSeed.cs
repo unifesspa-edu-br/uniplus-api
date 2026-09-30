@@ -62,9 +62,9 @@ public static class FatoValorDominioSeed
 
 /// <summary>
 /// Definição de uma linha do seed de <see cref="Domain.Entities.FatoValorDominio"/>
-/// (fonte única). Não passa pela factory (seed materializa linhas diretamente); a
-/// coerência com as invariantes de domínio é garantida por teste de unidade sobre
-/// <c>FatoCandidato.AdicionarValorDominio</c> e por índice único de banco.
+/// (fonte única), sempre de fato de sistema. Não passa pela factory: o seed materializa as linhas
+/// diretamente, e o fato de sistema não recebe valor por <c>FatoCandidato.AdicionarValorDominio</c>.
+/// A unicidade do código é garantida pelo índice único de banco e pelo teste do seed.
 /// </summary>
 public sealed record FatoValorDominioSeedItem(
     Guid Id,
