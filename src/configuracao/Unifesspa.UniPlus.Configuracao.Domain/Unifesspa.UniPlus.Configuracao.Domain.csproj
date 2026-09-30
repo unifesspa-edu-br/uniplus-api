@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Regras\Unifesspa.UniPlus.Regras.csproj" />
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
   </ItemGroup>
 

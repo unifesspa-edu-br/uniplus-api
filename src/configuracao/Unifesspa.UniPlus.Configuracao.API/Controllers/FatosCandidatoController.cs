@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura do catálogo <c>rol_de_fatos_candidato</c> — o
 /// catálogo de fatos do candidato (UNI-REQ-0077, UNI-REQ-0143, ADR-0136), e a manutenção pelo
-/// papel <c>plataforma-admin</c>: cadastro de fato declarado, edição de nome e descrição,
-/// desativação e valores de domínio.
+/// papel <c>plataforma-admin</c>: cadastro de fato declarado e de derivado por regra, edição de
+/// nome e descrição, desativação, valores de domínio e regras padrão do derivado.
 /// </summary>
 [ApiController]
 [SuppressMessage(
@@ -139,6 +139,47 @@ public sealed class FatosCandidatoController : ControllerBase
         return resultado.IsSuccess
             ? CreatedAtAction(nameof(ObterParaManutencao), new { id = resultado.Value }, resultado.Value)
             : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Cadastra um fato derivado por regra, booleano ou categórico. As regras padrão são definidas
+    /// depois, quando o categórico já tem os valores que elas contribuem.
+    /// </summary>
+    [HttpPost("admin/fatos-candidato/derivados")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CriarDerivado([FromBody] CriarFatoDerivadoCommand command, CancellationToken cancellationToken)
+    {
+        Result<Guid> resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess
+            ? CreatedAtAction(nameof(ObterParaManutencao), new { id = resultado.Value }, resultado.Value)
+            : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Substitui as regras padrão do derivado por regra, que o processo copia como ponto de partida.
+    /// Lista vazia remove as regras.
+    /// </summary>
+    [HttpPut("admin/fatos-candidato/{id:guid}/regras-padrao")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public Task<IActionResult> DefinirRegrasPadrao(Guid id, [FromBody] RegrasPadraoInput request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return Enviar(new DefinirRegrasPadraoCommand(id, request.Regras), cancellationToken);
     }
 
     /// <summary>Edita o nome e a descrição; os eixos do fato não se editam depois do cadastro.</summary>

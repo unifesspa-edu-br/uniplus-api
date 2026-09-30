@@ -8,7 +8,9 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Configuração EF Core do catálogo <see cref="FatoCandidato"/> — a tabela
@@ -114,6 +116,14 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
         builder.Property(f => f.PontoResolucao).HasMaxLength(PontoResolucaoMaxLength).IsRequired();
         builder.Property(f => f.Binding).HasMaxLength(BindingMaxLength).IsRequired();
 
+        // Regras padrão do derivado por regra (ADR-0136): lidas e gravadas sempre inteiras, junto do
+        // fato, sem consulta por condição — por isso num documento, e não em linhas.
+        builder.Property(f => f.RegrasPadrao)
+            .HasColumnType("jsonb")
+            .HasConversion(RegrasPadraoJson.Converter, RegrasPadraoJson.Comparer)
+            .HasDefaultValueSql("'[]'::jsonb")
+            .IsRequired();
+
         // Coleção filha (ADR-0116): descrição por valor de um categórico estático.
         // Cascade porque o filho não tem sentido sem o pai (mesmo padrão de
         // OfertaAtendimentoEspecializado.Condicoes).
@@ -212,6 +222,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             FatoCandidatoSeed.HipoteseLegal,
             Sistema = true,
             Ativo = true,
+            RegrasPadrao = (IReadOnlyList<RegraDerivacao>)[],
             CreatedAt = seedCriadoEm,
         });
     }

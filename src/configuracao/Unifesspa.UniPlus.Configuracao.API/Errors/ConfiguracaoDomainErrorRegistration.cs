@@ -744,6 +744,60 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.binding_referencia_regra_incoerente",
                 "Binding de regra de derivação referencia outro fato, não o próprio")),
 
+        new(FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.derivado_por_regra_so_booleano_ou_categorico",
+                "Fato derivado por regra é booleano ou categórico")),
+
+        new(FatoCandidatoErrorCodes.RegrasPadraoSoEmDerivadoPorRegra,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.regras_padrao_so_em_derivado_por_regra",
+                "Só o fato derivado por regra tem regras padrão")),
+
+        new(FatoCandidatoErrorCodes.RegraCitaFatoNaoCitavel,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.regra_cita_fato_nao_citavel",
+                "A regra cita fato que não entra em predicado")),
+
+        new(FatoCandidatoErrorCodes.RegraCitaFatoDesativado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.regra_cita_fato_desativado",
+                "A regra passa a citar fato desativado")),
+
+        new(FatoCandidatoErrorCodes.RegraCitaValorDesativado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.regra_cita_valor_desativado",
+                "A regra passa a citar valor desativado")),
+
+        new(FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.classificacao_abaixo_da_dependencia",
+                "O derivado protege menos que um fato que ele cita")),
+
+        new(FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.ponto_resolucao_anterior_a_dependencia",
+                "O derivado resolve antes de um fato que ele cita")),
+
+        new(FatoCandidatoErrorCodes.CicloEntreDerivados,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.ciclo_entre_derivados",
+                "As regras fecham ciclo entre derivados")),
+
+        new(FatoCandidatoErrorCodes.RegraPadraoMalformada,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.regra_padrao_malformada",
+                "A lista de regras, uma regra ou uma condição veio nula")),
+
         new(FatoCandidatoErrorCodes.CodigoJaExiste,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,

@@ -2,10 +2,12 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Um fato do candidato no catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0143, ADR-0136):
@@ -93,6 +95,17 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
     /// <summary>Fato inativo não recebe vínculo novo; os existentes continuam.</summary>
     public bool Ativo { get; private set; }
+
+    /// <summary>
+    /// As regras padrão do derivado por regra do administrador (ADR-0136): <c>{quando, contribui}</c>,
+    /// sem ordem, avaliadas por união. São o ponto de partida que o processo copia; a cópia do
+    /// processo é a que vale.
+    /// </summary>
+    public IReadOnlyList<RegraDerivacao> RegrasPadrao { get; private set; } = [];
+
+    /// <summary>O valor do fato vem da regra de derivação do próprio fato.</summary>
+    public bool DerivadoPorRegra =>
+        Binding.StartsWith(PrefixoBindingDerivadoRegra + ":", StringComparison.Ordinal);
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -311,6 +324,74 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             codigo, nome, descricao, dominio, OrigemFato.Declarado, cardinalidade, fonteValores, formato, pontoResolucao,
             $"{PrefixoBindingDeclarado}:{codigo?.Trim()}", escopo, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
             sistema: false);
+
+    /// <summary>
+    /// Cadastro de derivado por regra pelo administrador (ADR-0136): booleano, verdadeiro quando
+    /// alguma regra ativa, ou categórico de valores próprios, com a união das contribuições. As
+    /// regras padrão vêm depois, por <see cref="DefinirRegrasPadrao"/>, porque citam os valores que
+    /// o categórico ainda vai receber.
+    /// </summary>
+    public static Result<FatoCandidato> CriarDerivadoDoAdministrador(
+        string codigo,
+        string nome,
+        string? descricao,
+        DominioFato dominio,
+        string pontoResolucao,
+        EscopoFato escopo,
+        ClassificacaoProtecaoDado classificacaoProtecao,
+        string finalidadeTratamento,
+        HipoteseLegalTratamento hipoteseLegal)
+    {
+        bool categorico = dominio == DominioFato.Categorico;
+        Result<FatoCandidato> criado = Criar(
+            codigo, nome, descricao, dominio, OrigemFato.Derivado,
+            categorico ? CardinalidadeFato.Multivalorado : CardinalidadeFato.Escalar,
+            categorico ? FonteValoresFato.Global : null,
+            formato: null, pontoResolucao, $"{PrefixoBindingDerivadoRegra}:{codigo?.Trim()}", escopo,
+            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false);
+        if (dominio is DominioFato.Booleano or DominioFato.Categorico)
+        {
+            return criado;
+        }
+
+        // Com o domínio recusado, o que depende dele (formato, fonte) não é conferido.
+        FieldError recusa = new("dominio", new DomainError(
+            FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico,
+            "Fato derivado por regra é booleano ou categórico."));
+        return Result<FatoCandidato>.ValidationFailure(
+            [recusa, .. criado.Errors.Where(static e => e.Field is not ("dominio" or "formato" or "fonteValores"))]);
+    }
+
+    /// <summary>
+    /// Substitui as regras padrão do derivado por regra do administrador, conferidas contra o
+    /// catálogo (<see cref="ValidadorRegrasPadrao"/>). Lista vazia remove as regras.
+    /// </summary>
+    public Result DefinirRegrasPadrao(IReadOnlyList<RegraDerivacao> regras, CatalogoDeFatos catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(regras);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        if (RecusaSeSistema() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        if (!DerivadoPorRegra)
+        {
+            return Result.Failure(new DomainError(
+                FatoCandidatoErrorCodes.RegrasPadraoSoEmDerivadoPorRegra,
+                "Só o fato derivado por regra tem regras padrão."));
+        }
+
+        Result validacao = ValidadorRegrasPadrao.Validar(this, regras, catalogo);
+        if (validacao.IsFailure)
+        {
+            return validacao;
+        }
+
+        RegrasPadrao = [.. regras];
+        return Result.Success();
+    }
 
     /// <summary>
     /// Desativa um valor do fato do administrador: condição nova que o cite é recusada, e a que já o

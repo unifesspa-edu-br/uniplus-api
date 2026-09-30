@@ -1,10 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Domain.ValueObjects;
-
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Desativar um fato ou um valor no catálogo recusa só vínculo novo (ADR-0136): a configuração
