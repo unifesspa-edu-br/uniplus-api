@@ -366,8 +366,8 @@ internal static class CorpusEnvelope
         // snapshot, as arestas de produção, pré-condição e derivação, com predicado DNF de duas
         // condições numa cláusula. Ambos os códigos contribuídos (AC, LB_PPI) são ofertados.
         processo.DefinirItens(Ordem([
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

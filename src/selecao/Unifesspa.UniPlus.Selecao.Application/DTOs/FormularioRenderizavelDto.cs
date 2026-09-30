@@ -28,11 +28,13 @@ public sealed record FatoFormularioRenderizavelDto(
     int Ordem,
     string Rotulo,
     string TipoRenderizacao,
-    bool Obrigatorio,
+    ObrigatoriedadeDto Obrigatoriedade,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao,
     IReadOnlyList<ValorSelecionavelDto>? ValoresSelecionaveis,
     string? EtapaCodigo,
-    string? Formato);
+    string? Formato,
+    string? Ajuda,
+    bool PedirConfirmacao);
 
 /// <summary>
 /// Formulário de uma finalidade pronto para renderização (UNI-REQ-0144): título, etapas, termos

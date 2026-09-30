@@ -1,17 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Text.Json;
-
 using Domain.Entities;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Serializacao;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Configuração EF Core de <see cref="TermoExigidoFormulario"/> (UNI-REQ-0086), filha de
@@ -46,10 +39,10 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
         builder.Property(t => t.HashVersao).HasMaxLength(HashMaxLength).IsRequired();
 
         builder.Property(t => t.Exibicao)
-            .HasConversion(PredicadoConverter, PredicadoComparer)
+            .HasConversion(ConversoresDeRegras.Predicado, ConversoresDeRegras.ComparadorDePredicado)
             .HasColumnType("jsonb");
         builder.Property(t => t.Obrigatoriedade)
-            .HasConversion(ObrigatoriedadeConverter, ObrigatoriedadeComparer)
+            .HasConversion(ConversoresDeRegras.Obrigatoriedade, ConversoresDeRegras.ComparadorDeObrigatoriedade)
             .HasColumnType("jsonb")
             .IsRequired();
 
@@ -65,45 +58,4 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
             .IsUnique()
             .HasDatabaseName("ux_termos_exigidos_formulario_processo_finalidade_ordem");
     }
-
-    // O EF não chama o conversor para nulo: a coluna nula é a exibição sempre.
-    private static readonly ValueConverter<PredicadoDnf?, string?> PredicadoConverter =
-        new(predicado => SerializarPredicado(predicado!), json => LerPredicado(json!));
-
-    private static readonly ValueComparer<PredicadoDnf?> PredicadoComparer =
-        new(
-            (a, b) => (a == null ? null : SerializarPredicado(a)) == (b == null ? null : SerializarPredicado(b)),
-            p => p == null ? 0 : SerializarPredicado(p).GetHashCode(StringComparison.Ordinal),
-            p => p == null ? null : LerPredicado(SerializarPredicado(p)));
-
-    private static readonly ValueConverter<Obrigatoriedade, string> ObrigatoriedadeConverter =
-        new(obrigatoriedade => SerializarObrigatoriedade(obrigatoriedade), json => LerObrigatoriedade(json));
-
-    private static readonly ValueComparer<Obrigatoriedade> ObrigatoriedadeComparer =
-        new(
-            (a, b) => SerializarObrigatoriedade(a!) == SerializarObrigatoriedade(b!),
-            o => SerializarObrigatoriedade(o).GetHashCode(StringComparison.Ordinal),
-            o => LerObrigatoriedade(SerializarObrigatoriedade(o)));
-
-    private static string SerializarPredicado(PredicadoDnf predicado) => PredicadoDnfJson.ParaJson(predicado).ToJsonString();
-
-    private static string SerializarObrigatoriedade(Obrigatoriedade obrigatoriedade) =>
-        PredicadoDnfJson.ParaJson(obrigatoriedade).ToJsonString();
-
-    private static PredicadoDnf LerPredicado(string json)
-    {
-        using JsonDocument documento = JsonDocument.Parse(json);
-        return Exigir(PredicadoDnfJson.DeJson(documento.RootElement));
-    }
-
-    private static Obrigatoriedade LerObrigatoriedade(string json)
-    {
-        using JsonDocument documento = JsonDocument.Parse(json);
-        return Exigir(PredicadoDnfJson.ObrigatoriedadeDeJson(documento.RootElement));
-    }
-
-    private static T Exigir<T>(Kernel.Results.Result<T> resultado) =>
-        resultado.IsSuccess
-            ? resultado.Value!
-            : throw new InvalidOperationException($"Condição gravada de termo exigido inválida: {resultado.Error!.Message}");
 }

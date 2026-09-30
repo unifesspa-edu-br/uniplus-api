@@ -406,11 +406,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["formaAceite"] = termo.FormaAceite,
         ["hashVersao"] = termo.HashVersao,
         ["exibicao"] = termo.Exibicao is { } exibicao ? SerializarDnf(LinhasDoPredicado(exibicao)) : null,
-        ["obrigatoriedade"] = new JsonObject
-        {
-            ["tipo"] = PredicadoDnfJson.ParaToken(termo.Obrigatoriedade.Tipo),
-            ["predicado"] = termo.Obrigatoriedade.Predicado is { } predicado ? SerializarDnf(LinhasDoPredicado(predicado)) : null,
-        },
+        ["obrigatoriedade"] = SerializarObrigatoriedade(termo.Obrigatoriedade),
+    };
+
+    /// <summary>A obrigatoriedade de um item ou de um termo: o tipo e, em <c>QUANDO</c>, o predicado canônico.</summary>
+    private static JsonObject SerializarObrigatoriedade(Obrigatoriedade obrigatoriedade) => new()
+    {
+        ["tipo"] = PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo),
+        ["predicado"] = obrigatoriedade.Predicado is { } predicado ? SerializarDnf(LinhasDoPredicado(predicado)) : null,
     };
 
     private static IEnumerable<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> LinhasDoPredicado(PredicadoDnf predicado) =>
@@ -1827,7 +1830,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["ordem"] = fato.Ordem,
                 ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
                 ["tipoRenderizacao"] = fato.TipoRenderizacao.ToCodigo(),
-                ["obrigatorio"] = fato.Obrigatorio,
+                ["obrigatoriedade"] = SerializarObrigatoriedade(fato.Obrigatoriedade),
+                ["ajuda"] = fato.Ajuda is { } ajuda ? HashCanonicalComputer.NormalizeNfc(ajuda) : null,
+                ["pedirConfirmacao"] = fato.PedirConfirmacao,
                 ["origemValores"] = fato.OrigemValores.ToString(),
                 ["formato"] = fato.Formato,
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(

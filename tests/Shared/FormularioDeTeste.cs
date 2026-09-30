@@ -150,7 +150,7 @@ internal static class FormularioDeTeste
         fato.EtapaCodigo is not null
             ? fato
             : FatoColetado.Criar(
-                fato.FatoCodigo, fato.Ordem, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatorio,
+                fato.FatoCodigo, fato.Ordem, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatoriedade,
                 [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
-                fato.OrigemValores, Secao, formato: fato.Formato).Value!;
+                fato.OrigemValores, Secao, formato: fato.Formato, ajuda: fato.Ajuda, pedirConfirmacao: fato.PedirConfirmacao).Value!;
 }

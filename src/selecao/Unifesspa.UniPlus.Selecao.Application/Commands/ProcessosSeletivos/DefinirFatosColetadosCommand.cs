@@ -36,15 +36,20 @@ public sealed record CondicaoPrecondicaoInput(string Fato, string Operador, Json
 /// <see cref="Domain.Entities.FatoColetado.Criar"/> já rejeita com um erro de domínio (422)
 /// claro — dispensa anotação de "campo obrigatório" no contrato, porque não existe um valor de
 /// wire ausente que resolva silenciosamente para um tipo de renderização válido.
+/// A <see cref="Obrigatoriedade"/> segue a forma do termo exigido: <c>SEMPRE</c> ou <c>NUNCA</c>
+/// sem <see cref="PredicadoObrigatoriedade"/>, <c>QUANDO</c> com ele.
 /// </remarks>
 public sealed record FatoColetadoInput(
     string FatoCodigo,
     int Ordem,
     string Rotulo,
     string TipoRenderizacao,
-    bool Obrigatorio,
+    string? Obrigatoriedade,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Precondicao,
-    string? EtapaCodigo = null);
+    string? EtapaCodigo = null,
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade = null,
+    string? Ajuda = null,
+    bool PedirConfirmacao = false);
 
 /// <summary>
 /// Substitui os itens do formulário de uma finalidade, os fatos que ele coleta do candidato (Story

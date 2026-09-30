@@ -2092,14 +2092,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             return new DomainError(
                 FatoColetadoErrorCodes.GrafoComCiclo,
-                $"A pré-condição dos fatos forma um ciclo: {string.Join(" → ", caminho)}.");
+                $"As regras dos campos formam um ciclo: {string.Join(" → ", caminho)}.");
         }
 
         foreach (FatoColetado fato in fatos)
         {
             foreach (string citado in fato.FatosCitados)
             {
-                // A pré-condição de um campo só cita fato COLETADO — não um derivado. O resolvedor
+                // As regras de um campo só citam fato COLETADO — não um derivado. O resolvedor
                 // de estado dos fatos (runtime) percorre apenas os fatos coletados por Ordem e não
                 // aciona o motor de derivação; uma pré-condição que citasse um fato derivado
                 // avaliaria indeterminada para sempre, e o campo nunca ficaria respondível. Enquanto
@@ -2115,15 +2115,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     return new DomainError(
                         FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
                         finalidade == FinalidadeFormulario.Inscricao
-                            ? $"A pré-condição do fato '{fato.FatoCodigo}' cita '{citado}', que o formulário dele não coleta."
-                            : $"A pré-condição do fato '{fato.FatoCodigo}' cita '{citado}', que nem o formulário dele nem o de inscrição coletam.");
+                            ? $"Uma regra do fato '{fato.FatoCodigo}' cita '{citado}', que o formulário dele não coleta."
+                            : $"Uma regra do fato '{fato.FatoCodigo}' cita '{citado}', que nem o formulário dele nem o de inscrição coletam.");
                 }
 
                 if (anterior.Ordem >= fato.Ordem)
                 {
                     return new DomainError(
                         FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior,
-                        $"A pré-condição do fato '{fato.FatoCodigo}' (ordem {fato.Ordem}) cita '{citado}' "
+                        $"Uma regra do fato '{fato.FatoCodigo}' (ordem {fato.Ordem}) cita '{citado}' "
                         + $"(ordem {anterior.Ordem}), que não é anterior — o campo dependeria de uma resposta ainda não dada.");
                 }
             }
@@ -4255,7 +4255,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private IEnumerable<(string Fato, JsonElement Valor)> CondicoesVivas() =>
         _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Valor))
-            .Concat(_fatosColetados.SelectMany(static f => f.Precondicoes).Select(static c => (c.Fato, c.Valor)))
+            .Concat(_fatosColetados.SelectMany(static f => f.Condicoes).Select(static c => (c.Fato, c.Valor)))
             .Concat(_regrasDerivacao.SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
                 .Select(static c => (c.Fato, c.Valor)))
             .Concat(_criteriosDesempate.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()

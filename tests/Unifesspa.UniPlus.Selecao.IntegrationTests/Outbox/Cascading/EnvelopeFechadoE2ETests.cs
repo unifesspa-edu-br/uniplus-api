@@ -701,14 +701,14 @@ public sealed class EnvelopeFechadoE2ETests
         {
             object[] fatos =
             [
-                new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica, obrigatorio = true, precondicao = (object?)null },
+                new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica, obrigatoriedade = "SEMPRE", precondicao = (object?)null },
                 new
                 {
                     fatoCodigo = "BAIXA_RENDA",
                     ordem = 1,
                     rotulo = "Baixa renda",
                     tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
-                    obrigatorio = false,
+                    obrigatoriedade = "NUNCA",
                     precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
                 },
             ];

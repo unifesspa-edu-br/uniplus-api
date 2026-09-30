@@ -149,7 +149,7 @@ public sealed class FormulariosEndpointTests
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await ctx.PutFatosAsync(
         [
-            new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = true, precondicao = (object?)null },
+            new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE", precondicao = (object?)null },
         ])).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await ctx.PublicarAsync();
 
@@ -174,7 +174,7 @@ public sealed class FormulariosEndpointTests
         fato.GetProperty("fatoCodigo").GetString().Should().Be("COR_RACA");
         fato.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
         fato.GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
-        fato.GetProperty("obrigatorio").GetBoolean().Should().BeTrue();
+        fato.GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
         fato.GetProperty("etapaCodigo").GetString().Should().Be("DADOS");
     }
 

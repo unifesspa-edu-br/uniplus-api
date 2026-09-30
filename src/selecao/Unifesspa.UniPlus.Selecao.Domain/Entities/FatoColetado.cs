@@ -41,6 +41,7 @@ public sealed class FatoColetado : EntityBase
     /// </summary>
     public const int RotuloMaxLength = 300;
     public const int FormatoMaxLength = 30;
+    public const int AjudaMaxLength = 1000;
 
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
@@ -66,8 +67,18 @@ public sealed class FatoColetado : EntityBase
     /// </summary>
     public TipoRenderizacao TipoRenderizacao { get; private set; }
 
-    /// <summary>Se o candidato é obrigado a preencher o campo para prosseguir com a inscrição.</summary>
-    public bool Obrigatorio { get; private set; }
+    /// <summary>
+    /// Quando o candidato é obrigado a responder: sempre, nunca ou quando o predicado sobre fatos
+    /// anteriores é verdadeiro (UNI-REQ-0145). É do item, não do fato: o mesmo fato pode ser
+    /// obrigatório para um candidato e opcional para outro.
+    /// </summary>
+    public Obrigatoriedade Obrigatoriedade { get; private set; } = Obrigatoriedade.Nunca;
+
+    /// <summary>Texto de apoio exibido junto do campo.</summary>
+    public string? Ajuda { get; private set; }
+
+    /// <summary>Se o formulário pede a resposta duas vezes para conferir a digitação.</summary>
+    public bool PedirConfirmacao { get; private set; }
 
     /// <summary>
     /// De onde vêm as opções do campo no processo (ADR-0136). Copiada da fonte dos valores do
@@ -105,14 +116,25 @@ public sealed class FatoColetado : EntityBase
         int ordem,
         string rotulo,
         TipoRenderizacao tipoRenderizacao,
-        bool obrigatorio,
+        Obrigatoriedade obrigatoriedade,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
         OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo,
         string? etapaCodigo = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
-        string? formato = null)
+        string? formato = null,
+        string? ajuda = null,
+        bool pedirConfirmacao = false)
     {
+        ArgumentNullException.ThrowIfNull(obrigatoriedade);
+
         List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
+
+        string? ajudaNormalizada = string.IsNullOrWhiteSpace(ajuda) ? null : ajuda.Trim();
+        if (ajudaNormalizada is { Length: > AjudaMaxLength })
+        {
+            erros.Add(new("ajuda", new DomainError(
+                FatoColetadoErrorCodes.AjudaTamanho, $"A ajuda do campo tem no máximo {AjudaMaxLength} caracteres.")));
+        }
 
         string? formatoNormalizado = string.IsNullOrWhiteSpace(formato) ? null : formato.Trim();
         if ((tipoRenderizacao == TipoRenderizacao.Texto) != (formatoNormalizado is not null)
@@ -138,6 +160,13 @@ public sealed class FatoColetado : EntityBase
                 "A pré-condição cita o próprio fato.")));
         }
 
+        if (obrigatoriedade.FatosCitados.Contains(codigo, StringComparer.Ordinal))
+        {
+            erros.Add(new("predicadoObrigatoriedade", new DomainError(
+                FatoColetadoErrorCodes.PrecondicaoAutorreferente,
+                "A obrigatoriedade cita o próprio fato.")));
+        }
+
         if (erros.Count > 0)
         {
             return Result<FatoColetado>.ValidationFailure(erros);
@@ -149,7 +178,9 @@ public sealed class FatoColetado : EntityBase
             Ordem = ordem,
             Rotulo = rotulo.Trim(),
             TipoRenderizacao = tipoRenderizacao,
-            Obrigatorio = obrigatorio,
+            Obrigatoriedade = obrigatoriedade,
+            Ajuda = ajudaNormalizada,
+            PedirConfirmacao = pedirConfirmacao,
             OrigemValores = origemValores,
             Formato = formatoNormalizado,
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
@@ -225,9 +256,14 @@ public sealed class FatoColetado : EntityBase
     /// <summary>Indica se o fato é coletado incondicionalmente.</summary>
     public bool SemPrecondicao => _precondicoes.Count == 0;
 
-    /// <summary>Códigos dos fatos citados na pré-condição, sem repetição.</summary>
+    /// <summary>Códigos dos fatos citados pela pré-condição e pela obrigatoriedade, sem repetição.</summary>
     public IReadOnlyCollection<string> FatosCitados =>
-        [.. _precondicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal)];
+        [.. _precondicoes.Select(static c => c.Fato).Concat(Obrigatoriedade.FatosCitados).Distinct(StringComparer.Ordinal)];
+
+    /// <summary>As condições da pré-condição e da obrigatoriedade, para os vínculos e as referências a valor do processo.</summary>
+    public IEnumerable<CondicaoDnf> Condicoes =>
+        _precondicoes.Select(static c => c.ParaCondicaoDnf())
+            .Concat((Obrigatoriedade.Predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes));
 
     internal void VincularProcessoSeletivo(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
@@ -257,6 +293,8 @@ public static class FatoColetadoErrorCodes
     public const string RotuloTamanho = "FatoColetado.RotuloTamanho";
     public const string TipoRenderizacaoObrigatorio = "FatoColetado.TipoRenderizacaoObrigatorio";
     public const string FormatoIncoerente = "FatoColetado.FormatoIncoerente";
+    public const string AjudaTamanho = "FatoColetado.AjudaTamanho";
+    public const string ObrigatoriedadeInvalida = "FatoColetado.ObrigatoriedadeInvalida";
     public const string PrecondicaoAutorreferente = "FatoColetado.PrecondicaoAutorreferente";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
     public const string OrdemDuplicada = "FatoColetado.OrdemDuplicada";

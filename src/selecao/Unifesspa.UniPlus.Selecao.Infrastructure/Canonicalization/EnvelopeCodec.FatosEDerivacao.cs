@@ -225,8 +225,8 @@ public sealed partial class EnvelopeCodec
             JsonObject item = leitor.ItemObjeto(array, i, "fatosColetados");
             leitor.ExigirChaves(
                 item, path,
-                "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "origemValores",
-                "formato", "precondicao", "valoresSelecionaveis");
+                "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatoriedade", "ajuda",
+                "pedirConfirmacao", "origemValores", "formato", "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -234,7 +234,8 @@ public sealed partial class EnvelopeCodec
             int ordem = leitor.Inteiro(item, "ordem", path);
             string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
             string tipoRenderizacaoCodigo = leitor.TextoNaoVazio(item, "tipoRenderizacao", path);
-            bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
+            string? ajuda = leitor.TextoOpcional(item, "ajuda", path, LimitesDoEnvelope.AjudaDoCampo);
+            bool pedirConfirmacao = leitor.Booleano(item, "pedirConfirmacao", path);
             OrigemValoresColeta origemValores = leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path);
             string? formato = leitor.TextoOpcional(item, "formato", path, LimitesDoEnvelope.Token);
             if (leitor.Falhou)
@@ -281,8 +282,14 @@ public sealed partial class EnvelopeCodec
                 return ([], valoresSelecionaveis);
             }
 
+            if (LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
+            {
+                return ([], valoresSelecionaveis);
+            }
+
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes, origemValores, etapaCodigo, finalidade, formato);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, origemValores, etapaCodigo, finalidade, formato,
+                ajuda, pedirConfirmacao);
             if (fatoColetado.IsFailure)
             {
                 return (leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [], valoresSelecionaveis);
@@ -653,24 +660,25 @@ public sealed partial class EnvelopeCodec
             universo.Add(config.CodigoFato);
         }
 
-        // Pré-condição de campo só cita fato COLETADO: anterior no mesmo formulário (a garantia de
-        // anterioridade que o resolvedor de runtime pressupõe — ele percorre os coletados por ordem,
-        // sem acionar o motor) ou, em outra finalidade, coletado pela inscrição, que vem antes.
+        // As regras do campo (pré-condição e obrigatoriedade) só citam fato COLETADO: anterior no
+        // mesmo formulário (a garantia de anterioridade que o resolvedor de runtime pressupõe — ele
+        // percorre os coletados por ordem, sem acionar o motor) ou, em outra finalidade, coletado
+        // pela inscrição, que vem antes.
         foreach (FatoColetado fato in fatos)
         {
-            foreach (CondicaoPrecondicaoFato precondicao in fato.Precondicoes)
+            foreach (string fatoCitado in fato.FatosCitados)
             {
-                if (!coletadoPorCodigo.TryGetValue(precondicao.Fato, out FatoColetado? citado)
+                if (!coletadoPorCodigo.TryGetValue(fatoCitado, out FatoColetado? citado)
                     || (citado.Finalidade != fato.Finalidade && citado.Finalidade != FinalidadeFormulario.Inscricao))
                 {
                     return Malformado(
-                        $"'fatosColetados': a pré-condição do fato '{fato.FatoCodigo}' cita '{precondicao.Fato}', que nem o formulário dele nem o de inscrição coletam.");
+                        $"'fatosColetados': uma regra do fato '{fato.FatoCodigo}' cita '{fatoCitado}', que nem o formulário dele nem o de inscrição coletam.");
                 }
 
                 if (citado.Finalidade == fato.Finalidade && citado.Ordem >= fato.Ordem)
                 {
                     return Malformado(
-                        $"'fatosColetados': a pré-condição do fato '{fato.FatoCodigo}' cita '{precondicao.Fato}', que não é anterior na ordem de coleta.");
+                        $"'fatosColetados': uma regra do fato '{fato.FatoCodigo}' cita '{fatoCitado}', que não é anterior na ordem de coleta.");
                 }
             }
         }
