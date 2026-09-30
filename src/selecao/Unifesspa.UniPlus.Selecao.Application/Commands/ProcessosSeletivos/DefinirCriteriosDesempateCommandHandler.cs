@@ -54,10 +54,11 @@ public static class DefinirCriteriosDesempateCommandHandler
         // vocabulário só é resolvido (I/O cross-módulo) quando algum critério referencia
         // DESEMPATE-PREDICADO-FATO, e o catálogo de critérios é lido uma vez, para cada critério
         // se resolver em memória.
-        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos =
+        (IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyDictionary<string, FatoCandidatoView> Catalogo)? fatos =
             resolverCriterios && command.Criterios.Any(static c => c.RegraCodigo == CriterioDesempateCodigo.PredicadoFato)
                 ? await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false)
                 : null;
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = fatos?.Vocabulario;
         IReadOnlyList<RegraCatalogo> regrasDesempate = resolverCriterios
             ? await regraCatalogoReader
                 .ListarPorTipoAsync(TipoRegra.CriterioDesempate, cancellationToken)
@@ -130,6 +131,21 @@ public static class DefinirCriteriosDesempateCommandHandler
             return Result<MutacaoAceita>.ValidationFailure(processo.AnexarAreasAceitasDoDesempate(erros));
         }
 
+        if (fatos is { } catalogoFatos)
+        {
+            Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
+                catalogoFatos.Catalogo,
+                processo.Vinculos(),
+                VinculosDeFatos.De(
+                    [],
+                    criterios.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
+                        .Select(static a => (a.Condicao.Fato, a.Condicao.Valor))));
+            if (vinculoNovo.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+            }
+        }
+
         Result result = processo.DefinirCriteriosDesempate(criterios, command.Precondicao);
         if (result.IsFailure)
         {
@@ -152,7 +168,7 @@ public static class DefinirCriteriosDesempateCommandHandler
     /// dinâmico, fora de escopo — ADR-0111) e fica de fora do vocabulário
     /// fechado: um predicado que o cite reprova como fato desconhecido.
     /// </summary>
-    private static async Task<IReadOnlyDictionary<string, DescritorFatoCandidato>> ResolverVocabularioFatosAsync(
+    private static async Task<(IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyDictionary<string, FatoCandidatoView> Catalogo)> ResolverVocabularioFatosAsync(
         IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader
@@ -181,7 +197,7 @@ public static class DefinirCriteriosDesempateCommandHandler
             }
         }
 
-        return vocabulario;
+        return (vocabulario, fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal));
     }
 
     /// <summary>

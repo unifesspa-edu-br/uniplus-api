@@ -66,11 +66,11 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     private static FatoCandidatoView FatoSexo() => new(
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_INSCRICAO:SEXO", null, "GLOBAL");
+        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_INSCRICAO:SEXO", null, "GLOBAL", Ativo: true);
 
     private static FatoCandidatoView FatoSexoComPontoResolucao(string pontoResolucao) => new(
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_INSCRICAO:SEXO", null, "GLOBAL");
+        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_INSCRICAO:SEXO", null, "GLOBAL", Ativo: true);
 
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(
         ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
@@ -80,11 +80,11 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     private static FatoCandidatoView FatoModalidade() => new(
         Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null,
-        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE");
+        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true);
 
     private static FatoCandidatoView FatoTipoDeficiencia() => new(
         Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", null, "CATEGORICO", "DECLARADO", "ESCALAR", null,
-        "INSCRICAO", "CAMPO_INSCRICAO:TIPO_DEFICIENCIA", null, "PROCESSO");
+        "INSCRICAO", "CAMPO_INSCRICAO:TIPO_DEFICIENCIA", null, "PROCESSO", Ativo: true);
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -230,7 +230,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     /// <summary>A faixa etária como o catálogo a publica: derivada, por atributo do candidato.</summary>
     private static FatoCandidatoView FatoFaixaEtaria() => new(
         Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
-        null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null);
+        null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true);
 
     /// <summary>
     /// Declara a derivação da modalidade. É o que torna um gatilho por modalidade resolvível:

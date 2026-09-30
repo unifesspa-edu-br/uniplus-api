@@ -125,6 +125,18 @@ public static class DefinirRegrasDerivacaoCommandHandler
             configuracoes.Add(configResult.Value!);
         }
 
+        Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
+            catalogo,
+            processo.Vinculos(),
+            VinculosDeFatos.De(
+                configuracoes.Select(static c => c.CodigoFato),
+                configuracoes.SelectMany(static c => c.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor)),
+                configuracoes.SelectMany(static c => c.Regras.Select(r => (c.CodigoFato, r.Contribui)))));
+        if (vinculoNovo.IsFailure)
+        {
+            return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+        }
+
         Result result = processo.DefinirRegrasDerivacao(configuracoes, command.Precondicao);
         if (result.IsFailure)
         {

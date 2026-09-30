@@ -19,9 +19,9 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// <remarks>
 /// Espelha <see cref="ResolvedorMetadadosFatosCongelados"/> em estilo: helper estático
 /// compartilhado pelos três handlers que congelam. Não faz I/O próprio — recebe o catálogo
-/// inteiro (baixo volume) já lido UMA vez pelo handler, compartilhado com o gate de valor
-/// inativo e os dois resolvedores: duas leituras abririam janela para um gate aprovar sobre um
-/// catálogo e outro passo congelar sobre outro.
+/// inteiro (baixo volume) já lido UMA vez pelo handler, compartilhado com os dois resolvedores:
+/// duas leituras abririam janela para a conferência aprovar sobre um catálogo e outro passo
+/// congelar sobre outro.
 /// </remarks>
 internal static class ConferenciaDeColetabilidadeDeFatos
 {

@@ -3909,6 +3909,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         .FirstOrDefault();
 
     /// <summary>
+    /// Os fatos do catálogo que a configuração usa — coletados, derivados por regra ou citados — e
+    /// os valores citados ou contribuídos: o vínculo existente que a desativação de um fato ou valor
+    /// preserva.
+    /// </summary>
+    public VinculosDeFatos Vinculos() => VinculosDeFatos.De(
+        _fatosColetados.Select(static f => f.FatoCodigo).Concat(_regrasDerivacao.Select(static r => r.CodigoFato)),
+        CondicoesVivas(),
+        _regrasDerivacao.SelectMany(static c => c.Regras.Select(r => (c.CodigoFato, r.Contribui))));
+
+    /// <summary>
+    /// Todo predicado vivo que cita fato por valor: gatilhos de exigência, pré-condições da coleta,
+    /// condições das regras de derivação e critérios de desempate por fato.
+    /// </summary>
+    private IEnumerable<(string Fato, JsonElement Valor)> CondicoesVivas() =>
+        _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Valor))
+            .Concat(_fatosColetados.SelectMany(static f => f.Precondicoes).Select(static c => (c.Fato, c.Valor)))
+            .Concat(_regrasDerivacao.SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
+                .Select(static c => (c.Fato, c.Valor)))
+            .Concat(_criteriosDesempate.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
+                .Select(static a => (a.Condicao.Fato, a.Condicao.Valor)));
+
+    /// <summary>
     /// CA-03 (Story #554, issue #892): um gatilho DNF sobre um
     /// fato categórico dinâmico (<c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>) referencia
     /// um valor por CÓDIGO — nunca por Guid, diferente de <c>FaseCronograma</c>. Isso
@@ -3919,16 +3941,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private bool ReferenciaDinamicaSeriaInvalidada(string fato, HashSet<string> novosCodigosValidos)
     {
-        // Todo predicado vivo que cita o fato por valor: gatilhos de exigência, pré-condições da
-        // coleta e condições das regras de derivação. Uma opção removida que qualquer um deles
-        // ainda cita faria o edital congelar uma condição que nunca se satisfaz.
-        IEnumerable<(string Fato, JsonElement Valor)> condicoes =
-            _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Valor))
-                .Concat(_fatosColetados.SelectMany(static f => f.Precondicoes).Select(static c => (c.Fato, c.Valor)))
-                .Concat(_regrasDerivacao.SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
-                    .Select(static c => (c.Fato, c.Valor)));
-
-        foreach ((string fatoCitado, JsonElement valor) in condicoes)
+        // Uma opção removida que qualquer predicado vivo ainda cita faria o edital congelar uma
+        // condição que nunca se satisfaz.
+        foreach ((string fatoCitado, JsonElement valor) in CondicoesVivas())
         {
             if (!string.Equals(fatoCitado, fato, StringComparison.Ordinal))
             {

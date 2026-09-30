@@ -71,7 +71,8 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             f.PontoResolucao,
             f.Binding,
             valoresDominioDeclarados,
-            f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null);
+            f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
+            f.Ativo);
     }
 
     private static IReadOnlyList<FatoValorDominioViewItem>? ParaValoresDominioDeclarados(

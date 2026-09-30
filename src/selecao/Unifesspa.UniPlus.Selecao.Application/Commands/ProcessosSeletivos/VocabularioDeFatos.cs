@@ -139,4 +139,17 @@ internal static class VocabularioDeFatos
 
         return chave.ToString();
     }
+
+    /// <summary>
+    /// Os valores do catálogo que o processo congela para o fato: os ativos e os desativados que
+    /// uma condição do processo já cita, porque desativar recusa só vínculo novo (ADR-0136). A
+    /// mesma regra serve às opções do candidato e ao metadado do fato no edital.
+    /// </summary>
+    public static IReadOnlyList<FatoValorDominioViewItem> ValoresVigentes(
+        FatoCandidatoView fato, IReadOnlySet<(string Fato, string Valor)> valoresCitados)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        ArgumentNullException.ThrowIfNull(valoresCitados);
+        return [.. (fato.ValoresDominioDeclarados ?? []).Where(v => v.Ativo || valoresCitados.Contains((fato.Codigo, v.Codigo)))];
+    }
 }

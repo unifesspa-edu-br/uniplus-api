@@ -27,9 +27,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// <para>
 /// Três origens para o valor de um fato categórico coletado (UNI-REQ-0072 §2, ADR-0136). O
 /// catálogo de fonte GLOBAL (COR_RACA, SEXO, NACIONALIDADE — <c>ValoresDominioDeclarados</c>) é
-/// usado tal qual, SEM filtrar por <c>Ativo</c>: é <see cref="ConferenciaDeValoresDeDominioAtivos"/>,
-/// rodado ANTES deste resolvedor no mesmo congelamento, que garante que só chega aqui um fato
-/// coletado cujo vocabulário inteiro está ativo. Para as demais, decide a origem copiada para o
+/// filtrado: entram os valores ativos e os desativados que uma condição do processo já cita, porque
+/// desativar recusa só vínculo novo (ADR-0136). Para as demais, decide a origem copiada para o
 /// campo coletado (<c>ProcessoSeletivo.OrigemDasOpcoes</c>), a mesma que o agregado confere na
 /// publicação: as opções do PRÓPRIO processo, pela mesma leitura que valida predicado
 /// (<c>ProcessoSeletivo.OpcoesDoProcesso</c>); ou os municípios do bônus regional, com o código
@@ -38,8 +37,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </para>
 /// <para>
 /// Não faz I/O próprio — recebe o catálogo já lido UMA vez pelo handler (D4-bis), o mesmo
-/// compartilhado com o gate de valor inativo, a conferência de coletabilidade e o resolvedor de
-/// metadado de fato.
+/// compartilhado com a conferência de coletabilidade e o resolvedor de metadado de fato.
 /// </para>
 /// </remarks>
 internal static class ResolvedorValoresSelecionaveisCongelados
@@ -53,6 +51,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         ArgumentNullException.ThrowIfNull(catalogo);
 
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresPorFato = new(StringComparer.Ordinal);
+        IReadOnlySet<(string Fato, string Valor)> valoresCitados = processo.Vinculos().Valores;
         foreach (FatoColetado fato in processo.FatosColetados)
         {
             bool ehFatoDeSelecao = fato.TipoRenderizacao is TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla;
@@ -74,7 +73,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             }
 
             Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> valoresDoFato =
-                ResolverValoresDoFato(fato, fatoNoCatalogo, processo);
+                ResolverValoresDoFato(fato, fatoNoCatalogo, processo, valoresCitados);
             if (valoresDoFato.IsFailure)
             {
                 return Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>>.Failure(
@@ -93,15 +92,16 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     /// dois categóricos de escopo-processo hoje conhecidos, é alcançável por dado — um fato novo
     /// no catálogo (migration futura), vinculado como <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c>
     /// porque <c>CoerenciaDeRenderizacao</c> só confere domínio/cardinalidade, não a origem dos
-    /// valores. Nem a conferência de coletabilidade (o fato existe e é coletável) nem o gate de
-    /// valor inativo (não tem valores declarados para inativar) recusam esse caso — por isso ele
-    /// devolve <see cref="DomainError"/>, não lança.
+    /// valores. A conferência de coletabilidade (o fato existe e é coletável) não recusa esse
+    /// caso — por isso ele devolve <see cref="DomainError"/>, não lança.
     /// </summary>
     private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverValoresDoFato(
-        FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo)
+        FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo,
+        IReadOnlySet<(string Fato, string Valor)> valoresCitados)
     {
         string fatoCodigo = fato.FatoCodigo;
-        Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> resolvido = ResolverOrigemDosValores(fato, fatoNoCatalogo, processo);
+        Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> resolvido =
+            ResolverOrigemDosValores(fato, fatoNoCatalogo, processo, valoresCitados);
         if (resolvido.IsFailure)
         {
             return resolvido;
@@ -125,7 +125,8 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     }
 
     private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverOrigemDosValores(
-        FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo)
+        FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo,
+        IReadOnlySet<(string Fato, string Valor)> valoresCitados)
     {
         string fatoCodigo = fato.FatoCodigo;
 
@@ -145,13 +146,14 @@ internal static class ResolvedorValoresSelecionaveisCongelados
                 break;
         }
 
-        if (fatoNoCatalogo.ValoresDominioDeclarados is { Count: > 0 } declarados)
+        if (fatoNoCatalogo.ValoresDominioDeclarados is { Count: > 0 })
         {
+            IReadOnlyList<FatoValorDominioViewItem> vigentes = VocabularioDeFatos.ValoresVigentes(fatoNoCatalogo, valoresCitados);
             // Ordenação canônica própria (D2): o encoder não pode depender de o catálogo já vir
             // ordenado — FatoCandidato.AdicionarValorDominio valida unicidade de Codigo, não de
             // Ordem, e duas configurações equivalentes com empate produziriam bytes distintos sem
             // o desempate por código.
-            IReadOnlyList<ValorDominioDeclaradoCongelado> valores = [.. declarados
+            IReadOnlyList<ValorDominioDeclaradoCongelado> valores = [.. vigentes
                 .OrderBy(static v => v.Ordem)
                 .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
                 .Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))];

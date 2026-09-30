@@ -30,7 +30,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
         reader.ObterPorCodigoAsync("COR_RACA", Arg.Any<CancellationToken>()).Returns(fonte is null
             ? null
             : new FatoCandidatoView(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO",
-                "ESCALAR", ["PRETA"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null, fonte));
+                "ESCALAR", ["PRETA"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null, fonte, Ativo: true));
 
         Result<MutacaoAceita> resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
             new DefinirOpcoesDeclaradasCommand(processo.Id, "COR_RACA", [new OpcaoDeclaradaInput("PRETA", "Preta")], PrecondicaoIfMatch.Ausente),

@@ -23,9 +23,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// mesmo metadado congelado, pela mesma razão (qualquer um deles pode congelar uma versão
 /// com gatilho de documento vivo). Não faz I/O próprio: recebe o catálogo já lido pelo
 /// handler (uma leitura só por congelamento, compartilhada com a conferência de
-/// coletabilidade, o gate de valor inativo e o resolvedor de valores selecionáveis) — duas
-/// leituras abririam janela para o gate aprovar sobre um catálogo e este resolvedor congelar
-/// sobre outro.
+/// coletabilidade e o resolvedor de valores selecionáveis) — duas leituras abririam janela para
+/// a conferência aprovar sobre um catálogo e este resolvedor congelar sobre outro.
 /// </remarks>
 internal static class ResolvedorMetadadosFatosCongelados
 {
@@ -55,6 +54,7 @@ internal static class ResolvedorMetadadosFatosCongelados
         }
 
         Dictionary<string, MetadadoFatoCongelado> metadados = new(StringComparer.Ordinal);
+        IReadOnlySet<(string Fato, string Valor)> valoresCitados = processo.Vinculos().Valores;
         foreach (string codigo in codigos)
         {
             if (!catalogo.TryGetValue(codigo, out FatoCandidatoView? fato))
@@ -65,6 +65,7 @@ internal static class ResolvedorMetadadosFatosCongelados
                     "no catálogo de fatos do candidato — o congelamento não persiste um metadado incompleto."));
             }
 
+            IReadOnlyList<FatoValorDominioViewItem> vigentes = VocabularioDeFatos.ValoresVigentes(fato, valoresCitados);
             metadados[codigo] = new MetadadoFatoCongelado(
                 fato.Codigo,
                 fato.Dominio,
@@ -72,9 +73,9 @@ internal static class ResolvedorMetadadosFatosCongelados
                 fato.Cardinalidade,
                 fato.PontoResolucao,
                 fato.Binding,
-                fato.ValoresDominio,
-                fato.ValoresDominioDeclarados?.Count > 0
-                    ? [.. fato.ValoresDominioDeclarados.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))]
+                vigentes.Count > 0 ? [.. vigentes.Select(static v => v.Codigo)] : fato.ValoresDominio,
+                vigentes.Count > 0
+                    ? [.. vigentes.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))]
                     : null);
         }
 

@@ -33,7 +33,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: $"CAMPO_INSCRICAO:{codigo}",
-        ValoresDominioDeclarados: null, FonteValores: "PROCESSO");
+        ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true);
 
     [Fact(DisplayName = "Resolver congela, para fato de fonte do processo, as opções que o processo declarou, na ordem declarada")]
     public void Resolver_FatoDeFonteDoProcesso_CongelaAsOpcoesDeclaradas()

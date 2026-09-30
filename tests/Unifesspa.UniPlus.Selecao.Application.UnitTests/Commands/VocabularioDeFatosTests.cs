@@ -24,7 +24,7 @@ public sealed class VocabularioDeFatosTests
     public void Classificar_DominioNaoCitavel_Nulo(string dominio) =>
         VocabularioDeFatos.Classificar(new FatoCandidatoView(
             Guid.CreateVersion7(), "DADO_PESSOAL", "Dado pessoal", null, dominio, "DECLARADO", "ESCALAR",
-            ValoresDominio: null, "INSCRICAO", "CAMPO_INSCRICAO:DADO_PESSOAL", ValoresDominioDeclarados: null, FonteValores: null))
+            ValoresDominio: null, "INSCRICAO", "CAMPO_INSCRICAO:DADO_PESSOAL", ValoresDominioDeclarados: null, FonteValores: null, Ativo: true))
             .Should().BeNull();
 
     [Fact(DisplayName = "UF e município de residência são citáveis: a UF entre as 27 siglas, o município pelo código IBGE bem formado")]
@@ -50,5 +50,5 @@ public sealed class VocabularioDeFatosTests
 
     private static FatoCandidatoView Derivado(string codigo, string fonte) => new(
         Guid.CreateVersion7(), codigo, codigo, null, "CATEGORICO", "DERIVADO", "ESCALAR",
-        ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: fonte);
+        ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: fonte, Ativo: true);
 }
