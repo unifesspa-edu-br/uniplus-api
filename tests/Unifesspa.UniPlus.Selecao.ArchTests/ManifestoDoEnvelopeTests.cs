@@ -361,12 +361,18 @@ public sealed class ManifestoDoEnvelopeTests
         // Rotulo/TipoRenderizacao/Obrigatorio (Story #559) — a apresentação do campo no
         // formulário de inscrição, congelada junto do fato no mesmo bloco `fatosColetados`.
         [typeof(FatoColetado)] = (
-            ["FatoCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatorio", "Precondicoes"],
+            ["FatoCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatorio", "OpcoesDoProcesso", "Precondicoes"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("SemPrecondicao", "Derivada de Precondicoes — congelá-la duplicaria a fonte de verdade."),
                 ("FatosCitados", "Derivada das Precondicoes — a lista de citações é recomputada, nunca persistida."),
             ]),
+
+        // Opções declaradas pelo processo (issue #1619) — congeladas nos valores selecionáveis do
+        // fato coletado de fonte do processo, e reconstruídas deles pelo decoder.
+        [typeof(OpcaoDeclaradaFato)] = (
+            ["FatoCodigo", "Codigo", "Rotulo", "Ordem"],
+            [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
 
         [typeof(CondicaoPrecondicaoFato)] = (
             ["Clausula", "Fato", "Operador", "Valor"],

@@ -35,6 +35,31 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         Binding: $"CAMPO_INSCRICAO:{codigo}",
         ValoresDominioDeclarados: null, FonteValores: "PROCESSO");
 
+    [Fact(DisplayName = "Resolver congela, para fato de fonte do processo, as opções que o processo declarou, na ordem declarada")]
+    public void Resolver_FatoDeFonteDoProcesso_CongelaAsOpcoesDeclaradas()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirFatosColetados(
+            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, true, null, opcoesDoProcesso: true).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas(
+            "EDICAO_ENEM",
+            [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "ENEM 2025", 0).Value!,
+             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2024", "ENEM 2024", 1).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
+        {
+            ["EDICAO_ENEM"] = FatoCategoricoDeEscopoProcesso("EDICAO_ENEM"),
+        };
+
+        IReadOnlyList<ValorDominioDeclaradoCongelado>? valores =
+            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["EDICAO_ENEM"];
+
+        valores!.Select(static v => v.Codigo).Should().Equal("2025", "2024");
+        valores![0].Descricao.Should().Be("ENEM 2025");
+    }
+
     [Fact(DisplayName = "Resolver recusa CONDICAO_ATENDIMENTO coletável sem nenhuma condição ofertada")]
     public void Resolver_CondicaoAtendimentoSemOferta_Recusa()
     {

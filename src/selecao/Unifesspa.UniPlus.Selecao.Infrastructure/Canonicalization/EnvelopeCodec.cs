@@ -272,6 +272,13 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             return Result<EnvelopeReidratado>.Failure(malformado);
         }
 
+        Result<IReadOnlyList<OpcaoDeclaradaFato>> opcoesDeclaradas =
+            ReconstruirOpcoesDeclaradas(fatosColetados, fatosColetadosLidos.ValoresSelecionaveis);
+        if (opcoesDeclaradas.IsFailure)
+        {
+            return Result<EnvelopeReidratado>.Failure(opcoesDeclaradas.Error!);
+        }
+
         GrafoConfiguracao grafo = new(
             etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases,
             documentosExigidos, todosOsNos, referenciaTemporalFatos, fatosColetados, regrasDerivacao,
@@ -282,7 +289,8 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             configuracaoTaxaInscricao: configuracaoTaxaInscricao,
             localidade: localidade,
             algoritmoContagemPrazo: algoritmoContagemPrazo,
-            identificadorLegivel: identificadorLegivel);
+            identificadorLegivel: identificadorLegivel,
+            opcoesDeclaradas: opcoesDeclaradas.Value);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,

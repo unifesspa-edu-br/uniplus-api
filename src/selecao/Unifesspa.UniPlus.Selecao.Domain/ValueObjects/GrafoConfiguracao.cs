@@ -71,7 +71,10 @@ public sealed class GrafoConfiguracao
         // Identificador legível (issue #1480) — o endereço público do certame, congelado com a
         // versão. AplicarGrafo repõe o que veio, inclusive a ausência: descartar uma retificação
         // devolve o identificador que a versão vigente de fato tinha.
-        IdentificadorLegivel? identificadorLegivel = null)
+        IdentificadorLegivel? identificadorLegivel = null,
+        // Opções declaradas pelo processo (issue #1619) — reconstruídas pelo decoder a partir dos
+        // valores selecionáveis congelados dos fatos coletados de fonte do processo.
+        IReadOnlyList<OpcaoDeclaradaFato>? opcoesDeclaradas = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -100,6 +103,7 @@ public sealed class GrafoConfiguracao
         NosExigencia = [.. nosExigencia];
         ReferenciaTemporalFatos = referenciaTemporalFatos;
         FatosColetados = fatosColetados is null ? [] : [.. fatosColetados];
+        OpcoesDeclaradas = opcoesDeclaradas is null ? [] : [.. opcoesDeclaradas];
         RegrasDerivacao = regrasDerivacao is null ? [] : [.. regrasDerivacao];
         CascataRemanejamento = cascataRemanejamento;
         FormularioTitulo = formularioTitulo;
@@ -144,6 +148,8 @@ public sealed class GrafoConfiguracao
     /// no §8), então reusar a instância viva de mesmo código na reconciliação é seguro por construção.
     /// </summary>
     public IReadOnlyList<FatoColetado> FatosColetados { get; }
+
+    public IReadOnlyList<OpcaoDeclaradaFato> OpcoesDeclaradas { get; }
 
     /// <summary>
     /// As regras de derivação dos fatos derivados do processo (Story #928, §7.4) — congeladas no

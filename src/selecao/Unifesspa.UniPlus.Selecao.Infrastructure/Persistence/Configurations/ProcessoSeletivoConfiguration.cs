@@ -243,6 +243,15 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.FatosColetados)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        // Opções declaradas pelo processo (issue #1619) — mesma disciplina de FatosColetados.
+        builder.HasMany(p => p.OpcoesDeclaradas)
+            .WithOne()
+            .HasForeignKey(o => o.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.OpcoesDeclaradas)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         // Regras de derivação (Story #927) — mesma disciplina de FatosColetados: FK obrigatória,
         // cascade, substituição por inteiro pelo agregado.
         builder.HasMany(p => p.RegrasDerivacao)

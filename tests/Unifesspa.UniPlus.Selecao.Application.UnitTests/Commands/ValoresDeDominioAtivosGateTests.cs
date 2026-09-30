@@ -275,13 +275,13 @@ public sealed class ValoresDeDominioAtivosGateTests
 
     // ── Correção 1 (revisão): fato de seleção sem origem conhecida de valores devolve 422 nomeado, nunca 500 ──
 
-    [Fact(DisplayName = "Fato de seleção categórico DECLARADO sem valores no catálogo e sem ser CONDICAO_ATENDIMENTO/TIPO_DEFICIENCIA recusa com 422 nomeado, nunca lança")]
+    [Fact(DisplayName = "Fato de seleção categórico sem valores no catálogo e sem fonte do processo recusa com 422 nomeado, nunca lança")]
     public async Task Publicar_FatoDeSelecaoSemOrigemDeValores_RecusaComErroNomeado()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        // Um categórico DECLARADO novo (migration futura no catálogo), sem ValoresDominioDeclarados
-        // (não é estático) e sem ser um dos dois categóricos de escopo-processo conhecidos.
+        // Um categórico DECLARADO sem ValoresDominioDeclarados (não é estático) e cuja fonte dos
+        // valores não é o processo — nenhuma origem de valores selecionáveis.
         // CoerenciaDeRenderizacao só confere domínio/cardinalidade — SELECAO_UNICA é coerente com
         // CATEGORICO/ESCALAR mesmo sem origem de valores.
         FatoColetado fatoNovo = FatoColetado.Criar(
@@ -292,7 +292,7 @@ public sealed class ValoresDeDominioAtivosGateTests
             Id: Guid.CreateVersion7(), Codigo: "NOVO_CATEGORICO", Nome: "Novo categórico", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:NOVO_CATEGORICO",
-            ValoresDominioDeclarados: null, FonteValores: "PROCESSO");
+            ValoresDominioDeclarados: null, FonteValores: "MODALIDADE");
 
         IFatoCandidatoReader reader = ReaderCom(novoCategoricoNoCatalogo);
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();

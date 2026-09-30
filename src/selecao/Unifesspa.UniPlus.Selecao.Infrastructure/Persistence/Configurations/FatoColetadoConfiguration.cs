@@ -26,6 +26,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.Rotulo).HasMaxLength(FatoColetado.RotuloMaxLength).IsRequired();
         builder.Property(f => f.TipoRenderizacao).HasConversion<int>().IsRequired();
         builder.Property(f => f.Obrigatorio).IsRequired();
+        builder.Property(f => f.OpcoesDoProcesso).IsRequired();
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em
         // DefinirFatosColetados; os índices as garantem também contra escrita concorrente e

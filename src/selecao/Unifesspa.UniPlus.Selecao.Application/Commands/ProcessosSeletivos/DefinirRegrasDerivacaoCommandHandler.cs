@@ -93,9 +93,10 @@ public static class DefinirRegrasDerivacaoCommandHandler
             IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario) =
             await ResolverVocabularioAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
 
-        Dictionary<string, IReadOnlySet<string>> dominiosDinamicos = ResolverDominiosDinamicos(processo);
+        Dictionary<string, IReadOnlySet<string>> dominiosDinamicos =
+            VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
         IReadOnlyCollection<string> modalidadesOfertadas =
-            [.. dominiosDinamicos[RegrasDerivacaoModalidadeLei12711.CodigoFato]];
+            [.. dominiosDinamicos.GetValueOrDefault(RegrasDerivacaoModalidadeLei12711.CodigoFato) ?? new HashSet<string>()];
 
         // Universo dos fatos disponíveis na configuração final: os coletados pelo processo mais os
         // derivados definidos neste mesmo comando (a substituição é integral). Uma condição só pode
@@ -272,14 +273,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
         {
             catalogo[fato.Codigo] = fato;
 
-            TipoDominioFato? tipoDominio = fato switch
-            {
-                { Dominio: "BOOLEANO" } => TipoDominioFato.Booleano,
-                { Dominio: "NUMERICO" } => TipoDominioFato.Numerico,
-                { Dominio: "CATEGORICO", ValoresDominio.Count: > 0 } => TipoDominioFato.CategoricoEstatico,
-                { Dominio: "CATEGORICO", ValoresDominio: null } => TipoDominioFato.CategoricoDinamico,
-                _ => null,
-            };
+            TipoDominioFato? tipoDominio = VocabularioDeFatos.Classificar(fato);
 
             if (tipoDominio is not { } tipo)
             {
@@ -296,25 +290,6 @@ public static class DefinirRegrasDerivacaoCommandHandler
         return (catalogo, vocabulario);
     }
 
-    private static Dictionary<string, IReadOnlySet<string>> ResolverDominiosDinamicos(ProcessoSeletivo processo)
-    {
-        HashSet<string> modalidades = [.. processo.DistribuicaoVagas
-            .SelectMany(static d => d.Modalidades)
-            .Select(static m => m.Codigo)];
-
-        HashSet<string> condicoesAtendimento = [.. (processo.OfertaAtendimento?.Condicoes ?? [])
-            .Select(static c => c.CondicaoCodigo)];
-
-        HashSet<string> tiposDeficiencia = [.. (processo.OfertaAtendimento?.TiposDeficiencia ?? [])
-            .Select(static t => t.TipoDeficienciaCodigo)];
-
-        return new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            [RegrasDerivacaoModalidadeLei12711.CodigoFato] = modalidades,
-            ["CONDICAO_ATENDIMENTO"] = condicoesAtendimento,
-            ["TIPO_DEFICIENCIA"] = tiposDeficiencia,
-        };
-    }
 }
 
 /// <summary>

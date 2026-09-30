@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Contêiner (um por processo) da oferta de atendimento especializado do
@@ -22,6 +23,19 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
     /// </summary>
     public const string CodigoCondicaoPcd = "PCD";
 
+    /// <summary>Fato do candidato cujas opções são as condições de atendimento ofertadas.</summary>
+    public const string FatoCondicaoAtendimento = "CONDICAO_ATENDIMENTO";
+
+    /// <summary>Fato do candidato cujas opções são os tipos de deficiência ofertados.</summary>
+    public const string FatoTipoDeficiencia = "TIPO_DEFICIENCIA";
+
+    /// <summary>
+    /// Indica que as opções do fato são geridas pela oferta de atendimento, e não declaradas
+    /// diretamente pelo processo. A oferta é, por natureza, a dona desses dois fatos.
+    /// </summary>
+    public static bool GereOpcoesDoFato(string fatoCodigo) =>
+        fatoCodigo is FatoCondicaoAtendimento or FatoTipoDeficiencia;
+
     public Guid ProcessoSeletivoId { get; private set; }
 
     private readonly List<OfertaCondicao> _condicoes = [];
@@ -34,6 +48,23 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
     public IReadOnlyCollection<OfertaTipoDeficiencia> TiposDeficiencia => _tiposDeficiencia.AsReadOnly();
 
     private OfertaAtendimentoEspecializado() { }
+
+    /// <summary>
+    /// As opções que a oferta dá ao fato, ordenadas pelo código e numeradas a partir de zero: a
+    /// oferta não tem ordem de negócio própria, e remover um item renumera os demais preservando
+    /// a ordem relativa. Vazio para fato que a oferta não gere.
+    /// </summary>
+    public IReadOnlyList<OpcaoDoProcesso> OpcoesDoFato(string fatoCodigo) =>
+        fatoCodigo switch
+        {
+            FatoCondicaoAtendimento => [.. _condicoes
+                .OrderBy(static c => c.CondicaoCodigo, StringComparer.Ordinal)
+                .Select(static (c, indice) => new OpcaoDoProcesso(c.CondicaoCodigo, c.CondicaoNome, indice))],
+            FatoTipoDeficiencia => [.. _tiposDeficiencia
+                .OrderBy(static t => t.TipoDeficienciaCodigo, StringComparer.Ordinal)
+                .Select(static (t, indice) => new OpcaoDoProcesso(t.TipoDeficienciaCodigo, t.TipoDeficienciaNome, indice))],
+            _ => [],
+        };
 
     /// <summary>
     /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — as

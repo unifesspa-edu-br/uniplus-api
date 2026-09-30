@@ -1767,6 +1767,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
                 ["tipoRenderizacao"] = fato.TipoRenderizacao.ToCodigo(),
                 ["obrigatorio"] = fato.Obrigatorio,
+                ["opcoesDoProcesso"] = fato.OpcoesDoProcesso,
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(
                     static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
                 ["valoresSelecionaveis"] = ehFatoDeSelecao

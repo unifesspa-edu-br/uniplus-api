@@ -1563,4 +1563,65 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
+
+    // ══════════════════════════════════════════════════════════════════════════════════════
+    // Opções declaradas pelo processo (issue #1619)
+    // ══════════════════════════════════════════════════════════════════════════════════════
+
+    private static FatoColetado FatoEdicaoEnem() => FatoColetado.Criar(
+        "EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
+        opcoesDoProcesso: true).Value!;
+
+    private static OpcaoDeclaradaFato Opcao(string codigo, int ordem = 0) =>
+        OpcaoDeclaradaFato.Criar("EDICAO_ENEM", codigo, $"ENEM {codigo}", ordem).Value!;
+
+    [Fact(DisplayName = "Fato coletado de fonte do processo sem opção declarada: item vermelho e publicação recusada; com opção, liberado")]
+    public void FatoDeFonteDoProcessoSemOpcao_RecusaAtePrimeiraOpcao()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirFatosColetados([FatoEdicaoEnem()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario).Should().ContainSingle(i => !i.Ok)
+            .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
+
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+        processo.OpcoesDoProcesso("EDICAO_ENEM").Should().ContainSingle().Which.Codigo.Should().Be("2025");
+    }
+
+    [Theory(DisplayName = "Definir opções declaradas recusa fato da oferta de atendimento, lista vazia e código repetido")]
+    [InlineData("CONDICAO_ATENDIMENTO", 1, "OpcaoDeclaradaFato.GeridasPelaOfertaDeAtendimento")]
+    [InlineData("EDICAO_ENEM", 0, "OpcaoDeclaradaFato.ListaVazia")]
+    [InlineData("EDICAO_ENEM", 2, "OpcaoDeclaradaFato.CodigoRepetido")]
+    public void DefinirOpcoesDeclaradas_Recusa(string fato, int quantidade, string codigoEsperado)
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        List<OpcaoDeclaradaFato> opcoes = [.. Enumerable.Range(0, quantidade).Select(static i => Opcao("2025", i))];
+
+        processo.DefinirOpcoesDeclaradas(fato, opcoes, PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(codigoEsperado);
+    }
+
+    [Fact(DisplayName = "Definir opções declaradas recusa deixar de fora uma opção citada por exigência viva")]
+    public void DefinirOpcoesDeclaradas_OpcaoCitadaPorExigencia_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), "BOLETIM_ENEM_2024", "Boletim do ENEM 2024", "ACADEMICO",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [CondicaoGatilho.Criar(0, "EDICAO_ENEM", Operador.Igual, JsonSerializer.SerializeToElement("2024")).Value!],
+            basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be("OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva");
+    }
+
 }

@@ -890,9 +890,9 @@ internal static class CorpusEnvelope
     /// o estado que <see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/> exige,
     /// porque só um processo publicado tem versão congelada a restaurar.
     /// </summary>
-    internal static void Publicar(ProcessoSeletivo processo)
+    internal static void Publicar(ProcessoSeletivo processo, EntradaCanonicalizacao? entrada = null)
     {
-        SnapshotCanonico snapshot = Codec.Codificar(Entrada(processo));
+        SnapshotCanonico snapshot = Codec.Codificar(entrada ?? Entrada(processo));
         processo.Publicar(
             DadosRicos(),
             snapshot.Bytes,

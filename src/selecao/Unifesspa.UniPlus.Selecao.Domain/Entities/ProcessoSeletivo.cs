@@ -148,6 +148,97 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     public IReadOnlyCollection<FatoColetado> FatosColetados => _fatosColetados.AsReadOnly();
 
+    private readonly List<OpcaoDeclaradaFato> _opcoesDeclaradas = [];
+
+    /// <summary>
+    /// As opções que o processo declara para os fatos cuja fonte dos valores é o processo, fora
+    /// os de atendimento especializado, cujas opções vêm da oferta (issue #1619).
+    /// </summary>
+    public IReadOnlyCollection<OpcaoDeclaradaFato> OpcoesDeclaradas => _opcoesDeclaradas.AsReadOnly();
+
+    /// <summary>
+    /// As opções que o processo oferece para o fato, na ordem: da oferta de atendimento, quando
+    /// ela gere o fato, ou as declaradas pelo processo. Vazio quando não há nenhuma. É a única
+    /// leitura das opções do processo — publicação, validação de predicado e formulário usam
+    /// esta, e nenhuma decide pelo código do fato.
+    /// </summary>
+    public IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(string fatoCodigo)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
+
+        if (OfertaAtendimentoEspecializado.GereOpcoesDoFato(fatoCodigo))
+        {
+            return OfertaAtendimento?.OpcoesDoFato(fatoCodigo) ?? [];
+        }
+
+        return [.. _opcoesDeclaradas
+            .Where(o => string.Equals(o.FatoCodigo, fatoCodigo, StringComparison.Ordinal))
+            .OrderBy(static o => o.Ordem)
+            .ThenBy(static o => o.Codigo, StringComparer.Ordinal)
+            .Select(static o => new OpcaoDoProcesso(o.Codigo, o.Rotulo, o.Ordem))];
+    }
+
+    /// <summary>
+    /// Substitui as opções que o processo declara para um fato de fonte do processo (issue
+    /// #1619). Editável em rascunho e sob sessão de retificação, como os demais <c>Definir*</c>.
+    /// </summary>
+    /// <remarks>
+    /// Recusa o fato cujas opções vêm da oferta de atendimento, a lista vazia, o código repetido
+    /// e a redefinição que deixaria de fora um código que uma exigência viva ainda cita — o
+    /// edital sairia com uma condição que nunca se satisfaz.
+    /// </remarks>
+    public Result DefinirOpcoesDeclaradas(
+        string fatoCodigo, IReadOnlyList<OpcaoDeclaradaFato> opcoes, PrecondicaoIfMatch precondicao)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
+        ArgumentNullException.ThrowIfNull(opcoes);
+
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        string fato = fatoCodigo.Trim();
+        if (OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato))
+        {
+            return Result.Failure(new DomainError(
+                OpcaoDeclaradaFatoErrorCodes.GeridasPelaOfertaDeAtendimento,
+                "As opções deste fato vêm da oferta de atendimento especializado; defina-as na oferta."));
+        }
+
+        if (opcoes.Count == 0)
+        {
+            return Result.Failure(new DomainError(
+                OpcaoDeclaradaFatoErrorCodes.ListaVazia,
+                "Declare ao menos uma opção para o fato."));
+        }
+
+        HashSet<string> codigos = new(StringComparer.Ordinal);
+        if (opcoes.Any(o => !codigos.Add(o.Codigo)))
+        {
+            return Result.Failure(new DomainError(
+                OpcaoDeclaradaFatoErrorCodes.CodigoRepetido,
+                "Cada opção do fato precisa de um código próprio."));
+        }
+
+        if (ReferenciaDinamicaSeriaInvalidada(fato, codigos))
+        {
+            return Result.Failure(new DomainError(
+                OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva,
+                "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma opção que deixaria de existir — ajuste ou remova a condição antes de redefinir as opções."));
+        }
+
+        _opcoesDeclaradas.RemoveAll(o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal));
+        foreach (OpcaoDeclaradaFato opcao in opcoes)
+        {
+            opcao.VincularProcesso(Id);
+            _opcoesDeclaradas.Add(opcao);
+        }
+
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
     private readonly List<ConfiguracaoDerivacaoFato> _regrasDerivacao = [];
 
     /// <summary>
@@ -1699,9 +1790,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Limpa a coleta de fatos e as regras de derivação como passo da <b>restauração fiel</b> no
     /// descarte de uma retificação (Story #986). São as duas coleções que a edição sob retificação
-    /// tornou mutáveis: uma sessão pode ter trocado ordens (0↔1) ou alterado pré-condições/regras,
-    /// e repor as instâncias congeladas por cima das vivas colidiria no índice único de
-    /// <c>Ordem</c>/código na mesma transação. A orquestração do descarte chama este método, faz um
+    /// tornou mutáveis e cuja reposição colidiria no índice único: uma sessão pode ter trocado
+    /// ordens (0↔1) ou alterado pré-condições/regras, e repor as instâncias congeladas por cima
+    /// das vivas colidiria no índice único de <c>Ordem</c>/código na mesma transação. As opções
+    /// declaradas (issue #1619) não passam por aqui: a reposição as reconcilia por chave, sem
+    /// colisão. A orquestração do descarte chama este método, faz um
     /// <c>SaveChanges</c> intermediário (os <c>DELETE</c>s saem primeiro) e só então aplica o grafo
     /// congelado (<c>INSERT</c> das instâncias reidratadas) — a reposição fiel de graça, sem
     /// reconciliação profunda dos filhos. Nenhuma identidade precisa sobreviver: são
@@ -3359,18 +3452,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 continue;
             }
 
-            bool ofertaVazia = fato.FatoCodigo switch
-            {
-                "CONDICAO_ATENDIMENTO" => (OfertaAtendimento?.Condicoes.Count ?? 0) == 0,
-                "TIPO_DEFICIENCIA" => (OfertaAtendimento?.TiposDeficiencia.Count ?? 0) == 0,
-                _ => false,
-            };
-
-            if (ofertaVazia)
+            bool opcoesDoProcesso = fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo);
+            if (opcoesDoProcesso && OpcoesDoProcesso(fato.FatoCodigo).Count == 0)
             {
                 return new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
-                    $"O fato '{fato.FatoCodigo}' é coletável, mas a oferta do processo não declara nenhum valor para ele.");
+                    $"O fato '{fato.FatoCodigo}' é coletável, mas o processo não declara nenhuma opção para ele.");
             }
         }
 
@@ -3769,18 +3856,27 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private bool ReferenciaDinamicaSeriaInvalidada(string fato, HashSet<string> novosCodigosValidos)
     {
-        foreach (CondicaoGatilho condicao in _documentosExigidos.SelectMany(static d => d.Condicoes))
+        // Todo predicado vivo que cita o fato por valor: gatilhos de exigência, pré-condições da
+        // coleta e condições das regras de derivação. Uma opção removida que qualquer um deles
+        // ainda cita faria o edital congelar uma condição que nunca se satisfaz.
+        IEnumerable<(string Fato, JsonElement Valor)> condicoes =
+            _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Valor))
+                .Concat(_fatosColetados.SelectMany(static f => f.Precondicoes).Select(static c => (c.Fato, c.Valor)))
+                .Concat(_regrasDerivacao.SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
+                    .Select(static c => (c.Fato, c.Valor)));
+
+        foreach ((string fatoCitado, JsonElement valor) in condicoes)
         {
-            if (!string.Equals(condicao.Fato, fato, StringComparison.Ordinal))
+            if (!string.Equals(fatoCitado, fato, StringComparison.Ordinal))
             {
                 continue;
             }
 
-            IEnumerable<string?> valoresReferenciados = condicao.Valor.ValueKind == JsonValueKind.Array
-                ? condicao.Valor.EnumerateArray().Select(static v => v.GetString())
-                : [condicao.Valor.GetString()];
+            IEnumerable<string?> valoresReferenciados = valor.ValueKind == JsonValueKind.Array
+                ? valor.EnumerateArray().Select(static v => v.GetString())
+                : [valor.ValueKind == JsonValueKind.String ? valor.GetString() : null];
 
-            if (valoresReferenciados.Any(valor => valor is not null && !novosCodigosValidos.Contains(valor)))
+            if (valoresReferenciados.Any(v => v is not null && !novosCodigosValidos.Contains(v)))
             {
                 return true;
             }
@@ -5485,6 +5581,33 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 derivacoesTracked.TryGetValue(congelada.CodigoFato, out ConfiguracaoDerivacaoFato? viva) ? viva : congelada;
             config.VincularProcessoSeletivo(Id);
             _regrasDerivacao.Add(config);
+        }
+
+        // Opções declaradas (issue #1619): por fato congelado, a versão manda — a opção viva de
+        // mesma chave recebe o rótulo e a ordem congelados, a viva que a versão não tem sai, e a
+        // congelada que falta entra. As chaves que saem e as que entram nunca coincidem, então não
+        // há colisão no índice único. Opções de fato que a versão não congela são configuração
+        // viva e ficam como estão.
+        foreach (IGrouping<string, OpcaoDeclaradaFato> congeladasDoFato in grafo.OpcoesDeclaradas.GroupBy(static o => o.FatoCodigo))
+        {
+            Dictionary<string, OpcaoDeclaradaFato> congeladas = congeladasDoFato.ToDictionary(static o => o.Codigo, StringComparer.Ordinal);
+            _opcoesDeclaradas.RemoveAll(o => string.Equals(o.FatoCodigo, congeladasDoFato.Key, StringComparison.Ordinal)
+                && !congeladas.ContainsKey(o.Codigo));
+
+            foreach (OpcaoDeclaradaFato congelada in congeladas.Values)
+            {
+                OpcaoDeclaradaFato? viva = _opcoesDeclaradas.FirstOrDefault(o =>
+                    string.Equals(o.FatoCodigo, congelada.FatoCodigo, StringComparison.Ordinal)
+                    && string.Equals(o.Codigo, congelada.Codigo, StringComparison.Ordinal));
+                if (viva is not null)
+                {
+                    viva.ReporConteudo(congelada.Rotulo, congelada.Ordem);
+                    continue;
+                }
+
+                congelada.VincularProcesso(Id);
+                _opcoesDeclaradas.Add(congelada);
+            }
         }
     }
 

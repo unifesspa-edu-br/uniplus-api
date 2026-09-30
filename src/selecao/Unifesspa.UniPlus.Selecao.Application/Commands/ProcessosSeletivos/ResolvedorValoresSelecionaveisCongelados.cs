@@ -30,10 +30,9 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// vocabulário do catálogo tal qual, SEM filtrar por <c>Ativo</c> — é
 /// <see cref="ConferenciaDeValoresDeDominioAtivos"/>, rodado ANTES deste resolvedor no mesmo
 /// congelamento, que garante que só chega aqui um fato coletado cujo vocabulário inteiro está
-/// ativo. ESCOPO-PROCESSO (<c>CONDICAO_ATENDIMENTO</c>, <c>TIPO_DEFICIENCIA</c> — o catálogo não
-/// declara valores) usa a oferta do PRÓPRIO processo, pelo mesmo código que
-/// <c>DefinirFatosColetadosCommandHandler.ResolverDominiosDinamicos</c> já usa para validar
-/// predicado — para que a opção oferecida ao candidato case com o que um predicado pode citar.
+/// ativo. Fonte do PROCESSO (ADR-0136) usa as opções do PRÓPRIO processo, pela mesma leitura
+/// (<c>ProcessoSeletivo.OpcoesDoProcesso</c>) que valida predicado — para que a opção oferecida
+/// ao candidato case com o que um predicado pode citar.
 /// </para>
 /// <para>
 /// Não faz I/O próprio — recebe o catálogo já lido UMA vez pelo handler (D4-bis), o mesmo
@@ -43,8 +42,6 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 internal static class ResolvedorValoresSelecionaveisCongelados
 {
-    private const string CondicaoAtendimento = "CONDICAO_ATENDIMENTO";
-    private const string TipoDeficiencia = "TIPO_DEFICIENCIA";
 
     public static Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> Resolver(
         ProcessoSeletivo processo,
@@ -140,40 +137,16 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(valores);
         }
 
-        return fatoCodigo switch
+        if (VocabularioDeFatos.OpcoesDoProcesso(fatoNoCatalogo))
         {
-            CondicaoAtendimento => Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(
-                ResolverCondicaoAtendimento(processo)),
-            TipoDeficiencia => Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(
-                ResolverTipoDeficiencia(processo)),
-            _ => Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(new DomainError(
-                "ProcessoSeletivo.FatoDeSelecaoSemOrigemDeValores",
-                $"O fato coletado '{fatoCodigo}' está vinculado como seleção, mas o catálogo não declara " +
-                "valores de domínio para ele e ele não é um dos categóricos de escopo-processo conhecidos " +
-                "(CONDICAO_ATENDIMENTO, TIPO_DEFICIENCIA) — não há de onde derivar os valores selecionáveis.")),
-        };
+            IReadOnlyList<ValorDominioDeclaradoCongelado> opcoes = [.. processo.OpcoesDoProcesso(fatoCodigo)
+                .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
+            return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(opcoes);
+        }
+
+        return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(new DomainError(
+            "ProcessoSeletivo.FatoDeSelecaoSemOrigemDeValores",
+            $"O fato coletado '{fatoCodigo}' está vinculado como seleção, mas o catálogo não declara valores de "
+            + "domínio para ele e a fonte dos seus valores não é o processo — não há de onde derivar os valores selecionáveis."));
     }
-
-    /// <summary>
-    /// Ordem atribuída pela projeção (D3): a oferta não tem ordem de negócio própria
-    /// (<c>OfertaCondicao</c> só guarda <c>*OrigemId</c> e nome) — ordena por
-    /// <c>CondicaoCodigo</c> ordinal e numera 0..n-1. Remover uma condição e republicar renumera
-    /// as demais, mas preserva a ordem RELATIVA das que restam.
-    /// </summary>
-    private static IReadOnlyList<ValorDominioDeclaradoCongelado> ResolverCondicaoAtendimento(ProcessoSeletivo processo) =>
-        [.. (processo.OfertaAtendimento?.Condicoes ?? [])
-            .OrderBy(static c => c.CondicaoCodigo, StringComparer.Ordinal)
-            .Select(static (c, indice) => new ValorDominioDeclaradoCongelado(c.CondicaoCodigo, c.CondicaoNome, indice))];
-
-    /// <summary>
-    /// Mesmo raciocínio de <see cref="ResolverCondicaoAtendimento"/>, e agora com a
-    /// mesma forma: o <c>TipoDeficienciaCodigo</c> é o valor, e o nome é a descrição
-    /// exibida. Enquanto o snapshot não guardava o código, o nome fazia o papel dele —
-    /// o que amarrava o valor visto pelo candidato a um rótulo que o cadastro pode
-    /// renomear a qualquer momento.
-    /// </summary>
-    private static IReadOnlyList<ValorDominioDeclaradoCongelado> ResolverTipoDeficiencia(ProcessoSeletivo processo) =>
-        [.. (processo.OfertaAtendimento?.TiposDeficiencia ?? [])
-            .OrderBy(static t => t.TipoDeficienciaCodigo, StringComparer.Ordinal)
-            .Select(static (t, indice) => new ValorDominioDeclaradoCongelado(t.TipoDeficienciaCodigo, t.TipoDeficienciaNome, indice))];
 }

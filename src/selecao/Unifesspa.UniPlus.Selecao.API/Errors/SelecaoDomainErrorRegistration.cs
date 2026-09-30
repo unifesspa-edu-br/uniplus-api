@@ -707,9 +707,17 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fase_inexistente", "A fase âncora da referência temporal de fatos não pertence (mais) ao cronograma")),
         new("ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_extremo_ausente", "A fase âncora da referência temporal de fatos não tem o extremo (início/fim) definido")),
         new("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fim_inscricao_indisponivel", "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido")),
-        // issue #1077 — fato coletável de escopo do processo (CONDICAO_ATENDIMENTO/TIPO_DEFICIENCIA)
-        // sem nenhum valor ofertado publicaria um seletor sem opção para o candidato escolher.
-        new("ProcessoSeletivo.FatoColetadoSemValoresOfertados", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_coletado_sem_valores_ofertados", "O fato coletado é de seleção, mas a oferta do processo não declara nenhum valor para ele")),
+        // issue #1077, generalizado pela #1619 — fato coletável cuja fonte dos valores é o processo,
+        // sem nenhuma opção, publicaria um seletor sem opção para o candidato escolher.
+        new("ProcessoSeletivo.FatoColetadoSemValoresOfertados", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_coletado_sem_valores_ofertados", "O fato coletado é de seleção, mas o processo não declara nenhuma opção para ele")),
+        // Opções declaradas pelo processo (issue #1619).
+        new(OpcaoDeclaradaFatoErrorCodes.CodigoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.codigo_invalido", "O código da opção é obrigatório e respeita o tamanho máximo")),
+        new(OpcaoDeclaradaFatoErrorCodes.RotuloInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.rotulo_invalido", "O rótulo da opção é obrigatório e respeita o tamanho máximo")),
+        new(OpcaoDeclaradaFatoErrorCodes.ListaVazia, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.lista_vazia", "Declare ao menos uma opção para o fato")),
+        new(OpcaoDeclaradaFatoErrorCodes.CodigoRepetido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.codigo_repetido", "Cada opção do fato precisa de um código próprio")),
+        new(OpcaoDeclaradaFatoErrorCodes.GeridasPelaOfertaDeAtendimento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.geridas_pela_oferta_de_atendimento", "As opções deste fato vêm da oferta de atendimento especializado")),
+        new(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.referenciada_por_exigencia_viva", "Uma exigência documental cita uma opção que deixaria de existir")),
+        new(OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.fonte_nao_eh_do_processo", "Só se declaram opções para um fato cuja fonte dos valores é o processo")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.
