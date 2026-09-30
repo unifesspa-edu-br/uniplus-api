@@ -272,6 +272,13 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(metadadosFatosResult.Error!), []);
         }
 
+        // Os fatos dos gatilhos continuam no processo e conhecidos até a fase de cada exigência:
+        // itens, formulários e derivações mudam depois que a exigência os citou.
+        if (ConferenciaDosFatosDosGatilhos.Conferir(processo, catalogoPorCodigo) is { } gatilhoIncoerente)
+        {
+            return (Result.Failure(gatilhoIncoerente), []);
+        }
+
         // Story #1059 (UNI-REQ-0072): os valores que o candidato pode escolher para cada fato de
         // seleção coletado — a configuração EDITADA pela sessão pode ter alterado a coleta.
         Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> valoresSelecionaveisResult =

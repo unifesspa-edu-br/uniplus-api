@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -18,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura do congelamento de metadado de fato (Story #919, RN08) em
@@ -190,13 +192,16 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_ComCondicaoDeGatilhoResolvida_ResolveMetadadoDoFato()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
+        processo.DefinirRegrasDerivacao(
+            [ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!]).Value!],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]);
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]);
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -208,9 +213,68 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         metadado.Dominio.Should().Be("CATEGORICO");
         metadado.Origem.Should().Be("DERIVADO");
         metadado.Cardinalidade.Should().Be("MULTIVALORADO");
-        metadado.PontoResolucao.Should().Be("INSCRICAO");
+        metadado.PontoResolucao.Should().Be("RESULTADO_FINAL");
         metadado.Binding.Should().Be("REGRA_DERIVACAO:MODALIDADE");
         metadado.ValoresDominioDeclarados.Should().BeNull("MODALIDADE é escopo-processo — os valores vêm da oferta do processo, não de FatoValorDominio");
+    }
+
+    [Fact(DisplayName = "Gatilho que cita fato que o processo deixou de derivar recusa a publicação")]
+    public async Task Handle_GatilhoCitaFatoForaDoProcesso_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
+        processo.DefinirRegrasDerivacao(
+            [ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!]).Value!],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]);
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
+
+        resposta.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
+        processo.Status.Should().Be(StatusProcesso.Rascunho);
+    }
+
+    [Fact(DisplayName = "Derivado citado por gatilho herda a fase da dependência que o gatilho não cita")]
+    public async Task Handle_DerivadoComDependenciaForaDoCronograma_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
+        processo.DefinirFatosColetados(
+            FinalidadeFormulario.Inscricao,
+            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao).Value!],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao(
+        [
+            ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+            [
+                RegraDerivacaoConfigurada.Criar(0, "AC",
+                    [CondicaoRegraDerivacao.Criar(0, "TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
+            ]).Value!,
+        ], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        FatoCandidatoView temRenda = FatoModalidade() with
+        {
+            Codigo = "TEM_RENDA",
+            Dominio = "BOOLEANO",
+            Origem = "DECLARADO",
+            Cardinalidade = "ESCALAR",
+            PontoResolucao = "HABILITACAO",
+            Binding = "CAMPO_INSCRICAO:TEM_RENDA",
+            FonteValores = null,
+        };
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }, temRenda]);
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
+
+        resposta.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma);
     }
 
     [Fact(DisplayName = "Código de fato que não resolve no catálogo aborta a publicação ANTES de canonicalizar")]

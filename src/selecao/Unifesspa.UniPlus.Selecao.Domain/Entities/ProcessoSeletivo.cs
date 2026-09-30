@@ -1742,6 +1742,110 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// A recusa de citar o fato num gatilho de exigência da fase dada (UNI-REQ-0144, UNI-REQ-0077):
+    /// nenhum documento é pedido antes de o fato ser conhecido. O fato fica conhecido na mais
+    /// tardia entre a fase do catálogo (<paramref name="pontoResolucaoPorFato"/>) e a fase do
+    /// formulário que o produz, e o derivado por regra, não antes das suas dependências. Fato
+    /// produzido só pelo formulário de isenção só é citado na fase dele: a habilitação usa, de
+    /// outra finalidade, só fatos da inscrição.
+    /// </summary>
+    /// <remarks>
+    /// Fato que o processo não coleta, não deriva e o catálogo não situa não é recusado aqui: a
+    /// recusa por fato fora do processo é da conferência do universo. O derivado do sistema usa a
+    /// fase do catálogo enquanto as suas dependências não são declaradas no processo (#1724).
+    /// </remarks>
+    public DomainError? RecusaDeFaseDoGatilho(string fato, Guid exigidoNaFaseId, IReadOnlyDictionary<string, string> pontoResolucaoPorFato)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fato);
+        ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
+
+        if (_cronogramaFases.Find(f => f.Id == exigidoNaFaseId) is not { } faseDaExigencia)
+        {
+            return null;
+        }
+
+        FaseEfetiva efetiva = FaseEfetivaDoFato(fato, pontoResolucaoPorFato, []);
+        if (efetiva.Recusa is { } recusa)
+        {
+            return recusa;
+        }
+
+        if (efetiva.Fase is { } fase && fase.Ordem > faseDaExigencia.Ordem)
+        {
+            return new DomainError(
+                DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior,
+                $"O fato '{fato}' só é conhecido na fase '{fase.Codigo}' (ordem {fase.Ordem}), posterior à fase em que o documento é exigido (ordem {faseDaExigencia.Ordem}).");
+        }
+
+        if (FormularioDe(FinalidadeFormulario.IsencaoTaxa) is { } isencao
+            && isencao.FaseId != exigidoNaFaseId
+            && DependeDeFatoSoDaIsencao(fato, []))
+        {
+            return new DomainError(
+                DocumentoExigidoErrorCodes.FatoDaIsencaoForaDaFaseDeIsencao,
+                $"O fato '{fato}' vem do formulário de isenção e só é citado por documento exigido na fase da isenção.");
+        }
+
+        return null;
+    }
+
+    /// <summary>A fase em que o fato fica conhecido no processo, ou a recusa quando o catálogo o situa fora do cronograma.</summary>
+    private FaseEfetiva FaseEfetivaDoFato(string fato, IReadOnlyDictionary<string, string> pontoResolucaoPorFato, HashSet<string> emAvaliacao)
+    {
+        FaseCronograma? maisTardia = null;
+        void Considerar(FaseCronograma? fase)
+        {
+            if (fase is not null && (maisTardia is null || fase.Ordem > maisTardia.Ordem))
+            {
+                maisTardia = fase;
+            }
+        }
+
+        if (pontoResolucaoPorFato.TryGetValue(fato, out string? ponto))
+        {
+            if (_cronogramaFases.Find(f => string.Equals(f.Codigo, ponto, StringComparison.Ordinal)) is not { } faseDoPonto)
+            {
+                return new FaseEfetiva(null, new DomainError(
+                    DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma,
+                    $"O fato '{fato}' resolve na fase '{ponto}', que não pertence ao cronograma deste processo."));
+            }
+
+            Considerar(faseDoPonto);
+        }
+
+        if (_fatosColetados.Find(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
+            && FormularioDe(coletado.Finalidade)?.FaseId is { } faseDoFormulario)
+        {
+            Considerar(_cronogramaFases.Find(f => f.Id == faseDoFormulario));
+        }
+
+        if (_regrasDerivacao.Find(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal)) is { } derivacao && emAvaliacao.Add(fato))
+        {
+            foreach (string dependencia in derivacao.FatosCitados)
+            {
+                FaseEfetiva daDependencia = FaseEfetivaDoFato(dependencia, pontoResolucaoPorFato, emAvaliacao);
+                if (daDependencia.Recusa is not null)
+                {
+                    return daDependencia;
+                }
+
+                Considerar(daDependencia.Fase);
+            }
+        }
+
+        return new FaseEfetiva(maisTardia, null);
+    }
+
+    /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência de derivação.</summary>
+    private bool DependeDeFatoSoDaIsencao(string fato, HashSet<string> emAvaliacao) =>
+        _fatosColetados.Exists(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
+        || (_regrasDerivacao.Find(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal)) is { } derivacao
+            && emAvaliacao.Add(fato)
+            && derivacao.FatosCitados.Any(d => DependeDeFatoSoDaIsencao(d, emAvaliacao)));
+
+    private sealed record FaseEfetiva(FaseCronograma? Fase, DomainError? Recusa);
+
+    /// <summary>
     /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
     /// (Story #554, PR #895; Story #920 — árvore E/OU substitui o grupo plano): mesmo
     /// padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/> primeiro,
