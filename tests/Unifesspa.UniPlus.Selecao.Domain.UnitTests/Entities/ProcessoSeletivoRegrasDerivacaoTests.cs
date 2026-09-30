@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Story #927 — a regra de derivação persistida na configuração do processo, e a sua reconstrução no
@@ -265,7 +266,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     public void ConstruirGrafoDependencia_ConfigAciclica_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
         [
             FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!,
             FatoColetado.Criar("CONCORRER_PCD", 1, "CONCORRER_PCD", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [Precond("PCD")]).Value!,

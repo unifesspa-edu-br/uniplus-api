@@ -12,6 +12,7 @@ using DTOs;
 using Mappings;
 
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 public static class ObterProcessoSeletivoQueryHandler
 {
@@ -94,16 +95,27 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. processo.DocumentosExigidos.OrderBy(d => d.Id).Select(ProjectDocumentoExigido)],
         [.. processo.RaizesDeExigencia.OrderBy(n => n.Ordem).ThenBy(n => n.Id).Select(ProjectNoExigencia)],
         ProjectReferenciaTemporalFatos(processo.ReferenciaTemporalFatos),
-        [.. processo.FatosColetados.OrderBy(f => f.Ordem).Select(f => ProjectFatoColetado(processo, f))],
         [.. processo.RegrasDerivacao.OrderBy(c => c.CodigoFato, StringComparer.Ordinal).Select(ProjectConfiguracaoDerivacao)],
-        processo.FormularioTitulo,
-        [.. processo.TermosExigidos.OrderBy(static t => t.Ordem).Select(static t => t.ToDto())],
+        [.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(f => ProjectFormulario(processo, f))],
         ProjectConfiguracaoDivulgacao(processo.ConfiguracaoDivulgacao),
         ProjectConfiguracaoTaxaInscricao(processo.ConfiguracaoTaxaInscricao),
         processo.AlgoritmoContagemPrazo is { } algoritmo
             ? new ReferenciaRegraDto(algoritmo.Codigo, algoritmo.Versao, algoritmo.Hash)
             : null,
         processo.CreatedAt);
+
+    private static FormularioDto ProjectFormulario(ProcessoSeletivo processo, FormularioProcesso formulario) => new(
+        EstruturaFormulario.ParaToken(formulario.Finalidade),
+        formulario.FaseId,
+        formulario.Titulo,
+        formulario.ModeloOrigemId,
+        formulario.ModeloOrigemCodigo,
+        [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(static e => new EtapaFormularioDto(
+            e.Codigo, e.Ordem, EstruturaFormulario.ParaToken(e.Tipo), EstruturaFormulario.ParaToken(e.Bloco), e.Titulo, e.Descricao, e.Aviso))],
+        [.. processo.FatosColetados.Where(f => f.Finalidade == formulario.Finalidade).OrderBy(static f => f.Ordem)
+            .Select(f => ProjectFatoColetado(processo, f))],
+        [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem)
+            .Select(static t => t.ToDto())]);
 
     private static FatoColetadoDto ProjectFatoColetado(ProcessoSeletivo processo, FatoColetado fato) => new(
         fato.FatoCodigo,
@@ -115,7 +127,8 @@ public static class ObterProcessoSeletivoQueryHandler
             static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)),
         fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo)
             ? [.. processo.OpcoesDoProcesso(fato.FatoCodigo).Select(static o => new OpcaoDoProcessoDto(o.Codigo, o.Rotulo, o.Ordem))]
-            : null);
+            : null,
+        fato.EtapaCodigo);
 
     private static ConfiguracaoDerivacaoDto ProjectConfiguracaoDerivacao(ConfiguracaoDerivacaoFato config) => new(
         config.CodigoFato,

@@ -14,22 +14,23 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
-/// O formulário de inscrição (Story #559), fim a fim pelo HTTP: leitura pública sob
-/// <c>/processos-seletivos/{id}/formulario</c> e escrita administrativa sob
-/// <c>/admin/processos-seletivos/{id}/formulario</c> — mesmo padrão path-based (ADR-0064) de
-/// <see cref="ObrigatoriedadeLegalController"/>, agora sobre <c>ProcessoSeletivo</c>.
+/// Os formulários por finalidade (UNI-REQ-0144), fim a fim pelo HTTP: leitura pública sob
+/// <c>/processos-seletivos/{id}/formularios/{finalidade}</c> e escrita administrativa sob
+/// <c>/admin/processos-seletivos/{id}/formularios/{finalidade}</c> (ADR-0064).
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
-public sealed class FormularioInscricaoEndpointTests
+public sealed class FormulariosEndpointTests
 {
     private readonly CascadingFixture _fixture;
 
-    public FormularioInscricaoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
+    public FormulariosEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
     [Fact(DisplayName = "PUT admin sem autenticação é 401")]
     public async Task Definir_SemAutenticacao_401()
@@ -65,9 +66,9 @@ public sealed class FormularioInscricaoEndpointTests
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        ProcessoSeletivo processo = await db.Set<ProcessoSeletivo>().AsNoTracking()
+        ProcessoSeletivo processo = await db.Set<ProcessoSeletivo>().AsNoTracking().Include(static p => p.Formularios)
             .SingleAsync(p => p.Id == ctx.ProcessoId);
-        processo.FormularioTitulo.Should().Be("Formulário de Inscrição");
+        processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Titulo.Should().Be("Formulário de Inscrição");
     }
 
     [Fact(DisplayName = "PUT admin com título acima do limite é 422 com a violação em errors[]")]
@@ -82,7 +83,32 @@ public sealed class FormularioInscricaoEndpointTests
         // field usa o mesmo casing do payload JSON (camelCase, ADR-0023), não o PascalCase do C#.
         JsonElement erro = doc.RootElement.GetProperty("errors").EnumerateArray().Single();
         erro.GetProperty("field").GetString().Should().Be("titulo");
-        erro.GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.formulario_titulo_tamanho");
+        erro.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.titulo_tamanho");
+    }
+
+    [Fact(DisplayName = "Finalidade fora do vocabulário é 404, na leitura e na escrita")]
+    public async Task FinalidadeDesconhecida_404()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(FinalidadeDesconhecida_404));
+
+        HttpResponseMessage escrita = await ctx.PutFormularioAsync("Título", finalidade: "MATRICULA");
+        HttpResponseMessage leitura = await ctx.GetFormularioAsync(finalidade: "MATRICULA");
+
+        escrita.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        leitura.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "Formulário de habilitação fora da fase de habilitação é 422")]
+    public async Task Definir_FaseIncoerenteComFinalidade_422()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(Definir_FaseIncoerenteComFinalidade_422));
+
+        HttpResponseMessage resposta = await ctx.PutFormularioAsync(
+            "Habilitação", finalidade: "HABILITACAO", faseId: await ctx.FaseDeInscricaoAsync());
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.fase_incoerente_com_finalidade");
     }
 
     [Fact(DisplayName = "GET público de processo em rascunho responde o MESMO que de processo inexistente")]
@@ -96,7 +122,7 @@ public sealed class FormularioInscricaoEndpointTests
 
         HttpResponseMessage emRascunho = await ctx.GetFormularioAsync();
         HttpResponseMessage inexistente = await ctx.Client.GetAsync(
-            new Uri($"/api/selecao/processos-seletivos/{Guid.CreateVersion7()}/formulario", UriKind.Relative));
+            new Uri($"/api/selecao/processos-seletivos/{Guid.CreateVersion7()}/formularios/INSCRICAO", UriKind.Relative));
 
         emRascunho.StatusCode.Should().Be(HttpStatusCode.NotFound);
         emRascunho.StatusCode.Should().Be(
@@ -109,7 +135,7 @@ public sealed class FormularioInscricaoEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Obter_ProcessoInexistente_404));
 
         HttpResponseMessage resposta = await ctx.Client.GetAsync(
-            new Uri($"/api/selecao/processos-seletivos/{Guid.NewGuid()}/formulario", UriKind.Relative));
+            new Uri($"/api/selecao/processos-seletivos/{Guid.NewGuid()}/formularios/INSCRICAO", UriKind.Relative));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -137,7 +163,10 @@ public sealed class FormularioInscricaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
+        root.GetProperty("finalidade").GetString().Should().Be("INSCRICAO");
         root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
+        root.GetProperty("etapas").EnumerateArray().Select(static e => e.GetProperty("codigo").GetString())
+            .Should().Equal("DADOS", "REVISAO");
         root.GetProperty("termos").GetArrayLength().Should().Be(0);
         JsonElement fatos = root.GetProperty("fatosColetados");
         fatos.GetArrayLength().Should().Be(1);
@@ -146,6 +175,7 @@ public sealed class FormularioInscricaoEndpointTests
         fato.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
         fato.GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
         fato.GetProperty("obrigatorio").GetBoolean().Should().BeTrue();
+        fato.GetProperty("etapaCodigo").GetString().Should().Be("DADOS");
     }
 
     [Fact(DisplayName = "GET público exige revalidação, inclusive na recusa anterior à divulgação")]
@@ -209,30 +239,52 @@ public sealed class FormularioInscricaoEndpointTests
                 $"A divulgação do processo {ProcessoId} não chegou em 30s — sem ela o formulário não é servido.");
         }
 
-        public async Task<HttpResponseMessage> PutFormularioAsync(
-            string? titulo, Autenticacao autenticar = Autenticacao.PlataformaAdmin)
+        public async Task<Guid> FaseDeInscricaoAsync()
         {
+            await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
+            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking().Include(static p => p.CronogramaFases)
+                .SingleAsync(p => p.Id == ProcessoId).ConfigureAwait(false);
+            return processo.CronogramaFases.Single(static f => f.ColetaInscricao).Id;
+        }
+
+        public async Task<HttpResponseMessage> PutFormularioAsync(
+            string? titulo,
+            Autenticacao autenticar = Autenticacao.PlataformaAdmin,
+            string finalidade = "INSCRICAO",
+            Guid? faseId = null)
+        {
+            Guid? fase = faseId ?? (finalidade == "INSCRICAO" ? await FaseDeInscricaoAsync().ConfigureAwait(false) : null);
             using HttpRequestMessage request = new(
                 HttpMethod.Put,
-                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formulario", UriKind.Relative))
+                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{finalidade}", UriKind.Relative))
             {
-                Content = JsonContent.Create(new { titulo }),
+                Content = JsonContent.Create(new
+                {
+                    faseId = fase,
+                    titulo,
+                    etapas = new object[]
+                    {
+                        new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados" },
+                        new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão e aceite" },
+                    },
+                }),
             };
             Autenticar(request, autenticar);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
             return await Client.SendAsync(request).ConfigureAwait(false);
         }
 
-        public async Task<HttpResponseMessage> GetFormularioAsync() => await Client.GetAsync(
-            new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/formulario", UriKind.Relative)).ConfigureAwait(false);
+        public async Task<HttpResponseMessage> GetFormularioAsync(string finalidade = "INSCRICAO") => await Client.GetAsync(
+            new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/formularios/{finalidade}", UriKind.Relative)).ConfigureAwait(false);
 
         public async Task<HttpResponseMessage> PutFatosAsync(IReadOnlyList<object> corpo)
         {
             using HttpRequestMessage request = new(
                 HttpMethod.Put,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/fatos-coletados", UriKind.Relative))
+                FormularioDeInscricaoHttp.RotaDosItens(ProcessoId))
             {
-                Content = JsonContent.Create(corpo),
+                Content = JsonContent.Create(FormularioDeInscricaoHttp.CorpoDosItens(corpo)),
             };
             Autenticar(request, Autenticacao.PlataformaAdmin);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());

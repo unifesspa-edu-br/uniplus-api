@@ -285,6 +285,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     private static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> PersistirComDocumentoConfirmadoAsync(
         SelecaoDbContext db, ProcessoSeletivo processo)
     {
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
@@ -301,6 +302,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     private static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> PersistirComDocumentoPendenteAsync(
         SelecaoDbContext db, ProcessoSeletivo processo)
     {
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));

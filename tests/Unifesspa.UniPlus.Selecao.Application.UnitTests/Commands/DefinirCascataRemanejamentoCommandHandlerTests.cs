@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura do <see cref="DefinirCascataRemanejamentoCommandHandler"/>
@@ -358,6 +359,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         DadosEdital dados = DadosEdital.Criar(
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
         byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario)
             .IsSuccess.Should().BeTrue();
 

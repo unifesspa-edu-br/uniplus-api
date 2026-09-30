@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// A matriz normativa de derivação de modalidade publicada por leitura: recortada para o que o
@@ -245,9 +246,9 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
 
             using HttpRequestMessage request = new(
                 HttpMethod.Put,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/fatos-coletados", UriKind.Relative))
+                FormularioDeInscricaoHttp.RotaDosItens(ProcessoId))
             {
-                Content = JsonContent.Create(fatos),
+                Content = JsonContent.Create(FormularioDeInscricaoHttp.CorpoDosItens(fatos)),
             };
             Autenticar(request);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));

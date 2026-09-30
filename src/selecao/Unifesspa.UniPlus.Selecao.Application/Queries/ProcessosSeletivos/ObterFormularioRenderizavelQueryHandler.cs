@@ -12,6 +12,7 @@ using Domain.Interfaces;
 using DTOs;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (RN08, UNI-REQ-0072): projeta os
@@ -104,7 +105,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 $"A configuração congelada do processo {query.ProcessoSeletivoId} não é um documento legível."));
         }
 
-        return Projetar(envelope);
+        return Projetar(envelope, query.Finalidade) ?? NaoEncontrado(query.ProcessoSeletivoId);
     }
 
     /// <summary>
@@ -138,11 +139,25 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// checa presença, tipo e nulidade antes de usar o valor, nunca um cast bruto sobre entrada
     /// que não passou pelo encoder confiável.
     /// </summary>
-    private static Result<FormularioRenderizavelDto> Projetar(JsonObject envelope)
+    /// <remarks>Nulo quando a versão vigente não tem formulário da finalidade pedida.</remarks>
+    private static Result<FormularioRenderizavelDto>? Projetar(JsonObject envelope, FinalidadeFormulario finalidade)
     {
-        if (!envelope.TryGetPropertyValue("formulario", out JsonNode? formularioNode) || formularioNode is not JsonObject formulario
-            || !TentarStringOpcional(formulario, "titulo", out string? titulo)
-            || !TentarTermos(formulario, out List<TermoExigidoDto> termos))
+        string token = EstruturaFormulario.ParaToken(finalidade);
+        if (!envelope.TryGetPropertyValue("formularios", out JsonNode? formulariosNode) || formulariosNode is not JsonArray formularios)
+        {
+            return VersaoSemApresentacao();
+        }
+
+        JsonObject? formulario = formularios.OfType<JsonObject>()
+            .FirstOrDefault(f => TentarString(f, "finalidade", out string finalidadeDoBloco) && finalidadeDoBloco == token);
+        if (formulario is null)
+        {
+            return null;
+        }
+
+        if (!TentarStringOpcional(formulario, "titulo", out string? titulo)
+            || !TentarTermos(formulario, out List<TermoExigidoDto> termos)
+            || !TentarEtapas(formulario, out List<EtapaFormularioDto> etapas))
         {
             return VersaoSemApresentacao();
         }
@@ -155,8 +170,19 @@ public static class ObterFormularioRenderizavelQueryHandler
         List<FatoFormularioRenderizavelDto> fatos = [];
         foreach (JsonNode? item in fatosColetados)
         {
+            if (item is not JsonObject doItem || !TentarString(doItem, "finalidade", out string finalidadeDoItem))
+            {
+                return VersaoSemApresentacao();
+            }
+
+            if (finalidadeDoItem != token)
+            {
+                continue;
+            }
+
             if (item is not JsonObject fato
                 || !TentarString(fato, "fatoCodigo", out string fatoCodigo)
+                || !TentarStringOpcional(fato, "etapaCodigo", out string? etapaCodigo)
                 || !TentarInt(fato, "ordem", out int ordem)
                 || !TentarString(fato, "rotulo", out string rotulo)
                 || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
@@ -168,10 +194,10 @@ public static class ObterFormularioRenderizavelQueryHandler
             }
 
             fatos.Add(new FatoFormularioRenderizavelDto(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicao, valoresSelecionaveis));
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicao, valoresSelecionaveis, etapaCodigo));
         }
 
-        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(titulo, termos, fatos));
+        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos));
     }
 
     /// <summary>
@@ -227,9 +253,38 @@ public static class ObterFormularioRenderizavelQueryHandler
         return node is JsonValue jv && jv.TryGetValue(out valor);
     }
 
+    /// <summary>As etapas do formulário, na ordem congelada; forma inesperada é versão sem apresentação.</summary>
+    private static bool TentarEtapas(JsonObject formulario, out List<EtapaFormularioDto> etapas)
+    {
+        etapas = [];
+        if (!formulario.TryGetPropertyValue("etapas", out JsonNode? node) || node is not JsonArray itens)
+        {
+            return false;
+        }
+
+        foreach (JsonNode? item in itens)
+        {
+            if (item is not JsonObject etapa
+                || !TentarString(etapa, "codigo", out string codigo)
+                || !TentarInt(etapa, "ordem", out int ordem)
+                || !TentarString(etapa, "tipo", out string tipo)
+                || !TentarStringOpcional(etapa, "bloco", out string? bloco)
+                || !TentarString(etapa, "titulo", out string titulo)
+                || !TentarStringOpcional(etapa, "descricao", out string? descricao)
+                || !TentarStringOpcional(etapa, "aviso", out string? aviso))
+            {
+                return false;
+            }
+
+            etapas.Add(new EtapaFormularioDto(codigo, ordem, tipo, bloco, titulo, descricao, aviso));
+        }
+
+        return true;
+    }
+
     /// <summary>
-    /// Os termos exigidos do bloco <c>formulario</c> (UNI-REQ-0086), na ordem congelada; qualquer
-    /// forma fora da esperada é versão sem apresentação.
+    /// Os termos exigidos do formulário (UNI-REQ-0086), na ordem congelada; qualquer forma fora
+    /// da esperada é versão sem apresentação.
     /// </summary>
     private static bool TentarTermos(JsonObject formulario, out List<TermoExigidoDto> termos)
     {

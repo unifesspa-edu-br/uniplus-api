@@ -28,6 +28,8 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.Obrigatorio).IsRequired();
         builder.Property(f => f.OrigemValores).HasConversion<int>().IsRequired();
         builder.Ignore(f => f.OpcoesDoProcesso);
+        builder.Property(f => f.Finalidade).HasConversion<int>().IsRequired();
+        builder.Property(f => f.EtapaCodigo).HasMaxLength(EtapaFormulario.CodigoMaxLength);
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em
         // DefinirFatosColetados; os índices as garantem também contra escrita concorrente e
@@ -36,9 +38,10 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
             .IsUnique()
             .HasDatabaseName("ux_fatos_coletados_processo_fato");
 
-        builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Ordem })
+        // O fato tem um só produtor no processo; a ordem é única dentro de cada formulário.
+        builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Finalidade, f.Ordem })
             .IsUnique()
-            .HasDatabaseName("ux_fatos_coletados_processo_ordem");
+            .HasDatabaseName("ux_fatos_coletados_processo_finalidade_ordem");
 
         builder.HasMany(f => f.Precondicoes)
             .WithOne()

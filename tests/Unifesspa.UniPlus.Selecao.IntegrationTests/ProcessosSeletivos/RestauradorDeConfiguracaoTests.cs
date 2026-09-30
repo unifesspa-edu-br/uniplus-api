@@ -9,6 +9,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -16,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -63,6 +65,26 @@ public sealed class RestauradorDeConfiguracaoTests
 
         CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado voltou a ser, byte a byte, o que a versão congelou");
+    }
+
+    [Fact(DisplayName = "Restaurar sobre o formulário vivo editado repõe o conteúdo congelado dele")]
+    public void Restaurar_FormularioVivoEditado_RepoeOCongelado()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        string? tituloCongelado = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Titulo;
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        Result<GrafoConfiguracao> grafo = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao);
+        grafo.IsSuccess.Should().BeTrue(grafo.Error?.Message);
+
+        processo.AbrirRetificacao("Editar o formulário", versao, identificadorDaVersaoBase: null, CorpusEnvelope.Ator, TimeProvider.System.GetUtcNow())
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirTitulo("Título editado na sessão", PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        processo.RestaurarConfiguracaoCongelada(versao, grafo.Value!).IsSuccess.Should().BeTrue();
+
+        processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Titulo.Should().Be(tituloCongelado);
     }
 
     /// <summary>
@@ -352,6 +374,7 @@ public sealed class RestauradorDeConfiguracaoTests
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
@@ -573,7 +596,7 @@ public sealed class RestauradorDeConfiguracaoTests
         // Substitui a coleta pelo mesmo par {COR_RACA, RENDA} do corpus rico — SEM a
         // pré-condição de RENDA, irrelevante para esta prova — acrescido de
         // CONDICAO_ATENDIMENTO (escopo-processo, SELECAO_MULTIPLA).
-        processo.DefinirFatosColetados([
+        processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!,
             FatoColetado.Criar("CONDICAO_ATENDIMENTO", 2, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, obrigatorio: false, null).Value!,

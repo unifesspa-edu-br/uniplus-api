@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Edição de fatos coletados e regras de derivação <b>sob sessão de retificação</b> (Story #986),
@@ -55,7 +56,7 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
 
     public EdicaoColetaSobRetificacaoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "Sob sessão, PUT /fatos-coletados sem If-Match é 428; com If-Match defasado é 412; com o corrente é 204 com ETag novo")]
+    [Fact(DisplayName = "Sob sessão, PUT dos itens do formulário sem If-Match é 428; com If-Match defasado é 412; com o corrente é 204 com ETag novo")]
     public async Task Fatos_SobSessao_Precondicao()
     {
         Contexto ctx = await PublicarComColetaAsync(nameof(Fatos_SobSessao_Precondicao));
@@ -85,7 +86,7 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
         (await ctx.PutFatosAsync(FatosTrocados, ifMatch: etag)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using JsonDocument doc = await ctx.ObterProcessoAsync();
-        JsonElement fatos = doc.RootElement.GetProperty("fatosColetados");
+        JsonElement fatos = doc.RootElement.GetProperty("formularios")[0].GetProperty("fatosColetados");
         fatos.EnumerateArray().Select(f => f.GetProperty("fatoCodigo").GetString())
             .Should().Equal(["BAIXA_RENDA", "COR_RACA"], "a troca de ordens sob sessão persistiu");
 
@@ -120,7 +121,7 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
 
         // A coleta voltou byte-a-byte à ordem congelada.
         using JsonDocument doc = await ctx.ObterProcessoAsync();
-        JsonElement fatos = doc.RootElement.GetProperty("fatosColetados");
+        JsonElement fatos = doc.RootElement.GetProperty("formularios")[0].GetProperty("fatosColetados");
         fatos.EnumerateArray().Select(f => f.GetProperty("fatoCodigo").GetString())
             .Should().Equal(["COR_RACA", "BAIXA_RENDA"], "as ordens congeladas voltaram");
         fatos[0].GetProperty("ordem").GetInt32().Should().Be(0);
@@ -143,10 +144,11 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId, Guid DocumentoId)
     {
         public Task<HttpResponseMessage> PutFatosAsync(IReadOnlyList<object> corpo, string? ifMatch) =>
-            EnviarAsync(HttpMethod.Put, "fatos-coletados", corpo, ifMatch);
+            EnviarAsync(
+                HttpMethod.Put, FormularioDeInscricaoHttp.RotaDosItens(ProcessoId), FormularioDeInscricaoHttp.CorpoDosItens(corpo), ifMatch);
 
         public Task<HttpResponseMessage> PutRegrasAsync(IReadOnlyList<object> corpo, string? ifMatch) =>
-            EnviarAsync(HttpMethod.Put, "regras-derivacao", corpo, ifMatch);
+            EnviarAsync(HttpMethod.Put, Rota("regras-derivacao"), corpo, ifMatch);
 
         public async Task<string> AbrirSessaoAsync()
         {
@@ -186,11 +188,11 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
             return JsonDocument.Parse(await resposta.Content.ReadAsStringAsync().ConfigureAwait(false));
         }
 
-        private async Task<HttpResponseMessage> EnviarAsync(HttpMethod metodo, string recurso, object corpo, string? ifMatch)
+        private Uri Rota(string recurso) => new($"/api/selecao/processos-seletivos/{ProcessoId}/{recurso}", UriKind.Relative);
+
+        private async Task<HttpResponseMessage> EnviarAsync(HttpMethod metodo, Uri rota, object corpo, string? ifMatch)
         {
-            using HttpRequestMessage request = new(
-                metodo,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/{recurso}", UriKind.Relative))
+            using HttpRequestMessage request = new(metodo, rota)
             {
                 Content = JsonContent.Create(corpo),
             };

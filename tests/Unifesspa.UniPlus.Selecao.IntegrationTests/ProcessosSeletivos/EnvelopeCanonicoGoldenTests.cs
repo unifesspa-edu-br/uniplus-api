@@ -204,7 +204,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         // classes de aresta do grafo conjunto no mesmo snapshot — produção (campo→fato),
         // pré-condição (COR_RACA gata RENDA), derivação (RENDA→MODALIDADE) e gatilho
         // (MODALIDADE→exigência). MODALIDADE só contribui AC, a única modalidade ofertada.
-        processo.DefinirFatosColetados([
+        processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
@@ -212,9 +212,9 @@ public sealed class EnvelopeCanonicoGoldenTests
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo exigido — a
-        // fixture congela a forma real do bloco "formulario", não só o caso sem termos.
-        processo.DefinirFormulario("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
+        // fixture congela a forma real do bloco "formularios", não só o caso sem termos.
+        processo.DefinirTitulo("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao([

@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O catálogo de fatos do candidato pode reclassificar a <c>Origem</c> de um fato depois que
@@ -77,7 +78,7 @@ public sealed class ColetabilidadeDeFatosGateTests
     public async Task Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.DefinirFatosColetados([FatoColetadoModalidade()], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetadoModalidade()], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         IFatoCandidatoReader fatoCandidatoReader = ReaderCom(FatoModalidadeReclassificadaComoDerivada());
@@ -205,7 +206,7 @@ public sealed class ColetabilidadeDeFatosGateTests
     public async Task Publicar_ComFatoColetadoAindaDeclarado_Aprova()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.DefinirFatosColetados([FatoColetadoCorRaca()], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetadoCorRaca()], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         IFatoCandidatoReader fatoCandidatoReader = ReaderCom(FatoCorRacaAindaDeclarado());
@@ -306,7 +307,7 @@ public sealed class ColetabilidadeDeFatosGateTests
     private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicadoComFatoColetado()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.DefinirFatosColetados([FatoColetadoModalidade()], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetadoModalidade()], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         DadosEdital dados = DadosEdital.Criar(

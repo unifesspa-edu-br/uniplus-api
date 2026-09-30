@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Issue #1310: a fábrica recusa <c>Cobra = true</c> sem fundamento de isenção, mas essa
@@ -165,6 +166,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         taxa.IsSuccess.Should().BeTrue(taxa.Error?.Message);
         processo.DefinirTaxaInscricao(taxa.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
 
@@ -195,6 +197,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
             .Include(p => p.Etapas)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.Classificacao)
+            .Include(p => p.Formularios).ThenInclude(f => f.Etapas)
             .Include(p => p.OfertaAtendimento)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.ConfiguracaoTaxaInscricao)

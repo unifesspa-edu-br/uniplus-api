@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -14,9 +15,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
-/// O endpoint <c>PUT /processos-seletivos/{id}/fatos-coletados</c> (Story #984), fim a fim
+/// O endpoint <c>PUT /admin/processos-seletivos/{id}/formularios/{finalidade}/itens</c> (Story #984), fim a fim
 /// pelo HTTP. Prova o que só o ciclo real prova: a coletabilidade e o vocabulário resolvidos
 /// contra o seed cross-módulo de Configuração, o guard de rascunho num processo publicado, a
 /// idempotência do replay e a autorização herdada do controller.
@@ -70,6 +72,19 @@ public sealed class DefinirFatosColetadosEndpointTests
             [new { fatoCodigo = "V", ordem = 0, rotulo = "V", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null }]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "A recusa do validator aponta o campo pelo nome do corpo, itens[i]")]
+    public async Task Rascunho_PrecondicaoVazia_FieldPeloCorpo()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_PrecondicaoVazia_FieldPeloCorpo));
+
+        HttpResponseMessage resposta = await ctx.PutFatosAsync(
+            [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = Array.Empty<object>() }]);
+
+        using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
+            .Should().Equal("itens[0].precondicao");
     }
 
     [Fact(DisplayName = "Coletar um fato derivado (MODALIDADE) é recusado com 422")]
@@ -145,9 +160,9 @@ public sealed class DefinirFatosColetadosEndpointTests
         {
             using HttpRequestMessage request = new(
                 HttpMethod.Put,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/fatos-coletados", UriKind.Relative))
+                FormularioDeInscricaoHttp.RotaDosItens(ProcessoId))
             {
-                Content = JsonContent.Create(corpo),
+                Content = JsonContent.Create(FormularioDeInscricaoHttp.CorpoDosItens(corpo)),
             };
             Autenticar(request, autenticar);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey ?? MakeIdempotencyKey());

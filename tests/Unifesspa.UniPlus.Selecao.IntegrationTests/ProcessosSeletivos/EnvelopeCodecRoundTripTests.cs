@@ -4,11 +4,14 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -57,6 +60,39 @@ public sealed class EnvelopeCodecRoundTripTests
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
 
         AssertRoundTrip(processo, versao, congelado);
+    }
+
+    [Fact(DisplayName = "Dois formulários, cada um com item de ordem 0 e um termo, reproduzem os bytes")]
+    public void RoundTrip_DoisFormularios_OrdemRepetidaEntreEles()
+    {
+        // A ordem é única dentro de cada formulário: a inscrição e a habilitação têm, as duas,
+        // um item de ordem 0, e o decoder não pode tomar isso por repetição. O item da habilitação
+        // depende da cor/raça respondida na inscrição (UNI-REQ-0145).
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        FaseCronograma habilitacao = FaseCronograma.Criar(
+            processo.CronogramaFases.Max(static f => f.Ordem) + 1, Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, "CEPS",
+            OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
+            produtos: [ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirItens(
+            [FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, obrigatorio: true, [
+                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+            ]).Value!],
+            finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([CorpusEnvelope.Termo("VERACIDADE", 0)], finalidade: FinalidadeFormulario.Habilitacao)
+            .IsSuccess.Should().BeTrue();
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        AssertRoundTrip(processo, CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        Envelope(congelado)["formularios"]!.AsArray().Select(static f => f!["finalidade"]!.GetValue<string>())
+            .Should().Equal("INSCRICAO", "HABILITACAO");
     }
 
     [Fact(DisplayName = "A versão N>1 tem o bloco retificacao: o round-trip usa a RetificacaoInfo ORIGINAL, recuperada do próprio envelope")]
@@ -869,6 +905,7 @@ public sealed class EnvelopeCodecRoundTripTests
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
@@ -1045,6 +1082,7 @@ public sealed class EnvelopeCodecRoundTripTests
             bancasRequeridas: [],
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
@@ -1352,7 +1390,7 @@ public sealed class EnvelopeCodecRoundTripTests
     public void OpcoesDeclaradas_CongelarPublicarRestaurar_VoltamComRotuloEOrdem()
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1388,7 +1426,7 @@ public sealed class EnvelopeCodecRoundTripTests
     public void OpcoesDeclaradas_EdicaoDaSessao_DescarteRepoeCongeladasEPreservaAsVivas()
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1419,7 +1457,7 @@ public sealed class EnvelopeCodecRoundTripTests
         // coletar um fato cujas opções já estavam declaradas.
         processo.AbrirRetificacao("Ajusta as opções", versao, identificadorDaVersaoBase: null, "teste", DateTimeOffset.UtcNow)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!,
              FatoColetado.Criar("LOCAL_PROVA", 1, "Local de prova", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null,
@@ -1511,6 +1549,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 bancasRequeridas: [],
                 regraRecurso: null).Value!,
         ], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(

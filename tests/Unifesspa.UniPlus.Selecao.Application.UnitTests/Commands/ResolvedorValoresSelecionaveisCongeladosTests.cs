@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// issue #1077 — §2: defesa em profundidade da fronteira Application. O caminho esperado para
@@ -39,7 +40,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     public void Resolver_FatoDeFonteDoProcesso_CongelaAsOpcoesDeclaradas()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, true, null, origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
@@ -68,7 +69,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
             1.20m, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, true, null,
                 origemValores: OrigemValoresColeta.MunicipiosDoBonus).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -91,7 +92,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, false, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -115,7 +116,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             OfertaAtendimentoEspecializado.Criar(
                 [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, false, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

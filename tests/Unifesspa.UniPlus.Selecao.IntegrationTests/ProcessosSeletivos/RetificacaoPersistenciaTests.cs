@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -17,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da retificação
@@ -60,6 +62,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
@@ -413,8 +416,8 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
     {
         string nome = $"{nameof(Retificacao_DescartadaAposEditarFormulario_RestauraFormularioDaVersaoAnterior)}-{Guid.CreateVersion7()}";
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(nome);
-        processo.DefinirFormulario(tituloPublicado, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(
+        processo.DefinirTitulo(tituloPublicado, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos(
             termoPublicado is null ? [] : [CorpusEnvelope.Termo(termoPublicado, 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
@@ -445,11 +448,13 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
                 "Testar edição e descarte do formulário", versaoAbertura, identificadorDaVersaoBase: null, "integration-test-user", TimeProvider.System.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
-            tracked.DefinirFormulario(tituloEditado, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            tracked.DefinirTitulo(tituloEditado, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
             // A ordem 0 do termo editado colide com a do publicado: a restauração tem de limpar
             // antes de repor, senão bateria no índice único.
-            tracked.DefinirTermosDoFormulario([CorpusEnvelope.Termo(termoEditado, 0)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-            tracked.FormularioTitulo.Should().Be(tituloEditado, "pré-condição: a sessão editorial trocou o título");
+            tracked.DefinirTermos([CorpusEnvelope.Termo(termoEditado, 0)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            tracked.FormularioDe(FinalidadeFormulario.Inscricao)!.Titulo.Should().Be(tituloEditado, "pré-condição: a sessão editorial trocou o título");
+            tracked.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Curinga)
+                .IsSuccess.Should().BeTrue("a retificação acrescenta formulário");
 
             // O DESCARTE — com a prova de fidelidade, exatamente como em produção.
             Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope()).Restaurar(tracked, versaoAbertura);
@@ -468,7 +473,9 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         ProcessoSeletivo relido = (await leitura.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
         relido.Rascunho.Should().BeNull("a sessão foi descartada — não há mais retificação em curso");
-        relido.FormularioTitulo.Should().Be(
+        relido.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull(
+            "o formulário acrescentado na sessão abandonada some com ela");
+        relido.FormularioDe(FinalidadeFormulario.Inscricao)!.Titulo.Should().Be(
             tituloPublicado, "o descarte restaurou o título que a versão N congelou — não o título editado na sessão abandonada");
         relido.TermosExigidos.Select(static t => t.Codigo).Should().Equal(
             termoPublicado is null ? [] : [termoPublicado],

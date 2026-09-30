@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura do <see cref="DefinirRegrasDerivacaoCommandHandler"/> (Story #985): o alvo derivado
@@ -62,7 +63,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoBase();
 
-        processo.DefinirFatosColetados([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(

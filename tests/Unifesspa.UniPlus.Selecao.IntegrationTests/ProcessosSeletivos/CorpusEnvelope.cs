@@ -365,7 +365,7 @@ internal static class CorpusEnvelope
         // regra que contribui LB_PPI quando COR_RACA=PRETA E RENDA=ATE_1_SM. Exercita, no mesmo
         // snapshot, as arestas de produção, pré-condição e derivação, com predicado DNF de duas
         // condições numa cláusula. Ambos os códigos contribuídos (AC, LB_PPI) são ofertados.
-        processo.DefinirFatosColetados(Ordem([
+        processo.DefinirItens(Ordem([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
@@ -374,10 +374,10 @@ internal static class CorpusEnvelope
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
         // obrigatoriedade condicionais — o decoder tem de remontar o termo inteiro.
-        processo.DefinirFormulario("Formulário de Inscrição — PS Rico 2026", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTitulo("Formulário de Inscrição — PS Rico 2026", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         PredicadoDnf corPreta = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
-        processo.DefinirTermosDoFormulario(
+        processo.DefinirTermos(
             [Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta))],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

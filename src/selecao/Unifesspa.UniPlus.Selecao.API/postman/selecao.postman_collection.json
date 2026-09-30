@@ -1737,7 +1737,7 @@
           ]
         },
         {
-          "name": "Obter ProcessoSeletivo (capturar fase_cronograma_id)",
+          "name": "Obter ProcessoSeletivo (capturar fase_cronograma_id e fase_inscricao_id)",
           "request": {
             "method": "GET",
             "header": [
@@ -1784,6 +1784,7 @@
                   "  const avaliacao = j.cronogramaFases.find(f => f.codigo === 'AVALIACAO');",
                   "  pm.expect(avaliacao, 'fase AVALIACAO deve estar no cronograma').to.not.be.undefined;",
                   "  pm.environment.set('fase_cronograma_id', avaliacao.id);",
+                  "  pm.environment.set('fase_inscricao_id', j.cronogramaFases.find(f => f.codigo === 'INSCRICAO').id);",
                   "});"
                 ]
               }
@@ -2104,7 +2105,7 @@
           ]
         },
         {
-          "name": "Definir Fatos Coletados",
+          "name": "Definir Formulário de Inscrição",
           "request": {
             "method": "PUT",
             "header": [
@@ -2120,16 +2121,18 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/fatos-coletados",
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{processo_id}}/formularios/INSCRICAO",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "selecao",
+                "admin",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "fatos-coletados"
+                "formularios",
+                "INSCRICAO"
               ]
             },
             "auth": {
@@ -2144,7 +2147,72 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"fatoCodigo\": \"COR_RACA\",\n    \"ordem\": 0,\n    \"rotulo\": \"Cor ou raça\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": true,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"BAIXA_RENDA\",\n    \"ordem\": 1,\n    \"rotulo\": \"Baixa renda\",\n    \"tipoRenderizacao\": \"BOOLEANO\",\n    \"obrigatorio\": false,\n    \"precondicao\": [\n      [\n        {\n          \"fato\": \"COR_RACA\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PRETA\"\n        }\n      ]\n    ]\n  },\n  {\n    \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n    \"ordem\": 2,\n    \"rotulo\": \"Condição de atendimento especializado\",\n    \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"SEXO\",\n    \"ordem\": 3,\n    \"rotulo\": \"Sexo\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"NACIONALIDADE\",\n    \"ordem\": 4,\n    \"rotulo\": \"Nacionalidade\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  }\n]",
+              "raw": "{\n  \"faseId\": \"{{fase_inscricao_id}}\",\n  \"titulo\": \"Formulário de Inscrição (smoke)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Itens do Formulário de Inscrição",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{processo_id}}/formularios/INSCRICAO/itens",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "admin",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "formularios",
+                "INSCRICAO",
+                "itens"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itens\": [\n    {\n      \"fatoCodigo\": \"COR_RACA\",\n      \"ordem\": 0,\n      \"rotulo\": \"Cor ou raça\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatorio\": true,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"BAIXA_RENDA\",\n      \"ordem\": 1,\n      \"rotulo\": \"Baixa renda\",\n      \"tipoRenderizacao\": \"BOOLEANO\",\n      \"obrigatorio\": false,\n      \"precondicao\": [\n        [\n          {\n            \"fato\": \"COR_RACA\",\n            \"operador\": \"IGUAL\",\n            \"valor\": \"PRETA\"\n          }\n        ]\n      ],\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n      \"ordem\": 2,\n      \"rotulo\": \"Condição de atendimento especializado\",\n      \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n      \"obrigatorio\": false,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"SEXO\",\n      \"ordem\": 3,\n      \"rotulo\": \"Sexo\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatorio\": false,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"NACIONALIDADE\",\n      \"ordem\": 4,\n      \"rotulo\": \"Nacionalidade\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatorio\": false,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3703,7 +3771,7 @@
           ]
         },
         {
-          "name": "Editar Fatos Coletados dentro da sessão (troca ordens, com If-Match)",
+          "name": "Editar Itens do Formulário de Inscrição dentro da sessão (troca ordens, com If-Match)",
           "request": {
             "method": "PUT",
             "header": [
@@ -3724,16 +3792,19 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/fatos-coletados",
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{processo_id}}/formularios/INSCRICAO/itens",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "selecao",
+                "admin",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "fatos-coletados"
+                "formularios",
+                "INSCRICAO",
+                "itens"
               ]
             },
             "auth": {
@@ -3748,7 +3819,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"fatoCodigo\": \"BAIXA_RENDA\",\n    \"ordem\": 0,\n    \"rotulo\": \"Baixa renda\",\n    \"tipoRenderizacao\": \"BOOLEANO\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"COR_RACA\",\n    \"ordem\": 1,\n    \"rotulo\": \"Cor ou raça\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": true,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n    \"ordem\": 2,\n    \"rotulo\": \"Condição de atendimento especializado\",\n    \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"SEXO\",\n    \"ordem\": 3,\n    \"rotulo\": \"Sexo\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"NACIONALIDADE\",\n    \"ordem\": 4,\n    \"rotulo\": \"Nacionalidade\",\n    \"tipoRenderizacao\": \"SELECAO_UNICA\",\n    \"obrigatorio\": false,\n    \"precondicao\": null\n  }\n]",
+              "raw": "{\n  \"itens\": [\n    {\n      \"fatoCodigo\": \"BAIXA_RENDA\",\n      \"ordem\": 0,\n      \"rotulo\": \"Baixa renda\",\n      \"tipoRenderizacao\": \"BOOLEANO\",\n      \"obrigatorio\": false,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"COR_RACA\",\n      \"ordem\": 1,\n      \"rotulo\": \"Cor ou raça\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatorio\": true,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n      \"ordem\": 2,\n      \"rotulo\": \"Condição de atendimento especializado\",\n      \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n      \"obrigatorio\": false,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"SEXO\",\n      \"ordem\": 3,\n      \"rotulo\": \"Sexo\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatorio\": false,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"NACIONALIDADE\",\n      \"ordem\": 4,\n      \"rotulo\": \"Nacionalidade\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatorio\": false,\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"

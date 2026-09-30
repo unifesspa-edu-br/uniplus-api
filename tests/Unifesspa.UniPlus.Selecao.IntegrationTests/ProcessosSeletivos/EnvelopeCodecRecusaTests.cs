@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -99,6 +100,20 @@ public sealed class EnvelopeCodecRecusaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);
+    }
+
+    [Fact(DisplayName = "Etapas do formulário fora da ordem crescente são recusadas: o encoder nunca as emite assim")]
+    public void EtapasForaDeOrdem_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray etapas = envelope["formularios"]![0]!["etapas"]!.AsArray();
+            JsonNode primeira = etapas[0]!.DeepClone();
+            etapas.RemoveAt(0);
+            etapas.Add(primeira);
+        });
+
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
     [Fact(DisplayName = "Algoritmo de hash que o codec não emite é recusado")]
@@ -972,6 +987,7 @@ public sealed class EnvelopeCodecRecusaTests
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(

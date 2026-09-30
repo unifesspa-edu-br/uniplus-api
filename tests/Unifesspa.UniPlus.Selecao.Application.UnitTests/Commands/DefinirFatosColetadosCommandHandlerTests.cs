@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -15,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura do <see cref="DefinirFatosColetadosCommandHandler"/> (Story #984): a coletabilidade
@@ -54,8 +56,12 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true),
     ];
 
-    private static ProcessoSeletivo ProcessoEmRascunho() =>
-        ProcessoSeletivo.Criar("PS Fatos", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+    private static ProcessoSeletivo ProcessoEmRascunho()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fatos", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente);
+        return processo;
+    }
 
     private static CondicaoPrecondicaoInput Condicao(string fato, string operador, object valor) =>
         new(fato, operador, JsonSerializer.SerializeToElement(valor));
@@ -65,7 +71,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo: null, processoId);
-        DefinirFatosColetadosCommand command = new(processoId, [], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processoId, FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -79,7 +85,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        DefinirFatosColetadosCommand command = new(processo.Id,
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
         [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", false, null),
             new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", false, [[Condicao("COR_RACA", "IGUAL", "PRETA")]]),
@@ -93,6 +99,23 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Dois itens fora das seções do formulário saem juntos, cada um no seu campo")]
+    public async Task Handle_ItensForaDeSecao_AcumulaAsRecusas()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", false, null, EtapaCodigo: "INEXISTENTE"),
+            new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", false, null, EtapaCodigo: "OUTRA"),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["itens[0].etapaCodigo", "itens[1].etapaCodigo"]);
+    }
+
     [Fact(DisplayName = "Coletar fato desativado no catálogo é recusado quando o processo ainda não o coletava; já coletado, continua")]
     public async Task Handle_FatoDesativado_RecusaSoVinculoNovo()
     {
@@ -101,11 +124,11 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Ativo = false } : f)]);
         DefinirFatosColetadosCommand coletaBaixaRenda = new(
-            processo.Id, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", false, null)], PrecondicaoIfMatch.Ausente);
+            processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", false, null)], PrecondicaoIfMatch.Ausente);
 
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be("ProcessoSeletivo.FatoDesativado");
 
-        processo.DefinirFatosColetados(
+        processo.DefinirItens(
             [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, false, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         (await HandleAsync(mocks, coletaBaixaRenda)).IsSuccess.Should().BeTrue("o fato já era coletado pelo processo");
@@ -116,7 +139,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", false, null)], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", false, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -130,7 +153,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("RENDA_PER_CAPITA", 0, "Renda per capita", "NUMERO", false, null)], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput("RENDA_PER_CAPITA", 0, "Renda per capita", "NUMERO", false, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -143,7 +166,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("V", 0, "V", "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput("V", 0, "V", "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -158,7 +181,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         // COR_RACA é categórico: MAIOR_IGUAL não se aplica.
-        DefinirFatosColetadosCommand command = new(processo.Id,
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
         [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", false, null),
             new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", false, [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]),
@@ -177,7 +200,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         // BAIXA_RENDA na ordem 0 cita COR_RACA (ordem 1, posterior).
-        DefinirFatosColetadosCommand command = new(processo.Id,
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
         [
             new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", false, [[Condicao("COR_RACA", "IGUAL", "PRETA")]]),
             new FatoColetadoInput("COR_RACA", 1, "Cor ou raça", "SELECAO_UNICA", false, null),
@@ -200,8 +223,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(
-            processo.Id, [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacaoIncoerente, false, null)], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacaoIncoerente, false, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -215,7 +237,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        DefinirFatosColetadosCommand command = new(processo.Id,
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
         [
             new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", false, null),
             new FatoColetadoInput("BAIXA_RENDA", 1, "", "BOOLEANO", false, null),
@@ -224,7 +246,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fatos[0].ordem", "fatos[1].rotulo"]);
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["itens[0].ordem", "itens[1].rotulo"]);
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -233,7 +255,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("", 0, "Rótulo", "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput("", 0, "Rótulo", "SELECAO_UNICA", false, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -248,7 +270,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        DefinirFatosColetadosCommand command = new(processo.Id,
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
         [
             new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", false, null),
             new FatoColetadoInput("FATO_INEXISTENTE", 1, "Rótulo", "SELECAO_UNICA", false, null),
@@ -270,8 +292,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         // coerência, quando o TipoRenderizacao informado é o coerente com o domínio.
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(
-            processo.Id, [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", false, null)], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", false, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 

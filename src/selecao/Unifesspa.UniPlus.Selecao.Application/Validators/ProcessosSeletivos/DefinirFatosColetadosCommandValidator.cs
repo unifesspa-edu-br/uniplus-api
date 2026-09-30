@@ -25,15 +25,15 @@ public sealed class DefinirFatosColetadosCommandValidator : AbstractValidator<De
 
         // Lista obrigatória, mas pode ser vazia — vazia zera a coleta do processo. Sem esta
         // regra um payload nulo chegaria ao handler e estouraria no foreach em vez de 400.
-        RuleFor(x => x.Fatos)
+        RuleFor(x => x.Itens)
             .NotNull()
-            .WithMessage("Lista de fatos coletados é obrigatória (pode ser vazia).");
+            .WithMessage("Lista de itens do formulário é obrigatória (pode ser vazia).");
 
-        RuleForEach(x => x.Fatos)
+        RuleForEach(x => x.Itens)
             .NotNull()
             .WithMessage("Item de fato coletado não pode ser nulo.");
 
-        RuleForEach(x => x.Fatos).ChildRules(fato =>
+        RuleForEach(x => x.Itens).ChildRules(fato =>
         {
             // Ausência de pré-condição é null, nunca []. Uma lista externa vazia, uma cláusula
             // interna vazia ou uma condição nula deixariam a semântica DNF ambígua (um predicado

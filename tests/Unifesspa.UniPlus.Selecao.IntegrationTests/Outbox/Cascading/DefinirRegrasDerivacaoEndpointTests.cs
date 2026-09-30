@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// O endpoint <c>PUT /processos-seletivos/{id}/regras-derivacao</c> (Story #985), fim a fim pelo
@@ -183,18 +184,20 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId, Guid DocumentoId)
     {
         public Task<HttpResponseMessage> PutFatosAsync(IReadOnlyList<object> corpo) =>
-            EnviarAsync(HttpMethod.Put, "fatos-coletados", corpo, MakeIdempotencyKey(), Autenticacao.PlataformaAdmin);
+            EnviarAsync(
+                HttpMethod.Put, FormularioDeInscricaoHttp.RotaDosItens(ProcessoId), FormularioDeInscricaoHttp.CorpoDosItens(corpo),
+                MakeIdempotencyKey(), Autenticacao.PlataformaAdmin);
 
         public Task<HttpResponseMessage> PutRegrasAsync(
             IReadOnlyList<object> corpo, string? idempotencyKey = null, Autenticacao autenticar = Autenticacao.PlataformaAdmin) =>
-            EnviarAsync(HttpMethod.Put, "regras-derivacao", corpo, idempotencyKey ?? MakeIdempotencyKey(), autenticar);
+            EnviarAsync(HttpMethod.Put, Rota("regras-derivacao"), corpo, idempotencyKey ?? MakeIdempotencyKey(), autenticar);
+
+        private Uri Rota(string recurso) => new($"/api/selecao/processos-seletivos/{ProcessoId}/{recurso}", UriKind.Relative);
 
         private async Task<HttpResponseMessage> EnviarAsync(
-            HttpMethod metodo, string recurso, object corpo, string idempotencyKey, Autenticacao autenticar)
+            HttpMethod metodo, Uri rota, object corpo, string idempotencyKey, Autenticacao autenticar)
         {
-            using HttpRequestMessage request = new(
-                metodo,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/{recurso}", UriKind.Relative))
+            using HttpRequestMessage request = new(metodo, rota)
             {
                 Content = JsonContent.Create(corpo),
             };

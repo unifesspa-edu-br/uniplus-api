@@ -28,6 +28,7 @@
          cada projeto que precisa, em vez de copiado: três cópias divergiriam na primeira correção. -->
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/QuadroPesoAreaEnemDeTeste.cs" Link="QuadroPesoAreaEnemDeTeste.cs" />
+    <Compile Include="../Shared/FormularioDeTeste.cs" Link="FormularioDeTeste.cs" />
   </ItemGroup>
 
 </Project>

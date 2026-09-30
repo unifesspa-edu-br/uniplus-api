@@ -798,7 +798,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
     private static Task<HttpResponseMessage> ObterFormularioAsync(HttpClient client, Guid processoId) =>
         client.GetAsync(
-            new Uri($"/api/selecao/processos-seletivos/{processoId}/formulario", UriKind.Relative),
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/formularios/INSCRICAO", UriKind.Relative),
             CancellationToken.None);
 
     private static async Task<CertameDivulgado?> ObterDivulgacaoAsync(CascadingApiFactory api, Guid processoId)

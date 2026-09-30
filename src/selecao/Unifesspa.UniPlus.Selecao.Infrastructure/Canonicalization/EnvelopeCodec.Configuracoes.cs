@@ -24,56 +24,148 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed partial class EnvelopeCodec
 {
     /// <summary>
-    /// Título e termos exigidos do formulário de inscrição (Story #559, UNI-REQ-0086) — forma
-    /// fechada. Cada termo é remontado pela factory do domínio, e o conjunto pela mesma regra de
-    /// código e ordem únicos do agregado.
+    /// Os formulários por finalidade (UNI-REQ-0144), em ordem de finalidade e sem repetição, cada um
+    /// remontado pelas factories do domínio — que reconferem a estrutura das etapas — com os seus
+    /// termos, em ordem crescente e com código único no formulário.
     /// </summary>
-    private static (string? Titulo, IReadOnlyList<TermoExigidoFormulario> Termos) LerFormulario(LeitorEnvelope leitor, JsonObject payload)
+    private static (IReadOnlyList<FormularioProcesso> Formularios, IReadOnlyList<TermoExigidoFormulario> Termos) LerFormularios(
+        LeitorEnvelope leitor, JsonObject payload)
     {
-        JsonObject bloco = leitor.Objeto(payload, "formulario", "$");
+        JsonArray blocos = leitor.Array(payload, "formularios", "$");
         if (leitor.Falhou)
         {
-            return (null, []);
+            return ([], []);
         }
 
-        leitor.ExigirChaves(bloco, "formulario", "titulo", "termos");
-
-        string? titulo = leitor.TextoOpcional(bloco, "titulo", "formulario", LimitesDoEnvelope.NomeDeCadastro);
-        JsonArray itens = leitor.Array(bloco, "termos", "formulario");
-        if (leitor.Falhou)
-        {
-            return (null, []);
-        }
-
+        List<FormularioProcesso> formularios = [];
         List<TermoExigidoFormulario> termos = [];
-        HashSet<string> codigos = new(StringComparer.Ordinal);
+        FinalidadeFormulario? finalidadeAnterior = null;
+        for (int f = 0; f < blocos.Count; f++)
+        {
+            string path = $"formularios[{f}]";
+            JsonObject bloco = leitor.ItemObjeto(blocos, f, "formularios");
+            leitor.ExigirChaves(bloco, path, "finalidade", "faseId", "titulo", "modeloOrigem", "etapas", "termos");
+
+            FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(bloco, "finalidade", path));
+            Guid? faseId = leitor.IdentificadorOpcional(bloco, "faseId", path);
+            string? titulo = leitor.TextoOpcional(bloco, "titulo", path, LimitesDoEnvelope.NomeDeCadastro);
+            (Guid? modeloId, string? modeloCodigo) = LerModeloDeOrigem(leitor, bloco, path);
+            IReadOnlyList<EtapaFormulario> etapas = LerEtapasDoFormulario(leitor, bloco, path);
+            JsonArray itensDeTermo = leitor.Array(bloco, "termos", path);
+            if (leitor.Falhou)
+            {
+                return ([], []);
+            }
+
+            // O encoder emite as finalidades em ordem estritamente crescente, uma vez cada.
+            if (finalidade == FinalidadeFormulario.Nenhuma || finalidade <= finalidadeAnterior)
+            {
+                leitor.Propagar<object>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.finalidade' fora do vocabulário, repetida ou fora de ordem."));
+                return ([], []);
+            }
+
+            finalidadeAnterior = finalidade;
+            Result<FormularioProcesso> formulario = FormularioProcesso.Criar(finalidade, faseId, titulo, etapas, modeloId, modeloCodigo);
+            if (formulario.IsFailure)
+            {
+                leitor.Propagar<object>(formulario.Error!);
+                return ([], []);
+            }
+
+            formularios.Add(formulario.Value!);
+
+            HashSet<string> codigos = new(StringComparer.Ordinal);
+            int? ordemAnterior = null;
+            for (int i = 0; i < itensDeTermo.Count; i++)
+            {
+                string pathTermo = $"{path}.termos[{i}]";
+                TermoExigidoFormulario? termo = LerTermoExigido(leitor, leitor.ItemObjeto(itensDeTermo, i, $"{path}.termos"), pathTermo, finalidade);
+                if (leitor.Falhou || termo is null)
+                {
+                    return ([], []);
+                }
+
+                // O encoder emite os termos em ordem estritamente crescente e com código único; outra
+                // forma só vem de envelope adulterado.
+                if (!codigos.Add(termo.Codigo) || termo.Ordem <= ordemAnterior)
+                {
+                    leitor.Propagar<object>(new DomainError(
+                        ErrosCodecEnvelope.EnvelopeMalformado, $"'{pathTermo}' repete código ou quebra a ordem crescente dos termos."));
+                    return ([], []);
+                }
+
+                ordemAnterior = termo.Ordem;
+                termos.Add(termo);
+            }
+        }
+
+        return (formularios, termos);
+    }
+
+    private static (Guid? Id, string? Codigo) LerModeloDeOrigem(LeitorEnvelope leitor, JsonObject bloco, string path)
+    {
+        if (leitor.ObjetoOpcional(bloco, "modeloOrigem", path) is not { } modelo)
+        {
+            return (null, null);
+        }
+
+        string pathModelo = $"{path}.modeloOrigem";
+        leitor.ExigirChaves(modelo, pathModelo, "id", "codigo");
+        return (leitor.Identificador(modelo, "id", pathModelo), leitor.TextoOpcional(modelo, "codigo", pathModelo, LimitesDoEnvelope.CodigoModeloDeFormulario));
+    }
+
+    private static IReadOnlyList<EtapaFormulario> LerEtapasDoFormulario(LeitorEnvelope leitor, JsonObject bloco, string path)
+    {
+        JsonArray itens = leitor.Array(bloco, "etapas", path);
+        if (leitor.Falhou)
+        {
+            return [];
+        }
+
+        List<EtapaFormulario> etapas = [];
         int? ordemAnterior = null;
         for (int i = 0; i < itens.Count; i++)
         {
-            string path = $"formulario.termos[{i}]";
-            TermoExigidoFormulario? termo = LerTermoExigido(leitor, leitor.ItemObjeto(itens, i, "formulario.termos"), path);
-            if (leitor.Falhou || termo is null)
+            string pathEtapa = $"{path}.etapas[{i}]";
+            JsonObject item = leitor.ItemObjeto(itens, i, $"{path}.etapas");
+            leitor.ExigirChaves(item, pathEtapa, "codigo", "ordem", "tipo", "bloco", "titulo", "descricao", "aviso");
+            string codigo = leitor.TextoNaoVazio(item, "codigo", pathEtapa, LimitesDoEnvelope.CodigoEtapaFormulario);
+            int ordem = leitor.Inteiro(item, "ordem", pathEtapa);
+            string tipo = leitor.TextoNaoVazio(item, "tipo", pathEtapa);
+            string? blocoDeSistema = leitor.TextoOpcional(item, "bloco", pathEtapa);
+            string titulo = leitor.TextoNaoVazio(item, "titulo", pathEtapa, LimitesDoEnvelope.TituloEtapaFormulario);
+            string? descricao = leitor.TextoOpcional(item, "descricao", pathEtapa, LimitesDoEnvelope.TextoEtapaFormulario);
+            string? aviso = leitor.TextoOpcional(item, "aviso", pathEtapa, LimitesDoEnvelope.TextoEtapaFormulario);
+            if (leitor.Falhou)
             {
-                return (null, []);
+                return [];
             }
 
-            // O encoder emite os termos em ordem estritamente crescente e com código único; outra
-            // forma só vem de envelope adulterado.
-            if (!codigos.Add(termo.Codigo) || termo.Ordem <= ordemAnterior)
+            // O encoder emite as etapas em ordem estritamente crescente; outra forma só vem de
+            // envelope adulterado e não reproduziria os bytes.
+            if (ordem <= ordemAnterior)
             {
-                leitor.Propagar<object>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' repete código ou quebra a ordem crescente dos termos."));
-                return (null, []);
+                return leitor.Propagar<IReadOnlyList<EtapaFormulario>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{pathEtapa}' quebra a ordem crescente das etapas.")) ?? [];
             }
 
-            ordemAnterior = termo.Ordem;
-            termos.Add(termo);
+            ordemAnterior = ordem;
+            Result<EtapaFormulario> etapa = EtapaFormulario.Criar(
+                codigo, ordem, EstruturaFormulario.TipoDoToken(tipo), EstruturaFormulario.BlocoDoToken(blocoDeSistema), titulo, descricao, aviso);
+            if (etapa.IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<EtapaFormulario>>(etapa.Error!) ?? [];
+            }
+
+            etapas.Add(etapa.Value!);
         }
 
-        return (titulo, termos);
+        return etapas;
     }
 
-    private static TermoExigidoFormulario? LerTermoExigido(LeitorEnvelope leitor, JsonObject item, string path)
+    private static TermoExigidoFormulario? LerTermoExigido(
+        LeitorEnvelope leitor, JsonObject item, string path, FinalidadeFormulario finalidade)
     {
         leitor.ExigirChaves(item, path, "codigo", "ordem", "termoId", "versaoId", "nome", "texto", "baseLegal",
             "formaAceite", "hashVersao", "exibicao", "obrigatoriedade");
@@ -127,7 +219,7 @@ public sealed partial class EnvelopeCodec
 
         Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(
             codigo, ordem, new VersaoTermoEscolhida(termoId, versaoId, nome, texto, baseLegal, formaAceite, hash),
-            exibicaoLida.Value, obrigatoriedade);
+            exibicaoLida.Value, obrigatoriedade, finalidade);
         return termo.IsSuccess ? termo.Value : leitor.Propagar<TermoExigidoFormulario>(termo.Error!);
     }
 

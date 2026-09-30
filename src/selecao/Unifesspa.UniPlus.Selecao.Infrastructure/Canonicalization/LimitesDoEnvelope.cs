@@ -172,6 +172,19 @@ public static class LimitesDoEnvelope
     /// <summary><c>UnidadeAdministradoraSnapshot.CidadeUf</c> — espelha <c>ProcessoSeletivoConfiguration</c> (owned).</summary>
     public const int UnidadeAdministradoraCidadeUf = ReferenciaCidadeGeo.UfLength;
 
+    // UNI-REQ-0144 — formulários por finalidade.
+    /// <summary><c>EtapaFormulario.Codigo</c>, também o <c>etapaCodigo</c> de cada item.</summary>
+    public const int CodigoEtapaFormulario = Domain.Entities.EtapaFormulario.CodigoMaxLength;
+
+    /// <summary><c>EtapaFormulario.Titulo</c>.</summary>
+    public const int TituloEtapaFormulario = Domain.Entities.EtapaFormulario.TituloMaxLength;
+
+    /// <summary><c>EtapaFormulario.Descricao</c> e <c>Aviso</c>.</summary>
+    public const int TextoEtapaFormulario = Domain.Entities.EtapaFormulario.TextoMaxLength;
+
+    /// <summary><c>FormularioProcesso.ModeloOrigemCodigo</c>.</summary>
+    public const int CodigoModeloDeFormulario = Domain.Entities.FormularioProcesso.ModeloOrigemCodigoMaxLength;
+
     // UNI-REQ-0086 — termos exigidos pelo formulário, copiados da versão do catálogo.
     /// <summary><c>TermoExigidoFormulario.Codigo</c>.</summary>
     public const int CodigoTermoExigido = Domain.Entities.TermoExigidoFormulario.CodigoMaxLength;

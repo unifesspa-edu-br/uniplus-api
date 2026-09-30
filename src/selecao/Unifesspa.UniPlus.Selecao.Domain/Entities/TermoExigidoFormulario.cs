@@ -24,6 +24,9 @@ public sealed class TermoExigidoFormulario : EntityBase
 
     public Guid ProcessoSeletivoId { get; private set; }
 
+    /// <summary>A finalidade do formulário que exige o termo; atribuída pelo processo.</summary>
+    public FinalidadeFormulario Finalidade { get; private set; }
+
     /// <summary>Identificador próprio da exigência no formulário, estável mesmo entre termos de nome igual.</summary>
     public string Codigo { get; private set; } = string.Empty;
 
@@ -69,7 +72,8 @@ public sealed class TermoExigidoFormulario : EntityBase
         int ordem,
         VersaoTermoEscolhida versao,
         PredicadoDnf? exibicao,
-        Obrigatoriedade obrigatoriedade)
+        Obrigatoriedade obrigatoriedade,
+        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma)
     {
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
@@ -95,6 +99,9 @@ public sealed class TermoExigidoFormulario : EntityBase
             HashVersao = versao.Hash,
             Exibicao = exibicao,
             Obrigatoriedade = obrigatoriedade,
+
+            // O processo atribui a finalidade ao definir os termos; quem remonta o envelope a informa.
+            Finalidade = finalidade,
         });
     }
 
@@ -161,6 +168,8 @@ public sealed class TermoExigidoFormulario : EntityBase
     public bool SemFormaDeAceite => string.Equals(FormaAceite, FormaAceiteADefinir, StringComparison.Ordinal);
 
     internal void VincularProcessoSeletivo(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
+
+    internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
 }
 
 /// <summary>A versão do catálogo escolhida para o termo, com o conteúdo que o processo congela.</summary>

@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -246,9 +247,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// página pública e a chave do documento no acervo. O público lê a versão congelada, então o
     /// endereço tem de estar nela, e não só no agregado vivo. Texto quando declarado; nulo só se a
     /// versão foi congelada sem ele, o que a publicação e a sucessão de versão recusam.
-    /// <c>formulario.termos[]</c> guarda os termos exigidos escolhidos no catálogo, cada um com
-    /// código, ordem, termo e versão, o conteúdo da versão (nome, texto, base legal, forma de aceite
-    /// e hash) e as condições de exibição e de obrigatoriedade, ordenados pela ordem.
+    /// <c>formularios[]</c> tem um formulário por finalidade (inscrição, isenção de taxa,
+    /// habilitação), com fase, título, modelo de origem, etapas (seções e blocos de sistema) e os
+    /// termos exigidos escolhidos no catálogo — cada termo com código, ordem, termo e versão, o
+    /// conteúdo da versão (nome, texto, base legal, forma de aceite e hash) e as condições de exibição
+    /// e de obrigatoriedade, ordenados pela ordem. Cada item de <c>fatosColetados[]</c> traz
+    /// <c>finalidade</c> e <c>etapaCodigo</c>, e a lista sai ordenada por finalidade e ordem.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -295,7 +299,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["hashesEdital"] = SerializarHashesEdital(dados, entrada.HashDocumento),
             ["documentosExigidos"] = SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.MetadadosFatosCongelados, fusoDaVersao),
             ["arvoreSatisfacao"] = SerializarArvoreSatisfacao(processo),
-            ["formulario"] = SerializarFormulario(processo),
+            ["formularios"] = SerializarFormularios(processo),
             ["cascataRemanejamento"] = SerializarCascataRemanejamento(processo),
             ["divulgacao"] = SerializarDivulgacao(processo),
             ["cronogramaFases"] = SerializarCronogramaFases(processo),
@@ -352,14 +356,38 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     };
 
     /// <summary>
-    /// Título e termos exigidos do formulário de inscrição (Story #559, UNI-REQ-0086) — forma
-    /// fechada: título nulo quando não configurado, termos em lista vazia quando não há nenhum.
+    /// Os formulários por finalidade (UNI-REQ-0144), na ordem das finalidades: fase, título, modelo
+    /// de origem, etapas pela ordem e os termos exigidos de cada um. Os itens ficam em
+    /// <c>fatosColetados</c>, marcados com a finalidade.
     /// </summary>
-    private static JsonObject SerializarFormulario(ProcessoSeletivo processo) => new()
-    {
-        ["titulo"] = processo.FormularioTitulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
-        ["termos"] = new JsonArray([.. processo.TermosExigidos.OrderBy(static t => t.Ordem).Select(SerializarTermoExigido)]),
-    };
+    private static JsonArray SerializarFormularios(ProcessoSeletivo processo) =>
+        new([.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(formulario => (JsonNode)new JsonObject
+        {
+            ["finalidade"] = EstruturaFormulario.ParaToken(formulario.Finalidade),
+            ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
+            ["titulo"] = formulario.Titulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
+            ["modeloOrigem"] = formulario.ModeloOrigemId is { } modelo
+                ? new JsonObject
+                {
+                    ["id"] = JsonValue.Create(modelo),
+                    ["codigo"] = formulario.ModeloOrigemCodigo is { } codigo ? HashCanonicalComputer.NormalizeNfc(codigo) : null,
+                }
+                : null,
+            ["etapas"] = new JsonArray([.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(static e => (JsonNode)new JsonObject
+            {
+                ["codigo"] = HashCanonicalComputer.NormalizeNfc(e.Codigo),
+                ["ordem"] = e.Ordem,
+                ["tipo"] = EstruturaFormulario.ParaToken(e.Tipo),
+                ["bloco"] = EstruturaFormulario.ParaToken(e.Bloco),
+                ["titulo"] = HashCanonicalComputer.NormalizeNfc(e.Titulo),
+                ["descricao"] = e.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
+                ["aviso"] = e.Aviso is { } aviso ? HashCanonicalComputer.NormalizeNfc(aviso) : null,
+            })]),
+            ["termos"] = new JsonArray([.. processo.TermosExigidos
+                .Where(t => t.Finalidade == formulario.Finalidade)
+                .OrderBy(static t => t.Ordem)
+                .Select(SerializarTermoExigido)]),
+        })]);
 
     /// <summary>
     /// Um termo exigido, com o conteúdo da versão congelado por termo (UNI-REQ-0086): identificador
@@ -1758,7 +1786,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados)
     {
         JsonArray array = [];
-        foreach (FatoColetado fato in fatos.OrderBy(static f => f.Ordem))
+        foreach (FatoColetado fato in fatos.OrderBy(static f => f.Finalidade).ThenBy(static f => f.Ordem))
         {
             bool ehFatoDeSelecao = fato.TipoRenderizacao is TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla;
             IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = null;
@@ -1794,6 +1822,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             array.Add(new JsonObject
             {
                 ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
+                ["finalidade"] = EstruturaFormulario.ParaToken(fato.Finalidade),
+                ["etapaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
                 ["ordem"] = fato.Ordem,
                 ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
                 ["tipoRenderizacao"] = fato.TipoRenderizacao.ToCodigo(),

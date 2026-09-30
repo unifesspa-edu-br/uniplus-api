@@ -147,7 +147,7 @@ public static class DefinirTermosDoFormularioCommandHandler
             return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
         }
 
-        Result definir = processo.DefinirTermosDoFormulario(termos, command.Precondicao);
+        Result definir = processo.DefinirTermosDoFormulario(command.Finalidade, termos, command.Precondicao);
         if (definir.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(definir.Errors);
