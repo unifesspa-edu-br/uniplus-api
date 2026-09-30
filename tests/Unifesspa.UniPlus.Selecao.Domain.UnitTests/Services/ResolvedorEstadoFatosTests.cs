@@ -72,6 +72,7 @@ public sealed class ResolvedorEstadoFatosTests
         IReadOnlyDictionary<string, IReadOnlySet<string>> oferta, params (string Fato, JsonElement Valor)[] respostas) =>
         ResolvedorEstadoFatos.Resolver(
             TabelaNormativa(),
+            [],
             respostas.ToDictionary(static r => r.Fato, static r => r.Valor, StringComparer.Ordinal),
             oferta);
 
@@ -106,10 +107,33 @@ public sealed class ResolvedorEstadoFatosTests
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
             fatos,
+            [],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao, ["COR_RACA"] = Cor("PRETA") },
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
 
         estados["COR_RACA"].Estado.Should().Be(EstadoFato.Indeterminado, "PRETA só é opção para quem é egresso de escola pública");
+    }
+
+    [Fact(DisplayName = "Campo que cita derivado de campos anteriores é avaliado com a derivação entre os campos")]
+    public void CampoQueCitaDerivado_AvaliaADerivacao()
+    {
+        RegrasDerivacaoFato modalidade = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+            [RegraDerivacaoConfigurada.Criar(0, "LB_EP", [CondicaoRegraDerivacao.Criar(0, "EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim).Value!]).Value!])
+            .Value!.ParaRegrasDerivacao(["LB_EP"]).Value!;
+        FatoColetado[] fatos =
+        [
+            Fato("EGRESSO_ESCOLA_PUBLICA", 0),
+            Fato("CONCORRER_EP", 1, Cond("MODALIDADE", Operador.Igual, Cor("LB_EP"))),
+        ];
+
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
+            fatos,
+            [modalidade],
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao },
+            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
+
+        estados["CONCORRER_EP"].Estado.Should().Be(EstadoFato.NaoAplicavel, "quem não é egresso de escola pública não deriva LB_EP");
+        estados.Keys.Should().BeEquivalentTo(["EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP"], "o derivado é avaliado, mas não é fato coletado");
     }
 
     [Fact(DisplayName = "Itens de dois formulários, com a mesma ordem, resolvem juntos, e o de um cita o fato do outro")]
@@ -123,6 +147,7 @@ public sealed class ResolvedorEstadoFatosTests
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
             [declaracao, corRaca],
+            [],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["COR_RACA"] = Cor("BRANCA") },
             CoresOfertadas);
 
@@ -262,6 +287,7 @@ public sealed class ResolvedorEstadoFatosTests
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
             embaralhado,
+            [],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["PCD"] = Nao },
             CoresOfertadas);
 

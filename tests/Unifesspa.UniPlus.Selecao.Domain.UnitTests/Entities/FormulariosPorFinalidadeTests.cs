@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -114,6 +115,145 @@ public sealed class FormulariosPorFinalidadeTests
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
+
+    private static ConfiguracaoDerivacaoFato ModalidadeQueDependeDe(string fato) =>
+        ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+            [RegraDerivacaoConfigurada.Criar(0, "AC", [CondicaoRegraDerivacao.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!])
+            .Value!;
+
+    [Fact(DisplayName = "Item cita derivado cujas dependências são anteriores; derivado de campo posterior é recusado")]
+    public void Item_CitaDerivado_PelasDependencias()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0), ItemQueCitaModalidade(1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [ItemQueCitaModalidade(0), Item("TEM_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+    }
+
+    [Fact(DisplayName = "A publicação recusa item que cita derivado redefinido sobre campo posterior")]
+    public void Publicacao_DerivacaoMudaDepoisDaCitacao_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0), ItemQueCitaModalidade(1), Item("TEM_BOLSA", 2)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.PendenciaPreCanonicalizacao().Should().BeNull();
+
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_BOLSA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao()!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+    }
+
+    [Fact(DisplayName = "Termo cita os campos do próprio formulário e os da inscrição, nunca os de outra finalidade")]
+    public void Termo_CitaSoOQueOFormularioConhece()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA"), TermoQueCita("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [TermoQueCita("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente)
+            .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+            {
+                Field = "termos[0]",
+                Error = new { Code = FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado },
+            });
+    }
+
+    [Fact(DisplayName = "A inscrição não perde fato que um termo de outra finalidade cita")]
+    public void Inscricao_NaoPerdeFatoCitadoPorTermoDeOutraFinalidade()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+    }
+
+    [Fact(DisplayName = "Citação de outro formulário que já era inválida não trava a edição da inscrição")]
+    public void Inscricao_CitacaoJaInvalidaEmOutroFormulario_NaoTravaAEdicao()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.Habilitacao, [ItemQueCitaModalidade(0), Item("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0), Item("COR_RACA", 1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue("a troca da inscrição não tira nada que a habilitação conhecia");
+    }
+
+    [Fact(DisplayName = "Redefinir a inscrição mantendo o fato citado por outra finalidade é aceito")]
+    public void Inscricao_MantemFatoCitadoPorOutraFinalidade_Aceita()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0), Item("COR_RACA", 1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Citação que a troca da inscrição invalida é recusada mesmo com outra citação já inválida no formulário")]
+    public void Inscricao_InvalidaCitacaoComOutraJaInvalida_Recusa()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.Habilitacao, [ItemQueCitaModalidade(0), Item("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+    }
+
+    [Fact(DisplayName = "Remover da inscrição o fato citado por um item é recusado mesmo que outra citação do item já seja inválida")]
+    public void Inscricao_ComparaCadaCitacaoDoItem()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FatoColetado citaOsDois = FatoColetado.Criar(
+            "CONCORRER_EP", 0, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
+            [
+                CondicaoPrecondicaoFato.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!,
+                CondicaoPrecondicaoFato.Criar(0, "TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
+            ],
+            etapaCodigo: FormularioDeTeste.Secao).Value!;
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [citaOsDois, Item("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+    }
+
+    private static FatoColetado ItemQueCitaModalidade(int ordem) =>
+        FatoColetado.Criar(
+            "CONCORRER_EP", ordem, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
+            [CondicaoPrecondicaoFato.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!],
+            etapaCodigo: FormularioDeTeste.Secao).Value!;
+
+    private static TermoExigidoFormulario TermoQueCita(string fato, int ordem = 0) =>
+        TermoExigidoFormulario.Criar(
+            $"TERMO_{ordem}", ordem,
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
+            Obrigatoriedade.Sempre).Value!;
 
     [Theory(DisplayName = "Item em bloco de sistema ou em etapa inexistente é recusado na definição")]
     [InlineData("REVISAO")]

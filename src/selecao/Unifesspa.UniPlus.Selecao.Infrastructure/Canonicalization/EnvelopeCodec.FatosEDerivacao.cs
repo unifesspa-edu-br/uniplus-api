@@ -633,7 +633,6 @@ public sealed partial class EnvelopeCodec
         // Produtor único no processo; ordem única dentro de cada formulário.
         HashSet<string> coletados = new(StringComparer.Ordinal);
         HashSet<(FinalidadeFormulario, int)> ordens = [];
-        Dictionary<string, FatoColetado> coletadoPorCodigo = new(StringComparer.Ordinal);
         foreach (FatoColetado fato in fatos)
         {
             if (!coletados.Add(fato.FatoCodigo))
@@ -645,8 +644,6 @@ public sealed partial class EnvelopeCodec
             {
                 return Malformado($"'fatosColetados': a ordem {fato.Ordem} é usada por mais de um fato do mesmo formulário.");
             }
-
-            coletadoPorCodigo[fato.FatoCodigo] = fato;
         }
 
         HashSet<string> derivados = new(StringComparer.Ordinal);
@@ -659,29 +656,6 @@ public sealed partial class EnvelopeCodec
             }
 
             universo.Add(config.CodigoFato);
-        }
-
-        // As regras do campo (pré-condição e obrigatoriedade) só citam fato COLETADO: anterior no
-        // mesmo formulário (a garantia de anterioridade que o resolvedor de runtime pressupõe — ele
-        // percorre os coletados por ordem, sem acionar o motor) ou, em outra finalidade, coletado
-        // pela inscrição, que vem antes.
-        foreach (FatoColetado fato in fatos)
-        {
-            foreach (string fatoCitado in fato.FatosCitados)
-            {
-                if (!coletadoPorCodigo.TryGetValue(fatoCitado, out FatoColetado? citado)
-                    || (citado.Finalidade != fato.Finalidade && citado.Finalidade != FinalidadeFormulario.Inscricao))
-                {
-                    return Malformado(
-                        $"'fatosColetados': uma regra do fato '{fato.FatoCodigo}' cita '{fatoCitado}', que nem o formulário dele nem o de inscrição coletam.");
-                }
-
-                if (citado.Finalidade == fato.Finalidade && citado.Ordem >= fato.Ordem)
-                {
-                    return Malformado(
-                        $"'fatosColetados': uma regra do fato '{fato.FatoCodigo}' cita '{fatoCitado}', que não é anterior na ordem de coleta.");
-                }
-            }
         }
 
         // Toda citação de regra de derivação e de gatilho de exigência existe em coletados ∪ derivados.

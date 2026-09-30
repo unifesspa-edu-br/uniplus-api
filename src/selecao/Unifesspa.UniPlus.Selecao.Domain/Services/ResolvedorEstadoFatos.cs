@@ -32,6 +32,10 @@ public static class ResolvedorEstadoFatos
     /// Resolve todos os fatos coletados pelo processo.
     /// </summary>
     /// <param name="fatosColetados">O grafo de coleta — fatos, ordem e pré-condições.</param>
+    /// <param name="derivacoes">
+    /// As derivações por regra do processo, avaliadas entre os campos: uma regra de campo pode citar
+    /// o derivado cujas dependências são campos anteriores.
+    /// </param>
     /// <param name="respostasBrutas">
     /// O que o candidato respondeu, por código de fato. Uma chave que não corresponde a fato
     /// coletado é <b>ignorada</b>: o grafo é a autoridade sobre o que existe, e uma resposta órfã
@@ -45,10 +49,12 @@ public static class ResolvedorEstadoFatos
     /// </param>
     public static IReadOnlyDictionary<string, FatoResolvido> Resolver(
         IReadOnlyCollection<FatoColetado> fatosColetados,
+        IReadOnlyList<RegrasDerivacaoFato> derivacoes,
         IReadOnlyDictionary<string, JsonElement> respostasBrutas,
         IReadOnlyDictionary<string, IReadOnlySet<string>> valoresOfertados)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
+        ArgumentNullException.ThrowIfNull(derivacoes);
         ArgumentNullException.ThrowIfNull(respostasBrutas);
         ArgumentNullException.ThrowIfNull(valoresOfertados);
 
@@ -67,13 +73,14 @@ public static class ResolvedorEstadoFatos
                     fato.Restricoes))]))];
 
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
-            new DefinicaoFormulario(etapas, termos: [], derivacoes: []),
+            new DefinicaoFormulario(etapas, termos: [], derivacoes),
             new EntradaAvaliacaoFormulario(
                 RespostasDentroDaOferta(respostasBrutas, valoresOfertados),
                 EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
                 FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
 
-        return avaliacao.Fatos;
+        // Os derivados entram só na avaliação; o resultado é o estado dos fatos coletados.
+        return fatosColetados.ToDictionary(static f => f.FatoCodigo, f => avaliacao.Fatos[f.FatoCodigo], StringComparer.Ordinal);
     }
 
     private static Dictionary<string, JsonElement> RespostasDentroDaOferta(

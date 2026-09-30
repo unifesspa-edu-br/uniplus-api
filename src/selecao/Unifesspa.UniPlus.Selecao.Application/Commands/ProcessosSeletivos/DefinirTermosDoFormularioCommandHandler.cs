@@ -75,6 +75,7 @@ public static class DefinirTermosDoFormularioCommandHandler
 
         IReadOnlyList<FatoCandidatoView> catalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         Dictionary<string, DescritorFatoCandidato> vocabulario = VocabularioDeFatos.Descritores(catalogo);
+        Dictionary<string, FatoCandidatoView> catalogoPorCodigo = catalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
         Dictionary<string, DominioDeValores> dominiosDinamicos = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
 
         // O formulário avalia a condição do termo com as respostas e os derivados do candidato:
@@ -97,12 +98,14 @@ public static class DefinirTermosDoFormularioCommandHandler
             // As condições não dependem da versão: conferidas antes dela, as recusas do termo saem
             // juntas.
             (PredicadoDnf? exibicao, Obrigatoriedade obrigatoriedade) = condicao;
-            if (ValidarPredicado(exibicao, vocabulario, universo, dominiosDinamicos) is { } erroExibicao)
+            if ((VocabularioDeFatos.CitacaoDeAtributoDoCandidato(exibicao?.FatosCitados ?? [], catalogoPorCodigo)
+                    ?? ValidarPredicado(exibicao, vocabulario, universo, dominiosDinamicos)) is { } erroExibicao)
             {
                 erros.Add(new($"{campo}.exibicao", erroExibicao));
             }
 
-            if (ValidarPredicado(obrigatoriedade.Predicado, vocabulario, universo, dominiosDinamicos) is { } erroObrigatoriedade)
+            if ((VocabularioDeFatos.CitacaoDeAtributoDoCandidato(obrigatoriedade.FatosCitados, catalogoPorCodigo)
+                    ?? ValidarPredicado(obrigatoriedade.Predicado, vocabulario, universo, dominiosDinamicos)) is { } erroObrigatoriedade)
             {
                 erros.Add(new($"{campo}.predicadoObrigatoriedade", erroObrigatoriedade));
             }

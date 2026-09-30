@@ -1105,8 +1105,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Substitui os termos que o formulário da finalidade exige (UNI-REQ-0086). Código e ordem são
-    /// únicos no formulário. As condições dos termos já chegam validadas contra os fatos que o
-    /// processo resolve, e a publicação confere de novo que eles continuam resolvidos.
+    /// únicos no formulário, e as condições citam só o que o formulário conhece: os campos dele, os
+    /// da inscrição e os derivados desses (UNI-REQ-0144, UNI-REQ-0145). A publicação confere de
+    /// novo, porque os itens e as derivações podem mudar depois.
     /// </summary>
     public Result DefinirTermosDoFormulario(
         FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos, PrecondicaoIfMatch precondicao)
@@ -1124,6 +1125,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         List<FieldError> erros = TermoExigidoFormulario.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
+        DependenciasDoFormulario dependencias = DependenciasDe(finalidade, _fatosColetados.Where(f => f.Finalidade == finalidade), FatosDaInscricao(_fatosColetados));
+        for (int indice = 0; indice < termos.Count; indice++)
+        {
+            if (CitacaoInvalidaDoTermo(termos[indice], dependencias) is { } recusa)
+            {
+                erros.Add(new($"termos[{indice}]", recusa));
+            }
+        }
+
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
@@ -1910,7 +1920,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
             : FatosDaInscricao(_fatosColetados);
-        if (ValidarGrafoDeFatos(finalidade, fatosColetados, daInscricao) is { } erro)
+        if (ValidarGrafoDeFatos(finalidade, fatosColetados, daInscricao, DependenciasDasDerivacoes()) is { } erro)
         {
             return Result.Failure(erro);
         }
@@ -2031,24 +2041,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new(fatos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
 
     /// <summary>
-    /// Trocar os itens da inscrição não pode tirar um fato que um item de outra finalidade cita:
-    /// a pré-condição dele passaria a depender de uma resposta que ninguém pede.
+    /// Trocar os itens da inscrição não pode tirar um fato que uma regra de outra finalidade cita,
+    /// direta ou por um derivado: ela passaria a depender de uma resposta que ninguém pede. Só a
+    /// citação que a troca invalida é recusada; a que já era inválida fica para a publicação.
     /// </summary>
     private DomainError? CitacaoQueFicariaOrfa(IReadOnlyCollection<FatoColetado> novosDaInscricao)
     {
-        HashSet<string> coletados = new(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-        foreach (IGrouping<FinalidadeFormulario, FatoColetado> outro in _fatosColetados
-            .Where(static f => f.Finalidade != FinalidadeFormulario.Inscricao).GroupBy(static f => f.Finalidade))
+        HashSet<string> atuais = FatosDaInscricao(_fatosColetados);
+
+        // Os itens novos ainda não têm a finalidade vinculada: valem pelo código.
+        HashSet<string> novos = new(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+        foreach (FinalidadeFormulario outra in _formularios.Select(static f => f.Finalidade).Where(static f => f != FinalidadeFormulario.Inscricao))
         {
-            HashSet<string> doProprio = new(outro.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-            foreach (FatoColetado item in outro)
+            FatoColetado[] itens = [.. _fatosColetados.Where(f => f.Finalidade == outra)];
+            DependenciasDoFormulario antes = DependenciasDe(outra, itens, atuais);
+            DependenciasDoFormulario depois = DependenciasDe(outra, itens, novos);
+            IEnumerable<(string Dono, long Posicao, string Citado)> citacoes = itens
+                .SelectMany(static item => item.FatosCitados.Select(c => ($"o item '{item.FatoCodigo}'", (long)item.Ordem, c)))
+                .Concat(_termosExigidos.Where(t => t.Finalidade == outra)
+                    .SelectMany(static termo => termo.FatosCitados.Select(c => ($"o termo '{termo.Codigo}'", DependenciasDoFormulario.PosicaoDosTermos, c))));
+            foreach ((string dono, long posicao, string citado) in citacoes)
             {
-                if (item.FatosCitados.FirstOrDefault(c => !doProprio.Contains(c) && !coletados.Contains(c)) is { } citado)
+                if (antes.Conferir(citado, posicao) is null && depois.Conferir(citado, posicao) is not null)
                 {
                     return new DomainError(
                         FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
-                        $"O fato '{citado}' é citado pelo item '{item.FatoCodigo}' do formulário de "
-                        + $"{EstruturaFormulario.ParaToken(outro.Key)} e não pode sair da inscrição.");
+                        $"O fato '{citado}', citado por {dono} do formulário de {EstruturaFormulario.ParaToken(outra)}, deixaria de ser conhecido por ele.");
                 }
             }
         }
@@ -2057,12 +2075,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// O grafo de coleta de um formulário. A pré-condição de um campo cita um campo anterior do
-    /// mesmo formulário ou, em outra finalidade, um fato já coletado pela inscrição, que todo
-    /// candidato preenche antes (UNI-REQ-0144, UNI-REQ-0145).
+    /// O grafo de coleta de um formulário. As regras de um campo citam campo anterior do mesmo
+    /// formulário, em outra finalidade um fato já coletado pela inscrição, que todo candidato
+    /// preenche antes, ou um derivado por regra cujas dependências estão todas entre esses
+    /// (UNI-REQ-0144, UNI-REQ-0145).
     /// </summary>
     private static DomainError? ValidarGrafoDeFatos(
-        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatos, HashSet<string> daInscricao)
+        FinalidadeFormulario finalidade,
+        IReadOnlyList<FatoColetado> fatos,
+        HashSet<string> daInscricao,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         Dictionary<string, FatoColetado> porCodigo = new(StringComparer.Ordinal);
         HashSet<int> ordens = [];
@@ -2095,42 +2117,109 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"As regras dos campos formam um ciclo: {string.Join(" → ", caminho)}.");
         }
 
+        return CitacaoInvalidaDosItens(finalidade, fatos, DependenciasDe(finalidade, fatos, daInscricao, derivacoes));
+    }
+
+    /// <summary>A primeira regra de item que cita fato que o formulário não conhece antes do item.</summary>
+    private static DomainError? CitacaoInvalidaDosItens(
+        FinalidadeFormulario finalidade, IEnumerable<FatoColetado> fatos, DependenciasDoFormulario dependencias)
+    {
         foreach (FatoColetado fato in fatos)
         {
             foreach (string citado in fato.FatosCitados)
             {
-                // As regras de um campo só citam fato COLETADO — não um derivado. O resolvedor
-                // de estado dos fatos (runtime) percorre apenas os fatos coletados por Ordem e não
-                // aciona o motor de derivação; uma pré-condição que citasse um fato derivado
-                // avaliaria indeterminada para sempre, e o campo nunca ficaria respondível. Enquanto
-                // a coleta não for dirigida pelo grafo conjunto (§6, dependente do portador do
-                // estado de coleta, ainda inexistente), a citação fica restrita ao que se coleta.
-                if (!porCodigo.TryGetValue(citado, out FatoColetado? anterior))
+                switch (dependencias.Conferir(citado, fato.Ordem))
                 {
-                    if (daInscricao.Contains(citado))
-                    {
-                        continue;
-                    }
-
-                    return new DomainError(
-                        FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
-                        finalidade == FinalidadeFormulario.Inscricao
-                            ? $"Uma regra do fato '{fato.FatoCodigo}' cita '{citado}', que o formulário dele não coleta."
-                            : $"Uma regra do fato '{fato.FatoCodigo}' cita '{citado}', que nem o formulário dele nem o de inscrição coletam.");
-                }
-
-                if (anterior.Ordem >= fato.Ordem)
-                {
-                    return new DomainError(
-                        FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior,
-                        $"Uma regra do fato '{fato.FatoCodigo}' (ordem {fato.Ordem}) cita '{citado}' "
-                        + $"(ordem {anterior.Ordem}), que não é anterior — o campo dependeria de uma resposta ainda não dada.");
+                    case RecusaDeCitacao.FatoNaoConhecido:
+                        return new DomainError(
+                            FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+                            finalidade == FinalidadeFormulario.Inscricao
+                                ? $"Uma regra do fato '{fato.FatoCodigo}' cita '{citado}', que o formulário dele não coleta nem deriva dos seus campos."
+                                : $"Uma regra do fato '{fato.FatoCodigo}' cita '{citado}', que nem o formulário dele nem o de inscrição coletam ou derivam.");
+                    case RecusaDeCitacao.FatoPosterior:
+                        return new DomainError(
+                            FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior,
+                            $"Uma regra do fato '{fato.FatoCodigo}' cita '{citado}', que só fica conhecido nesse campo ou depois dele — "
+                            + "o campo dependeria de uma resposta ainda não dada.");
+                    case null:
+                    default:
+                        break;
                 }
             }
         }
 
         return null;
     }
+
+    /// <summary>
+    /// A primeira regra de item ou condição de termo que cita fato que o formulário dela não
+    /// conhece. É a mesma conferência da definição, repetida na publicação e na leitura do edital
+    /// congelado.
+    /// </summary>
+    public static DomainError? CitacaoInvalidaNosFormularios(
+        IEnumerable<FinalidadeFormulario> finalidades,
+        IReadOnlyCollection<FatoColetado> fatos,
+        IReadOnlyCollection<TermoExigidoFormulario> termos,
+        IReadOnlyCollection<ConfiguracaoDerivacaoFato> derivacoes)
+    {
+        ArgumentNullException.ThrowIfNull(finalidades);
+        ArgumentNullException.ThrowIfNull(fatos);
+        ArgumentNullException.ThrowIfNull(termos);
+        ArgumentNullException.ThrowIfNull(derivacoes);
+
+        HashSet<string> daInscricao = FatosDaInscricao(fatos);
+        Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
+            derivacoes.ToDictionary(static c => c.CodigoFato, static c => c.FatosCitados, StringComparer.Ordinal);
+        foreach (FinalidadeFormulario finalidade in finalidades)
+        {
+            FatoColetado[] itens = [.. fatos.Where(f => f.Finalidade == finalidade)];
+            DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, daInscricao, dependenciasDasDerivacoes);
+            if (CitacaoInvalidaNoFormulario(finalidade, itens, termos.Where(t => t.Finalidade == finalidade), dependencias) is { } recusa)
+            {
+                return recusa;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>A primeira regra de item, e depois de termo, do formulário que cita fato que ele não conhece.</summary>
+    private static DomainError? CitacaoInvalidaNoFormulario(
+        FinalidadeFormulario finalidade,
+        IEnumerable<FatoColetado> itens,
+        IEnumerable<TermoExigidoFormulario> termos,
+        DependenciasDoFormulario dependencias) =>
+        CitacaoInvalidaDosItens(finalidade, itens, dependencias)
+            ?? termos.Select(t => CitacaoInvalidaDoTermo(t, dependencias)).FirstOrDefault(static e => e is not null);
+
+    /// <summary>A condição do termo cita fato que o formulário dele não conhece.</summary>
+    private static DomainError? CitacaoInvalidaDoTermo(TermoExigidoFormulario termo, DependenciasDoFormulario dependencias) =>
+        termo.FatosCitados.FirstOrDefault(f => dependencias.Conferir(f, DependenciasDoFormulario.PosicaoDosTermos) is not null) is { } citado
+            ? new DomainError(
+                FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+                $"A condição do termo '{termo.Codigo}' cita '{citado}', que nem o formulário dele nem o de inscrição coletam ou derivam.")
+            : null;
+
+    /// <summary>
+    /// O que as regras do formulário da finalidade podem citar: os campos dele, na ordem; os da
+    /// inscrição, quando o formulário é de outra finalidade; e os derivados por regra desses.
+    /// </summary>
+    private DependenciasDoFormulario DependenciasDe(
+        FinalidadeFormulario finalidade, IEnumerable<FatoColetado> itens, IReadOnlySet<string> daInscricao) =>
+        DependenciasDe(finalidade, itens, daInscricao, DependenciasDasDerivacoes());
+
+    private static DependenciasDoFormulario DependenciasDe(
+        FinalidadeFormulario finalidade,
+        IEnumerable<FatoColetado> itens,
+        IReadOnlySet<string> daInscricao,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
+        Regras.Formularios.DependenciasDoFormulario.Criar(
+            itens.ToDictionary(static f => f.FatoCodigo, static f => f.Ordem, StringComparer.Ordinal),
+            finalidade == FinalidadeFormulario.Inscricao ? new HashSet<string>(StringComparer.Ordinal) : daInscricao,
+            derivacoes);
+
+    private Dictionary<string, IReadOnlyCollection<string>> DependenciasDasDerivacoes() =>
+        _regrasDerivacao.ToDictionary(static c => c.CodigoFato, static c => c.FatosCitados, StringComparer.Ordinal);
 
     /// <summary>
     /// Gate <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c> (Story #920) — mesmo gate
@@ -3684,8 +3773,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// aciclicidade e a ordem topológica sejam congeladas (RN08).
     /// </summary>
     /// <remarks>
-    /// A pré-condição de campo já é barrada na definição (<see cref="ValidarGrafoDeFatos"/>): ela
-    /// só cita coletado, porque o resolvedor de runtime não aciona o motor de derivação. O gatilho
+    /// As regras dos itens e dos termos são conferidas de novo aqui, pela mesma regra da definição
+    /// (<see cref="ValidarGrafoDeFatos"/>), porque os itens e as derivações mudam depois. O gatilho
     /// de exigência cita pelo mesmo vocabulário e caberá aqui quando passar a exigir os seus fatos.
     /// </remarks>
     private DomainError? PendenciaDeFatosCitados()
@@ -3718,19 +3807,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        // A condição de termo é avaliada no formulário, com as respostas e os derivados do
-        // candidato: cita o mesmo universo, e a coleta pode ter mudado depois que o termo a citou.
-        foreach (TermoExigidoFormulario termo in _termosExigidos)
-        {
-            if (termo.FatosCitados.FirstOrDefault(f => !universo.Contains(f)) is { } ausente)
-            {
-                return new DomainError(
-                    FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
-                    $"A condição do termo '{termo.Codigo}' cita '{ausente}', que este processo não coleta nem deriva.");
-            }
-        }
-
-        return null;
+        // As regras dos itens e as condições dos termos citam o que o formulário conhece; os itens
+        // e as derivações podem ter mudado depois da citação.
+        return CitacaoInvalidaNosFormularios(_formularios.Select(static f => f.Finalidade), _fatosColetados, _termosExigidos, _regrasDerivacao);
     }
 
     /// <summary>
