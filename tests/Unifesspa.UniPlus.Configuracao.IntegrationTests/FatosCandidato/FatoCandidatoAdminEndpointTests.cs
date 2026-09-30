@@ -142,6 +142,52 @@ public sealed class FatoCandidatoAdminEndpointTests
         valor.GetProperty("ativo").GetBoolean().Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Derivado por regra é cadastrado, recebe regras padrão e as devolve como gravou")]
+    public async Task DerivadoComRegrasPadrao()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string dependencia = CodigoUnico();
+        (await EnviarAsync(client, HttpMethod.Post, Base, FatoBooleano(dependencia)))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, $"{Base}/derivados", new
+        {
+            codigo = CodigoUnico(),
+            nome = "Perfil de conclusão",
+            dominio = "CATEGORICO",
+            pontoResolucao = "HABILITACAO",
+            escopo = "CANDIDATO",
+            classificacaoProtecao = "PESSOAL",
+            finalidadeTratamento = "Verificação dos requisitos do processo seletivo.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/valores", new { codigo = "EJA", descricao = "Educação de jovens e adultos", ordem = 0 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/regras-padrao", new
+        {
+            regras = new[] { new { contribui = "EJA", quando = new[] { new[] { new { fato = dependencia, operador = "IGUAL", valor = true } } } } },
+        })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/regras-padrao", new { }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest, "corpo sem a lista não apaga as regras");
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/regras-padrao", new
+        {
+            regras = new[] { new { contribui = "EJA", quando = new[] { new[] { new { fato = dependencia, operador = "IGUAL" } } } } },
+        })).StatusCode.Should().Be(HttpStatusCode.BadRequest, "condição sem valor é recusada, não vira erro interno");
+
+        using JsonDocument fato = await ObterAsync(client, id);
+        fato.RootElement.GetProperty("cardinalidade").GetString().Should().Be("MULTIVALORADO");
+        JsonElement regra = fato.RootElement.GetProperty("regrasPadrao").EnumerateArray().Single();
+        regra.GetProperty("contribui").GetString().Should().Be("EJA");
+        JsonElement condicao = regra.GetProperty("quando").EnumerateArray().Single().EnumerateArray().Single();
+        condicao.GetProperty("fato").GetString().Should().Be(dependencia);
+        condicao.GetProperty("operador").GetString().Should().Be("IGUAL");
+        condicao.GetProperty("valor").GetBoolean().Should().BeTrue();
+    }
+
     private static object FatoBooleano(string codigo) => new
     {
         codigo,

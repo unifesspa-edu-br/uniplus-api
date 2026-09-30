@@ -4206,6 +4206,269 @@
         ]
       }
     },
+    "/api/configuracao/admin/fatos-candidato/derivados": {
+      "post": {
+        "tags": [
+          "FatosCandidato"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarFatoDerivadoCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarFatoDerivadoCommand"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarFatoDerivadoCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
+    "/api/configuracao/admin/fatos-candidato/{id}/regras-padrao": {
+      "put": {
+        "tags": [
+          "FatosCandidato"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegrasPadraoInput"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegrasPadraoInput"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/RegrasPadraoInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/configuracao/admin/fatos-candidato/{id}/ativacao": {
       "post": {
         "tags": [
@@ -12894,6 +13157,44 @@
           }
         }
       },
+      "CondicaoRegraPadraoDto": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
+      "CondicaoRegraPadraoInput": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
       "CriarBaseLegalBonusRegionalCommand": {
         "required": [
           "tipoInstrumento",
@@ -13254,6 +13555,52 @@
               "null",
               "string"
             ]
+          },
+          "pontoResolucao": {
+            "type": "string"
+          },
+          "escopo": {
+            "type": "string"
+          },
+          "classificacaoProtecao": {
+            "type": "string"
+          },
+          "finalidadeTratamento": {
+            "type": "string"
+          },
+          "hipoteseLegal": {
+            "type": "string"
+          }
+        }
+      },
+      "CriarFatoDerivadoCommand": {
+        "required": [
+          "codigo",
+          "nome",
+          "descricao",
+          "dominio",
+          "pontoResolucao",
+          "escopo",
+          "classificacaoProtecao",
+          "finalidadeTratamento",
+          "hipoteseLegal"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dominio": {
+            "type": "string"
           },
           "pontoResolucao": {
             "type": "string"
@@ -14356,7 +14703,8 @@
           "hipoteseLegal",
           "sistema",
           "ativo",
-          "valores"
+          "valores",
+          "regrasPadrao"
         ],
         "type": "object",
         "properties": {
@@ -14425,6 +14773,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FatoValorDominioDto"
+            }
+          },
+          "regrasPadrao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegraPadraoDto"
             }
           }
         }
@@ -14584,6 +14938,7 @@
           }
         }
       },
+      "JsonElement": {},
       "LocalOfertaDto": {
         "required": [
           "id",
@@ -15131,6 +15486,71 @@
             ],
             "additionalProperties": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "RegraPadraoDto": {
+        "required": [
+          "contribui",
+          "quando"
+        ],
+        "type": "object",
+        "properties": {
+          "contribui": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quando": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoRegraPadraoDto"
+              }
+            }
+          }
+        }
+      },
+      "RegraPadraoInput": {
+        "required": [
+          "contribui",
+          "quando"
+        ],
+        "type": "object",
+        "properties": {
+          "contribui": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quando": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoRegraPadraoInput"
+              }
+            }
+          }
+        }
+      },
+      "RegrasPadraoInput": {
+        "required": [
+          "regras"
+        ],
+        "type": "object",
+        "properties": {
+          "regras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegraPadraoInput"
             }
           }
         }

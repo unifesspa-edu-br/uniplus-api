@@ -20,4 +20,10 @@ public interface IFatoCandidatoRepository
 
     /// <summary>Se o código já é usado por algum fato, ativo ou não: o código nunca é reutilizado.</summary>
     Task<bool> CodigoExisteAsync(string codigo, CancellationToken cancellationToken);
+
+    /// <summary>O catálogo inteiro, com os valores de domínio, sem rastreamento.</summary>
+    Task<IReadOnlyList<FatoCandidato>> ListarTodosAsync(CancellationToken cancellationToken);
+
+    /// <summary>Serializa, até o fim da transação, as escritas de regras padrão do catálogo.</summary>
+    Task TravarRegrasPadraoParaEscritaAsync(CancellationToken cancellationToken);
 }

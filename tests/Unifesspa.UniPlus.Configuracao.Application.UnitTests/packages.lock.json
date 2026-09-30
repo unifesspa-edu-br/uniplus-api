@@ -738,7 +738,8 @@
         "type": "Project",
         "dependencies": {
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Regras": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.governance.contracts": {
@@ -749,6 +750,12 @@
       },
       "unifesspa.uniplus.kernel": {
         "type": "Project"
+      },
+      "unifesspa.uniplus.regras": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
       },
       "FluentValidation": {
         "type": "CentralTransitive",

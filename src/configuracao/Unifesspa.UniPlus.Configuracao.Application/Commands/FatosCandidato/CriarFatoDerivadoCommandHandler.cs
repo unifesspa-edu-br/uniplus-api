@@ -6,14 +6,10 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>
-/// Valida o fato por inteiro primeiro (sem I/O), com as violações acumuladas (ADR-0125), e só então
-/// o grava (<see cref="NovoFato"/>).
-/// </summary>
-public static class CriarFatoCandidatoCommandHandler
+public static class CriarFatoDerivadoCommandHandler
 {
     public static async Task<Result<Guid>> Handle(
-        CriarFatoCandidatoCommand command,
+        CriarFatoDerivadoCommand command,
         IFatoCandidatoRepository repository,
         IConfiguracaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
@@ -24,18 +20,13 @@ public static class CriarFatoCandidatoCommandHandler
 
         // Token desconhecido vira o sentinela do enum, que o agregado recusa com o erro do campo.
         _ = DominiosFato.TryAnalisar(command.Dominio, out DominioFato dominio);
-        _ = CardinalidadesFato.TryAnalisar(command.Cardinalidade, out CardinalidadeFato cardinalidade);
         _ = EscoposFato.TryAnalisar(command.Escopo, out EscopoFato escopo);
         _ = ClassificacoesProtecaoDado.TryAnalisar(command.ClassificacaoProtecao, out ClassificacaoProtecaoDado classificacao);
         _ = HipotesesLegaisTratamento.TryAnalisar(command.HipoteseLegal, out HipoteseLegalTratamento hipotese);
-        FonteValoresFato? fonte = command.FonteValores is null ? null
-            : FontesValoresFato.TryAnalisar(command.FonteValores, out FonteValoresFato f) ? f : FonteValoresFato.Nenhuma;
-        FormatoTexto? formato = command.Formato is null ? null
-            : FormatosTexto.TryAnalisar(command.Formato, out FormatoTexto fmt) ? fmt : FormatoTexto.Nenhum;
 
-        Result<FatoCandidato> criar = FatoCandidato.CriarDoAdministrador(
-            command.Codigo, command.Nome, command.Descricao, dominio, cardinalidade, fonte, formato,
-            command.PontoResolucao, escopo, classificacao, command.FinalidadeTratamento, hipotese);
+        Result<FatoCandidato> criar = FatoCandidato.CriarDerivadoDoAdministrador(
+            command.Codigo, command.Nome, command.Descricao, dominio, command.PontoResolucao, escopo, classificacao,
+            command.FinalidadeTratamento, hipotese);
         if (criar.IsFailure)
         {
             return Result<Guid>.ValidationFailure(criar.Errors);

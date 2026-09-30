@@ -75,4 +75,31 @@ public static class FatoCandidatoErrorCodes
 
     /// <summary>O fato foi alterado por outra escrita concorrente.</summary>
     public const string ConflitoDeConcorrencia = "FatoCandidato.ConflitoDeConcorrencia";
+
+    /// <summary>Fato derivado por regra fora dos domínios booleano e categórico.</summary>
+    public const string DerivadoPorRegraSoBooleanoOuCategorico = "FatoCandidato.DerivadoPorRegraSoBooleanoOuCategorico";
+
+    /// <summary>Regras padrão pedidas para fato que não é derivado por regra.</summary>
+    public const string RegrasPadraoSoEmDerivadoPorRegra = "FatoCandidato.RegrasPadraoSoEmDerivadoPorRegra";
+
+    /// <summary>Regra padrão cita fato que o predicado não avalia (texto, data, endereço, membro de grupo, categórico sem valores).</summary>
+    public const string RegraCitaFatoNaoCitavel = "FatoCandidato.RegraCitaFatoNaoCitavel";
+
+    /// <summary>Regra padrão passa a citar fato desativado.</summary>
+    public const string RegraCitaFatoDesativado = "FatoCandidato.RegraCitaFatoDesativado";
+
+    /// <summary>Regra padrão passa a citar ou contribuir valor desativado.</summary>
+    public const string RegraCitaValorDesativado = "FatoCandidato.RegraCitaValorDesativado";
+
+    /// <summary>Derivado com proteção de dados mais fraca que a de um fato que ele cita.</summary>
+    public const string ClassificacaoAbaixoDaDependencia = "FatoCandidato.ClassificacaoAbaixoDaDependencia";
+
+    /// <summary>Derivado resolve em fase anterior à de um fato que ele cita.</summary>
+    public const string PontoResolucaoAnteriorADependencia = "FatoCandidato.PontoResolucaoAnteriorADependencia";
+
+    /// <summary>Regras padrão fecham ciclo entre derivados do catálogo.</summary>
+    public const string CicloEntreDerivados = "FatoCandidato.CicloEntreDerivados";
+
+    /// <summary>Lista de regras padrão, regra ou condição nula na entrada.</summary>
+    public const string RegraPadraoMalformada = "FatoCandidato.RegraPadraoMalformada";
 }
