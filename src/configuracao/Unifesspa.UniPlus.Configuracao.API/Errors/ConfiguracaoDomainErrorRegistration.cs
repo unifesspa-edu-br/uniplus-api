@@ -744,6 +744,36 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.binding_referencia_regra_incoerente",
                 "Binding de regra de derivação referencia outro fato, não o próprio")),
 
+        new(FatoCandidatoErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.fato_candidato.codigo_ja_existe",
+                "Já existe um fato com o código informado")),
+
+        new(FatoCandidatoErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.fato_candidato.conflito_de_concorrencia",
+                "O fato foi alterado concorrentemente")),
+
+        new(FatoValorDominioErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.fato_valor_dominio.nao_encontrado",
+                "Valor de domínio não encontrado neste fato")),
+
+        new(FatoValorDominioErrorCodes.JaAtivo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.ja_ativo",
+                "O valor já está ativo")),
+
+        new(FatoValorDominioErrorCodes.JaDesativado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.ja_desativado",
+                "O valor já está desativado")),
+
         new(FatoCandidatoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(
                 StatusCodes.Status404NotFound,

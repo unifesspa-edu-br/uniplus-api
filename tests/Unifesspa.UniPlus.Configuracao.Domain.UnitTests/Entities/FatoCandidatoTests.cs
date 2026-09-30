@@ -90,6 +90,54 @@ public sealed class FatoCandidatoTests
             binding: "CAMPO_INSCRICAO:DADO", classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
+    [Fact(DisplayName = "Violações independentes saem juntas, cada uma no seu campo (ADR-0125)")]
+    public void Criar_ViolacoesIndependentes_Acumula()
+    {
+        Result<FatoCandidato> resultado = Criar(
+            codigo: "codigo invalido", nome: " ", classificacao: ClassificacaoProtecaoDado.Nenhuma, finalidade: " ");
+
+        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(
+            ["codigo", "nome", "classificacaoProtecao", "finalidadeTratamento"]);
+    }
+
+    [Fact(DisplayName = "Fato do administrador é declarado, com vínculo ao campo gerado a partir do código, e não é de sistema")]
+    public void CriarDoAdministrador_DeclaradoComVinculoDoCodigo()
+    {
+        FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
+            " ANO_CONCLUSAO ", "Ano de conclusão", null, DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
+            PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade,
+            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+
+        fato.Origem.Should().Be(OrigemFato.Declarado);
+        fato.Binding.Should().Be("CAMPO_INSCRICAO:ANO_CONCLUSAO");
+        fato.Sistema.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Acrescentar valor acumula as violações do código, da descrição e da ordem")]
+    public void AdicionarValorDominio_AcumulaViolacoes() =>
+        Criar().Value!.AdicionarValorDominio(" ", null, -1, ativo: true)
+            .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["codigo", "descricao", "ordem"]);
+
+    [Fact(DisplayName = "Editar nome e descrição acumula as duas violações")]
+    public void AlterarDescritivo_AcumulaViolacoes() =>
+        Criar().Value!.AlterarDescritivo(" ", new string('x', 1001))
+            .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["nome", "descricao"]);
+
+    [Fact(DisplayName = "Valor do fato do administrador desativa e reativa; o do fato de sistema, não")]
+    public void DesativarValor_SoNoFatoDoAdministrador()
+    {
+        FatoCandidato doAdministrador = Criar().Value!;
+        doAdministrador.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
+
+        doAdministrador.DesativarValor("PRETA").IsSuccess.Should().BeTrue();
+        doAdministrador.DesativarValor("PRETA").Error!.Code.Should().Be(FatoValorDominioErrorCodes.JaDesativado);
+        doAdministrador.ReativarValor("PRETA").IsSuccess.Should().BeTrue();
+        doAdministrador.DesativarValor("INEXISTENTE").Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoEncontrado);
+
+        Criar(sistema: true).Value!.DesativarValor("PRETA")
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+    }
+
     [Theory(DisplayName = "Proteção de dados incompleta é recusada")]
     [InlineData(ClassificacaoProtecaoDado.Nenhuma, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
     [InlineData(ClassificacaoProtecaoDado.Pessoal, "  ", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria)]

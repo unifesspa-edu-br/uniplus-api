@@ -8,6 +8,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -44,7 +45,9 @@ public sealed class FatoCandidatoEndpointTests
 
         List<FatoCandidatoView>? fatos = await response.Content.ReadFromJsonAsync<List<FatoCandidatoView>>();
         fatos.Should().NotBeNull();
-        fatos!.Should().HaveCount(21);
+        // O catálogo é compartilhado pela coleção, e outros testes cadastram fatos do administrador:
+        // confere os fatos de sistema, não a contagem total.
+        fatos!.Select(f => f.Codigo).Should().Contain(FatoCandidatoSeed.Itens.Select(i => i.Codigo));
         fatos.Select(f => f.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
         fatos.Should().Contain(f => f.Codigo == "MODALIDADE" && f.Cardinalidade == "MULTIVALORADO" && f.ValoresDominio == null);
     }

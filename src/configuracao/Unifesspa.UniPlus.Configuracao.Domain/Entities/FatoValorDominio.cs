@@ -64,4 +64,7 @@ public sealed class FatoValorDominio : EntityBase
             Ativo = ativo,
         };
     }
+
+    /// <summary>Muda o estado do valor; a decisão (e a recusa) é do agregado pai.</summary>
+    internal void DefinirAtivo(bool ativo) => Ativo = ativo;
 }
