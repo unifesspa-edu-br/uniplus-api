@@ -183,6 +183,7 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
 
 ## Mais informações
 
+- **Emendada pela ADR-0138:** o agregado sobre grupo repetível é declarado pelo administrador com o vínculo `AGREGACAO_GRUPO:`, o que fecha a exceção em aberto na governança.
 - UNI-REQ-0143 (catálogo de fatos administrável), UNI-REQ-0065 (vocabulário extensível por configuração), UNI-REQ-0074 (estados do fato), UNI-REQ-0075 (derivados pelo sistema), UNI-REQ-0077 (ordem de coleta), UNI-REQ-0144 (formulário por finalidade), UNI-REQ-0145 (regras do item) e UNI-REQ-0148 (origem escolar).
 - ADR-0055 (código imutável por invariante), ADR-0056 (leitor cross-módulo), ADR-0061 (cópia por valor), ADR-0081 (classificação e base legal do dado pessoal), ADR-0082 (nome social público quando preferido), ADR-0096 (endereço estruturado), ADR-0111 (vocabulário de fatos), ADR-0116 (origem, ponto de resolução e vínculo), ADR-0122 (desativação prospectiva), ADR-0129 (identidade da origem) e ADR-0135 (projeto compartilhado de regras).
 - Lei 13.709/2018 (LGPD), arts. 5º, I e II, 7º e 11.
