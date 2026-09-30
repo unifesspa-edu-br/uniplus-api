@@ -43,6 +43,12 @@ public static class DomainErrorMappingServiceCollectionExtensions
                 registrations,
                 sp.GetRequiredService<IProblemTypeUriFactory>());
         });
+
+        // O código que cada violação do FluentValidation publica em errors[].code. Instalado
+        // aqui, junto do registro que o resolve, porque todo host que responde o 422 de
+        // validação passa por este ponto — e é a configuração global do FluentValidation, não
+        // algo que o container possa injetar nos validators.
+        ValidationErrorCodes.InstallGlobalResolver();
         // O envelope das recusas de LEITURA da requisição, que o MVC responde antes de
         // qualquer código nosso rodar. Sem isto elas saem no formato do framework — sem `code`,
         // sem `traceId`, título em inglês e, o que é grave, com o nome completo do tipo CLR que

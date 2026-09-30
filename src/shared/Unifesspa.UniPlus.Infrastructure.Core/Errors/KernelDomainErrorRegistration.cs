@@ -22,6 +22,18 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
         new(InvalidRequestErrorCodes.MissingBody, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.corpo_ausente", "A requisição não traz corpo")),
         new(InvalidRequestErrorCodes.InvalidValue, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.valor_invalido", "A requisição traz valor que não corresponde ao tipo declarado")),
 
+        // Recusas do validator FluentValidation, que roda como middleware antes do handler.
+        // A raiz é o `code` do corpo do 422; as demais descrevem cada violação em `errors[]`,
+        // traduzidas do tipo do validator por ValidationErrorCodes.Resolve. A chave é o próprio
+        // código de wire porque o resolver já publica na taxonomia — não há código interno a
+        // traduzir.
+        new(ValidationErrorCodes.Raiz, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, ValidationErrorCodes.Raiz, "Erro de validação")),
+        new(ValidationErrorCodes.Obrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, ValidationErrorCodes.Obrigatorio, "Campo obrigatório não informado")),
+        new(ValidationErrorCodes.Tamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, ValidationErrorCodes.Tamanho, "Campo fora do tamanho permitido")),
+        new(ValidationErrorCodes.Formato, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, ValidationErrorCodes.Formato, "Campo em formato inválido")),
+        new(ValidationErrorCodes.Faixa, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, ValidationErrorCodes.Faixa, "Valor fora do intervalo permitido")),
+        new(ValidationErrorCodes.Regra, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, ValidationErrorCodes.Regra, "Campo não atende a regra de validação")),
+
         new("Cpf.Vazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cpf.vazio", "CPF obrigatório")),
         new("Cpf.Invalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cpf.invalido", "CPF inválido")),
         new("Email.Vazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.email.vazio", "E-mail obrigatório")),
