@@ -6,6 +6,10 @@ using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Serializacao;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -20,24 +24,136 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed partial class EnvelopeCodec
 {
     /// <summary>
-    /// Título e termo de aceite do formulário de inscrição (Story #559) — forma fechada mesmo
-    /// quando os dois campos são nulos, mesmo raciocínio de <see cref="LerDadosEdital"/> para
-    /// campos individualmente opcionais (não um toggle por presença como
-    /// <see cref="LerBonusRegional"/>).
+    /// Título e termos exigidos do formulário de inscrição (Story #559, UNI-REQ-0086) — forma
+    /// fechada. Cada termo é remontado pela factory do domínio, e o conjunto pela mesma regra de
+    /// código e ordem únicos do agregado.
     /// </summary>
-    private static (string? Titulo, string? TermoAceiteTexto) LerFormulario(LeitorEnvelope leitor, JsonObject payload)
+    private static (string? Titulo, IReadOnlyList<TermoExigidoFormulario> Termos) LerFormulario(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "formulario", "$");
         if (leitor.Falhou)
         {
-            return (null, null);
+            return (null, []);
         }
 
-        leitor.ExigirChaves(bloco, "formulario", "titulo", "termoAceiteTexto");
+        leitor.ExigirChaves(bloco, "formulario", "titulo", "termos");
 
         string? titulo = leitor.TextoOpcional(bloco, "titulo", "formulario", LimitesDoEnvelope.NomeDeCadastro);
-        string? termoAceiteTexto = leitor.TextoOpcional(bloco, "termoAceiteTexto", "formulario", LimitesDoEnvelope.TermoDeAceite);
-        return leitor.Falhou ? (null, null) : (titulo, termoAceiteTexto);
+        JsonArray itens = leitor.Array(bloco, "termos", "formulario");
+        if (leitor.Falhou)
+        {
+            return (null, []);
+        }
+
+        List<TermoExigidoFormulario> termos = [];
+        HashSet<string> codigos = new(StringComparer.Ordinal);
+        int? ordemAnterior = null;
+        for (int i = 0; i < itens.Count; i++)
+        {
+            string path = $"formulario.termos[{i}]";
+            TermoExigidoFormulario? termo = LerTermoExigido(leitor, leitor.ItemObjeto(itens, i, "formulario.termos"), path);
+            if (leitor.Falhou || termo is null)
+            {
+                return (null, []);
+            }
+
+            // O encoder emite os termos em ordem estritamente crescente e com código único; outra
+            // forma só vem de envelope adulterado.
+            if (!codigos.Add(termo.Codigo) || termo.Ordem <= ordemAnterior)
+            {
+                leitor.Propagar<object>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' repete código ou quebra a ordem crescente dos termos."));
+                return (null, []);
+            }
+
+            ordemAnterior = termo.Ordem;
+            termos.Add(termo);
+        }
+
+        return (titulo, termos);
+    }
+
+    private static TermoExigidoFormulario? LerTermoExigido(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        leitor.ExigirChaves(item, path, "codigo", "ordem", "termoId", "versaoId", "nome", "texto", "baseLegal",
+            "formaAceite", "hashVersao", "exibicao", "obrigatoriedade");
+
+        string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CodigoTermoExigido);
+        int ordem = leitor.Inteiro(item, "ordem", path);
+        Guid termoId = leitor.Identificador(item, "termoId", path);
+        Guid versaoId = leitor.Identificador(item, "versaoId", path);
+        string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.NomeDoTermo);
+        string texto = leitor.TextoNaoVazio(item, "texto", path, LimitesDoEnvelope.TextoDoTermo);
+        string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegalDoTermo);
+        string formaAceite = leitor.TextoNaoVazio(item, "formaAceite", path, LimitesDoEnvelope.FormaAceiteDoTermo);
+        string hash = leitor.TextoNaoVazio(item, "hashVersao", path, LimitesDoEnvelope.HashDaVersaoDoTermo);
+        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> exibicao = LerDnf(leitor, item, "exibicao", path);
+        JsonObject obrigatoriedadeBloco = leitor.Objeto(item, "obrigatoriedade", path);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        string obrigatoriedadePath = $"{path}.obrigatoriedade";
+        leitor.ExigirChaves(obrigatoriedadeBloco, obrigatoriedadePath, "tipo", "predicado");
+        string tipo = leitor.TextoNaoVazio(obrigatoriedadeBloco, "tipo", obrigatoriedadePath);
+        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> predicado =
+            LerDnf(leitor, obrigatoriedadeBloco, "predicado", obrigatoriedadePath);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        Result<PredicadoDnf?> exibicaoLida = PredicadoOpcional(exibicao);
+        Result<PredicadoDnf?> predicadoLido = PredicadoOpcional(predicado);
+        if (exibicaoLida.IsFailure || predicadoLido.IsFailure)
+        {
+            return leitor.Propagar<TermoExigidoFormulario>((exibicaoLida.IsFailure ? exibicaoLida : predicadoLido).Error!);
+        }
+
+        Obrigatoriedade? obrigatoriedade = (PredicadoDnfJson.TipoDoToken(tipo), predicadoLido.Value) switch
+        {
+            (TipoObrigatoriedade.Sempre, null) => Obrigatoriedade.Sempre,
+            (TipoObrigatoriedade.Nunca, null) => Obrigatoriedade.Nunca,
+            (TipoObrigatoriedade.Quando, { } quando) => Obrigatoriedade.Quando(quando),
+            _ => null,
+        };
+        if (obrigatoriedade is null)
+        {
+            return leitor.Propagar<TermoExigidoFormulario>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'{obrigatoriedadePath}' tem tipo SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado."));
+        }
+
+        Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(
+            codigo, ordem, new VersaoTermoEscolhida(termoId, versaoId, nome, texto, baseLegal, formaAceite, hash),
+            exibicaoLida.Value, obrigatoriedade);
+        return termo.IsSuccess ? termo.Value : leitor.Propagar<TermoExigidoFormulario>(termo.Error!);
+    }
+
+    /// <summary>O predicado das linhas lidas; <see langword="null"/> quando não há condição.</summary>
+    private static Result<PredicadoDnf?> PredicadoOpcional(
+        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> linhas)
+    {
+        if (linhas.Count == 0)
+        {
+            return Result<PredicadoDnf?>.Success(null);
+        }
+
+        List<(int Clausula, CondicaoDnf Condicao)> condicoes = [];
+        foreach ((int clausula, string fato, Operador operador, JsonElement valor) in linhas)
+        {
+            Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, operador, valor);
+            if (condicao.IsFailure)
+            {
+                return Result<PredicadoDnf?>.Failure(condicao.Error!);
+            }
+
+            condicoes.Add((clausula, condicao.Value!));
+        }
+
+        Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(condicoes);
+        return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.Failure(predicado.Error!);
     }
 
     /// <summary>

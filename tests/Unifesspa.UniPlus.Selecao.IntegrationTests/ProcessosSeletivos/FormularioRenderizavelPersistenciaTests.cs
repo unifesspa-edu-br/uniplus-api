@@ -120,9 +120,9 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFormulario(
-            "Formulário de Inscrição", "Declaro que as informações prestadas são verdadeiras.",
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
 
         return processo;
     }

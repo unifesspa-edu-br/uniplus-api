@@ -50,6 +50,21 @@ internal static class VocabularioDeFatos
         };
     }
 
+    /// <summary>
+    /// O vocabulário que o validador de predicado usa: o descritor de cada fato avaliável do
+    /// catálogo, por código. Texto, data e endereço ficam de fora.
+    /// </summary>
+    public static Dictionary<string, DescritorFatoCandidato> Descritores(IEnumerable<FatoCandidatoView> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        return catalogo
+            .Select(static fato => Classificar(fato) is { } tipo ? DescritorFatoCandidato.Criar(fato.Codigo, tipo, fato.ValoresDominio) : null)
+            .Where(static descritor => descritor is { IsSuccess: true })
+            .Select(static descritor => descritor!.Value!)
+            .ToDictionary(static descritor => descritor.Codigo, StringComparer.Ordinal);
+    }
+
     /// <summary>De onde vêm as opções do fato quando ele é coletado pelo processo.</summary>
     public static OrigemValoresColeta OrigemValores(FatoCandidatoView fato)
     {

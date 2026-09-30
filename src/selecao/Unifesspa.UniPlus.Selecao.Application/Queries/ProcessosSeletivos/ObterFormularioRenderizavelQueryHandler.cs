@@ -142,7 +142,7 @@ public static class ObterFormularioRenderizavelQueryHandler
     {
         if (!envelope.TryGetPropertyValue("formulario", out JsonNode? formularioNode) || formularioNode is not JsonObject formulario
             || !TentarStringOpcional(formulario, "titulo", out string? titulo)
-            || !TentarStringOpcional(formulario, "termoAceiteTexto", out string? termoAceiteTexto))
+            || !TentarTermos(formulario, out List<TermoExigidoDto> termos))
         {
             return VersaoSemApresentacao();
         }
@@ -161,7 +161,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarString(fato, "rotulo", out string rotulo)
                 || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
                 || !TentarBool(fato, "obrigatorio", out bool obrigatorio)
-                || !TentarPrecondicao(fato, out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
+                || !TentarPredicado(fato, "precondicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
                 || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis))
             {
                 return VersaoSemApresentacao();
@@ -171,7 +171,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicao, valoresSelecionaveis));
         }
 
-        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(titulo, termoAceiteTexto, fatos));
+        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(titulo, termos, fatos));
     }
 
     /// <summary>
@@ -228,15 +228,62 @@ public static class ObterFormularioRenderizavelQueryHandler
     }
 
     /// <summary>
+    /// Os termos exigidos do bloco <c>formulario</c> (UNI-REQ-0086), na ordem congelada; qualquer
+    /// forma fora da esperada é versão sem apresentação.
+    /// </summary>
+    private static bool TentarTermos(JsonObject formulario, out List<TermoExigidoDto> termos)
+    {
+        termos = [];
+        if (!formulario.TryGetPropertyValue("termos", out JsonNode? node) || node is not JsonArray itens)
+        {
+            return false;
+        }
+
+        foreach (JsonNode? item in itens)
+        {
+            if (item is not JsonObject termo
+                || !TentarString(termo, "codigo", out string codigo)
+                || !TentarInt(termo, "ordem", out int ordem)
+                || !TentarGuid(termo, "termoId", out Guid termoId)
+                || !TentarGuid(termo, "versaoId", out Guid versaoId)
+                || !TentarString(termo, "nome", out string nome)
+                || !TentarString(termo, "texto", out string texto)
+                || !TentarString(termo, "baseLegal", out string baseLegal)
+                || !TentarString(termo, "formaAceite", out string formaAceite)
+                || !TentarString(termo, "hashVersao", out string hashVersao)
+                || !TentarPredicado(termo, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao)
+                || !termo.TryGetPropertyValue("obrigatoriedade", out JsonNode? obrigatoriedadeNode)
+                || obrigatoriedadeNode is not JsonObject obrigatoriedade
+                || !TentarString(obrigatoriedade, "tipo", out string tipo)
+                || !TentarPredicado(obrigatoriedade, "predicado", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? predicado))
+            {
+                return false;
+            }
+
+            termos.Add(new TermoExigidoDto(
+                codigo, ordem, termoId, versaoId, nome, texto, baseLegal, formaAceite, hashVersao, exibicao,
+                new ObrigatoriedadeDto(tipo, predicado)));
+        }
+
+        return true;
+    }
+
+    private static bool TentarGuid(JsonObject objeto, string chave, out Guid valor)
+    {
+        valor = Guid.Empty;
+        return TentarString(objeto, chave, out string texto) && Guid.TryParse(texto, out valor);
+    }
+
+    /// <summary>
     /// Chave ausente: sucesso, <see langword="null"/> (fato sem pré-condição). Chave presente com
     /// <c>null</c> explícito: mesmo caso — o encoder nunca emite lista vazia. Chave presente com
     /// outro tipo, ou uma cláusula/condição malformada por dentro: falha — nunca convertida
     /// silenciosamente em "sem pré-condição", que mudaria a semântica do campo para incondicional.
     /// </summary>
-    private static bool TentarPrecondicao(JsonObject fato, out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
+    private static bool TentarPredicado(JsonObject objeto, string chave, out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
     {
         precondicao = null;
-        if (!fato.TryGetPropertyValue("precondicao", out JsonNode? node) || node is null)
+        if (!objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is null)
         {
             return true;
         }

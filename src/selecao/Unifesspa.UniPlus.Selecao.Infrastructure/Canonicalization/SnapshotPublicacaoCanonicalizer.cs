@@ -7,7 +7,9 @@ using System.Text.Json.Nodes;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -244,6 +246,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// página pública e a chave do documento no acervo. O público lê a versão congelada, então o
     /// endereço tem de estar nela, e não só no agregado vivo. Texto quando declarado; nulo só se a
     /// versão foi congelada sem ele, o que a publicação e a sucessão de versão recusam.
+    /// <c>formulario.termos[]</c> guarda os termos exigidos escolhidos no catálogo, cada um com
+    /// código, ordem, termo e versão, o conteúdo da versão (nome, texto, base legal, forma de aceite
+    /// e hash) e as condições de exibição e de obrigatoriedade, ordenados pela ordem.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -347,16 +352,42 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     };
 
     /// <summary>
-    /// Título e termo de aceite do formulário de inscrição (Story #559) — forma fechada mesmo
-    /// quando os dois campos são nulos (ausência = sem título/termo configurado; não é o toggle
-    /// por presença de <see cref="SerializarBonusRegional"/>, os dois campos são
-    /// independentemente nuláveis).
+    /// Título e termos exigidos do formulário de inscrição (Story #559, UNI-REQ-0086) — forma
+    /// fechada: título nulo quando não configurado, termos em lista vazia quando não há nenhum.
     /// </summary>
     private static JsonObject SerializarFormulario(ProcessoSeletivo processo) => new()
     {
         ["titulo"] = processo.FormularioTitulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
-        ["termoAceiteTexto"] = processo.FormularioTermoAceiteTexto is { } termo ? HashCanonicalComputer.NormalizeNfc(termo) : null,
+        ["termos"] = new JsonArray([.. processo.TermosExigidos.OrderBy(static t => t.Ordem).Select(SerializarTermoExigido)]),
     };
+
+    /// <summary>
+    /// Um termo exigido, com o conteúdo da versão congelado por termo (UNI-REQ-0086): identificador
+    /// da exigência, versão, texto, base legal, forma de aceite, hash, e as condições de exibição e
+    /// de obrigatoriedade na mesma forma canônica dos demais predicados.
+    /// </summary>
+    private static JsonNode SerializarTermoExigido(TermoExigidoFormulario termo) => new JsonObject
+    {
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(termo.Codigo),
+        ["ordem"] = termo.Ordem,
+        ["termoId"] = JsonValue.Create(termo.TermoId),
+        ["versaoId"] = JsonValue.Create(termo.VersaoId),
+        ["nome"] = HashCanonicalComputer.NormalizeNfc(termo.Nome),
+        ["texto"] = HashCanonicalComputer.NormalizeNfc(termo.Texto),
+        ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(termo.BaseLegal),
+        ["formaAceite"] = termo.FormaAceite,
+        ["hashVersao"] = termo.HashVersao,
+        ["exibicao"] = termo.Exibicao is { } exibicao ? SerializarDnf(LinhasDoPredicado(exibicao)) : null,
+        ["obrigatoriedade"] = new JsonObject
+        {
+            ["tipo"] = PredicadoDnfJson.ParaToken(termo.Obrigatoriedade.Tipo),
+            ["predicado"] = termo.Obrigatoriedade.Predicado is { } predicado ? SerializarDnf(LinhasDoPredicado(predicado)) : null,
+        },
+    };
+
+    private static IEnumerable<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> LinhasDoPredicado(PredicadoDnf predicado) =>
+        predicado.Clausulas.SelectMany(static (clausula, indice) =>
+            clausula.Condicoes.Select(condicao => (indice, condicao.Fato, condicao.Operador, condicao.Valor)));
 
     /// <summary>
     /// Etapas do processo (issue #1069): <c>Ordem ?? int.MaxValue</c> primeiro (semântica, define a

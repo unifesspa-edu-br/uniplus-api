@@ -9,6 +9,8 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Mappings;
+
 using Unifesspa.UniPlus.Regras.Enums;
 
 public static class ObterProcessoSeletivoQueryHandler
@@ -95,7 +97,7 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. processo.FatosColetados.OrderBy(f => f.Ordem).Select(f => ProjectFatoColetado(processo, f))],
         [.. processo.RegrasDerivacao.OrderBy(c => c.CodigoFato, StringComparer.Ordinal).Select(ProjectConfiguracaoDerivacao)],
         processo.FormularioTitulo,
-        processo.FormularioTermoAceiteTexto,
+        [.. processo.TermosExigidos.OrderBy(static t => t.Ordem).Select(static t => t.ToDto())],
         ProjectConfiguracaoDivulgacao(processo.ConfiguracaoDivulgacao),
         ProjectConfiguracaoTaxaInscricao(processo.ConfiguracaoTaxaInscricao),
         processo.AlgoritmoContagemPrazo is { } algoritmo

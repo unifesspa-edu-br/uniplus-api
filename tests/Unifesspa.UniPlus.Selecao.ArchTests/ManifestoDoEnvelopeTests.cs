@@ -375,6 +375,15 @@ public sealed class ManifestoDoEnvelopeTests
             ["FatoCodigo", "Codigo", "Rotulo", "Ordem"],
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
 
+        [typeof(TermoExigidoFormulario)] = (
+            ["Codigo", "Ordem", "TermoId", "VersaoId", "Nome", "Texto", "BaseLegal", "FormaAceite", "HashVersao", "Exibicao", "Obrigatoriedade"],
+            [
+                ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),
+                ("Condicoes", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),
+                ("SemFormaDeAceite", "Derivada de FormaAceite — congelá-la duplicaria a fonte de verdade."),
+            ]),
+
         [typeof(CondicaoPrecondicaoFato)] = (
             ["Clausula", "Fato", "Operador", "Valor"],
             [("FatoColetadoId", "FK interna.")]),

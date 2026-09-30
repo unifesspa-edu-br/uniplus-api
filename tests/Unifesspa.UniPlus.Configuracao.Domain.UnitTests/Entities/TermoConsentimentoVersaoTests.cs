@@ -47,4 +47,20 @@ public sealed class TermoConsentimentoVersaoTests
 
         versaoA.Hash.Should().NotBe(versaoB.Hash);
     }
+
+    [Fact(DisplayName = "Texto e base legal decompostos são guardados em NFC, e o hash é o do conteúdo guardado")]
+    public void Promover_Decomposto_GuardaNfcComHashDoGuardado()
+    {
+        // "declaração" com o "ç" e o "ã" decompostos (letra + diacrítico combinante).
+        const string decomposto = "declarac\u0327a\u0303o";
+
+        TermoConsentimentoVersao decompostaVersao = TermoConsentimentoVersao.Promover(
+            Guid.CreateVersion7(), decomposto, decomposto, FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
+        TermoConsentimentoVersao composta = TermoConsentimentoVersao.Promover(
+            Guid.CreateVersion7(), "declaração", "declaração", FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
+
+        decompostaVersao.Texto.Should().Be("declaração");
+        decompostaVersao.BaseLegal.Should().Be("declaração");
+        decompostaVersao.Hash.Should().Be(composta.Hash, "o hash cobre o conteúdo que a publicação congela, em NFC");
+    }
 }

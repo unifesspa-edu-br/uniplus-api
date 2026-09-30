@@ -87,7 +87,7 @@ public sealed class FormularioInscricaoController : ControllerBase
     }
 
     /// <summary>
-    /// Define (ou substitui) título e termo de aceite do formulário de inscrição. Restrito ao
+    /// Define (ou substitui) o título do formulário de inscrição. Restrito ao
     /// role <c>plataforma-admin</c>. Bloqueado em processo publicado sem retificação aberta —
     /// mesmo padrão dos demais <c>Definir*</c> de <see cref="ProcessoSeletivoController"/>.
     /// </summary>
@@ -115,7 +115,40 @@ public sealed class FormularioInscricaoController : ControllerBase
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirFormularioCommand(id, request.Titulo, request.TermoAceiteTexto, precondicao), cancellationToken);
+            new DefinirFormularioCommand(id, request.Titulo, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
+    /// Substitui os termos de consentimento que o formulário de inscrição exige, escolhidos no
+    /// catálogo por termo e versão (UNI-REQ-0086). Mesmas restrições de papel, idempotência e
+    /// precondição de <see cref="DefinirFormulario"/>.
+    /// </summary>
+    [HttpPut("admin/processos-seletivos/{id:guid}/formulario/termos")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirTermos(
+        Guid id,
+        [FromBody] DefinirTermosDoFormularioRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirTermosDoFormularioCommand(id, request.Termos, precondicao), cancellationToken);
         return ResponderMutacao(resultado);
     }
 

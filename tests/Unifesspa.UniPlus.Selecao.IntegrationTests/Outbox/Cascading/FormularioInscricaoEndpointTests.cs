@@ -37,7 +37,7 @@ public sealed class FormularioInscricaoEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Definir_SemAutenticacao_401));
 
         HttpResponseMessage resposta = await ctx.PutFormularioAsync(
-            "Título", "Termo", autenticar: Autenticacao.Nenhuma);
+            "Título", autenticar: Autenticacao.Nenhuma);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -48,18 +48,17 @@ public sealed class FormularioInscricaoEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Definir_SemPapel_403));
 
         HttpResponseMessage resposta = await ctx.PutFormularioAsync(
-            "Título", "Termo", autenticar: Autenticacao.PapelErrado);
+            "Título", autenticar: Autenticacao.PapelErrado);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "PUT admin em rascunho é 204 sem ETag e persiste título/termo")]
+    [Fact(DisplayName = "PUT admin em rascunho é 204 sem ETag e persiste o título")]
     public async Task Definir_EmRascunho_204SemEtagEPersiste()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Definir_EmRascunho_204SemEtagEPersiste));
 
-        HttpResponseMessage resposta = await ctx.PutFormularioAsync(
-            "Formulário de Inscrição", "Declaro que as informações são verdadeiras.");
+        HttpResponseMessage resposta = await ctx.PutFormularioAsync("Formulário de Inscrição");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         resposta.Headers.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
@@ -69,26 +68,21 @@ public sealed class FormularioInscricaoEndpointTests
         ProcessoSeletivo processo = await db.Set<ProcessoSeletivo>().AsNoTracking()
             .SingleAsync(p => p.Id == ctx.ProcessoId);
         processo.FormularioTitulo.Should().Be("Formulário de Inscrição");
-        processo.FormularioTermoAceiteTexto.Should().Be("Declaro que as informações são verdadeiras.");
     }
 
-    [Fact(DisplayName = "PUT admin com título e termo acima do limite é 422 com as duas violações em errors[]")]
-    public async Task Definir_ComDoisCamposInvalidos_422ComAsDuasViolacoes()
+    [Fact(DisplayName = "PUT admin com título acima do limite é 422 com a violação em errors[]")]
+    public async Task Definir_TituloAcimaDoLimite_422()
     {
-        Contexto ctx = await SemearRascunhoAsync(nameof(Definir_ComDoisCamposInvalidos_422ComAsDuasViolacoes));
+        Contexto ctx = await SemearRascunhoAsync(nameof(Definir_TituloAcimaDoLimite_422));
 
-        HttpResponseMessage resposta = await ctx.PutFormularioAsync(
-            new string('a', 301), new string('a', 4001));
+        HttpResponseMessage resposta = await ctx.PutFormularioAsync(new string('a', 301));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         // field usa o mesmo casing do payload JSON (camelCase, ADR-0023), não o PascalCase do C#.
-        JsonElement erros = doc.RootElement.GetProperty("errors");
-        erros.GetArrayLength().Should().Be(2);
-        erros[0].GetProperty("field").GetString().Should().Be("titulo");
-        erros[0].GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.formulario_titulo_tamanho");
-        erros[1].GetProperty("field").GetString().Should().Be("termoAceiteTexto");
-        erros[1].GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.formulario_termo_aceite_texto_tamanho");
+        JsonElement erro = doc.RootElement.GetProperty("errors").EnumerateArray().Single();
+        erro.GetProperty("field").GetString().Should().Be("titulo");
+        erro.GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.formulario_titulo_tamanho");
     }
 
     [Fact(DisplayName = "GET público de processo em rascunho responde o MESMO que de processo inexistente")]
@@ -125,7 +119,7 @@ public sealed class FormularioInscricaoEndpointTests
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Obter_ProcessoPublicado_200ComFormularioEFatos));
 
-        (await ctx.PutFormularioAsync("Formulário de Inscrição", "Declaro que as informações são verdadeiras."))
+        (await ctx.PutFormularioAsync("Formulário de Inscrição"))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await ctx.PutFatosAsync(
         [
@@ -144,7 +138,7 @@ public sealed class FormularioInscricaoEndpointTests
         using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
         root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
-        root.GetProperty("termoAceiteTexto").GetString().Should().Be("Declaro que as informações são verdadeiras.");
+        root.GetProperty("termos").GetArrayLength().Should().Be(0);
         JsonElement fatos = root.GetProperty("fatosColetados");
         fatos.GetArrayLength().Should().Be(1);
         JsonElement fato = fatos[0];
@@ -162,7 +156,7 @@ public sealed class FormularioInscricaoEndpointTests
         // heurístico à recusa e segue escondendo o formulário já público.
         Contexto ctx = await SemearRascunhoAsync(nameof(Obter_AntesEDepoisDaDivulgacao_ExigeRevalidacao));
 
-        (await ctx.PutFormularioAsync("Formulário de Inscrição", "Declaro que as informações são verdadeiras."))
+        (await ctx.PutFormularioAsync("Formulário de Inscrição"))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage recusa = await ctx.GetFormularioAsync();
@@ -216,13 +210,13 @@ public sealed class FormularioInscricaoEndpointTests
         }
 
         public async Task<HttpResponseMessage> PutFormularioAsync(
-            string? titulo, string? termoAceiteTexto, Autenticacao autenticar = Autenticacao.PlataformaAdmin)
+            string? titulo, Autenticacao autenticar = Autenticacao.PlataformaAdmin)
         {
             using HttpRequestMessage request = new(
                 HttpMethod.Put,
                 new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formulario", UriKind.Relative))
             {
-                Content = JsonContent.Create(new { titulo, termoAceiteTexto }),
+                Content = JsonContent.Create(new { titulo }),
             };
             Autenticar(request, autenticar);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());

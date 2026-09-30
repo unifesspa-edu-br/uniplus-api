@@ -7,9 +7,8 @@ using FluentValidation;
 /// <summary>
 /// Checa só a forma do <c>ProcessoSeletivoId</c> — um identificador de rota sem
 /// equivalente no agregado (<c>ProcessoSeletivo.DefinirFormulario</c> não o
-/// recebe como parâmetro). O tamanho de Título/TermoAceiteTexto tem equivalente
-/// de domínio (ADR-0125) e ficou fora daqui — o agregado é a autoridade sobre
-/// eles, via <c>ValidarCamposDoFormulario</c>.
+/// recebe como parâmetro). O tamanho do título tem equivalente de domínio
+/// (ADR-0125) e ficou fora daqui — o agregado é a autoridade sobre ele.
 /// </summary>
 public sealed class DefinirFormularioCommandValidator : AbstractValidator<DefinirFormularioCommand>
 {
