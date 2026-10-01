@@ -204,4 +204,5 @@ public static class GrafoFormularioErrorCodes
     public const string GrafoComCiclo = "GrafoFormulario.GrafoComCiclo";
     public const string CitaFatoNaoConhecido = "GrafoFormulario.CitaFatoNaoConhecido";
     public const string CitaFatoPosterior = "GrafoFormulario.CitaFatoPosterior";
+    public const string CitaAtributoDoCandidato = "GrafoFormulario.CitaAtributoDoCandidato";
 }

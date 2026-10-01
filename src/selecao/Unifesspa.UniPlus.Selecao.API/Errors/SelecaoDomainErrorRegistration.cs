@@ -425,8 +425,6 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // (Story #986) — a recusa de mutação de processo publicado sem sessão é a geral
         // (ProcessoSeletivo.MutacaoPosPublicacaoBloqueada). Os códigos de FatoColetado usam
         // constantes e escapam do fitness test — registrados aqui à mão para não caírem em 500.
-        new("FatoColetado.OpcoesDeOutroDominio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.opcoes_de_outro_dominio", "As opções vêm de um campo com outra fonte ou outro domínio de valores")),
-        new("FatoColetado.CitaAtributoDoCandidato", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.cita_atributo_do_candidato", "A regra do formulário cita fato calculado de atributos do candidato")),
         new("DocumentoExigido.FatoDaIsencaoForaDaFaseDeIsencao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_da_isencao_fora_da_fase_de_isencao", "Fato do formulário de isenção citado por documento de outra fase")),
         new("FatoColetado.ObrigatoriedadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.obrigatoriedade_invalida", "Obrigatoriedade do campo inválida")),
         new("FatoColetado.FatoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_duplicado", "O fato já é coletado por outro formulário do processo")),
@@ -463,9 +461,6 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Origem de um fato depois que ele já virou FatoColetado (ex.: a migration que
         // reclassificou MODALIDADE de DECLARADO para DERIVADO).
         new("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_coletado_nao_mais_declarado", "Fato coletado deixou de ser declarado/vinculado a campo de inscrição no catálogo de fatos do candidato")),
-        // Desativar um fato ou um valor no catálogo recusa só vínculo novo (ADR-0136).
-        new("ProcessoSeletivo.FatoDesativado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_desativado", "O fato está desativado no catálogo e não aceita vínculo novo")),
-        new("ProcessoSeletivo.ValorDeDominioDesativado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.valor_de_dominio_desativado", "O valor está desativado no catálogo e não aceita vínculo novo")),
         // Um fato coletado vinculado como seleção (SELECAO_UNICA/SELECAO_MULTIPLA) cujo catálogo
         // não declara valores de domínio nem é um dos categóricos de escopo-processo conhecidos —
         // alcançável se o catálogo crescer um categórico DECLARADO novo antes de o resolvedor de

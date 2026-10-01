@@ -9,6 +9,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -114,7 +115,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
                 if (valoresPorFato.GetValueOrDefault(fonte) is { } daFonte && daFonte.Any(v => !oferta.Contains(v.Codigo)))
                 {
                     return new DomainError(
-                        FatoColetadoErrorCodes.OpcoesDeOutroDominio,
+                        ItemFormularioErrorCodes.OpcoesDeOutroDominio,
                         $"As opções do campo '{fonte}' formam as opções do campo '{alvo.FatoCodigo}', mas nem todas são opções dele.");
                 }
             }

@@ -18,6 +18,14 @@ public static class ItemFormularioErrorCodes
     public const string FatoDesconhecido = "ItemFormulario.FatoDesconhecido";
     public const string FatoNaoColetavel = "ItemFormulario.FatoNaoColetavel";
     public const string ItensEmExcesso = "ItemFormulario.ItensEmExcesso";
+    public const string OpcoesDeOutroDominio = "ItemFormulario.OpcoesDeOutroDominio";
+}
+
+/// <summary>Códigos de recusa de vínculo novo a fato ou valor desativado no catálogo, no processo e no modelo.</summary>
+public static class VinculoCatalogoErrorCodes
+{
+    public const string FatoDesativado = "VinculoCatalogo.FatoDesativado";
+    public const string ValorDesativado = "VinculoCatalogo.ValorDesativado";
 }
 
 /// <summary>Códigos de recusa da forma de um termo exigido pelo formulário, no processo e no modelo.</summary>

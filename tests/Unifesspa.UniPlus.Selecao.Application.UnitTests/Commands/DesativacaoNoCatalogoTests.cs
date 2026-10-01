@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -44,7 +45,7 @@ public sealed class DesativacaoNoCatalogoTests
         Dictionary<string, FatoCandidatoView> catalogo = Catalogo(CorRaca(ativo: false));
         VinculosDeFatos coleta = VinculosDeFatos.De(["COR_RACA"], []);
 
-        ConferenciaDeVinculoNovo.Conferir(catalogo, Nenhum, coleta).Error!.Code.Should().Be("ProcessoSeletivo.FatoDesativado");
+        ConferenciaDeVinculoNovo.Conferir(catalogo, Nenhum, coleta).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
         ConferenciaDeVinculoNovo.Conferir(catalogo, coleta, coleta).IsSuccess.Should().BeTrue();
     }
 
@@ -54,7 +55,7 @@ public sealed class DesativacaoNoCatalogoTests
         Dictionary<string, FatoCandidatoView> catalogo = Catalogo(CorRaca());
 
         ConferenciaDeVinculoNovo.Conferir(catalogo, Nenhum, Citando("COR_RACA", "PRETA"))
-            .Error!.Code.Should().Be("ProcessoSeletivo.ValorDeDominioDesativado");
+            .Error!.Code.Should().Be(VinculoCatalogoErrorCodes.ValorDesativado);
         ConferenciaDeVinculoNovo.Conferir(catalogo, Citando("COR_RACA", "PRETA"), Citando("COR_RACA", "PRETA"))
             .IsSuccess.Should().BeTrue();
         ConferenciaDeVinculoNovo.Conferir(catalogo, Nenhum, Citando("COR_RACA", "PARDA")).IsSuccess.Should().BeTrue();
@@ -67,7 +68,7 @@ public sealed class DesativacaoNoCatalogoTests
         VinculosDeFatos contribuiPreta = VinculosDeFatos.De([], [], [("COR_RACA", "PRETA")]);
 
         ConferenciaDeVinculoNovo.Conferir(catalogo, Nenhum, contribuiPreta)
-            .Error!.Code.Should().Be("ProcessoSeletivo.ValorDeDominioDesativado");
+            .Error!.Code.Should().Be(VinculoCatalogoErrorCodes.ValorDesativado);
         ConferenciaDeVinculoNovo.Conferir(catalogo, contribuiPreta, contribuiPreta).IsSuccess.Should().BeTrue();
     }
 

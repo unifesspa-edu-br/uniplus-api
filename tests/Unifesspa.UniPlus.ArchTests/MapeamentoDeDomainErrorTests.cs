@@ -217,8 +217,8 @@ public sealed partial class MapeamentoDeDomainErrorTests
     {
         {
             // Filtrar por tipo terminado em "ErrorCodes" perderia os codes declarados
-            // em classes de constantes com outro nome — ColetabilidadeDeFato e
-            // ErrosCodecEnvelope, entre outras, declaram 43 deles. O que identifica
+            // em classes de constantes com outro nome — ConferenciaDeColetabilidadeDeFatos
+            // e ErrosCodecEnvelope, entre outras, declaram códigos assim. O que identifica
             // um code é o formato do valor, não o nome de quem o declara.
             IEnumerable<string> constantes = TiposDe(assembly)
                 .SelectMany(t => t.GetFields(

@@ -136,7 +136,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("termos[0].exibicao", VocabularioDeFatos.CitaAtributoDoCandidato),
+            ("termos[0].exibicao", GrafoFormularioErrorCodes.CitaAtributoDoCandidato),
             ("termos[0].predicadoObrigatoriedade", "PredicadoDnf.FatoNaoColetadoPeloProcesso"),
         ]);
     }

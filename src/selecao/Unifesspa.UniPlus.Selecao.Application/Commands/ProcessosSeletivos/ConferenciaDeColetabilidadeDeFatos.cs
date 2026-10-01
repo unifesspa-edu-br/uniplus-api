@@ -5,10 +5,11 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Reconfere, no momento do congelamento, que cada <see cref="FatoColetado"/> do processo ainda
-/// satisfaz <see cref="ColetabilidadeDeFato.EhColetavel"/> contra o catálogo VIVO — o mesmo
+/// satisfaz <see cref="ConferenciaNoCatalogo.EhColetavel"/> contra o catálogo VIVO — o mesmo
 /// predicado que <see cref="DefinirFatosColetadosCommandHandler"/> já aplica ao vincular o fato
 /// (PUT dos itens do formulário), reaplicado aqui porque o catálogo pode reclassificar a
 /// <c>Origem</c> de um fato depois que ele já virou <see cref="FatoColetado"/> — a migration que
@@ -43,14 +44,14 @@ internal static class ConferenciaDeColetabilidadeDeFatos
             .OrderBy(static f => f.Finalidade)
             .ThenBy(static f => f.Ordem)
             .FirstOrDefault(f => !catalogo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
-                || !ColetabilidadeDeFato.EhColetavel(fato));
+                || !ConferenciaNoCatalogo.EhColetavel(VocabularioDeFatos.ParaRegras(fato)));
 
         if (naoColetavel is not null)
         {
             return Result.Failure(new DomainError(
                 FatoColetadoNaoMaisDeclarado,
-                $"O fato coletado '{naoColetavel.FatoCodigo}' não é mais declarado/vinculado a campo de " +
-                "inscrição no catálogo de fatos do candidato — o catálogo mudou depois que este fato foi " +
+                $"O fato coletado '{naoColetavel.FatoCodigo}' não é mais coletável no catálogo de fatos do " +
+                "candidato — declarado, do próprio candidato e respondido em campo —; o catálogo mudou depois que este fato foi " +
                 "vinculado ao formulário, e o congelamento não persiste um vínculo que já não é coletável."));
         }
 
