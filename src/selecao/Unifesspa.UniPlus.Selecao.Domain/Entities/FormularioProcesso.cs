@@ -172,6 +172,9 @@ public sealed class EtapaFormulario : EntityBase
     /// <summary>Os fatos que a exibição cita.</summary>
     public IReadOnlyCollection<string> FatosCitados => Exibicao?.FatosCitados ?? [];
 
+    /// <summary>A etapa no que o grafo do formulário confere.</summary>
+    public EtapaDoGrafo ParaGrafo() => new(Codigo, Ordem, FatosCitados);
+
     /// <summary>As condições da exibição, para os vínculos e as referências a valor do processo.</summary>
     public IEnumerable<CondicaoDnf> Condicoes => (Exibicao?.Clausulas ?? []).SelectMany(static c => c.Condicoes);
 

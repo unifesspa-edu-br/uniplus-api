@@ -13,6 +13,7 @@ public static class ItemFormularioErrorCodes
     public const string FormatoIncoerente = "ItemFormulario.FormatoIncoerente";
     public const string RegraAutorreferente = "ItemFormulario.RegraAutorreferente";
     public const string RestricaoIncoerente = "ItemFormulario.RestricaoIncoerente";
+    public const string OpcionalQueAlimentaRegra = "ItemFormulario.OpcionalQueAlimentaRegra";
 }
 
 /// <summary>Códigos de recusa da forma de um termo exigido pelo formulário, no processo e no modelo.</summary>
