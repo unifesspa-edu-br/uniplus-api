@@ -21,6 +21,17 @@ public static class ItemFormularioErrorCodes
     public const string OpcoesDeOutroDominio = "ItemFormulario.OpcoesDeOutroDominio";
 }
 
+/// <summary>Códigos de recusa da forma de um grupo repetível do formulário, no processo e no modelo.</summary>
+public static class GrupoFormularioErrorCodes
+{
+    public const string CodigoInvalido = "GrupoFormulario.CodigoInvalido";
+    public const string OrdemInvalida = "GrupoFormulario.OrdemInvalida";
+    public const string RotuloInvalido = "GrupoFormulario.RotuloInvalido";
+    public const string ContagemIncoerente = "GrupoFormulario.ContagemIncoerente";
+    public const string SubitensForaDoLimite = "GrupoFormulario.SubitensForaDoLimite";
+    public const string RegraAutorreferente = "GrupoFormulario.RegraAutorreferente";
+}
+
 /// <summary>Códigos de recusa de vínculo novo a fato ou valor desativado no catálogo, no processo e no modelo.</summary>
 public static class VinculoCatalogoErrorCodes
 {

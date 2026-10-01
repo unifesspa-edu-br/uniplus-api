@@ -36,18 +36,47 @@ public static class ConferenciaNoCatalogo
 {
     private const string OrigemDeclarado = "DECLARADO";
     private const string EscopoCandidato = "CANDIDATO";
+    private const string EscopoMembroGrupo = "MEMBRO_GRUPO";
 
     /// <summary>
     /// Coletável é o fato declarado, respondido num campo de formulário, do próprio candidato. O
     /// derivado e o calculado não se respondem; o de membro de grupo só existe dentro do grupo.
     /// </summary>
-    public static bool EhColetavel(FatoDoCatalogo fato)
+    public static bool EhColetavel(FatoDoCatalogo fato) => EhRespondidoNoEscopo(fato, EscopoCandidato);
+
+    /// <summary>
+    /// Coletável num campo de grupo repetível é o fato declarado, respondido num campo de formulário,
+    /// de membro do grupo: cada ocorrência responde o seu.
+    /// </summary>
+    public static bool EhColetavelEmGrupo(FatoDoCatalogo fato) => EhRespondidoNoEscopo(fato, EscopoMembroGrupo);
+
+    /// <summary>O fato que o campo do grupo coleta: existe no catálogo e é coletável em grupo.</summary>
+    public static DomainError? FatoDoSubitem(string fatoCodigo, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+        if (!catalogo.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato))
+        {
+            return FatoDesconhecido(fatoCodigo);
+        }
+
+        return EhColetavelEmGrupo(fato)
+            ? null
+            : new DomainError(
+                ItemFormularioErrorCodes.FatoNaoColetavel,
+                $"O fato '{fatoCodigo}' não é coletável num campo do grupo: só o fato declarado de membro de grupo é respondido "
+                + "em cada ocorrência — fatos do candidato, derivados e calculados não.");
+    }
+
+    private static bool EhRespondidoNoEscopo(FatoDoCatalogo fato, string escopo)
     {
         ArgumentNullException.ThrowIfNull(fato);
         return string.Equals(fato.Origem, OrigemDeclarado, StringComparison.Ordinal)
-            && string.Equals(fato.Escopo, EscopoCandidato, StringComparison.Ordinal)
+            && string.Equals(fato.Escopo, escopo, StringComparison.Ordinal)
             && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.CampoDoFormulario);
     }
+
+    private static DomainError FatoDesconhecido(string fatoCodigo) =>
+        new(ItemFormularioErrorCodes.FatoDesconhecido, $"O fato '{fatoCodigo}' não pertence ao catálogo de fatos do candidato.");
 
     /// <summary>O fato que o item coleta: existe no catálogo e é coletável.</summary>
     public static DomainError? FatoDoItem(string fatoCodigo, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo)
@@ -55,8 +84,7 @@ public static class ConferenciaNoCatalogo
         ArgumentNullException.ThrowIfNull(catalogo);
         if (!catalogo.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato))
         {
-            return new DomainError(
-                ItemFormularioErrorCodes.FatoDesconhecido, $"O fato '{fatoCodigo}' não pertence ao catálogo de fatos do candidato.");
+            return FatoDesconhecido(fatoCodigo);
         }
 
         return EhColetavel(fato)
