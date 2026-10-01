@@ -109,4 +109,14 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
 
         result.IsValid.Should().BeTrue();
     }
+
+    [Fact(DisplayName = "Acima do teto de itens, os itens não são conferidos um a um — a recusa é a da quantidade")]
+    public void AcimaDoTeto_NaoConfereItemAItem()
+    {
+        FatoColetadoInput[] itens = [.. Enumerable.Repeat<FatoColetadoInput>(null!, FormaDoItem.MaximoDeItens + 1)];
+
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, itens, PrecondicaoIfMatch.Ausente));
+
+        result.IsValid.Should().BeTrue();
+    }
 }

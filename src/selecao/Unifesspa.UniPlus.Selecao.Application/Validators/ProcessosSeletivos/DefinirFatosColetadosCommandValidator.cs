@@ -4,6 +4,8 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+using Unifesspa.UniPlus.Regras.Formularios;
+
 /// <summary>
 /// Duas checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
 /// identificador de rota; a lista de fatos e cada item não podem ser nulos — o handler
@@ -29,22 +31,26 @@ public sealed class DefinirFatosColetadosCommandValidator : AbstractValidator<De
             .NotNull()
             .WithMessage("Lista de itens do formulário é obrigatória (pode ser vazia).");
 
-        RuleForEach(x => x.Itens)
-            .NotNull()
-            .WithMessage("Item de fato coletado não pode ser nulo.");
-
-        RuleForEach(x => x.Itens).ChildRules(fato =>
+        // Acima do teto a lista é recusada inteira pela quantidade, sem um erro por item.
+        When(static x => x.Itens is not null && x.Itens.Count <= FormaDoItem.MaximoDeItens, () =>
         {
-            // Ausência de pré-condição é null, nunca []. Uma lista externa vazia, uma cláusula
-            // interna vazia ou uma condição nula deixariam a semântica DNF ambígua (um predicado
-            // sem cláusula, ou uma cláusula sem condição, avaliaria falso — o oposto de "sem
-            // pré-condição") ou fariam o handler desreferenciar um item nulo.
-            fato.RuleFor(f => f.Precondicao)
-                .Must(precondicao => precondicao is null
-                    || (precondicao.Count > 0 && precondicao.All(static clausula =>
-                        clausula is { Count: > 0 } && clausula.All(static condicao => condicao is not null))))
-                .WithMessage("A pré-condição, quando presente, não pode ser uma lista vazia, conter cláusulas "
-                    + "vazias ou condições nulas — a ausência de pré-condição é representada por null.");
+            RuleForEach(x => x.Itens)
+                .NotNull()
+                .WithMessage("Item de fato coletado não pode ser nulo.");
+
+            RuleForEach(x => x.Itens).ChildRules(fato =>
+            {
+                // Ausência de pré-condição é null, nunca []. Uma lista externa vazia, uma cláusula
+                // interna vazia ou uma condição nula deixariam a semântica DNF ambígua (um predicado
+                // sem cláusula, ou uma cláusula sem condição, avaliaria falso — o oposto de "sem
+                // pré-condição") ou fariam o handler desreferenciar um item nulo.
+                fato.RuleFor(f => f.Precondicao)
+                    .Must(precondicao => precondicao is null
+                        || (precondicao.Count > 0 && precondicao.All(static clausula =>
+                            clausula is { Count: > 0 } && clausula.All(static condicao => condicao is not null))))
+                    .WithMessage("A pré-condição, quando presente, não pode ser uma lista vazia, conter cláusulas "
+                        + "vazias ou condições nulas — a ausência de pré-condição é representada por null.");
+            });
         });
     }
 }

@@ -3,6 +3,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -231,6 +234,20 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio");
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
+    [Fact(DisplayName = "Restaurar formulário com mais itens que o teto é recusado, como na gravação")]
+    public void Restaurar_ItensAcimaDoTeto_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        Estado antes = Estado.De(processo);
+        FatoColetado[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
+            $"FATO_{i}", i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, finalidade: FinalidadeFormulario.Inscricao).Value!)];
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(fatosColetados: itens));
+
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         Estado.De(processo).Should().BeEquivalentTo(antes);
     }
 
@@ -1256,7 +1273,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         IReadOnlyList<RegraEliminacao>? eliminacoes = null,
         IReadOnlyList<FaseCronograma>? cronogramaFases = null,
         ConfiguracaoDivulgacao? configuracaoDivulgacao = null,
-        ConfiguracaoClassificacao? classificacao = null) => new(
+        ConfiguracaoClassificacao? classificacao = null,
+        IReadOnlyList<FatoColetado>? fatosColetados = null) => new(
             etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
@@ -1267,7 +1285,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             documentosExigidos: [],
             nosExigencia: [],
             referenciaTemporalFatos: null,
-            configuracaoDivulgacao: configuracaoDivulgacao);
+            configuracaoDivulgacao: configuracaoDivulgacao,
+            fatosColetados: fatosColetados);
 
     /// <summary>
     /// Mesmo grafo de <see cref="Grafo"/>, com <c>documentosExigidos</c>/<c>nosExigencia</c>

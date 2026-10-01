@@ -323,6 +323,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "formulario_fase_incoerente",
                 "formulario_isencao_sem_taxa",
                 "formulario_item_fora_de_secao",
+                "formulario_itens_em_excesso",
                 "derivacao_dominio_de_contribuicao_invalido",
                 "derivacao_cota_e_acao_afirmativa_juntas",
                 "grafo_dependencia_com_ciclo",

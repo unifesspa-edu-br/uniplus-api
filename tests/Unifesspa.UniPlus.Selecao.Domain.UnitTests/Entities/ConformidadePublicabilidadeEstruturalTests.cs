@@ -956,6 +956,23 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.Error.Message.Should().Contain("ordem 1");
     }
 
+    [Fact(DisplayName = "Pré-canonicalização: formulário com mais itens que o teto — só o item do teto fica vermelho, e Publicar recusa")]
+    public void PreCanon_ItensAcimaDoTeto()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        // Direto na lista: a gravação e a restauração recusam acima do teto, e o gate cobre o
+        // rascunho que chega por outro caminho.
+        ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_fatosColetados", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
+            .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
+                $"FATO_{i}", i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+                etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!));
+
+        SoEstesItensVermelhos(processo, "formulario_itens_em_excesso");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
+    }
+
     private static List<CriterioDesempate> CriteriosDesempateDe(ProcessoSeletivo processo) =>
         (List<CriterioDesempate>)typeof(ProcessoSeletivo)
             .GetField("_criteriosDesempate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!;

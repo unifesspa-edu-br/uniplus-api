@@ -25,6 +25,29 @@ public static class FormaDoItem
     public const int CasasDecimaisDaFaixa = 4;
 
     /// <summary>
+    /// Teto de itens de um formulário. O maior formulário do edital de Medicina 2027 tem algumas
+    /// dezenas de campos; o teto dá folga larga sem deixar uma entrada pequena gerar resposta
+    /// desproporcional, porque acima dele a lista é recusada inteira, sem um erro por item.
+    /// </summary>
+    public const int MaximoDeItens = 200;
+
+    /// <summary>
+    /// A quantidade de itens não depende do catálogo: existe separada para quem recebe a lista
+    /// recusá-la acima do teto antes de ler o catálogo e de conferir item a item.
+    /// </summary>
+    public static List<FieldError> ValidarQuantidade(int quantidade)
+    {
+        List<FieldError> erros = [];
+        if (quantidade > MaximoDeItens)
+        {
+            erros.Add(new("itens", new DomainError(
+                ItemFormularioErrorCodes.ItensEmExcesso, $"O formulário admite no máximo {MaximoDeItens} itens; vieram {quantidade}.")));
+        }
+
+        return erros;
+    }
+
+    /// <summary>
     /// Os quatro campos que não dependem do catálogo nem das regras: existe separada para quem
     /// recebe a lista inteira conferir a forma de todos os itens antes de resolver o catálogo, e
     /// assim um código vazio não cai num "fato desconhecido", menos específico.

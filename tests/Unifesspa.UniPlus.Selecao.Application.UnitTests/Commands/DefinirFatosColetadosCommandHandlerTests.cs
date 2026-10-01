@@ -588,4 +588,18 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
     }
+
+    [Fact(DisplayName = "Acima do teto de itens, a lista é recusada inteira sem ler o catálogo")]
+    public async Task Handle_AcimaDoTeto_RecusaSemLerOCatalogo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        FatoColetadoInput[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1)
+            .Select(static i => new FatoColetadoInput($"FATO_{i}", i, "Campo", "BOOLEANO", "SEMPRE", null))];
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Inscricao, itens, PrecondicaoIfMatch.Ausente));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+    }
 }

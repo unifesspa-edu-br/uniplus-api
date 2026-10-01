@@ -206,4 +206,15 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         FatoColetado comPrecondicao = processo.FatosColetados.Single(f => f.FatoCodigo == "CONCORRER_PCD");
         comPrecondicao.Precondicoes.Should().OnlyContain(c => c.FatoColetadoId == comPrecondicao.Id);
     }
+
+    [Fact(DisplayName = "Mais itens que o teto do formulário é recusado")]
+    public void ItensAcimaDoTeto_Recusado()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        Result resultado = processo.DefinirItens(
+            [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => Fato($"FATO_{i}", i))], PrecondicaoIfMatch.Ausente);
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
+    }
 }
