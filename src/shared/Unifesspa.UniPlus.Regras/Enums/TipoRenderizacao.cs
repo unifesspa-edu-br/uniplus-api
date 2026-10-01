@@ -5,7 +5,7 @@ namespace Unifesspa.UniPlus.Regras.Enums;
 /// candidato: <see cref="Booleano"/> só para domínio <c>BOOLEANO</c>, <see cref="Numero"/> só
 /// para <c>NUMERICO</c>, <see cref="SelecaoUnica"/>/<see cref="SelecaoMultipla"/> para
 /// <c>CATEGORICO</c> conforme a cardinalidade do fato no catálogo, <see cref="Texto"/> para
-/// <c>TEXTO</c>.
+/// <c>TEXTO</c>, <see cref="Data"/> para <c>DATA</c> e <see cref="Endereco"/> para <c>ENDERECO</c>.
 /// </summary>
 /// <remarks>
 /// A numeração dos membros é identidade de persistência, não peso de ordenação — mesmo raciocínio
@@ -38,4 +38,13 @@ public enum TipoRenderizacao
     /// catálogo (livre, CPF, e-mail…) diz como a resposta é conferida.
     /// </summary>
     Texto = 5,
+
+    /// <summary>Campo de data — só aceito quando o fato tem domínio <c>DATA</c>.</summary>
+    Data = 6,
+
+    /// <summary>
+    /// Endereço estruturado, composto a partir da busca do CEP no Geo (ADR-0096) — só aceito quando o
+    /// fato tem domínio <c>ENDERECO</c>.
+    /// </summary>
+    Endereco = 7,
 }

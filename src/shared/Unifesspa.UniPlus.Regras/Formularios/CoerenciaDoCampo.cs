@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Regras.Errors;
 
 /// <summary>
 /// O tipo de campo segue o domínio e a cardinalidade do fato no catálogo, no processo e no modelo:
-/// booleano em campo de sim/não, numérico em campo numérico, texto de resposta única em campo de
-/// texto, e categórico em seleção única ou múltipla conforme a cardinalidade.
+/// booleano em campo de sim/não, numérico em campo numérico, texto, data e endereço de resposta
+/// única nos campos deles, e categórico em seleção única ou múltipla conforme a cardinalidade.
 /// </summary>
 public static class CoerenciaDoCampo
 {
@@ -15,6 +15,8 @@ public static class CoerenciaDoCampo
     private const string Numerico = "NUMERICO";
     private const string Categorico = "CATEGORICO";
     private const string Texto = "TEXTO";
+    private const string Data = "DATA";
+    private const string Endereco = "ENDERECO";
     private const string Multivalorado = "MULTIVALORADO";
 
     /// <summary>
@@ -29,6 +31,8 @@ public static class CoerenciaDoCampo
             Booleano => tipoRenderizacao == TipoRenderizacao.Booleano,
             Numerico => tipoRenderizacao == TipoRenderizacao.Numero,
             Texto => tipoRenderizacao == TipoRenderizacao.Texto && !multivalorado,
+            Data => tipoRenderizacao == TipoRenderizacao.Data && !multivalorado,
+            Endereco => tipoRenderizacao == TipoRenderizacao.Endereco && !multivalorado,
             Categorico => tipoRenderizacao == (multivalorado ? TipoRenderizacao.SelecaoMultipla : TipoRenderizacao.SelecaoUnica),
             _ => false,
         };

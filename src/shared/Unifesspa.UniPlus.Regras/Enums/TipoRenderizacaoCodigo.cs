@@ -12,9 +12,11 @@ public static class TipoRenderizacaoCodigo
     public const string SelecaoUnica = "SELECAO_UNICA";
     public const string SelecaoMultipla = "SELECAO_MULTIPLA";
     public const string Texto = "TEXTO";
+    public const string Data = "DATA";
+    public const string Endereco = "ENDERECO";
 
     /// <summary>
-    /// Converte para o código canônico. O <c>switch</c> é exaustivo: um 5º valor quebra a build
+    /// Converte para o código canônico. O <c>switch</c> é exaustivo: um valor novo quebra a build
     /// (CS8509 promovido a erro por <c>TreatWarningsAsErrors</c>) até este mapeamento absorvê-lo.
     /// </summary>
     public static string ToCodigo(this TipoRenderizacao tipo) => tipo switch
@@ -24,6 +26,8 @@ public static class TipoRenderizacaoCodigo
         TipoRenderizacao.SelecaoUnica => SelecaoUnica,
         TipoRenderizacao.SelecaoMultipla => SelecaoMultipla,
         TipoRenderizacao.Texto => Texto,
+        TipoRenderizacao.Data => Data,
+        TipoRenderizacao.Endereco => Endereco,
         TipoRenderizacao.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(tipo), tipo, "TipoRenderizacao.Nenhuma é sentinela e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoRenderizacao desconhecido."),
@@ -42,6 +46,8 @@ public static class TipoRenderizacaoCodigo
         SelecaoUnica => TipoRenderizacao.SelecaoUnica,
         SelecaoMultipla => TipoRenderizacao.SelecaoMultipla,
         Texto => TipoRenderizacao.Texto,
+        Data => TipoRenderizacao.Data,
+        Endereco => TipoRenderizacao.Endereco,
         _ => TipoRenderizacao.Nenhuma,
     };
 }
