@@ -50,7 +50,6 @@ public sealed class AtualizarPesoAreaEnemCommandHandlerTests
         existente.Resolucao.Should().Be("Res. 805/2024");
         existente.GrupoCurso.Codigo.Should().Be(GrupoCurso.Tecnologica);
         existente.AreasDaLinha.Single(a => a.Codigo == PesoAreaEnem.CodigoMatematica).Peso.Should().Be(3.00m);
-        _repository.Received(1).RegistrarAtualizacao(existente);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -65,7 +64,6 @@ public sealed class AtualizarPesoAreaEnemCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.PesoNegativo);
-        _repository.DidNotReceive().RegistrarAtualizacao(Arg.Any<PesoAreaEnem>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

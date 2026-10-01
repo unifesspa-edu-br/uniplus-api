@@ -4,7 +4,9 @@ using Kernel.Domain.Entities;
 using Kernel.Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
@@ -68,8 +70,9 @@ public sealed class AuditableInterceptor : SaveChangesInterceptor
         DateTimeOffset now = _timeProvider.GetUtcNow();
         string userBy = ResolveUserBy();
 
-        foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<EntityBase> entry
-            in context.ChangeTracker.Entries<EntityBase>())
+        MarcarDonosDeOwnedAlterado(context);
+
+        foreach (EntityEntry<EntityBase> entry in context.ChangeTracker.Entries<EntityBase>())
         {
             bool isAuditable = entry.Entity is IAuditableEntity;
 
@@ -93,6 +96,64 @@ public sealed class AuditableInterceptor : SaveChangesInterceptor
             }
         }
     }
+
+    /// <summary>
+    /// Editar só uma coleção owned (<c>OwnsMany</c>) muda apenas as linhas filhas, e o dono
+    /// continuaria <see cref="EntityState.Unchanged"/>: a trilha não registraria quem mudou nem
+    /// quando. O dono de cada entrada owned alterada passa a <see cref="EntityState.Modified"/>.
+    /// </summary>
+    /// <remarks>
+    /// O dono é achado pela chave da posse, e não pela navegação: o item removido da coleção
+    /// some dela, e só a chave estrangeira ainda aponta o dono. Marca-se só
+    /// <see cref="EntityBase.UpdatedAt"/>, que o carimbo regrava em seguida: marcar a entrada
+    /// inteira regravaria as demais colunas e desfaria, por exemplo, uma remoção lógica
+    /// concorrente.
+    /// </remarks>
+    private static void MarcarDonosDeOwnedAlterado(DbContext context)
+    {
+        List<EntityEntry> alteradas = [.. context.ChangeTracker.Entries()
+            .Where(static e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted && e.Metadata.IsOwned())];
+        if (alteradas.Count == 0)
+        {
+            return;
+        }
+
+        // Indexadas uma vez, por tipo (inclusive os tipos base) e chave primária: o interceptor
+        // roda em todo SaveChanges, e procurar o dono varrendo as entradas a cada item owned
+        // custaria o quadrado do agregado.
+        Dictionary<(IReadOnlyEntityType Tipo, string Chave), EntityEntry> porChave = [];
+        foreach (EntityEntry entrada in context.ChangeTracker.Entries())
+        {
+            if (entrada.Metadata.FindPrimaryKey() is not { } chavePrimaria)
+            {
+                continue;
+            }
+
+            string chave = Chave(chavePrimaria.Properties.Select(p => entrada.Property(p.Name).CurrentValue));
+            foreach (IReadOnlyEntityType tipo in entrada.Metadata.GetAllBaseTypesInclusive())
+            {
+                porChave.TryAdd((tipo, chave), entrada);
+            }
+        }
+
+        foreach (EntityEntry owned in alteradas)
+        {
+            EntityEntry? dono = owned;
+            while (dono?.Metadata.FindOwnership() is { } posse)
+            {
+                string chaveDoDono = Chave(posse.Properties.Select(p => dono.Property(p.Name).CurrentValue));
+                dono = porChave.GetValueOrDefault((posse.PrincipalEntityType, chaveDoDono));
+            }
+
+            if (dono is { State: EntityState.Unchanged, Entity: EntityBase })
+            {
+                dono.Property(nameof(EntityBase.UpdatedAt)).IsModified = true;
+            }
+        }
+    }
+
+    private static string Chave(IEnumerable<object?> valores) =>
+        string.Join('\u001f', valores.Select(static v => Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture)));
 
     private string ResolveUserBy()
     {
