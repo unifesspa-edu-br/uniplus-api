@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>

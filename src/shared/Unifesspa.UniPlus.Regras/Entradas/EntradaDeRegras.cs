@@ -1,8 +1,6 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+namespace Unifesspa.UniPlus.Regras.Entradas;
 
-using Domain.Entities;
-
-using Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -12,10 +10,10 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A forma das regras do formulário vindas da escrita — predicado, obrigatoriedade e restrição de
-/// valor —, a mesma para item e termo. A semântica (fatos citáveis, operador e valor do domínio) é conferida depois,
+/// valor —, a mesma para item e termo, no processo e no modelo. A semântica (fatos citáveis, operador e valor do domínio) é conferida depois,
 /// contra o catálogo.
 /// </summary>
-internal static class EntradaDeRegras
+public static class EntradaDeRegras
 {
     /// <summary>O predicado da entrada; nulo ou sem cláusula é ausência de condição.</summary>
     public static Result<PredicadoDnf?> Predicado(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? clausulas)
@@ -38,7 +36,7 @@ internal static class EntradaDeRegras
                 if (condicao is null)
                 {
                     return Result<PredicadoDnf?>.Failure(new DomainError(
-                        CondicaoPrecondicaoFatoErrorCodes.ClausulaInvalida, "O predicado contém uma condição nula."));
+                        PredicadoDnfErrorCodes.CondicaoNula, "O predicado contém uma condição nula."));
                 }
 
                 Result<CondicaoDnf> criada = CondicaoDnf.Criar(condicao.Fato, OperadorCodigo.FromCodigo(condicao.Operador), condicao.Valor);
@@ -63,9 +61,9 @@ internal static class EntradaDeRegras
     public static Obrigatoriedade? Obrigatoriedade(string? token, PredicadoDnf? predicado) =>
         (PredicadoDnfJson.TipoDoToken(token), predicado) switch
         {
-            (TipoObrigatoriedade.Sempre, null) => Regras.Formularios.Obrigatoriedade.Sempre,
-            (TipoObrigatoriedade.Nunca, null) => Regras.Formularios.Obrigatoriedade.Nunca,
-            (TipoObrigatoriedade.Quando, { } quando) => Regras.Formularios.Obrigatoriedade.Quando(quando),
+            (TipoObrigatoriedade.Sempre, null) => Formularios.Obrigatoriedade.Sempre,
+            (TipoObrigatoriedade.Nunca, null) => Formularios.Obrigatoriedade.Nunca,
+            (TipoObrigatoriedade.Quando, { } quando) => Formularios.Obrigatoriedade.Quando(quando),
             _ => null,
         };
 

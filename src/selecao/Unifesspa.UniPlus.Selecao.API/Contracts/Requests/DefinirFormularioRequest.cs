@@ -6,6 +6,8 @@ using Application.Commands.ProcessosSeletivos;
 
 using Controllers;
 
+using Unifesspa.UniPlus.Regras.Entradas;
+
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirFormulario"/> — o processo e a finalidade vêm da
 /// rota, e a precondição do header <c>If-Match</c>. A lista de etapas é obrigatória: o formulário
