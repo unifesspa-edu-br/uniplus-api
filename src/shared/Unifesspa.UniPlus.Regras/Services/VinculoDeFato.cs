@@ -22,6 +22,12 @@ public static class VinculoDeFato
     /// <summary>Recebido de integração externa.</summary>
     public const string Integracao = "INTEGRACAO";
 
+    /// <summary>
+    /// Agregado sobre um grupo repetível (ADR-0138), pelo fato de membro que o sufixo nomeia — o fato
+    /// de membro tem um só produtor no processo, então identifica o grupo.
+    /// </summary>
+    public const string AgregacaoDeGrupo = "AGREGACAO_GRUPO";
+
     /// <summary>O vínculo do mecanismo para o código dado.</summary>
     public static string De(string prefixo, string codigo) => $"{prefixo}:{codigo}";
 
