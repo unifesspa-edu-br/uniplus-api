@@ -339,6 +339,33 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             """;
     }
 
+    [Theory(DisplayName = "Com o bloco de comprovação, fase ausente ou malformada no formulário ou na exigência recusa a versão em vez de omitir documento")]
+    [InlineData("null", "\"0199a000-0000-7000-8000-0000000000f2\"")]
+    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "null")]
+    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "\"nao-e-guid\"")]
+    public async Task Handle_BlocoDeComprovacaoComFaseAusente_Recusa(string faseDoFormulario, string faseDaExigencia)
+    {
+        string envelope = $$"""
+            {
+              "formularios": [{"finalidade": "HABILITACAO", "faseId": {{faseDoFormulario}}, "titulo": null, "modeloOrigem": null, "termos": [],
+                "etapas": [
+                  {"codigo": "DOCUMENTOS", "ordem": 0, "tipo": "BLOCO", "bloco": "COMPROVACAO_DOCUMENTAL", "titulo": "Documentos", "descricao": null, "aviso": null},
+                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}],
+              "fatosColetados": [],
+              "documentosExigidos": {"exigencias": [
+                {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
+                 "formatosPermitidos": {"lista": null, "qualquer": true} }
+              ]}
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
+
+        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+    }
+
     [Fact(DisplayName = "Item com obrigatoriedade QUANDO é projetado com o predicado, a ajuda e o pedido de confirmação")]
     public async Task Handle_ObrigatoriedadeQuando_ProjetaRegras()
     {

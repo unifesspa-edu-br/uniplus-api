@@ -454,11 +454,12 @@ internal static class ProjecaoDoCertamePublicado
     /// Só o que o candidato precisa para reunir documentos. Os blocos irmãos de
     /// <c>documentosExigidos</c> — obrigatoriedades legais, referência temporal dos fatos e os
     /// metadados dos fatos que condicionam cada exigência — não entram. <paramref name="incluir"/>
-    /// recorta as exigências projetadas, como as da fase de um formulário.
+    /// recorta as exigências projetadas, como as da fase de um formulário; nulo quando a exigência
+    /// não tem a forma que o recorte lê, o que recusa a leitura inteira em vez de omiti-la.
     /// </summary>
     internal static bool TentarExigencias(
         JsonObject envelope,
-        Func<JsonObject, bool> incluir,
+        Func<JsonObject, bool?> incluir,
         [NotNullWhen(true)] out List<ExigenciaDocumentalCertameDto>? exigencias)
     {
         exigencias = null;
@@ -480,9 +481,13 @@ internal static class ProjecaoDoCertamePublicado
                 return false;
             }
 
-            if (incluir(exigencia))
+            switch (incluir(exigencia))
             {
-                lidas.Add(new ExigenciaDocumentalCertameDto(rotulo, aplicabilidade, obrigatorio, formatos));
+                case null:
+                    return false;
+                case true:
+                    lidas.Add(new ExigenciaDocumentalCertameDto(rotulo, aplicabilidade, obrigatorio, formatos));
+                    break;
             }
         }
 
