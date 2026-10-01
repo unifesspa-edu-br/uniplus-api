@@ -111,9 +111,8 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(derivacoes);
 
         ConteudoDoModelo normalizado = Normalizar(conteudo);
-        List<FieldError> erros = ValidarCodigo(codigo);
-        erros.AddRange(ValidarDescritivo(nome, descricao, tipoProcessoCodigo));
-        erros.AddRange(ConferirNormalizado(finalidade, normalizado, derivacoes));
+        List<FieldError> erros = ConferirCadastro(codigo, nome, descricao, tipoProcessoCodigo, finalidade);
+        erros.AddRange(NoConteudo(ConferirNormalizado(finalidade, normalizado, derivacoes)));
         if (erros.Count > 0)
         {
             return Result<ModeloFormulario>.ValidationFailure(erros);
@@ -125,7 +124,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             Finalidade = finalidade,
             Ativo = true,
         };
-        modelo.Aplicar(nome!, descricao, tipoProcessoCodigo, normalizado);
+        modelo.Aplicar(nome ?? string.Empty, descricao, tipoProcessoCodigo, normalizado);
         return Result<ModeloFormulario>.Success(modelo);
     }
 
@@ -141,14 +140,14 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(derivacoes);
 
         ConteudoDoModelo normalizado = Normalizar(conteudo);
-        List<FieldError> erros = ValidarDescritivo(nome, descricao, tipoProcessoCodigo);
-        erros.AddRange(ConferirNormalizado(Finalidade, normalizado, derivacoes));
+        List<FieldError> erros = ConferirDescritivo(nome, descricao, tipoProcessoCodigo);
+        erros.AddRange(NoConteudo(ConferirNormalizado(Finalidade, normalizado, derivacoes)));
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
         }
 
-        Aplicar(nome!, descricao, tipoProcessoCodigo, normalizado);
+        Aplicar(nome ?? string.Empty, descricao, tipoProcessoCodigo, normalizado);
         return Result.Success();
     }
 
@@ -177,17 +176,30 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// O conteúdo pelas regras do formulário, conferido na forma em que é gravado: textos aparados e
-    /// códigos em NFC — senão dois códigos que só diferem por espaço passariam como distintos e seriam
-    /// gravados repetidos.
+    /// O que o cadastro confere fora do conteúdo — código, descritivo, tipo de processo e finalidade
+    /// —, para que essas recusas saiam junto das do conteúdo mesmo quando ele não chega a ser lido.
     /// </summary>
-    public static List<FieldError> ConferirConteudo(
-        FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+    public static List<FieldError> ConferirCadastro(
+        string? codigo, string? nome, string? descricao, string? tipoProcessoCodigo, FinalidadeFormulario finalidade) =>
+        [.. ValidarCodigo(codigo), .. ValidarDescritivo(nome, descricao, tipoProcessoCodigo), .. FormaDoCabecalho.ValidarFinalidade(finalidade)];
+
+    /// <summary>O que a edição confere fora do conteúdo: o descritivo e o tipo de processo.</summary>
+    public static List<FieldError> ConferirDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo) =>
+        ValidarDescritivo(nome, descricao, tipoProcessoCodigo);
+
+    /// <summary>O conteúdo na forma em que é gravado: o que se compara com o catálogo e com o modelo gravado.</summary>
+    public static ConteudoDoModelo NaFormaGravada(ConteudoDoModelo conteudo)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
-        ArgumentNullException.ThrowIfNull(derivacoes);
-        return ConferirNormalizado(finalidade, Normalizar(conteudo), derivacoes);
+        return Normalizar(conteudo);
     }
+
+    /// <summary>O código na forma em que é gravado: aparado e em NFC.</summary>
+    public static string CodigoNaFormaGravada(string? codigo) => Normalizar(codigo);
+
+    /// <summary>As recusas do conteúdo apontam o campo dentro dele, no caminho da escrita.</summary>
+    public static IEnumerable<FieldError> NoConteudo(IEnumerable<FieldError> erros) =>
+        erros.Select(static e => e with { Field = string.IsNullOrEmpty(e.Field) ? "conteudo" : $"conteudo.{e.Field}" });
 
     /// <summary>
     /// O cabeçalho, a forma de cada etapa, item e termo, o teto de itens e os pressupostos acumulam; a
@@ -198,7 +210,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         List<FieldError> erros = [.. TextosNaoGravaveis(conteudo)];
-        erros.AddRange(FormaDoCabecalho.Validar(finalidade, conteudo.Titulo));
+        erros.AddRange(FormaDoCabecalho.ValidarTitulo(conteudo.Titulo));
 
         for (int i = 0; i < conteudo.Etapas.Count; i++)
         {
@@ -230,7 +242,8 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         erros.AddRange(FormaDoTermo.ConferirUnicidade([.. conteudo.Termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]));
         erros.AddRange(ConferirPressupostos(finalidade, conteudo));
 
-        if (erros.Count > 0)
+        // A estrutura depende da finalidade, recusada no cadastro.
+        if (erros.Count > 0 || FormaDoCabecalho.ValidarFinalidade(finalidade).Count > 0)
         {
             return erros;
         }
@@ -405,7 +418,14 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
                 ModeloFormularioErrorCodes.DescricaoTamanho, $"A descrição do modelo deve ter no máximo {DescricaoMaxLength} caracteres.")));
         }
 
-        if (FormaDoItem.TextoOpcional(tipoProcessoCodigo) is { Length: > TipoProcessoCodigoMaxLength })
+        if (tipoProcessoCodigo is not null && string.IsNullOrWhiteSpace(tipoProcessoCodigo))
+        {
+            // Só espaços viraria nulo, que é "todos os tipos": o modelo mudaria de alcance sem que ninguém o pedisse.
+            erros.Add(new("tipoProcessoCodigo", new DomainError(
+                ModeloFormularioErrorCodes.TipoProcessoCodigoEmBranco,
+                "O tipo de processo é um código, ou ausente quando o modelo serve a todos os tipos.")));
+        }
+        else if (FormaDoItem.TextoOpcional(tipoProcessoCodigo) is { Length: > TipoProcessoCodigoMaxLength })
         {
             erros.Add(new("tipoProcessoCodigo", new DomainError(
                 ModeloFormularioErrorCodes.TipoProcessoCodigoTamanho,
@@ -510,9 +530,19 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         _ => [],
     };
 
+    /// <summary>
+    /// O texto que o banco grava: sem caractere nulo e Unicode válido. Quem consulta o banco com um
+    /// texto recebido confere isto antes, para a recusa ser a do modelo e não um erro do banco.
+    /// </summary>
+    public static bool EhGravavel(string texto)
+    {
+        ArgumentNullException.ThrowIfNull(texto);
+        return !texto.Contains('\0', StringComparison.Ordinal) && TextoNormalizavel.TentarNormalizar(texto, out _);
+    }
+
     private static IEnumerable<FieldError> NaoGravavel(string campo, string? texto)
     {
-        if (texto is not null && (texto.Contains('\0', StringComparison.Ordinal) || !TextoNormalizavel.TentarNormalizar(texto, out _)))
+        if (texto is not null && !EhGravavel(texto))
         {
             yield return new(campo, new DomainError(
                 ModeloFormularioErrorCodes.TextoNaoGravavel, "O texto contém o caractere nulo (U+0000) ou não é Unicode válido."));

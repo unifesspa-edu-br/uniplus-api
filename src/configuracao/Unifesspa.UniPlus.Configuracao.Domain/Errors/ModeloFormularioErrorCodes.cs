@@ -19,4 +19,9 @@ public static class ModeloFormularioErrorCodes
     public const string JaDesativado = "ModeloFormulario.JaDesativado";
     public const string ConflitoDeConcorrencia = "ModeloFormulario.ConflitoDeConcorrencia";
     public const string TextoNaoGravavel = "ModeloFormulario.TextoNaoGravavel";
+    public const string TipoProcessoCodigoEmBranco = "ModeloFormulario.TipoProcessoCodigoEmBranco";
+    public const string TipoProcessoInexistente = "ModeloFormulario.TipoProcessoInexistente";
+    public const string TermoVersaoNaoEncontrada = "ModeloFormulario.TermoVersaoNaoEncontrada";
+    public const string ObrigatoriedadeInvalida = "ModeloFormulario.ObrigatoriedadeInvalida";
+    public const string EntradaMalformada = "ModeloFormulario.EntradaMalformada";
 }
