@@ -211,6 +211,13 @@ public static class FormaDoGrupo
     /// <summary>Teto de campos de cada ocorrência: um membro da família tem poucos dados declarados.</summary>
     public const int MaximoDeSubitens = 30;
 
+    /// <summary>O mínimo vai de zero até o máximo, e o máximo, de um até o teto de ocorrências.</summary>
+    public static bool ContagemValida(int minimo, int maximo) =>
+        minimo >= 0 && maximo >= 1 && maximo >= minimo && maximo <= MaximoDeOcorrencias;
+
+    /// <summary>O grupo tem de um até o teto de campos por ocorrência.</summary>
+    public static bool QuantidadeDeCamposValida(int quantidade) => quantidade is >= 1 and <= MaximoDeSubitens;
+
     /// <summary>
     /// Código e rótulo obrigatórios e limitados, ordem não negativa, mínimo de zero até o máximo,
     /// máximo de um até o teto, ao menos um campo e no máximo o teto, e nenhuma regra do grupo
@@ -255,12 +262,12 @@ public static class FormaDoGrupo
         {
             Recusar("minimo", GrupoFormularioErrorCodes.ContagemIncoerente, contagem);
         }
-        else if (maximo < 1 || maximo < minimo || maximo > MaximoDeOcorrencias)
+        else if (!ContagemValida(minimo, maximo))
         {
             Recusar("maximo", GrupoFormularioErrorCodes.ContagemIncoerente, contagem);
         }
 
-        if (codigosDosSubitens.Count is 0 or > MaximoDeSubitens)
+        if (!QuantidadeDeCamposValida(codigosDosSubitens.Count))
         {
             Recusar("subitens", GrupoFormularioErrorCodes.SubitensForaDoLimite,
                 $"O grupo tem de um a {MaximoDeSubitens} campos por ocorrência.");

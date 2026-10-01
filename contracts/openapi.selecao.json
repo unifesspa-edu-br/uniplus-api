@@ -11530,7 +11530,8 @@
           "etapas",
           "termos",
           "fatosColetados",
-          "comprovacaoDocumental"
+          "comprovacaoDocumental",
+          "grupos"
         ],
         "type": "object",
         "properties": {
@@ -11568,6 +11569,12 @@
             ],
             "items": {
               "$ref": "#/components/schemas/ExigenciaDocumentalCertameDto"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoFormularioRenderizavelDto"
             }
           }
         }
@@ -11764,6 +11771,79 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FatoColetadoInput"
+            }
+          }
+        }
+      },
+      "GrupoFormularioRenderizavelDto": {
+        "required": [
+          "codigo",
+          "ordem",
+          "etapaCodigo",
+          "rotulo",
+          "minimo",
+          "maximo",
+          "exibicao",
+          "obrigatoriedade",
+          "subitens"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maximo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          },
+          "obrigatoriedade": {
+            "$ref": "#/components/schemas/ObrigatoriedadeDto"
+          },
+          "subitens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FatoFormularioRenderizavelDto"
             }
           }
         }
