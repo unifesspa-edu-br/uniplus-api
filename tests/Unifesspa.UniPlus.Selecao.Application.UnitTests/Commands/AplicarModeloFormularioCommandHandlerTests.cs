@@ -50,6 +50,8 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         new(Guid.CreateVersion7(), "FLAG", "Flag", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:FLAG", null, null, Ativo: true),
         new(Guid.CreateVersion7(), "FLAG_SEM_REGRA", "Flag sem regra", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
             "REGRA_DERIVACAO:FLAG_SEM_REGRA", null, null, Ativo: true),
+        new(Guid.CreateVersion7(), "COTISTA", "Cotista", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["SIM"], "INSCRICAO",
+            "REGRA_DERIVACAO:COTISTA", [new("SIM", "Sim", 0, true)], "GLOBAL", Ativo: true),
         new(Guid.CreateVersion7(), "SEM_REGRA", "Sem regra", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["X"], "INSCRICAO",
             "REGRA_DERIVACAO:SEM_REGRA", [new("X", "X", 0, true)], "GLOBAL", Ativo: true),
         new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null, "INSCRICAO",
@@ -66,6 +68,9 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         {
             ["PERFIL"] = [RegraDerivacao.Criar(Quando("QUILOMBOLA", true), "A").Value!],
             ["FLAG"] = [RegraDerivacao.CriarBooleana(Quando("QUILOMBOLA", true))],
+            ["COTISTA"] = [RegraDerivacao.Criar(
+                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("MODALIDADE", Operador.Em, JsonSerializer.SerializeToElement(new[] { "AC" })).Value!)]).Value!,
+                "SIM").Value!],
         });
         _termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
     }
@@ -234,6 +239,16 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
             Modelo(FinalidadeFormulario.Habilitacao, [Item("QUILOMBOLA", 0)], termos: [removido, citaIsencao]));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.termos[1]");
+    }
+
+    [Fact(DisplayName = "A modalidade citada pela regra padrão de um derivado também pede a distribuição de vagas antes")]
+    public async Task Handle_ModalidadePelaRegraPadrao_PedeADistribuicao()
+    {
+        FatoColetadoInput porCotista = Item("QUILOMBOLA", 1) with { Precondicao = [[new CondicaoPrecondicaoInput("COTISTA", "EM", JsonSerializer.SerializeToElement(new[] { "SIM" }))]] };
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), porCotista]));
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.SemDistribuicaoDeVagas);
     }
 
     [Fact(DisplayName = "Modelo que cita a modalidade num processo sem distribuição de vagas pede a distribuição antes")]

@@ -164,15 +164,18 @@ public static partial class AplicarModeloFormularioCommandHandler
         // Os citados vêm da entrada das partes que entram na cópia, inclusive das que serão recusadas:
         // o que falta configurar aparece junto das outras recusas, e o que saiu da cópia não pesa.
         string[] citados = [.. FatosCitados(itensACopiar, conteudo.Etapas ?? [], termosACopiar).Distinct(StringComparer.Ordinal)];
+        List<ConfiguracaoDerivacaoInput> derivacoesACopiar = EscolherDerivacoes(citados, processo, contexto, regrasPadrao, relatorio, erros);
+
+        // A modalidade pode vir pela cópia ou pelas regras padrão que ela traz.
+        IEnumerable<string> fechamento = citados.Concat(derivacoesACopiar
+            .SelectMany(static d => d.Regras).SelectMany(static r => r.Quando ?? []).SelectMany(static c => c).Select(static c => c.Fato));
         if (processo.DistribuicaoVagas.Count == 0
-            && citados.Any(c => contexto.Fatos.TryGetValue(c, out FatoCandidatoView? fato) && fato.FonteValores == FonteModalidade))
+            && fechamento.Any(c => contexto.Fatos.TryGetValue(c, out FatoCandidatoView? fato) && fato.FonteValores == FonteModalidade))
         {
             erros.Add(new("modelo", new DomainError(
                 AplicacaoDeModeloErrorCodes.SemDistribuicaoDeVagas,
                 "O modelo cita a modalidade de concorrência, que depende da distribuição de vagas do processo; defina a distribuição de vagas antes.")));
         }
-
-        List<ConfiguracaoDerivacaoInput> derivacoesACopiar = EscolherDerivacoes(citados, processo, contexto, regrasPadrao, relatorio, erros);
 
         // O universo da configuração final: o que o processo coleta e deriva depois da cópia.
         HashSet<string> universo = new(
