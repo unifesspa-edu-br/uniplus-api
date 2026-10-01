@@ -245,4 +245,6 @@ public static class EstruturaFormularioErrorCodes
     public const string EtapaTituloInvalido = "EstruturaFormulario.EtapaTituloInvalido";
     public const string EtapaTextoTamanho = "EstruturaFormulario.EtapaTextoTamanho";
     public const string ExibicaoForaDeSecao = "EstruturaFormulario.ExibicaoForaDeSecao";
+    public const string FinalidadeInvalida = "EstruturaFormulario.FinalidadeInvalida";
+    public const string TituloTamanho = "EstruturaFormulario.TituloTamanho";
 }

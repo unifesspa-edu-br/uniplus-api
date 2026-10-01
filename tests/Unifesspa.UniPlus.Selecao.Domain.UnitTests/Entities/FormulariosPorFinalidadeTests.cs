@@ -411,7 +411,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301), [soSecao], PrecondicaoIfMatch.Ausente)
             .Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
             [
-                FormularioProcessoErrorCodes.TituloTamanho,
+                EstruturaFormularioErrorCodes.TituloTamanho,
                 FormularioProcessoErrorCodes.FaseIncoerenteComFinalidade,
                 EstruturaFormularioErrorCodes.BlocoExigidoAusente,
             ]);

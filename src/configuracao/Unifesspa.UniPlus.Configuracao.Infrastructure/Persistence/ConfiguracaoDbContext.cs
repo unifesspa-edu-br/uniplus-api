@@ -87,6 +87,9 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     /// </summary>
     public DbSet<FatoCandidato> FatosCandidato => Set<FatoCandidato>();
 
+    /// <summary>Modelos de formulário por tipo de processo e finalidade (UNI-REQ-0144, ADR-0137).</summary>
+    public DbSet<ModeloFormulario> ModelosFormulario => Set<ModeloFormulario>();
+
     /// <summary>
     /// Descrição por valor de um categórico estático de <see cref="FatoCandidato"/>
     /// (ADR-0116) — filha seed-governada, sem CRUD próprio.

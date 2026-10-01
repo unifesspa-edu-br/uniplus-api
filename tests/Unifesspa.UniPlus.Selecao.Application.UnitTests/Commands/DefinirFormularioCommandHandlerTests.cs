@@ -77,7 +77,7 @@ public sealed class DefinirFormularioCommandHandlerTests
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("etapas[0].exibicao", "PredicadoDnf.FatoDesconhecido"),
-            ("titulo", FormularioProcessoErrorCodes.TituloTamanho),
+            ("titulo", EstruturaFormularioErrorCodes.TituloTamanho),
             ("etapas", "EstruturaFormulario.BlocoExigidoAusente"),
         ]);
     }
