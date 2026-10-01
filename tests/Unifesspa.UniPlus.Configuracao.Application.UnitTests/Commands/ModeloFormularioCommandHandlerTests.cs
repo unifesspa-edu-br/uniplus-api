@@ -16,11 +16,13 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A escrita do modelo de formulário confere o conteúdo contra o catálogo de fatos, de termos e de
@@ -156,6 +158,29 @@ public sealed class ModeloFormularioCommandHandlerTests
         _certificado.Desativar().IsSuccess.Should().BeTrue();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item(" CERTIFICADO", 0)));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
+    }
+
+    [Fact(DisplayName = "Derivado desativado cujas respostas formam as opções de um item é vínculo novo recusado")]
+    public async Task Criar_OpcoesDeDerivadoDesativado_Recusa()
+    {
+        FatoCandidato opcao = FatoCandidato.CriarDoAdministrador(
+            "OPCAO", "Opção", null, DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
+            EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+        FatoCandidato perfil = FatoCandidato.CriarDerivadoDoAdministrador(
+            "PERFIL", "Perfil", null, DominioFato.Categorico, "INSCRICAO", EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+        opcao.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+        perfil.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+        RegraDerivacao regra = RegraDerivacao.Criar(
+            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
+            "A").Value!;
+        perfil.DefinirRegrasPadrao([regra], new CatalogoDeFatos([_certificado, opcao, perfil], [])).IsSuccess.Should().BeTrue();
+        perfil.Desativar().IsSuccess.Should().BeTrue();
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([_certificado, opcao, perfil]);
+        FatoColetadoInput comOpcoes = Item("OPCAO", 1, "SELECAO_UNICA") with { Restricoes = [new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])] };
+
+        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0), comOpcoes));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
     }
