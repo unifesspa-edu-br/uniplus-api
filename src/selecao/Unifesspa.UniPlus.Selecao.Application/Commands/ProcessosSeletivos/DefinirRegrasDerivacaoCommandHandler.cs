@@ -147,7 +147,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 
-    private static Result<ConfiguracaoDerivacaoFato> ResolverConfiguracao(
+    internal static Result<ConfiguracaoDerivacaoFato> ResolverConfiguracao(
         ConfiguracaoDerivacaoInput configInput,
         IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Contracts;
 
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
 /// <summary>
 /// Leitor cross-módulo do catálogo <c>rol_de_fatos_candidato</c> (ADR-0056, ADR-0111).
 /// Expõe o vocabulário fechado de fatos do candidato para consumo por outros
@@ -23,5 +25,12 @@ public interface IFatoCandidatoReader
     /// </summary>
     Task<FatoCandidatoView?> ObterPorCodigoAsync(
         string codigo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As regras padrão de cada derivado por regra do catálogo que as tem, por código do fato: o
+    /// ponto de partida que o processo copia ao aplicar um modelo de formulário (ADR-0136).
+    /// </summary>
+    Task<IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>>> ListarRegrasPadraoAsync(
         CancellationToken cancellationToken = default);
 }
