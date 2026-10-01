@@ -51,11 +51,13 @@ public sealed class ModeloFormularioReaderTests
         IReadOnlyList<ModeloFormularioView> habilitacao = await reader.ListarAtivosAsync($" {tipo} ", "HABILITACAO");
         IReadOnlyList<ModeloFormularioView> inscricao = await reader.ListarAtivosAsync(tipo, "INSCRICAO");
         ModeloFormularioView? lidoDesativado = await reader.ObterAsync(desativado.Id);
+        IReadOnlyList<ModeloFormularioView> tipoNaoGravavel = await reader.ListarAtivosAsync("PSR\u0000", "HABILITACAO");
 
         Guid[] ids = [.. habilitacao.Select(static m => m.Id)];
         ids.Should().Contain([doTipo.Id, deTodos.Id]).And.NotContain([desativado.Id, deOutroTipo.Id]);
         habilitacao.Select(static m => m.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
         inscricao.Select(static m => m.Id).Should().NotContain(doTipo.Id);
+        tipoNaoGravavel.Should().BeEmpty();
         lidoDesativado!.Ativo.Should().BeFalse();
         lidoDesativado.Conteudo.Itens!.Single().FatoCodigo.Should().Be("CERTIFICADO");
     }

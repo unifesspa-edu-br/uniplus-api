@@ -30,8 +30,9 @@ internal sealed class ModeloFormularioReader : IModeloFormularioReader
         string tipoProcessoCodigo, string finalidade, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(tipoProcessoCodigo);
+        // Finalidade desconhecida, ou tipo que o banco não grava, não é de nenhum modelo.
         FinalidadeFormulario daFinalidade = EstruturaFormulario.FinalidadeDoToken(finalidade);
-        if (daFinalidade == FinalidadeFormulario.Nenhuma)
+        if (daFinalidade == FinalidadeFormulario.Nenhuma || !ModeloFormulario.EhGravavel(tipoProcessoCodigo))
         {
             return [];
         }
