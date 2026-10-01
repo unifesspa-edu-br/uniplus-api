@@ -1,8 +1,7 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Como o campo produtor de um <see cref="Entities.FatoColetado"/> é apresentado no formulário de
-/// inscrição. Conjunto fechado por design, coerente com o domínio do fato no catálogo do
+/// Como o campo que produz um fato é apresentado no formulário. Conjunto fechado por design, coerente com o domínio do fato no catálogo do
 /// candidato: <see cref="Booleano"/> só para domínio <c>BOOLEANO</c>, <see cref="Numero"/> só
 /// para <c>NUMERICO</c>, <see cref="SelecaoUnica"/>/<see cref="SelecaoMultipla"/> para
 /// <c>CATEGORICO</c> conforme a cardinalidade do fato no catálogo, <see cref="Texto"/> para

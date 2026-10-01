@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Mapeamento único entre <see cref="TipoRenderizacao"/> e o código textual canônico
@@ -32,8 +32,8 @@ public static class TipoRenderizacaoCodigo
     /// <summary>
     /// Converte o código canônico de volta para o tipo. Um código não reconhecido (ou ausente —
     /// o campo é omitido do JSON) mapeia para o sentinela <see cref="TipoRenderizacao.Nenhuma"/>,
-    /// que <see cref="Entities.FatoColetado.Criar"/> já rejeita com um erro de domínio (422)
-    /// claro, em vez de aceitar silenciosamente um tipo de renderização não informado.
+    /// que a forma do item recusa com um erro de domínio (422) claro, em vez de aceitar
+    /// silenciosamente um tipo de renderização não informado.
     /// </summary>
     public static TipoRenderizacao FromCodigo(string? codigo) => codigo switch
     {

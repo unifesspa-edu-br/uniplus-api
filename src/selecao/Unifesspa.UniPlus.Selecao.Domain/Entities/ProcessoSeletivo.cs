@@ -1139,7 +1139,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(FormularioInexistente(finalidade));
         }
 
-        List<FieldError> erros = TermoExigidoFormulario.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
+        List<FieldError> erros = FormaDoTermo.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
         DependenciasDoFormulario dependencias = DependenciasDe(finalidade, _fatosColetados.Where(f => f.Finalidade == finalidade), FatosDaInscricao(_fatosColetados));
         for (int indice = 0; indice < termos.Count; indice++)
         {

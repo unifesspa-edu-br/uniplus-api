@@ -25,7 +25,7 @@ public sealed class FatoColetadoTests
             "COR_RACA", 0, "", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.RotuloObrigatorio);
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RotuloObrigatorio);
     }
 
     [Fact(DisplayName = "Rótulo só de espaço é recusado")]
@@ -35,7 +35,7 @@ public sealed class FatoColetadoTests
             "COR_RACA", 0, "   ", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.RotuloObrigatorio);
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RotuloObrigatorio);
     }
 
     [Fact(DisplayName = "TipoRenderizacao.Nenhuma (sentinela) é recusado")]
@@ -45,7 +45,7 @@ public sealed class FatoColetadoTests
             "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.Nenhuma, Obrigatoriedade.Nunca, null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.TipoRenderizacaoObrigatorio);
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio);
     }
 
     [Theory(DisplayName = "O formato existe se, e só se, o campo é de texto")]
@@ -63,7 +63,7 @@ public sealed class FatoColetadoTests
         }
         else
         {
-            resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FormatoIncoerente);
+            resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.FormatoIncoerente);
         }
     }
 
@@ -74,12 +74,12 @@ public sealed class FatoColetadoTests
             [(0, CondicaoDnf.Criar("PCD", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!)]).Value!);
 
         FatoColetado.Criar("PCD", 0, "Pessoa com deficiência", TipoRenderizacao.Booleano, quando, null)
-            .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoAutorreferente);
+            .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.RegraAutorreferente);
     }
 
     [Fact(DisplayName = "Ajuda acima do limite é recusada no campo")]
     public void Criar_AjudaLonga_Recusa() =>
-        FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, ajuda: new string('a', FatoColetado.AjudaMaxLength + 1))
+        FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, ajuda: new string('a', FormaDoItem.AjudaMaxLength + 1))
             .Errors.Should().ContainSingle().Which.Field.Should().Be("ajuda");
 
     public static TheoryData<TipoRenderizacao, RestricaoValor, bool> RestricoesPorTipoDeCampo => new()
@@ -108,7 +108,7 @@ public sealed class FatoColetadoTests
             resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "restricoes[0]",
-                Error = new { Code = FatoColetadoErrorCodes.RestricaoIncoerente },
+                Error = new { Code = ItemFormularioErrorCodes.RestricaoIncoerente },
             });
         }
     }
@@ -163,25 +163,25 @@ public sealed class FatoColetadoTests
     [Fact(DisplayName = "Código do fato acima do limite é recusado")]
     public void Criar_FatoCodigoMuitoLongo_Recusa()
     {
-        string codigoLongo = new('A', FatoColetado.FatoCodigoMaxLength + 1);
+        string codigoLongo = new('A', FormaDoItem.FatoCodigoMaxLength + 1);
 
         Result<FatoColetado> resultado = FatoColetado.Criar(
             codigoLongo, 0, "Rótulo", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoCodigoTamanho);
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.FatoCodigoTamanho);
     }
 
     [Fact(DisplayName = "Rótulo acima do limite é recusado")]
     public void Criar_RotuloMuitoLongo_Recusa()
     {
-        string rotuloLongo = new('a', FatoColetado.RotuloMaxLength + 1);
+        string rotuloLongo = new('a', FormaDoItem.RotuloMaxLength + 1);
 
         Result<FatoColetado> resultado = FatoColetado.Criar(
             "COR_RACA", 0, rotuloLongo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.RotuloTamanho);
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RotuloTamanho);
     }
 
     [Fact(DisplayName = "ADR-0125: violações independentes acumulam num único lote")]
@@ -193,9 +193,9 @@ public sealed class FatoColetadoTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
-            FatoColetadoErrorCodes.OrdemInvalida,
-            FatoColetadoErrorCodes.RotuloObrigatorio,
-            FatoColetadoErrorCodes.TipoRenderizacaoObrigatorio,
+            ItemFormularioErrorCodes.OrdemInvalida,
+            ItemFormularioErrorCodes.RotuloObrigatorio,
+            ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio,
         ]);
     }
 }

@@ -75,7 +75,7 @@ public static class DefinirFatosColetadosCommandHandler
             FatoColetadoInput input = command.Itens[indice];
             string campo = $"itens[{indice}]";
             int recusasAntes = erros.Count;
-            erros.AddRange(FatoColetado.ValidarFormaBasica(
+            erros.AddRange(FormaDoItem.ValidarFormaBasica(
                     input.FatoCodigo, input.Ordem, input.Rotulo, TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao))
                 .Select(erro => erro with { Field = $"{campo}.{erro.Field}" }));
 
@@ -276,7 +276,7 @@ public static class DefinirFatosColetadosCommandHandler
     {
         for (int indice = 0; indice < restricoes.Count; indice++)
         {
-            if (!FatoColetado.RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
+            if (!FormaDoItem.RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
             {
                 continue;
             }

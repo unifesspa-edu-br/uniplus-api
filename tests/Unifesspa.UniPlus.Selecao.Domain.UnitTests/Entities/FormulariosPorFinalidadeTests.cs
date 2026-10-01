@@ -365,7 +365,7 @@ public sealed class FormulariosPorFinalidadeTests
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "exibicao",
-                Error = new { Code = FormularioProcessoErrorCodes.ExibicaoForaDeSecao },
+                Error = new { Code = EstruturaFormularioErrorCodes.ExibicaoForaDeSecao },
             });
 
     private static FatoColetado ItemQueCitaModalidade(int ordem) =>

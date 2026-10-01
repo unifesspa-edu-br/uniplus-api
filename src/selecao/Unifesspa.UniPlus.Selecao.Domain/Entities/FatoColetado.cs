@@ -34,22 +34,6 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </remarks>
 public sealed class FatoColetado : EntityBase
 {
-    /// <summary>Alinhado a <c>FatoColetadoConfiguration</c> (varchar(60)).</summary>
-    public const int FatoCodigoMaxLength = 60;
-
-    /// <summary>
-    /// Alinhado a <c>FatoColetadoConfiguration</c> (varchar(300)) — mesma grandeza de
-    /// <c>LimitesDoEnvelope.NomeDeCadastro</c> (o decoder do envelope aplica o mesmo limite ao
-    /// reidratar): um rótulo de campo de formulário é a mesma grandeza de um nome de cadastro
-    /// curto.
-    /// </summary>
-    public const int RotuloMaxLength = 300;
-    public const int FormatoMaxLength = 30;
-    public const int AjudaMaxLength = 1000;
-
-    /// <summary>As casas decimais dos limites da faixa numérica, as mesmas com que o edital os congela.</summary>
-    public const int CasasDecimaisDaFaixa = 4;
-
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -142,47 +126,9 @@ public sealed class FatoColetado : EntityBase
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
 
-        List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
-
-        string? ajudaNormalizada = string.IsNullOrWhiteSpace(ajuda) ? null : ajuda.Trim();
-        if (ajudaNormalizada is { Length: > AjudaMaxLength })
-        {
-            erros.Add(new("ajuda", new DomainError(
-                FatoColetadoErrorCodes.AjudaTamanho, $"A ajuda do campo tem no máximo {AjudaMaxLength} caracteres.")));
-        }
-
-        string? formatoNormalizado = string.IsNullOrWhiteSpace(formato) ? null : formato.Trim();
-        if ((tipoRenderizacao == TipoRenderizacao.Texto) != (formatoNormalizado is not null)
-            || formatoNormalizado is { Length: > FormatoMaxLength })
-        {
-            erros.Add(new("formato", new DomainError(
-                FatoColetadoErrorCodes.FormatoIncoerente,
-                $"O campo de texto tem o formato do fato no catálogo, com no máximo {FormatoMaxLength} caracteres; os demais campos não têm formato.")));
-        }
-
-        string codigo = fatoCodigo?.Trim() ?? string.Empty;
         IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
-
-        // Auto-referência é ciclo de comprimento um. Barrada aqui, na criação, porque não depende
-        // de conhecer os irmãos — e um erro específico diz mais do que o genérico de ciclo, que
-        // reportaria um caminho de um nó só. Toda a validação acontece antes de qualquer mutação:
-        // uma condição só é vinculada depois de o fato inteiro ser aceito, para nunca deixar uma
-        // instância recebida do chamador apontando para um fato que a factory acabou de recusar.
-        if (condicoes.Any(precondicao => string.Equals(precondicao.Fato, codigo, StringComparison.Ordinal)))
-        {
-            erros.Add(new("precondicao", new DomainError(
-                FatoColetadoErrorCodes.PrecondicaoAutorreferente,
-                "A pré-condição cita o próprio fato.")));
-        }
-
-        if (obrigatoriedade.FatosCitados.Contains(codigo, StringComparer.Ordinal))
-        {
-            erros.Add(new("predicadoObrigatoriedade", new DomainError(
-                FatoColetadoErrorCodes.PrecondicaoAutorreferente,
-                "A obrigatoriedade cita o próprio fato.")));
-        }
-
-        erros.AddRange(ConferirRestricoes(codigo, tipoRenderizacao, restricoesDoItem));
+        List<FieldError> erros = FormaDoItem.Conferir(
+            fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, condicoes.Select(static c => c.Fato), obrigatoriedade, restricoesDoItem);
 
         if (erros.Count > 0)
         {
@@ -191,16 +137,16 @@ public sealed class FatoColetado : EntityBase
 
         FatoColetado fato = new()
         {
-            FatoCodigo = codigo,
+            FatoCodigo = (fatoCodigo ?? string.Empty).Trim(),
             Ordem = ordem,
-            Rotulo = rotulo.Trim(),
+            Rotulo = (rotulo ?? string.Empty).Trim(),
             TipoRenderizacao = tipoRenderizacao,
             Obrigatoriedade = obrigatoriedade,
-            Ajuda = ajudaNormalizada,
+            Ajuda = FormaDoItem.TextoOpcional(ajuda),
             PedirConfirmacao = pedirConfirmacao,
             Restricoes = [.. restricoesDoItem.OrderBy(static r => r.Tipo)],
             OrigemValores = origemValores,
-            Formato = formatoNormalizado,
+            Formato = FormaDoItem.TextoOpcional(formato),
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
 
             // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
@@ -213,111 +159,6 @@ public sealed class FatoColetado : EntityBase
         }
 
         return Result<FatoColetado>.Success(fato);
-    }
-
-    /// <summary>
-    /// As restrições cabem no tipo do campo — faixa só no numérico, tamanho só no de texto, opções só
-    /// no de seleção —, não se repetem por tipo, não citam o próprio fato, e os limites da faixa
-    /// cabem nas casas decimais do edital.
-    /// </summary>
-    private static IEnumerable<FieldError> ConferirRestricoes(
-        string codigo, TipoRenderizacao tipoRenderizacao, IReadOnlyList<RestricaoValor> restricoes)
-    {
-        if (RestricoesDeValor.TipoRepetido(restricoes) is { } repetido)
-        {
-            yield return new("restricoes", repetido);
-        }
-
-        for (int indice = 0; indice < restricoes.Count; indice++)
-        {
-            if (!RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
-            {
-                yield return new($"restricoes[{indice}]", new DomainError(
-                    FatoColetadoErrorCodes.RestricaoIncoerente,
-                    "A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto e as opções só ao de seleção."));
-            }
-
-            if (restricoes[indice] is FaixaNumerica faixa
-                && new[] { faixa.Minimo, faixa.Maximo }.Any(static limite => limite is { } v && Math.Round(v, CasasDecimaisDaFaixa) != v))
-            {
-                yield return new($"restricoes[{indice}]", new DomainError(
-                    RestricaoValorErrorCodes.LimitesIncoerentes,
-                    $"Os limites da faixa numérica têm no máximo {CasasDecimaisDaFaixa} casas decimais."));
-            }
-
-            if (restricoes[indice].FatosCitados.Contains(codigo, StringComparer.Ordinal))
-            {
-                yield return new($"restricoes[{indice}]", new DomainError(
-                    FatoColetadoErrorCodes.PrecondicaoAutorreferente, "A restrição cita o próprio fato."));
-            }
-        }
-    }
-
-    /// <summary>Se o tipo de restrição se aplica ao tipo de campo.</summary>
-    public static bool RestricaoCabeNoCampo(TipoRestricaoValor restricao, TipoRenderizacao campo) =>
-        campo != TipoRenderizacao.Nenhuma && restricao switch
-        {
-            TipoRestricaoValor.FaixaNumerica => campo == TipoRenderizacao.Numero,
-            TipoRestricaoValor.TamanhoTexto => campo == TipoRenderizacao.Texto,
-            TipoRestricaoValor.OpcoesPermitidas or TipoRestricaoValor.OpcoesDasRespostas => campo.EhSelecao(),
-            TipoRestricaoValor.Nenhuma => false,
-            _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao, "Tipo de restrição desconhecido."),
-        };
-
-    /// <summary>
-    /// Os quatro campos que não dependem do vocabulário cross-módulo nem de a pré-condição já
-    /// ter sido resolvida — ao contrário da autorreferência, checada só dentro de
-    /// <see cref="Criar"/>. Existe separada para o handler poder confirmar a forma de TODOS os
-    /// fatos do payload numa primeira passada, antes de resolver o catálogo de cada um (achado
-    /// de revisão): sem essa ordem, um <c>fatoCodigo</c> vazio caía direto no
-    /// <c>FatoDesconhecido</c> da busca no catálogo — um erro menos específico — e uma violação
-    /// de forma de um fato podia ser mascarada pelo erro semântico de outro fato da mesma lista.
-    /// </summary>
-    public static List<FieldError> ValidarFormaBasica(string? fatoCodigo, int ordem, string? rotulo, TipoRenderizacao tipoRenderizacao)
-    {
-        List<FieldError> erros = [];
-
-        if (string.IsNullOrWhiteSpace(fatoCodigo))
-        {
-            erros.Add(new("fatoCodigo", new DomainError(
-                FatoColetadoErrorCodes.FatoCodigoObrigatorio,
-                "O código do fato coletado é obrigatório.")));
-        }
-        else if (fatoCodigo.Trim().Length > FatoCodigoMaxLength)
-        {
-            erros.Add(new("fatoCodigo", new DomainError(
-                FatoColetadoErrorCodes.FatoCodigoTamanho,
-                $"O código do fato coletado deve ter no máximo {FatoCodigoMaxLength} caracteres.")));
-        }
-
-        if (ordem < 0)
-        {
-            erros.Add(new("ordem", new DomainError(
-                FatoColetadoErrorCodes.OrdemInvalida,
-                "A ordem de coleta não pode ser negativa.")));
-        }
-
-        if (string.IsNullOrWhiteSpace(rotulo))
-        {
-            erros.Add(new("rotulo", new DomainError(
-                FatoColetadoErrorCodes.RotuloObrigatorio,
-                "O rótulo do fato coletado é obrigatório.")));
-        }
-        else if (rotulo.Trim().Length > RotuloMaxLength)
-        {
-            erros.Add(new("rotulo", new DomainError(
-                FatoColetadoErrorCodes.RotuloTamanho,
-                $"O rótulo do fato coletado deve ter no máximo {RotuloMaxLength} caracteres.")));
-        }
-
-        if (tipoRenderizacao == TipoRenderizacao.Nenhuma)
-        {
-            erros.Add(new("tipoRenderizacao", new DomainError(
-                FatoColetadoErrorCodes.TipoRenderizacaoObrigatorio,
-                "O tipo de renderização do fato coletado é obrigatório.")));
-        }
-
-        return erros;
     }
 
     /// <summary>Indica se o fato é coletado incondicionalmente.</summary>
@@ -372,19 +213,9 @@ public sealed class FatoColetado : EntityBase
 /// <summary>Códigos de erro de <see cref="FatoColetado"/>.</summary>
 public static class FatoColetadoErrorCodes
 {
-    public const string FatoCodigoObrigatorio = "FatoColetado.FatoCodigoObrigatorio";
-    public const string FatoCodigoTamanho = "FatoColetado.FatoCodigoTamanho";
-    public const string OrdemInvalida = "FatoColetado.OrdemInvalida";
-    public const string RotuloObrigatorio = "FatoColetado.RotuloObrigatorio";
-    public const string RotuloTamanho = "FatoColetado.RotuloTamanho";
-    public const string TipoRenderizacaoObrigatorio = "FatoColetado.TipoRenderizacaoObrigatorio";
-    public const string FormatoIncoerente = "FatoColetado.FormatoIncoerente";
-    public const string AjudaTamanho = "FatoColetado.AjudaTamanho";
-    public const string RestricaoIncoerente = "FatoColetado.RestricaoIncoerente";
     public const string OpcoesDeOutroDominio = "FatoColetado.OpcoesDeOutroDominio";
     public const string OpcionalQueAlimentaRegra = "ProcessoSeletivo.CampoOpcionalQueAlimentaRegra";
     public const string ObrigatoriedadeInvalida = "FatoColetado.ObrigatoriedadeInvalida";
-    public const string PrecondicaoAutorreferente = "FatoColetado.PrecondicaoAutorreferente";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
     public const string OrdemDuplicada = "FatoColetado.OrdemDuplicada";
     public const string PrecondicaoCitaFatoNaoColetado = "FatoColetado.PrecondicaoCitaFatoNaoColetado";

@@ -5,6 +5,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Regras.Formularios;
+
 /// <summary>
 /// Configuração EF Core de <see cref="FormularioProcesso"/> (UNI-REQ-0144): filho de
 /// <c>ProcessoSeletivo</c>, no máximo um por finalidade, com as etapas em cascata.
@@ -48,13 +50,13 @@ public sealed class EtapaFormularioConfiguration : IEntityTypeConfiguration<Etap
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedNever();
 
-        builder.Property(e => e.Codigo).HasMaxLength(EtapaFormulario.CodigoMaxLength).IsRequired();
+        builder.Property(e => e.Codigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength).IsRequired();
         builder.Property(e => e.Ordem).IsRequired();
         builder.Property(e => e.Tipo).HasConversion<int>().IsRequired();
         builder.Property(e => e.Bloco).HasConversion<int>().IsRequired();
-        builder.Property(e => e.Titulo).HasMaxLength(EtapaFormulario.TituloMaxLength).IsRequired();
-        builder.Property(e => e.Descricao).HasMaxLength(EtapaFormulario.TextoMaxLength);
-        builder.Property(e => e.Aviso).HasMaxLength(EtapaFormulario.TextoMaxLength);
+        builder.Property(e => e.Titulo).HasMaxLength(FormaDaEtapa.TituloMaxLength).IsRequired();
+        builder.Property(e => e.Descricao).HasMaxLength(FormaDaEtapa.TextoMaxLength);
+        builder.Property(e => e.Aviso).HasMaxLength(FormaDaEtapa.TextoMaxLength);
         builder.Property(e => e.Exibicao)
             .HasConversion(ConversoresDeRegras.Predicado, ConversoresDeRegras.ComparadorDePredicado)
             .HasColumnType("jsonb");

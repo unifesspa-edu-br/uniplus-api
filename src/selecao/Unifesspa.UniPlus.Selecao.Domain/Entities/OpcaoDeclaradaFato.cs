@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -15,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </remarks>
 public sealed class OpcaoDeclaradaFato : EntityBase
 {
-    public const int FatoCodigoMaxLength = FatoColetado.FatoCodigoMaxLength;
+    public const int FatoCodigoMaxLength = FormaDoItem.FatoCodigoMaxLength;
     public const int CodigoMaxLength = 60;
     public const int RotuloMaxLength = 300;
 

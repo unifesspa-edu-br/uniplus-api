@@ -8,6 +8,8 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -179,9 +181,9 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("termos[0].codigo", TermoExigidoFormularioErrorCodes.CodigoObrigatorio),
+            ("termos[0].codigo", TermoFormularioErrorCodes.CodigoObrigatorio),
             ("termos[1].versaoId", TermoExigidoFormularioErrorCodes.VersaoNaoEncontrada),
-            ("termos[2].codigo", TermoExigidoFormularioErrorCodes.CodigoDuplicado),
+            ("termos[2].codigo", TermoFormularioErrorCodes.CodigoDuplicado),
         ]);
     }
 }

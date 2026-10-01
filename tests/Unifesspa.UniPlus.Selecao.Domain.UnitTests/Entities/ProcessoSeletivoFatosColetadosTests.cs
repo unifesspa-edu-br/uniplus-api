@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -141,7 +142,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Cond("PCD")]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoAutorreferente);
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RegraAutorreferente);
     }
 
     [Fact(DisplayName = "Código de fato repetido na coleta é recusado")]

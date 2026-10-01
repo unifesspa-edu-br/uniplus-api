@@ -5,6 +5,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Regras.Formularios;
+
 /// <summary>
 /// Configuração EF Core de <see cref="FatoColetado"/> (Story #926; apresentação —
 /// Rotulo/TipoRenderizacao/Obrigatorio — Story #559) — entidade filha de
@@ -21,26 +23,26 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.HasKey(f => f.Id);
         builder.Property(f => f.Id).ValueGeneratedNever();
 
-        builder.Property(f => f.FatoCodigo).HasMaxLength(FatoColetado.FatoCodigoMaxLength).IsRequired();
+        builder.Property(f => f.FatoCodigo).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
         builder.Property(f => f.Ordem).IsRequired();
-        builder.Property(f => f.Rotulo).HasMaxLength(FatoColetado.RotuloMaxLength).IsRequired();
+        builder.Property(f => f.Rotulo).HasMaxLength(FormaDoItem.RotuloMaxLength).IsRequired();
         builder.Property(f => f.TipoRenderizacao).HasConversion<int>().IsRequired();
         builder.Property(f => f.Obrigatoriedade)
             .HasConversion(ConversoresDeRegras.Obrigatoriedade, ConversoresDeRegras.ComparadorDeObrigatoriedade)
             .HasColumnType("jsonb")
             .IsRequired();
-        builder.Property(f => f.Ajuda).HasMaxLength(FatoColetado.AjudaMaxLength);
+        builder.Property(f => f.Ajuda).HasMaxLength(FormaDoItem.AjudaMaxLength);
         builder.Property(f => f.PedirConfirmacao).IsRequired();
         builder.Property(f => f.Restricoes)
             .HasConversion(ConversoresDeRegras.Restricoes, ConversoresDeRegras.ComparadorDeRestricoes)
             .HasColumnType("jsonb")
             .IsRequired();
         builder.Property(f => f.OrigemValores).HasConversion<int>().IsRequired();
-        builder.Property(f => f.Formato).HasMaxLength(FatoColetado.FormatoMaxLength);
+        builder.Property(f => f.Formato).HasMaxLength(FormaDoItem.FormatoMaxLength);
         builder.Ignore(f => f.OpcoesDoProcesso);
         builder.Ignore(f => f.Condicoes);
         builder.Property(f => f.Finalidade).HasConversion<int>().IsRequired();
-        builder.Property(f => f.EtapaCodigo).HasMaxLength(EtapaFormulario.CodigoMaxLength);
+        builder.Property(f => f.EtapaCodigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength);
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em
         // DefinirFatosColetados; os índices as garantem também contra escrita concorrente e

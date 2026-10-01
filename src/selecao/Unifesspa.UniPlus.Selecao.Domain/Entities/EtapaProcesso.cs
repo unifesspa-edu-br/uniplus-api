@@ -203,7 +203,7 @@ public sealed class EtapaProcesso : EntityBase
     /// <see cref="AtualizarDados"/> (mesmas checagens) e exposta para o handler poder
     /// confirmar a forma de TODAS as etapas do payload numa primeira passada, antes de
     /// resolver o tipo de etapa no cadastro (mesmo padrão de
-    /// <c>FatoColetado.ValidarFormaBasica</c>, PR #1214).
+    /// <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(
         string? nome, CaraterEtapa carater, decimal? peso, decimal? notaMinima, int? ordem)

@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>O que cada <see cref="TipoRenderizacao"/> implica para o campo.</summary>
 public static class TiposRenderizacao

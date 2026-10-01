@@ -134,7 +134,7 @@ public static class DefinirTermosDoFormularioCommandHandler
             }
         }
 
-        erros.AddRange(TermoExigidoFormulario.ConferirUnicidade(
+        erros.AddRange(FormaDoTermo.ConferirUnicidade(
             [.. entradas.Select(static t => t is null ? null : ((string?, int)?)(t.Codigo, t.Ordem))]));
         if (erros.Count > 0)
         {
@@ -174,7 +174,7 @@ public static class DefinirTermosDoFormularioCommandHandler
             return (null, null);
         }
 
-        erros.AddRange(TermoExigidoFormulario.ValidarFormaBasica(entrada.Codigo, entrada.Ordem)
+        erros.AddRange(FormaDoTermo.ValidarFormaBasica(entrada.Codigo, entrada.Ordem)
             .Select(e => new FieldError($"{campo}.{e.Field}", e.Error)));
 
         Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(entrada.Exibicao);

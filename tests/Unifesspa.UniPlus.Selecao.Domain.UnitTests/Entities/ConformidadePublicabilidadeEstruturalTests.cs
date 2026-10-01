@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -1677,8 +1678,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirTermos([Termo("DECLARACAO", 0), Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente)
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
             [
-                ("termos[1].codigo", TermoExigidoFormularioErrorCodes.CodigoDuplicado),
-                ("termos[1].ordem", TermoExigidoFormularioErrorCodes.OrdemDuplicada),
+                ("termos[1].codigo", TermoFormularioErrorCodes.CodigoDuplicado),
+                ("termos[1].ordem", TermoFormularioErrorCodes.OrdemDuplicada),
             ]);
         processo.TermosExigidos.Should().BeEmpty();
     }
@@ -1689,7 +1690,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConforme();
 
         processo.DefinirTermos([Termo("DECLARAÇÃO", 0), Termo("DECLARAC\u0327A\u0303O", 1)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(TermoExigidoFormularioErrorCodes.CodigoDuplicado);
+            .Error!.Code.Should().Be(TermoFormularioErrorCodes.CodigoDuplicado);
     }
 
     [Fact(DisplayName = "Condição de termo que cita fato que o processo deixou de coletar recusa a publicação")]

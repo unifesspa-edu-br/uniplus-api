@@ -79,7 +79,7 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
     /// cross-módulo nem das regras já resolvidas — só do código cru e da contagem/ordens brutas
     /// do payload. Existe separada para o handler poder confirmar a forma de TODAS as
     /// configurações numa primeira passada, antes de resolver o catálogo (mesmo padrão de
-    /// <c>FatoColetado.ValidarFormaBasica</c>, PR #1214).
+    /// <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(string? codigoFato, int totalRegras, IEnumerable<int> ordensBrutas)
     {
