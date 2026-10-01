@@ -54,10 +54,6 @@ public static class AtualizarPesoAreaEnemCommandHandler
             return atualizarResult;
         }
 
-        // Os valores editados vivem nas linhas filhas de áreas; sem marcar a linha de
-        // pesos, uma edição só de peso ou corte não carimbaria UpdatedAt/UpdatedBy.
-        repository.RegistrarAtualizacao(peso);
-
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result.Success();

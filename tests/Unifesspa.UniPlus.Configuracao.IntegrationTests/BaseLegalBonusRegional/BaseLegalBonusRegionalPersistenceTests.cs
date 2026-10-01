@@ -64,4 +64,33 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
             "o soft-delete do agregado não pode apagar fisicamente os municípios da coleção owned");
         excluido.Municipios.Select(m => m.CodigoIbge).Should().BeEquivalentTo(["1504208", "1501402"]);
     }
+
+    [Fact(DisplayName = "Editar só os municípios carimba UpdatedAt e UpdatedBy do agregado")]
+    public async Task Atualizar_SoOsMunicipios_CarimbaAuditoriaDoAgregado()
+    {
+        Domain.Entities.BaseLegalBonusRegional baseLegal = Domain.Entities.BaseLegalBonusRegional.Criar(
+            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-a"))
+        {
+            ctx.BaseLegaisBonus.Add(baseLegal);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-b"))
+        {
+            Domain.Entities.BaseLegalBonusRegional tracked = await ctx.BaseLegaisBonus
+                .Include(b => b.Municipios)
+                .SingleAsync(b => b.Id == baseLegal.Id);
+            tracked.Atualizar(
+                "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+                [("1504208", "Marabá", "PA"), ("1501402", "Belém", "PA")]).IsSuccess.Should().BeTrue();
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        Domain.Entities.BaseLegalBonusRegional persistida = await readCtx.BaseLegaisBonus.SingleAsync(b => b.Id == baseLegal.Id);
+        persistida.UpdatedBy.Should().Be("admin-b", "mudar só os municípios também é edição da base legal");
+        persistida.UpdatedAt.Should().NotBeNull();
+    }
 }

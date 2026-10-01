@@ -123,7 +123,6 @@ public sealed class PesoAreaEnemPersistenceTests
             List<AreaInformada> novas = Areas();
             novas[4] = new(PesoAreaEnem.CodigoMatematica, 4.25m, null);
             tracked.Atualizar(novas, BaseLegal).IsSuccess.Should().BeTrue();
-            repository.RegistrarAtualizacao(tracked);
             await ctx.SaveChangesAsync();
         }
 
@@ -208,7 +207,6 @@ public sealed class PesoAreaEnemPersistenceTests
         List<AreaInformada> novas = Areas();
         novas[4] = new(PesoAreaEnem.CodigoMatematica, 4.25m, null);
         emEdicao.Atualizar(novas, BaseLegal).IsSuccess.Should().BeTrue();
-        new PesoAreaEnemRepository(ctxEdicao).RegistrarAtualizacao(emEdicao);
         await ctxEdicao.SaveChangesAsync();
 
         await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
@@ -232,7 +230,6 @@ public sealed class PesoAreaEnemPersistenceTests
         {
             PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
             tracked.Atualizar(Areas(), BaseLegal).IsSuccess.Should().BeTrue();
-            new PesoAreaEnemRepository(ctx).RegistrarAtualizacao(tracked);
             await ctx.SaveChangesAsync();
         }
 
