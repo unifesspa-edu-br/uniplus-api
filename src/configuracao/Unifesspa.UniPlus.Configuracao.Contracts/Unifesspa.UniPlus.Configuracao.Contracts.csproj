@@ -10,6 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
+    <!-- O conteúdo do modelo de formulário viaja na forma de escrita do formulário, que é das regras compartilhadas. -->
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Regras\Unifesspa.UniPlus.Regras.csproj" />
   </ItemGroup>
 
 </Project>

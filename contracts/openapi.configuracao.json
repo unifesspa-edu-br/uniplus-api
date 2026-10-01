@@ -5961,7 +5961,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ModeloFormularioDto"
+                    "$ref": "#/components/schemas/ModeloFormularioView"
                   }
                 }
               }
@@ -6188,7 +6188,7 @@
             "content": {
               "application/vnd.uniplus.modelo-formulario.v1\u002Bjson": {
                 "schema": {
-                  "$ref": "#/components/schemas/ModeloFormularioDto"
+                  "$ref": "#/components/schemas/ModeloFormularioView"
                 }
               }
             }
@@ -16079,7 +16079,7 @@
           }
         }
       },
-      "ModeloFormularioDto": {
+      "ModeloFormularioView": {
         "required": [
           "id",
           "codigo",

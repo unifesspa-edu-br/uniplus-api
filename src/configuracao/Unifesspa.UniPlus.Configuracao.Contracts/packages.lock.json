@@ -10,6 +10,12 @@
       },
       "unifesspa.uniplus.kernel": {
         "type": "Project"
+      },
+      "unifesspa.uniplus.regras": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
       }
     }
   }

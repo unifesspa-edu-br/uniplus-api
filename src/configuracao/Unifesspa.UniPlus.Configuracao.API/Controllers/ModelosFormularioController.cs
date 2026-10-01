@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
-using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
@@ -46,7 +46,7 @@ public sealed class ModelosFormularioController : ControllerBase
     /// </summary>
     [HttpGet("admin/modelos-formulario")]
     [VendorMediaType(Resource = "modelo-formulario", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<ModeloFormularioDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<ModeloFormularioView>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -72,14 +72,14 @@ public sealed class ModelosFormularioController : ControllerBase
     /// <summary>O modelo, ativo ou desativado, com o conteúdo no formato da escrita.</summary>
     [HttpGet("admin/modelos-formulario/{id:guid}")]
     [VendorMediaType(Resource = "modelo-formulario", Versions = [1])]
-    [ProducesResponseType(typeof(ModeloFormularioDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ModeloFormularioView), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
     {
-        ModeloFormularioDto? modelo = await _queryBus.Send(new ObterModeloFormularioQuery(id), cancellationToken).ConfigureAwait(false);
+        ModeloFormularioView? modelo = await _queryBus.Send(new ObterModeloFormularioQuery(id), cancellationToken).ConfigureAwait(false);
         return modelo is null ? NotFound() : Ok(modelo);
     }
 

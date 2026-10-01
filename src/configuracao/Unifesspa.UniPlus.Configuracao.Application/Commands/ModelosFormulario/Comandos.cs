@@ -1,20 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Entradas;
-
-/// <summary>
-/// O conteúdo do modelo no mesmo formato da escrita do formulário do processo: título, etapas,
-/// itens, termos e os fatos pressupostos — coletados pela inscrição, citáveis pelo modelo de outra
-/// finalidade (UNI-REQ-0144).
-/// </summary>
-public sealed record ConteudoDoModeloInput(
-    string? Titulo,
-    IReadOnlyList<EtapaFormularioInput>? Etapas,
-    IReadOnlyList<FatoColetadoInput>? Itens,
-    IReadOnlyList<TermoExigidoInput>? Termos,
-    IReadOnlyList<string>? Pressupostos);
 
 /// <summary>Cadastra um modelo de formulário, ativo; o código e a finalidade não mudam depois.</summary>
 public sealed record CriarModeloFormularioCommand(

@@ -1,18 +1,19 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
-using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
-using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
-internal static class ModeloFormularioMapping
+/// <summary>O modelo na forma de leitura, a mesma da manutenção e do leitor cross-módulo.</summary>
+public static class ModeloFormularioMapping
 {
-    public static ModeloFormularioDto ToDto(this ModeloFormulario modelo)
+    public static ModeloFormularioView ToView(this ModeloFormulario modelo)
     {
+        ArgumentNullException.ThrowIfNull(modelo);
         ConteudoDoModelo conteudo = modelo.Conteudo;
-        return new ModeloFormularioDto(
+        return new ModeloFormularioView(
             modelo.Id,
             modelo.Codigo,
             modelo.Nome,

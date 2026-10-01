@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
