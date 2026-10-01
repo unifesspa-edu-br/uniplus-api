@@ -159,6 +159,87 @@ public sealed class ModeloFormularioTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoEmBranco);
     }
 
+    [Fact(DisplayName = "Texto com caractere nulo, no descritivo, no item ou num valor citado por regra, é recusado antes de chegar ao banco")]
+    public void TextoComCaractereNulo_Recusa()
+    {
+        Result<ModeloFormulario> descricao = ModeloFormulario.Criar(
+            "HABILITACAO_MEDICINA", "Habilitação", "texto\0", FinalidadeFormulario.Habilitacao, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+        Result<ModeloFormulario> rotulo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0) with { Rotulo = "Certificado\0" }]));
+        PredicadoDnf valorNulo = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("CONCLUSAO_REGULAR", Operador.Igual, JsonSerializer.SerializeToElement("A\0")).Value!)]).Value!;
+        Result<ModeloFormulario> valor = Criar(
+            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: valorNulo)], "CONCLUSAO_REGULAR"));
+
+        PredicadoDnf objetoNulo = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("CONCLUSAO_REGULAR", Operador.Em, JsonSerializer.SerializeToElement(new[] { new Dictionary<string, string> { ["a\0"] = "b" } })).Value!)]).Value!;
+        Result<ModeloFormulario> objeto = Criar(
+            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: objetoNulo)], "CONCLUSAO_REGULAR"));
+
+        descricao.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+        objeto.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+        rotulo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+        valor.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+    }
+
+    [Fact(DisplayName = "Código com surrogate sem par é recusado, sem exceção na normalização")]
+    public void CodigoComSurrogateSemPar_Recusa()
+    {
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO\uD800", 0) with { Rotulo = "Certificado" }]));
+
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+    }
+
+    [Fact(DisplayName = "Código de termo com surrogate sem par é recusado, sem exceção na conferência de unicidade")]
+    public void CodigoDeTermoComSurrogateSemPar_Recusa()
+    {
+        TermoDoModelo termo = new("LGPD\uD800", 0, Guid.NewGuid(), Guid.NewGuid(), null, Obrigatoriedade.Sempre);
+
+        Result<ModeloFormulario> modelo = Criar(
+            FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, Revisao], [Item("CERTIFICADO", 0)], [termo], []));
+
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+    }
+
+    [Fact(DisplayName = "O tamanho do código do modelo é o do código normalizado, que é o gravado")]
+    public void CodigoQueCresceNaNormalizacao_Recusa()
+    {
+        string codigo = string.Concat(Enumerable.Repeat("\u0958", ModeloFormulario.CodigoMaxLength));
+
+        Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
+            codigo, "Habilitação", null, FinalidadeFormulario.Habilitacao, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.CodigoTamanho);
+    }
+
+    [Fact(DisplayName = "A recusa de restrição aponta a posição em que ela veio")]
+    public void RestricaoIncoerente_ApontaAPosicaoEnviada()
+    {
+        ItemDoModelo item = Item("IDADE", 0) with
+        {
+            TipoRenderizacao = TipoRenderizacao.Numero,
+            Restricoes = [new TamanhoTexto(1, 10), new FaixaNumerica(0, 10)],
+        };
+
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([item]));
+
+        FieldError recusa = modelo.Errors.Should().ContainSingle().Subject;
+        recusa.Error.Code.Should().Be(ItemFormularioErrorCodes.RestricaoIncoerente);
+        recusa.Field.Should().Be("itens[0].restricoes[0]");
+    }
+
+    [Fact(DisplayName = "Tipo de etapa e tipo de campo fora do vocabulário são recusados")]
+    public void EnumsForaDoVocabulario_Recusa()
+    {
+        Result<ModeloFormulario> etapa = Criar(
+            FinalidadeFormulario.Habilitacao,
+            new ConteudoDoModelo("Habilitação", [Dados with { Tipo = (TipoEtapaFormulario)99 }, Revisao], [Item("CERTIFICADO", 0)], [], []));
+        Result<ModeloFormulario> campo = Criar(
+            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0) with { TipoRenderizacao = (TipoRenderizacao)99 }]));
+
+        etapa.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio);
+        campo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio);
+    }
+
     [Fact(DisplayName = "Desativar e reativar alternam o modelo; repetir o estado atual é recusado")]
     public void AtivarDesativar_AlternaERecusaORepetido()
     {

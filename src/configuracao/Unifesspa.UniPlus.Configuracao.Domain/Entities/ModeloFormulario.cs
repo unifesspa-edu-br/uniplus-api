@@ -1,10 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using System.Text;
+using System.Text.Json;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -196,7 +197,8 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     private static List<FieldError> ConferirNormalizado(
         FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
-        List<FieldError> erros = FormaDoCabecalho.Validar(finalidade, conteudo.Titulo);
+        List<FieldError> erros = [.. TextosNaoGravaveis(conteudo)];
+        erros.AddRange(FormaDoCabecalho.Validar(finalidade, conteudo.Titulo));
 
         for (int i = 0; i < conteudo.Etapas.Count; i++)
         {
@@ -370,12 +372,12 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
     private static List<FieldError> ValidarCodigo(string? codigo)
     {
-        List<FieldError> erros = [];
+        List<FieldError> erros = [.. NaoGravavel("codigo", codigo)];
         if (string.IsNullOrWhiteSpace(codigo))
         {
             erros.Add(new("codigo", new DomainError(ModeloFormularioErrorCodes.CodigoObrigatorio, "O código do modelo é obrigatório.")));
         }
-        else if (codigo.Trim().Length > CodigoMaxLength)
+        else if (Normalizar(codigo).Length > CodigoMaxLength)
         {
             erros.Add(new("codigo", new DomainError(
                 ModeloFormularioErrorCodes.CodigoTamanho, $"O código do modelo deve ter no máximo {CodigoMaxLength} caracteres.")));
@@ -386,7 +388,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
     private static List<FieldError> ValidarDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo)
     {
-        List<FieldError> erros = [];
+        List<FieldError> erros = [.. NaoGravavel("nome", nome), .. NaoGravavel("descricao", descricao), .. NaoGravavel("tipoProcessoCodigo", tipoProcessoCodigo)];
         if (string.IsNullOrWhiteSpace(nome))
         {
             erros.Add(new("nome", new DomainError(ModeloFormularioErrorCodes.NomeObrigatorio, "O nome do modelo é obrigatório.")));
@@ -413,7 +415,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         return erros;
     }
 
-    /// <summary>Grava o descritivo e o conteúdo já normalizado, com etapas, itens e termos na ordem declarada.</summary>
+    /// <summary>Grava o descritivo e o conteúdo já normalizado, com etapas, itens e termos na ordem declarada e as restrições de cada item na ordem do tipo.</summary>
     private void Aplicar(string nome, string? descricao, string? tipoProcessoCodigo, ConteudoDoModelo conteudo)
     {
         Nome = nome.Trim();
@@ -422,15 +424,15 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         Conteudo = conteudo with
         {
             Etapas = [.. conteudo.Etapas.OrderBy(static e => e.Ordem)],
-            Itens = [.. conteudo.Itens.OrderBy(static i => i.Ordem)],
+            Itens = [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(static i => i with { Restricoes = [.. i.Restricoes.OrderBy(static r => r.Tipo)] })],
             Termos = [.. conteudo.Termos.OrderBy(static t => t.Ordem)],
         };
     }
 
     /// <summary>
     /// A forma em que o conteúdo é conferido e gravado: textos aparados, códigos em NFC, ausente como
-    /// vazio — a forma do item recusa o vazio — e restrições na ordem do tipo. Mantém as posições, para
-    /// que cada recusa aponte o índice que veio.
+    /// vazio — a forma do item recusa o vazio. Mantém as posições, inclusive das restrições, para que
+    /// cada recusa aponte o índice que veio.
     /// </summary>
     private static ConteudoDoModelo Normalizar(ConteudoDoModelo conteudo) => new(
         FormaDoItem.TextoOpcional(conteudo.Titulo),
@@ -448,10 +450,72 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             Rotulo = (i.Rotulo ?? string.Empty).Trim(),
             Formato = FormaDoItem.TextoOpcional(i.Formato),
             Ajuda = FormaDoItem.TextoOpcional(i.Ajuda),
-            Restricoes = [.. (i.Restricoes ?? []).OrderBy(static r => r.Tipo)],
+            Restricoes = i.Restricoes ?? [],
         })],
         [.. (conteudo.Termos ?? []).Select(static t => t with { Codigo = Normalizar(t.Codigo) })],
         [.. (conteudo.Pressupostos ?? []).Select(static p => Normalizar(p))]);
 
-    private static string Normalizar(string? codigo) => (codigo ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
+    /// <summary>O código aparado e em NFC; o que não se normaliza fica como veio, para a recusa de texto não gravável.</summary>
+    private static string Normalizar(string? codigo)
+    {
+        string aparado = (codigo ?? string.Empty).Trim();
+        return TextoNormalizavel.TentarNormalizar(aparado, out string normalizado) ? normalizado : aparado;
+    }
+
+    /// <summary>
+    /// Os textos do conteúdo que o banco não grava — com caractere nulo, ou que não são Unicode
+    /// válido —, inclusive os valores e os fatos citados pelas regras: o conteúdo é um documento
+    /// jsonb, e o Postgres o recusaria só na gravação.
+    /// </summary>
+    private static IEnumerable<FieldError> TextosNaoGravaveis(ConteudoDoModelo conteudo)
+    {
+        IEnumerable<(string Campo, string? Texto)> textos = new (string, string?)[] { ("titulo", conteudo.Titulo) }
+            .Concat(conteudo.Etapas.SelectMany(static (e, i) => new (string, string?)[]
+                {
+                    ($"etapas[{i}].codigo", e.Codigo), ($"etapas[{i}].titulo", e.Titulo),
+                    ($"etapas[{i}].descricao", e.Descricao), ($"etapas[{i}].aviso", e.Aviso),
+                }.Concat(TextosDoPredicado($"etapas[{i}].exibicao", e.Exibicao))))
+            .Concat(conteudo.Itens.SelectMany(static (item, i) => new (string, string?)[]
+                {
+                    ($"itens[{i}].fatoCodigo", item.FatoCodigo), ($"itens[{i}].etapaCodigo", item.EtapaCodigo),
+                    ($"itens[{i}].rotulo", item.Rotulo), ($"itens[{i}].formato", item.Formato), ($"itens[{i}].ajuda", item.Ajuda),
+                }
+                .Concat(TextosDoPredicado($"itens[{i}].exibicao", item.Exibicao))
+                .Concat(TextosDoPredicado($"itens[{i}].obrigatoriedade", item.Obrigatoriedade.Predicado))
+                .Concat(item.Restricoes.SelectMany((r, j) => TextosDaRestricao($"itens[{i}].restricoes[{j}]", r)))))
+            .Concat(conteudo.Termos.SelectMany(static (t, i) => new (string, string?)[] { ($"termos[{i}].codigo", t.Codigo) }
+                .Concat(TextosDoPredicado($"termos[{i}].exibicao", t.Exibicao))
+                .Concat(TextosDoPredicado($"termos[{i}].obrigatoriedade", t.Obrigatoriedade.Predicado))))
+            .Concat(conteudo.Pressupostos.Select(static (p, i) => ($"pressupostos[{i}]", (string?)p)));
+        return textos.SelectMany(static t => NaoGravavel(t.Campo, t.Texto)).DistinctBy(static e => e.Field);
+    }
+
+    private static IEnumerable<(string Campo, string? Texto)> TextosDaRestricao(string campo, RestricaoValor restricao) => restricao switch
+    {
+        OpcoesPermitidas opcoes => opcoes.Entradas.SelectMany((e, k) => e.Valores.Select(v => ($"{campo}.entradas[{k}].valores", (string?)v))
+            .Concat(TextosDoPredicado($"{campo}.entradas[{k}].quando", e.Quando))),
+        OpcoesDasRespostas respostas => respostas.Fatos.Select(f => ($"{campo}.fatos", (string?)f)),
+        _ => [],
+    };
+
+    private static IEnumerable<(string Campo, string? Texto)> TextosDoPredicado(string campo, PredicadoDnf? predicado) =>
+        (predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes)
+            .SelectMany(c => new[] { (campo, (string?)c.Fato) }.Concat(TextosDoValor(c.Valor).Select(v => (campo, (string?)v))));
+
+    private static IEnumerable<string> TextosDoValor(JsonElement valor) => valor.ValueKind switch
+    {
+        JsonValueKind.String => [valor.GetString()!],
+        JsonValueKind.Array => valor.EnumerateArray().SelectMany(TextosDoValor),
+        JsonValueKind.Object => valor.EnumerateObject().SelectMany(static p => TextosDoValor(p.Value).Prepend(p.Name)),
+        _ => [],
+    };
+
+    private static IEnumerable<FieldError> NaoGravavel(string campo, string? texto)
+    {
+        if (texto is not null && (texto.Contains('\0', StringComparison.Ordinal) || !TextoNormalizavel.TentarNormalizar(texto, out _)))
+        {
+            yield return new(campo, new DomainError(
+                ModeloFormularioErrorCodes.TextoNaoGravavel, "O texto contém o caractere nulo (U+0000) ou não é Unicode válido."));
+        }
+    }
 }

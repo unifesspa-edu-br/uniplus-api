@@ -106,7 +106,7 @@ public static class EstruturaFormulario
                 case TipoEtapaFormulario.Bloco when !blocos.Add(etapa.Bloco):
                     Recusar($"{campo}.bloco", EstruturaFormularioErrorCodes.BlocoRepetido, "O bloco aparece mais de uma vez no formulário.");
                     break;
-                case TipoEtapaFormulario.Nenhum:
+                case not (TipoEtapaFormulario.Secao or TipoEtapaFormulario.Bloco):
                     Recusar($"{campo}.tipo", EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio, "A etapa é uma seção ou um bloco de sistema.");
                     break;
                 default:
