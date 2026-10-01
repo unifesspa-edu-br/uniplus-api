@@ -6446,6 +6446,111 @@
         ]
       }
     },
+    "/api/configuracao/admin/modelos-formulario/{id}/pre-visualizacao": {
+      "post": {
+        "tags": [
+          "ModelosFormulario"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreVisualizacaoDoModeloInput"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreVisualizacaoDoModeloInput"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/PreVisualizacaoDoModeloInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreVisualizacaoDoModeloDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreVisualizacaoDoModeloDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreVisualizacaoDoModeloDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/configuracao/admin/modelos-formulario/{id}/ativacao": {
       "post": {
         "tags": [
@@ -15917,6 +16022,36 @@
           }
         }
       },
+      "ItemPreVisualizadoDto": {
+        "required": [
+          "fatoCodigo",
+          "etapaCodigo",
+          "visivel",
+          "obrigatorio",
+          "restricoesVioladas"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "etapaCodigo": {
+            "type": "string"
+          },
+          "visivel": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "string"
+          },
+          "restricoesVioladas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "JsonElement": {},
       "LocalOfertaDto": {
         "required": [
@@ -16402,6 +16537,58 @@
           }
         }
       },
+      "PreVisualizacaoDoModeloDto": {
+        "required": [
+          "itens",
+          "termos"
+        ],
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemPreVisualizadoDto"
+            }
+          },
+          "termos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermoPreVisualizadoDto"
+            }
+          }
+        }
+      },
+      "PreVisualizacaoDoModeloInput": {
+        "required": [
+          "respostas",
+          "etapasConcluidas",
+          "pressupostos"
+        ],
+        "type": "object",
+        "properties": {
+          "respostas": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "etapasConcluidas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "pressupostos": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -16849,6 +17036,25 @@
                 "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
               }
             }
+          }
+        }
+      },
+      "TermoPreVisualizadoDto": {
+        "required": [
+          "codigo",
+          "visivel",
+          "obrigatorio"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "visivel": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "string"
           }
         }
       },

@@ -140,6 +140,24 @@ public sealed class ModeloFormularioAdminEndpointTests
         lista.RootElement.GetArrayLength().Should().Be(0);
     }
 
+    [Fact(DisplayName = "A pré-visualização avalia o modelo com as respostas simuladas; modelo inexistente é 404, e sem o papel, 403")]
+    public async Task PreVisualizacao()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico()));
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        object simulacao = new { respostas = new Dictionary<string, object> { ["QUILOMBOLA"] = false } };
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", simulacao);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        JsonObject resultado = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
+        JsonNode baixaRenda = resultado["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "BAIXA_RENDA")!;
+        baixaRenda["visivel"]!.GetValue<string>().Should().Be("FALSO");
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{Guid.NewGuid()}/pre-visualizacao", simulacao)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", simulacao, papel: "candidato")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     [Fact(DisplayName = "Código já usado por outro modelo é recusado com conflito")]
     public async Task Criar_CodigoExistente_Retorna409()
     {

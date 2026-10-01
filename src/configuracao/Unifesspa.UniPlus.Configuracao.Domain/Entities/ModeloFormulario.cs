@@ -176,6 +176,22 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     }
 
     /// <summary>
+    /// O modelo como o avaliador de formulário o lê: cada etapa, na ordem, com os seus itens; os
+    /// termos; e as derivações por regra do catálogo, que a pré-visualização resolve com as respostas
+    /// simuladas.
+    /// </summary>
+    public DefinicaoFormulario ParaAvaliacao(IReadOnlyList<RegrasDerivacaoFato> derivacoes)
+    {
+        ArgumentNullException.ThrowIfNull(derivacoes);
+        ILookup<string?, ItemDoModelo> itensPorEtapa = Conteudo.Itens.ToLookup(static i => i.EtapaCodigo, StringComparer.Ordinal);
+        return new DefinicaoFormulario(
+            [.. Conteudo.Etapas.Select(e => new DefinicaoEtapa(
+                e.Codigo, e.Exibicao, [.. itensPorEtapa[e.Codigo].Select(static i => new DefinicaoItem(i.FatoCodigo, i.Exibicao, i.Obrigatoriedade, i.Restricoes))]))],
+            [.. Conteudo.Termos.Select(static t => new DefinicaoTermo(t.Codigo, t.Exibicao, t.Obrigatoriedade))],
+            derivacoes);
+    }
+
+    /// <summary>
     /// O que o cadastro confere fora do conteúdo — código, descritivo, tipo de processo e finalidade
     /// —, para que essas recusas saiam junto das do conteúdo mesmo quando ele não chega a ser lido.
     /// </summary>
