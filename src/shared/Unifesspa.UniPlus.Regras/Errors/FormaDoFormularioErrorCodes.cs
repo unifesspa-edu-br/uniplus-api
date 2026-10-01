@@ -17,6 +17,7 @@ public static class ItemFormularioErrorCodes
     public const string TipoRenderizacaoIncoerenteComDominio = "ItemFormulario.TipoRenderizacaoIncoerenteComDominio";
     public const string FatoDesconhecido = "ItemFormulario.FatoDesconhecido";
     public const string FatoNaoColetavel = "ItemFormulario.FatoNaoColetavel";
+    public const string ItensEmExcesso = "ItemFormulario.ItensEmExcesso";
 }
 
 /// <summary>Códigos de recusa da forma de um termo exigido pelo formulário, no processo e no modelo.</summary>

@@ -65,6 +65,13 @@ public static class DefinirFatosColetadosCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        // Acima do teto a lista não é lida item a item: o validator não confere os itens dela, e a
+        // recusa da quantidade é a única resposta.
+        if (FormaDoItem.ValidarQuantidade(command.Itens.Count) is { Count: > 0 } excesso)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(excesso);
+        }
+
         // Forma, leitura do catálogo e semântica acumulam no mesmo errors[] (ADR-0125), e a decisão
         // é tomada num ponto só. A forma vem antes da leitura, sem I/O; o item de forma inválida só
         // não segue para a conferência contra o catálogo.

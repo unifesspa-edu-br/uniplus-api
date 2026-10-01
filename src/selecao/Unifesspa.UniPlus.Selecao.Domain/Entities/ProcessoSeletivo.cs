@@ -2038,6 +2038,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(FormularioInexistente(finalidade));
         }
 
+        if (FormaDoItem.ValidarQuantidade(fatosColetados.Count) is [var excesso, ..])
+        {
+            return Result.ValidationFailure([excesso]);
+        }
+
         // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
@@ -2812,6 +2817,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("formulario_fase_incoerente", DimensaoConformidade.ColetaDeFatos, "Formulários: cada um na fase do cronograma que a finalidade pede", PendenciaDaFaseDosFormularios() is null),
         new ItemConformidade("formulario_isencao_sem_taxa", DimensaoConformidade.ColetaDeFatos, "Formulários: isenção de taxa só em processo que cobra taxa", PendenciaDaIsencaoSemTaxa() is null),
         new ItemConformidade("formulario_item_fora_de_secao", DimensaoConformidade.ColetaDeFatos, "Formulários: todo item numa seção, na ordem das seções", PendenciaDosItensForaDeSecao() is null),
+        new ItemConformidade("formulario_itens_em_excesso", DimensaoConformidade.ColetaDeFatos, $"Formulários: no máximo {FormaDoItem.MaximoDeItens} itens cada", PendenciaDosItensEmExcesso() is null),
         new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
         new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: cota da lei e ação afirmativa não derivam juntas", PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
@@ -3681,6 +3687,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return itemForaDeSecao;
         }
 
+        if (PendenciaDosItensEmExcesso() is { } itensEmExcesso)
+        {
+            return itensEmExcesso;
+        }
+
         if (PendenciaDoDominioDeContribuicao() is { } contribuicaoForaDoDominio)
         {
             return contribuicaoForaDoDominio;
@@ -3972,6 +3983,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return null;
     }
+
+    /// <summary>
+    /// O mesmo teto da gravação, conferido de novo na publicação: uma gravação feita fora do
+    /// agregado não publica formulário que o PUT seguinte da mesma lista recusaria.
+    /// </summary>
+    private DomainError? PendenciaDosItensEmExcesso() =>
+        _formularios.OrderBy(static f => f.Finalidade)
+            .Select(f => FormaDoItem.ValidarQuantidade(ItensDaFinalidade(f.Finalidade, _fatosColetados).Count))
+            .FirstOrDefault(static erros => erros.Count > 0) is [var excesso, ..]
+            ? excesso.Error
+            : null;
 
     /// <summary>
     /// Termo exigido cuja versão ainda não definiu a forma de aceite não é publicável
@@ -5474,6 +5496,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (ValidarQuantidadeDeCriteriosDesempate(grafo.CriteriosDesempate.Count) is [var excesso, ..])
         {
             return excesso.Error;
+        }
+
+        if (grafo.FatosColetados.GroupBy(static f => f.Finalidade).OrderBy(static g => g.Key)
+                .Select(static g => FormaDoItem.ValidarQuantidade(g.Count())).FirstOrDefault(static e => e.Count > 0) is [var itensEmExcesso, ..])
+        {
+            return itensEmExcesso.Error;
         }
 
         List<int> ordensDesempate = [.. grafo.CriteriosDesempate.Select(c => c.Ordem)];
