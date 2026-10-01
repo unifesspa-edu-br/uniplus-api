@@ -58,92 +58,30 @@ public static class DefinirTermosDoFormularioCommandHandler
                 TermoExigidoFormularioErrorCodes.EntradaMalformada, "A lista de termos é obrigatória; a lista vazia remove os termos."));
         }
 
-        // Forma, leitura do catálogo e unicidade acumulam no mesmo errors[], sem retorno entre elas
-        // (ADR-0125); o termo de forma inválida só não segue para a conferência contra o catálogo.
-        List<FieldError> erros = [];
-        List<(PredicadoDnf? Exibicao, Obrigatoriedade Obrigatoriedade)?> condicoes = [];
-        for (int i = 0; i < entradas.Count; i++)
-        {
-            int recusasAntes = erros.Count;
-            (PredicadoDnf? Exibicao, Obrigatoriedade? Obrigatoriedade) forma = ConferirForma(entradas[i], $"termos[{i}]", erros);
-            condicoes.Add(erros.Count == recusasAntes ? (forma.Exibicao, forma.Obrigatoriedade!) : null);
-        }
-
+        // A forma vem antes das leituras externas; as recusas da forma, do catálogo e da unicidade
+        // acumulam no mesmo errors[] (ADR-0125).
+        TermosLidos lidos = EscritaDosTermos.Ler(entradas);
         IReadOnlyList<VersaoTermoConsentimentoView> versoes = await termoConsentimentoReader
             .ListarVersoesAsync([.. entradas.OfType<TermoExigidoInput>().Select(static t => t.VersaoId).Distinct()], cancellationToken)
             .ConfigureAwait(false);
-        Dictionary<Guid, VersaoTermoConsentimentoView> versaoPorId = versoes.ToDictionary(static v => v.VersaoId);
-
         IReadOnlyList<FatoCandidatoView> catalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
-        Dictionary<string, DescritorFatoCandidato> vocabulario = VocabularioDeFatos.Descritores(catalogo);
-        Dictionary<string, FatoCandidatoView> catalogoPorCodigo = catalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-        Dictionary<string, DominioDeValores> dominiosDinamicos = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
+        ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
 
         // O formulário avalia a condição do termo com as respostas e os derivados do candidato:
         // o universo são os fatos coletados e os derivados por regra do processo.
         HashSet<string> universo = new(
             processo.FatosColetados.Select(static f => f.FatoCodigo).Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato)),
             StringComparer.Ordinal);
+        (List<TermoExigidoFormulario> termos, List<FieldError> erros) =
+            EscritaDosTermos.Resolver(lidos, contexto, versoes.ToDictionary(static v => v.VersaoId), universo);
 
-        List<TermoExigidoFormulario> termos = [];
-        for (int i = 0; i < entradas.Count; i++)
-        {
-            if (condicoes[i] is not { } condicao)
-            {
-                continue;
-            }
-
-            TermoExigidoInput entrada = entradas[i];
-            string campo = $"termos[{i}]";
-
-            // As condições não dependem da versão: conferidas antes dela, as recusas do termo saem
-            // juntas.
-            (PredicadoDnf? exibicao, Obrigatoriedade obrigatoriedade) = condicao;
-            if ((VocabularioDeFatos.CitacaoDeAtributoDoCandidato(exibicao?.FatosCitados ?? [], catalogoPorCodigo)
-                    ?? ValidarPredicado(exibicao, vocabulario, universo, dominiosDinamicos)) is { } erroExibicao)
-            {
-                erros.Add(new($"{campo}.exibicao", erroExibicao));
-            }
-
-            if ((VocabularioDeFatos.CitacaoDeAtributoDoCandidato(obrigatoriedade.FatosCitados, catalogoPorCodigo)
-                    ?? ValidarPredicado(obrigatoriedade.Predicado, vocabulario, universo, dominiosDinamicos)) is { } erroObrigatoriedade)
-            {
-                erros.Add(new($"{campo}.predicadoObrigatoriedade", erroObrigatoriedade));
-            }
-
-            if (!versaoPorId.TryGetValue(entrada.VersaoId, out VersaoTermoConsentimentoView? versao) || versao.TermoId != entrada.TermoId)
-            {
-                erros.Add(new($"{campo}.versaoId", new DomainError(
-                    TermoExigidoFormularioErrorCodes.VersaoNaoEncontrada,
-                    "A versão informada não existe no catálogo de termos, ou pertence a outro termo.")));
-                continue;
-            }
-
-            Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(
-                entrada.Codigo,
-                entrada.Ordem,
-                new VersaoTermoEscolhida(versao.TermoId, versao.VersaoId, versao.Nome, versao.Texto, versao.BaseLegal, versao.FormaAceite, versao.Hash),
-                exibicao,
-                obrigatoriedade);
-            if (termo.IsSuccess)
-            {
-                termos.Add(termo.Value!);
-            }
-            else
-            {
-                erros.AddRange(termo.Errors.Select(e => new FieldError($"{campo}.{e.Field}", e.Error)));
-            }
-        }
-
-        erros.AddRange(FormaDoTermo.ConferirUnicidade(
-            [.. entradas.Select(static t => t is null ? null : ((string?, int)?)(t.Codigo, t.Ordem))]));
         if (erros.Count > 0)
         {
             return Result<MutacaoAceita>.ValidationFailure(erros);
         }
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
-            catalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal),
+            contexto.Fatos,
             processo.Vinculos(),
             VinculosDeFatos.De([], termos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor))));
         if (vinculoNovo.IsFailure)
@@ -161,51 +99,4 @@ public static class DefinirTermosDoFormularioCommandHandler
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
-
-    /// <summary>
-    /// A forma do termo sem leitura externa: código, ordem, exibição e obrigatoriedade coerente — só
-    /// <c>QUANDO</c> tem predicado, e ele o tem sempre.
-    /// </summary>
-    private static (PredicadoDnf? Exibicao, Obrigatoriedade? Obrigatoriedade) ConferirForma(
-        TermoExigidoInput? entrada, string campo, List<FieldError> erros)
-    {
-        if (entrada is null)
-        {
-            erros.Add(new(campo, new DomainError(TermoExigidoFormularioErrorCodes.EntradaMalformada, "O termo veio nulo.")));
-            return (null, null);
-        }
-
-        erros.AddRange(FormaDoTermo.ValidarFormaBasica(entrada.Codigo, entrada.Ordem)
-            .Select(e => new FieldError($"{campo}.{e.Field}", e.Error)));
-
-        Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(entrada.Exibicao);
-        if (exibicao.IsFailure)
-        {
-            erros.Add(new($"{campo}.exibicao", exibicao.Error!));
-        }
-
-        Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(entrada.PredicadoObrigatoriedade);
-        if (predicado.IsFailure)
-        {
-            erros.Add(new($"{campo}.predicadoObrigatoriedade", predicado.Error!));
-            return (exibicao.Value, null);
-        }
-
-        Obrigatoriedade? obrigatoriedade = EntradaDeRegras.Obrigatoriedade(entrada.Obrigatoriedade, predicado.Value);
-        if (obrigatoriedade is null)
-        {
-            erros.Add(new($"{campo}.obrigatoriedade", new DomainError(
-                TermoExigidoFormularioErrorCodes.ObrigatoriedadeInvalida,
-                "A obrigatoriedade é SEMPRE ou NUNCA, sem predicado, ou QUANDO, com predicado.")));
-        }
-
-        return (exibicao.Value, obrigatoriedade);
-    }
-
-    private static DomainError? ValidarPredicado(
-        PredicadoDnf? predicado,
-        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
-        IReadOnlySet<string> universo,
-        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos) =>
-        predicado is null ? null : PredicadoDnfValidador.Validar(predicado, vocabulario, universo, dominiosDinamicos).Error;
 }
