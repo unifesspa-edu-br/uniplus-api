@@ -199,23 +199,22 @@ public static class FormaDoCabecalho
     public const int TituloMaxLength = 300;
 
     /// <summary>A finalidade é uma das três do formulário, e o título, quando há, cabe no limite.</summary>
-    public static List<FieldError> Validar(FinalidadeFormulario finalidade, string? titulo)
-    {
-        List<FieldError> erros = [];
-        if (finalidade == FinalidadeFormulario.Nenhuma || !Enum.IsDefined(finalidade))
-        {
-            erros.Add(new("finalidade", new DomainError(EstruturaFormularioErrorCodes.FinalidadeInvalida,
-                "A finalidade do formulário é inscrição, isenção de taxa ou habilitação.")));
-        }
+    public static List<FieldError> Validar(FinalidadeFormulario finalidade, string? titulo) =>
+        [.. ValidarFinalidade(finalidade), .. ValidarTitulo(titulo)];
 
-        if (FormaDoItem.TextoOpcional(titulo) is { Length: > TituloMaxLength })
-        {
-            erros.Add(new("titulo", new DomainError(EstruturaFormularioErrorCodes.TituloTamanho,
-                $"O título do formulário deve ter no máximo {TituloMaxLength} caracteres.")));
-        }
+    /// <summary>A finalidade é inscrição, isenção de taxa ou habilitação.</summary>
+    public static List<FieldError> ValidarFinalidade(FinalidadeFormulario finalidade) =>
+        finalidade == FinalidadeFormulario.Nenhuma || !Enum.IsDefined(finalidade)
+            ? [new("finalidade", new DomainError(EstruturaFormularioErrorCodes.FinalidadeInvalida,
+                "A finalidade do formulário é inscrição, isenção de taxa ou habilitação."))]
+            : [];
 
-        return erros;
-    }
+    /// <summary>O título, quando há, cabe no limite.</summary>
+    public static List<FieldError> ValidarTitulo(string? titulo) =>
+        FormaDoItem.TextoOpcional(titulo) is { Length: > TituloMaxLength }
+            ? [new("titulo", new DomainError(EstruturaFormularioErrorCodes.TituloTamanho,
+                $"O título do formulário deve ter no máximo {TituloMaxLength} caracteres."))]
+            : [];
 }
 
 /// <summary>A forma de uma etapa do formulário, a mesma no processo e no modelo.</summary>

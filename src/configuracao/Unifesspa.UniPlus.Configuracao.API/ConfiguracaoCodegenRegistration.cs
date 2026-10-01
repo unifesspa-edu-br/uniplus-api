@@ -44,5 +44,10 @@ public static class ConfiguracaoCodegenRegistration
         // diretamente, então o service location é o opt-in sancionado (ADR-0098),
         // mesmo mecanismo dos readers cross-módulo consumidos pela Seleção.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
+
+        // A escrita do modelo de formulário confere os termos e o tipo de processo pelos mesmos
+        // leitores que a Seleção usa, também internal.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITermoConsentimentoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoProcessoReader>();
     }
 }

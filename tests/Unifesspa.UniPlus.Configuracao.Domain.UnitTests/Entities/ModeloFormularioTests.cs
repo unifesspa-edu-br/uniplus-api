@@ -224,7 +224,7 @@ public sealed class ModeloFormularioTests
 
         FieldError recusa = modelo.Errors.Should().ContainSingle().Subject;
         recusa.Error.Code.Should().Be(ItemFormularioErrorCodes.RestricaoIncoerente);
-        recusa.Field.Should().Be("itens[0].restricoes[0]");
+        recusa.Field.Should().Be("conteudo.itens[0].restricoes[0]");
     }
 
     [Fact(DisplayName = "Tipo de etapa e tipo de campo fora do vocabulário são recusados")]
@@ -238,6 +238,25 @@ public sealed class ModeloFormularioTests
 
         etapa.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio);
         campo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio);
+    }
+
+    [Fact(DisplayName = "Tipo de processo só com espaços é recusado, em vez de virar o modelo de todos os tipos")]
+    public void TipoProcessoEmBranco_Recusa()
+    {
+        Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
+            "HABILITACAO_MEDICINA", "Habilitação", null, FinalidadeFormulario.Habilitacao, "   ", Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TipoProcessoCodigoEmBranco);
+    }
+
+    [Fact(DisplayName = "Finalidade inválida é recusada no cadastro, não no conteúdo, e a estrutura que depende dela não é conferida")]
+    public void FinalidadeInvalida_RecusaNoCadastro()
+    {
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Nenhuma, Conteudo([Item("CERTIFICADO", 0)]));
+
+        modelo.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
+            new FieldError("finalidade", new DomainError(EstruturaFormularioErrorCodes.FinalidadeInvalida, string.Empty)),
+            static o => o.Excluding(static e => e.Error.Message));
     }
 
     [Fact(DisplayName = "Desativar e reativar alternam o modelo; repetir o estado atual é recusado")]

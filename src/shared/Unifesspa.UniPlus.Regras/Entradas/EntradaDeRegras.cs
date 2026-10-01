@@ -109,4 +109,37 @@ public static class EntradaDeRegras
 
         return RestricoesDeValor.Opcoes(lidas);
     }
+
+    /// <summary>
+    /// O predicado na forma da entrada — o OU de cláusulas, cada uma o E de condições —, para a
+    /// leitura que volta à edição; nulo quando não há condição.
+    /// </summary>
+    public static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? ParaEntrada(PredicadoDnf? predicado) =>
+        predicado is null
+            ? null
+            : [.. predicado.Clausulas.Select(static c => (IReadOnlyList<CondicaoPrecondicaoInput>)
+                [.. c.Condicoes.Select(static k => new CondicaoPrecondicaoInput(k.Fato, k.Operador.ToCodigo(), k.Valor))])];
+
+    /// <summary>O token da obrigatoriedade; o predicado do <c>QUANDO</c> vai à parte (<see cref="ParaEntrada(PredicadoDnf?)"/>).</summary>
+    public static string ParaEntrada(Formularios.Obrigatoriedade obrigatoriedade)
+    {
+        ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        return PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo);
+    }
+
+    /// <summary>A restrição de valor na forma da entrada.</summary>
+    public static RestricaoValorInput ParaEntrada(RestricaoValor restricao)
+    {
+        ArgumentNullException.ThrowIfNull(restricao);
+        string tipo = RestricaoValorJson.ParaToken(restricao.Tipo);
+        return restricao switch
+        {
+            FaixaNumerica faixa => new(tipo, faixa.Minimo, faixa.Maximo),
+            TamanhoTexto tamanho => new(tipo, tamanho.Minimo, tamanho.Maximo),
+            OpcoesPermitidas opcoes => new(tipo, Entradas: [.. opcoes.Entradas.Select(static e =>
+                new OpcoesCondicionadasInput(ParaEntrada(e.Quando), [.. e.Valores.Order(StringComparer.Ordinal)]))]),
+            OpcoesDasRespostas respostas => new(tipo, Fatos: respostas.Fatos),
+            _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Restrição de valor fora do vocabulário."),
+        };
+    }
 }

@@ -4,6 +4,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -74,5 +76,48 @@ public static class VocabularioDoCatalogo
         }
 
         return dominios;
+    }
+
+    /// <summary>O catálogo como as regras do formulário o conferem, por código (<see cref="FatoDoCatalogo"/>).</summary>
+    public static Dictionary<string, FatoDoCatalogo> ParaRegras(IEnumerable<FatoCandidato> fatos)
+    {
+        ArgumentNullException.ThrowIfNull(fatos);
+        return fatos.ToDictionary(
+            static f => f.Codigo,
+            static f => new FatoDoCatalogo(
+                f.Codigo,
+                DominiosFato.ParaTokenCanonico(f.Dominio),
+                CardinalidadesFato.ParaTokenCanonico(f.Cardinalidade),
+                OrigensFato.ParaTokenCanonico(f.Origem),
+                f.Binding,
+                f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
+                EscoposFato.ParaTokenCanonico(f.Escopo),
+                f.Ativo,
+                [.. f.ValoresDominioDeclarados.Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]),
+            StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// As dependências de cada derivado por regra que o catálogo sabe derivar: os fatos citados pelas
+    /// regras padrão dele. O derivado sem regra padrão não entra — quem o deriva é o processo.
+    /// </summary>
+    public static Dictionary<string, IReadOnlyCollection<string>> Derivacoes(IEnumerable<FatoCandidato> fatos)
+    {
+        ArgumentNullException.ThrowIfNull(fatos);
+        return fatos
+            .Where(static f => f.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(f.Binding, VinculoDeFato.RegraDeDerivacao))
+            .ToDictionary(
+                static f => f.Codigo,
+                static f => (IReadOnlyCollection<string>)[.. f.RegrasPadrao.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)],
+                StringComparer.Ordinal);
+    }
+
+    /// <summary>O formato da resposta de cada fato de texto, em token canônico.</summary>
+    public static Dictionary<string, string> Formatos(IEnumerable<FatoCandidato> fatos)
+    {
+        ArgumentNullException.ThrowIfNull(fatos);
+        return fatos
+            .Where(static f => f.Formato is { } formato && formato != FormatoTexto.Nenhum)
+            .ToDictionary(static f => f.Codigo, static f => FormatosTexto.ParaTokenCanonico(f.Formato!.Value), StringComparer.Ordinal);
     }
 }
