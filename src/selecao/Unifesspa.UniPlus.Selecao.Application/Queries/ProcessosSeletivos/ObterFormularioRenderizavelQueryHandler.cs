@@ -547,12 +547,12 @@ public static class ObterFormularioRenderizavelQueryHandler
             return true;
         }
 
-        return TentarStringOpcional(formulario, "faseId", out string? faseDoFormulario)
+        // O formulário publicado tem fase, e toda exigência é de uma fase: a falta de qualquer das
+        // duas é forma inesperada, e omitir o documento em silêncio esconderia exigência do candidato.
+        return TentarGuid(formulario, "faseId", out Guid faseDoFormulario)
             && ProjecaoDoCertamePublicado.TentarExigencias(
                 envelope,
-                exigencia => faseDoFormulario is not null
-                    && TentarStringOpcional(exigencia, "exigidoNaFaseId", out string? fase)
-                    && string.Equals(fase, faseDoFormulario, StringComparison.Ordinal),
+                exigencia => TentarGuid(exigencia, "exigidoNaFaseId", out Guid fase) ? fase == faseDoFormulario : null,
                 out comprovacao);
     }
 
