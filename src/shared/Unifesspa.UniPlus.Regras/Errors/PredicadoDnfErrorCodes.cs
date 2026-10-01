@@ -11,4 +11,5 @@ public static class PredicadoDnfErrorCodes
     public const string OperadorIncompativelComDominio = "PredicadoDnf.OperadorIncompativelComDominio";
     public const string ValorIncompativelComTipo = "PredicadoDnf.ValorIncompativelComTipo";
     public const string ValorForaDoDominio = "PredicadoDnf.ValorForaDoDominio";
+    public const string CondicaoNula = "PredicadoDnf.CondicaoNula";
 }

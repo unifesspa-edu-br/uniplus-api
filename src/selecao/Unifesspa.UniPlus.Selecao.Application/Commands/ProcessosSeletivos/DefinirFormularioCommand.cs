@@ -5,22 +5,8 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
-
-/// <summary>
-/// Uma etapa do formulário: seção (<c>SECAO</c>) ou bloco de sistema (<c>BLOCO</c>, com o bloco em
-/// <see cref="Bloco"/>), com a ordem, o título, os textos de apoio e, na seção, a
-/// <see cref="Exibicao"/> condicional — predicado sobre fatos conhecidos antes dela.
-/// </summary>
-public sealed record EtapaFormularioInput(
-    string Codigo,
-    int Ordem,
-    string Tipo,
-    string? Bloco,
-    string Titulo,
-    string? Descricao,
-    string? Aviso,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao = null);
 
 /// <summary>
 /// Define ou substitui o formulário de uma finalidade (UNI-REQ-0144): a fase do cronograma, o título
