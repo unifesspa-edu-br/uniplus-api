@@ -10,8 +10,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 /// <remarks>
 /// As invariantes que tornariam a avaliação ambígua são protegidas com
-/// <see cref="ArgumentException"/>: um fato produzido por dois itens, um fato que é ao mesmo tempo
-/// item e derivado, e código de etapa ou de termo repetido. A recusa com mensagem ao administrador é
+/// <see cref="ArgumentException"/>: um fato produzido por dois itens ou subitens, um fato que é ao
+/// mesmo tempo item e derivado, um grupo com o código de um fato, e código de etapa ou de termo
+/// repetido. A recusa com mensagem ao administrador é
 /// do cadastro, antes de a descrição existir.
 /// </remarks>
 public sealed record DefinicaoFormulario
@@ -29,8 +30,10 @@ public sealed record DefinicaoFormulario
         GarantirUnicos(termos.Select(static t => t.Codigo), "termo");
         GarantirUnicos(
             etapas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo)
-                .Concat(derivacoes.Select(static d => d.CodigoFato)),
-            "fato produzido no formulário");
+                .Concat(etapas.SelectMany(static e => e.Grupos).SelectMany(static g => g.Subitens).Select(static i => i.FatoCodigo))
+                .Concat(derivacoes.Select(static d => d.CodigoFato))
+                .Concat(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo)),
+            "fato produzido ou grupo do formulário");
 
         Etapas = [.. etapas];
         Termos = [.. termos];
@@ -62,7 +65,8 @@ public sealed record DefinicaoFormulario
 /// </summary>
 public sealed record DefinicaoEtapa
 {
-    public DefinicaoEtapa(string codigo, PredicadoDnf? exibicao, IReadOnlyList<DefinicaoItem> itens)
+    public DefinicaoEtapa(
+        string codigo, PredicadoDnf? exibicao, IReadOnlyList<DefinicaoItem> itens, IReadOnlyList<DefinicaoGrupo>? grupos = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentNullException.ThrowIfNull(itens);
@@ -70,6 +74,7 @@ public sealed record DefinicaoEtapa
         Codigo = codigo;
         Exibicao = exibicao;
         Itens = [.. itens];
+        Grupos = [.. grupos ?? []];
     }
 
     public string Codigo { get; }
@@ -78,6 +83,65 @@ public sealed record DefinicaoEtapa
     public PredicadoDnf? Exibicao { get; }
 
     public IReadOnlyList<DefinicaoItem> Itens { get; }
+
+    /// <summary>Os grupos repetíveis da etapa, cada um uma lista de ocorrências (UNI-REQ-0146).</summary>
+    public IReadOnlyList<DefinicaoGrupo> Grupos { get; }
+}
+
+/// <summary>
+/// Um grupo repetível: uma lista de ocorrências, cada uma com os subitens — fatos de membro —, com
+/// exibição e obrigatoriedade do grupo e o mínimo e o máximo de ocorrências (ADR-0138, UNI-REQ-0146).
+/// As regras dos subitens citam fatos do candidato ou subitens anteriores da mesma ocorrência.
+/// </summary>
+public sealed record DefinicaoGrupo
+{
+    public DefinicaoGrupo(
+        string codigo,
+        PredicadoDnf? exibicao,
+        Obrigatoriedade obrigatoriedade,
+        int minimo,
+        int maximo,
+        IReadOnlyList<DefinicaoItem> subitens)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        ArgumentNullException.ThrowIfNull(subitens);
+        ArgumentOutOfRangeException.ThrowIfNegative(minimo);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maximo, Math.Max(minimo, 1));
+
+        Codigo = codigo;
+        Exibicao = exibicao;
+        Obrigatoriedade = obrigatoriedade;
+        Minimo = minimo;
+        Maximo = maximo;
+        Subitens = [.. subitens];
+    }
+
+    public string Codigo { get; }
+
+    /// <summary>A condição de exibição do grupo inteiro — nula quando o grupo sempre aparece na etapa.</summary>
+    public PredicadoDnf? Exibicao { get; }
+
+    public Obrigatoriedade Obrigatoriedade { get; }
+    public int Minimo { get; }
+    public int Maximo { get; }
+    public IReadOnlyList<DefinicaoItem> Subitens { get; }
+
+    /// <summary>
+    /// Os fatos do candidato de que o grupo depende: os da exibição e da obrigatoriedade dele e os
+    /// que os subitens citam fora da ocorrência.
+    /// </summary>
+    public IReadOnlyCollection<string> FatosDoCandidatoCitados
+    {
+        get
+        {
+            HashSet<string> dosSubitens = new(Subitens.Select(static s => s.FatoCodigo), StringComparer.Ordinal);
+            return [.. (Exibicao?.FatosCitados ?? [])
+                .Concat(Obrigatoriedade.FatosCitados)
+                .Concat(Subitens.SelectMany(static s => s.FatosCitados).Where(f => !dosSubitens.Contains(f)))
+                .Distinct(StringComparer.Ordinal)];
+        }
+    }
 }
 
 /// <summary>

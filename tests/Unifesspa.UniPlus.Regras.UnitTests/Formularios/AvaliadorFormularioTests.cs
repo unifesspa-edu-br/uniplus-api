@@ -222,6 +222,152 @@ public sealed class AvaliadorFormularioTests
         avaliacao.Fatos["B"].Estado.Should().Be(EstadoFato.Indeterminado);
     }
 
+    [Fact]
+    public void Grupo_AvaliaCadaOcorrencia_PelasRespostasDela()
+    {
+        DefinicaoGrupo grupo = Grupo(
+            Obrigatoriedade.Sempre, minimo: 1, maximo: 5,
+            Item("PARENTESCO"),
+            Item("SOB_GUARDA", exibicao: Predicado(Condicao("PARENTESCO", Operador.Igual, "FILHO"))));
+
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+            ComGrupo(grupo),
+            EntradaComGrupo(etapaConcluida: false, [Ocorrencia("m1", ("PARENTESCO", "FILHO")), Ocorrencia("m2", ("PARENTESCO", "MAE"))])).Grupos.Single();
+
+        avaliacao.Ocorrencias.Select(static o => o.Itens[1].Visivel).Should().Equal(Ternario.Verdadeiro, Ternario.Falso);
+        avaliacao.Ocorrencias.Select(static o => o.Estado).Should().Equal(EstadoFato.Indeterminado, EstadoFato.Resolvido);
+        avaliacao.Estado.Should().Be(EstadoFato.Indeterminado, "o grupo só resolve quando todas as ocorrências resolvem");
+    }
+
+    [Fact]
+    public void Grupo_OsFatosDeMembroNaoEntramNosFatosDoCandidato()
+    {
+        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+            ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: 5, Item("PARENTESCO"))),
+            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))]));
+
+        avaliacao.Fatos.Should().NotContainKey("PARENTESCO");
+        avaliacao.Grupos.Single().Estado.Should().Be(EstadoFato.Resolvido);
+        avaliacao.Grupos.Single().Ocorrencias.Single().Fatos["PARENTESCO"].Estado.Should().Be(EstadoFato.Resolvido);
+    }
+
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
+    [InlineData(4, false)]
+    public void Grupo_ContagemForaDoIntervalo_NaoValeComoResposta(int quantas, bool valida)
+    {
+        DefinicaoGrupo grupo = Grupo(Obrigatoriedade.Sempre, minimo: 2, maximo: 3, Item("PARENTESCO"));
+        (string, (string, object)[])[] ocorrencias = [.. Enumerable.Range(0, quantas).Select(i => Ocorrencia($"m{i}", ("PARENTESCO", "MAE")))];
+
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+
+        avaliacao.ContagemValida.Should().Be(valida);
+        avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
+    }
+
+    [Theory]
+    [InlineData(0, EstadoFato.Resolvido)]
+    [InlineData(1, EstadoFato.Indeterminado)]
+    public void GrupoObrigatorio_ListaVazia_ResolveSoComMinimoZero(int minimo, EstadoFato esperado)
+    {
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+            ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo, maximo: 5, Item("PARENTESCO"))),
+            EntradaComGrupo(etapaConcluida: true, [])).Grupos.Single();
+
+        avaliacao.Estado.Should().Be(esperado);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GrupoOpcional_ListaVazia_EhNaoInformado_MesmoComMinimoAcimaDeZero(bool etapaConcluida)
+    {
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+            ComGrupo(Grupo(Obrigatoriedade.Nunca, minimo: 2, maximo: 5, Item("PARENTESCO"))),
+            EntradaComGrupo(etapaConcluida, [])).Grupos.Single();
+
+        avaliacao.ContagemValida.Should().BeTrue("o opcional aceita zero ocorrência");
+        avaliacao.Estado.Should().Be(EstadoFato.NaoInformado, "a lista vazia é resposta, mesmo com a etapa aberta");
+    }
+
+    [Theory]
+    [InlineData(true, EstadoFato.NaoInformado)]
+    [InlineData(false, EstadoFato.Indeterminado)]
+    public void GrupoOpcional_SemResposta_SoViraNaoInformadoComAEtapaConcluida(bool etapaConcluida, EstadoFato esperado)
+    {
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+            ComGrupo(Grupo(Obrigatoriedade.Nunca, minimo: 0, maximo: 5, Item("PARENTESCO"))),
+            Entrada(etapaConcluida)).Grupos.Single();
+
+        avaliacao.Estado.Should().Be(esperado);
+    }
+
+    [Fact]
+    public void Grupo_OcorrenciasComAMesmaIdentidade_SaoRecusadas()
+    {
+        Action avaliar = () => AvaliadorFormulario.Avaliar(
+            ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: 5, Item("PARENTESCO"))),
+            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE")), Ocorrencia("m1", ("PARENTESCO", "PAI"))]));
+
+        avaliar.Should().Throw<ArgumentException>().WithMessage("*'m1'*");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Ocorrencia_SemIdentidade_EhRecusada(string id)
+    {
+        Action criar = () => _ = new OcorrenciaRespondida(id, new Dictionary<string, JsonElement>(StringComparer.Ordinal));
+
+        criar.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void GrupoOculto_EhNaoAplicavel_MesmoComOcorrenciaGravada()
+    {
+        DefinicaoGrupo grupo = new(
+            "COMPOSICAO",
+            Predicado(Condicao("CONCORRER_RENDA", Operador.Igual, true)),
+            Obrigatoriedade.Sempre,
+            minimo: 1,
+            maximo: 5,
+            [Item("PARENTESCO")]);
+        DefinicaoFormulario formulario = new(
+            [new DefinicaoEtapa(Etapa, exibicao: null, [Item("CONCORRER_RENDA")], [grupo])], termos: [], derivacoes: []);
+
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+            formulario,
+            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))], ("CONCORRER_RENDA", false))).Grupos.Single();
+
+        avaliacao.Visivel.Should().Be(Ternario.Falso);
+        avaliacao.Estado.Should().Be(EstadoFato.NaoAplicavel);
+        avaliacao.Ocorrencias.Should().BeEmpty();
+    }
+
+    private static DefinicaoGrupo Grupo(Obrigatoriedade obrigatoriedade, int minimo, int maximo, params DefinicaoItem[] subitens) =>
+        new("COMPOSICAO", exibicao: null, obrigatoriedade, minimo, maximo, subitens);
+
+    private static DefinicaoFormulario ComGrupo(DefinicaoGrupo grupo) =>
+        new([new DefinicaoEtapa(Etapa, exibicao: null, [], [grupo])], termos: [], derivacoes: []);
+
+    private static (string Id, (string Fato, object Valor)[] Respostas) Ocorrencia(string id, params (string Fato, object Valor)[] respostas) =>
+        (id, respostas);
+
+    /// <summary>A entrada com as ocorrências do grupo <c>COMPOSICAO</c>, na ordem dada, e as respostas do candidato.</summary>
+    private static EntradaAvaliacaoFormulario EntradaComGrupo(
+        bool etapaConcluida,
+        IReadOnlyList<(string Id, (string Fato, object Valor)[] Respostas)> ocorrencias,
+        params (string Fato, object Valor)[] respostas) =>
+        Entrada(etapaConcluida, respostas) with
+        {
+            RespostasDosGrupos = new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
+            {
+                ["COMPOSICAO"] = [.. ocorrencias.Select(static o => new OcorrenciaRespondida(o.Id, Respostas(o.Respostas)))],
+            },
+        };
+
     private static DefinicaoFormulario Formulario(params DefinicaoItem[] itens) =>
         new([new DefinicaoEtapa(Etapa, exibicao: null, itens)], termos: [], derivacoes: []);
 
@@ -234,12 +380,15 @@ public sealed class AvaliadorFormularioTests
 
     private static EntradaAvaliacaoFormulario Entrada(bool etapaConcluida, params (string Fato, object Valor)[] respostas) =>
         new(
-            respostas.ToDictionary(
-                static r => r.Fato,
-                static r => r.Valor is JsonElement json ? json : JsonSerializer.SerializeToElement(r.Valor),
-                StringComparer.Ordinal),
+            Respostas(respostas),
             etapaConcluida ? new HashSet<string>([Etapa], StringComparer.Ordinal) : new HashSet<string>(StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal));
+
+    private static Dictionary<string, JsonElement> Respostas((string Fato, object Valor)[] respostas) =>
+        respostas.ToDictionary(
+            static r => r.Fato,
+            static r => r.Valor is JsonElement json ? json : JsonSerializer.SerializeToElement(r.Valor),
+            StringComparer.Ordinal);
 
     private static CondicaoDnf Condicao(string fato, Operador operador, object valor) =>
         CondicaoDnf.Criar(

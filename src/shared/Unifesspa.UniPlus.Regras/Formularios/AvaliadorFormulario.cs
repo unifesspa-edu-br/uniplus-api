@@ -10,7 +10,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// Avalia um formulário contra as respostas de um candidato: resolve cada fato em ordem topológica,
 /// com os fatos derivados intercalados assim que as suas dependências estão resolvidas, e diz, por
 /// item, se ele aparece, se é obrigatório e quais restrições a resposta viola; por termo, se aparece e
-/// se é obrigatório (UNI-REQ-0074, UNI-REQ-0145, ADR-0135).
+/// se é obrigatório; e, por grupo repetível, o mesmo para cada ocorrência (UNI-REQ-0074,
+/// UNI-REQ-0145, UNI-REQ-0146, ADR-0135).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -54,6 +55,10 @@ public static class AvaliadorFormulario
             itens.ToDictionary(static par => par.Item.FatoCodigo, StringComparer.Ordinal);
         Dictionary<string, RegrasDerivacaoFato> derivacaoPorFato =
             definicao.Derivacoes.ToDictionary(static d => d.CodigoFato, StringComparer.Ordinal);
+        List<(DefinicaoEtapa Etapa, DefinicaoGrupo Grupo)> grupos =
+            [.. definicao.Etapas.SelectMany(static etapa => etapa.Grupos.Select(grupo => (etapa, grupo)))];
+        Dictionary<string, (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo)> grupoPorCodigo =
+            grupos.ToDictionary(static par => par.Grupo.Codigo, StringComparer.Ordinal);
 
         List<NoDoGrafo> nos =
         [
@@ -61,12 +66,17 @@ public static class AvaliadorFormulario
                 par.Item.FatoCodigo,
                 [.. (par.Etapa.Exibicao?.FatosCitados ?? []).Concat(par.Item.FatosCitados)],
                 posicao)),
+            .. grupos.Select((par, posicao) => new NoDoGrafo(
+                par.Grupo.Codigo,
+                [.. (par.Etapa.Exibicao?.FatosCitados ?? []).Concat(par.Grupo.FatosDoCandidatoCitados)],
+                itens.Count + posicao)),
             .. definicao.Derivacoes.Select(static d => new NoDoGrafo(d.CodigoFato, d.DependenciasDeclaradas, PrioridadeDerivado)),
         ];
         OrdemTopologica ordem = GrafoDeFatos.Ordenar(nos);
 
         Dictionary<string, FatoResolvido> fatos = new(entrada.FatosConhecidos, StringComparer.Ordinal);
         Dictionary<string, AvaliacaoItem> avaliacaoPorFato = new(StringComparer.Ordinal);
+        Dictionary<string, AvaliacaoGrupo> avaliacaoPorGrupo = new(StringComparer.Ordinal);
 
         foreach (string codigo in ordem.Ordem)
         {
@@ -76,14 +86,35 @@ public static class AvaliadorFormulario
                 continue;
             }
 
+            if (grupoPorCodigo.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo) doGrupo))
+            {
+                avaliacaoPorGrupo[codigo] = AvaliarGrupo(doGrupo.Etapa, doGrupo.Grupo, entrada, fatos);
+                continue;
+            }
+
             (DefinicaoEtapa etapa, DefinicaoItem item) = itemPorFato[codigo];
-            (FatoResolvido fato, AvaliacaoItem avaliacao) = AvaliarItem(etapa, item, entrada, fatos);
+            (FatoResolvido fato, AvaliacaoItem avaliacao) = AvaliarItem(
+                etapa.Codigo,
+                etapa.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro,
+                item,
+                entrada.Respostas.TryGetValue(item.FatoCodigo, out JsonElement resposta) ? resposta : null,
+                entrada.EtapasConcluidas.Contains(etapa.Codigo),
+                fatos);
             fatos[codigo] = fato;
             avaliacaoPorFato[codigo] = avaliacao;
         }
 
+        // O que cai fora da ordem, por ciclo, fica indeterminado: o avaliador não decide sobre o que
+        // não consegue ordenar.
         foreach (string codigo in ordem.ForaDeOrdem)
         {
+            if (grupoPorCodigo.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo) doGrupo))
+            {
+                avaliacaoPorGrupo[codigo] = new AvaliacaoGrupo(
+                    codigo, doGrupo.Etapa.Codigo, Ternario.Indeterminado, Ternario.Indeterminado, EstadoFato.Indeterminado, ContagemValida: true, []);
+                continue;
+            }
+
             fatos[codigo] = FatoResolvido.Indeterminado();
             if (itemPorFato.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoItem Item) par))
             {
@@ -104,7 +135,8 @@ public static class AvaliadorFormulario
         return new AvaliacaoFormulario(
             fatos,
             [.. itens.Select(par => avaliacaoPorFato[par.Item.FatoCodigo])],
-            termos);
+            termos,
+            [.. grupos.Select(par => avaliacaoPorGrupo[par.Grupo.Codigo])]);
     }
 
     private static FatoResolvido Derivar(RegrasDerivacaoFato derivacao, IReadOnlyDictionary<string, FatoResolvido> fatos)
@@ -120,19 +152,110 @@ public static class AvaliadorFormulario
             : FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(resultado.Valores.Order(StringComparer.Ordinal)));
     }
 
+    /// <summary>
+    /// O grupo no estado do candidato e, se aparece e foi respondido, cada ocorrência com os fatos do
+    /// candidato e os subitens anteriores dela. A contagem fora do mínimo e do máximo não vale como
+    /// resposta, do mesmo modo que a resposta que viola restrição.
+    /// </summary>
+    private static AvaliacaoGrupo AvaliarGrupo(
+        DefinicaoEtapa etapa, DefinicaoGrupo grupo, EntradaAvaliacaoFormulario entrada, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    {
+        Ternario visivel = E(etapa.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro, grupo.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
+        Ternario obrigatorio = ObrigatorioSeVisivel(visivel, grupo.Obrigatoriedade, fatos);
+
+        AvaliacaoGrupo Avaliacao(EstadoFato estado, bool contagemValida, IReadOnlyList<AvaliacaoOcorrencia> ocorrencias) =>
+            new(grupo.Codigo, etapa.Codigo, visivel, obrigatorio, estado, contagemValida, ocorrencias);
+
+        switch (visivel)
+        {
+            case Ternario.Falso:
+                return Avaliacao(EstadoFato.NaoAplicavel, contagemValida: true, []);
+            case Ternario.Indeterminado:
+                return Avaliacao(EstadoFato.Indeterminado, contagemValida: true, []);
+            case Ternario.Verdadeiro:
+            default:
+                break;
+        }
+
+        bool etapaConcluida = entrada.EtapasConcluidas.Contains(etapa.Codigo);
+        EstadoFato semResposta = obrigatorio == Ternario.Falso && etapaConcluida ? EstadoFato.NaoInformado : EstadoFato.Indeterminado;
+        if (entrada.RespostasDosGrupos is null || !entrada.RespostasDosGrupos.TryGetValue(grupo.Codigo, out IReadOnlyList<OcorrenciaRespondida>? respondidas))
+        {
+            return Avaliacao(semResposta, contagemValida: true, []);
+        }
+
+        if (respondidas.GroupBy(static o => o.Id, StringComparer.Ordinal).FirstOrDefault(static g => g.Count() > 1) is { } repetida)
+        {
+            throw new ArgumentException(
+                $"A identidade '{repetida.Key}' aparece em mais de uma ocorrência do grupo '{grupo.Codigo}'.", nameof(entrada));
+        }
+
+        AvaliacaoOcorrencia[] ocorrencias = [.. respondidas.Select(o => AvaliarOcorrencia(etapa.Codigo, grupo, o, etapaConcluida, fatos))];
+        int quantas = ocorrencias.Length;
+        bool contagemValida = quantas <= grupo.Maximo && (quantas >= grupo.Minimo || (quantas == 0 && obrigatorio == Ternario.Falso));
+        if (!contagemValida)
+        {
+            return Avaliacao(semResposta, contagemValida: false, ocorrencias);
+        }
+
+        // A lista vazia é resposta: no opcional, não informado; no obrigatório de mínimo zero, a
+        // declaração de que não há ocorrência.
+        EstadoFato estado = quantas == 0
+            ? obrigatorio switch
+            {
+                Ternario.Falso => EstadoFato.NaoInformado,
+                Ternario.Verdadeiro => EstadoFato.Resolvido,
+                _ => EstadoFato.Indeterminado,
+            }
+            : ocorrencias.All(static o => o.Estado == EstadoFato.Resolvido) ? EstadoFato.Resolvido : EstadoFato.Indeterminado;
+        return Avaliacao(estado, contagemValida: true, ocorrencias);
+    }
+
+    /// <summary>
+    /// Os subitens de uma ocorrência, em ordem, cada um com os fatos do candidato e os subitens
+    /// anteriores da mesma ocorrência; a ocorrência resolve quando nenhum subitem ficou pendente.
+    /// </summary>
+    private static AvaliacaoOcorrencia AvaliarOcorrencia(
+        string etapaCodigo, DefinicaoGrupo grupo, OcorrenciaRespondida ocorrencia, bool etapaConcluida, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    {
+        Dictionary<string, FatoResolvido> contexto = new(fatos, StringComparer.Ordinal);
+        Dictionary<string, FatoResolvido> daOcorrencia = new(StringComparer.Ordinal);
+        List<AvaliacaoItem> itens = [];
+        foreach (DefinicaoItem subitem in grupo.Subitens)
+        {
+            (FatoResolvido fato, AvaliacaoItem avaliacao) = AvaliarItem(
+                etapaCodigo,
+                Ternario.Verdadeiro,
+                subitem,
+                ocorrencia.Respostas.TryGetValue(subitem.FatoCodigo, out JsonElement resposta) ? resposta : null,
+                etapaConcluida,
+                contexto);
+            contexto[subitem.FatoCodigo] = fato;
+            daOcorrencia[subitem.FatoCodigo] = fato;
+            itens.Add(avaliacao);
+        }
+
+        EstadoFato estado = daOcorrencia.Values.Any(static f => f.Estado == EstadoFato.Indeterminado) ? EstadoFato.Indeterminado : EstadoFato.Resolvido;
+        return new AvaliacaoOcorrencia(ocorrencia.Id, itens, daOcorrencia, estado);
+    }
+
+    /// <summary>
+    /// Um campo — item da etapa ou subitem da ocorrência —, visível quando quem o contém aparece e a
+    /// exibição dele é verdadeira.
+    /// </summary>
     private static (FatoResolvido Fato, AvaliacaoItem Avaliacao) AvaliarItem(
-        DefinicaoEtapa etapa,
+        string etapaCodigo,
+        Ternario visivelDoContentor,
         DefinicaoItem item,
-        EntradaAvaliacaoFormulario entrada,
+        JsonElement? resposta,
+        bool etapaConcluida,
         IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
-        Ternario visivel = E(
-            etapa.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro,
-            item.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
+        Ternario visivel = E(visivelDoContentor, item.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
         Ternario obrigatorio = ObrigatorioSeVisivel(visivel, item.Obrigatoriedade, fatos);
 
         AvaliacaoItem Avaliacao(IReadOnlyList<RestricaoValor> violadas) =>
-            new(item.FatoCodigo, etapa.Codigo, visivel, obrigatorio, violadas);
+            new(item.FatoCodigo, etapaCodigo, visivel, obrigatorio, violadas);
 
         switch (visivel)
         {
@@ -146,12 +269,12 @@ public static class AvaliadorFormulario
         }
 
         List<RestricaoValor> violadas = [];
-        if (entrada.Respostas.TryGetValue(item.FatoCodigo, out JsonElement resposta) && !RespostaDeCampo.EstaVazia(resposta))
+        if (resposta is { } respondida && !RespostaDeCampo.EstaVazia(respondida))
         {
             bool algumaIndeterminada = false;
             foreach (RestricaoValor restricao in item.Restricoes)
             {
-                switch (restricao.Avaliar(resposta, fatos))
+                switch (restricao.Avaliar(respondida, fatos))
                 {
                     case Ternario.Falso:
                         violadas.Add(restricao);
@@ -167,13 +290,13 @@ public static class AvaliadorFormulario
 
             if (violadas.Count == 0)
             {
-                return (algumaIndeterminada ? FatoResolvido.Indeterminado() : FatoResolvido.Resolvido(resposta), Avaliacao([]));
+                return (algumaIndeterminada ? FatoResolvido.Indeterminado() : FatoResolvido.Resolvido(respondida), Avaliacao([]));
             }
         }
 
         // Sem resposta que valha: o candidato ainda deve a resposta, salvo o opcional numa etapa já
         // concluída, que resolve como não informado e não trava as regras seguintes.
-        FatoResolvido semResposta = obrigatorio == Ternario.Falso && entrada.EtapasConcluidas.Contains(etapa.Codigo)
+        FatoResolvido semResposta = obrigatorio == Ternario.Falso && etapaConcluida
             ? FatoResolvido.NaoInformado()
             : FatoResolvido.Indeterminado();
         return (semResposta, Avaliacao(violadas));
