@@ -11,13 +11,13 @@ using Unifesspa.UniPlus.Regras.Errors;
 /// </summary>
 public static class CoerenciaDoCampo
 {
-    private const string Booleano = "BOOLEANO";
-    private const string Numerico = "NUMERICO";
-    private const string Categorico = "CATEGORICO";
-    private const string Texto = "TEXTO";
-    private const string Data = "DATA";
-    private const string Endereco = "ENDERECO";
-    private const string Multivalorado = "MULTIVALORADO";
+    private const string Booleano = DominioDoCatalogo.Booleano;
+    private const string Numerico = DominioDoCatalogo.Numerico;
+    private const string Categorico = DominioDoCatalogo.Categorico;
+    private const string Texto = DominioDoCatalogo.Texto;
+    private const string Data = DominioDoCatalogo.Data;
+    private const string Endereco = DominioDoCatalogo.Endereco;
+    private const string Multivalorado = DominioDoCatalogo.Multivalorado;
 
     /// <summary>
     /// Recusa o tipo de campo incoerente com o domínio e a cardinalidade do fato, dados pelos
