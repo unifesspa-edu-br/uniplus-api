@@ -221,7 +221,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FatoColetado.PrecondicaoCitaFatoPosterior");
+        resultado.Error!.Code.Should().Be("GrafoFormulario.CitaFatoPosterior");
     }
 
     [Theory(DisplayName = "TipoRenderizacao incoerente com Domínio/Cardinalidade do fato no catálogo é recusado")]
@@ -553,7 +553,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     [Fact(DisplayName = "Regra do item que cita fato calculado de atributos do candidato é recusada pelo nome")]

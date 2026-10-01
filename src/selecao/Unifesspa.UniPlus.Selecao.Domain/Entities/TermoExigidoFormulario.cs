@@ -57,6 +57,9 @@ public sealed class TermoExigidoFormulario : EntityBase
     public IReadOnlyCollection<string> FatosCitados =>
         [.. (Exibicao?.FatosCitados ?? []).Concat(Obrigatoriedade.FatosCitados).Distinct(StringComparer.Ordinal)];
 
+    /// <summary>O termo no que o grafo do formulário confere.</summary>
+    public TermoDoGrafo ParaGrafo() => new(Codigo, FatosCitados);
+
     /// <summary>As condições do termo, para os vínculos e as referências a valor do processo.</summary>
     public IEnumerable<CondicaoDnf> Condicoes =>
         (Exibicao?.Clausulas ?? []).Concat(Obrigatoriedade.Predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes);

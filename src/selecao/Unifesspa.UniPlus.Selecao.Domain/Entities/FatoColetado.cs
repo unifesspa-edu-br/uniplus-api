@@ -161,6 +161,9 @@ public sealed class FatoColetado : EntityBase
         return Result<FatoColetado>.Success(fato);
     }
 
+    /// <summary>O item no que o grafo do formulário confere.</summary>
+    public ItemDoGrafo ParaGrafo() => new(FatoCodigo, Ordem, EtapaCodigo, FatosCitados);
+
     /// <summary>Indica se o fato é coletado incondicionalmente.</summary>
     public bool SemPrecondicao => _precondicoes.Count == 0;
 
@@ -214,11 +217,7 @@ public sealed class FatoColetado : EntityBase
 public static class FatoColetadoErrorCodes
 {
     public const string OpcoesDeOutroDominio = "FatoColetado.OpcoesDeOutroDominio";
-    public const string OpcionalQueAlimentaRegra = "ProcessoSeletivo.CampoOpcionalQueAlimentaRegra";
     public const string ObrigatoriedadeInvalida = "FatoColetado.ObrigatoriedadeInvalida";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
-    public const string OrdemDuplicada = "FatoColetado.OrdemDuplicada";
     public const string PrecondicaoCitaFatoNaoColetado = "FatoColetado.PrecondicaoCitaFatoNaoColetado";
-    public const string PrecondicaoCitaFatoPosterior = "FatoColetado.PrecondicaoCitaFatoPosterior";
-    public const string GrafoComCiclo = "FatoColetado.GrafoComCiclo";
 }

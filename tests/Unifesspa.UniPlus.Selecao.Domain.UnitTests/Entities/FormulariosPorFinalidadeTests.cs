@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -50,7 +51,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("CERTIFICADO_EMITIDO", 0)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("A", 1), Item("B", 1)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.OrdemDuplicada);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.OrdemDuplicada);
         processo.FatosColetados.Select(static f => (f.Finalidade, f.FatoCodigo)).Should().BeEquivalentTo(
             [(FinalidadeFormulario.Inscricao, "TEM_RENDA"), (FinalidadeFormulario.Habilitacao, "CERTIFICADO_EMITIDO")],
             "definir os itens de um formulário não mexe nos do outro");
@@ -99,7 +100,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_BOLSA")], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     [Fact(DisplayName = "A inscrição não perde fato que um item de outra finalidade cita")]
@@ -111,9 +112,9 @@ public sealed class FormulariosPorFinalidadeTests
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     private static ConfiguracaoDerivacaoFato ModalidadeQueDependeDe(string fato) =>
@@ -130,7 +131,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0), ItemQueCitaModalidade(1)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [ItemQueCitaModalidade(0), Item("TEM_RENDA", 1)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     [Fact(DisplayName = "A publicação recusa item que cita derivado redefinido sobre campo posterior")]
@@ -145,7 +146,7 @@ public sealed class FormulariosPorFinalidadeTests
 
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_BOLSA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     [Fact(DisplayName = "Termo cita os campos do próprio formulário e os da inscrição, nunca os de outra finalidade")]
@@ -161,7 +162,7 @@ public sealed class FormulariosPorFinalidadeTests
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "termos[0]",
-                Error = new { Code = FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado },
+                Error = new { Code = GrafoFormularioErrorCodes.CitaFatoNaoConhecido },
             });
     }
 
@@ -174,7 +175,7 @@ public sealed class FormulariosPorFinalidadeTests
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     [Fact(DisplayName = "Citação de outro formulário que já era inválida não trava a edição da inscrição")]
@@ -218,7 +219,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     [Fact(DisplayName = "Remover da inscrição o fato citado por um item é recusado mesmo que outra citação do item já seja inválida")]
@@ -239,7 +240,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     private static IReadOnlyList<EtapaFormulario> EtapasComExibicao(string? citado) =>
@@ -271,7 +272,7 @@ public sealed class FormulariosPorFinalidadeTests
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "etapas[1].exibicao",
-                Error = new { Code = FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior },
+                Error = new { Code = GrafoFormularioErrorCodes.CitaFatoPosterior },
             });
     }
 
@@ -289,7 +290,7 @@ public sealed class FormulariosPorFinalidadeTests
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao,
                 [ItemNaSecao("RENDA_FORMAL", 0, "DADOS"), ItemNaSecao("TEM_RENDA", 1, "RENDA")], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     [Fact(DisplayName = "A inscrição não perde fato que a exibição de uma seção de outra finalidade cita")]
@@ -301,7 +302,7 @@ public sealed class FormulariosPorFinalidadeTests
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+            .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     [Fact(DisplayName = "A publicação recusa seção que cita derivado redefinido sobre campo da própria seção")]
@@ -326,7 +327,7 @@ public sealed class FormulariosPorFinalidadeTests
 
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("RENDA_FORMAL")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     private static FatoColetado Opcional(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
@@ -339,7 +340,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Opcional("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FatoColetadoErrorCodes.OpcionalQueAlimentaRegra);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();

@@ -55,7 +55,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
             [Fato("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue("aciclicidade sozinha não garante que a dependência venha antes");
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+        resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     private static FatoColetado ObrigatorioQuando(string codigo, int ordem, string citado, JsonElement? valor = null) =>
@@ -69,7 +69,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     {
         Result resultado = NovoProcesso().DefinirItens([ObrigatorioQuando("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)], PrecondicaoIfMatch.Ausente);
 
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
+        resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     [Fact(DisplayName = "O valor citado pela obrigatoriedade entra nos vínculos do processo")]
@@ -92,7 +92,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
             [Fato("A", 0, "C"), Fato("B", 1, "A"), Fato("C", 2, "B")], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.GrafoComCiclo);
+        resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.GrafoComCiclo);
         resultado.Error.Message.Should().Contain("→", "o caminho do ciclo é o que torna o erro acionável para quem configura");
         foreach (string participante in new[] { "A", "B", "C" })
         {
@@ -111,7 +111,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
             [Fato("ENTRADA", 0, "A"), Fato("A", 1, "B"), Fato("B", 2, "A")], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.GrafoComCiclo);
+        resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.GrafoComCiclo);
         resultado.Error.Message.Should().NotContain(
             "ENTRADA",
             "ENTRADA leva ao ciclo mas não pertence a ele — reportá-la confundiria quem procura a aresta a remover");
@@ -133,7 +133,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
             [Fato("CONCORRER_PCD", 0, "PCD")], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue("o gate ficaria preso a um fato que este processo nunca vai resolver");
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+        resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     [Fact(DisplayName = "Fato citando a si mesmo é recusado na criação, antes de chegar ao grafo")]
@@ -154,7 +154,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
             [Fato("PCD", 0), Fato("PCD", 1)], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
+        resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.FatoDuplicado);
     }
 
     [Fact(DisplayName = "Ordem repetida é recusada — a ordem de coleta precisa ser total")]
@@ -167,7 +167,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
 
         resultado.IsFailure.Should().BeTrue(
             "com empate de ordem, 'anterior' deixa de ser decidível entre os dois fatos");
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.OrdemDuplicada);
+        resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.OrdemDuplicada);
     }
 
     [Fact(DisplayName = "Definir a coleta substitui a anterior por inteiro")]
