@@ -314,7 +314,6 @@ internal static class DerivabilidadeDeFato
     public const string FatoNaoDerivavel = "ConfiguracaoDerivacaoFato.FatoNaoDerivavel";
 
     private const string OrigemDerivado = "DERIVADO";
-    private const string PrefixoBindingRegraDerivacao = "REGRA_DERIVACAO:";
 
     private const string DominioCategorico = "CATEGORICO";
 
@@ -329,6 +328,6 @@ internal static class DerivabilidadeDeFato
 
         return string.Equals(fato.Origem, OrigemDerivado, StringComparison.Ordinal)
             && string.Equals(fato.Dominio, DominioCategorico, StringComparison.Ordinal)
-            && string.Equals(fato.Binding, PrefixoBindingRegraDerivacao + fato.Codigo, StringComparison.Ordinal);
+            && string.Equals(fato.Binding, VinculoDeFato.De(VinculoDeFato.RegraDeDerivacao, fato.Codigo), StringComparison.Ordinal);
     }
 }

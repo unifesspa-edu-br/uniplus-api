@@ -3,9 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -31,8 +29,8 @@ public static class ValidadorRegrasPadrao
         ArgumentNullException.ThrowIfNull(catalogo);
 
         Dictionary<string, FatoCandidato> fatos = catalogo.Fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-        Dictionary<string, DescritorFatoCandidato> vocabulario = Vocabulario(fatos.Values);
-        Dictionary<string, DominioDeValores> dominiosDinamicos = DominiosDinamicos(fatos.Values);
+        Dictionary<string, DescritorFatoCandidato> vocabulario = VocabularioDoCatalogo.Descritores(fatos.Values);
+        Dictionary<string, DominioDeValores> dominiosDinamicos = VocabularioDoCatalogo.DominiosDinamicos(fatos.Values);
 
         List<FieldError> erros = [];
         void Recusar(string campo, string codigo, string mensagem) => erros.Add(new(campo, new DomainError(codigo, mensagem)));
@@ -216,66 +214,5 @@ public static class ValidadorRegrasPadrao
         }
 
         return false;
-    }
-
-    /// <summary>
-    /// Os fatos que um predicado sabe avaliar: booleano, numérico e categórico do candidato; o
-    /// categórico global só quando já tem valores.
-    /// </summary>
-    private static Dictionary<string, DescritorFatoCandidato> Vocabulario(IEnumerable<FatoCandidato> fatos)
-    {
-        Dictionary<string, DescritorFatoCandidato> vocabulario = new(StringComparer.Ordinal);
-        foreach (FatoCandidato fato in fatos.Where(static f => f.Escopo == EscopoFato.Candidato))
-        {
-            TipoDominioFato? tipo = fato switch
-            {
-                { Dominio: DominioFato.Booleano } => TipoDominioFato.Booleano,
-                { Dominio: DominioFato.Numerico } => TipoDominioFato.Numerico,
-                { Dominio: DominioFato.Categorico, FonteValores: FonteValoresFato.Global } => TipoDominioFato.CategoricoEstatico,
-                { Dominio: DominioFato.Categorico } => TipoDominioFato.CategoricoDinamico,
-                _ => null,
-            };
-            if (tipo is null)
-            {
-                continue;
-            }
-
-            IReadOnlyList<string>? valores = tipo == TipoDominioFato.CategoricoEstatico
-                ? [.. fato.ValoresDominioDeclarados.Select(static v => v.Codigo)]
-                : null;
-            if (DescritorFatoCandidato.Criar(fato.Codigo, tipo.Value, valores) is { IsSuccess: true } descritor)
-            {
-                vocabulario[fato.Codigo] = descritor.Value!;
-            }
-        }
-
-        return vocabulario;
-    }
-
-    /// <summary>
-    /// O domínio dos categóricos cujos valores o catálogo não enumera. UF e município de residência
-    /// vêm do Geo e são conferidos como em qualquer processo; as opções do processo, as modalidades
-    /// e os municípios do bônus só existem no processo, que confere a regra de novo quando a copia.
-    /// </summary>
-    private static Dictionary<string, DominioDeValores> DominiosDinamicos(IEnumerable<FatoCandidato> fatos)
-    {
-        Dictionary<string, DominioDeValores> dominios = new(StringComparer.Ordinal);
-        foreach (FatoCandidato fato in fatos.Where(static f => f.Dominio == DominioFato.Categorico))
-        {
-            DominioDeValores? dominio = fato.FonteValores switch
-            {
-                FonteValoresFato.GeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
-                FonteValoresFato.GeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
-                FonteValoresFato.Processo or FonteValoresFato.Modalidade or FonteValoresFato.MunicipiosBonus
-                    => DominioDeValores.PorFormato(static _ => true),
-                _ => null,
-            };
-            if (dominio is not null)
-            {
-                dominios[fato.Codigo] = dominio;
-            }
-        }
-
-        return dominios;
     }
 }

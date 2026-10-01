@@ -431,15 +431,12 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FatoColetado.CitaAtributoDoCandidato", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.cita_atributo_do_candidato", "A regra do formulário cita fato calculado de atributos do candidato")),
         new("DocumentoExigido.FatoDaIsencaoForaDaFaseDeIsencao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_da_isencao_fora_da_fase_de_isencao", "Fato do formulário de isenção citado por documento de outra fase")),
         new("FatoColetado.ObrigatoriedadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.obrigatoriedade_invalida", "Obrigatoriedade do campo inválida")),
-        new("FatoColetado.TipoRenderizacaoIncoerenteComDominio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.tipo_renderizacao_incoerente_com_dominio", "O tipo de renderização não é coerente com o domínio/cardinalidade do fato no catálogo")),
         new("FatoColetado.FatoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_duplicado", "O fato já é coletado por outro formulário do processo")),
         new("FatoColetado.PrecondicaoCitaFatoNaoColetado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_cita_fato_nao_coletado", "A regra de derivação cita um fato que este processo não coleta nem deriva")),
         new("CondicaoPrecondicaoFato.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_precondicao_fato.clausula_invalida", "O ordinal da cláusula da pré-condição não pode ser negativo")),
         // Coletabilidade de fato (Story #984) — semântica cross-módulo resolvida na Application:
         // um fato coletado tem de existir no vocabulário e ser declarado com binding de campo de
         // inscrição (derivado/computado não é coletável).
-        new("FatoColetado.FatoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_desconhecido", "O fato coletado não pertence ao vocabulário de fatos do candidato")),
-        new("FatoColetado.FatoNaoColetavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_nao_coletavel", "O fato não é coletável — só um fato declarado respondido em campo de inscrição pode ser coletado")),
         // Regra de derivação de fato (Story #927). Todas as recusas são de configuração (422): regra
         // mal formada. A edição é permitida em rascunho e sob sessão de retificação (Story #986) — a
         // recusa de mutação de processo publicado sem sessão é a geral

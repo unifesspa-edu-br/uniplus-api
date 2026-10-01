@@ -205,20 +205,20 @@ public static class DefinirFatosColetadosCommandHandler
         if (!catalogo.TryGetValue(input.FatoCodigo, out FatoCandidatoView? view))
         {
             return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", new DomainError(
-                ColetabilidadeDeFato.FatoDesconhecido,
+                ItemFormularioErrorCodes.FatoDesconhecido,
                 $"O fato '{input.FatoCodigo}' não pertence ao vocabulário de fatos do candidato."))]);
         }
 
         if (!ColetabilidadeDeFato.EhColetavel(view))
         {
             return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", new DomainError(
-                ColetabilidadeDeFato.FatoNaoColetavel,
+                ItemFormularioErrorCodes.FatoNaoColetavel,
                 $"O fato '{input.FatoCodigo}' não é coletável — só um fato declarado, respondido em campo de "
                 + "inscrição, pode ser coletado (derivados e computados não)."))]);
         }
 
         TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao);
-        if (CoerenciaDeRenderizacao.Validar(tipoRenderizacao, view) is { } incoerencia)
+        if (CoerenciaDoCampo.Validar(view.Codigo, tipoRenderizacao, view.Dominio, view.Cardinalidade) is { } incoerencia)
         {
             return Result<FatoColetado>.ValidationFailure([new("tipoRenderizacao", incoerencia)]);
         }
@@ -409,59 +409,13 @@ public static class DefinirFatosColetadosCommandHandler
 /// </summary>
 internal static class ColetabilidadeDeFato
 {
-    public const string FatoDesconhecido = "FatoColetado.FatoDesconhecido";
-    public const string FatoNaoColetavel = "FatoColetado.FatoNaoColetavel";
-
     private const string OrigemDeclarado = "DECLARADO";
-    private const string PrefixoBindingCampoInscricao = "CAMPO_INSCRICAO:";
 
     public static bool EhColetavel(FatoCandidatoView fato)
     {
         ArgumentNullException.ThrowIfNull(fato);
 
         return string.Equals(fato.Origem, OrigemDeclarado, StringComparison.Ordinal)
-            && fato.Binding.StartsWith(PrefixoBindingCampoInscricao, StringComparison.Ordinal)
-            && fato.Binding.Length > PrefixoBindingCampoInscricao.Length;
-    }
-}
-
-/// <summary>
-/// Coerência entre <see cref="TipoRenderizacao"/> e o <c>Dominio</c>/<c>Cardinalidade</c> do
-/// fato no catálogo (Story #559) — semântica cross-módulo resolvida na Application, mesmo
-/// motivo de <see cref="ColetabilidadeDeFato"/> viver aqui e não no Domain.
-/// </summary>
-internal static class CoerenciaDeRenderizacao
-{
-    public const string TipoRenderizacaoIncoerenteComDominio = "FatoColetado.TipoRenderizacaoIncoerenteComDominio";
-
-    private const string DominioBooleano = "BOOLEANO";
-    private const string DominioNumerico = "NUMERICO";
-    private const string DominioCategorico = "CATEGORICO";
-    private const string DominioTexto = "TEXTO";
-    private const string CardinalidadeMultivalorado = "MULTIVALORADO";
-
-    public static DomainError? Validar(TipoRenderizacao tipoRenderizacao, FatoCandidatoView fato)
-    {
-        ArgumentNullException.ThrowIfNull(fato);
-
-        bool coerente = fato.Dominio switch
-        {
-            DominioBooleano => tipoRenderizacao == TipoRenderizacao.Booleano,
-            DominioNumerico => tipoRenderizacao == TipoRenderizacao.Numero,
-            // O campo de texto recolhe uma resposta só: não há renderização de várias respostas de texto.
-            DominioTexto => tipoRenderizacao == TipoRenderizacao.Texto
-                && !string.Equals(fato.Cardinalidade, CardinalidadeMultivalorado, StringComparison.Ordinal),
-            DominioCategorico => tipoRenderizacao == (string.Equals(fato.Cardinalidade, CardinalidadeMultivalorado, StringComparison.Ordinal)
-                ? TipoRenderizacao.SelecaoMultipla
-                : TipoRenderizacao.SelecaoUnica),
-            _ => false,
-        };
-
-        return coerente
-            ? null
-            : new DomainError(
-                TipoRenderizacaoIncoerenteComDominio,
-                $"O tipo de renderização '{tipoRenderizacao}' não é coerente com o domínio "
-                + $"'{fato.Dominio}'/cardinalidade '{fato.Cardinalidade}' do fato '{fato.Codigo}'.");
+            && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.CampoDoFormulario);
     }
 }

@@ -128,7 +128,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     /// multivalorada, sem <c>ValoresDominioDeclarados</c> no catálogo e com código diferente dos
     /// dois categóricos de escopo-processo hoje conhecidos, é alcançável por dado — um fato novo
     /// no catálogo (migration futura), vinculado como <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c>
-    /// porque <c>CoerenciaDeRenderizacao</c> só confere domínio/cardinalidade, não a origem dos
+    /// porque <see cref="CoerenciaDoCampo"/> só confere domínio/cardinalidade, não a origem dos
     /// valores. A conferência de coletabilidade (o fato existe e é coletável) não recusa esse
     /// caso — por isso ele devolve <see cref="DomainError"/>, não lança.
     /// </summary>

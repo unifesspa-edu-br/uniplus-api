@@ -14,6 +14,9 @@ public static class ItemFormularioErrorCodes
     public const string RegraAutorreferente = "ItemFormulario.RegraAutorreferente";
     public const string RestricaoIncoerente = "ItemFormulario.RestricaoIncoerente";
     public const string OpcionalQueAlimentaRegra = "ItemFormulario.OpcionalQueAlimentaRegra";
+    public const string TipoRenderizacaoIncoerenteComDominio = "ItemFormulario.TipoRenderizacaoIncoerenteComDominio";
+    public const string FatoDesconhecido = "ItemFormulario.FatoDesconhecido";
+    public const string FatoNaoColetavel = "ItemFormulario.FatoNaoColetavel";
 }
 
 /// <summary>Códigos de recusa da forma de um termo exigido pelo formulário, no processo e no modelo.</summary>

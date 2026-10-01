@@ -156,7 +156,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FatoColetado.FatoNaoColetavel");
+        resultado.Error!.Code.Should().Be("ItemFormulario.FatoNaoColetavel");
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -170,7 +170,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FatoColetado.FatoNaoColetavel");
+        resultado.Error!.Code.Should().Be("ItemFormulario.FatoNaoColetavel");
     }
 
     [Fact(DisplayName = "Fato fora do vocabulário é recusado como desconhecido, sem tradução")]
@@ -183,7 +183,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FatoColetado.FatoDesconhecido");
+        resultado.Error!.Code.Should().Be("ItemFormulario.FatoDesconhecido");
     }
 
     [Fact(DisplayName = "Pré-condição com operador incompatível com o domínio do fato citado é recusada")]
@@ -242,7 +242,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue(motivo);
-        resultado.Error!.Code.Should().Be("FatoColetado.TipoRenderizacaoIncoerenteComDominio");
+        resultado.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
     }
 
     [Theory(DisplayName = "Obrigatoriedade é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele; o resto é recusado no campo")]
@@ -317,7 +317,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
             [new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
 
-        (await HandleAsync(mocks, command)).Error!.Code.Should().Be("FatoColetado.TipoRenderizacaoIncoerenteComDominio");
+        (await HandleAsync(mocks, command)).Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
     }
 
     [Fact(DisplayName = "Campo de texto é aceito e congela o formato do fato no catálogo")]
@@ -382,7 +382,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("itens[0].ordem", "ItemFormulario.OrdemInvalida"),
-            ("itens[1].fatoCodigo", "FatoColetado.FatoDesconhecido"),
+            ("itens[1].fatoCodigo", "ItemFormulario.FatoDesconhecido"),
         ]);
     }
 
@@ -400,7 +400,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FatoColetado.FatoNaoColetavel");
+        resultado.Error!.Code.Should().Be("ItemFormulario.FatoNaoColetavel");
     }
 
     [Theory(DisplayName = "Restrição de tipo desconhecido ou de limites incoerentes é recusada no campo dela")]

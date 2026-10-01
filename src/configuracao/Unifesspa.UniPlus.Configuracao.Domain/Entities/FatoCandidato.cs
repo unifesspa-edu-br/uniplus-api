@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -32,11 +33,11 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     private const int BindingMaxLength = 200;
     private const int FinalidadeTratamentoMaxLength = 500;
 
-    private const string PrefixoBindingDerivadoAtributo = "ATRIBUTO_CANDIDATO";
-    private const string PrefixoBindingDerivadoRegra = "REGRA_DERIVACAO";
-    private const string PrefixoBindingDerivadoClassificacao = "CLASSIFICACAO";
-    private const string PrefixoBindingDeclarado = "CAMPO_INSCRICAO";
-    private const string PrefixoBindingIntegracao = "INTEGRACAO";
+    private const string PrefixoBindingDerivadoAtributo = VinculoDeFato.AtributoDoCandidato;
+    private const string PrefixoBindingDerivadoRegra = VinculoDeFato.RegraDeDerivacao;
+    private const string PrefixoBindingDerivadoClassificacao = VinculoDeFato.Classificacao;
+    private const string PrefixoBindingDeclarado = VinculoDeFato.CampoDoFormulario;
+    private const string PrefixoBindingIntegracao = VinculoDeFato.Integracao;
 
     // Um fato derivado tem três mecanismos de produção de valor: computar de um atributo do
     // candidato (FAIXA_ETARIA, RENDA_PER_CAPITA), referenciar a regra de derivação congelada do
