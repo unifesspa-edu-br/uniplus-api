@@ -38,7 +38,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
-    private List<FatoCandidatoView> _catalogo =
+    private readonly List<FatoCandidatoView> _catalogo =
     [
         Declarado("QUILOMBOLA"),
         Declarado("CERTIFICADO"),
