@@ -18,4 +18,5 @@ public static class ModeloFormularioErrorCodes
     public const string JaAtivo = "ModeloFormulario.JaAtivo";
     public const string JaDesativado = "ModeloFormulario.JaDesativado";
     public const string ConflitoDeConcorrencia = "ModeloFormulario.ConflitoDeConcorrencia";
+    public const string TextoNaoGravavel = "ModeloFormulario.TextoNaoGravavel";
 }

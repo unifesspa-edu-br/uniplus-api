@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
-using System.Text;
-
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -81,7 +80,7 @@ public static class FormaDoItem
                 ItemFormularioErrorCodes.RotuloTamanho, $"O rótulo do item deve ter no máximo {RotuloMaxLength} caracteres.")));
         }
 
-        if (tipoRenderizacao == TipoRenderizacao.Nenhuma)
+        if (tipoRenderizacao == TipoRenderizacao.Nenhuma || !Enum.IsDefined(tipoRenderizacao))
         {
             erros.Add(new("tipoRenderizacao", new DomainError(
                 ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio, "O tipo de campo do item é obrigatório.")));
@@ -300,6 +299,9 @@ public static class FormaDoTermo
         return erros;
     }
 
+    /// <summary>O código em NFC; o que não se normaliza é comparado como veio, e a recusa dele é de quem guarda o texto.</summary>
+    private static string EmNfc(string codigo) => TextoNormalizavel.TentarNormalizar(codigo, out string normalizado) ? normalizado : codigo;
+
     /// <summary>
     /// Código e ordem únicos entre os termos do formulário, com o código na forma que o termo guarda
     /// (aparado, em NFC). Termo ausente ou sem código não entra na conferência do código — a recusa
@@ -319,7 +321,7 @@ public static class FormaDoTermo
                 continue;
             }
 
-            if (!string.IsNullOrWhiteSpace(termo.Codigo) && !codigos.Add(termo.Codigo.Trim().Normalize(NormalizationForm.FormC)))
+            if (!string.IsNullOrWhiteSpace(termo.Codigo) && !codigos.Add(EmNfc(termo.Codigo.Trim())))
             {
                 erros.Add(new($"termos[{i}].codigo", new DomainError(
                     TermoFormularioErrorCodes.CodigoDuplicado, $"O código '{termo.Codigo.Trim()}' aparece em mais de um termo do formulário.")));
