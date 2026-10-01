@@ -185,30 +185,112 @@ public static class ObterFormularioRenderizavelQueryHandler
                 continue;
             }
 
-            if (item is not JsonObject fato
-                || !TentarString(fato, "fatoCodigo", out string fatoCodigo)
-                || !TentarStringOpcional(fato, "etapaCodigo", out string? etapaCodigo)
-                || !TentarStringOpcional(fato, "formato", out string? formato)
-                || !TentarInt(fato, "ordem", out int ordem)
-                || !TentarString(fato, "rotulo", out string rotulo)
-                || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
-                || !TentarObrigatoriedade(fato, out ObrigatoriedadeDto? obrigatoriedade)
-                || !TentarStringOpcional(fato, "ajuda", out string? ajuda)
-                || !TentarBool(fato, "pedirConfirmacao", out bool pedirConfirmacao)
-                || !TentarRestricoes(fato, out List<RestricaoValorDto>? restricoes)
-                || !TentarPredicado(fato, "precondicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
-                || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
-                || !FormatoCoerente(tipoRenderizacao, formato))
+            if (!TentarFato(doItem, out FatoFormularioRenderizavelDto? fato))
             {
                 return VersaoSemApresentacao();
             }
 
-            fatos.Add(new FatoFormularioRenderizavelDto(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade!, precondicao, valoresSelecionaveis, etapaCodigo, formato,
-                ajuda, pedirConfirmacao, restricoes!));
+            fatos.Add(fato);
         }
 
-        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos, comprovacao));
+        if (!TentarGrupos(envelope, token, out List<GrupoFormularioRenderizavelDto>? grupos))
+        {
+            return VersaoSemApresentacao();
+        }
+
+        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos, comprovacao, grupos));
+    }
+
+    /// <summary>Um fato coletado do envelope — item ou campo de grupo — na forma de renderização.</summary>
+    private static bool TentarFato(JsonObject fato, [NotNullWhen(true)] out FatoFormularioRenderizavelDto? dto)
+    {
+        dto = null;
+        if (!TentarString(fato, "fatoCodigo", out string fatoCodigo)
+            || !TentarStringOpcional(fato, "etapaCodigo", out string? etapaCodigo)
+            || !TentarStringOpcional(fato, "formato", out string? formato)
+            || !TentarInt(fato, "ordem", out int ordem)
+            || !TentarString(fato, "rotulo", out string rotulo)
+            || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
+            || !TentarObrigatoriedade(fato, out ObrigatoriedadeDto? obrigatoriedade)
+            || !TentarStringOpcional(fato, "ajuda", out string? ajuda)
+            || !TentarBool(fato, "pedirConfirmacao", out bool pedirConfirmacao)
+            || !TentarRestricoes(fato, out List<RestricaoValorDto>? restricoes)
+            || !TentarPredicado(fato, "precondicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
+            || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
+            || !FormatoCoerente(tipoRenderizacao, formato))
+        {
+            return false;
+        }
+
+        dto = new FatoFormularioRenderizavelDto(
+            fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade!, precondicao, valoresSelecionaveis, etapaCodigo, formato,
+            ajuda, pedirConfirmacao, restricoes!);
+        return true;
+    }
+
+    /// <summary>
+    /// Os grupos repetíveis da finalidade (UNI-REQ-0146), com os campos de cada ocorrência na forma
+    /// dos itens. O bloco é obrigatório no envelope; ausente, a versão não tem apresentação.
+    /// </summary>
+    private static bool TentarGrupos(JsonObject envelope, string token, [NotNullWhen(true)] out List<GrupoFormularioRenderizavelDto>? grupos)
+    {
+        grupos = null;
+        if (!envelope.TryGetPropertyValue("gruposColetados", out JsonNode? gruposNode) || gruposNode is not JsonArray array)
+        {
+            return false;
+        }
+
+        List<GrupoFormularioRenderizavelDto> lidos = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject grupo || !TentarString(grupo, "finalidade", out string finalidade))
+            {
+                return false;
+            }
+
+            if (finalidade != token)
+            {
+                continue;
+            }
+
+            if (!TentarString(grupo, "codigo", out string codigo)
+                || !TentarInt(grupo, "ordem", out int ordem)
+                || !TentarStringOpcional(grupo, "etapaCodigo", out string? etapaCodigo)
+                || !TentarString(grupo, "rotulo", out string rotulo)
+                || !TentarInt(grupo, "minimo", out int minimo)
+                || !TentarInt(grupo, "maximo", out int maximo)
+                || !TentarPredicado(grupo, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao)
+                || !TentarObrigatoriedade(grupo, out ObrigatoriedadeDto? obrigatoriedade)
+                || !grupo.TryGetPropertyValue("subitens", out JsonNode? subitensNode) || subitensNode is not JsonArray subitens)
+            {
+                return false;
+            }
+
+            List<FatoFormularioRenderizavelDto> campos = [];
+            foreach (JsonNode? campo in subitens)
+            {
+                // O campo segue o grupo: a mesma finalidade e nenhuma seção própria.
+                if (campo is not JsonObject doCampo
+                    || !TentarString(doCampo, "finalidade", out string finalidadeDoCampo) || finalidadeDoCampo != token
+                    || !TentarFato(doCampo, out FatoFormularioRenderizavelDto? dto) || dto.EtapaCodigo is not null)
+                {
+                    return false;
+                }
+
+                campos.Add(dto);
+            }
+
+            // A contagem e a quantidade de campos são as da forma do grupo: fora delas o grupo não se responde.
+            if (!FormaDoGrupo.ContagemValida(minimo, maximo) || !FormaDoGrupo.QuantidadeDeCamposValida(campos.Count))
+            {
+                return false;
+            }
+
+            lidos.Add(new GrupoFormularioRenderizavelDto(codigo, ordem, etapaCodigo, rotulo, minimo, maximo, exibicao, obrigatoriedade!, campos));
+        }
+
+        grupos = lidos;
+        return true;
     }
 
     /// <summary>

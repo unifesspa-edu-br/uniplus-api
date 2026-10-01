@@ -184,7 +184,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         const string envelopeAntigo = """
             {
               "formulario": {"status": "nao_construido"},
-              "fatosColetados": [
+              "gruposColetados": [], "fatosColetados": [
                 {"fatoCodigo": "COR_RACA", "ordem": 0, "precondicao": null}
               ]
             }
@@ -267,7 +267,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                 {"finalidade": "INSCRICAO", "faseId": null, "titulo": "Inscrição", "modeloOrigem": null, "etapas": {{etapas}}, "termos": [{{Termo("CIENCIA_EDITAL")}}]},
                 {"finalidade": "HABILITACAO", "faseId": null, "titulo": "Habilitação", "modeloOrigem": null, "etapas": {{etapas}}, "termos": [{{Termo("VERACIDADE")}}]}
               ],
-              "fatosColetados": [
+              "gruposColetados": [], "fatosColetados": [
                 {{Item("COR_RACA", "INSCRICAO")}},
                 {{Item("CERTIFICADO_EMITIDO", "HABILITACAO")}}
               ]
@@ -314,7 +314,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                 {"finalidade": "INSCRICAO", "faseId": "0199a000-0000-7000-8000-0000000000f1", "titulo": null, "modeloOrigem": null, "termos": [],
                  "etapas": [{"codigo": "REVISAO", "ordem": 0, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}
               ],
-              "fatosColetados": [],
+              "gruposColetados": [], "fatosColetados": [],
               "documentosExigidos": {"exigencias": [
                 {{Exigencia("Documento de identidade", "Geral", faseHabilitacao)}},
                 {{Exigencia("Comprovante de inscrição", "Geral", "0199a000-0000-7000-8000-0000000000f1")}},
@@ -351,7 +351,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                 "etapas": [
                   {"codigo": "DOCUMENTOS", "ordem": 0, "tipo": "BLOCO", "bloco": "COMPROVACAO_DOCUMENTAL", "titulo": "Documentos", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}],
-              "fatosColetados": [],
+              "gruposColetados": [], "fatosColetados": [],
               "documentosExigidos": {"exigencias": [
                 {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
                  "formatosPermitidos": {"lista": null, "qualquer": true} }
@@ -376,7 +376,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ]}],
-              "fatosColetados": [
+              "gruposColetados": [], "fatosColetados": [
                 {"fatoCodigo": "BAIXA_RENDA", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 1,
                  "rotulo": "Baixa renda", "tipoRenderizacao": "BOOLEANO",
                  "obrigatoriedade": {"tipo": "QUANDO", "predicado": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]]},
@@ -395,6 +395,126 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         fato.PedirConfirmacao.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "O grupo repetível da finalidade é projetado com as regras e os campos de cada ocorrência")]
+    public async Task Handle_GrupoRepetivel_ProjetaComOsCampos()
+    {
+        const string envelope = """
+            {
+              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+                "etapas": [
+                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
+                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
+                ]}],
+              "fatosColetados": [],
+              "gruposColetados": [
+                {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
+                 "minimo": 0, "maximo": 10, "exibicao": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]],
+                 "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
+                 "subitens": [
+                   {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
+                    "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
+                    "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
+                 ]},
+                {"codigo": "OUTRO", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Outro",
+                 "minimo": 0, "maximo": 1, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null}, "subitens": []}
+              ]
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
+
+        GrupoFormularioRenderizavelDto grupo = resultado.Value!.Grupos.Should().ContainSingle("só o grupo da finalidade pedida").Which;
+        grupo.Codigo.Should().Be("COMPOSICAO_FAMILIAR");
+        grupo.Maximo.Should().Be(10);
+        grupo.Exibicao.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("COR_RACA");
+        grupo.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MENOR_SOB_GUARDA");
+    }
+
+    [Theory(DisplayName = "Campo de grupo com outra finalidade ou com seção própria não tem apresentação — o campo segue o grupo")]
+    [InlineData("\"finalidade\": \"INSCRICAO\", \"etapaCodigo\": null")]
+    [InlineData("\"finalidade\": \"HABILITACAO\", \"etapaCodigo\": \"DADOS\"")]
+    public async Task Handle_CampoDeGrupoForaDoGrupo_VersaoSemApresentacao(string donoDoCampo)
+    {
+        string envelope = $$"""
+            {
+              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+                "etapas": [
+                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
+                ]}],
+              "fatosColetados": [],
+              "gruposColetados": [
+                {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
+                 "minimo": 0, "maximo": 10, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
+                 "subitens": [
+                   {"fatoCodigo": "MENOR_SOB_GUARDA", {{donoDoCampo}}, "formato": null, "ordem": 0,
+                    "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
+                    "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
+                 ]}
+              ]
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
+
+        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+    }
+
+    [Theory(DisplayName = "Grupo com contagem impossível ou sem campos não tem apresentação")]
+    [InlineData(5, 2, true)]
+    [InlineData(0, 0, true)]
+    [InlineData(0, 3, false)]
+    public async Task Handle_GrupoImpossivel_VersaoSemApresentacao(int minimo, int maximo, bool comCampo)
+    {
+        string campo = """
+            {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
+             "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
+             "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
+            """;
+        string envelope = $$"""
+            {
+              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+                "etapas": [
+                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
+                ]}],
+              "fatosColetados": [],
+              "gruposColetados": [
+                {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
+                 "minimo": {{minimo}}, "maximo": {{maximo}}, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
+                 "subitens": [{{(comCampo ? campo : string.Empty)}}]}
+              ]
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
+
+        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+    }
+
+    [Fact(DisplayName = "Envelope sem o bloco de grupos não tem apresentação")]
+    public async Task Handle_SemBlocoDeGrupos_VersaoSemApresentacao()
+    {
+        const string envelope = """
+            {
+              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+                "etapas": [
+                  {"codigo": "REVISAO", "ordem": 0, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
+                ]}],
+              "fatosColetados": []
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
+
+        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+    }
+
     [Fact(DisplayName = "As restrições de valor congeladas são projetadas por tipo, com os limites e os grupos de opções")]
     public async Task Handle_Restricoes_ProjetaPorTipo()
     {
@@ -405,7 +525,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ]}],
-              "fatosColetados": [
+              "gruposColetados": [], "fatosColetados": [
                 {"fatoCodigo": "IDADE", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0,
                  "rotulo": "Idade", "tipoRenderizacao": "NUMERO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
                  "ajuda": null, "pedirConfirmacao": false, "precondicao": null, "valoresSelecionaveis": null,
@@ -441,7 +561,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ]}],
-              "fatosColetados": [
+              "gruposColetados": [], "fatosColetados": [
                 {"fatoCodigo": "NOME_SOCIAL", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": "NOME_PESSOA", "ordem": 0,
                  "rotulo": "Nome social", "tipoRenderizacao": "TEXTO", "obrigatoriedade": {"tipo": "NUNCA", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
               ]
@@ -469,7 +589,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ]}],
-              "fatosColetados": [
+              "gruposColetados": [], "fatosColetados": [
                 {"fatoCodigo": "{{fatoCodigo}}", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0,
                  "rotulo": "Campo", "tipoRenderizacao": "{{tipoRenderizacao}}", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
               ]
@@ -505,7 +625,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                   "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}
                 }
               ]}],
-              "fatosColetados": [
+              "gruposColetados": [], "fatosColetados": [
                 {
                   "fatoCodigo": "COR_RACA", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0, "rotulo": "Cor ou raça",
                   "tipoRenderizacao": "SELECAO_UNICA", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null,
@@ -563,7 +683,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ], "termos": []}],
-              "fatosColetados": []
+              "gruposColetados": [], "fatosColetados": []
             }
             """;
         Guid processoId = Guid.CreateVersion7();

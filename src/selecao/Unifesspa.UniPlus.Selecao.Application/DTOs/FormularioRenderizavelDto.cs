@@ -38,8 +38,24 @@ public sealed record FatoFormularioRenderizavelDto(
     IReadOnlyList<RestricaoValorDto> Restricoes);
 
 /// <summary>
+/// Um grupo repetível pronto para renderização (UNI-REQ-0146): a posição na ordem dos itens, a
+/// seção, o rótulo, o mínimo e o máximo de ocorrências, a exibição — nula quando sempre aparece —,
+/// a obrigatoriedade e os campos que cada ocorrência responde, na forma dos itens.
+/// </summary>
+public sealed record GrupoFormularioRenderizavelDto(
+    string Codigo,
+    int Ordem,
+    string? EtapaCodigo,
+    string Rotulo,
+    int Minimo,
+    int Maximo,
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
+    ObrigatoriedadeDto Obrigatoriedade,
+    IReadOnlyList<FatoFormularioRenderizavelDto> Subitens);
+
+/// <summary>
 /// Formulário de uma finalidade pronto para renderização (UNI-REQ-0144): título, etapas, termos
-/// exigidos (UNI-REQ-0086) e os fatos coletados na ordem de coleta, cada um com rótulo, tipo de renderização, obrigatoriedade,
+/// exigidos (UNI-REQ-0086), os grupos repetíveis (UNI-REQ-0146) e os fatos coletados na ordem de coleta, cada um com rótulo, tipo de renderização, obrigatoriedade,
 /// a pré-condição já congelada e os valores selecionáveis (issue #1059). Projetado da
 /// <c>VersaoConfiguracao</c> vigente — nunca da raiz viva — pelo <c>FormulariosController</c>,
 /// endpoint público.
@@ -54,4 +70,5 @@ public sealed record FormularioRenderizavelDto(
     IReadOnlyList<EtapaFormularioDto> Etapas,
     IReadOnlyList<TermoExigidoDto> Termos,
     IReadOnlyList<FatoFormularioRenderizavelDto> FatosColetados,
-    IReadOnlyList<ExigenciaDocumentalCertameDto>? ComprovacaoDocumental);
+    IReadOnlyList<ExigenciaDocumentalCertameDto>? ComprovacaoDocumental,
+    IReadOnlyList<GrupoFormularioRenderizavelDto> Grupos);
