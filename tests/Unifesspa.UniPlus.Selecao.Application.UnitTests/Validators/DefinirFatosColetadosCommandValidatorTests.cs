@@ -120,4 +120,45 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
 
         result.IsValid.Should().BeTrue();
     }
+
+    [Theory(DisplayName = "Grupo nulo, sem lista de campos, com campo nulo ou com predicado vazio é recusado na forma")]
+    [InlineData("grupoNulo")]
+    [InlineData("subitensNulo")]
+    [InlineData("campoNulo")]
+    [InlineData("exibicaoVazia")]
+    [InlineData("obrigatoriedadeVazia")]
+    [InlineData("precondicaoDoCampoVazia")]
+    [InlineData("obrigatoriedadeDoCampoVazia")]
+    public void Rejeita_GrupoMalformado(string caso)
+    {
+        FatoColetadoInput campo = new("PARENTESCO", 0, "Parentesco", "SELECAO_UNICA", "SEMPRE", null);
+        GrupoColetadoInput grupo = new("COMPOSICAO", 1, "Composição", "DADOS", 0, 5, null, "NUNCA", null, [campo]);
+        GrupoColetadoInput? adulterado = caso switch
+        {
+            "grupoNulo" => null,
+            "subitensNulo" => grupo with { Subitens = null! },
+            "campoNulo" => grupo with { Subitens = [null!] },
+            "exibicaoVazia" => grupo with { Exibicao = [] },
+            "obrigatoriedadeVazia" => grupo with { PredicadoObrigatoriedade = [] },
+            "precondicaoDoCampoVazia" => grupo with { Subitens = [campo with { Precondicao = [[]] }] },
+            _ => grupo with { Subitens = [campo with { PredicadoObrigatoriedade = [] }] },
+        };
+
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
+            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Ausente, [adulterado!]));
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().OnlyContain(e => e.PropertyName.StartsWith("Grupos[0]", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Acima do teto, contando os grupos, o validador não lista um erro por grupo — a recusa é a da quantidade")]
+    public void AcimaDoTeto_NaoConfereGrupoAGrupo()
+    {
+        GrupoColetadoInput[] grupos = [.. Enumerable.Repeat<GrupoColetadoInput>(null!, FormaDoItem.MaximoDeItens + 1)];
+
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
+            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Ausente, grupos));
+
+        result.IsValid.Should().BeTrue();
+    }
 }

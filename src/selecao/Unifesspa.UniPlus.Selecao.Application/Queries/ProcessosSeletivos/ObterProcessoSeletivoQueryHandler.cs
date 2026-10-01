@@ -116,7 +116,11 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. processo.FatosColetados.Where(f => f.Finalidade == formulario.Finalidade).OrderBy(static f => f.Ordem)
             .Select(f => ProjectFatoColetado(processo, f))],
         [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem)
-            .Select(static t => t.ToDto())]);
+            .Select(static t => t.ToDto())],
+        [.. processo.GruposColetados.Where(g => g.Finalidade == formulario.Finalidade).OrderBy(static g => g.Ordem)
+            .Select(g => new GrupoColetadoDto(
+                g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo, g.Minimo, g.Maximo, g.Exibicao?.ToDto(), g.Obrigatoriedade.ToDto(),
+                [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => ProjectFatoColetado(processo, s))]))]);
 
     private static FatoColetadoDto ProjectFatoColetado(ProcessoSeletivo processo, FatoColetado fato) => new(
         fato.FatoCodigo,

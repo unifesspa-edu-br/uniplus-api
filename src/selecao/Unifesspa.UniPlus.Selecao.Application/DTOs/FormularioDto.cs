@@ -15,8 +15,24 @@ public sealed record EtapaFormularioDto(
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao);
 
 /// <summary>
+/// Um grupo repetível do formulário (UNI-REQ-0146): a posição na ordem dos itens, a seção, o
+/// rótulo, o mínimo e o máximo de ocorrências, a exibição — nula quando sempre aparece —, a
+/// obrigatoriedade e os campos de cada ocorrência, na ordem dentro do grupo.
+/// </summary>
+public sealed record GrupoColetadoDto(
+    string Codigo,
+    int Ordem,
+    string? EtapaCodigo,
+    string Rotulo,
+    int Minimo,
+    int Maximo,
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
+    ObrigatoriedadeDto Obrigatoriedade,
+    IReadOnlyList<FatoColetadoDto> Subitens);
+
+/// <summary>
 /// O formulário de uma finalidade (UNI-REQ-0144): a fase, o título, o modelo de origem, as etapas,
-/// os itens em ordem e os termos exigidos.
+/// os itens em ordem, os grupos repetíveis e os termos exigidos.
 /// </summary>
 public sealed record FormularioDto(
     string Finalidade,
@@ -26,4 +42,5 @@ public sealed record FormularioDto(
     string? ModeloOrigemCodigo,
     IReadOnlyList<EtapaFormularioDto> Etapas,
     IReadOnlyList<FatoColetadoDto> FatosColetados,
-    IReadOnlyList<TermoExigidoDto> Termos);
+    IReadOnlyList<TermoExigidoDto> Termos,
+    IReadOnlyList<GrupoColetadoDto> Grupos);

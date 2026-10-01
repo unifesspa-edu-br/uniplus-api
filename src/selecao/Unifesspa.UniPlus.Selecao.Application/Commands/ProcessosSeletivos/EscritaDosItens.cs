@@ -25,6 +25,20 @@ internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IRe
 internal sealed record RegrasDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes);
 
 /// <summary>
+/// Os grupos lidos pela forma, sem leitura externa: a exibição e a obrigatoriedade de cada grupo
+/// cuja forma foi aceita, e os campos de cada um, lidos como os itens.
+/// </summary>
+internal sealed record GruposLidos(
+    IReadOnlyList<GrupoColetadoInput> Entradas,
+    IReadOnlyList<RegrasDoGrupo?> Regras,
+    IReadOnlyList<bool> FormaValida,
+    IReadOnlyList<ItensLidos> Campos,
+    IReadOnlyList<FieldError> Erros);
+
+/// <summary>A exibição e a obrigatoriedade de um grupo cuja forma foi aceita.</summary>
+internal sealed record RegrasDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedade Obrigatoriedade);
+
+/// <summary>
 /// A escrita dos itens do formulário do processo, sem ler nem mudar o processo: primeiro a forma
 /// de cada item, sem I/O; depois, para os itens de forma válida, a coletabilidade (só se coleta fato
 /// declarado com vínculo de campo) e a semântica das regras (operador × domínio × valor do fato
@@ -33,7 +47,7 @@ internal sealed record RegrasDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyLi
 /// </summary>
 internal static class EscritaDosItens
 {
-    public static ItensLidos Ler(IReadOnlyList<FatoColetadoInput> entradas)
+    public static ItensLidos Ler(IReadOnlyList<FatoColetadoInput> entradas, string caminho = "itens")
     {
         ArgumentNullException.ThrowIfNull(entradas);
         List<FieldError> erros = [];
@@ -41,13 +55,13 @@ internal static class EscritaDosItens
         for (int indice = 0; indice < entradas.Count; indice++)
         {
             FatoColetadoInput input = entradas[indice];
-            string campo = $"itens[{indice}]";
+            string campo = $"{caminho}[{indice}]";
             int recusasAntes = erros.Count;
             erros.AddRange(FormaDoItem.ValidarFormaBasica(
                     input.FatoCodigo, input.Ordem, input.Rotulo, TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao))
                 .Select(erro => erro with { Field = $"{campo}.{erro.Field}" }));
 
-            Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input, campo, erros);
+            Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input.Obrigatoriedade, input.PredicadoObrigatoriedade, campo, erros);
             IReadOnlyList<RestricaoValor> restricoes = ConferirRestricoes(input, campo, erros);
             regras[indice] = erros.Count == recusasAntes ? new RegrasDoItem(obrigatoriedade!, restricoes) : null;
         }
@@ -55,8 +69,109 @@ internal static class EscritaDosItens
         return new ItensLidos(entradas, regras, erros);
     }
 
-    /// <summary>Os itens de forma válida conferidos contra o catálogo, com as recusas da forma e da semântica no mesmo lote.</summary>
-    public static (List<FatoColetado> Itens, List<FieldError> Erros) Resolver(ItensLidos lidos, ContextoDoCatalogo contexto)
+    /// <summary>
+    /// Os grupos pela forma, sem leitura externa: a exibição e a obrigatoriedade de cada um, a forma
+    /// do grupo — código, ordem, rótulo, contagem, quantidade de campos, autorreferência — e os
+    /// campos, lidos como os itens no caminho do grupo, sem seção própria.
+    /// </summary>
+    public static GruposLidos LerGrupos(IReadOnlyList<GrupoColetadoInput> entradas)
+    {
+        ArgumentNullException.ThrowIfNull(entradas);
+        List<FieldError> erros = [];
+        RegrasDoGrupo?[] regras = new RegrasDoGrupo?[entradas.Count];
+        bool[] formaValida = new bool[entradas.Count];
+        ItensLidos[] campos = new ItensLidos[entradas.Count];
+        for (int indice = 0; indice < entradas.Count; indice++)
+        {
+            GrupoColetadoInput input = entradas[indice];
+            IReadOnlyList<FatoColetadoInput> subitens = input.Subitens ?? [];
+            string caminho = $"grupos[{indice}]";
+            int recusasAntes = erros.Count;
+            Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(input.Exibicao);
+            if (exibicao.IsFailure)
+            {
+                erros.Add(new($"{caminho}.exibicao", exibicao.Error!));
+            }
+
+            Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input.Obrigatoriedade, input.PredicadoObrigatoriedade, caminho, erros);
+            regras[indice] = erros.Count == recusasAntes ? new RegrasDoGrupo(exibicao.Value, obrigatoriedade!) : null;
+
+            erros.AddRange(FormaDoGrupo.Conferir(
+                    input.Codigo, input.Ordem, input.Rotulo, input.Minimo, input.Maximo,
+                    [.. subitens.Where(static s => s is not null).Select(static s => s.FatoCodigo)],
+                    exibicao.IsSuccess ? exibicao.Value?.FatosCitados ?? [] : [],
+                    obrigatoriedade ?? Obrigatoriedade.Nunca)
+                .Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
+            erros.AddRange(GrupoColetado.CamposComSecaoPropria([.. subitens.Select(static s => (s?.FatoCodigo, s?.EtapaCodigo))])
+                .Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
+            formaValida[indice] = erros.Count == recusasAntes;
+
+            campos[indice] = Ler(subitens, $"{caminho}.subitens");
+            erros.AddRange(campos[indice].Erros);
+        }
+
+        return new GruposLidos(entradas, regras, formaValida, campos, erros);
+    }
+
+    /// <summary>
+    /// Os grupos conferidos contra o catálogo, acumulando tudo no mesmo lote (ADR-0125): os campos
+    /// como os itens, mas coletando fato de membro; a semântica da exibição e da obrigatoriedade
+    /// do grupo e a recusa de fato calculado de atributo, sempre que as regras tiverem forma. O
+    /// grupo só é montado quando nada dele foi recusado.
+    /// </summary>
+    public static (List<GrupoColetado> Grupos, List<FieldError> Erros) ResolverGrupos(GruposLidos lidos, ContextoDoCatalogo contexto)
+    {
+        ArgumentNullException.ThrowIfNull(lidos);
+        ArgumentNullException.ThrowIfNull(contexto);
+        List<FieldError> erros = [.. lidos.Erros];
+        List<GrupoColetado> grupos = [];
+        for (int indice = 0; indice < lidos.Entradas.Count; indice++)
+        {
+            string caminho = $"grupos[{indice}]";
+            (List<FatoColetado> campos, List<FieldError> dosCampos) =
+                Resolver(lidos.Campos[indice] with { Erros = [] }, contexto, $"{caminho}.subitens", campoDeGrupo: true);
+            erros.AddRange(dosCampos);
+            if (lidos.Regras[indice] is not { } regras)
+            {
+                continue;
+            }
+
+            int recusasAntes = erros.Count;
+            foreach ((string regra, PredicadoDnf? predicado) in new[] { ("exibicao", regras.Exibicao), ("predicadoObrigatoriedade", regras.Obrigatoriedade.Predicado) })
+            {
+                if (predicado is not null
+                    && PredicadoDnfValidador.Validar(predicado, contexto.Vocabulario, null, contexto.DominiosDinamicos) is { IsFailure: true } semantica)
+                {
+                    erros.Add(new($"{caminho}.{regra}", semantica.Error!));
+                }
+            }
+
+            if (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(
+                    (regras.Exibicao?.FatosCitados ?? []).Concat(regras.Obrigatoriedade.FatosCitados), contexto.Fatos) is { } atributo)
+            {
+                erros.Add(new(caminho, atributo));
+            }
+
+            if (erros.Count > recusasAntes || !lidos.FormaValida[indice] || dosCampos.Count > 0 || lidos.Campos[indice].Erros.Count > 0)
+            {
+                continue;
+            }
+
+            // A forma do grupo já foi conferida na leitura; a fábrica a repete e devolve o grupo.
+            GrupoColetadoInput input = lidos.Entradas[indice];
+            grupos.Add(GrupoColetado.Criar(
+                input.Codigo, input.Ordem, input.EtapaCodigo, input.Rotulo, input.Minimo, input.Maximo, regras.Exibicao, regras.Obrigatoriedade, campos).Value!);
+        }
+
+        return (grupos, erros);
+    }
+
+    /// <summary>
+    /// Os itens de forma válida conferidos contra o catálogo, com as recusas da forma e da semântica
+    /// no mesmo lote. O campo de grupo coleta fato de membro; o item, fato do candidato.
+    /// </summary>
+    public static (List<FatoColetado> Itens, List<FieldError> Erros) Resolver(
+        ItensLidos lidos, ContextoDoCatalogo contexto, string caminho = "itens", bool campoDeGrupo = false)
     {
         ArgumentNullException.ThrowIfNull(lidos);
         ArgumentNullException.ThrowIfNull(contexto);
@@ -69,8 +184,8 @@ internal static class EscritaDosItens
                 continue;
             }
 
-            string campo = $"itens[{indice}]";
-            Result<FatoColetado> fato = ResolverFato(lidos.Entradas[indice], regrasDoItem, contexto);
+            string campo = $"{caminho}[{indice}]";
+            Result<FatoColetado> fato = ResolverFato(lidos.Entradas[indice], regrasDoItem, contexto, campoDeGrupo);
             if (fato.IsSuccess)
             {
                 fatos.Add(fato.Value!);
@@ -88,16 +203,17 @@ internal static class EscritaDosItens
     /// A obrigatoriedade do item na forma do termo: <c>SEMPRE</c> ou <c>NUNCA</c> sem predicado,
     /// <c>QUANDO</c> com ele. A semântica do predicado é conferida contra o catálogo, depois.
     /// </summary>
-    private static Obrigatoriedade? ConferirObrigatoriedade(FatoColetadoInput input, string campo, List<FieldError> erros)
+    private static Obrigatoriedade? ConferirObrigatoriedade(
+        string? token, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicadoInput, string campo, List<FieldError> erros)
     {
-        Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(input.PredicadoObrigatoriedade);
+        Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(predicadoInput);
         if (predicado.IsFailure)
         {
             erros.Add(new($"{campo}.predicadoObrigatoriedade", predicado.Error!));
             return null;
         }
 
-        if (EntradaDeRegras.Obrigatoriedade(input.Obrigatoriedade, predicado.Value) is { } obrigatoriedade)
+        if (EntradaDeRegras.Obrigatoriedade(token, predicado.Value) is { } obrigatoriedade)
         {
             return obrigatoriedade;
         }
@@ -131,15 +247,17 @@ internal static class EscritaDosItens
         return restricoes;
     }
 
-    private static Result<FatoColetado> ResolverFato(FatoColetadoInput input, RegrasDoItem regras, ContextoDoCatalogo contexto)
+    private static Result<FatoColetado> ResolverFato(FatoColetadoInput input, RegrasDoItem regras, ContextoDoCatalogo contexto, bool campoDeGrupo)
     {
         IReadOnlyDictionary<string, FatoCandidatoView> catalogo = contexto.Fatos;
         IReadOnlyDictionary<string, FatoDoCatalogo> catalogoDasRegras = contexto.FatosDasRegras;
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario = contexto.Vocabulario;
         IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos = contexto.DominiosDinamicos;
-        // Só o fato declarado do próprio candidato, respondido num campo, é coletável: derivados,
-        // calculados e fatos de membro de grupo não.
-        if (ConferenciaNoCatalogo.FatoDoItem(input.FatoCodigo, catalogoDasRegras) is { } naoColetavel)
+        // O item coleta fato declarado do próprio candidato; o campo de grupo, fato declarado de
+        // membro. Derivados e calculados não se respondem.
+        if ((campoDeGrupo
+                ? ConferenciaNoCatalogo.FatoDoSubitem(input.FatoCodigo, catalogoDasRegras)
+                : ConferenciaNoCatalogo.FatoDoItem(input.FatoCodigo, catalogoDasRegras)) is { } naoColetavel)
         {
             return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", naoColetavel)]);
         }

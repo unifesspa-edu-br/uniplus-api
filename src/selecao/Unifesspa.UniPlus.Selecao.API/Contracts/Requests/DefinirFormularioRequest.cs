@@ -19,10 +19,14 @@ public sealed record DefinirFormularioRequest(
     [property: JsonRequired] IReadOnlyList<EtapaFormularioInput> Etapas);
 
 /// <summary>
-/// Corpo de <see cref="FormulariosController.DefinirItens"/>. A lista é obrigatória: só a lista
-/// vazia explícita remove os itens, nunca um corpo sem ela.
+/// Corpo de <see cref="FormulariosController.DefinirItens"/>. A lista de itens é obrigatória: só a
+/// lista vazia explícita remove os itens, nunca um corpo sem ela. Os grupos repetíveis
+/// (UNI-REQ-0146) são opcionais: sem eles, os grupos do formulário ficam como estão, e só a lista
+/// vazia explícita os remove.
 /// </summary>
-public sealed record DefinirItensDoFormularioRequest([property: JsonRequired] IReadOnlyList<FatoColetadoInput> Itens);
+public sealed record DefinirItensDoFormularioRequest(
+    [property: JsonRequired] IReadOnlyList<FatoColetadoInput> Itens,
+    IReadOnlyList<GrupoColetadoInput>? Grupos = null);
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirTermos"/>. A lista é obrigatória: só a lista

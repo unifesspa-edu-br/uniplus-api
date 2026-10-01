@@ -156,7 +156,7 @@ public sealed class FormulariosController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return EnviarMutacao(finalidade, ifMatch,
-            (alvo, precondicao) => new DefinirFatosColetadosCommand(id, alvo, request.Itens, precondicao),
+            (alvo, precondicao) => new DefinirFatosColetadosCommand(id, alvo, request.Itens, precondicao, request.Grupos),
             cancellationToken);
     }
 

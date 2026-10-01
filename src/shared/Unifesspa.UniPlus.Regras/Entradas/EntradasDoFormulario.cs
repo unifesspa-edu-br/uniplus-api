@@ -61,6 +61,24 @@ public sealed record FatoColetadoInput(
     IReadOnlyList<RestricaoValorInput>? Restricoes = null);
 
 /// <summary>
+/// Um grupo repetível do formulário (UNI-REQ-0146): o código, a posição na ordem dos itens, a
+/// seção, o rótulo, o mínimo e o máximo de ocorrências, a exibição e a obrigatoriedade do grupo —
+/// na forma das do item — e os campos de cada ocorrência, cada um na forma do item, com ordem
+/// própria dentro do grupo e sem seção.
+/// </summary>
+public sealed record GrupoColetadoInput(
+    string Codigo,
+    int Ordem,
+    string Rotulo,
+    string? EtapaCodigo,
+    int Minimo,
+    int Maximo,
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
+    string? Obrigatoriedade,
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade,
+    IReadOnlyList<FatoColetadoInput> Subitens);
+
+/// <summary>
 /// Uma etapa do formulário: seção (<c>SECAO</c>) ou bloco de sistema (<c>BLOCO</c>, com o bloco em
 /// <see cref="Bloco"/>), com a ordem, o título, os textos de apoio e, na seção, a
 /// <see cref="Exibicao"/> condicional — predicado sobre fatos conhecidos antes dela.

@@ -10088,6 +10088,15 @@
             "items": {
               "$ref": "#/components/schemas/FatoColetadoInput"
             }
+          },
+          "grupos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GrupoColetadoInput"
+            }
           }
         }
       },
@@ -11454,7 +11463,8 @@
           "modeloOrigemCodigo",
           "etapas",
           "fatosColetados",
-          "termos"
+          "termos",
+          "grupos"
         ],
         "type": "object",
         "properties": {
@@ -11503,6 +11513,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TermoExigidoDto"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoColetadoDto"
             }
           }
         }
@@ -11587,6 +11603,168 @@
           },
           "rotulo": {
             "type": "string"
+          }
+        }
+      },
+      "GrupoColetadoDto": {
+        "required": [
+          "codigo",
+          "ordem",
+          "etapaCodigo",
+          "rotulo",
+          "minimo",
+          "maximo",
+          "exibicao",
+          "obrigatoriedade",
+          "subitens"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maximo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          },
+          "obrigatoriedade": {
+            "$ref": "#/components/schemas/ObrigatoriedadeDto"
+          },
+          "subitens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FatoColetadoDto"
+            }
+          }
+        }
+      },
+      "GrupoColetadoInput": {
+        "required": [
+          "codigo",
+          "ordem",
+          "rotulo",
+          "etapaCodigo",
+          "minimo",
+          "maximo",
+          "exibicao",
+          "obrigatoriedade",
+          "predicadoObrigatoriedade",
+          "subitens"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maximo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "obrigatoriedade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "predicadoObrigatoriedade": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "subitens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FatoColetadoInput"
+            }
           }
         }
       },

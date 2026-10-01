@@ -66,7 +66,8 @@ public static class DefinirFatosColetadosCommandHandler
 
         // Acima do teto a lista não é lida item a item: o validator não confere os itens dela, e a
         // recusa da quantidade é a única resposta.
-        if (FormaDoItem.ValidarQuantidade(command.Itens.Count) is { Count: > 0 } excesso)
+        IReadOnlyList<GrupoColetadoInput> grupos = command.Grupos ?? [];
+        if (FormaDoItem.ValidarQuantidade(command.QuantidadeNoTeto) is { Count: > 0 } excesso)
         {
             return Result<MutacaoAceita>.ValidationFailure(excesso);
         }
@@ -74,9 +75,12 @@ public static class DefinirFatosColetadosCommandHandler
         // A forma vem antes da leitura do catálogo, sem I/O; o item de forma inválida só não segue
         // para a conferência contra o catálogo, e as recusas acumulam no mesmo errors[] (ADR-0125).
         ItensLidos lidos = EscritaDosItens.Ler(command.Itens);
+        GruposLidos gruposLidos = EscritaDosItens.LerGrupos(grupos);
         IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, fatosDoCatalogo);
         (List<FatoColetado> fatos, List<FieldError> erros) = EscritaDosItens.Resolver(lidos, contexto);
+        (List<GrupoColetado> gruposResolvidos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(gruposLidos, contexto);
+        erros.AddRange(errosDosGrupos);
 
         if (erros.Count > 0)
         {
@@ -87,14 +91,17 @@ public static class DefinirFatosColetadosCommandHandler
             contexto.Fatos,
             processo.Vinculos(),
             VinculosDeFatos.De(
-                fatos.Select(static f => f.FatoCodigo),
-                fatos.SelectMany(static f => f.Condicoes).Select(static c => (c.Fato, c.Valor))));
+                fatos.Concat(gruposResolvidos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo),
+                fatos.SelectMany(static f => f.Condicoes).Concat(gruposResolvidos.SelectMany(static g => g.Condicoes))
+                    .Select(static c => (c.Fato, c.Valor))));
         if (vinculoNovo.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
         }
 
-        Result result = processo.DefinirFatosColetados(command.Finalidade, fatos, command.Precondicao);
+        // Grupos omitidos ficam como estão no formulário; a lista vazia os remove.
+        Result result = processo.DefinirFatosColetados(
+            command.Finalidade, fatos, command.Precondicao, command.Grupos is null ? null : gruposResolvidos);
         if (result.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(result.Errors);

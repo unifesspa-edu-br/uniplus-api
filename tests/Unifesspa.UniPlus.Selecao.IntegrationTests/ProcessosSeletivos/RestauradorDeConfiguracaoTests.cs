@@ -600,7 +600,7 @@ public sealed class RestauradorDeConfiguracaoTests
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
             FatoColetado.Criar("CONDICAO_ATENDIMENTO", 2, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!,
-        ], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Curinga, grupos: []).IsSuccess.Should().BeTrue();
 
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =
             new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(CorpusEnvelope.ValoresSelecionaveisRicos())

@@ -4,6 +4,7 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -31,26 +32,63 @@ public sealed class DefinirFatosColetadosCommandValidator : AbstractValidator<De
             .NotNull()
             .WithMessage("Lista de itens do formulário é obrigatória (pode ser vazia).");
 
-        // Acima do teto a lista é recusada inteira pela quantidade, sem um erro por item.
-        When(static x => x.Itens is not null && x.Itens.Count <= FormaDoItem.MaximoDeItens, () =>
+        // Acima do teto — itens, grupos e campos de grupo — o pedido é recusado inteiro pela
+        // quantidade, sem um erro por item nem por grupo.
+        When(static x => x.Itens is not null && x.QuantidadeNoTeto <= FormaDoItem.MaximoDeItens, () =>
         {
             RuleForEach(x => x.Itens)
                 .NotNull()
                 .WithMessage("Item de fato coletado não pode ser nulo.");
 
-            RuleForEach(x => x.Itens).ChildRules(fato =>
+            RuleForEach(x => x.Itens).ChildRules(static fato => RegrasDoCampo(fato));
+        });
+
+        // Os grupos são opcionais; quando vêm, nenhum é nulo, cada um traz a lista de campos, e os
+        // campos seguem a forma dos itens.
+        When(static x => x.Grupos is not null && x.QuantidadeNoTeto <= FormaDoItem.MaximoDeItens, () =>
+        {
+            RuleForEach(x => x.Grupos)
+                .NotNull()
+                .WithMessage("Grupo repetível não pode ser nulo.");
+
+            RuleForEach(x => x.Grupos).ChildRules(static grupo =>
             {
-                // Ausência de pré-condição é null, nunca []. Uma lista externa vazia, uma cláusula
-                // interna vazia ou uma condição nula deixariam a semântica DNF ambígua (um predicado
-                // sem cláusula, ou uma cláusula sem condição, avaliaria falso — o oposto de "sem
-                // pré-condição") ou fariam o handler desreferenciar um item nulo.
-                fato.RuleFor(f => f.Precondicao)
-                    .Must(precondicao => precondicao is null
-                        || (precondicao.Count > 0 && precondicao.All(static clausula =>
-                            clausula is { Count: > 0 } && clausula.All(static condicao => condicao is not null))))
-                    .WithMessage("A pré-condição, quando presente, não pode ser uma lista vazia, conter cláusulas "
-                        + "vazias ou condições nulas — a ausência de pré-condição é representada por null.");
+                grupo.RuleFor(g => g.Subitens)
+                    .NotNull()
+                    .WithMessage("A lista de campos do grupo é obrigatória.");
+                grupo.RuleFor(g => g.Exibicao)
+                    .Must(PredicadoBemFormado)
+                    .WithMessage(MensagemDoPredicado);
+                grupo.RuleFor(g => g.PredicadoObrigatoriedade)
+                    .Must(PredicadoBemFormado)
+                    .WithMessage(MensagemDoPredicado);
+                grupo.RuleForEach(g => g.Subitens)
+                    .NotNull()
+                    .WithMessage("Campo do grupo não pode ser nulo.");
+                grupo.RuleForEach(g => g.Subitens).ChildRules(static campo => RegrasDoCampo(campo));
             });
         });
     }
+
+    private const string MensagemDoPredicado = "O predicado, quando presente, não pode ser uma lista vazia, conter cláusulas "
+        + "vazias ou condições nulas — a ausência de condição é representada por null.";
+
+    // Ausência de pré-condição é null, nunca []. Uma lista externa vazia, uma cláusula interna vazia
+    // ou uma condição nula deixariam a semântica DNF ambígua (um predicado sem cláusula, ou uma
+    // cláusula sem condição, avaliaria falso — o oposto de "sem pré-condição") ou fariam o handler
+    // desreferenciar um item nulo.
+    private static void RegrasDoCampo(InlineValidator<FatoColetadoInput> fato)
+    {
+        fato.RuleFor(f => f.Precondicao)
+            .Must(PredicadoBemFormado)
+            .WithMessage(MensagemDoPredicado);
+        fato.RuleFor(f => f.PredicadoObrigatoriedade)
+            .Must(PredicadoBemFormado)
+            .WithMessage(MensagemDoPredicado);
+    }
+
+    private static bool PredicadoBemFormado(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicado) =>
+        predicado is null
+        || (predicado.Count > 0 && predicado.All(static clausula =>
+            clausula is { Count: > 0 } && clausula.All(static condicao => condicao is not null)));
 }
