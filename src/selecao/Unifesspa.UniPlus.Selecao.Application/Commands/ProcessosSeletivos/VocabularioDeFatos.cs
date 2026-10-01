@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -88,23 +89,11 @@ internal static class VocabularioDeFatos
             : null;
     }
 
-    private const string PrefixoBindingAtributo = "ATRIBUTO_CANDIDATO:";
-
     /// <summary>Se o vínculo é de fato que o sistema calcula de atributos do candidato, como a faixa etária.</summary>
-    public static bool CalculadoDeAtributo(string binding)
-    {
-        ArgumentNullException.ThrowIfNull(binding);
-        return binding.StartsWith(PrefixoBindingAtributo, StringComparison.Ordinal);
-    }
-
-    private const string PrefixoBindingClassificacao = "CLASSIFICACAO:";
+    public static bool CalculadoDeAtributo(string binding) => VinculoDeFato.Usa(binding, VinculoDeFato.AtributoDoCandidato);
 
     /// <summary>Se o vínculo é de fato que a classificação produz, como o grupo em que o candidato foi convocado.</summary>
-    public static bool ProduzidoPelaClassificacao(string binding)
-    {
-        ArgumentNullException.ThrowIfNull(binding);
-        return binding.StartsWith(PrefixoBindingClassificacao, StringComparison.Ordinal);
-    }
+    public static bool ProduzidoPelaClassificacao(string binding) => VinculoDeFato.Usa(binding, VinculoDeFato.Classificacao);
 
     /// <summary>
     /// Os fatos que o processo resolve para um candidato — o universo contra o qual um gatilho é
