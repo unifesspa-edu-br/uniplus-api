@@ -12,6 +12,7 @@ using Npgsql;
 
 using Testcontainers.PostgreSql;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -81,7 +82,7 @@ public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
         (string rotulo, int tipo) corRaca = await LerApresentacaoAsync(CorRacaId);
         corRaca.rotulo.Should().Be("Cor ou raça", "o backfill promove o rótulo do catálogo para o código conhecido COR_RACA");
         corRaca.tipo.Should().Be(
-            (int)Unifesspa.UniPlus.Selecao.Domain.Enums.TipoRenderizacao.SelecaoUnica,
+            (int)Unifesspa.UniPlus.Regras.Enums.TipoRenderizacao.SelecaoUnica,
             "COR_RACA é CATEGORICO/ESCALAR no catálogo — o tipo coerente é seleção única");
 
         (string rotulo, int tipo) baixaRenda = await LerApresentacaoAsync(BaixaRendaId);
@@ -89,7 +90,7 @@ public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
             "Renda familiar per capita igual ou inferior a um salário mínimo",
             "o backfill promove o rótulo do catálogo para o código conhecido BAIXA_RENDA");
         baixaRenda.tipo.Should().Be(
-            (int)Unifesspa.UniPlus.Selecao.Domain.Enums.TipoRenderizacao.Booleano,
+            (int)Unifesspa.UniPlus.Regras.Enums.TipoRenderizacao.Booleano,
             "BAIXA_RENDA é BOOLEANO no catálogo — o tipo coerente é booleano");
     }
 

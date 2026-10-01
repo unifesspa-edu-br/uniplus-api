@@ -60,7 +60,7 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
     /// Ordem e contribuição não dependem do vocabulário cross-módulo nem de condições já
     /// resolvidas. Existe separada para o handler poder confirmar a forma de TODAS as regras do
     /// payload numa primeira passada, antes de resolver o catálogo (mesmo padrão de
-    /// <c>FatoColetado.ValidarFormaBasica</c>, PR #1214 — evita que um <c>contribui</c> vazio
+    /// <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214 — evita que um <c>contribui</c> vazio
     /// caia num erro semântico menos específico, e que uma violação de forma seja mascarada pelo
     /// erro semântico de outra regra do mesmo payload).
     /// </summary>

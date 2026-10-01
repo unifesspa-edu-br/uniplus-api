@@ -8,6 +8,8 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -360,7 +362,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
-        resultado.Errors.Select(static e => e.Error.Code).Should().Equal("FatoColetado.FatoCodigoObrigatorio");
+        resultado.Errors.Select(static e => e.Error.Code).Should().Equal("ItemFormulario.FatoCodigoObrigatorio");
     }
 
     [Fact(DisplayName = "ADR-0125: a forma inválida de um item e o fato desconhecido de outro saem juntos, cada um no seu campo")]
@@ -379,7 +381,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("itens[0].ordem", "FatoColetado.OrdemInvalida"),
+            ("itens[0].ordem", "ItemFormulario.OrdemInvalida"),
             ("itens[1].fatoCodigo", "FatoColetado.FatoDesconhecido"),
         ]);
     }
@@ -460,7 +462,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
             Field = "itens[0].restricoes[0]",
-            Error = new { Code = FatoColetadoErrorCodes.RestricaoIncoerente },
+            Error = new { Code = ItemFormularioErrorCodes.RestricaoIncoerente },
         });
     }
 

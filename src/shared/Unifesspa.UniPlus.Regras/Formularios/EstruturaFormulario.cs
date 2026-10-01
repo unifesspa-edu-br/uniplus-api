@@ -240,4 +240,9 @@ public static class EstruturaFormularioErrorCodes
     public const string RevisaoEAceiteForaDoFim = "EstruturaFormulario.RevisaoEAceiteForaDoFim";
     public const string ItemForaDeSecao = "EstruturaFormulario.ItemForaDeSecao";
     public const string ItemForaDaOrdemDasSecoes = "EstruturaFormulario.ItemForaDaOrdemDasSecoes";
+    public const string EtapaCodigoInvalido = "EstruturaFormulario.EtapaCodigoInvalido";
+    public const string EtapaOrdemInvalida = "EstruturaFormulario.EtapaOrdemInvalida";
+    public const string EtapaTituloInvalido = "EstruturaFormulario.EtapaTituloInvalido";
+    public const string EtapaTextoTamanho = "EstruturaFormulario.EtapaTextoTamanho";
+    public const string ExibicaoForaDeSecao = "EstruturaFormulario.ExibicaoForaDeSecao";
 }

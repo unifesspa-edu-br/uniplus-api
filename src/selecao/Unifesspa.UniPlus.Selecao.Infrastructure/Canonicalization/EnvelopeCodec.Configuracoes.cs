@@ -257,8 +257,8 @@ public sealed partial class EnvelopeCodec
     private static Result<RestricaoValor>? LerFaixa(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         leitor.ExigirChaves(bloco, path, "tipo", "minimo", "maximo");
-        decimal? minimo = leitor.DecimalOpcional(bloco, "minimo", FatoColetado.CasasDecimaisDaFaixa, path);
-        decimal? maximo = leitor.DecimalOpcional(bloco, "maximo", FatoColetado.CasasDecimaisDaFaixa, path);
+        decimal? minimo = leitor.DecimalOpcional(bloco, "minimo", FormaDoItem.CasasDecimaisDaFaixa, path);
+        decimal? maximo = leitor.DecimalOpcional(bloco, "maximo", FormaDoItem.CasasDecimaisDaFaixa, path);
         return leitor.Falhou ? null : RestricoesDeValor.Faixa(minimo, maximo);
     }
 

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Mapeamento dos códigos de erro emitidos pelas regras sobre fatos do candidato
@@ -29,6 +30,26 @@ internal sealed class RegrasDomainErrorRegistration : IDomainErrorRegistration
         new("EstruturaFormulario.RevisaoEAceiteForaDoFim", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.revisao_e_aceite_fora_do_fim", "A revisão e aceite é sempre a última etapa")),
         new("EstruturaFormulario.ItemForaDeSecao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.item_fora_de_secao", "O item precisa estar numa seção do formulário")),
         new("EstruturaFormulario.ItemForaDaOrdemDasSecoes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.item_fora_da_ordem_das_secoes", "A ordem dos itens não acompanha a ordem das seções")),
+        new(EstruturaFormularioErrorCodes.EtapaCodigoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.etapa_codigo_invalido", "O código da etapa é obrigatório e tem tamanho limitado")),
+        new(EstruturaFormularioErrorCodes.EtapaOrdemInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.etapa_ordem_invalida", "A ordem da etapa não pode ser negativa")),
+        new(EstruturaFormularioErrorCodes.EtapaTituloInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.etapa_titulo_invalido", "O título da etapa é obrigatório e tem tamanho limitado")),
+        new(EstruturaFormularioErrorCodes.EtapaTextoTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.etapa_texto_tamanho", "A descrição ou o aviso da etapa excede o tamanho máximo")),
+        new(EstruturaFormularioErrorCodes.ExibicaoForaDeSecao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.estrutura_formulario.exibicao_fora_de_secao", "Só a seção do formulário tem exibição condicional")),
+        new(ItemFormularioErrorCodes.FatoCodigoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.fato_codigo_obrigatorio", "O código do fato do item é obrigatório")),
+        new(ItemFormularioErrorCodes.FatoCodigoTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.fato_codigo_tamanho", "O código do fato do item excede o tamanho máximo")),
+        new(ItemFormularioErrorCodes.OrdemInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.ordem_invalida", "A ordem do item não pode ser negativa")),
+        new(ItemFormularioErrorCodes.RotuloObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.rotulo_obrigatorio", "O rótulo do item é obrigatório")),
+        new(ItemFormularioErrorCodes.RotuloTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.rotulo_tamanho", "O rótulo do item excede o tamanho máximo")),
+        new(ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.tipo_renderizacao_obrigatorio", "O tipo de campo do item é obrigatório")),
+        new(ItemFormularioErrorCodes.AjudaTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.ajuda_tamanho", "Ajuda do campo acima do tamanho máximo")),
+        new(ItemFormularioErrorCodes.FormatoIncoerente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.formato_incoerente", "Formato do campo incoerente com o tipo de campo")),
+        new(ItemFormularioErrorCodes.RegraAutorreferente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.regra_autorreferente", "Uma regra do item cita o próprio fato")),
+        new(ItemFormularioErrorCodes.RestricaoIncoerente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.restricao_incoerente", "A restrição de valor não se aplica ao tipo do campo")),
+        new(TermoFormularioErrorCodes.CodigoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.termo_formulario.codigo_obrigatorio", "O código do termo exigido é obrigatório")),
+        new(TermoFormularioErrorCodes.CodigoTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.termo_formulario.codigo_tamanho", "O código do termo exigido excede o tamanho máximo")),
+        new(TermoFormularioErrorCodes.OrdemInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.termo_formulario.ordem_invalida", "A ordem do termo não pode ser negativa")),
+        new(TermoFormularioErrorCodes.CodigoDuplicado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.termo_formulario.codigo_duplicado", "O código aparece em mais de um termo do formulário")),
+        new(TermoFormularioErrorCodes.OrdemDuplicada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.termo_formulario.ordem_duplicada", "Dois termos do formulário têm a mesma ordem")),
         new(RestricaoValorErrorCodes.TipoDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.restricao_valor.tipo_desconhecido", "O tipo da restrição de valor não é reconhecido")),
         new(RestricaoValorErrorCodes.LimitesIncoerentes, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.restricao_valor.limites_incoerentes", "Os limites da restrição de valor são incoerentes")),
         new(RestricaoValorErrorCodes.OpcoesVazias, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.restricao_valor.opcoes_vazias", "As opções permitidas precisam de valores")),

@@ -142,10 +142,6 @@ public sealed class FormularioProcesso : EntityBase
 /// </summary>
 public sealed class EtapaFormulario : EntityBase
 {
-    public const int CodigoMaxLength = 60;
-    public const int TituloMaxLength = 300;
-    public const int TextoMaxLength = 2000;
-
     public Guid FormularioProcessoId { get; private set; }
 
     public string Codigo { get; private set; } = string.Empty;
@@ -183,48 +179,7 @@ public sealed class EtapaFormulario : EntityBase
         string codigo, int ordem, TipoEtapaFormulario tipo, BlocoSistema bloco, string titulo, string? descricao, string? aviso,
         PredicadoDnf? exibicao = null)
     {
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
-
-        string codigoNormalizado = codigo?.Trim() ?? string.Empty;
-        if (codigoNormalizado.Length is 0 or > CodigoMaxLength)
-        {
-            Recusar("codigo", FormularioProcessoErrorCodes.EtapaCodigoInvalido,
-                $"O código da etapa é obrigatório e tem no máximo {CodigoMaxLength} caracteres.");
-        }
-
-        if (ordem < 0)
-        {
-            Recusar("ordem", FormularioProcessoErrorCodes.EtapaOrdemInvalida, "A ordem da etapa não pode ser negativa.");
-        }
-
-        string tituloNormalizado = titulo?.Trim() ?? string.Empty;
-        if (tituloNormalizado.Length is 0 or > TituloMaxLength)
-        {
-            Recusar("titulo", FormularioProcessoErrorCodes.EtapaTituloInvalido,
-                $"O título da etapa é obrigatório e tem no máximo {TituloMaxLength} caracteres.");
-        }
-
-        string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
-        string? avisoNormalizado = string.IsNullOrWhiteSpace(aviso) ? null : aviso.Trim();
-        if (descricaoNormalizada is { Length: > TextoMaxLength })
-        {
-            Recusar("descricao", FormularioProcessoErrorCodes.EtapaTextoTamanho,
-                $"A descrição da etapa tem no máximo {TextoMaxLength} caracteres.");
-        }
-
-        if (avisoNormalizado is { Length: > TextoMaxLength })
-        {
-            Recusar("aviso", FormularioProcessoErrorCodes.EtapaTextoTamanho,
-                $"O aviso da etapa tem no máximo {TextoMaxLength} caracteres.");
-        }
-
-        if (exibicao is not null && tipo != TipoEtapaFormulario.Secao)
-        {
-            Recusar("exibicao", FormularioProcessoErrorCodes.ExibicaoForaDeSecao,
-                "Só a seção tem exibição condicional; o bloco de sistema aparece sempre.");
-        }
-
+        List<FieldError> erros = FormaDaEtapa.Conferir(codigo, ordem, tipo, titulo, descricao, aviso, exibicao is not null);
         if (erros.Count > 0)
         {
             return Result<EtapaFormulario>.ValidationFailure(erros);
@@ -232,13 +187,13 @@ public sealed class EtapaFormulario : EntityBase
 
         return Result<EtapaFormulario>.Success(new EtapaFormulario
         {
-            Codigo = codigoNormalizado.Normalize(System.Text.NormalizationForm.FormC),
+            Codigo = (codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC),
             Ordem = ordem,
             Tipo = tipo,
             Bloco = bloco,
-            Titulo = tituloNormalizado,
-            Descricao = descricaoNormalizada,
-            Aviso = avisoNormalizado,
+            Titulo = (titulo ?? string.Empty).Trim(),
+            Descricao = FormaDoItem.TextoOpcional(descricao),
+            Aviso = FormaDoItem.TextoOpcional(aviso),
             Exibicao = exibicao,
         });
     }
@@ -250,11 +205,6 @@ public static class FormularioProcessoErrorCodes
 {
     public const string FinalidadeInvalida = "FormularioProcesso.FinalidadeInvalida";
     public const string TituloTamanho = "FormularioProcesso.TituloTamanho";
-    public const string EtapaCodigoInvalido = "FormularioProcesso.EtapaCodigoInvalido";
-    public const string EtapaOrdemInvalida = "FormularioProcesso.EtapaOrdemInvalida";
-    public const string EtapaTituloInvalido = "FormularioProcesso.EtapaTituloInvalido";
-    public const string EtapaTextoTamanho = "FormularioProcesso.EtapaTextoTamanho";
-    public const string ExibicaoForaDeSecao = "FormularioProcesso.ExibicaoForaDeSecao";
 
     /// <summary>Formulário publicado sem a fase em que é respondido.</summary>
     public const string SemFase = "ProcessoSeletivo.FormularioSemFase";

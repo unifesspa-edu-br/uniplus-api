@@ -455,7 +455,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     private static string? LimiteDaFaixa(decimal? limite) =>
-        limite is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, FatoColetado.CasasDecimaisDaFaixa) : null;
+        limite is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, FormaDoItem.CasasDecimaisDaFaixa) : null;
 
     private static JsonArray CodigosEmOrdem(IEnumerable<string> codigos) =>
         new([.. codigos.Select(HashCanonicalComputer.NormalizeNfc).Order(StringComparer.Ordinal).Select(static c => (JsonNode)c)]);

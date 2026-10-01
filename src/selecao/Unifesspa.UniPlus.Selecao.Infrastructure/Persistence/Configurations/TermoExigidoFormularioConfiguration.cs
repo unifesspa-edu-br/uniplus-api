@@ -5,6 +5,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Regras.Formularios;
+
 
 /// <summary>
 /// Configuração EF Core de <see cref="TermoExigidoFormulario"/> (UNI-REQ-0086), filha de
@@ -27,7 +29,7 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).ValueGeneratedNever();
 
-        builder.Property(t => t.Codigo).HasMaxLength(TermoExigidoFormulario.CodigoMaxLength).IsRequired();
+        builder.Property(t => t.Codigo).HasMaxLength(FormaDoTermo.CodigoMaxLength).IsRequired();
         builder.Property(t => t.Ordem).IsRequired();
         builder.Property(t => t.Finalidade).HasConversion<int>().IsRequired();
         builder.Property(t => t.TermoId).IsRequired();

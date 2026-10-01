@@ -54,7 +54,7 @@ public static class DefinirFormularioCommandHandler
         {
             if (entradas[i] is not { } entrada)
             {
-                erros.Add(new($"etapas[{i}]", new DomainError(FormularioProcessoErrorCodes.EtapaCodigoInvalido, "A etapa veio nula.")));
+                erros.Add(new($"etapas[{i}]", new DomainError(EstruturaFormularioErrorCodes.EtapaCodigoInvalido, "A etapa veio nula.")));
                 continue;
             }
 
