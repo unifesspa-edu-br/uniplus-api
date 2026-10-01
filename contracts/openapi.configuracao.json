@@ -6486,17 +6486,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PreVisualizacaoDoModeloDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PreVisualizacaoDoModeloDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.pre-visualizacao-modelo-formulario.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/PreVisualizacaoDoModeloDto"
                 }
@@ -6535,6 +6525,16 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

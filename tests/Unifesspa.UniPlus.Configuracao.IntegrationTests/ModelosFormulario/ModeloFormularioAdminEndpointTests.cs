@@ -151,6 +151,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", simulacao);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.pre-visualizacao-modelo-formulario.v1+json");
         JsonObject resultado = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
         JsonNode baixaRenda = resultado["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "BAIXA_RENDA")!;
         baixaRenda["visivel"]!.GetValue<string>().Should().Be("FALSO");

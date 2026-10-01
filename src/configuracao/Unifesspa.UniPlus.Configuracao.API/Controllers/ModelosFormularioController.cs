@@ -89,11 +89,13 @@ public sealed class ModelosFormularioController : ControllerBase
     /// pelo mesmo avaliador da inscrição. Não grava nada.
     /// </summary>
     [HttpPost("admin/modelos-formulario/{id:guid}/pre-visualizacao")]
+    [VendorMediaType(Resource = "pre-visualizacao-modelo-formulario", Versions = [1])]
     [ProducesResponseType(typeof(PreVisualizacaoDoModeloDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> PreVisualizar(Guid id, [FromBody] PreVisualizacaoDoModeloInput simulacao, CancellationToken cancellationToken)
     {
         PreVisualizacaoDoModeloDto? resultado = await _queryBus
