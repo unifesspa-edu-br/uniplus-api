@@ -71,6 +71,10 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             ["MEDICINA"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_CURSO_2", null, "GLOBAL", Ativo: true),
         new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "CATEGORICO", "DERIVADO", "ESCALAR",
             ["MENOR_DE_18", "DE_18_A_59", "60_OU_MAIS"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, "GLOBAL", Ativo: true),
+        new(Guid.CreateVersion7(), "PARENTESCO", "Parentesco", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+            ["PAI", "MAE", "FILHO"], "HABILITACAO", "CAMPO_INSCRICAO:PARENTESCO", null, "GLOBAL", Ativo: true, Escopo: "MEMBRO_GRUPO"),
+        new(Guid.CreateVersion7(), "MENOR_SOB_GUARDA", "Menor sob guarda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
+            null, "HABILITACAO", "CAMPO_INSCRICAO:MENOR_SOB_GUARDA", null, null, Ativo: true, Escopo: "MEMBRO_GRUPO"),
     ];
 
     private static ProcessoSeletivo ProcessoEmRascunho()
@@ -639,4 +643,136 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Grupo repetível com campos de membro é aceito, com a exibição citando item anterior")]
+    public async Task Handle_ComGrupo_DefineOGrupoComOsCampos()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.GruposColetados.Should().ContainSingle().Which.Subitens.Select(static s => s.FatoCodigo)
+            .Should().BeEquivalentTo(["PARENTESCO", "MENOR_SOB_GUARDA"]);
+    }
+
+    [Fact(DisplayName = "Campo de grupo com fato do candidato é recusado no caminho do campo")]
+    public async Task Handle_CampoDeGrupoComFatoDoCandidato_RecusaNoCaminhoDoCampo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with
+        {
+            Subitens = [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "SEMPRE", null)],
+        };
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("grupos[0].subitens[0].fatoCodigo");
+        erro.Error.Code.Should().Be(ItemFormularioErrorCodes.FatoNaoColetavel);
+    }
+
+    [Fact(DisplayName = "Exibição do grupo com valor fora do domínio do fato citado é recusada no grupo")]
+    public async Task Handle_ExibicaoDoGrupoInvalida_RecusaNoGrupo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("COR_RACA", "IGUAL", "VERDE")]] };
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("grupos[0].exibicao");
+    }
+
+    [Fact(DisplayName = "Exibição do grupo que cita fato calculado de atributo do candidato é recusada, como nas demais regras")]
+    public async Task Handle_ExibicaoDoGrupoCitandoAtributo_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("FAIXA_ETARIA", "IGUAL", "MENOR_DE_18")]] };
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+
+        resultado.Errors.Should().Contain(static e => e.Field == "grupos[0]" && e.Error.Code == GrafoFormularioErrorCodes.CitaAtributoDoCandidato);
+    }
+
+    [Fact(DisplayName = "As recusas do grupo — forma, semântica da exibição — saem junto com as dos campos")]
+    public async Task Handle_GrupoComVariasRecusas_AcumulaTodas()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with
+        {
+            Minimo = 5,
+            Maximo = 2,
+            Exibicao = [[Condicao("COR_RACA", "IGUAL", "VERDE")]],
+            Subitens =
+            [
+                new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "SEMPRE", null),
+                new FatoColetadoInput("MENOR_SOB_GUARDA", 1, "Menor sob guarda", "BOOLEANO", "SEMPRE", null, EtapaCodigo: FormularioDeTeste.Secao),
+            ],
+        };
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+
+        resultado.Errors.Select(static e => e.Field).Should().Contain(
+            ["grupos[0].maximo", "grupos[0].exibicao", "grupos[0].subitens[0].fatoCodigo", "grupos[0].subitens[1].etapaCodigo"]);
+    }
+
+    [Fact(DisplayName = "PUT sem grupos mantém os grupos do formulário")]
+    public async Task Handle_SemGrupos_MantemOsDoFormulario()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        (await HandleAsync(mocks, ComGrupo(processo, Composicao()))).IsSuccess.Should().BeTrue();
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()) with { Grupos = null });
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.GruposColetados.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "O teto conta o grupo e os campos dele antes de ler o catálogo")]
+    public async Task Handle_GrupoECamposContamNoTeto()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        FatoColetadoInput[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens - 2)
+            .Select(static i => new FatoColetadoInput($"ITEM_{i}", i, "Item", "BOOLEANO", "NUNCA", null))];
+
+        Result<MutacaoAceita> resultado = await HandleAsync(
+            mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Inscricao, itens, PrecondicaoIfMatch.Ausente, [Composicao()]));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Campo de grupo com fato desativado é vínculo novo recusado")]
+    public async Task Handle_CampoDeGrupoDesativado_RecusaVinculoNovo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+            [.. VocabularioSeed().Select(static f => f.Codigo == "MENOR_SOB_GUARDA" ? f with { Ativo = false } : f)]);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()));
+
+        resultado.Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
+    }
+
+    private static GrupoColetadoInput Composicao() => new(
+        "COMPOSICAO_FAMILIAR", 1, "Composição familiar", FormularioDeTeste.Secao, 0, 10,
+        [[Condicao("COR_RACA", "IGUAL", "PRETA")]], "NUNCA", null,
+        [
+            new FatoColetadoInput("PARENTESCO", 0, "Parentesco", "SELECAO_UNICA", "SEMPRE", null),
+            new FatoColetadoInput("MENOR_SOB_GUARDA", 1, "Menor sob guarda", "BOOLEANO", "SEMPRE", [[Condicao("PARENTESCO", "IGUAL", "FILHO")]]),
+        ]);
+
+    private static DefinirFatosColetadosCommand ComGrupo(ProcessoSeletivo processo, GrupoColetadoInput grupo) => new(
+        processo.Id, FinalidadeFormulario.Inscricao,
+        [new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null, EtapaCodigo: FormularioDeTeste.Secao)],
+        PrecondicaoIfMatch.Ausente,
+        [grupo]);
 }

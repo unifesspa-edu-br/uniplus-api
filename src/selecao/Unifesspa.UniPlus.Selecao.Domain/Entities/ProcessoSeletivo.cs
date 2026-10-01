@@ -2229,7 +2229,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         IReadOnlyList<GrupoColetado>? grupos = null)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
-        grupos ??= [];
+
+        // Sem grupos informados, os do formulário ficam como estão; a lista vazia os remove.
+        grupos ??= [.. GruposDaFinalidade(finalidade)];
 
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {

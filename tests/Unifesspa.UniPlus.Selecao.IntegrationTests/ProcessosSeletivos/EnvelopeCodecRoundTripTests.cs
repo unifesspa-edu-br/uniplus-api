@@ -109,7 +109,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas(
                     [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!),
                 null, ajuda: "Renda por pessoa da família", pedirConfirmacao: true).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], grupos: []).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         CorpusEnvelope.Publicar(processo);
@@ -134,7 +134,7 @@ public sealed class EnvelopeCodecRoundTripTests
             FatoColetado.Criar("NOME_SOCIAL", 2, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, formato: "NOME_PESSOA").Value!,
             FatoColetado.Criar("DATA_NASCIMENTO", 3, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null).Value!,
             FatoColetado.Criar("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], grupos: []).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         CorpusEnvelope.Publicar(processo);

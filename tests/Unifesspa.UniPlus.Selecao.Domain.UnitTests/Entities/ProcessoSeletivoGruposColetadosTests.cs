@@ -35,6 +35,20 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         grupo.Subitens.Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
     }
 
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 0)]
+    public void DefinirFatosColetados_GruposOmitidosFicam_ListaVaziaRemove(bool listaVazia, int esperados)
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirItens([Item("RENDA", 0)], grupos: [Grupo("COMPOSICAO", 1, Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
+
+        processo.DefinirItens([Item("RENDA", 0)], grupos: listaVazia ? [] : null).IsSuccess.Should().BeTrue();
+
+        processo.GruposColetados.Should().HaveCount(esperados);
+        processo.Campos.Should().HaveCount(1 + esperados);
+    }
+
     [Fact]
     public void DefinirFatosColetados_ItemQueCitaCampoDoGrupo_Recusa()
     {
