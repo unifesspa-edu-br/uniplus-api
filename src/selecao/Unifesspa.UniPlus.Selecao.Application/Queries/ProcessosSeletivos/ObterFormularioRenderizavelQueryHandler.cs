@@ -161,7 +161,8 @@ public static class ObterFormularioRenderizavelQueryHandler
 
         if (!TentarStringOpcional(formulario, "titulo", out string? titulo)
             || !TentarTermos(formulario, out List<TermoExigidoDto> termos)
-            || !TentarEtapas(formulario, out List<EtapaFormularioDto> etapas))
+            || !TentarEtapas(formulario, out List<EtapaFormularioDto> etapas)
+            || !TentarComprovacaoDocumental(envelope, formulario, etapas, out List<ExigenciaDocumentalCertameDto>? comprovacao))
         {
             return VersaoSemApresentacao();
         }
@@ -207,7 +208,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 ajuda, pedirConfirmacao, restricoes!));
         }
 
-        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos));
+        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos, comprovacao));
     }
 
     /// <summary>
@@ -528,6 +529,31 @@ public static class ObterFormularioRenderizavelQueryHandler
 
         precondicao = clausulas;
         return true;
+    }
+
+    /// <summary>
+    /// As exigências do bloco de comprovação documental (UNI-REQ-0144): as da fase do formulário, na
+    /// forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade e formatos. A condição
+    /// de cada uma e a árvore de satisfação não atravessam este endereço anônimo
+    /// (<see cref="ClassificacaoDosBlocosDoCertame"/>): quais documentos cabem a um candidato é
+    /// resposta da execução, sobre as respostas dele. Só é lida quando o formulário tem o bloco.
+    /// </summary>
+    private static bool TentarComprovacaoDocumental(
+        JsonObject envelope, JsonObject formulario, List<EtapaFormularioDto> etapas, out List<ExigenciaDocumentalCertameDto>? comprovacao)
+    {
+        comprovacao = null;
+        if (!etapas.Exists(static e => e.Bloco == EstruturaFormulario.BlocoComprovacaoDocumental))
+        {
+            return true;
+        }
+
+        return TentarStringOpcional(formulario, "faseId", out string? faseDoFormulario)
+            && ProjecaoDoCertamePublicado.TentarExigencias(
+                envelope,
+                exigencia => faseDoFormulario is not null
+                    && TentarStringOpcional(exigencia, "exigidoNaFaseId", out string? fase)
+                    && string.Equals(fase, faseDoFormulario, StringComparison.Ordinal),
+                out comprovacao);
     }
 
     /// <summary>O formato existe se, e só se, o campo é de texto.</summary>

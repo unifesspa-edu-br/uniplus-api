@@ -11290,7 +11290,8 @@
           "titulo",
           "etapas",
           "termos",
-          "fatosColetados"
+          "fatosColetados",
+          "comprovacaoDocumental"
         ],
         "type": "object",
         "properties": {
@@ -11319,6 +11320,15 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FatoFormularioRenderizavelDto"
+            }
+          },
+          "comprovacaoDocumental": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExigenciaDocumentalCertameDto"
             }
           }
         }
