@@ -23,8 +23,9 @@ public static class VocabularioDoCatalogo
     public static Dictionary<string, DescritorFatoCandidato> Descritores(IEnumerable<FatoCandidato> fatos)
     {
         ArgumentNullException.ThrowIfNull(fatos);
+        Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
         Dictionary<string, DescritorFatoCandidato> vocabulario = new(StringComparer.Ordinal);
-        foreach (FatoCandidato fato in fatos.Where(static f => f.Escopo == EscopoFato.Candidato))
+        foreach (FatoCandidato fato in porCodigo.Values.Where(static f => f.Escopo == EscopoFato.Candidato))
         {
             TipoDominioFato? tipo = fato switch
             {
@@ -40,7 +41,7 @@ public static class VocabularioDoCatalogo
             }
 
             IReadOnlyList<string>? valores = tipo == TipoDominioFato.CategoricoEstatico
-                ? [.. fato.ValoresDominioDeclarados.Select(static v => v.Codigo)]
+                ? [.. ValoresDe(fato, porCodigo).Select(static v => v.Codigo)]
                 : null;
             if (DescritorFatoCandidato.Criar(fato.Codigo, tipo.Value, valores) is { IsSuccess: true } descritor)
             {
@@ -83,9 +84,10 @@ public static class VocabularioDoCatalogo
     public static Dictionary<string, FatoDoCatalogo> ParaRegras(IEnumerable<FatoCandidato> fatos)
     {
         ArgumentNullException.ThrowIfNull(fatos);
-        return fatos.ToDictionary(
+        Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
+        return porCodigo.Values.ToDictionary(
             static f => f.Codigo,
-            static f => new FatoDoCatalogo(
+            f => new FatoDoCatalogo(
                 f.Codigo,
                 DominiosFato.ParaTokenCanonico(f.Dominio),
                 CardinalidadesFato.ParaTokenCanonico(f.Cardinalidade),
@@ -94,9 +96,28 @@ public static class VocabularioDoCatalogo
                 f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
                 EscoposFato.ParaTokenCanonico(f.Escopo),
                 f.Ativo,
-                [.. f.ValoresDominioDeclarados.Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]),
+                [.. ValoresDe(f, porCodigo).Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]),
             StringComparer.Ordinal);
     }
+
+    /// <summary>
+    /// Os valores do fato: os próprios, ou, no agregado sobre grupo repetível, os do fato de membro
+    /// que ele resume (ADR-0138) — o agregado não tem valores próprios. A regra única para quem lê o
+    /// domínio efetivo de um fato: o vocabulário, a conferência das regras e o contrato que a Seleção
+    /// lê. A manutenção do administrador mostra o que cada fato guarda; os valores do agregado são
+    /// mantidos no fato de membro.
+    /// </summary>
+    public static IReadOnlyCollection<FatoValorDominio> ValoresDe(FatoCandidato fato, IReadOnlyDictionary<string, FatoCandidato> porCodigo)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        ArgumentNullException.ThrowIfNull(porCodigo);
+        return fato.FatoDeMembroAgregado is { } membro && porCodigo.TryGetValue(membro, out FatoCandidato? doMembro)
+            ? doMembro.ValoresDominioDeclarados
+            : fato.ValoresDominioDeclarados;
+    }
+
+    private static Dictionary<string, FatoCandidato> PorCodigo(IEnumerable<FatoCandidato> fatos) =>
+        fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
 
     /// <summary>
     /// As dependências de cada derivado por regra que o catálogo sabe derivar: os fatos citados pelas

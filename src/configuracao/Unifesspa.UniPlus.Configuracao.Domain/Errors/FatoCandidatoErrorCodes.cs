@@ -97,6 +97,18 @@ public static class FatoCandidatoErrorCodes
     /// <summary>Derivado resolve em fase anterior à de um fato que ele cita.</summary>
     public const string PontoResolucaoAnteriorADependencia = "FatoCandidato.PontoResolucaoAnteriorADependencia";
 
+    /// <summary>Agregado sobre fato de membro que não está no catálogo.</summary>
+    public const string AgregadoSemFatoDeMembro = "FatoCandidato.AgregadoSemFatoDeMembro";
+
+    /// <summary>Agregado sobre fato que não é declarado de membro de grupo repetível.</summary>
+    public const string AgregadoSobreFatoQueNaoEhCampoDeGrupo = "FatoCandidato.AgregadoSobreFatoQueNaoEhCampoDeGrupo";
+
+    /// <summary>Agregado sobre fato de membro de domínio que não agrega (só booleano e categórico agregam).</summary>
+    public const string AgregadoSobreDominioQueNaoAgrega = "FatoCandidato.AgregadoSobreDominioQueNaoAgrega";
+
+    /// <summary>Valor acrescentado ao agregado, cujos valores são os do fato de membro.</summary>
+    public const string AgregadoNaoTemValoresProprios = "FatoCandidato.AgregadoNaoTemValoresProprios";
+
     /// <summary>Regras padrão fecham ciclo entre derivados do catálogo.</summary>
     public const string CicloEntreDerivados = "FatoCandidato.CicloEntreDerivados";
 
