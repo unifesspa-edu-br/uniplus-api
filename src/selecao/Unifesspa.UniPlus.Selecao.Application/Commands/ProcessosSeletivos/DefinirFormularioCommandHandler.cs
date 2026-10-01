@@ -47,54 +47,16 @@ public static class DefinirFormularioCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
-        List<FieldError> erros = [];
-        List<EtapaFormulario> etapas = [];
         IReadOnlyList<EtapaFormularioInput> entradas = command.Etapas ?? [];
-        PredicadoDnf?[] exibicoes = new PredicadoDnf?[entradas.Count];
-        for (int i = 0; i < entradas.Count; i++)
-        {
-            if (entradas[i] is not { } entrada)
-            {
-                erros.Add(new($"etapas[{i}]", new DomainError(EstruturaFormularioErrorCodes.EtapaCodigoInvalido, "A etapa veio nula.")));
-                continue;
-            }
-
-            Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(entrada.Exibicao);
-            if (exibicao.IsFailure)
-            {
-                erros.Add(new($"etapas[{i}].exibicao", exibicao.Error!));
-            }
-
-            exibicoes[i] = exibicao.IsSuccess ? exibicao.Value : null;
-            Result<EtapaFormulario> etapa = EtapaFormulario.Criar(
-                entrada.Codigo, entrada.Ordem, EstruturaFormulario.TipoDoToken(entrada.Tipo), EstruturaFormulario.BlocoDoToken(entrada.Bloco),
-                entrada.Titulo, entrada.Descricao, entrada.Aviso, exibicoes[i]);
-            if (etapa.IsSuccess)
-            {
-                etapas.Add(etapa.Value!);
-            }
-            else
-            {
-                erros.AddRange(etapa.Errors.Select(e => new FieldError($"etapas[{i}].{e.Field}", e.Error)));
-            }
-        }
+        EtapasLidas lidas = EscritaDasEtapas.Ler(entradas);
 
         // A semântica das exibições vem do catálogo, lido só quando alguma seção tem exibição.
-        IReadOnlyList<FatoCandidatoView> catalogo = exibicoes.Any(static e => e is not null)
+        IReadOnlyList<FatoCandidatoView> catalogo = lidas.Exibicoes.Any(static e => e is not null)
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
-        Dictionary<string, FatoCandidatoView> catalogoPorCodigo = catalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-        Dictionary<string, DescritorFatoCandidato> vocabulario = VocabularioDeFatos.Descritores(catalogo);
-        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
-        for (int i = 0; i < exibicoes.Length; i++)
-        {
-            if (exibicoes[i] is { } exibicao
-                && (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(exibicao.FatosCitados, catalogoPorCodigo)
-                    ?? PredicadoDnfValidador.Validar(exibicao, vocabulario, null, dominiosDinamicos).Error) is { } semantica)
-            {
-                erros.Add(new($"etapas[{i}].exibicao", semantica));
-            }
-        }
+        ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
+        List<FieldError> erros = [.. lidas.Erros, .. EscritaDasEtapas.ConferirExibicoes(lidas, contexto)];
+        List<EtapaFormulario> etapas = [.. lidas.Etapas];
 
         if (erros.Count > 0)
         {
@@ -111,7 +73,7 @@ public static class DefinirFormularioCommandHandler
         }
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
-            catalogoPorCodigo,
+            contexto.Fatos,
             processo.Vinculos(),
             VinculosDeFatos.De([], etapas.SelectMany(static e => e.Condicoes).Select(static c => (c.Fato, c.Valor))));
         if (vinculoNovo.IsFailure)
