@@ -370,7 +370,7 @@ internal static class CorpusEnvelope
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
-        ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
         // obrigatoriedade condicionais — o decoder tem de remontar o termo inteiro.
@@ -828,6 +828,23 @@ internal static class CorpusEnvelope
             ["RENDA"] = renda,
         };
     }
+
+    /// <summary>
+    /// O grupo repetível do corpus rico (UNI-REQ-0146): exibido por um fato do candidato, com um
+    /// campo exibido pelo campo anterior da mesma ocorrência — o decoder remonta o grupo, as regras
+    /// dele e os campos, e o grafo conjunto liga os campos às regras.
+    /// </summary>
+    private static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetado.Criar(
+        "COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 10,
+        PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!,
+        Obrigatoriedade.Nunca,
+        Ordem([
+            FatoColetado.Criar("TRABALHADOR_RURAL", 0, "Trabalha no campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!,
+            FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
+                CondicaoPrecondicaoFato.Criar(0, "TRABALHADOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!,
+            ]).Value!,
+        ], permutar)).Value!;
 
     /// <summary>
     /// Calendário congelado do corpus rico (UNI-REQ-0080). Traz <b>uma data de cada abrangência</b>

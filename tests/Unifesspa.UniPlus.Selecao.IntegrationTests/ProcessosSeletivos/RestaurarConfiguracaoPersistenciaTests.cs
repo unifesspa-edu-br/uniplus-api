@@ -386,7 +386,8 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             // tracked nasce vazia e a restauração (AplicarGrafo) inseriria linhas novas para os
             // mesmos (ProcessoSeletivoId, FatoCodigo)/(…, CodigoFato) já persistidos, colidindo no
             // índice único — a mesma razão pela qual o repositório de produção já os inclui.
-            .Include(p => p.FatosColetados).ThenInclude(f => f.Precondicoes)
+            .Include(p => p.Campos).ThenInclude(f => f.Precondicoes)
+            .Include(p => p.GruposColetados).ThenInclude(g => g.Subitens)
             .Include(p => p.RegrasDerivacao).ThenInclude(c => c.Regras).ThenInclude(r => r.Condicoes)
             // Termos exigidos (UNI-REQ-0086): mesmo motivo, no índice único de código do termo.
             .Include(p => p.Formularios).ThenInclude(f => f.Etapas)

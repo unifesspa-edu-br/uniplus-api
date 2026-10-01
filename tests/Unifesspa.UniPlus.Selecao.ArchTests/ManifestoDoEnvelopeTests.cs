@@ -364,10 +364,21 @@ public sealed class ManifestoDoEnvelopeTests
             ["FatoCodigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "OrigemValores", "Formato", "Precondicoes"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("GrupoColetadoId", "FK interna do campo de grupo — o campo é congelado dentro do grupo, em `gruposColetados`."),
                 ("SemPrecondicao", "Derivada de Precondicoes — congelá-la duplicaria a fonte de verdade."),
                 ("FatosCitados", "Derivada das Precondicoes, da Obrigatoriedade e das Restricoes — a lista de citações é recomputada, nunca persistida."),
                 ("Condicoes", "Derivada das Precondicoes, da Obrigatoriedade e das Restricoes — recomputada, nunca persistida."),
                 ("OpcoesDoProcesso", "Derivada de OrigemValores — congelá-la duplicaria a fonte de verdade."),
+            ]),
+
+        // Grupos repetíveis (UNI-REQ-0146) — congelados no bloco de topo `gruposColetados`, com os
+        // campos de cada ocorrência na mesma forma dos itens de `fatosColetados`.
+        [typeof(GrupoColetado)] = (
+            ["Codigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "Minimo", "Maximo", "Exibicao", "Obrigatoriedade", "Subitens"],
+            [
+                ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),
+                ("Condicoes", "Derivada das regras do grupo e dos campos — recomputada, nunca persistida."),
             ]),
 
         // Opções declaradas pelo processo (issue #1619) — congeladas nos valores selecionáveis do

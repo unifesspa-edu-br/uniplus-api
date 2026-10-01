@@ -121,7 +121,7 @@ public sealed class AplicarModeloFormularioEndpointTests
         SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         return await db.ProcessosSeletivos.AsNoTracking()
             .Include(static p => p.Formularios)
-            .Include(static p => p.FatosColetados)
+            .Include(static p => p.Campos)
             .SingleAsync(p => p.Id == processoId);
     }
 

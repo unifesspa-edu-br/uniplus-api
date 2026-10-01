@@ -51,10 +51,16 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
             .IsUnique()
             .HasDatabaseName("ux_fatos_coletados_processo_fato");
 
-        // O fato tem um só produtor no processo; a ordem é única dentro de cada formulário.
+        // O fato tem um só produtor no processo, item ou campo de grupo. A ordem do item é única no
+        // formulário, e a do campo de grupo, dentro do grupo; a ordem que o grupo divide com os
+        // itens é invariante do agregado.
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Finalidade, f.Ordem })
             .IsUnique()
+            .HasFilter("grupo_coletado_id IS NULL")
             .HasDatabaseName("ux_fatos_coletados_processo_finalidade_ordem");
+        builder.HasIndex(f => new { f.GrupoColetadoId, f.Ordem })
+            .IsUnique()
+            .HasDatabaseName("ux_fatos_coletados_grupo_ordem");
 
         builder.HasMany(f => f.Precondicoes)
             .WithOne()

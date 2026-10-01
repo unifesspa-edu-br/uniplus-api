@@ -151,6 +151,17 @@ public sealed class GrafoDoGrupoTests
     }
 
     [Fact]
+    public void ValidarColeta_CampoDoGrupoComCodigoDeFatoDerivado_Recusa()
+    {
+        Dictionary<string, IReadOnlyCollection<string>> derivacoes = new(StringComparer.Ordinal) { ["RENDA_PER_CAPITA"] = [] };
+
+        DomainError? erro = GrafoDoFormulario.ValidarColeta(
+            [], [], NenhumConhecidoAntes, derivacoes, [Grupo("COMPOSICAO", 1, [], Subitem("RENDA_PER_CAPITA", 0))]);
+
+        erro!.Code.Should().Be(GrafoFormularioErrorCodes.FatoDuplicado);
+    }
+
+    [Fact]
     public void ValidarColeta_GrupoNaOrdemDeUmItem_Recusa()
     {
         DomainError? erro = Validar([Item("RENDA", 1)], [Grupo("COMPOSICAO", 1, [], Subitem("PARENTESCO", 0))]);

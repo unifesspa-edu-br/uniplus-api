@@ -158,7 +158,9 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // deixando as linhas antigas no banco. Sem o ThenInclude das pré-condições, o grafo
             // seria reidratado sem aresta nenhuma: todo fato pareceria coletado
             // incondicionalmente, e campos que deveriam ser suprimidos passariam a ser exigidos.
-            .Include(p => p.FatosColetados).ThenInclude(f => f.Precondicoes)
+            .Include(p => p.Campos).ThenInclude(f => f.Precondicoes)
+            // Grupos repetíveis (UNI-REQ-0146) — mesmo raciocínio, com os campos e as pré-condições deles.
+            .Include(p => p.GruposColetados).ThenInclude(g => g.Subitens)
             // Opções declaradas (issue #1619) — mesmo raciocínio: sem o Include, a substituição
             // por fato não veria as linhas antigas e a pendência de publicação veria zero opções.
             .Include(p => p.OpcoesDeclaradas)
