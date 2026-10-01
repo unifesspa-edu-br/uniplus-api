@@ -39,7 +39,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     }
 
     [Fact(DisplayName = "O pressuposto simulado decide a exibição; sem ele, a exibição fica indeterminada")]
-    public async Task Pressuposto_DecideAExibicao()
+    public async Task Handle_PressupostoSimulado_DecideAExibicao()
     {
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0, exibicao: Quando("CONCLUSAO_REGULAR", true))], pressupostos: ["CONCLUSAO_REGULAR"]);
 
@@ -51,7 +51,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     }
 
     [Fact(DisplayName = "O pressuposto em branco é não informado: nem a condição DIFERENTE se cumpre")]
-    public async Task PressupostoEmBranco_NaoInformado()
+    public async Task Handle_PressupostoEmBranco_TrataComoNaoInformado()
     {
         PredicadoDnf diferente = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("FORMA_CONCLUSAO", Operador.Diferente, JsonSerializer.SerializeToElement("REGULAR")).Value!)]).Value!;
@@ -63,7 +63,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     }
 
     [Fact(DisplayName = "A resposta que viola restrição aparece com o tipo da restrição")]
-    public async Task RestricaoViolada_TemOTipo()
+    public async Task Handle_RespostaForaDaRestricao_DevolveOTipoDaRestricao()
     {
         ItemDoModelo idade = Item("IDADE", 0, TipoRenderizacao.Numero) with { Restricoes = [RestricoesDeValor.Faixa(0, 10).Value!] };
 
@@ -73,7 +73,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     }
 
     [Fact(DisplayName = "O derivado por regra do catálogo é resolvido com as respostas e decide a exibição")]
-    public async Task DerivadoDoCatalogo_DecideAExibicao()
+    public async Task Handle_DerivadoDoCatalogo_DecideAExibicao()
     {
         FatoCandidato perfil = FatoCandidato.CriarDerivadoDoAdministrador(
             "PERFIL", "Perfil", null, DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
@@ -90,7 +90,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     }
 
     [Fact(DisplayName = "O termo aparece conforme as respostas")]
-    public async Task Termo_ConformeAsRespostas()
+    public async Task Handle_TermoCondicionado_SegueAsRespostas()
     {
         TermoDoModelo termo = new("BANCO_CENTRAL", 0, Guid.NewGuid(), Guid.NewGuid(), Quando("CERTIFICADO", true), Obrigatoriedade.Sempre);
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], termos: [termo]);
@@ -101,7 +101,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     }
 
     [Fact(DisplayName = "Modelo inexistente não tem pré-visualização")]
-    public async Task ModeloInexistente_Nulo()
+    public async Task Handle_ModeloInexistente_DevolveNulo()
     {
         PreVisualizacaoDoModeloDto? resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
             new PreVisualizarModeloFormularioQuery(Guid.NewGuid(), new(null, null, null)), _repository, _fatos, CancellationToken.None);
