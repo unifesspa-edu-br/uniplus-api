@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -81,6 +82,23 @@ public sealed class ModelosFormularioController : ControllerBase
     {
         ModeloFormularioView? modelo = await _queryBus.Send(new ObterModeloFormularioQuery(id), cancellationToken).ConfigureAwait(false);
         return modelo is null ? NotFound() : Ok(modelo);
+    }
+
+    /// <summary>
+    /// Pré-visualiza o modelo com respostas simuladas: o que cada item e cada termo faria diante delas,
+    /// pelo mesmo avaliador da inscrição. Não grava nada.
+    /// </summary>
+    [HttpPost("admin/modelos-formulario/{id:guid}/pre-visualizacao")]
+    [ProducesResponseType(typeof(PreVisualizacaoDoModeloDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PreVisualizar(Guid id, [FromBody] PreVisualizacaoDoModeloInput simulacao, CancellationToken cancellationToken)
+    {
+        PreVisualizacaoDoModeloDto? resultado = await _queryBus
+            .Send(new PreVisualizarModeloFormularioQuery(id, simulacao), cancellationToken).ConfigureAwait(false);
+        return resultado is null ? NotFound() : Ok(resultado);
     }
 
     /// <summary>

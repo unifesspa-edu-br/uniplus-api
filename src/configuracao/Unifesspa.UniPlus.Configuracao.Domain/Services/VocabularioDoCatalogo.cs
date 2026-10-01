@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -101,16 +102,8 @@ public static class VocabularioDoCatalogo
     /// As dependências de cada derivado por regra que o catálogo sabe derivar: os fatos citados pelas
     /// regras padrão dele. O derivado sem regra padrão não entra — quem o deriva é o processo.
     /// </summary>
-    public static Dictionary<string, IReadOnlyCollection<string>> Derivacoes(IEnumerable<FatoCandidato> fatos)
-    {
-        ArgumentNullException.ThrowIfNull(fatos);
-        return fatos
-            .Where(static f => f.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(f.Binding, VinculoDeFato.RegraDeDerivacao))
-            .ToDictionary(
-                static f => f.Codigo,
-                static f => (IReadOnlyCollection<string>)[.. f.RegrasPadrao.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)],
-                StringComparer.Ordinal);
-    }
+    public static Dictionary<string, IReadOnlyCollection<string>> Derivacoes(IEnumerable<FatoCandidato> fatos) =>
+        RegrasDeDerivacao(fatos).ToDictionary(static r => r.CodigoFato, static r => r.DependenciasDeclaradas, StringComparer.Ordinal);
 
     /// <summary>O formato da resposta de cada fato de texto, em token canônico.</summary>
     public static Dictionary<string, string> Formatos(IEnumerable<FatoCandidato> fatos)
@@ -119,5 +112,27 @@ public static class VocabularioDoCatalogo
         return fatos
             .Where(static f => f.Formato is { } formato && formato != FormatoTexto.Nenhum)
             .ToDictionary(static f => f.Codigo, static f => FormatosTexto.ParaTokenCanonico(f.Formato!.Value), StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// As regras de derivação que o catálogo sabe aplicar: as regras padrão de cada derivado por
+    /// regra, booleano ou categórico, com as dependências citadas por elas. O catálogo as conferiu ao
+    /// gravá-las, então uma recusa aqui é defeito.
+    /// </summary>
+    public static IReadOnlyList<RegrasDerivacaoFato> RegrasDeDerivacao(IEnumerable<FatoCandidato> fatos)
+    {
+        ArgumentNullException.ThrowIfNull(fatos);
+        return [.. fatos
+            .Where(static f => f.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(f.Binding, VinculoDeFato.RegraDeDerivacao))
+            .Select(static f =>
+            {
+                string[] dependencias = [.. f.RegrasPadrao.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
+                Result<RegrasDerivacaoFato> regras = f.Dominio == DominioFato.Booleano
+                    ? RegrasDerivacaoFato.CriarBooleana(f.Codigo, f.RegrasPadrao, dependencias)
+                    : RegrasDerivacaoFato.Criar(f.Codigo, f.RegrasPadrao, dependencias, [.. f.ValoresDominioDeclarados.Select(static v => v.Codigo)]);
+                return regras.IsSuccess
+                    ? regras.Value!
+                    : throw new InvalidOperationException($"As regras padrão gravadas de '{f.Codigo}' não formam uma derivação: {regras.Error!.Message}");
+            })];
     }
 }
