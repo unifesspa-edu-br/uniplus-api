@@ -141,7 +141,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     }
 
     [Fact(DisplayName = "A pré-visualização avalia o modelo com as respostas simuladas; modelo inexistente é 404, e sem o papel, 403")]
-    public async Task PreVisualizacao()
+    public async Task PreVisualizar_RespostasSimuladas_AvaliaOModelo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico()));
