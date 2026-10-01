@@ -44,9 +44,14 @@ public sealed record FatoFormularioRenderizavelDto(
 /// <c>VersaoConfiguracao</c> vigente — nunca da raiz viva — pelo <c>FormulariosController</c>,
 /// endpoint público.
 /// </summary>
+/// <param name="ComprovacaoDocumental">
+/// As exigências que o bloco de comprovação documental lista: as da fase do formulário, na forma
+/// que o certame publica. Nula quando o formulário não tem o bloco.
+/// </param>
 public sealed record FormularioRenderizavelDto(
     string Finalidade,
     string? Titulo,
     IReadOnlyList<EtapaFormularioDto> Etapas,
     IReadOnlyList<TermoExigidoDto> Termos,
-    IReadOnlyList<FatoFormularioRenderizavelDto> FatosColetados);
+    IReadOnlyList<FatoFormularioRenderizavelDto> FatosColetados,
+    IReadOnlyList<ExigenciaDocumentalCertameDto>? ComprovacaoDocumental);

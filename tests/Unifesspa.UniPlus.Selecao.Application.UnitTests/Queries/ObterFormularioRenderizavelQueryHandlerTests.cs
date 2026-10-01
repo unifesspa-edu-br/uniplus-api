@@ -300,6 +300,45 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             """;
     }
 
+    [Fact(DisplayName = "O bloco de comprovação documental lista as exigências da fase do formulário, na forma pública; sem o bloco, nada")]
+    public async Task Handle_BlocoDeComprovacao_ListaAsExigenciasDaFaseDoFormulario()
+    {
+        const string faseHabilitacao = "0199a000-0000-7000-8000-0000000000f2";
+        string envelope = $$"""
+            {
+              "formularios": [
+                {"finalidade": "HABILITACAO", "faseId": "{{faseHabilitacao}}", "titulo": null, "modeloOrigem": null, "termos": [],
+                 "etapas": [
+                   {"codigo": "DOCUMENTOS", "ordem": 0, "tipo": "BLOCO", "bloco": "COMPROVACAO_DOCUMENTAL", "titulo": "Documentos", "descricao": null, "aviso": null},
+                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]},
+                {"finalidade": "INSCRICAO", "faseId": "0199a000-0000-7000-8000-0000000000f1", "titulo": null, "modeloOrigem": null, "termos": [],
+                 "etapas": [{"codigo": "REVISAO", "ordem": 0, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}
+              ],
+              "fatosColetados": [],
+              "documentosExigidos": {"exigencias": [
+                {{Exigencia("Documento de identidade", "Geral", faseHabilitacao)}},
+                {{Exigencia("Comprovante de inscrição", "Geral", "0199a000-0000-7000-8000-0000000000f1")}},
+                {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao)}}
+              ]}
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelope);
+
+        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(repository, processoId, finalidade: FinalidadeFormulario.Habilitacao);
+        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(repository, processoId);
+
+        habilitacao.Value!.ComprovacaoDocumental!.Select(static e => (e.Rotulo, e.Aplicabilidade)).Should().Equal(
+            [("Documento de identidade", "Geral"), ("Autodeclaração étnico-racial", "Condicional")],
+            "só as exigências da fase da habilitação, na ordem congelada");
+        inscricao.Value!.ComprovacaoDocumental.Should().BeNull("o formulário de inscrição não tem o bloco");
+
+        static string Exigencia(string nome, string aplicabilidade, string fase) => $$"""
+            {"tipoDocumentoNome": "{{nome}}", "aplicabilidade": "{{aplicabilidade}}", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
+             "formatosPermitidos": {"lista": null, "qualquer": true} }
+            """;
+    }
+
     [Fact(DisplayName = "Item com obrigatoriedade QUANDO é projetado com o predicado, a ajuda e o pedido de confirmação")]
     public async Task Handle_ObrigatoriedadeQuando_ProjetaRegras()
     {
