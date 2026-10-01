@@ -9,6 +9,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -186,7 +187,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
     [Theory(DisplayName = "Derivado de fonte global contribui valor do catálogo; o desativado é recusado como desativado e o desconhecido como fora do domínio")]
     [InlineData("EJA", null)]
-    [InlineData("PROFICIENCIA", "ProcessoSeletivo.ValorDeDominioDesativado")]
+    [InlineData("PROFICIENCIA", VinculoCatalogoErrorCodes.ValorDesativado)]
     [InlineData("XYZ", "RegrasDerivacaoFato.ContribuiForaDoDominio")]
     public async Task Handle_DerivadoDeFonteGlobal_ContribuiSoValorVigente(string contribui, string? recusa)
     {

@@ -216,7 +216,6 @@ public sealed class FatoColetado : EntityBase
 /// <summary>Códigos de erro de <see cref="FatoColetado"/>.</summary>
 public static class FatoColetadoErrorCodes
 {
-    public const string OpcoesDeOutroDominio = "FatoColetado.OpcoesDeOutroDominio";
     public const string ObrigatoriedadeInvalida = "FatoColetado.ObrigatoriedadeInvalida";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
     public const string PrecondicaoCitaFatoNaoColetado = "FatoColetado.PrecondicaoCitaFatoNaoColetado";

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -68,25 +69,36 @@ internal static class VocabularioDeFatos
             .ToDictionary(static descritor => descritor.Codigo, StringComparer.Ordinal);
     }
 
-    public const string CitaAtributoDoCandidato = "FatoColetado.CitaAtributoDoCandidato";
+    /// <summary>
+    /// O fato como as regras do formulário o conferem contra o catálogo; os valores com o estado de
+    /// cada um, ou os códigos do domínio, ativos, quando o catálogo não traz a descrição por valor.
+    /// </summary>
+    public static FatoDoCatalogo ParaRegras(FatoCandidatoView fato)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        return new FatoDoCatalogo(
+            fato.Codigo, fato.Dominio, fato.Cardinalidade, fato.Origem, fato.Binding, fato.FonteValores, fato.Escopo, fato.Ativo,
+            fato.ValoresDominioDeclarados is { } declarados
+                ? [.. declarados.Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]
+                : [.. (fato.ValoresDominio ?? []).Select(static v => new ValorDoCatalogo(v, Ativo: true))]);
+    }
+
+    /// <summary>O catálogo como as regras do formulário o conferem, por código.</summary>
+    public static Dictionary<string, FatoDoCatalogo> ParaRegras(IEnumerable<FatoCandidatoView> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+        return catalogo.ToDictionary(static f => f.Codigo, ParaRegras, StringComparer.Ordinal);
+    }
 
     /// <summary>
-    /// A recusa de citar, numa regra do formulário, um fato que o sistema calcula de atributos do
-    /// candidato, como a faixa etária: as dependências dele não são declaradas, e o formulário não
-    /// tem como saber em que ponto ele fica conhecido.
+    /// A recusa de citar, numa regra do formulário, fato que o sistema calcula de atributos do
+    /// candidato (<see cref="ConferenciaNoCatalogo.CitacaoDeAtributoDoCandidato"/>).
     /// </summary>
     public static DomainError? CitacaoDeAtributoDoCandidato(
         IEnumerable<string> citados, IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
     {
-        ArgumentNullException.ThrowIfNull(citados);
         ArgumentNullException.ThrowIfNull(catalogo);
-
-        return citados.FirstOrDefault(c => c is not null && catalogo.TryGetValue(c, out FatoCandidatoView? fato)
-                && CalculadoDeAtributo(fato.Binding)) is { } atributo
-            ? new DomainError(
-                CitaAtributoDoCandidato,
-                $"O fato '{atributo}' é calculado pelo sistema a partir de atributos do candidato e ainda não pode ser citado em regra do formulário.")
-            : null;
+        return ConferenciaNoCatalogo.CitacaoDeAtributoDoCandidato(citados, ParaRegras(catalogo.Values));
     }
 
     /// <summary>Se o vínculo é de fato que o sistema calcula de atributos do candidato, como a faixa etária.</summary>

@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -97,7 +98,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         }
         else
         {
-            resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.OpcoesDeOutroDominio);
+            resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.OpcoesDeOutroDominio);
         }
     }
 

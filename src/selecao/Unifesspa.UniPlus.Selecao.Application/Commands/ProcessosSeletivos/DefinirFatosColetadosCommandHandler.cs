@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using System.Text.Json;
-
 using Abstractions;
 
 using Domain.Entities;
@@ -94,6 +92,7 @@ public static class DefinirFatosColetadosCommandHandler
         IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         Dictionary<string, FatoCandidatoView> catalogo = fatosDoCatalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
         Dictionary<string, DescritorFatoCandidato> vocabulario = VocabularioDeFatos.Descritores(fatosDoCatalogo);
+        Dictionary<string, FatoDoCatalogo> catalogoDasRegras = VocabularioDeFatos.ParaRegras(fatosDoCatalogo);
 
         // O domínio dos fatos categóricos cuja fonte é o processo vem do PRÓPRIO processo — uma
         // regra que os cite valida contra ele, nunca contra um catálogo global.
@@ -109,7 +108,7 @@ public static class DefinirFatosColetadosCommandHandler
             }
 
             string campo = $"itens[{indice}]";
-            Result<FatoColetado> fato = ResolverFato(command.Itens[indice], regrasDoItem, catalogo, vocabulario, dominiosDinamicos);
+            Result<FatoColetado> fato = ResolverFato(command.Itens[indice], regrasDoItem, catalogo, catalogoDasRegras, vocabulario, dominiosDinamicos);
             if (fato.IsSuccess)
             {
                 fatos.Add(fato.Value!);
@@ -202,28 +201,18 @@ public static class DefinirFatosColetadosCommandHandler
         FatoColetadoInput input,
         RegrasDoItem regras,
         Dictionary<string, FatoCandidatoView> catalogo,
+        Dictionary<string, FatoDoCatalogo> catalogoDasRegras,
         Dictionary<string, DescritorFatoCandidato> vocabulario,
         IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
-        // Coletabilidade: o fato existe no vocabulário e é DECLARADO com binding de campo de
-        // inscrição. Um derivado (MODALIDADE, binding REGRA_DERIVACAO) ou um computado
-        // (RENDA_PER_CAPITA, binding ATRIBUTO_CANDIDATO) não é coletável — o candidato não o
-        // responde num campo.
-        if (!catalogo.TryGetValue(input.FatoCodigo, out FatoCandidatoView? view))
+        // Só o fato declarado do próprio candidato, respondido num campo, é coletável: derivados,
+        // calculados e fatos de membro de grupo não.
+        if (ConferenciaNoCatalogo.FatoDoItem(input.FatoCodigo, catalogoDasRegras) is { } naoColetavel)
         {
-            return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", new DomainError(
-                ItemFormularioErrorCodes.FatoDesconhecido,
-                $"O fato '{input.FatoCodigo}' não pertence ao vocabulário de fatos do candidato."))]);
+            return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", naoColetavel)]);
         }
 
-        if (!ColetabilidadeDeFato.EhColetavel(view))
-        {
-            return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", new DomainError(
-                ItemFormularioErrorCodes.FatoNaoColetavel,
-                $"O fato '{input.FatoCodigo}' não é coletável — só um fato declarado, respondido em campo de "
-                + "inscrição, pode ser coletado (derivados e computados não)."))]);
-        }
-
+        FatoCandidatoView view = catalogo[input.FatoCodigo];
         TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao);
         if (CoerenciaDoCampo.Validar(view.Codigo, tipoRenderizacao, view.Dominio, view.Cardinalidade) is { } incoerencia)
         {
@@ -244,7 +233,8 @@ public static class DefinirFatosColetadosCommandHandler
             erros.Add(new("predicadoObrigatoriedade", semantica.Error!));
         }
 
-        erros.AddRange(SemanticaDasRestricoes(view, tipoRenderizacao, regras.Restricoes, catalogo, vocabulario, dominiosDinamicos));
+        erros.AddRange(ConferenciaNoCatalogo.SemanticaDasRestricoes(
+            catalogoDasRegras[view.Codigo], tipoRenderizacao, regras.Restricoes, catalogoDasRegras, vocabulario, dominiosDinamicos));
 
         IEnumerable<string> citados = (input.Precondicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato)
             .Concat(regras.Obrigatoriedade.FatosCitados)
@@ -265,82 +255,6 @@ public static class DefinirFatosColetadosCommandHandler
             ? fato
             : Result<FatoColetado>.ValidationFailure([.. erros, .. fato.IsFailure ? fato.Errors : []]);
     }
-
-    /// <summary>
-    /// As restrições contra o catálogo: a condição de cada grupo de opções valida como qualquer
-    /// predicado; os valores permitidos são do domínio do próprio fato, conferidos como a condição
-    /// <c>FATO EM [valores]</c>; e as respostas que formam as opções vêm de campos categóricos cujas
-    /// opções são todas opções do campo, para que toda resposta anterior seja uma opção válida.
-    /// A restrição que não cabe no tipo do campo fica para a recusa de coerência do item.
-    /// </summary>
-    private static IEnumerable<FieldError> SemanticaDasRestricoes(
-        FatoCandidatoView alvo,
-        TipoRenderizacao tipoRenderizacao,
-        IReadOnlyList<RestricaoValor> restricoes,
-        Dictionary<string, FatoCandidatoView> catalogo,
-        Dictionary<string, DescritorFatoCandidato> vocabulario,
-        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
-    {
-        for (int indice = 0; indice < restricoes.Count; indice++)
-        {
-            if (!FormaDoItem.RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
-            {
-                continue;
-            }
-
-            string campo = $"restricoes[{indice}]";
-            switch (restricoes[indice])
-            {
-                case OpcoesPermitidas opcoes:
-                    for (int entrada = 0; entrada < opcoes.Entradas.Count; entrada++)
-                    {
-                        OpcoesCondicionadas grupo = opcoes.Entradas[entrada];
-                        if (grupo.Quando is { } quando
-                            && PredicadoDnfValidador.Validar(quando, vocabulario, null, dominiosDinamicos) is { IsFailure: true } condicao)
-                        {
-                            yield return new($"{campo}.entradas[{entrada}].quando", condicao.Error!);
-                        }
-
-                        PredicadoDnf pertinencia = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(
-                            alvo.Codigo, Operador.Em, JsonSerializer.SerializeToElement(grupo.Valores.Order(StringComparer.Ordinal))).Value!)]).Value!;
-                        if (PredicadoDnfValidador.Validar(pertinencia, vocabulario, null, dominiosDinamicos) is { IsFailure: true } valores)
-                        {
-                            yield return new($"{campo}.entradas[{entrada}].valores", valores.Error!);
-                        }
-                    }
-
-                    break;
-                case OpcoesDasRespostas respostas
-                    when respostas.Fatos.Any(f => !catalogo.TryGetValue(f, out FatoCandidatoView? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominiosDinamicos)):
-                    yield return new($"{campo}.fatos", new DomainError(
-                        FatoColetadoErrorCodes.OpcoesDeOutroDominio,
-                        "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."));
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Toda resposta possível da fonte é opção do alvo: os valores da fonte cabem nos do alvo; no
-    /// domínio por formato, que não enumera valores, a fonte dos valores é a mesma.
-    /// </summary>
-    private static bool OpcoesDaFonteCabemNoAlvo(
-        FatoCandidatoView alvo, FatoCandidatoView fonte, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos) =>
-        string.Equals(fonte.Dominio, alvo.Dominio, StringComparison.Ordinal)
-        && (ValoresDoDominio(fonte, dominiosDinamicos), ValoresDoDominio(alvo, dominiosDinamicos)) switch
-        {
-            (null, null) => string.Equals(fonte.FonteValores, alvo.FonteValores, StringComparison.Ordinal),
-            ({ } daFonte, { } doAlvo) => daFonte.IsSubsetOf(doAlvo),
-            _ => false,
-        };
-
-    /// <summary>Os valores enumerados do domínio do fato — do catálogo ou do processo —; nulo no domínio por formato.</summary>
-    private static IReadOnlySet<string>? ValoresDoDominio(FatoCandidatoView fato, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos) =>
-        fato.ValoresDominio is { Count: > 0 } estaticos
-            ? estaticos.ToHashSet(StringComparer.Ordinal)
-            : dominiosDinamicos.TryGetValue(fato.Codigo, out DominioDeValores? dinamico) ? dinamico.Valores : null;
 
     /// <summary>A obrigatoriedade e as restrições de um item cuja forma foi aceita.</summary>
     private sealed record RegrasDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes);
@@ -401,28 +315,5 @@ public static class DefinirFatosColetadosCommandHandler
         return validacao.IsFailure
             ? Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Failure(validacao.Error!)
             : Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Success(condicoes);
-    }
-
-}
-
-/// <summary>
-/// Política de coletabilidade de um fato do candidato (Story #984). Só é coletável — respondido
-/// pelo candidato num campo do formulário de inscrição — o fato de <c>Origem = DECLARADO</c>
-/// cujo binding aponta para um campo de inscrição (<c>CAMPO_INSCRICAO:{campo}</c>). Um fato
-/// derivado (<c>REGRA_DERIVACAO:…</c>) ou computado de atributo (<c>ATRIBUTO_CANDIDATO:…</c>)
-/// não é respondido diretamente e não pode ser coletado. Enquanto <c>CAMPO_INSCRICAO</c> for o
-/// único binding coletável, este é o critério; um novo binding coletável estende esta política,
-/// não os call sites.
-/// </summary>
-internal static class ColetabilidadeDeFato
-{
-    private const string OrigemDeclarado = "DECLARADO";
-
-    public static bool EhColetavel(FatoCandidatoView fato)
-    {
-        ArgumentNullException.ThrowIfNull(fato);
-
-        return string.Equals(fato.Origem, OrigemDeclarado, StringComparison.Ordinal)
-            && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.CampoDoFormulario);
     }
 }

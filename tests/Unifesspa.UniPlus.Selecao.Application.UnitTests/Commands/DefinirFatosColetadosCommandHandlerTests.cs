@@ -138,7 +138,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         DefinirFatosColetadosCommand coletaBaixaRenda = new(
             processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
 
-        (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be("ProcessoSeletivo.FatoDesativado");
+        (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
 
         processo.DefinirItens(
             [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null).Value!],
@@ -158,6 +158,21 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ItemFormulario.FatoNaoColetavel");
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Fato de membro de grupo não é coletado como item do formulário")]
+    public async Task Handle_FatoDeMembroDeGrupo_RetornaNaoColetavel()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+            [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Escopo = "MEMBRO_GRUPO" } : f)]);
+        DefinirFatosColetadosCommand command = new(
+            processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.FatoNaoColetavel);
     }
 
     [Fact(DisplayName = "Coletar um fato computado de atributo (RENDA_PER_CAPITA) é recusado como não coletável")]
@@ -502,7 +517,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
                 Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["AMARELA"])])]),
         ], PrecondicaoIfMatch.Ausente);
 
-        (await HandleAsync(mocks, command)).Error!.Code.Should().Be("ProcessoSeletivo.ValorDeDominioDesativado");
+        (await HandleAsync(mocks, command)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.ValorDesativado);
     }
 
     [Theory(DisplayName = "Opções formadas pelas respostas só vêm de campo cujas opções são todas opções do campo")]
@@ -533,7 +548,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "itens[1].restricoes[0].fatos",
-                Error = new { Code = FatoColetadoErrorCodes.OpcoesDeOutroDominio },
+                Error = new { Code = ItemFormularioErrorCodes.OpcoesDeOutroDominio },
             });
         }
     }
@@ -571,7 +586,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
             Field = "itens[0]",
-            Error = new { Code = VocabularioDeFatos.CitaAtributoDoCandidato },
+            Error = new { Code = GrafoFormularioErrorCodes.CitaAtributoDoCandidato },
         });
     }
 

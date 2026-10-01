@@ -73,7 +73,8 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             valoresDominioDeclarados,
             f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
             f.Ativo,
-            f.Formato is { } formato and not FormatoTexto.Nenhum ? FormatosTexto.ParaTokenCanonico(formato) : null);
+            f.Formato is { } formato and not FormatoTexto.Nenhum ? FormatosTexto.ParaTokenCanonico(formato) : null,
+            EscoposFato.ParaTokenCanonico(f.Escopo));
     }
 
     private static IReadOnlyList<FatoValorDominioViewItem>? ParaValoresDominioDeclarados(

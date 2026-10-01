@@ -38,6 +38,10 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// Formato da resposta do fato de texto — token canônico (LIVRE, CPF, EMAIL, TELEFONE, CEP,
 /// NOME_PESSOA) —, ou <see langword="null"/> quando o fato não é de texto.
 /// </param>
+/// <param name="Escopo">
+/// De quem é o fato — token canônico (CANDIDATO, MEMBRO_GRUPO). O de membro de grupo só é
+/// respondido dentro do grupo.
+/// </param>
 public sealed record FatoCandidatoView(
     Guid Id,
     string Codigo,
@@ -52,7 +56,8 @@ public sealed record FatoCandidatoView(
     IReadOnlyList<FatoValorDominioViewItem>? ValoresDominioDeclarados,
     string? FonteValores,
     bool Ativo,
-    string? Formato = null);
+    string? Formato = null,
+    string Escopo = "CANDIDATO");
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidatoView"/> categórico
