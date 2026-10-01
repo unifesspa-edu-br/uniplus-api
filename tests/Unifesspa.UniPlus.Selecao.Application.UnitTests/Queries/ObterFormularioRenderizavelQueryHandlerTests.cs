@@ -457,6 +457,34 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         fato.ValoresSelecionaveis.Should().BeNull();
     }
 
+    [Theory(DisplayName = "Campo de data e campo de endereço são projetados com o tipo, sem formato nem valores selecionáveis")]
+    [InlineData("DATA_NASCIMENTO", "DATA")]
+    [InlineData("ENDERECO_RESIDENCIAL", "ENDERECO")]
+    public async Task Handle_CampoDeDataOuEndereco_ProjetaOTipo(string fatoCodigo, string tipoRenderizacao)
+    {
+        string envelope = $$"""
+            {
+              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+                "etapas": [
+                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
+                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
+                ]}],
+              "fatosColetados": [
+                {"fatoCodigo": "{{fatoCodigo}}", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0,
+                 "rotulo": "Campo", "tipoRenderizacao": "{{tipoRenderizacao}}", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
+              ]
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
+
+        FatoFormularioRenderizavelDto fato = resultado.Value!.FatosColetados.Should().ContainSingle().Which;
+        fato.TipoRenderizacao.Should().Be(tipoRenderizacao);
+        fato.Formato.Should().BeNull();
+        fato.ValoresSelecionaveis.Should().BeNull();
+    }
+
     [Fact(DisplayName = "Versão vigente congelada com a forma corrente projeta título, termos e fatos com apresentação e valores selecionáveis")]
     public async Task Handle_EnvelopeCorrente_ProjetaApresentacao()
     {

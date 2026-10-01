@@ -59,6 +59,10 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true),
         new(Guid.CreateVersion7(), "NOME_SOCIAL", "Nome social", null, "TEXTO", "DECLARADO", "ESCALAR",
             null, "INSCRICAO", "CAMPO_INSCRICAO:NOME_SOCIAL", null, null, Ativo: true, Formato: "NOME_PESSOA"),
+        new(Guid.CreateVersion7(), "DATA_NASCIMENTO", "Data de nascimento", null, "DATA", "DECLARADO", "ESCALAR",
+            null, "INSCRICAO", "CAMPO_INSCRICAO:DATA_NASCIMENTO", null, null, Ativo: true),
+        new(Guid.CreateVersion7(), "ENDERECO_RESIDENCIAL", "Endereço residencial", null, "ENDERECO", "DECLARADO", "ESCALAR",
+            null, "INSCRICAO", "CAMPO_INSCRICAO:ENDERECO_RESIDENCIAL", null, null, Ativo: true),
         new(Guid.CreateVersion7(), "OPCAO_CURSO_1", "1ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
             ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_CURSO_1", null, "GLOBAL", Ativo: true),
         new(Guid.CreateVersion7(), "OPCAO_LISTA_ESPERA", "Opção da lista de espera", null, "CATEGORICO", "DECLARADO", "ESCALAR",
@@ -248,6 +252,8 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     [InlineData("BAIXA_RENDA", "NUMERO", "BAIXA_RENDA é BOOLEANO — NUMERO não é coerente")]
     [InlineData("NOME_SOCIAL", "SELECAO_UNICA", "NOME_SOCIAL é TEXTO — só TEXTO é coerente")]
     [InlineData("BAIXA_RENDA", "TEXTO", "BAIXA_RENDA é BOOLEANO — TEXTO não é coerente")]
+    [InlineData("DATA_NASCIMENTO", "TEXTO", "DATA_NASCIMENTO é DATA — só DATA é coerente")]
+    [InlineData("ENDERECO_RESIDENCIAL", "DATA", "ENDERECO_RESIDENCIAL é ENDERECO — só ENDERECO é coerente")]
     public async Task Handle_TipoRenderizacaoIncoerente_RetornaErroDeCoerencia(
         string fatoCodigo, string tipoRenderizacaoIncoerente, string motivo)
     {
@@ -321,6 +327,21 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("itens[0].predicadoObrigatoriedade");
+    }
+
+    [Theory(DisplayName = "Data e endereço são coletados no campo do domínio deles")]
+    [InlineData("DATA_NASCIMENTO", "DATA")]
+    [InlineData("ENDERECO_RESIDENCIAL", "ENDERECO")]
+    public async Task Handle_DataEEndereco_ColetaNoCampoDoDominio(string fatoCodigo, string tipoRenderizacao)
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
+            processo.Id, FinalidadeFormulario.Inscricao, [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacao, "SEMPRE", null)], PrecondicaoIfMatch.Ausente));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.FatosColetados.Single().TipoRenderizacao.Should().Be(TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacao));
     }
 
     [Fact(DisplayName = "Fato de texto multivalorado não é coletável como campo de texto")]
