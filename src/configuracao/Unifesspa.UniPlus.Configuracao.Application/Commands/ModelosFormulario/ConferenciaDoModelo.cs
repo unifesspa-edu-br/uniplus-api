@@ -110,7 +110,8 @@ internal static class ConferenciaDoModelo
 
     /// <summary>
     /// O que o conteúdo vincula no catálogo: os fatos dos itens e dos pressupostos, os fatos e
-    /// valores citados pelas regras e os valores das opções permitidas de cada item.
+    /// valores citados pelas regras, os fatos cujas respostas formam opções e os valores das opções
+    /// permitidas de cada item.
     /// </summary>
     public static VinculosDeFatos Vinculos(ConteudoDoModelo conteudo)
     {
@@ -126,7 +127,10 @@ internal static class ConferenciaDoModelo
         IEnumerable<(string Fato, string Valor)> opcoes = conteudo.Itens
             .SelectMany(static i => i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas)
                 .SelectMany(e => e.Valores.Select(v => (i.FatoCodigo, v))));
-        return VinculosDeFatos.De(conteudo.Itens.Select(static i => i.FatoCodigo).Concat(conteudo.Pressupostos), condicoes, opcoes);
+        IEnumerable<string> fatos = conteudo.Itens.Select(static i => i.FatoCodigo)
+            .Concat(conteudo.Pressupostos)
+            .Concat(conteudo.Itens.SelectMany(static i => i.Restricoes.SelectMany(static r => r.FatosCitados)));
+        return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
 
     private static IEnumerable<FieldError> ConferirItem(ItemDoModelo item, CatalogoDoModelo catalogo)
