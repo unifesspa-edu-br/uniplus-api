@@ -333,7 +333,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         Result resultado = processo.DefinirFormulario(
             FinalidadeFormulario.Habilitacao, null, new string('a', 301), FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente);
 
-        resultado.Errors.Should().ContainSingle(e => e.Field == "titulo" && e.Error.Code == FormularioProcessoErrorCodes.TituloTamanho);
+        resultado.Errors.Should().ContainSingle(e => e.Field == "titulo" && e.Error.Code == EstruturaFormularioErrorCodes.TituloTamanho);
         processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull("a mutação recusada não altera o estado");
     }
 

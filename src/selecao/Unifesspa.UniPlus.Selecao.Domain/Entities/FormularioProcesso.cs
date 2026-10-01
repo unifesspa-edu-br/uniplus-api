@@ -13,7 +13,6 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class FormularioProcesso : EntityBase
 {
-    public const int TituloMaxLength = 300;
     public const int ModeloOrigemCodigoMaxLength = 60;
 
     /// <summary>O código canônico da fase de habilitação no catálogo de fases.</summary>
@@ -42,25 +41,6 @@ public sealed class FormularioProcesso : EntityBase
 
     private FormularioProcesso() { }
 
-    /// <summary>A finalidade e o título do formulário, conferidos sem as etapas.</summary>
-    public static List<FieldError> ValidarCabecalho(FinalidadeFormulario finalidade, string? titulo)
-    {
-        List<FieldError> erros = [];
-        if (finalidade == FinalidadeFormulario.Nenhuma || !Enum.IsDefined(finalidade))
-        {
-            erros.Add(new("finalidade", new DomainError(FormularioProcessoErrorCodes.FinalidadeInvalida,
-                "A finalidade do formulário é inscrição, isenção de taxa ou habilitação.")));
-        }
-
-        if (!string.IsNullOrWhiteSpace(titulo) && titulo.Trim().Length > TituloMaxLength)
-        {
-            erros.Add(new("titulo", new DomainError(FormularioProcessoErrorCodes.TituloTamanho,
-                $"Título do formulário deve ter no máximo {TituloMaxLength} caracteres.")));
-        }
-
-        return erros;
-    }
-
     /// <summary>
     /// Acumula as recusas de forma (ADR-0125): finalidade, título e a estrutura das etapas pelas
     /// regras do formulário compartilhadas com o modelo. A fase é conferida pelo processo, que tem o
@@ -78,7 +58,7 @@ public sealed class FormularioProcesso : EntityBase
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
-        List<FieldError> erros = ValidarCabecalho(finalidade, titulo);
+        List<FieldError> erros = FormaDoCabecalho.Validar(finalidade, titulo);
         if (finalidade != FinalidadeFormulario.Nenhuma)
         {
             erros.AddRange(EstruturaFormulario.ValidarEtapas(finalidade, [.. etapas.Select(static e => e.Estrutura)]));
@@ -206,8 +186,6 @@ public sealed class EtapaFormulario : EntityBase
 
 public static class FormularioProcessoErrorCodes
 {
-    public const string FinalidadeInvalida = "FormularioProcesso.FinalidadeInvalida";
-    public const string TituloTamanho = "FormularioProcesso.TituloTamanho";
 
     /// <summary>Formulário publicado sem a fase em que é respondido.</summary>
     public const string SemFase = "ProcessoSeletivo.FormularioSemFase";

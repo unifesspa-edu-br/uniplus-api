@@ -194,6 +194,31 @@ public static class FormaDoItem
     }
 }
 
+/// <summary>O cabeçalho do formulário, o mesmo no processo e no modelo: a finalidade e o título.</summary>
+public static class FormaDoCabecalho
+{
+    public const int TituloMaxLength = 300;
+
+    /// <summary>A finalidade é uma das três do formulário, e o título, quando há, cabe no limite.</summary>
+    public static List<FieldError> Validar(FinalidadeFormulario finalidade, string? titulo)
+    {
+        List<FieldError> erros = [];
+        if (finalidade == FinalidadeFormulario.Nenhuma || !Enum.IsDefined(finalidade))
+        {
+            erros.Add(new("finalidade", new DomainError(EstruturaFormularioErrorCodes.FinalidadeInvalida,
+                "A finalidade do formulário é inscrição, isenção de taxa ou habilitação.")));
+        }
+
+        if (FormaDoItem.TextoOpcional(titulo) is { Length: > TituloMaxLength })
+        {
+            erros.Add(new("titulo", new DomainError(EstruturaFormularioErrorCodes.TituloTamanho,
+                $"O título do formulário deve ter no máximo {TituloMaxLength} caracteres.")));
+        }
+
+        return erros;
+    }
+}
+
 /// <summary>A forma de uma etapa do formulário, a mesma no processo e no modelo.</summary>
 public static class FormaDaEtapa
 {

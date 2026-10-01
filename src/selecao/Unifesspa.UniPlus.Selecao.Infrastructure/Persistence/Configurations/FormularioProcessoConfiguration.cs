@@ -22,7 +22,7 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
         builder.Property(f => f.Id).ValueGeneratedNever();
 
         builder.Property(f => f.Finalidade).HasConversion<int>().IsRequired();
-        builder.Property(f => f.Titulo).HasMaxLength(FormularioProcesso.TituloMaxLength);
+        builder.Property(f => f.Titulo).HasMaxLength(FormaDoCabecalho.TituloMaxLength);
         builder.Property(f => f.ModeloOrigemCodigo).HasMaxLength(FormularioProcesso.ModeloOrigemCodigoMaxLength);
         builder.Ignore(f => f.Estrutura);
 

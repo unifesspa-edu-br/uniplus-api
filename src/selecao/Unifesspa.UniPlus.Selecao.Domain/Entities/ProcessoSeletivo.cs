@@ -1047,7 +1047,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
-        List<FieldError> recusas = FormularioProcesso.ValidarCabecalho(finalidade, titulo);
+        List<FieldError> recusas = FormaDoCabecalho.Validar(finalidade, titulo);
         if (faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(finalidade, fase) is { } recusaDaFase)
         {
             recusas.Add(new("faseId", recusaDaFase));

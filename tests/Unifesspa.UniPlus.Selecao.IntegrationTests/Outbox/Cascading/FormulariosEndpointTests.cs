@@ -83,7 +83,7 @@ public sealed class FormulariosEndpointTests
         // field usa o mesmo casing do payload JSON (camelCase, ADR-0023), não o PascalCase do C#.
         JsonElement erro = doc.RootElement.GetProperty("errors").EnumerateArray().Single();
         erro.GetProperty("field").GetString().Should().Be("titulo");
-        erro.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.titulo_tamanho");
+        erro.GetProperty("code").GetString().Should().Be("uniplus.estrutura_formulario.titulo_tamanho");
     }
 
     [Fact(DisplayName = "Finalidade fora do vocabulário é 404, na leitura e na escrita")]
