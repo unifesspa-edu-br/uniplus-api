@@ -55,7 +55,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
 
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresPorFato = new(StringComparer.Ordinal);
         IReadOnlySet<(string Fato, string Valor)> valoresCitados = processo.Vinculos().Valores;
-        foreach (FatoColetado fato in processo.FatosColetados)
+        foreach (FatoColetado fato in processo.Campos)
         {
             if (!fato.TipoRenderizacao.EhSelecao())
             {
@@ -102,7 +102,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         ProcessoSeletivo processo,
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresPorFato)
     {
-        foreach (FatoColetado alvo in processo.FatosColetados)
+        foreach (FatoColetado alvo in processo.Campos)
         {
             if (alvo.Restricoes.OfType<OpcoesDasRespostas>().SingleOrDefault() is not { } respostas)
             {

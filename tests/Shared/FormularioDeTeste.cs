@@ -25,10 +25,11 @@ internal static class FormularioDeTeste
         this ProcessoSeletivo processo,
         IReadOnlyList<FatoColetado> fatos,
         PrecondicaoIfMatch? precondicao = null,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
+        FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao,
+        IReadOnlyList<GrupoColetado>? grupos = null)
     {
         PrecondicaoIfMatch vigente = GarantirFormulario(processo, finalidade, precondicao ?? PrecondicaoIfMatch.Ausente);
-        return processo.DefinirFatosColetados(finalidade, [.. fatos.Select(NaSecao)], vigente);
+        return processo.DefinirFatosColetados(finalidade, [.. fatos.Select(NaSecao)], vigente, grupos);
     }
 
     /// <summary>

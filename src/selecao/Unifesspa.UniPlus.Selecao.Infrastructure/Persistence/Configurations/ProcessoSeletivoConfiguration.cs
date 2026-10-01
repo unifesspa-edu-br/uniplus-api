@@ -226,12 +226,26 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // Grafo de coleta de fatos (Story #926) — quais fatos o processo coleta, em que ordem e
         // sob qual pré-condição. Cascade pelo mesmo motivo dos documentos exigidos: a FK é
         // obrigatória e o agregado substitui a coleção por inteiro.
-        builder.HasMany(p => p.FatosColetados)
+        // Todo campo pertence ao processo — o item e o campo de grupo repetível —; os itens são a
+        // projeção dos campos sem grupo.
+        builder.HasMany(p => p.Campos)
             .WithOne()
             .HasForeignKey(f => f.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Navigation(p => p.FatosColetados)
+        builder.Navigation(p => p.Campos)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Ignore(p => p.FatosColetados);
+
+        // Grupos repetíveis (UNI-REQ-0146) — mesma disciplina dos campos; os campos de cada grupo são
+        // também campos do processo.
+        builder.HasMany(p => p.GruposColetados)
+            .WithOne()
+            .HasForeignKey(g => g.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.GruposColetados)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // Formulários por finalidade (UNI-REQ-0144) — mesma disciplina de FatosColetados.

@@ -962,7 +962,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         // Direto na lista: a gravação e a restauração recusam acima do teto, e o gate cobre o
         // rascunho que chega por outro caminho.
-        ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_fatosColetados", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
+        ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
             .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
                 $"FATO_{i}", i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
                 etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!));

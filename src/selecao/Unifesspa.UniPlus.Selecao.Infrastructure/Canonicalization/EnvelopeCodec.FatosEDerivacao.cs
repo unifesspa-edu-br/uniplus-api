@@ -207,22 +207,108 @@ public sealed partial class EnvelopeCodec
     /// </summary>
     private static (
         IReadOnlyList<FatoColetado> Fatos,
-        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
         LerFatosColetados(LeitorEnvelope leitor, JsonObject payload)
     {
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = new(StringComparer.Ordinal);
 
         JsonArray array = leitor.Array(payload, "fatosColetados", "$");
+        return leitor.Falhou ? ([], valoresSelecionaveis) : (LerListaDeFatos(leitor, array, "fatosColetados", valoresSelecionaveis), valoresSelecionaveis);
+    }
+
+    /// <summary>
+    /// Os grupos repetíveis (UNI-REQ-0146), reconstruídos por <see cref="GrupoColetado.Criar"/>, que
+    /// revalida a forma; os campos de cada um são lidos como os itens, e os valores selecionáveis
+    /// deles entram no mesmo dicionário dos itens.
+    /// </summary>
+    private static IReadOnlyList<GrupoColetado> LerGruposColetados(
+        LeitorEnvelope leitor,
+        JsonObject payload,
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+    {
+        JsonArray array = leitor.Array(payload, "gruposColetados", "$");
         if (leitor.Falhou)
         {
-            return ([], valoresSelecionaveis);
+            return [];
         }
 
+        List<GrupoColetado> grupos = [];
+        for (int i = 0; i < array.Count; i++)
+        {
+            string path = $"gruposColetados[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, "gruposColetados");
+            leitor.ExigirChaves(
+                item, path, "codigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "minimo", "maximo", "exibicao", "obrigatoriedade", "subitens");
+
+            string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato);
+            FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
+            string? etapaCodigo = leitor.TextoOpcional(item, "etapaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario);
+            int ordem = leitor.Inteiro(item, "ordem", path);
+            string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
+            int minimo = leitor.Inteiro(item, "minimo", path);
+            int maximo = leitor.Inteiro(item, "maximo", path);
+            IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> exibicao = LerDnf(leitor, item, "exibicao", path);
+            JsonArray subitens = leitor.Array(item, "subitens", path);
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            if (finalidade == FinalidadeFormulario.Nenhuma)
+            {
+                return leitor.Propagar<IReadOnlyList<GrupoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.finalidade' fora do vocabulário de finalidades.")) ?? [];
+            }
+
+            Result<PredicadoDnf?> exibicaoLida = PredicadoOpcional(exibicao);
+            if (exibicaoLida.IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<GrupoColetado>>(exibicaoLida.Error!) ?? [];
+            }
+
+            if (LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
+            {
+                return [];
+            }
+
+            IReadOnlyList<FatoColetado> campos = LerListaDeFatos(leitor, subitens, $"{path}.subitens", valoresSelecionaveis);
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            if (campos.FirstOrDefault(c => c.Finalidade != finalidade || c.EtapaCodigo is not null) is { } foraDoGrupo)
+            {
+                return leitor.Propagar<IReadOnlyList<GrupoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{path}.subitens': o campo '{foraDoGrupo.FatoCodigo}' tem finalidade ou seção própria, mas o campo do grupo segue o grupo.")) ?? [];
+            }
+
+            Result<GrupoColetado> grupo = GrupoColetado.Criar(
+                codigo, ordem, etapaCodigo, rotulo, minimo, maximo, exibicaoLida.Value, obrigatoriedade, campos, finalidade);
+            if (grupo.IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<GrupoColetado>>(grupo.Error!) ?? [];
+            }
+
+            grupos.Add(grupo.Value!);
+        }
+
+        return grupos;
+    }
+
+    /// <summary>Uma lista de fatos coletados — os itens ou os campos de um grupo —, na forma congelada.</summary>
+    private static IReadOnlyList<FatoColetado> LerListaDeFatos(
+        LeitorEnvelope leitor,
+        JsonArray array,
+        string caminho,
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+    {
         List<FatoColetado> fatos = [];
         for (int i = 0; i < array.Count; i++)
         {
-            string path = $"fatosColetados[{i}]";
-            JsonObject item = leitor.ItemObjeto(array, i, "fatosColetados");
+            string path = $"{caminho}[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, caminho);
             leitor.ExigirChaves(
                 item, path,
                 "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatoriedade", "ajuda",
@@ -240,27 +326,27 @@ public sealed partial class EnvelopeCodec
             string? formato = leitor.TextoOpcional(item, "formato", path, LimitesDoEnvelope.Token);
             if (leitor.Falhou)
             {
-                return ([], valoresSelecionaveis);
+                return [];
             }
 
             if (finalidade == FinalidadeFormulario.Nenhuma)
             {
-                return (leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.finalidade' fora do vocabulário de finalidades.")) ?? [], valoresSelecionaveis);
+                return leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.finalidade' fora do vocabulário de finalidades.")) ?? [];
             }
 
             TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacaoCodigo);
             if (tipoRenderizacao is TipoRenderizacao.Nenhuma)
             {
-                return (leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.tipoRenderizacao' fora do vocabulário de tipos de renderização.")) ?? [], valoresSelecionaveis);
+                return leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.tipoRenderizacao' fora do vocabulário de tipos de renderização.")) ?? [];
             }
 
             IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> condicoes =
                 LerDnf(leitor, item, "precondicao", path);
             if (leitor.Falhou)
             {
-                return ([], valoresSelecionaveis);
+                return [];
             }
 
             List<CondicaoPrecondicaoFato> precondicoes = [];
@@ -269,7 +355,7 @@ public sealed partial class EnvelopeCodec
                 Result<CondicaoPrecondicaoFato> condicao = CondicaoPrecondicaoFato.Criar(clausula, fato, operador, valor);
                 if (condicao.IsFailure)
                 {
-                    return (leitor.Propagar<IReadOnlyList<FatoColetado>>(condicao.Error!) ?? [], valoresSelecionaveis);
+                    return leitor.Propagar<IReadOnlyList<FatoColetado>>(condicao.Error!) ?? [];
                 }
 
                 precondicoes.Add(condicao.Value!);
@@ -279,13 +365,13 @@ public sealed partial class EnvelopeCodec
                 LerValoresSelecionaveis(leitor, item, path, tipoRenderizacao);
             if (leitor.Falhou)
             {
-                return ([], valoresSelecionaveis);
+                return [];
             }
 
             if (LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade
                 || LerRestricoes(leitor, item, path) is not { } restricoes)
             {
-                return ([], valoresSelecionaveis);
+                return [];
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
@@ -293,7 +379,7 @@ public sealed partial class EnvelopeCodec
                 ajuda, pedirConfirmacao, restricoes);
             if (fatoColetado.IsFailure)
             {
-                return (leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [], valoresSelecionaveis);
+                return leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [];
             }
 
             fatos.Add(fatoColetado.Value!);
@@ -304,7 +390,7 @@ public sealed partial class EnvelopeCodec
             valoresSelecionaveis[fatoCodigo] = valoresDoFato;
         }
 
-        return (fatos, valoresSelecionaveis);
+        return fatos;
     }
 
     /// <summary>
@@ -609,6 +695,7 @@ public sealed partial class EnvelopeCodec
     /// </summary>
     private static DomainError? ValidarBlocoDeFatosEDerivacao(
         IReadOnlyList<FatoColetado> fatos,
+        IReadOnlyList<GrupoColetado> grupos,
         IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao,
         IReadOnlyList<DocumentoExigido> documentosExigidos,
         IReadOnlyList<FormularioProcesso> formularios,
@@ -632,7 +719,9 @@ public sealed partial class EnvelopeCodec
                 + $"'{MotorDerivacao.VersaoSemantica}'.");
         }
 
-        // Produtor único no processo; ordem única dentro de cada formulário.
+        // Produtor único no processo, contando os campos dos grupos; ordem única dentro de cada
+        // formulário, entre itens e grupos, e dentro de cada grupo; código de grupo único no processo
+        // e fora do espaço de códigos dos fatos.
         HashSet<string> coletados = new(StringComparer.Ordinal);
         HashSet<(FinalidadeFormulario, int)> ordens = [];
         foreach (FatoColetado fato in fatos)
@@ -648,13 +737,54 @@ public sealed partial class EnvelopeCodec
             }
         }
 
+        HashSet<string> codigosDeGrupo = new(StringComparer.Ordinal);
+        foreach (GrupoColetado grupo in grupos)
+        {
+            if (!codigosDeGrupo.Add(grupo.Codigo))
+            {
+                return Malformado($"'gruposColetados': o código '{grupo.Codigo}' aparece em mais de um grupo.");
+            }
+
+            if (!ordens.Add((grupo.Finalidade, grupo.Ordem)))
+            {
+                return Malformado($"'gruposColetados': a ordem {grupo.Ordem} é usada por mais de um item ou grupo do mesmo formulário.");
+            }
+
+            HashSet<int> ordensNoGrupo = [];
+            foreach (FatoColetado campo in grupo.Subitens)
+            {
+                if (!coletados.Add(campo.FatoCodigo))
+                {
+                    return Malformado($"'gruposColetados': o fato '{campo.FatoCodigo}' aparece mais de uma vez.");
+                }
+
+                if (!ordensNoGrupo.Add(campo.Ordem))
+                {
+                    return Malformado($"'gruposColetados': a ordem {campo.Ordem} é usada por mais de um campo do grupo '{grupo.Codigo}'.");
+                }
+            }
+        }
+
+        // Depois de todos os campos: o código de grupo não coincide com fato coletado, item ou campo.
+        if (codigosDeGrupo.Overlaps(coletados))
+        {
+            return Malformado("'gruposColetados': um código de grupo coincide com o de um fato coletado.");
+        }
+
         HashSet<string> derivados = new(StringComparer.Ordinal);
-        HashSet<string> universo = new(coletados, StringComparer.Ordinal);
+        // A derivação cita item ou derivado, nunca campo de grupo repetível, que existe por ocorrência.
+        HashSet<string> universo = new(fatos.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
         foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
         {
             if (!derivados.Add(config.CodigoFato))
             {
                 return Malformado($"'regrasDerivacao': o fato '{config.CodigoFato}' tem mais de uma configuração de derivação.");
+            }
+
+            // O derivado não é fato coletado — item ou campo de grupo — nem grupo.
+            if (coletados.Contains(config.CodigoFato) || codigosDeGrupo.Contains(config.CodigoFato))
+            {
+                return Malformado($"'regrasDerivacao': o código '{config.CodigoFato}' já é de fato coletado ou de grupo.");
             }
 
             universo.Add(config.CodigoFato);
@@ -701,7 +831,7 @@ public sealed partial class EnvelopeCodec
         // Aciclicidade do grafo conjunto + testemunho: o grafo/modalidades congelados têm de reproduzir
         // exatamente o recomputado das partes reidratadas (byte a byte, pela mesma projeção canônica).
         Result<GrafoDependenciaConjunta> grafo =
-            GrafoDependenciaConjunta.Construir(fatos, regrasDerivacao, documentosExigidos, formularios, termos);
+            GrafoDependenciaConjunta.Construir(fatos, regrasDerivacao, documentosExigidos, formularios, termos, grupos);
         if (grafo.IsFailure)
         {
             return grafo.Error;

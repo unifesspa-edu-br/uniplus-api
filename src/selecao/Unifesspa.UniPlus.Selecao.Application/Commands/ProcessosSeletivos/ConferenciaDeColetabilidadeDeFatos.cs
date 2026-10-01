@@ -35,16 +35,18 @@ internal static class ConferenciaDeColetabilidadeDeFatos
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        if (processo.FatosColetados.Count == 0)
-        {
-            return Result.Success();
-        }
-
+        // O item coleta fato do candidato; o campo de grupo repetível, fato de membro (UNI-REQ-0146).
         FatoColetado? naoColetavel = processo.FatosColetados
             .OrderBy(static f => f.Finalidade)
             .ThenBy(static f => f.Ordem)
             .FirstOrDefault(f => !catalogo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
-                || !ConferenciaNoCatalogo.EhColetavel(VocabularioDeFatos.ParaRegras(fato)));
+                || !ConferenciaNoCatalogo.EhColetavel(VocabularioDeFatos.ParaRegras(fato)))
+            ?? processo.GruposColetados
+                .OrderBy(static g => g.Finalidade)
+                .ThenBy(static g => g.Ordem)
+                .SelectMany(static g => g.Subitens.OrderBy(static s => s.Ordem))
+                .FirstOrDefault(f => !catalogo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
+                    || !ConferenciaNoCatalogo.EhColetavelEmGrupo(VocabularioDeFatos.ParaRegras(fato)));
 
         if (naoColetavel is not null)
         {

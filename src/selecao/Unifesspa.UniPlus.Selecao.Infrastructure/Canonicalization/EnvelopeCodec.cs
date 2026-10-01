@@ -52,6 +52,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         "divulgacao",
         "identidadesUnidade",
         "fatosColetados",
+        "gruposColetados",
         "regrasDerivacao",
         "grafoDependencia",
         "versaoInterpretador",
@@ -234,9 +235,12 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             return leitor.Falha<EnvelopeReidratado>();
         }
 
-        (IReadOnlyList<FatoColetado> Fatos, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
+        (IReadOnlyList<FatoColetado> Fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
             fatosColetadosLidos = LerFatosColetados(leitor, payload);
         IReadOnlyList<FatoColetado> fatosColetados = fatosColetadosLidos.Fatos;
+        IReadOnlyList<GrupoColetado> gruposColetados = leitor.Falhou
+            ? []
+            : LerGruposColetados(leitor, payload, fatosColetadosLidos.ValoresSelecionaveis);
         IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao = LerRegrasDerivacao(leitor, payload);
         string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
         IReadOnlyList<string> modalidadesOfertadas = leitor.Textos(payload, "modalidadesOfertadas", "$");
@@ -245,7 +249,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             return leitor.Falha<EnvelopeReidratado>();
         }
 
-        if (ItensForaDosFormularios(formularios, fatosColetados) is { } itemForaDoFormulario)
+        if (ItensForaDosFormularios(formularios, fatosColetados, gruposColetados) is { } itemForaDoFormulario)
         {
             return Result<EnvelopeReidratado>.Failure(itemForaDoFormulario);
         }
@@ -272,7 +276,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         // domínio de modalidades, feche ciclo no grafo conjunto, ou cujo grafo/modalidades congelados
         // divirjam do recomputado, é recusado como malformado — nunca reidratado como se fosse íntegro.
         if (ValidarBlocoDeFatosEDerivacao(
-            fatosColetados, regrasDerivacao, documentosExigidos, formularios, termosExigidos,
+            fatosColetados, gruposColetados, regrasDerivacao, documentosExigidos, formularios, termosExigidos,
             versaoInterpretador, modalidadesOfertadas, distribuicao, payload) is { } malformado)
         {
             return Result<EnvelopeReidratado>.Failure(malformado);
@@ -281,14 +285,14 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         // As regras dos itens, das seções e dos termos citam só o que o formulário delas conhece,
         // pela mesma conferência da escrita e da publicação.
         if (ProcessoSeletivo.CitacaoInvalidaNosFormularios(
-                formularios, fatosColetados, termosExigidos, regrasDerivacao) is { } citacaoInvalida)
+                formularios, fatosColetados, termosExigidos, regrasDerivacao, gruposColetados) is { } citacaoInvalida)
         {
             return Result<EnvelopeReidratado>.Failure(new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {citacaoInvalida.Message}"));
         }
 
         Result<IReadOnlyList<OpcaoDeclaradaFato>> opcoesDeclaradas =
-            ReconstruirOpcoesDeclaradas(fatosColetados, fatosColetadosLidos.ValoresSelecionaveis);
+            ReconstruirOpcoesDeclaradas([.. fatosColetados, .. gruposColetados.SelectMany(static g => g.Subitens)], fatosColetadosLidos.ValoresSelecionaveis);
         if (opcoesDeclaradas.IsFailure)
         {
             return Result<EnvelopeReidratado>.Failure(opcoesDeclaradas.Error!);
@@ -305,7 +309,8 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             localidade: localidade,
             algoritmoContagemPrazo: algoritmoContagemPrazo,
             identificadorLegivel: identificadorLegivel,
-            opcoesDeclaradas: opcoesDeclaradas.Value);
+            opcoesDeclaradas: opcoesDeclaradas.Value,
+            gruposColetados: gruposColetados);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,
@@ -341,10 +346,14 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
     /// Todo item pertence a um formulário do envelope e está numa seção dele, na ordem das seções —
     /// a mesma recusa da publicação, que nunca congela outra forma.
     /// </summary>
-    private static DomainError? ItensForaDosFormularios(IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<FatoColetado> fatos)
+    private static DomainError? ItensForaDosFormularios(
+        IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
     {
         Dictionary<FinalidadeFormulario, FormularioProcesso> porFinalidade = formularios.ToDictionary(static f => f.Finalidade);
-        foreach (IGrouping<FinalidadeFormulario, FatoColetado> itens in fatos.GroupBy(static f => f.Finalidade))
+        IEnumerable<(FinalidadeFormulario Finalidade, ItemEstrutura Item)> itensEGrupos = fatos
+            .Select(static f => (f.Finalidade, new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo)))
+            .Concat(grupos.Select(static g => (g.Finalidade, g.ParaEstrutura())));
+        foreach (IGrouping<FinalidadeFormulario, ItemEstrutura> itens in itensEGrupos.GroupBy(static p => p.Finalidade, static p => p.Item))
         {
             if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
             {
@@ -352,8 +361,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
                     $"'fatosColetados' tem itens de {EstruturaFormulario.ParaToken(itens.Key)}, que não tem formulário no envelope.");
             }
 
-            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))])
-                is [{ } primeiro, ..])
+            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens]) is [{ } primeiro, ..])
             {
                 return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {primeiro.Error.Message}");
             }

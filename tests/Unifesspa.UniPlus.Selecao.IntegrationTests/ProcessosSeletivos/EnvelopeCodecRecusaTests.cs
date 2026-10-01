@@ -1034,6 +1034,98 @@ public sealed class EnvelopeCodecRecusaTests
     // ── Issue #1059 (UNI-REQ-0072) — recusas do decoder nos dois blocos de valores selecionáveis,
     // e a bicondicional de fatosColetados[].valoresSelecionaveis com tipoRenderizacao nos dois sentidos ──
 
+    // ── gruposColetados (UNI-REQ-0146): o grupo e os campos fecham nas mesmas invariantes da escrita ──
+
+    [Theory(DisplayName = "gruposColetados com código ou campo repetido entre fatos e grupos, ou na ordem de um item, é recusado")]
+    [InlineData("codigo", "RENDA")]
+    [InlineData("campo", "RENDA")]
+    [InlineData("ordem", "1")]
+    public void GruposColetados_ColisaoComItens_Recusa(string chave, string valor)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject grupo = envelope["gruposColetados"]!.AsArray().Single()!.AsObject();
+            switch (chave)
+            {
+                case "codigo":
+                    grupo["codigo"] = valor;
+                    break;
+                case "campo":
+                    grupo["subitens"]!.AsArray()[0]!["fatoCodigo"] = valor;
+                    break;
+                default:
+                    grupo["ordem"] = int.Parse(valor, System.Globalization.CultureInfo.InvariantCulture);
+                    break;
+            }
+        });
+
+        resultado.IsFailure.Should().BeTrue("o encoder nunca congela grupo que colide com fato ou com a ordem de um item");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain(
+            "'gruposColetados'", "a colisão é recusada pela conferência do próprio bloco, que vale mesmo com o grafo congelado recomputado");
+    }
+
+    [Fact(DisplayName = "gruposColetados com dois grupos de mesmo código é recusado, mesmo com campos distintos")]
+    public void GruposColetados_CodigoRepetido_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray grupos = envelope["gruposColetados"]!.AsArray();
+            JsonObject copia = grupos[0]!.DeepClone().AsObject();
+            copia["ordem"] = 3;
+            foreach (JsonNode? campo in copia["subitens"]!.AsArray())
+            {
+                campo!["fatoCodigo"] = $"{campo["fatoCodigo"]!.GetValue<string>()}_2";
+            }
+
+            grupos.Add(copia);
+        });
+
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("'gruposColetados'");
+    }
+
+    [Fact(DisplayName = "regra de derivação que cita campo de grupo repetível é recusada — o campo existe por ocorrência")]
+    public void RegrasDerivacao_CitandoCampoDeGrupo_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject regimeDeIngresso = envelope["regrasDerivacao"]!.AsArray()
+                .Single(r => r!["codigoFato"]!.GetValue<string>() == "REGIME_INGRESSO")!.AsObject();
+            JsonObject condicao = regimeDeIngresso["regras"]!.AsArray()
+                .Select(static r => r!["quando"])
+                .OfType<JsonArray>()
+                .First()[0]!.AsArray()[0]!.AsObject();
+            condicao["fato"] = "TRABALHADOR_RURAL";
+        });
+
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("'regrasDerivacao'");
+    }
+
+    [Theory(DisplayName = "regra de derivação com o código de um grupo ou de um campo de grupo é recusada")]
+    [InlineData("COMPOSICAO_FAMILIAR")]
+    [InlineData("TRABALHADOR_RURAL")]
+    public void RegrasDerivacao_ComCodigoDeGrupoOuDeCampo_Recusa(string codigo)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["regrasDerivacao"]!.AsArray()
+                .Single(r => r!["codigoFato"]!.GetValue<string>() == "REGIME_INGRESSO")!["codigoFato"] = codigo);
+
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("'regrasDerivacao'");
+    }
+
+    [Fact(DisplayName = "gruposColetados com campo de seção própria é recusado — o campo segue o grupo")]
+    public void GruposColetados_CampoComSecaoPropria_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["gruposColetados"]!.AsArray().Single()!["subitens"]!.AsArray()[0]!["etapaCodigo"] = "DADOS");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis ausente é recusado — omitir a chave não é o mesmo que declará-la null")]
     public void ValoresSelecionaveis_ChaveAusente_Recusa()
     {

@@ -38,6 +38,9 @@ public sealed class FatoColetado : EntityBase
 
     public Guid ProcessoSeletivoId { get; private set; }
 
+    /// <summary>O grupo repetível de que o fato é campo; nulo no item do formulário.</summary>
+    public Guid? GrupoColetadoId { get; private set; }
+
     /// <summary>Código do fato no vocabulário fechado do candidato.</summary>
     public string FatoCodigo { get; private set; } = string.Empty;
 
@@ -197,6 +200,8 @@ public sealed class FatoColetado : EntityBase
 
     internal void VincularProcessoSeletivo(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
+
+    internal void VincularGrupo(Guid grupoColetadoId) => GrupoColetadoId = grupoColetadoId;
 
     internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
 

@@ -57,17 +57,20 @@ public sealed class GrafoDependenciaConjunta
     /// fatos coletados (campo + fato declarado + as regras do item), as regras de derivação (fato
     /// derivado + dependências), as exigências (gatilho), as seções com exibição (que gatam os seus
     /// campos) e os termos com condição. A posição de coleta é a finalidade do formulário e depois a
-    /// ordem dentro dele (UNI-REQ-0078). Devolve erro nomeado — nunca lança — quando as quatro
-    /// classes de aresta juntas formam um ciclo.
+    /// ordem dentro dele (UNI-REQ-0078). Os campos dos grupos repetíveis (UNI-REQ-0146) são campos
+    /// como os itens, na posição do grupo, gatados pelas regras do grupo. Devolve erro nomeado —
+    /// nunca lança — quando as quatro classes de aresta juntas formam um ciclo.
     /// </summary>
     public static Result<GrafoDependenciaConjunta> Construir(
         IReadOnlyCollection<FatoColetado> fatosColetados,
         IReadOnlyCollection<ConfiguracaoDerivacaoFato> regrasDerivacao,
         IReadOnlyCollection<DocumentoExigido> documentosExigidos,
         IReadOnlyCollection<FormularioProcesso> formularios,
-        IReadOnlyCollection<TermoExigidoFormulario> termos)
+        IReadOnlyCollection<TermoExigidoFormulario> termos,
+        IReadOnlyCollection<GrupoColetado>? grupos = null)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
+        grupos ??= [];
         ArgumentNullException.ThrowIfNull(regrasDerivacao);
         ArgumentNullException.ThrowIfNull(documentosExigidos);
         ArgumentNullException.ThrowIfNull(formularios);
@@ -101,6 +104,16 @@ public sealed class GrafoDependenciaConjunta
             posicaoDeclarada[No(ClasseNoGrafo.Fato, fato.FatoCodigo)] = Posicao(fato.Finalidade, fato.Ordem);
         }
 
+        foreach (GrupoColetado grupo in grupos)
+        {
+            foreach (FatoColetado subitem in grupo.Subitens)
+            {
+                fatosExistentes.Add(subitem.FatoCodigo);
+                posicaoDeclarada[No(ClasseNoGrafo.Campo, subitem.FatoCodigo)] = Posicao(grupo.Finalidade, grupo.Ordem);
+                posicaoDeclarada[No(ClasseNoGrafo.Fato, subitem.FatoCodigo)] = Posicao(grupo.Finalidade, grupo.Ordem);
+            }
+        }
+
         foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
         {
             fatosExistentes.Add(config.CodigoFato);
@@ -108,13 +121,18 @@ public sealed class GrafoDependenciaConjunta
 
         // (1) Fatos declarados: nó de campo + nó de fato + aresta de produção campo → fato; e a
         // pré-condição vira aresta fato → campo (o campo é gatado pelos fatos que a pré-condição cita).
-        foreach (FatoColetado fato in fatosColetados)
+        // O campo de grupo é gatado também pelas regras do grupo dele.
+        Dictionary<string, IReadOnlyCollection<string>> regrasDoGrupoDoCampo = grupos
+            .SelectMany(static g => g.Subitens.Select(s => (s.FatoCodigo, g.FatosCitados)))
+            .ToDictionary(static p => p.FatoCodigo, static p => p.FatosCitados, StringComparer.Ordinal);
+        foreach (FatoColetado fato in fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)))
         {
             NoGrafoDependencia campo = No(ClasseNoGrafo.Campo, fato.FatoCodigo);
             NoGrafoDependencia noFato = No(ClasseNoGrafo.Fato, fato.FatoCodigo);
             arestas.Add(new ArestaGrafoDependencia(TipoArestaGrafo.Producao, campo, noFato));
 
-            foreach (string citado in fato.FatosCitados)
+            IEnumerable<string> doGrupo = regrasDoGrupoDoCampo.TryGetValue(fato.FatoCodigo, out IReadOnlyCollection<string>? doSeuGrupo) ? doSeuGrupo : [];
+            foreach (string citado in fato.FatosCitados.Concat(doGrupo).Distinct(StringComparer.Ordinal))
             {
                 if (fatosExistentes.Contains(citado))
                 {
@@ -161,14 +179,18 @@ public sealed class GrafoDependenciaConjunta
             foreach (EtapaFormulario secao in formulario.Etapas.Where(static e => e.Exibicao is not null))
             {
                 NoGrafoDependencia noSecao = No(ClasseNoGrafo.Secao, CodigoNoFormulario(formulario.Finalidade, secao.Codigo));
-                posicaoDeclarada[noSecao] = PosicaoDaSecao(formulario, secao, fatosColetados);
+                posicaoDeclarada[noSecao] = PosicaoDaSecao(formulario, secao, fatosColetados, grupos);
                 foreach (string citado in secao.FatosCitados.Where(fatosExistentes.Contains))
                 {
                     arestas.Add(new ArestaGrafoDependencia(TipoArestaGrafo.Precondicao, No(ClasseNoGrafo.Fato, citado), noSecao));
                 }
 
-                foreach (FatoColetado campo in fatosColetados.Where(f =>
-                    f.Finalidade == formulario.Finalidade && string.Equals(f.EtapaCodigo, secao.Codigo, StringComparison.Ordinal)))
+                IEnumerable<FatoColetado> camposDaSecao = fatosColetados
+                    .Where(f => f.Finalidade == formulario.Finalidade && string.Equals(f.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))
+                    .Concat(grupos
+                        .Where(g => g.Finalidade == formulario.Finalidade && string.Equals(g.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))
+                        .SelectMany(static g => g.Subitens));
+                foreach (FatoColetado campo in camposDaSecao)
                 {
                     arestas.Add(new ArestaGrafoDependencia(TipoArestaGrafo.Precondicao, noSecao, No(ClasseNoGrafo.Campo, campo.FatoCodigo)));
                 }
@@ -237,16 +259,18 @@ public sealed class GrafoDependenciaConjunta
         ((long)finalidade << 35) | ((depoisDosCampos ? 1L : 0L) << 34) | (((long)(uint)ordem << 1) | (antesDoCampo ? 0L : 1L));
 
     /// <summary>
-    /// A posição da seção: a do primeiro campo dela ou, se está vazia, das seções seguintes; sem
-    /// campo em nenhuma delas, depois de todos os campos do formulário.
+    /// A posição da seção: a do primeiro item ou grupo dela ou, se está vazia, das seções seguintes;
+    /// sem nenhum em nenhuma delas, depois de todos os campos do formulário.
     /// </summary>
-    private static long PosicaoDaSecao(FormularioProcesso formulario, EtapaFormulario secao, IEnumerable<FatoColetado> fatosColetados)
+    private static long PosicaoDaSecao(
+        FormularioProcesso formulario, EtapaFormulario secao, IEnumerable<FatoColetado> fatosColetados, IEnumerable<GrupoColetado> grupos)
     {
         HashSet<string> daquiEmDiante = new(
             formulario.Etapas.Where(e => e.Ordem >= secao.Ordem).Select(static e => e.Codigo), StringComparer.Ordinal);
-        int ordem = fatosColetados
-            .Where(f => f.Finalidade == formulario.Finalidade && f.EtapaCodigo is { } etapa && daquiEmDiante.Contains(etapa))
-            .Select(static f => f.Ordem)
+        int ordem = fatosColetados.Select(static f => (f.Finalidade, f.EtapaCodigo, f.Ordem))
+            .Concat(grupos.Select(static g => (g.Finalidade, g.EtapaCodigo, g.Ordem)))
+            .Where(p => p.Finalidade == formulario.Finalidade && p.EtapaCodigo is { } etapa && daquiEmDiante.Contains(etapa))
+            .Select(static p => p.Ordem)
             .DefaultIfEmpty(int.MaxValue)
             .Min();
         return Posicao(formulario.Finalidade, ordem, antesDoCampo: true);

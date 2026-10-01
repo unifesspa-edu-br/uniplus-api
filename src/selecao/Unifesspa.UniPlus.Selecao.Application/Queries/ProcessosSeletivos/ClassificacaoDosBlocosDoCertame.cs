@@ -66,6 +66,7 @@ public static class ClassificacaoDosBlocosDoCertame
         "grafoDependencia",
         "regrasDerivacao",
         "fatosColetados",
+        "gruposColetados",
         "divulgacao",
         "calendarioDiasUteis",
         "algoritmoContagemPrazo",

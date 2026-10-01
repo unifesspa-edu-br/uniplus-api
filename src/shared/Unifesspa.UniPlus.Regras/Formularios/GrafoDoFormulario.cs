@@ -103,7 +103,10 @@ public static class GrafoDoFormulario
             HashSet<int> ordensNoGrupo = [];
             foreach (ItemDoGrafo subitem in grupo.Subitens)
             {
-                if (codigosDeGrupo.Contains(subitem.FatoCodigo) || !porCodigo.TryAdd(subitem.FatoCodigo, subitem))
+                // O campo de grupo é fato de membro: não é derivado, nem grupo, nem outro campo.
+                if (codigosDeGrupo.Contains(subitem.FatoCodigo)
+                    || derivacoes.ContainsKey(subitem.FatoCodigo)
+                    || !porCodigo.TryAdd(subitem.FatoCodigo, subitem))
                 {
                     return FatoDuplicado(subitem.FatoCodigo);
                 }

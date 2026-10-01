@@ -147,14 +147,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// antigo <c>DocumentoExigido.GrupoSatisfacaoId</c> (grupo plano, residual). Use
     /// <see cref="RaizesDeExigencia"/> para as raízes da floresta.
     /// </summary>
-    private readonly List<FatoColetado> _fatosColetados = [];
+    /// <summary>
+    /// Todo campo que o processo coleta: os itens dos formulários e os campos dos grupos repetíveis,
+    /// que também pertencem ao processo e se distinguem pelo grupo.
+    /// </summary>
+    private readonly List<FatoColetado> _campos = [];
 
     /// <summary>
     /// Os fatos que este processo coleta do candidato, com a ordem de coleta e a pré-condição de
     /// cada um (Story #926). Formam um grafo acíclico: a pré-condição de um fato só cita fatos
     /// anteriores na ordem.
     /// </summary>
-    public IReadOnlyCollection<FatoColetado> FatosColetados => _fatosColetados.AsReadOnly();
+    public IReadOnlyCollection<FatoColetado> FatosColetados => [.. Itens];
+
+    /// <summary>Os itens dos formulários: os campos fora de grupo repetível.</summary>
+    private IEnumerable<FatoColetado> Itens => _campos.Where(static f => f.GrupoColetadoId is null);
+
+    private readonly List<GrupoColetado> _gruposColetados = [];
+
+    /// <summary>
+    /// Os grupos repetíveis dos formulários (UNI-REQ-0146), cada um dono dos seus campos. Os campos
+    /// são fatos de membro: não estão em <see cref="FatosColetados"/>, que são os itens.
+    /// </summary>
+    public IReadOnlyCollection<GrupoColetado> GruposColetados => _gruposColetados.AsReadOnly();
+
+    /// <summary>Os itens e os campos dos grupos: todo campo que o processo apresenta ao candidato.</summary>
+    public IReadOnlyCollection<FatoColetado> Campos => _campos.AsReadOnly();
 
     private readonly List<OpcaoDeclaradaFato> _opcoesDeclaradas = [];
 
@@ -661,7 +679,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // IBGE: trocar a área ou remover o bônus não pode deixar de fora um município citado por
         // condição viva, que nunca mais seria satisfeita.
         HashSet<string> novosMunicipios = [.. (bonus?.Municipios ?? []).Select(static m => m.CodigoIbge)];
-        if (_fatosColetados
+        if (_campos
             .Where(static f => f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus)
             .Any(f => ReferenciaDinamicaSeriaInvalidada(f.FatoCodigo, novosMunicipios)))
         {
@@ -1063,19 +1081,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 // Os itens não estão no corpo do formulário: a recusa aponta as etapas que os
                 // deixariam fora de seção, e a mensagem nomeia o item.
                 recusas.AddRange(EstruturaFormulario
-                    .ValidarItens(estrutura, ItensDaFinalidade(finalidade, _fatosColetados), secaoObrigatoria: false)
+                    .ValidarItens(estrutura, ItensDaFinalidade(finalidade), secaoObrigatoria: false)
                     .Select(static recusa => recusa with { Field = "etapas" }));
             }
 
             // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais.
-            FatoColetado[] itens = [.. _fatosColetados.Where(f => f.Finalidade == finalidade)];
-            DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, FatosDaInscricao(_fatosColetados));
+            FatoColetado[] itens = [.. Itens.Where(f => f.Finalidade == finalidade)];
+            DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, FatosDaInscricao(Itens));
             EtapaDoGrafo[] etapasDoGrafo = [.. etapas.Select(static e => e.ParaGrafo())];
             ItemDoGrafo[] itensDoGrafo = [.. itens.Select(static i => i.ParaGrafo())];
+            GrupoDoGrafo[] gruposDoGrafo = [.. GruposDaFinalidade(finalidade).Select(static g => g.ParaGrafo())];
             for (int indice = 0; indice < etapas.Count; indice++)
             {
                 if (GrafoDoFormulario.CitacaoInvalidaDaEtapa(
-                        etapasDoGrafo[indice], GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo), dependencias) is { } recusa)
+                        etapasDoGrafo[indice],
+                        GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo, gruposDoGrafo),
+                        dependencias) is { } recusa)
                 {
                     recusas.Add(new($"etapas[{indice}].exibicao", recusa));
                 }
@@ -1116,7 +1137,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         _formularios.Remove(formulario);
-        _fatosColetados.RemoveAll(f => f.Finalidade == finalidade);
+        _campos.RemoveAll(f => f.Finalidade == finalidade);
+        _gruposColetados.RemoveAll(g => g.Finalidade == finalidade);
         _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
         return Result.Success();
     }
@@ -1176,13 +1198,25 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             novo.Estrutura, [.. copia.Itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))], secaoObrigatoria: false));
         if (finalidade != FinalidadeFormulario.Inscricao)
         {
-            erros.AddRange(_fatosColetados
+            erros.AddRange(Itens
                 .Where(f => f.Finalidade != finalidade && daCopia.Contains(f.FatoCodigo))
                 .OrderBy(static f => f.FatoCodigo, StringComparer.Ordinal)
                 .Select(f => new FieldError("itens", new DomainError(
                     FatoColetadoErrorCodes.FatoDuplicado,
                     $"O fato '{f.FatoCodigo}' já é coletado pelo formulário de {EstruturaFormulario.ParaToken(f.Finalidade)}."))));
         }
+
+        // A cópia substitui os grupos do próprio formulário; os dos outros continuam, e nem item nem
+        // derivação da cópia repete o código de um deles ou de um campo deles.
+        HashSet<string> dosGruposDeOutros = new(
+            _gruposColetados.Where(g => g.Finalidade != finalidade).SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)),
+            StringComparer.Ordinal);
+        erros.AddRange(copia.Itens.Select(static i => i.FatoCodigo).Concat(copia.DerivacoesNovas.Select(static c => c.CodigoFato))
+            .Where(dosGruposDeOutros.Contains)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .Select(static codigo => new FieldError("itens", new DomainError(
+                FatoColetadoErrorCodes.FatoDuplicado, $"O código '{codigo}' já é usado por um grupo de outro formulário do processo."))));
 
         HashSet<string> derivados = new(_regrasDerivacao.Select(static c => c.CodigoFato), StringComparer.Ordinal);
         erros.AddRange(copia.DerivacoesNovas
@@ -1206,7 +1240,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         // O estado final: os outros formulários sem o que a cópia trouxe para cá, e a cópia.
-        FatoColetado[] itensFinais = [.. _fatosColetados.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
+        FatoColetado[] itensFinais = [.. Itens.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
         ConfiguracaoDerivacaoFato[] derivacoesFinais = [.. _regrasDerivacao, .. copia.DerivacoesNovas];
         TermoExigidoFormulario[] termosFinais = [.. _termosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
@@ -1215,7 +1249,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             ? new(StringComparer.Ordinal)
             : FatosDaInscricao(itensFinais);
 
-        if (ValidarGrafoDeFatos(novo.Etapas, copia.Itens, daInscricao, dependenciasDasDerivacoes) is { } grafo)
+        if (ValidarGrafoDeFatos(novo.Etapas, copia.Itens, [], daInscricao, dependenciasDasDerivacoes) is { } grafo)
         {
             return Result.ValidationFailure([new("itens", grafo)]);
         }
@@ -1260,12 +1294,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _formularios.Add(novo);
         }
 
-        _fatosColetados.RemoveAll(f => f.Finalidade == finalidade || daCopia.Contains(f.FatoCodigo));
+        _campos.RemoveAll(f => f.Finalidade == finalidade || (f.GrupoColetadoId is null && daCopia.Contains(f.FatoCodigo)));
         foreach (FatoColetado item in copia.Itens)
         {
             item.VincularProcessoSeletivo(Id);
-            _fatosColetados.Add(item);
+            _campos.Add(item);
         }
+
+        // A cópia substitui o formulário inteiro, e o modelo ainda não tem grupos repetíveis.
+        _gruposColetados.RemoveAll(g => g.Finalidade == finalidade);
 
         _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
         foreach (TermoExigidoFormulario termo in copia.Termos)
@@ -1305,7 +1342,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         List<FieldError> erros = FormaDoTermo.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
-        DependenciasDoFormulario dependencias = DependenciasDe(finalidade, _fatosColetados.Where(f => f.Finalidade == finalidade), FatosDaInscricao(_fatosColetados));
+        DependenciasDoFormulario dependencias = DependenciasDe(finalidade, Itens.Where(f => f.Finalidade == finalidade), FatosDaInscricao(Itens));
         for (int indice = 0; indice < termos.Count; indice++)
         {
             if (GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias) is { } recusa)
@@ -1364,9 +1401,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {EstruturaFormulario.ParaToken(finalidade)}.");
     }
 
-    /// <summary>Os itens da finalidade, na forma que a estrutura confere.</summary>
-    private static IReadOnlyList<ItemEstrutura> ItensDaFinalidade(FinalidadeFormulario finalidade, IEnumerable<FatoColetado> fatos) =>
-        [.. fatos.Where(f => f.Finalidade == finalidade).Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))];
+    /// <summary>Os itens e os grupos da finalidade, na forma que a estrutura confere.</summary>
+    private IReadOnlyList<ItemEstrutura> ItensDaFinalidade(FinalidadeFormulario finalidade) =>
+        ParaEstrutura(Itens.Where(f => f.Finalidade == finalidade), GruposDaFinalidade(finalidade));
 
     /// <summary>
     /// Substitui integralmente o cronograma de fases do processo (Story #851, §3.7):
@@ -1982,7 +2019,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             Considerar(faseDoPonto);
         }
 
-        if (_fatosColetados.Find(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
+        if (Itens.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
             && FormularioDe(coletado.Finalidade)?.FaseId is { } faseDoFormulario)
         {
             Considerar(_cronogramaFases.Find(f => f.Id == faseDoFormulario));
@@ -2007,7 +2044,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência de derivação.</summary>
     private bool DependeDeFatoSoDaIsencao(string fato, HashSet<string> emAvaliacao) =>
-        _fatosColetados.Exists(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
+        Itens.Any(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
         || (_regrasDerivacao.Find(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal)) is { } derivacao
             && emAvaliacao.Add(fato)
             && derivacao.FatosCitados.Any(d => DependeDeFatoSoDaIsencao(d, emAvaliacao)));
@@ -2186,9 +2223,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </para>
     /// </remarks>
     public Result DefinirFatosColetados(
-        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, PrecondicaoIfMatch precondicao)
+        FinalidadeFormulario finalidade,
+        IReadOnlyList<FatoColetado> fatosColetados,
+        PrecondicaoIfMatch precondicao,
+        IReadOnlyList<GrupoColetado>? grupos = null)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
+        grupos ??= [];
 
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
@@ -2200,7 +2241,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(FormularioInexistente(finalidade));
         }
 
-        if (FormaDoItem.ValidarQuantidade(fatosColetados.Count) is [var excesso, ..])
+        if (FormaDoItem.ValidarQuantidade(QuantidadeNoTeto(fatosColetados.Count, grupos)) is [var excesso, ..])
         {
             return Result.ValidationFailure([excesso]);
         }
@@ -2208,8 +2249,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
-            : FatosDaInscricao(_fatosColetados);
-        if (ValidarGrafoDeFatos(formulario.Etapas, fatosColetados, daInscricao, DependenciasDasDerivacoes()) is { } erro)
+            : FatosDaInscricao(Itens);
+        if (ValidarGrafoDeFatos(formulario.Etapas, fatosColetados, grupos, daInscricao, DependenciasDasDerivacoes()) is { } erro)
         {
             return Result.Failure(erro);
         }
@@ -2219,9 +2260,27 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(orfa);
         }
 
-        // Produtor único (UNI-REQ-0144): cada fato é coletado por um só formulário do processo.
-        if (_fatosColetados.Find(f => f.Finalidade != finalidade
-                && fatosColetados.Any(novo => string.Equals(novo.FatoCodigo, f.FatoCodigo, StringComparison.Ordinal))) is { } jaProduzido)
+        // O código do grupo é único no processo e não coincide com o de fato coletado: um grupo novo
+        // não repete grupo nem fato de outro formulário, e um fato novo não repete grupo de outro.
+        HashSet<string> deOutrosFormularios = new(
+            _campos.Where(f => f.Finalidade != finalidade).Select(static f => f.FatoCodigo)
+                .Concat(_gruposColetados.Where(g => g.Finalidade != finalidade).Select(static g => g.Codigo)),
+            StringComparer.Ordinal);
+        HashSet<string> gruposDeOutros = new(
+            _gruposColetados.Where(g => g.Finalidade != finalidade).Select(static g => g.Codigo), StringComparer.Ordinal);
+        if ((grupos.Select(static g => g.Codigo).FirstOrDefault(deOutrosFormularios.Contains)
+                ?? fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo).FirstOrDefault(gruposDeOutros.Contains))
+            is { } codigoRepetido)
+        {
+            return Result.Failure(new DomainError(
+                FatoColetadoErrorCodes.FatoDuplicado,
+                $"O código '{codigoRepetido}' já é usado por um fato ou grupo de outro formulário do processo."));
+        }
+
+        // Produtor único (UNI-REQ-0144): cada fato é coletado por um só formulário do processo,
+        // contando os campos dos grupos.
+        HashSet<string> novos = new(fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+        if (_campos.FirstOrDefault(f => f.Finalidade != finalidade && novos.Contains(f.FatoCodigo)) is { } jaProduzido)
         {
             return Result.Failure(new DomainError(
                 FatoColetadoErrorCodes.FatoDuplicado,
@@ -2229,20 +2288,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         IReadOnlyList<FieldError> itensForaDasSecoes = EstruturaFormulario.ValidarItens(
-            formulario.Estrutura,
-            [.. fatosColetados.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))],
-            secaoObrigatoria: false);
+            formulario.Estrutura, ParaEstrutura(fatosColetados, grupos), secaoObrigatoria: false);
         if (itensForaDasSecoes.Count > 0)
         {
             return Result.ValidationFailure(itensForaDasSecoes);
         }
 
-        _fatosColetados.RemoveAll(f => f.Finalidade == finalidade);
+        // Sai tudo o que o formulário coletava, itens e campos dos grupos, e entra o novo.
+        _campos.RemoveAll(f => f.Finalidade == finalidade);
         foreach (FatoColetado fato in fatosColetados)
         {
             fato.VincularProcessoSeletivo(Id);
             fato.VincularFinalidade(finalidade);
-            _fatosColetados.Add(fato);
+            _campos.Add(fato);
+        }
+
+        _gruposColetados.RemoveAll(g => g.Finalidade == finalidade);
+        foreach (GrupoColetado grupo in grupos)
+        {
+            grupo.VincularProcessoSeletivo(Id);
+            grupo.VincularFinalidade(finalidade);
+            _gruposColetados.Add(grupo);
+            _campos.AddRange(grupo.Subitens);
         }
 
         Rascunho?.IncrementarRevisao();
@@ -2270,6 +2337,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
+        // O derivado não coincide com grupo repetível nem com campo de grupo: o código do grupo é
+        // único no processo, e o campo é fato de membro, que existe por ocorrência.
+        HashSet<string> dosGrupos = new(
+            _gruposColetados.SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)), StringComparer.Ordinal);
         HashSet<string> codigos = new(StringComparer.Ordinal);
         foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
         {
@@ -2278,6 +2349,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return Result.Failure(new DomainError(
                     ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
                     $"O fato '{config.CodigoFato}' tem mais de uma configuração de derivação neste processo."));
+            }
+
+            if (dosGrupos.Contains(config.CodigoFato))
+            {
+                return Result.Failure(new DomainError(
+                    ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
+                    $"O código '{config.CodigoFato}' já é de um grupo repetível ou de um campo de grupo do processo."));
             }
         }
 
@@ -2308,7 +2386,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     public void LimparColetaEDerivacaoParaRestauracao()
     {
-        _fatosColetados.Clear();
+        _campos.Clear();
+        _gruposColetados.Clear();
         _regrasDerivacao.Clear();
         _termosExigidos.Clear();
         _formularios.Clear();
@@ -2324,7 +2403,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// a recusa de publicação por ciclo são da fatia de determinismo (§7).
     /// </summary>
     public Result<GrafoDependenciaConjunta> ConstruirGrafoDependencia() =>
-        GrafoDependenciaConjunta.Construir(_fatosColetados, _regrasDerivacao, _documentosExigidos, _formularios, _termosExigidos);
+        GrafoDependenciaConjunta.Construir(FatosColetados, _regrasDerivacao, _documentosExigidos, _formularios, _termosExigidos, _gruposColetados);
 
     /// <summary>Os fatos coletados pela inscrição, que os formulários das outras finalidades podem citar.</summary>
     private static HashSet<string> FatosDaInscricao(IEnumerable<FatoColetado> fatos) =>
@@ -2339,7 +2418,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         CitacoesQueFicariamOrfas(
             // Os itens novos ainda não têm a finalidade vinculada: valem pelo código.
             new HashSet<string>(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal),
-            outra => [.. _fatosColetados.Where(f => f.Finalidade == outra)],
+            outra => [.. Itens.Where(f => f.Finalidade == outra)],
             DependenciasDasDerivacoes()).FirstOrDefault();
 
     /// <summary>
@@ -2352,19 +2431,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Func<FinalidadeFormulario, FatoColetado[]> itensDepois,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoesDepois)
     {
-        HashSet<string> atuais = FatosDaInscricao(_fatosColetados);
+        HashSet<string> atuais = FatosDaInscricao(Itens);
         Dictionary<string, IReadOnlyCollection<string>> derivacoesAntes = DependenciasDasDerivacoes();
         foreach (FormularioProcesso formulario in _formularios.Where(static f => f.Finalidade != FinalidadeFormulario.Inscricao))
         {
             FinalidadeFormulario outra = formulario.Finalidade;
             FatoColetado[] itens = itensDepois(outra);
-            DependenciasDoFormulario antes = DependenciasDe(outra, _fatosColetados.Where(f => f.Finalidade == outra), atuais, derivacoesAntes);
+            GrupoColetado[] grupos = [.. GruposDaFinalidade(outra)];
+            DependenciasDoFormulario antes = DependenciasDe(outra, Itens.Where(f => f.Finalidade == outra), atuais, derivacoesAntes);
             DependenciasDoFormulario depois = DependenciasDe(outra, itens, daInscricaoDepois, derivacoesDepois);
             IEnumerable<(string Dono, long Posicao, string Citado)> citacoes = itens
                 .SelectMany(static item => item.FatosCitados.Select(c => ($"o item '{item.FatoCodigo}'", (long)item.Ordem, c)))
+                .Concat(grupos.SelectMany(static grupo => CitacoesDeFora(grupo).Select(c => ($"o grupo '{grupo.Codigo}'", (long)grupo.Ordem, c))))
                 .Concat(formulario.Etapas.SelectMany(secao => secao.FatosCitados
                     .Select(c => ($"a exibição da seção '{secao.Codigo}'",
-                        GrafoDoFormulario.PosicaoDaEtapa(secao.ParaGrafo(), formulario.Etapas.Select(static e => e.ParaGrafo()), itens.Select(static i => i.ParaGrafo())), c))))
+                        GrafoDoFormulario.PosicaoDaEtapa(
+                            secao.ParaGrafo(),
+                            formulario.Etapas.Select(static e => e.ParaGrafo()),
+                            itens.Select(static i => i.ParaGrafo()),
+                            grupos.Select(static g => g.ParaGrafo())),
+                        c))))
                 .Concat(_termosExigidos.Where(t => t.Finalidade == outra)
                     .SelectMany(static termo => termo.FatosCitados.Select(c => ($"o termo '{termo.Codigo}'", DependenciasDoFormulario.PosicaoDosTermos, c))));
             foreach ((string dono, long posicao, string citado) in citacoes)
@@ -2388,10 +2474,38 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private static DomainError? ValidarGrafoDeFatos(
         IReadOnlyCollection<EtapaFormulario> etapas,
         IReadOnlyList<FatoColetado> fatos,
+        IReadOnlyList<GrupoColetado> grupos,
         HashSet<string> daInscricao,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
         GrafoDoFormulario.ValidarColeta(
-            [.. fatos.Select(static f => f.ParaGrafo())], [.. etapas.Select(static e => e.ParaGrafo())], daInscricao, derivacoes);
+            [.. fatos.Select(static f => f.ParaGrafo())],
+            [.. etapas.Select(static e => e.ParaGrafo())],
+            daInscricao,
+            derivacoes,
+            [.. grupos.Select(static g => g.ParaGrafo())]);
+
+    /// <summary>
+    /// Os fatos que o grupo cita fora dele: os da exibição e da obrigatoriedade do grupo e os que os
+    /// campos citam além dos campos do próprio grupo.
+    /// </summary>
+    private static IEnumerable<string> CitacoesDeFora(GrupoColetado grupo)
+    {
+        HashSet<string> doGrupo = new(grupo.Subitens.Select(static s => s.FatoCodigo), StringComparer.Ordinal);
+        return grupo.FatosCitados.Concat(grupo.Subitens.SelectMany(static s => s.FatosCitados).Where(c => !doGrupo.Contains(c)))
+            .Distinct(StringComparer.Ordinal);
+    }
+
+    /// <summary>Os grupos repetíveis do formulário da finalidade.</summary>
+    private IEnumerable<GrupoColetado> GruposDaFinalidade(FinalidadeFormulario finalidade) =>
+        _gruposColetados.Where(g => g.Finalidade == finalidade);
+
+    /// <summary>A quantidade que o teto do formulário conta: cada item, cada grupo e cada campo de grupo.</summary>
+    private static int QuantidadeNoTeto(int itens, IEnumerable<GrupoColetado> grupos) =>
+        itens + grupos.Sum(static g => 1 + g.Subitens.Count);
+
+    /// <summary>Os itens e os grupos, na forma que a estrutura confere: o grupo ocupa uma posição na ordem dos itens.</summary>
+    private static IReadOnlyList<ItemEstrutura> ParaEstrutura(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
+        [.. itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo)), .. grupos.Select(static g => g.ParaEstrutura())];
 
     /// <summary>
     /// A primeira regra de item ou condição de termo que cita fato que o formulário dela não
@@ -2402,7 +2516,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         IEnumerable<FormularioProcesso> formularios,
         IReadOnlyCollection<FatoColetado> fatos,
         IReadOnlyCollection<TermoExigidoFormulario> termos,
-        IReadOnlyCollection<ConfiguracaoDerivacaoFato> derivacoes)
+        IReadOnlyCollection<ConfiguracaoDerivacaoFato> derivacoes,
+        IReadOnlyCollection<GrupoColetado>? grupos = null)
     {
         ArgumentNullException.ThrowIfNull(formularios);
         ArgumentNullException.ThrowIfNull(fatos);
@@ -2421,7 +2536,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     [.. itens.Select(static i => i.ParaGrafo())],
                     [.. formulario.Etapas.Select(static e => e.ParaGrafo())],
                     termos.Where(t => t.Finalidade == finalidade).Select(static t => t.ParaGrafo()),
-                    dependencias) is { } recusa)
+                    dependencias,
+                    [.. (grupos ?? []).Where(g => g.Finalidade == finalidade).Select(static g => g.ParaGrafo())]) is { } recusa)
             {
                 return recusa;
             }
@@ -3940,7 +4056,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .ToDictionary(static m => m.Codigo, static m => m.NaturezaLegal, StringComparer.Ordinal);
 
         HashSet<string> fatosMultivalorados = [
-            .. _fatosColetados
+            .. Itens
                 .Where(static f => f.TipoRenderizacao == TipoRenderizacao.SelecaoMultipla)
                 .Select(static f => f.FatoCodigo),
             .. _regrasDerivacao.Select(static c => c.CodigoFato),
@@ -4025,7 +4141,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private DomainError? PendenciaDeFatosCitados()
     {
         HashSet<string> universo = new(StringComparer.Ordinal);
-        foreach (FatoColetado fato in _fatosColetados)
+        foreach (FatoColetado fato in Itens)
         {
             universo.Add(fato.FatoCodigo);
         }
@@ -4054,7 +4170,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // As regras dos itens, a exibição das seções e as condições dos termos citam o que o
         // formulário conhece; os itens e as derivações podem ter mudado depois da citação.
-        return CitacaoInvalidaNosFormularios(_formularios, _fatosColetados, _termosExigidos, _regrasDerivacao);
+        return CitacaoInvalidaNosFormularios(_formularios, FatosColetados, _termosExigidos, _regrasDerivacao, _gruposColetados);
     }
 
     /// <summary>
@@ -4063,7 +4179,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private DomainError? PendenciaDeCampoOpcionalQueAlimentaRegra() =>
         CampoQueAlimentaRegra.PrimeiroOpcional(
-            _fatosColetados.OrderBy(static f => f.Finalidade).ThenBy(static f => f.Ordem).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo)),
+            Itens.OrderBy(static f => f.Finalidade).ThenBy(static f => f.Ordem).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))
+                .Concat(_gruposColetados.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem)
+                    .SelectMany(static g => g.Subitens).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))),
             CampoQueAlimentaRegra.Fatos(
                 _regrasDerivacao.SelectMany(static c => c.FatosCitados),
                 CondicoesVivasComOperador().Select(static c => (c.Fato, c.Operador))));
@@ -4079,7 +4197,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private DomainError? PendenciaDeFatoColetadoSemValoresOfertados()
     {
-        foreach (FatoColetado fato in _fatosColetados)
+        foreach (FatoColetado fato in _campos)
         {
             if (!fato.TipoRenderizacao.EhSelecao())
             {
@@ -4148,7 +4266,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         foreach (FormularioProcesso formulario in _formularios.OrderBy(static f => f.Finalidade))
         {
-            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, ItensDaFinalidade(formulario.Finalidade, _fatosColetados)) is [{ } primeiro, ..])
+            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, ItensDaFinalidade(formulario.Finalidade)) is [{ } primeiro, ..])
             {
                 return new DomainError(FormularioProcessoErrorCodes.ItemForaDeSecao, primeiro.Error.Message);
             }
@@ -4163,7 +4281,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private DomainError? PendenciaDosItensEmExcesso() =>
         _formularios.OrderBy(static f => f.Finalidade)
-            .Select(f => FormaDoItem.ValidarQuantidade(ItensDaFinalidade(f.Finalidade, _fatosColetados).Count))
+            .Select(f => FormaDoItem.ValidarQuantidade(
+                QuantidadeNoTeto(Itens.Count(i => i.Finalidade == f.Finalidade), GruposDaFinalidade(f.Finalidade))))
             .FirstOrDefault(static erros => erros.Count > 0) is [var excesso, ..]
             ? excesso.Error
             : null;
@@ -4193,7 +4312,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         HashSet<string> municipios = [.. BonusRegional.Municipios.Select(static m => m.CodigoIbge)];
-        FatoColetado? fato = _fatosColetados.FirstOrDefault(f =>
+        FatoColetado? fato = _campos.FirstOrDefault(f =>
             f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus
             && ReferenciaDinamicaSeriaInvalidada(f.FatoCodigo, municipios));
         return fato is null
@@ -4591,7 +4710,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// preserva.
     /// </summary>
     public VinculosDeFatos Vinculos() => VinculosDeFatos.De(
-        _fatosColetados.Select(static f => f.FatoCodigo).Concat(_regrasDerivacao.Select(static r => r.CodigoFato)),
+        _campos.Select(static f => f.FatoCodigo).Concat(_regrasDerivacao.Select(static r => r.CodigoFato)),
         CondicoesVivas(),
         _regrasDerivacao.SelectMany(static c => c.Regras.Select(r => (c.CodigoFato, r.Contribui))));
 
@@ -4606,7 +4725,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Todo predicado vivo que cita fato, com o operador de cada condição — a enumeração única das fontes.</summary>
     private IEnumerable<(string Fato, Operador Operador, JsonElement Valor)> CondicoesVivasComOperador() =>
         _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor))
-            .Concat(_fatosColetados.SelectMany(static f => f.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
+            .Concat(Itens.SelectMany(static f => f.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
+            .Concat(_gruposColetados.SelectMany(static g => g.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
             .Concat(_regrasDerivacao.SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
                 .Select(static c => (c.Fato, c.Operador, c.Valor)))
             .Concat(_criteriosDesempate.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
@@ -5671,8 +5791,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return excesso.Error;
         }
 
-        if (grafo.FatosColetados.GroupBy(static f => f.Finalidade).OrderBy(static g => g.Key)
-                .Select(static g => FormaDoItem.ValidarQuantidade(g.Count())).FirstOrDefault(static e => e.Count > 0) is [var itensEmExcesso, ..])
+        if (grafo.FatosColetados.Select(static f => f.Finalidade).Concat(grafo.GruposColetados.Select(static g => g.Finalidade)).Distinct().Order()
+                .Select(finalidade => FormaDoItem.ValidarQuantidade(QuantidadeNoTeto(
+                    grafo.FatosColetados.Count(f => f.Finalidade == finalidade), grafo.GruposColetados.Where(g => g.Finalidade == finalidade))))
+                .FirstOrDefault(static e => e.Count > 0) is [var itensEmExcesso, ..])
         {
             return itensEmExcesso.Error;
         }
@@ -6365,13 +6487,25 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // TRACKED não é tomado, e as instâncias CONGELADAS entram como INSERT (Id novo da
         // reidratação — nenhuma identidade precisa sobreviver). A reposição fiel de graça, sem
         // reconciliação profunda dos filhos.
-        Dictionary<string, FatoColetado> fatosTracked = _fatosColetados.ToDictionary(f => f.FatoCodigo, StringComparer.Ordinal);
-        _fatosColetados.Clear();
+        Dictionary<string, FatoColetado> fatosTracked = Itens.ToDictionary(f => f.FatoCodigo, StringComparer.Ordinal);
+        _campos.Clear();
         foreach (FatoColetado congelado in grafo.FatosColetados)
         {
             FatoColetado fato = fatosTracked.TryGetValue(congelado.FatoCodigo, out FatoColetado? vivo) ? vivo : congelado;
             fato.VincularProcessoSeletivo(Id);
-            _fatosColetados.Add(fato);
+            _campos.Add(fato);
+        }
+
+        // Grupos repetíveis (UNI-REQ-0146): a mesma reconciliação, por finalidade e código.
+        Dictionary<(FinalidadeFormulario, string), GrupoColetado> gruposTracked =
+            _gruposColetados.ToDictionary(static g => (g.Finalidade, g.Codigo));
+        _gruposColetados.Clear();
+        foreach (GrupoColetado congelado in grafo.GruposColetados)
+        {
+            GrupoColetado grupo = gruposTracked.TryGetValue((congelado.Finalidade, congelado.Codigo), out GrupoColetado? vivo) ? vivo : congelado;
+            grupo.VincularProcessoSeletivo(Id);
+            _gruposColetados.Add(grupo);
+            _campos.AddRange(grupo.Subitens);
         }
 
         Dictionary<string, ConfiguracaoDerivacaoFato> derivacoesTracked =

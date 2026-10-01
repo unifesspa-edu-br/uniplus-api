@@ -73,7 +73,9 @@ public sealed class GrafoConfiguracao
         IdentificadorLegivel? identificadorLegivel = null,
         // Opções declaradas pelo processo (issue #1619) — reconstruídas pelo decoder a partir dos
         // valores selecionáveis congelados dos fatos coletados de fonte do processo.
-        IReadOnlyList<OpcaoDeclaradaFato>? opcoesDeclaradas = null)
+        IReadOnlyList<OpcaoDeclaradaFato>? opcoesDeclaradas = null,
+        // Grupos repetíveis dos formulários (UNI-REQ-0146), com os seus campos; ausência = nenhum.
+        IReadOnlyList<GrupoColetado>? gruposColetados = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -102,6 +104,7 @@ public sealed class GrafoConfiguracao
         NosExigencia = [.. nosExigencia];
         ReferenciaTemporalFatos = referenciaTemporalFatos;
         FatosColetados = fatosColetados is null ? [] : [.. fatosColetados];
+        GruposColetados = gruposColetados is null ? [] : [.. gruposColetados];
         OpcoesDeclaradas = opcoesDeclaradas is null ? [] : [.. opcoesDeclaradas];
         RegrasDerivacao = regrasDerivacao is null ? [] : [.. regrasDerivacao];
         CascataRemanejamento = cascataRemanejamento;
@@ -147,6 +150,8 @@ public sealed class GrafoConfiguracao
     /// no §8), então reusar a instância viva de mesmo código na reconciliação é seguro por construção.
     /// </summary>
     public IReadOnlyList<FatoColetado> FatosColetados { get; }
+
+    public IReadOnlyList<GrupoColetado> GruposColetados { get; }
 
     public IReadOnlyList<OpcaoDeclaradaFato> OpcoesDeclaradas { get; }
 

@@ -305,6 +305,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["cronogramaFases"] = SerializarCronogramaFases(processo),
             ["identidadesUnidade"] = SerializarIdentidadesUnidade(processo),
             ["fatosColetados"] = SerializarFatosColetados(processo.FatosColetados, entrada.ValoresSelecionaveisCongelados),
+            ["gruposColetados"] = SerializarGruposColetados(processo.GruposColetados, entrada.ValoresSelecionaveisCongelados),
             ["regrasDerivacao"] = SerializarRegrasDerivacao(processo.RegrasDerivacao),
             ["grafoDependencia"] = SerializarGrafoDependencia(processo),
             ["versaoInterpretador"] = MotorDerivacao.VersaoSemantica,
@@ -316,10 +317,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor,
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 30º bloco preservando os 29
+        // ADR-0101: a retificação ACRESCENTA um 31º bloco preservando os 30
         // anteriores (a issue #1112 elevou de 24 para 25, a localidade de 25 para 26, a
-        // convenção de contagem de 26 para 27, o calendário de 27 para 28 e o identificador
-        // legível de 28 para 29). A
+        // convenção de contagem de 26 para 27, o calendário de 27 para 28, o identificador
+        // legível de 28 para 29 e os grupos repetíveis de 29 para 30). A
         // abertura não escreve esta chave —
         // seu payload é byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
@@ -1898,6 +1899,27 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
         return array;
     }
+
+    /// <summary>
+    /// Os grupos repetíveis (UNI-REQ-0146), na ordem do formulário: o grupo, as regras dele e os
+    /// campos de cada ocorrência, na mesma forma dos itens.
+    /// </summary>
+    internal static JsonArray SerializarGruposColetados(
+        IEnumerable<GrupoColetado> grupos,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados) =>
+        [.. grupos.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem).Select(g => (JsonNode)new JsonObject
+        {
+            ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
+            ["finalidade"] = EstruturaFormulario.ParaToken(g.Finalidade),
+            ["etapaCodigo"] = g.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
+            ["ordem"] = g.Ordem,
+            ["rotulo"] = HashCanonicalComputer.NormalizeNfc(g.Rotulo),
+            ["minimo"] = g.Minimo,
+            ["maximo"] = g.Maximo,
+            ["exibicao"] = g.Exibicao is { } exibicao ? SerializarDnf(LinhasDoPredicado(exibicao)) : null,
+            ["obrigatoriedade"] = SerializarObrigatoriedade(g.Obrigatoriedade),
+            ["subitens"] = SerializarFatosColetados(g.Subitens, valoresSelecionaveisCongelados),
+        })];
 
     /// <summary>
     /// As regras de derivação dos fatos derivados do processo (Story #928, §7.4), ordenadas pelo
