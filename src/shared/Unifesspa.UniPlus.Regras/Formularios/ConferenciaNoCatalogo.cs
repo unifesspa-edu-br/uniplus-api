@@ -110,7 +110,7 @@ public static class ConferenciaNoCatalogo
     /// <summary>
     /// Desativar um fato ou um valor no catálogo recusa só vínculo novo (ADR-0136): a configuração
     /// que já usava o fato, ou já citava o valor, continua com ele. Compara o que se propõe com o
-    /// que já está vinculado e recusa o que é novo e está desativado.
+    /// que já está vinculado e recusa, de uma vez, todo vínculo novo a desativado.
     /// </summary>
     public static Result VinculoNovo(IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos)
     {
@@ -118,31 +118,20 @@ public static class ConferenciaNoCatalogo
         ArgumentNullException.ThrowIfNull(existentes);
         ArgumentNullException.ThrowIfNull(propostos);
 
-        string? fatoDesativado = propostos.Fatos
-            .Where(fato => !existentes.Fatos.Contains(fato))
+        // Todos os vínculos novos a desativado saem juntos (ADR-0125), em ordem estável: fatos, depois valores.
+        List<FieldError> erros = [.. propostos.Fatos
+            .Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && !doCatalogo.Ativo)
             .Order(StringComparer.Ordinal)
-            .FirstOrDefault(fato => catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && !doCatalogo.Ativo);
-        if (fatoDesativado is not null)
-        {
-            return Result.Failure(new DomainError(
-                VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fatoDesativado}' está desativado no catálogo e não aceita vínculo novo."));
-        }
-
-        IEnumerable<(string Fato, string Valor)> valoresNovos = propostos.Valores
-            .Where(valor => !existentes.Valores.Contains(valor))
+            .Select(static fato => new FieldError(string.Empty, new DomainError(
+                VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fato}' está desativado no catálogo e não aceita vínculo novo.")))];
+        erros.AddRange(propostos.Valores
+            .Where(valor => !existentes.Valores.Contains(valor)
+                && catalogo.TryGetValue(valor.Fato, out FatoDoCatalogo? doCatalogo) && doCatalogo.Valores.Any(v => v.Codigo == valor.Valor && !v.Ativo))
             .OrderBy(static v => v.Fato, StringComparer.Ordinal)
-            .ThenBy(static v => v.Valor, StringComparer.Ordinal);
-        foreach ((string fato, string valor) in valoresNovos)
-        {
-            if (catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && doCatalogo.Valores.Any(v => v.Codigo == valor && !v.Ativo))
-            {
-                return Result.Failure(new DomainError(
-                    VinculoCatalogoErrorCodes.ValorDesativado,
-                    $"O valor '{valor}' do fato '{fato}' está desativado no catálogo e não aceita vínculo novo."));
-            }
-        }
-
-        return Result.Success();
+            .ThenBy(static v => v.Valor, StringComparer.Ordinal)
+            .Select(static v => new FieldError(string.Empty, new DomainError(
+                VinculoCatalogoErrorCodes.ValorDesativado, $"O valor '{v.Valor}' do fato '{v.Fato}' está desativado no catálogo e não aceita vínculo novo."))));
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
     private static IEnumerable<FieldError> Semantica(

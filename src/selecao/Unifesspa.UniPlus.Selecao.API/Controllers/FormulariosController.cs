@@ -190,6 +190,42 @@ public sealed class FormulariosController : ControllerBase
     }
 
     /// <summary>
+    /// Aplica ao processo a cópia de um modelo de formulário: o formulário da finalidade do modelo é
+    /// criado ou substituído por inteiro, e a resposta relata o que a cópia trouxe, manteve,
+    /// descartou e derivou (UNI-REQ-0144). Só em rascunho, onde o <c>If-Match</c> é aceito e
+    /// ignorado, como nas demais escritas; mudar o modelo depois não muda o processo.
+    /// </summary>
+    [HttpPost("admin/processos-seletivos/{id:guid}/formularios/aplicacoes-de-modelo")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [VendorMediaType(Resource = "aplicacao-de-modelo-formulario", Versions = [1])]
+    [ProducesResponseType(typeof(AplicacaoDeModeloDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AplicarModelo(
+        Guid id,
+        [FromBody] AplicacaoDeModeloInput request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
+        if (analise.IsFailure)
+        {
+            return analise.ToActionResult(_mapper);
+        }
+
+        Result<AplicacaoDeModeloDto> resultado = await _commandBus
+            .Send(new AplicarModeloFormularioCommand(id, request.ModeloId, analise.Value!), cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// O fluxo comum das escritas: finalidade desconhecida é 404, o <c>If-Match</c> malformado é
     /// recusado antes do comando, e a resposta segue o padrão das mutações sob sessão editorial.
     /// </summary>

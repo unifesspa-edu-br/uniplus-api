@@ -531,6 +531,18 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     // Helpers
     // ══════════════════════════════════════════════════════════════════════════════
 
+    [Fact(DisplayName = "Aplicar modelo de formulário sob retificação é recusado antes da precondição")]
+    public void AplicarModeloDeFormulario_SobRetificacao_Recusa()
+    {
+        ProcessoSeletivo processo = ComSessaoAberta(out _);
+        CopiaDeModeloDeFormulario copia = new(
+            FinalidadeFormulario.Inscricao, "Inscrição", FormularioDeTeste.Etapas(), [], [], [], Guid.CreateVersion7(), "INSCRICAO_MEDICINA");
+
+        Result resultado = processo.AplicarModeloDeFormulario(copia, PrecondicaoIfMatch.Ausente);
+
+        resultado.Error!.Code.Should().Be(FormularioProcessoErrorCodes.AplicacaoDeModeloSoEmRascunho);
+    }
+
     private static ProcessoSeletivo ComSessaoAberta(out RascunhoRetificacao rascunho)
     {
         ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);

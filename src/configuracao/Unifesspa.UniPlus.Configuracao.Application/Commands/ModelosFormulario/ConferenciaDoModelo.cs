@@ -95,7 +95,7 @@ internal static class ConferenciaDoModelo
         VinculosDeFatos propostos = Vinculos(ModeloFormulario.NaFormaGravada(conteudo.ParaConteudo()));
         if (ConferenciaNoCatalogo.VinculoNovo(catalogo.Fatos, existentes.Fatos, propostos) is { IsFailure: true } vinculo)
         {
-            erros.Add(new(string.Empty, vinculo.Error!));
+            erros.AddRange(vinculo.Errors);
         }
 
         return erros;

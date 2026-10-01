@@ -1122,6 +1122,168 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Por que o processo não recebe agora a cópia de um modelo: sob retificação, nunca — a
+    /// aplicação substitui o formulário inteiro —, e a recusa vem antes da precondição, que só
+    /// esconderia o motivo; fora disso, o guard de mutação.
+    /// </summary>
+    public DomainError? RecusaDeAplicacaoDeModelo(PrecondicaoIfMatch precondicao) =>
+        Rascunho is not null
+            ? new DomainError(
+                FormularioProcessoErrorCodes.AplicacaoDeModeloSoEmRascunho,
+                "O modelo se aplica só em rascunho: a aplicação substitui o formulário inteiro, e a retificação não retira o que o edital publicou.")
+            : MutacaoBloqueada(precondicao);
+
+    /// <summary>
+    /// Aplica a cópia de um modelo de formulário à finalidade dela (UNI-REQ-0144, ADR-0061): as
+    /// etapas, os itens e os termos da finalidade são substituídos por inteiro, a fase do formulário
+    /// existente é preservada, e as derivações novas somam-se às do processo, sem trocar nenhuma.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Na inscrição, o fato da cópia que outra finalidade coletava passa para ela. As regras dessa
+    /// finalidade continuam citando o fato, porque todo formulário conhece a inscrição. Nas outras
+    /// finalidades, o fato coletado em outro formulário é recusado: quem decide o que fica na
+    /// inscrição é a aplicação, antes daqui.
+    /// </para>
+    /// <para>
+    /// O estado final é conferido de uma vez: a forma e a estrutura do formulário, o grafo da
+    /// finalidade, o produtor único, os termos e as citações de todos os formulários. Só depois o
+    /// processo muda, numa vez só (ADR-0125). Só em rascunho: sob retificação, a substituição
+    /// inteira tiraria o que o edital publicou.
+    /// </para>
+    /// </remarks>
+    public Result AplicarModeloDeFormulario(CopiaDeModeloDeFormulario copia, PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(copia);
+
+        if (RecusaDeAplicacaoDeModelo(precondicao) is { } recusaDeEstado)
+        {
+            return Result.Failure(recusaDeEstado);
+        }
+
+        FinalidadeFormulario finalidade = copia.Finalidade;
+        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(
+            finalidade, FormularioDe(finalidade)?.FaseId, copia.Titulo, copia.Etapas, copia.ModeloId, copia.ModeloCodigo);
+        if (formulario.IsFailure)
+        {
+            return Result.ValidationFailure(formulario.Errors);
+        }
+
+        FormularioProcesso novo = formulario.Value!;
+        HashSet<string> daCopia = new(copia.Itens.Select(static i => i.FatoCodigo), StringComparer.Ordinal);
+        List<FieldError> erros = [.. FormaDoItem.ValidarQuantidade(copia.Itens.Count)];
+        erros.AddRange(EstruturaFormulario.ValidarItens(
+            novo.Estrutura, [.. copia.Itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))], secaoObrigatoria: false));
+        if (finalidade != FinalidadeFormulario.Inscricao)
+        {
+            erros.AddRange(_fatosColetados
+                .Where(f => f.Finalidade != finalidade && daCopia.Contains(f.FatoCodigo))
+                .OrderBy(static f => f.FatoCodigo, StringComparer.Ordinal)
+                .Select(f => new FieldError("itens", new DomainError(
+                    FatoColetadoErrorCodes.FatoDuplicado,
+                    $"O fato '{f.FatoCodigo}' já é coletado pelo formulário de {EstruturaFormulario.ParaToken(f.Finalidade)}."))));
+        }
+
+        HashSet<string> derivados = new(_regrasDerivacao.Select(static c => c.CodigoFato), StringComparer.Ordinal);
+        erros.AddRange(copia.DerivacoesNovas
+            .Where(c => !derivados.Add(c.CodigoFato))
+            .Select(static c => new FieldError("derivacoes", new DomainError(
+                ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
+                $"O fato '{c.CodigoFato}' tem mais de uma configuração de derivação neste processo."))));
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
+        }
+
+        foreach (FatoColetado item in copia.Itens)
+        {
+            item.VincularFinalidade(finalidade);
+        }
+
+        foreach (TermoExigidoFormulario termo in copia.Termos)
+        {
+            termo.VincularFinalidade(finalidade);
+        }
+
+        // O estado final: os outros formulários sem o que a cópia trouxe para cá, e a cópia.
+        FatoColetado[] itensFinais = [.. _fatosColetados.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
+        ConfiguracaoDerivacaoFato[] derivacoesFinais = [.. _regrasDerivacao, .. copia.DerivacoesNovas];
+        TermoExigidoFormulario[] termosFinais = [.. _termosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
+        Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
+            derivacoesFinais.ToDictionary(static c => c.CodigoFato, static c => c.FatosCitados, StringComparer.Ordinal);
+        HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
+            ? new(StringComparer.Ordinal)
+            : FatosDaInscricao(itensFinais);
+
+        if (ValidarGrafoDeFatos(novo.Etapas, copia.Itens, daInscricao, dependenciasDasDerivacoes) is { } grafo)
+        {
+            return Result.ValidationFailure([new("itens", grafo)]);
+        }
+
+        erros.AddRange(FormaDoTermo.ConferirUnicidade([.. copia.Termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]));
+        DependenciasDoFormulario dependencias = DependenciasDe(finalidade, copia.Itens, FatosDaInscricao(itensFinais), dependenciasDasDerivacoes);
+        for (int indice = 0; indice < copia.Termos.Count; indice++)
+        {
+            if (GrafoDoFormulario.CitacaoInvalidaDoTermo(copia.Termos[indice].ParaGrafo(), dependencias) is { } recusa)
+            {
+                erros.Add(new($"termos[{indice}]", recusa));
+            }
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
+        }
+
+        // O formulário novo é conferido por inteiro; nos outros, só a citação que a cópia invalida é
+        // recusada, e a que já era inválida fica para a publicação, como na escrita direta dos itens.
+        // A cópia fora da inscrição não muda o que os outros formulários conhecem.
+        IEnumerable<DomainError> orfasDosOutros = finalidade == FinalidadeFormulario.Inscricao
+            ? CitacoesQueFicariamOrfas(daCopia, outra => [.. itensFinais.Where(f => f.Finalidade == outra)], dependenciasDasDerivacoes)
+            : [];
+        FieldError[] orfas = [.. orfasDosOutros
+            .Concat(CitacaoInvalidaNosFormularios([novo], itensFinais, termosFinais, derivacoesFinais) is { } doNovo ? [doNovo] : [])
+            .Select(static recusa => new FieldError(string.Empty, recusa))];
+        if (orfas.Length > 0)
+        {
+            return Result.ValidationFailure(orfas);
+        }
+
+        if (FormularioDe(finalidade) is { } existente)
+        {
+            existente.Substituir(novo);
+            existente.RegistrarOrigem(copia.ModeloId, copia.ModeloCodigo);
+        }
+        else
+        {
+            novo.VincularProcessoSeletivo(Id);
+            _formularios.Add(novo);
+        }
+
+        _fatosColetados.RemoveAll(f => f.Finalidade == finalidade || daCopia.Contains(f.FatoCodigo));
+        foreach (FatoColetado item in copia.Itens)
+        {
+            item.VincularProcessoSeletivo(Id);
+            _fatosColetados.Add(item);
+        }
+
+        _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
+        foreach (TermoExigidoFormulario termo in copia.Termos)
+        {
+            termo.VincularProcessoSeletivo(Id);
+            _termosExigidos.Add(termo);
+        }
+
+        foreach (ConfiguracaoDerivacaoFato derivacao in copia.DerivacoesNovas)
+        {
+            derivacao.VincularProcessoSeletivo(Id);
+            _regrasDerivacao.Add(derivacao);
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Substitui os termos que o formulário da finalidade exige (UNI-REQ-0086). Código e ordem são
     /// únicos no formulário, e as condições citam só o que o formulário conhece: os campos dele, os
     /// da inscrição e os derivados desses (UNI-REQ-0144, UNI-REQ-0145). A publicação confere de
@@ -2173,18 +2335,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// direta ou por um derivado: ela passaria a depender de uma resposta que ninguém pede. Só a
     /// citação que a troca invalida é recusada; a que já era inválida fica para a publicação.
     /// </summary>
-    private DomainError? CitacaoQueFicariaOrfa(IReadOnlyCollection<FatoColetado> novosDaInscricao)
+    private DomainError? CitacaoQueFicariaOrfa(IReadOnlyCollection<FatoColetado> novosDaInscricao) =>
+        CitacoesQueFicariamOrfas(
+            // Os itens novos ainda não têm a finalidade vinculada: valem pelo código.
+            new HashSet<string>(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal),
+            outra => [.. _fatosColetados.Where(f => f.Finalidade == outra)],
+            DependenciasDasDerivacoes()).FirstOrDefault();
+
+    /// <summary>
+    /// As citações das outras finalidades que uma mudança na inscrição, nos itens delas ou nas
+    /// derivações deixaria sem o fato citado: compara cada citação antes e depois e devolve só as
+    /// que a mudança invalida.
+    /// </summary>
+    private IEnumerable<DomainError> CitacoesQueFicariamOrfas(
+        IReadOnlySet<string> daInscricaoDepois,
+        Func<FinalidadeFormulario, FatoColetado[]> itensDepois,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoesDepois)
     {
         HashSet<string> atuais = FatosDaInscricao(_fatosColetados);
-
-        // Os itens novos ainda não têm a finalidade vinculada: valem pelo código.
-        HashSet<string> novos = new(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+        Dictionary<string, IReadOnlyCollection<string>> derivacoesAntes = DependenciasDasDerivacoes();
         foreach (FormularioProcesso formulario in _formularios.Where(static f => f.Finalidade != FinalidadeFormulario.Inscricao))
         {
             FinalidadeFormulario outra = formulario.Finalidade;
-            FatoColetado[] itens = [.. _fatosColetados.Where(f => f.Finalidade == outra)];
-            DependenciasDoFormulario antes = DependenciasDe(outra, itens, atuais);
-            DependenciasDoFormulario depois = DependenciasDe(outra, itens, novos);
+            FatoColetado[] itens = itensDepois(outra);
+            DependenciasDoFormulario antes = DependenciasDe(outra, _fatosColetados.Where(f => f.Finalidade == outra), atuais, derivacoesAntes);
+            DependenciasDoFormulario depois = DependenciasDe(outra, itens, daInscricaoDepois, derivacoesDepois);
             IEnumerable<(string Dono, long Posicao, string Citado)> citacoes = itens
                 .SelectMany(static item => item.FatosCitados.Select(c => ($"o item '{item.FatoCodigo}'", (long)item.Ordem, c)))
                 .Concat(formulario.Etapas.SelectMany(secao => secao.FatosCitados
@@ -2196,14 +2371,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             {
                 if (antes.Conferir(citado, posicao) is null && depois.Conferir(citado, posicao) is not null)
                 {
-                    return new DomainError(
+                    yield return new DomainError(
                         GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
                         $"O fato '{citado}', citado por {dono} do formulário de {EstruturaFormulario.ParaToken(outra)}, deixaria de ser conhecido por ele.");
                 }
             }
         }
-
-        return null;
     }
 
     /// <summary>

@@ -6,6 +6,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Implementação de <see cref="IFatoCandidatoReader"/> (ADR-0056, ADR-0111):
@@ -52,6 +54,19 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             .ConfigureAwait(false);
 
         return fato is null ? null : ParaView(fato);
+    }
+
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>>> ListarRegrasPadraoAsync(
+        CancellationToken cancellationToken = default)
+    {
+        List<FatoCandidato> fatos = await _dbContext.FatosCandidato
+            .AsNoTracking()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return fatos
+            .Where(static f => f.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(f.Binding, VinculoDeFato.RegraDeDerivacao))
+            .ToDictionary(static f => f.Codigo, static f => f.RegrasPadrao, StringComparer.Ordinal);
     }
 
     private static FatoCandidatoView ParaView(FatoCandidato f)

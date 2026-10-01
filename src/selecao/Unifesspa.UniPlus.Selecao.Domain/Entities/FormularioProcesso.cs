@@ -113,6 +113,13 @@ public sealed class FormularioProcesso : EntityBase
 
     internal void RemapearFase(Guid faseId) => FaseId = faseId;
 
+    /// <summary>Registra o modelo de que o conteúdo atual partiu; a cópia continua sendo a que vale.</summary>
+    internal void RegistrarOrigem(Guid modeloId, string modeloCodigo)
+    {
+        ModeloOrigemId = modeloId;
+        ModeloOrigemCodigo = modeloCodigo.Trim();
+    }
+
     internal void VincularProcessoSeletivo(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
 }
 
@@ -186,6 +193,8 @@ public sealed class EtapaFormulario : EntityBase
 
 public static class FormularioProcessoErrorCodes
 {
+    /// <summary>A aplicação de modelo substitui o formulário inteiro: sob retificação, não.</summary>
+    public const string AplicacaoDeModeloSoEmRascunho = "FormularioProcesso.AplicacaoDeModeloSoEmRascunho";
 
     /// <summary>Formulário publicado sem a fase em que é respondido.</summary>
     public const string SemFase = "ProcessoSeletivo.FormularioSemFase";
