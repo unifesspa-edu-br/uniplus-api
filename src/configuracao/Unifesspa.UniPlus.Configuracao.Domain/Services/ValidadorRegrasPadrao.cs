@@ -121,7 +121,8 @@ public static class ValidadorRegrasPadrao
     }
 
     private static bool ValorDesativado(Dictionary<string, FatoCandidato> fatos, string fato, string valor) =>
-        fatos.TryGetValue(fato, out FatoCandidato? citado) && citado.ValoresDominioDeclarados.Any(v => v.Codigo == valor && !v.Ativo);
+        fatos.TryGetValue(fato, out FatoCandidato? citado)
+        && VocabularioDoCatalogo.ValoresDe(citado, fatos).Any(v => v.Codigo == valor && !v.Ativo);
 
     /// <summary>
     /// A forma de cada regra: a do booleano não contribui código, a do categórico contribui só os
@@ -186,7 +187,7 @@ public static class ValidadorRegrasPadrao
     /// A fase <paramref name="fase"/> vem antes de <paramref name="outra"/> quando há caminho de
     /// precedência de uma à outra.
     /// </summary>
-    private static bool Precede(string fase, string outra, IReadOnlyCollection<PrecedenciaFase> precedencias)
+    internal static bool Precede(string fase, string outra, IReadOnlyCollection<PrecedenciaFase> precedencias)
     {
         if (string.Equals(fase, outra, StringComparison.Ordinal))
         {

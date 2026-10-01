@@ -163,6 +163,27 @@ public sealed class FatosCandidatoController : ControllerBase
     }
 
     /// <summary>
+    /// Cadastra um agregado sobre grupo repetível: o fato do candidato que resume o que os membros
+    /// responderam no fato de membro informado.
+    /// </summary>
+    [HttpPost("admin/fatos-candidato/agregados")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CriarAgregado([FromBody] CriarFatoAgregadoCommand command, CancellationToken cancellationToken)
+    {
+        Result<Guid> resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess
+            ? CreatedAtAction(nameof(ObterParaManutencao), new { id = resultado.Value }, resultado.Value)
+            : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Substitui as regras padrão do derivado por regra, que o processo copia como ponto de partida.
     /// Lista vazia remove as regras.
     /// </summary>

@@ -780,6 +780,30 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.classificacao_abaixo_da_dependencia",
                 "O derivado protege menos que um fato que ele cita")),
 
+        new(FatoCandidatoErrorCodes.AgregadoSemFatoDeMembro,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.agregado_sem_fato_de_membro",
+                "O fato de membro do agregado não pertence ao catálogo")),
+
+        new(FatoCandidatoErrorCodes.AgregadoSobreFatoQueNaoEhCampoDeGrupo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.agregado_sobre_fato_que_nao_eh_campo_de_grupo",
+                "O agregado resume fato declarado de membro de grupo")),
+
+        new(FatoCandidatoErrorCodes.AgregadoSobreDominioQueNaoAgrega,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.agregado_sobre_dominio_que_nao_agrega",
+                "O agregado resume fato de membro booleano ou categórico")),
+
+        new(FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.agregado_nao_tem_valores_proprios",
+                "Os valores do agregado são os do fato de membro")),
+
         new(FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

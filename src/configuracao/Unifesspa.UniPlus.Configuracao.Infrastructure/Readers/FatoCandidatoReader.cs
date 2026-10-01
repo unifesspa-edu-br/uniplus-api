@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -40,7 +41,8 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. fatos.Select(ParaView)];
+        Dictionary<string, FatoCandidato> porCodigo = fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
+        return [.. fatos.Select(f => ParaView(f, porCodigo))];
     }
 
     public async Task<FatoCandidatoView?> ObterPorCodigoAsync(
@@ -53,7 +55,21 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             .FirstOrDefaultAsync(f => f.Codigo == codigo, cancellationToken)
             .ConfigureAwait(false);
 
-        return fato is null ? null : ParaView(fato);
+        if (fato is null)
+        {
+            return null;
+        }
+
+        // O agregado expõe os valores do fato de membro, que vem junto.
+        Dictionary<string, FatoCandidato> porCodigo = new(StringComparer.Ordinal) { [fato.Codigo] = fato };
+        if (fato.FatoDeMembroAgregado is { } membro
+            && await _dbContext.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados)
+                .FirstOrDefaultAsync(f => f.Codigo == membro, cancellationToken).ConfigureAwait(false) is { } doMembro)
+        {
+            porCodigo[doMembro.Codigo] = doMembro;
+        }
+
+        return ParaView(fato, porCodigo);
     }
 
     public async Task<IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>>> ListarRegrasPadraoAsync(
@@ -69,10 +85,10 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             .ToDictionary(static f => f.Codigo, static f => f.RegrasPadrao, StringComparer.Ordinal);
     }
 
-    private static FatoCandidatoView ParaView(FatoCandidato f)
+    private static FatoCandidatoView ParaView(FatoCandidato f, IReadOnlyDictionary<string, FatoCandidato> porCodigo)
     {
         IReadOnlyList<FatoValorDominioViewItem>? valoresDominioDeclarados =
-            ParaValoresDominioDeclarados(f.ValoresDominioDeclarados);
+            ParaValoresDominioDeclarados(VocabularioDoCatalogo.ValoresDe(f, porCodigo));
 
         return new(
             f.Id,

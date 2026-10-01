@@ -7,6 +7,9 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
@@ -186,6 +189,89 @@ public sealed class FatoCandidatoAdminEndpointTests
         condicao.GetProperty("fato").GetString().Should().Be(dependencia);
         condicao.GetProperty("operador").GetString().Should().Be("IGUAL");
         condicao.GetProperty("valor").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Agregado sobre fato de membro é cadastrado com o vínculo ao fato de membro; sobre fato do candidato é recusado")]
+    public async Task AgregadoSobreFatoDeMembro()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string membro = CodigoUnico();
+        string doCandidato = CodigoUnico();
+        (await EnviarAsync(client, HttpMethod.Post, Base, new
+        {
+            codigo = membro,
+            nome = "Menor sob guarda",
+            dominio = "BOOLEANO",
+            cardinalidade = "ESCALAR",
+            pontoResolucao = "HABILITACAO",
+            escopo = "MEMBRO_GRUPO",
+            classificacaoProtecao = "PESSOAL",
+            finalidadeTratamento = "Composição familiar.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        })).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await EnviarAsync(client, HttpMethod.Post, Base, FatoBooleano(doCandidato))).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        object Agregado(string fatoDeMembro) => new
+        {
+            codigo = CodigoUnico(),
+            nome = "Existe menor sob guarda",
+            fatoDeMembro,
+            pontoResolucao = "HABILITACAO",
+            classificacaoProtecao = "PESSOAL",
+            finalidadeTratamento = "Composição familiar.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        };
+
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, $"{Base}/agregados", Agregado(membro));
+        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
+        using JsonDocument fato = await ObterAsync(client, await criar.Content.ReadFromJsonAsync<Guid>());
+        fato.RootElement.GetProperty("binding").GetString().Should().Be($"AGREGACAO_GRUPO:{membro}");
+
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/agregados", Agregado(doCandidato)))
+            .StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "O contrato lido pela Seleção expõe no agregado categórico os valores do fato de membro")]
+    public async Task AgregadoCategorico_ReaderExpoeOsValoresDoFatoDeMembro()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string membro = CodigoUnico();
+        HttpResponseMessage criarMembro = await EnviarAsync(client, HttpMethod.Post, Base, new
+        {
+            codigo = membro,
+            nome = "Categoria de renda",
+            dominio = "CATEGORICO",
+            cardinalidade = "ESCALAR",
+            fonteValores = "GLOBAL",
+            pontoResolucao = "HABILITACAO",
+            escopo = "MEMBRO_GRUPO",
+            classificacaoProtecao = "PESSOAL",
+            finalidadeTratamento = "Composição familiar.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        });
+        criarMembro.StatusCode.Should().Be(HttpStatusCode.Created, await criarMembro.Content.ReadAsStringAsync());
+        Guid idDoMembro = await criarMembro.Content.ReadFromJsonAsync<Guid>();
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{idDoMembro}/valores", new { codigo = "RURAL", descricao = "Trabalho rural", ordem = 0 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        string agregado = CodigoUnico();
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/agregados", new
+        {
+            codigo = agregado,
+            nome = "Categorias de renda da família",
+            fatoDeMembro = membro,
+            pontoResolucao = "HABILITACAO",
+            classificacaoProtecao = "PESSOAL",
+            finalidadeTratamento = "Composição familiar.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        })).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        IFatoCandidatoReader reader = escopo.ServiceProvider.GetRequiredService<IFatoCandidatoReader>();
+        FatoCandidatoView listado = (await reader.ListarAsync()).Single(v => v.Codigo == agregado);
+        FatoCandidatoView? obtido = await reader.ObterPorCodigoAsync(agregado);
+
+        listado.ValoresDominio.Should().Equal("RURAL");
+        obtido!.ValoresDominio.Should().Equal("RURAL");
     }
 
     private static object FatoBooleano(string codigo) => new
