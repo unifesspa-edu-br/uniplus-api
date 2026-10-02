@@ -75,6 +75,26 @@ public sealed class GrafoDependenciaConjuntaTests
         Posicao(grafo, ClasseNoGrafo.Campo, "PCD").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Fato, "PCD"));
     }
 
+    [Fact(DisplayName = "O derivado do sistema citado entra no grafo pela dependência declarada pelo mecanismo dele")]
+    public void DerivadoDoSistemaCitado_EntraPelaDependencia()
+    {
+        FatoColetado dataDeNascimento = Declarado("DATA_NASCIMENTO", 0);
+        FatoColetado responsavel = Declarado("RESPONSAVEL_LEGAL", 1, "FAIXA_ETARIA");
+
+        IReadOnlyList<ArestaGrafoDependencia> arestas = Construir([dataDeNascimento, responsavel], [], []).Value!.Arestas;
+
+        arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Derivacao && a.Origem.Codigo == "DATA_NASCIMENTO" && a.Destino.Codigo == "FAIXA_ETARIA");
+        arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Precondicao
+            && a.Origem.Codigo == "FAIXA_ETARIA" && a.Destino.Classe == ClasseNoGrafo.Campo && a.Destino.Codigo == "RESPONSAVEL_LEGAL");
+    }
+
+    [Fact(DisplayName = "O derivado do sistema que nenhuma regra cita fica fora do grafo")]
+    public void DerivadoDoSistemaNaoCitado_FicaFora()
+    {
+        Construir([Declarado("DATA_NASCIMENTO", 0)], [], []).Value!.Arestas
+            .Should().NotContain(static a => a.Destino.Codigo == "FAIXA_ETARIA");
+    }
+
     [Fact(DisplayName = "As quatro classes de aresta são montadas das componentes da configuração")]
     public void QuatroClassesDeAresta_Montadas()
     {

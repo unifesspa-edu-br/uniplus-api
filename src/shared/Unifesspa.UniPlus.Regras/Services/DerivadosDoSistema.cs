@@ -17,4 +17,21 @@ public static class DerivadosDoSistema
             ["UF_RESIDENCIA"] = ["ENDERECO_RESIDENCIAL"],
             ["MUNICIPIO_RESIDENCIA"] = ["ENDERECO_RESIDENCIAL"],
         };
+
+    /// <summary>
+    /// As derivações que o grafo do formulário confere: as dadas, por regra, e as dos derivados do
+    /// sistema, conhecidos quando as dependências deles são.
+    /// </summary>
+    public static Dictionary<string, IReadOnlyCollection<string>> ComAsDoSistema(
+        IEnumerable<KeyValuePair<string, IReadOnlyCollection<string>>> derivacoes)
+    {
+        ArgumentNullException.ThrowIfNull(derivacoes);
+        Dictionary<string, IReadOnlyCollection<string>> todas = new(derivacoes, StringComparer.Ordinal);
+        foreach ((string derivado, IReadOnlyList<string> dependencias) in Dependencias)
+        {
+            todas.TryAdd(derivado, dependencias);
+        }
+
+        return todas;
+    }
 }

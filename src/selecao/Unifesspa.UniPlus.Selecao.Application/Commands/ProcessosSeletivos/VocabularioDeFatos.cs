@@ -125,10 +125,10 @@ internal static class VocabularioDeFatos
     /// São cinco conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
     /// coleta nos formulários; o que ele deriva por regra declarada (a modalidade de
     /// concorrência); o agregado cujo fato de membro é campo de um grupo do processo; o que o
-    /// sistema calcula de atributos do candidato (faixa etária, renda per capita); e o que a
-    /// classificação produz (o grupo em que o candidato foi convocado). Os dois últimos nunca
-    /// aparecem nas regras de derivação, porque não há o que declarar sobre eles; a fase em que
-    /// ficam conhecidos é a do catálogo.
+    /// sistema calcula de atributos do candidato (faixa etária, renda per capita) — o que declara
+    /// dependências, só quando o processo coleta todas elas, porque sem a data de nascimento a faixa
+    /// etária nunca se resolve; e o que a classificação produz (o grupo em que o candidato foi
+    /// convocado). Os dois últimos nunca aparecem nas regras de derivação do processo.
     /// </remarks>
     public static HashSet<string> QueOProcessoResolve(ProcessoSeletivo processo, IEnumerable<FatoCandidatoView> catalogo)
     {
@@ -138,14 +138,28 @@ internal static class VocabularioDeFatos
         List<FatoCandidatoView> fatos = [.. catalogo];
         HashSet<string> camposDeGrupo = new(
             processo.GruposColetados.SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo), StringComparer.Ordinal);
+        HashSet<string> coletados = new(processo.FatosColetados.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+        HashSet<string> resolvidos = new(DerivadosDoSistemaResolvidos(coletados), StringComparer.Ordinal);
+        bool DependenciasColetadas(string codigo) => !DerivadosDoSistema.Dependencias.ContainsKey(codigo) || resolvidos.Contains(codigo);
         return new(
-            processo.FatosColetados.Select(static f => f.FatoCodigo)
+            coletados
                 .Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato))
                 .Concat(MembroPorAgregado(fatos).Where(a => camposDeGrupo.Contains(a.Value)).Select(static a => a.Key))
                 .Concat(fatos
-                    .Where(static f => f.Binding is { } binding && (CalculadoDeAtributo(binding) || ProduzidoPelaClassificacao(binding)))
+                    .Where(f => f.Binding is { } binding
+                        && ((CalculadoDeAtributo(binding) && DependenciasColetadas(f.Codigo)) || ProduzidoPelaClassificacao(binding)))
                     .Select(static f => f.Codigo)),
             StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// Os derivados do sistema que o processo resolve com os fatos coletados dados: os que têm todas
+    /// as dependências declaradas (<see cref="DerivadosDoSistema"/>) entre eles.
+    /// </summary>
+    public static IEnumerable<string> DerivadosDoSistemaResolvidos(IReadOnlySet<string> coletados)
+    {
+        ArgumentNullException.ThrowIfNull(coletados);
+        return DerivadosDoSistema.Dependencias.Where(d => d.Value.All(coletados.Contains)).Select(static d => d.Key);
     }
 
     /// <summary>Os fatos do catálogo cujos valores são as modalidades que o processo oferta.</summary>

@@ -1266,7 +1266,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         TermoExigidoFormulario[] termosFinais = [.. _termosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
         GrupoColetado[] gruposFinais = [.. _gruposColetados.Where(g => g.Finalidade != finalidade), .. copia.Grupos];
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
-            derivacoesFinais.ToDictionary(static c => c.CodigoFato, static c => c.FatosCitados, StringComparer.Ordinal);
+            MapaDeDerivacoes(derivacoesFinais);
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
             : FatosDaInscricao(itensFinais);
@@ -1980,7 +1980,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <remarks>
     /// Fato que o processo não coleta, não deriva e o catálogo não situa não é recusado aqui: a
     /// recusa por fato fora do processo é da conferência do universo. O derivado do sistema usa a
-    /// fase do catálogo enquanto as suas dependências não são declaradas no processo (#1724).
+    /// fase do catálogo e a das dependências declaradas pelo mecanismo dele.
     /// </remarks>
     public DomainError? RecusaDeFaseDoGatilho(
         string fato,
@@ -2081,10 +2081,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Os fatos de que o valor do fato depende no processo: os citados pela regra de derivação dele,
-    /// ou o fato de membro, quando ele é agregado sobre grupo repetível.
+    /// os declarados pelo mecanismo do derivado do sistema, ou o fato de membro, quando ele é
+    /// agregado sobre grupo repetível.
     /// </summary>
     private IEnumerable<string> DependenciasDoFato(string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
         (_regrasDerivacao.Find(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal))?.FatosCitados ?? [])
+            .Concat(DerivadosDoSistema.Dependencias.GetValueOrDefault(fato) ?? [])
             .Concat(membroPorAgregado.TryGetValue(fato, out string? membro) ? [membro] : []);
 
     private sealed record FaseEfetiva(FaseCronograma? Fase, DomainError? Recusa);
@@ -2622,7 +2624,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         HashSet<string> daInscricao = FatosDaInscricao(fatos);
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
-            derivacoes.ToDictionary(static c => c.CodigoFato, static c => c.FatosCitados, StringComparer.Ordinal);
+            MapaDeDerivacoes(derivacoes);
         foreach (FormularioProcesso formulario in formularios)
         {
             FinalidadeFormulario finalidade = formulario.Finalidade;
@@ -2661,7 +2663,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             derivacoes);
 
     private Dictionary<string, IReadOnlyCollection<string>> DependenciasDasDerivacoes() =>
-        _regrasDerivacao.ToDictionary(static c => c.CodigoFato, static c => c.FatosCitados, StringComparer.Ordinal);
+        MapaDeDerivacoes(_regrasDerivacao);
+
+    /// <summary>
+    /// As dependências de cada derivado que uma regra do formulário pode citar: os derivados por regra
+    /// do processo e os derivados do sistema, com as dependências declaradas pelo mecanismo deles.
+    /// </summary>
+    private static Dictionary<string, IReadOnlyCollection<string>> MapaDeDerivacoes(IEnumerable<ConfiguracaoDerivacaoFato> derivacoes) =>
+        DerivadosDoSistema.ComAsDoSistema(derivacoes.Select(static c => KeyValuePair.Create(c.CodigoFato, c.FatosCitados)));
 
     /// <summary>
     /// Gate <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c> (Story #920) — mesmo gate
@@ -3189,7 +3198,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
         new ItemConformidade("grupo_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ExisteGrupoRemoveVantagemSemVantagemViva()),
         new ItemConformidade("grupo_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
-        new ItemConformidade("referencia_temporal_ausente_com_gatilho_etario", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: configurada quando há gatilho por faixa etária", !ReferenciaTemporalFatosAusenteQuandoExigida()),
+        new ItemConformidade("referencia_temporal_ausente_com_gatilho_etario", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: configurada quando alguma regra cita a faixa etária", !ReferenciaTemporalFatosAusenteQuandoExigida()),
         new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
@@ -4285,8 +4294,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 .Concat(_gruposColetados.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem)
                     .SelectMany(static g => g.Subitens).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))),
             CampoQueAlimentaRegra.Fatos(
-                _regrasDerivacao.SelectMany(static c => c.FatosCitados),
+                _regrasDerivacao.SelectMany(static c => c.FatosCitados).Concat(DependenciasDosDerivadosDoSistemaCitados()),
                 CondicoesVivasComOperador().Select(static c => (c.Fato, c.Operador))));
+
+    /// <summary>Os fatos de que dependem os derivados do sistema que uma regra viva do processo cita.</summary>
+    private IEnumerable<string> DependenciasDosDerivadosDoSistemaCitados() =>
+        CondicoesVivasComOperador().Select(static c => c.Fato).Distinct(StringComparer.Ordinal)
+            .SelectMany(static fato => DerivadosDoSistema.Dependencias.GetValueOrDefault(fato) ?? []);
 
     /// <summary>
     /// Grupo ou campo de grupo opcional que alimenta um agregado citado por regra viva do processo
@@ -4648,8 +4662,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// sempre <b>depois</b> de <see cref="PendenciaDasExigenciasDocumentais"/>.
     /// </summary>
     /// <remarks>
-    /// Sem fallback silencioso (ADR-0111:235-236): se existir gatilho por
-    /// <c>FAIXA_ETARIA</c> em qualquer <see cref="DocumentoExigido"/>, a referência
+    /// Sem fallback silencioso (ADR-0111:235-236): se alguma regra — gatilho de exigência ou regra
+    /// do formulário — citar <c>FAIXA_ETARIA</c>, a referência
     /// precisa resolver para uma data concreta — política ausente, âncora de fase sem o
     /// extremo escolhido, ou <c>FIM_INSCRICAO</c> sem fase que colete inscrição com
     /// <c>Fim</c> definido bloqueiam a publicação. O congelamento da <c>DateOnly</c>
@@ -4657,7 +4671,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     private DomainError? PendenciaDaReferenciaTemporalFatos()
     {
-        if (!ExisteGatilhoPorFaixaEtaria())
+        if (!CitaFaixaEtaria())
         {
             return null;
         }
@@ -4666,7 +4680,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             return new DomainError(
                 "ProcessoSeletivo.ReferenciaTemporalFatosAusente",
-                "Existe gatilho por FAIXA_ETARIA, mas nenhuma referência temporal de fatos foi configurada — a publicação não pode resolver a idade do candidato sem fallback silencioso (ADR-0111).");
+                "Uma regra do processo (gatilho de exigência ou regra do formulário) cita FAIXA_ETARIA, mas nenhuma referência temporal de fatos foi configurada — a publicação não pode resolver a idade do candidato sem fallback silencioso (ADR-0111).");
         }
 
         ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos!;
@@ -4704,10 +4718,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return null;
     }
 
-    /// <summary>Existe gatilho por FAIXA_ETARIA em algum <see cref="DocumentoExigido"/> — sem ele, a referência temporal é opcional.</summary>
-    private bool ExisteGatilhoPorFaixaEtaria() =>
-        _documentosExigidos.SelectMany(static d => d.Condicoes)
-            .Any(static c => string.Equals(c.Fato, "FAIXA_ETARIA", StringComparison.Ordinal));
+    /// <summary>
+    /// Alguma regra viva do processo — gatilho de exigência ou regra do formulário — cita a faixa
+    /// etária; sem isso, a referência temporal é opcional.
+    /// </summary>
+    private bool CitaFaixaEtaria() =>
+        CondicoesVivasComOperador().Any(static c => string.Equals(c.Fato, FaixaEtaria, StringComparison.Ordinal));
+
+    private const string FaixaEtaria = "FAIXA_ETARIA";
 
     /// <summary>A fase âncora de InicioFase/FimFase — <see langword="null"/> quando o tipo não usa fase ou ela não pertence (mais) ao cronograma.</summary>
     private FaseCronograma? FaseAncoraDaReferenciaTemporal() =>
@@ -4716,21 +4734,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             : null;
 
     private bool ReferenciaTemporalFatosAusenteQuandoExigida() =>
-        ExisteGatilhoPorFaixaEtaria() && ReferenciaTemporalFatos is null;
+        CitaFaixaEtaria() && ReferenciaTemporalFatos is null;
 
     private bool ReferenciaTemporalFatosFaseNaoPertenceAoCronograma() =>
-        ExisteGatilhoPorFaixaEtaria()
+        CitaFaixaEtaria()
         && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase }
         && FaseAncoraDaReferenciaTemporal() is null;
 
     private bool ReferenciaTemporalFatosExtremoDaFaseAusente() =>
-        ExisteGatilhoPorFaixaEtaria()
+        CitaFaixaEtaria()
         && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
         && FaseAncoraDaReferenciaTemporal() is { } fase
         && (referencia.Tipo == ReferenciaTipo.InicioFase ? fase.Inicio : fase.Fim) is null;
 
     private bool ReferenciaTemporalFatosFimInscricaoIndisponivel() =>
-        ExisteGatilhoPorFaixaEtaria()
+        CitaFaixaEtaria()
         && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.FimInscricao }
         && !_cronogramaFases.Any(static f => f.ColetaInscricao && f.Fim is not null);
 
@@ -4743,7 +4761,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// encoder ler <see cref="DateTimeOffset"/> cru.
     /// </summary>
     /// <returns>
-    /// <see langword="null"/> quando não há gatilho por <c>FAIXA_ETARIA</c> — a resolução
+    /// <see langword="null"/> quando nenhuma regra cita <c>FAIXA_ETARIA</c> — a resolução
     /// não foi provada nem é necessária, e congelar uma data não pedida por ninguém seria
     /// dado morto no envelope, não uma garantia a mais.
     /// </returns>
@@ -4757,10 +4775,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(fusoHorario);
 
-        bool existeGatilhoPorFaixaEtaria = _documentosExigidos
-            .SelectMany(static d => d.Condicoes)
-            .Any(static c => string.Equals(c.Fato, "FAIXA_ETARIA", StringComparison.Ordinal));
-        if (!existeGatilhoPorFaixaEtaria)
+        if (!CitaFaixaEtaria())
         {
             return null;
         }

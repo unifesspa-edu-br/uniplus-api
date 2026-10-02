@@ -69,8 +69,10 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_LISTA_ESPERA", null, "GLOBAL", Ativo: true),
         new(Guid.CreateVersion7(), "OPCAO_CURSO_2", "2ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
             ["MEDICINA"], "INSCRICAO", "CAMPO_INSCRICAO:OPCAO_CURSO_2", null, "GLOBAL", Ativo: true),
-        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "CATEGORICO", "DERIVADO", "ESCALAR",
-            ["MENOR_DE_18", "DE_18_A_59", "60_OU_MAIS"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, "GLOBAL", Ativo: true),
+        new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", null, "CATEGORICO", "DERIVADO", "ESCALAR",
+            ["MENOR_DE_18", "DE_18_A_59", "60_OU_MAIS"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true),
+        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
+            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true),
         new(Guid.CreateVersion7(), "PARENTESCO", "Parentesco", null, "CATEGORICO", "DECLARADO", "ESCALAR",
             ["PAI", "MAE", "FILHO"], "HABILITACAO", "CAMPO_INSCRICAO:PARENTESCO", null, "GLOBAL", Ativo: true, Escopo: "MEMBRO_GRUPO"),
         new(Guid.CreateVersion7(), "MENOR_SOB_GUARDA", "Menor sob guarda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
@@ -597,14 +599,43 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
-    [Fact(DisplayName = "Regra do item que cita fato calculado de atributos do candidato é recusada pelo nome")]
+    [Theory(DisplayName = "Item cita a faixa etária quando a data de nascimento é coletada antes; depois, ou sem ela, é recusado")]
+    [InlineData(0, 1, null)]
+    [InlineData(2, 1, GrafoFormularioErrorCodes.CitaFatoPosterior)]
+    [InlineData(-1, 1, GrafoFormularioErrorCodes.CitaFatoNaoConhecido)]
+    public async Task Handle_CitaFaixaEtaria_PelaDataDeNascimento(int ordemDaData, int ordemDoItem, string? recusa)
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        FatoColetadoInput[] dataDeNascimento = ordemDaData < 0
+            ? []
+            : [new FatoColetadoInput("DATA_NASCIMENTO", ordemDaData, "Data de nascimento", "DATA", "SEMPRE", null)];
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        [
+            .. dataDeNascimento,
+            new FatoColetadoInput("BAIXA_RENDA", ordemDoItem, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("FAIXA_ETARIA", "MAIOR_IGUAL", 18)]]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        if (recusa is null)
+        {
+            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        }
+        else
+        {
+            resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(recusa);
+        }
+    }
+
+    [Fact(DisplayName = "Regra do item que cita fato calculado de atributos do candidato sem dependências declaradas é recusada pelo nome")]
     public async Task Handle_CitaAtributoDoCandidato_RecusaNomeada()
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
         [
-            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("FAIXA_ETARIA", "IGUAL", "DE_18_A_59")]]),
+            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("FAIXA_DE_RENDA", "IGUAL", "DE_18_A_59")]]),
         ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -686,12 +717,12 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("grupos[0].exibicao");
     }
 
-    [Fact(DisplayName = "Exibição do grupo que cita fato calculado de atributo do candidato é recusada, como nas demais regras")]
+    [Fact(DisplayName = "Exibição do grupo que cita fato calculado de atributo do candidato sem dependências declaradas é recusada, como nas demais regras")]
     public async Task Handle_ExibicaoDoGrupoCitandoAtributo_Recusa()
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("FAIXA_ETARIA", "IGUAL", "MENOR_DE_18")]] };
+        GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("FAIXA_DE_RENDA", "IGUAL", "MENOR_DE_18")]] };
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 

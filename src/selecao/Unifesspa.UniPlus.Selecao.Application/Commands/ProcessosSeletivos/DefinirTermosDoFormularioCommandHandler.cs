@@ -68,9 +68,11 @@ public static class DefinirTermosDoFormularioCommandHandler
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
 
         // O formulário avalia a condição do termo com as respostas e os derivados do candidato:
-        // o universo são os fatos coletados e os derivados por regra do processo.
+        // o universo são os fatos coletados, os derivados por regra do processo e os derivados do
+        // sistema cujas dependências o processo coleta.
+        HashSet<string> coletados = new(processo.FatosColetados.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
         HashSet<string> universo = new(
-            processo.FatosColetados.Select(static f => f.FatoCodigo).Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato)),
+            coletados.Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato)).Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)),
             StringComparer.Ordinal);
         (List<TermoExigidoFormulario> termos, List<FieldError> erros) =
             EscritaDosTermos.Resolver(lidos, contexto, versoes.ToDictionary(static v => v.VersaoId), universo);

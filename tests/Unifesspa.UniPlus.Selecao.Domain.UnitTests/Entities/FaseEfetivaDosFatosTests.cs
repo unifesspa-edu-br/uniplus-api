@@ -105,6 +105,18 @@ public sealed class FaseEfetivaDosFatosTests
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
     }
 
+    [Fact(DisplayName = "O derivado do sistema fica conhecido na fase do formulário que coleta a dependência declarada")]
+    public void DerivadoDoSistema_HerdaAFaseDaDependencia()
+    {
+        (ProcessoSeletivo processo, FaseCronograma inscricao, _, FaseCronograma habilitacao) = Processo();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("DATA_NASCIMENTO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Dictionary<string, string> catalogo = new(TudoNaInscricao, StringComparer.Ordinal) { ["FAIXA_ETARIA"] = "INSCRICAO" };
+
+        processo.RecusaDeFaseDoGatilho("FAIXA_ETARIA", inscricao.Id, catalogo, SemAgregados)!.Code
+            .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
+        processo.RecusaDeFaseDoGatilho("FAIXA_ETARIA", habilitacao.Id, catalogo, SemAgregados).Should().BeNull();
+    }
+
     [Fact(DisplayName = "O agregado fica conhecido na fase do formulário do grupo que tem o fato de membro")]
     public void Agregado_HerdaAFaseDoGrupoDoFatoDeMembro()
     {
