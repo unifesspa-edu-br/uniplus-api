@@ -4155,8 +4155,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Duas cláusulas só valem juntas se nenhum fato é exigido com valores incompatíveis nelas. A prova
     /// de incompatibilidade é conservadora — o mesmo fato escalar com <c>IGUAL</c> a valores
     /// diferentes, ou <c>IGUAL</c> e <c>DIFERENTE</c> ao mesmo valor —, e o que ela não prova conta
-    /// como derivável junto. Fato multivalorado (seleção múltipla) ou derivado não é tratado como
-    /// escalar: sobre ele <c>IGUAL</c> é pertinência, e o mesmo candidato pode conter os dois valores.
+    /// como derivável junto. Fato multivalorado (seleção múltipla) ou derivado categórico não é
+    /// tratado como escalar: sobre ele <c>IGUAL</c> é pertinência, e o mesmo candidato pode conter os
+    /// dois valores. O derivado booleano é escalar.
     /// A âncora, sem cláusula, vale sempre.
     /// </remarks>
     private DomainError? PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa()
@@ -4170,7 +4171,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .. Itens
                 .Where(static f => f.TipoRenderizacao == TipoRenderizacao.SelecaoMultipla)
                 .Select(static f => f.FatoCodigo),
-            .. _regrasDerivacao.Select(static c => c.CodigoFato),
+            .. _regrasDerivacao.Where(static c => !c.Booleano).Select(static c => c.CodigoFato),
         ];
 
         foreach (ConfiguracaoDerivacaoFato config in _regrasDerivacao)
@@ -4847,7 +4848,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public VinculosDeFatos Vinculos() => VinculosDeFatos.De(
         _campos.Select(static f => f.FatoCodigo).Concat(_regrasDerivacao.Select(static r => r.CodigoFato)),
         CondicoesVivas(),
-        _regrasDerivacao.SelectMany(static c => c.Regras.Select(r => (c.CodigoFato, r.Contribui))));
+        _regrasDerivacao.SelectMany(static c => c.CodigosContribuidos));
 
     /// <summary>
     /// Todo predicado vivo que cita fato por valor: gatilhos de exigência, regras dos itens,

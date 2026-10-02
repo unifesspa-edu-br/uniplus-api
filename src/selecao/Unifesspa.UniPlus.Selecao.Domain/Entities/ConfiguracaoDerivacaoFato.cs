@@ -46,6 +46,16 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
             .Select(static c => c.Fato)
             .Distinct(StringComparer.Ordinal)];
 
+    /// <summary>
+    /// Derivado booleano: nenhuma regra contribui código, e a ativa torna o derivado verdadeiro
+    /// (ADR-0136). A forma recusa a configuração que mistura regras com e sem código.
+    /// </summary>
+    public bool Booleano => _regras.TrueForAll(static r => r.Contribui is null);
+
+    /// <summary>Pares (fato derivado, código contribuído) das regras que contribuem código.</summary>
+    public IEnumerable<(string Fato, string Valor)> CodigosContribuidos =>
+        _regras.Where(static r => r.Contribui is not null).Select(r => (CodigoFato, r.Contribui!));
+
     private ConfiguracaoDerivacaoFato() { }
 
     /// <summary>
@@ -58,7 +68,7 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
         IReadOnlyList<RegraDerivacaoConfigurada>? regras)
     {
         IReadOnlyList<RegraDerivacaoConfigurada> lista = regras ?? [];
-        List<FieldError> erros = ValidarFormaBasica(codigoFato, lista.Count, lista.Select(static r => r.Ordem));
+        List<FieldError> erros = ValidarFormaBasica(codigoFato, [.. lista.Select(static r => (r.Ordem, r.Contribui))]);
         if (erros.Count > 0)
         {
             return Result<ConfiguracaoDerivacaoFato>.ValidationFailure(erros);
@@ -75,15 +85,17 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
     }
 
     /// <summary>
-    /// Código do fato, presença de regras e unicidade de ordem não dependem do vocabulário
-    /// cross-módulo nem das regras já resolvidas — só do código cru e da contagem/ordens brutas
-    /// do payload. Existe separada para o handler poder confirmar a forma de TODAS as
-    /// configurações numa primeira passada, antes de resolver o catálogo (mesmo padrão de
-    /// <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
+    /// Código do fato, presença de regras, unicidade de ordem e regras com e sem código misturadas
+    /// não dependem do vocabulário cross-módulo nem das regras já resolvidas — só do código cru e
+    /// das ordens e contribuições brutas do payload. Existe separada para o handler poder
+    /// confirmar a forma de TODAS as configurações numa primeira passada, antes de resolver o
+    /// catálogo (mesmo padrão de <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
     /// </summary>
-    public static List<FieldError> ValidarFormaBasica(string? codigoFato, int totalRegras, IEnumerable<int> ordensBrutas)
+    public static List<FieldError> ValidarFormaBasica(
+        string? codigoFato,
+        IReadOnlyCollection<(int Ordem, string? Contribui)> regrasBrutas)
     {
-        ArgumentNullException.ThrowIfNull(ordensBrutas);
+        ArgumentNullException.ThrowIfNull(regrasBrutas);
 
         List<FieldError> erros = [];
 
@@ -94,19 +106,25 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
                 "O código do fato derivado é obrigatório.")));
         }
 
-        if (totalRegras == 0)
+        if (regrasBrutas.Count == 0)
         {
             erros.Add(new("regras", new DomainError(
                 ConfiguracaoDerivacaoFatoErrorCodes.SemRegras,
                 "A derivação de um fato precisa de ao menos uma regra.")));
         }
 
-        List<int> ordens = [.. ordensBrutas];
-        if (ordens.Distinct().Count() != ordens.Count)
+        if (regrasBrutas.Select(static r => r.Ordem).Distinct().Count() != regrasBrutas.Count)
         {
             erros.Add(new("regras", new DomainError(
                 ConfiguracaoDerivacaoFatoErrorCodes.OrdemRegraDuplicada,
                 "A ordem de uma regra é usada por mais de uma regra na mesma derivação.")));
+        }
+
+        if (regrasBrutas.Any(static r => r.Contribui is null) && regrasBrutas.Any(static r => r.Contribui is not null))
+        {
+            erros.Add(new("regras", new DomainError(
+                ConfiguracaoDerivacaoFatoErrorCodes.RegrasComESemCodigo,
+                "As regras de uma derivação contribuem código todas, no derivado categórico, ou nenhuma, no derivado booleano.")));
         }
 
         return erros;
@@ -120,7 +138,8 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
     /// valores do fato — que, para um fato de escopo-processo como <c>MODALIDADE</c>, é o conjunto
     /// de modalidades ofertadas pelo processo, e não uma lista global do catálogo. O domínio é dado
     /// pelo chamador; a reconstrução valida a coerência (dependências, auto-referência, código
-    /// contribuído no domínio) e devolve <see cref="Result{T}"/> — nunca lança.
+    /// contribuído no domínio) e devolve <see cref="Result{T}"/> — nunca lança. O derivado booleano
+    /// não contribui código, e o domínio não se aplica a ele.
     /// </summary>
     public Result<RegrasDerivacaoFato> ParaRegrasDerivacao(IReadOnlyCollection<string> dominioContribui)
     {
@@ -143,7 +162,9 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
         IReadOnlyCollection<string> dependencias =
             [.. regras.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
 
-        return RegrasDerivacaoFato.Criar(CodigoFato, regras, dependencias, dominioContribui);
+        return Booleano
+            ? RegrasDerivacaoFato.CriarBooleana(CodigoFato, regras, dependencias)
+            : RegrasDerivacaoFato.Criar(CodigoFato, regras, dependencias, dominioContribui);
     }
 }
 
@@ -153,5 +174,6 @@ public static class ConfiguracaoDerivacaoFatoErrorCodes
     public const string CodigoFatoObrigatorio = "ConfiguracaoDerivacaoFato.CodigoFatoObrigatorio";
     public const string SemRegras = "ConfiguracaoDerivacaoFato.SemRegras";
     public const string OrdemRegraDuplicada = "ConfiguracaoDerivacaoFato.OrdemRegraDuplicada";
+    public const string RegrasComESemCodigo = "ConfiguracaoDerivacaoFato.RegrasComESemCodigo";
     public const string CodigoFatoDuplicado = "ConfiguracaoDerivacaoFato.CodigoFatoDuplicado";
 }

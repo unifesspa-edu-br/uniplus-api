@@ -410,6 +410,12 @@ internal static class CorpusEnvelope
                     CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
                 ]).Value!,
             ]).Value!,
+            // Derivado booleano: as regras não contribuem código, e o envelope grava contribui nulo.
+            ConfiguracaoDerivacaoFato.Criar("PRETO_DECLARADO", [
+                RegraDerivacaoConfigurada.Criar(0, null, [
+                    CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+                ]).Value!,
+            ]).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Cascata de remanejamento (Story #575): as 8 modalidades federais de

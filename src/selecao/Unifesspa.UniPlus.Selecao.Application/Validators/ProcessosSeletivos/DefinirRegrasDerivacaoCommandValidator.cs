@@ -11,11 +11,11 @@ using FluentValidation;
 /// (<c>configInput.Regras.Count</c> na primeira passada, achado de revisão: <c>RuleForEach</c>
 /// não reporta a coleção nula em si, só seus itens — a ausência dela exige o <c>NotNull</c>
 /// explícito abaixo, distinto do <c>NotEmpty</c> removido). Código do fato/presença de
-/// regras/unicidade de ordem (via <c>ConfiguracaoDerivacaoFato.ValidarFormaBasica</c>) e
-/// ordem/contribuição (via <c>RegraDerivacaoConfigurada.ValidarFormaBasica</c>) já têm
-/// equivalente completo no domínio e ficaram fora daqui. A forma do predicado <c>quando</c>
-/// permanece: não tem equivalente em <c>RegraDerivacaoConfigurada.Criar</c>, que só recebe a
-/// lista já montada — a montagem e a checagem de forma bruta acontecem na Application
+/// regras/unicidade de ordem/regras com e sem código (via
+/// <c>ConfiguracaoDerivacaoFato.ValidarFormaBasica</c>) e ordem/contribuição em branco (via
+/// <c>RegraDerivacaoConfigurada.ValidarFormaBasica</c>) já têm equivalente completo no domínio
+/// e ficaram fora daqui. A forma do predicado <c>quando</c> permanece: não tem equivalente em
+/// <c>RegraDerivacaoConfigurada.Criar</c>, que só recebe a lista já montada — a montagem e a checagem de forma bruta acontecem na Application
 /// (<c>DefinirRegrasDerivacaoCommandHandler</c>), que resolve o vocabulário cross-módulo.
 /// </summary>
 public sealed class DefinirRegrasDerivacaoCommandValidator : AbstractValidator<DefinirRegrasDerivacaoCommand>

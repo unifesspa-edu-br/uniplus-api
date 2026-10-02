@@ -48,7 +48,6 @@ public static partial class AplicarModeloFormularioCommandHandler
     private const string FatoDesativado = "FATO_DESATIVADO";
     private const string FatoNaoColetavel = "FATO_NAO_COLETAVEL";
     private const string VersaoDeTermoRemovida = "VERSAO_DE_TERMO_REMOVIDA";
-    private const string DominioBooleano = "BOOLEANO";
     private const string FonteModalidade = "MODALIDADE";
 
     public static async Task<Result<AplicacaoDeModeloDto>> Handle(
@@ -246,7 +245,7 @@ public static partial class AplicarModeloFormularioCommandHandler
                     .Concat(termos.SelectMany(static t => t.Condicoes))
                     .Select(static c => (c.Fato, c.Valor))
                     .Concat(derivacoes.SelectMany(static d => d.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor))),
-                derivacoes.SelectMany(static d => d.Regras.Select(r => (d.CodigoFato, r.Contribui)))));
+                derivacoes.SelectMany(static d => d.CodigosContribuidos)));
         if (vinculoNovo.IsFailure)
         {
             return Result<AplicacaoDeModeloDto>.ValidationFailure(vinculoNovo.Errors.Select(static e => NoModelo(e)).ToList());
@@ -337,8 +336,7 @@ public static partial class AplicarModeloFormularioCommandHandler
     /// <summary>
     /// Os derivados por regra citados pela cópia, direta ou transitivamente: o que o processo já
     /// configura fica como está; o que não configura recebe as regras padrão do catálogo, salvo o
-    /// booleano, que o processo ainda não deriva, e o derivado sem regra padrão, que o processo
-    /// precisa configurar antes.
+    /// derivado sem regra padrão, que o processo precisa configurar antes.
     /// </summary>
     private static List<ConfiguracaoDerivacaoInput> EscolherDerivacoes(
         IEnumerable<string> citados,
@@ -365,12 +363,6 @@ public static partial class AplicarModeloFormularioCommandHandler
             {
                 relatorio.Mantidas.Add(codigo);
             }
-            else if (string.Equals(fato.Dominio, DominioBooleano, StringComparison.Ordinal))
-            {
-                erros.Add(new($"derivacoes[{codigo}]", new DomainError(
-                    AplicacaoDeModeloErrorCodes.DerivadoBooleano,
-                    $"O modelo cita o derivado booleano '{codigo}', que o processo ainda não deriva.")));
-            }
             else if (!regrasPadrao.TryGetValue(codigo, out IReadOnlyList<RegraDerivacao>? regras))
             {
                 erros.Add(new($"derivacoes[{codigo}]", new DomainError(
@@ -380,7 +372,7 @@ public static partial class AplicarModeloFormularioCommandHandler
             else
             {
                 relatorio.Copiadas.Add(codigo);
-                aCopiar.Add(new ConfiguracaoDerivacaoInput(codigo, [.. regras.Select(static (r, ordem) => new RegraDerivacaoInput(ordem, r.Contribui!, Quando(r.Quando)))]));
+                aCopiar.Add(new ConfiguracaoDerivacaoInput(codigo, [.. regras.Select(static (r, ordem) => new RegraDerivacaoInput(ordem, r.Contribui, Quando(r.Quando)))]));
                 foreach (string dependencia in regras.SelectMany(static r => r.FatosCitados))
                 {
                     pendentes.Enqueue(dependencia);

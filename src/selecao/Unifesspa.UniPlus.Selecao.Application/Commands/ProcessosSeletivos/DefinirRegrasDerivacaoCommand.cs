@@ -18,14 +18,16 @@ public sealed record CondicaoDerivacaoInput(string Fato, string Operador, JsonEl
 
 /// <summary>
 /// Uma regra de derivação: quando o predicado <see cref="Quando"/> é verdadeiro, a regra contribui
-/// o código <see cref="Contribui"/> para o conjunto derivado. O <see cref="Quando"/> é um predicado
+/// o código <see cref="Contribui"/> para o conjunto derivado; no derivado booleano a regra não
+/// contribui código (<see cref="Contribui"/> <see langword="null"/>), e a ativa torna o derivado
+/// verdadeiro. O <see cref="Quando"/> é um predicado
 /// na forma normal disjuntiva — a lista externa é o <b>OU</b> de cláusulas, cada cláusula interna é
 /// o <b>E</b> de condições. A regra <b>âncora</b> (incondicional, sempre verdadeira) é representada
 /// por <see cref="Quando"/> <see langword="null"/> — nunca por uma lista vazia.
 /// </summary>
 public sealed record RegraDerivacaoInput(
     int Ordem,
-    string Contribui,
+    string? Contribui,
     IReadOnlyList<IReadOnlyList<CondicaoDerivacaoInput>>? Quando);
 
 /// <summary>

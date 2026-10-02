@@ -22,7 +22,7 @@ public sealed class RegraDerivacaoConfiguradaConfiguration : IEntityTypeConfigur
         builder.Property(r => r.Id).ValueGeneratedNever();
 
         builder.Property(r => r.Ordem).IsRequired();
-        builder.Property(r => r.Contribui).HasMaxLength(ContribuiMaxLength).IsRequired();
+        builder.Property(r => r.Contribui).HasMaxLength(ContribuiMaxLength);
 
         // A ordem é total e única dentro da configuração — invariante do agregado, garantida também
         // pelo índice para a serialização determinística da regra.

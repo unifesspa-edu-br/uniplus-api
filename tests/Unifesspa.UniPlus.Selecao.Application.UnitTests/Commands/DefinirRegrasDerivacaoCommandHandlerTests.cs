@@ -166,23 +166,28 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDerivacaoFato.FatoNaoDerivavel");
     }
 
-    [Fact(DisplayName = "Derivado booleano por regra não tem regra configurável no processo")]
-    public async Task Handle_AlvoDerivadoBooleano_RetornaNaoDerivavel()
+    [Theory(DisplayName = "O domínio do fato no catálogo decide a forma das regras: o booleano não contribui código e o categórico, mesmo de fonte não enumerável, contribui")]
+    [InlineData("BOOLEANO", null, null)]
+    [InlineData("BOOLEANO", "INDIGENA", "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio")]
+    [InlineData("CATEGORICO", null, "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio")]
+    public async Task Handle_ContribuicaoConformeODominioDoDerivado_AceitaOuRecusa(string dominio, string? contribui, string? recusa)
     {
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
         [
             .. VocabularioSeed(),
-            new FatoCandidatoView(Guid.CreateVersion7(), "EGRESSO_REDE_PUBLICA", "Egresso da rede pública", null, "BOOLEANO",
-                "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:EGRESSO_REDE_PUBLICA", [], null, Ativo: true),
+            new FatoCandidatoView(Guid.CreateVersion7(), "INDIGENA_DECLARADO", "Indígena declarado", null, dominio,
+                "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:INDIGENA_DECLARADO", [], dominio == "BOOLEANO" ? null : "GEO_UF", Ativo: true),
         ]);
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [new ConfiguracaoDerivacaoInput("EGRESSO_REDE_PUBLICA", [new RegraDerivacaoInput(0, "XYZ", null)])], PrecondicaoIfMatch.Ausente);
+            [new ConfiguracaoDerivacaoInput("INDIGENA_DECLARADO",
+                [new RegraDerivacaoInput(0, contribui, [[Condicao("COR_RACA", "IGUAL", "INDIGENA")]])])],
+            PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
-        resultado.Error!.Code.Should().Be("ConfiguracaoDerivacaoFato.FatoNaoDerivavel");
+        (resultado.Error?.Code).Should().Be(recusa);
     }
 
     [Theory(DisplayName = "Derivado de fonte global contribui valor do catálogo; o desativado é recusado como desativado e o desconhecido como fora do domínio")]
