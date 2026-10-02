@@ -223,11 +223,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     /// <remarks>
     /// Recusa o fato cujas opções vêm da oferta de atendimento, a lista vazia, o código repetido
-    /// e a redefinição que deixaria de fora um código que uma exigência viva ainda cita — o
-    /// edital sairia com uma condição que nunca se satisfaz.
+    /// e a redefinição que deixaria de fora um código que uma exigência viva ainda cita, pelo
+    /// próprio fato ou por um agregado cujas opções são as dele — o edital sairia com uma
+    /// condição que nunca se satisfaz.
     /// </remarks>
+    /// <param name="agregadosDoFato">Os agregados sobre grupo repetível cujo fato de membro é este, lidos do catálogo.</param>
     public Result DefinirOpcoesDeclaradas(
-        string fatoCodigo, IReadOnlyList<OpcaoDeclaradaFato> opcoes, PrecondicaoIfMatch precondicao)
+        string fatoCodigo, IReadOnlyList<OpcaoDeclaradaFato> opcoes, PrecondicaoIfMatch precondicao,
+        IReadOnlyCollection<string>? agregadosDoFato = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
         ArgumentNullException.ThrowIfNull(opcoes);
@@ -260,7 +263,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Cada opção do fato precisa de um código próprio."));
         }
 
-        if (ReferenciaDinamicaSeriaInvalidada(fato, codigos))
+        if (ReferenciaDinamicaSeriaInvalidada(fato, codigos)
+            || (agregadosDoFato ?? []).Any(agregado => ReferenciaDinamicaSeriaInvalidada(agregado, codigos)))
         {
             return Result.Failure(new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva,
@@ -1951,7 +1955,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// A recusa de citar o fato num gatilho de exigência da fase dada (UNI-REQ-0144, UNI-REQ-0077):
     /// nenhum documento é pedido antes de o fato ser conhecido. O fato fica conhecido na mais
     /// tardia entre a fase do catálogo (<paramref name="pontoResolucaoPorFato"/>) e a fase do
-    /// formulário que o produz, e o derivado por regra, não antes das suas dependências. Fato
+    /// formulário que o produz; o derivado por regra, não antes das suas dependências; e o agregado
+    /// sobre grupo repetível (<paramref name="membroPorAgregado"/>), não antes do fato de membro. Fato
     /// produzido só pelo formulário de isenção só é citado na fase dele: a habilitação usa, de
     /// outra finalidade, só fatos da inscrição.
     /// </summary>
@@ -1960,17 +1965,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// recusa por fato fora do processo é da conferência do universo. O derivado do sistema usa a
     /// fase do catálogo enquanto as suas dependências não são declaradas no processo (#1724).
     /// </remarks>
-    public DomainError? RecusaDeFaseDoGatilho(string fato, Guid exigidoNaFaseId, IReadOnlyDictionary<string, string> pontoResolucaoPorFato)
+    public DomainError? RecusaDeFaseDoGatilho(
+        string fato,
+        Guid exigidoNaFaseId,
+        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
+        IReadOnlyDictionary<string, string> membroPorAgregado)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fato);
         ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
+        ArgumentNullException.ThrowIfNull(membroPorAgregado);
 
         if (_cronogramaFases.Find(f => f.Id == exigidoNaFaseId) is not { } faseDaExigencia)
         {
             return null;
         }
 
-        FaseEfetiva efetiva = FaseEfetivaDoFato(fato, pontoResolucaoPorFato, []);
+        FaseEfetiva efetiva = FaseEfetivaDoFato(fato, pontoResolucaoPorFato, membroPorAgregado, []);
         if (efetiva.Recusa is { } recusa)
         {
             return recusa;
@@ -1985,7 +1995,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         if (FormularioDe(FinalidadeFormulario.IsencaoTaxa) is { } isencao
             && isencao.FaseId != exigidoNaFaseId
-            && DependeDeFatoSoDaIsencao(fato, []))
+            && DependeDeFatoSoDaIsencao(fato, membroPorAgregado, []))
         {
             return new DomainError(
                 DocumentoExigidoErrorCodes.FatoDaIsencaoForaDaFaseDeIsencao,
@@ -1996,7 +2006,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>A fase em que o fato fica conhecido no processo, ou a recusa quando o catálogo o situa fora do cronograma.</summary>
-    private FaseEfetiva FaseEfetivaDoFato(string fato, IReadOnlyDictionary<string, string> pontoResolucaoPorFato, HashSet<string> emAvaliacao)
+    private FaseEfetiva FaseEfetivaDoFato(
+        string fato,
+        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
+        IReadOnlyDictionary<string, string> membroPorAgregado,
+        HashSet<string> emAvaliacao)
     {
         FaseCronograma? maisTardia = null;
         void Considerar(FaseCronograma? fase)
@@ -2019,17 +2033,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             Considerar(faseDoPonto);
         }
 
-        if (Itens.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
+        if (_campos.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
             && FormularioDe(coletado.Finalidade)?.FaseId is { } faseDoFormulario)
         {
             Considerar(_cronogramaFases.Find(f => f.Id == faseDoFormulario));
         }
 
-        if (_regrasDerivacao.Find(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal)) is { } derivacao && emAvaliacao.Add(fato))
+        if (emAvaliacao.Add(fato))
         {
-            foreach (string dependencia in derivacao.FatosCitados)
+            foreach (string dependencia in DependenciasDoFato(fato, membroPorAgregado))
             {
-                FaseEfetiva daDependencia = FaseEfetivaDoFato(dependencia, pontoResolucaoPorFato, emAvaliacao);
+                FaseEfetiva daDependencia = FaseEfetivaDoFato(dependencia, pontoResolucaoPorFato, membroPorAgregado, emAvaliacao);
                 if (daDependencia.Recusa is not null)
                 {
                     return daDependencia;
@@ -2042,12 +2056,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return new FaseEfetiva(maisTardia, null);
     }
 
-    /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência de derivação.</summary>
-    private bool DependeDeFatoSoDaIsencao(string fato, HashSet<string> emAvaliacao) =>
-        Itens.Any(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
-        || (_regrasDerivacao.Find(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal)) is { } derivacao
-            && emAvaliacao.Add(fato)
-            && derivacao.FatosCitados.Any(d => DependeDeFatoSoDaIsencao(d, emAvaliacao)));
+    /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência.</summary>
+    private bool DependeDeFatoSoDaIsencao(string fato, IReadOnlyDictionary<string, string> membroPorAgregado, HashSet<string> emAvaliacao) =>
+        _campos.Any(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
+        || (emAvaliacao.Add(fato)
+            && DependenciasDoFato(fato, membroPorAgregado).Any(d => DependeDeFatoSoDaIsencao(d, membroPorAgregado, emAvaliacao)));
+
+    /// <summary>
+    /// Os fatos de que o valor do fato depende no processo: os citados pela regra de derivação dele,
+    /// ou o fato de membro, quando ele é agregado sobre grupo repetível.
+    /// </summary>
+    private IEnumerable<string> DependenciasDoFato(string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
+        (_regrasDerivacao.Find(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal))?.FatosCitados ?? [])
+            .Concat(membroPorAgregado.TryGetValue(fato, out string? membro) ? [membro] : []);
 
     private sealed record FaseEfetiva(FaseCronograma? Fase, DomainError? Recusa);
 
@@ -4187,6 +4208,24 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             CampoQueAlimentaRegra.Fatos(
                 _regrasDerivacao.SelectMany(static c => c.FatosCitados),
                 CondicoesVivasComOperador().Select(static c => (c.Fato, c.Operador))));
+
+    /// <summary>
+    /// Grupo ou campo de grupo opcional que alimenta um agregado citado por regra viva do processo
+    /// (<see cref="CampoQueAlimentaRegra"/>): os agregados vêm do catálogo
+    /// (<paramref name="membroPorAgregado"/>), lido por quem congela o processo.
+    /// </summary>
+    public DomainError? PendenciaDeGrupoQueAlimentaAgregado(IReadOnlyDictionary<string, string> membroPorAgregado)
+    {
+        ArgumentNullException.ThrowIfNull(membroPorAgregado);
+
+        HashSet<string> membros = new(
+            CondicoesVivasComOperador().Select(static c => c.Fato).Where(membroPorAgregado.ContainsKey).Select(a => membroPorAgregado[a]),
+            StringComparer.Ordinal);
+        return CampoQueAlimentaRegra.PrimeiroGrupoOpcional(
+            _gruposColetados.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem)
+                .Select(static g => (g.Codigo, g.Obrigatoriedade.Tipo, g.Subitens.Select(static s => (s.FatoCodigo, s.Obrigatoriedade.Tipo)))),
+            membros);
+    }
 
     /// <summary>
     /// Um fato categórico coletável cujo domínio é derivado da oferta do próprio processo

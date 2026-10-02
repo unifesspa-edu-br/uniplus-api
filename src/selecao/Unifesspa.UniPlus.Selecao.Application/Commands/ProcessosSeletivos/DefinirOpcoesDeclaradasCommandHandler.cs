@@ -9,6 +9,7 @@ using Domain.Interfaces;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
 /// Handler do <see cref="DefinirOpcoesDeclaradasCommand"/> (issue #1619): confere no catálogo que
@@ -76,7 +77,19 @@ public static class DefinirOpcoesDeclaradasCommandHandler
                 "Só se declaram opções para um fato categórico cuja fonte dos valores é o processo."));
         }
 
-        Result result = processo.DefinirOpcoesDeclaradas(fato.Codigo, opcoes, command.Precondicao);
+        if (VinculoDeFato.Usa(fato.Binding, VinculoDeFato.AgregacaoDeGrupo))
+        {
+            return Result<MutacaoAceita>.Failure(new DomainError(
+                OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso,
+                $"O fato '{fato.Codigo}' é agregado sobre grupo repetível: as opções dele são as do fato de membro."));
+        }
+
+        IReadOnlyList<FatoCandidatoView> catalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
+        string[] agregadosDoFato = [.. VocabularioDeFatos.MembroPorAgregado(catalogo)
+            .Where(a => string.Equals(a.Value, fato.Codigo, StringComparison.Ordinal))
+            .Select(static a => a.Key)];
+
+        Result result = processo.DefinirOpcoesDeclaradas(fato.Codigo, opcoes, command.Precondicao, agregadosDoFato);
         if (result.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(result.Error!);

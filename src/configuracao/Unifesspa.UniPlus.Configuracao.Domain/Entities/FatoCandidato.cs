@@ -114,8 +114,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// O fato de membro que o agregado aponta (ADR-0138), ou <see langword="null"/> quando o fato não
     /// é agregado sobre grupo repetível.
     /// </summary>
-    public string? FatoDeMembroAgregado =>
-        Binding.StartsWith(PrefixoBindingAgregacao + ":", StringComparison.Ordinal) ? Binding[(PrefixoBindingAgregacao.Length + 1)..] : null;
+    public string? FatoDeMembroAgregado => VinculoDeFato.Nomeado(Binding, PrefixoBindingAgregacao);
 
     /// <summary>O valor do fato vem da regra de derivação do próprio fato.</summary>
     public bool DerivadoPorRegra =>
