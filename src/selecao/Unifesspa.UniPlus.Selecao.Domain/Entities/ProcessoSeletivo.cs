@@ -2072,6 +2072,48 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private sealed record FaseEfetiva(FaseCronograma? Fase, DomainError? Recusa);
 
+    private static readonly IReadOnlyDictionary<string, string> SemCatalogo = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// A repetição por entidade nomeia um grupo do processo (<see cref="Services.ValidadorRepeticaoPorGrupo"/>)
+    /// conhecido até a fase da subárvore que repete: a fase do formulário do grupo, pela mesma regra
+    /// de fase dos gatilhos, inclusive a do grupo coletado só na isenção. A fase que o catálogo dá a
+    /// cada campo é conferida com os gatilhos, por quem lê o catálogo.
+    /// </summary>
+    private DomainError? RecusaDaRepeticaoPorGrupo(IReadOnlyCollection<NoExigencia> nos) =>
+        Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(nos, _gruposColetados)
+        ?? nos
+            .Where(static n => n.RepetePorEntidade is not null && n.FaseComum() is not null)
+            .SelectMany(n => _gruposColetados.Single(g => string.Equals(g.Codigo, n.RepetePorEntidade, StringComparison.Ordinal)).Subitens
+                .Select(campo => RecusaDeFaseDoGatilho(campo.FatoCodigo, n.FaseComum()!.Value, SemCatalogo, SemCatalogo)))
+            .FirstOrDefault(static r => r is not null);
+
+    /// <summary>A repetição por entidade de exigência viva que deixou de valer: o grupo saiu ou mudou de formulário.</summary>
+    private DomainError? PendenciaDaRepeticaoPorGrupo() => RecusaDaRepeticaoPorGrupo(_nosExigencia);
+
+    /// <summary>
+    /// Os campos do grupo pelo qual a folha do documento se repete, subindo pelos ancestrais; vazio
+    /// quando a folha não está numa subárvore repetida. São os fatos que o gatilho da folha cita além
+    /// dos do candidato.
+    /// </summary>
+    public IReadOnlySet<string> CamposDaRepeticao(Guid documentoExigidoId)
+    {
+        NoExigencia? no = _nosExigencia.Find(n => n.DocumentoExigidoId == documentoExigidoId);
+        while (no is { RepetePorEntidade: null, NoPaiId: { } paiId })
+        {
+            no = _nosExigencia.Find(n => n.Id == paiId);
+        }
+
+        return CamposDoGrupo(no?.RepetePorEntidade);
+    }
+
+    /// <summary>Os fatos dos campos do grupo repetível de código dado; vazio quando o processo não o tem.</summary>
+    public IReadOnlySet<string> CamposDoGrupo(string? codigoDoGrupo) =>
+        new HashSet<string>(
+            _gruposColetados.Where(g => string.Equals(g.Codigo, codigoDoGrupo, StringComparison.Ordinal))
+                .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
+            StringComparer.Ordinal);
+
     /// <summary>
     /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
     /// (Story #554, PR #895; Story #920 — árvore E/OU substitui o grupo plano): mesmo
@@ -2114,6 +2156,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (Services.ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(folhas, _cronogramaFases, _etapas) is { } vinculoInvalido)
         {
             return Result.Failure(vinculoInvalido);
+        }
+
+        if (RecusaDaRepeticaoPorGrupo(todosOsNos) is { } repeticaoInvalida)
+        {
+            return Result.Failure(repeticaoInvalida);
         }
 
         foreach (DocumentoExigido item in folhas)
@@ -3122,6 +3169,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
         new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação ou negação é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
+        new ItemConformidade("exigencia_repete_por_grupo_do_formulario", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: repete por grupo dos formulários, conhecido até a fase da exigência", PendenciaDaRepeticaoPorGrupo() is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
         new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciaDeTermoSemFormaDeAceite() is null),
@@ -3962,6 +4010,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDeCampoOpcionalQueAlimentaRegra() is { } campoOpcional)
         {
             return campoOpcional;
+        }
+
+        if (PendenciaDaRepeticaoPorGrupo() is { } repeticaoPorGrupo)
+        {
+            return repeticaoPorGrupo;
         }
 
         if (PendenciaDeFatoColetadoSemValoresOfertados() is { } fatoSemOferta)

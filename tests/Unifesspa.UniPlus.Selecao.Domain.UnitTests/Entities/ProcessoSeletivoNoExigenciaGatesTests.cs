@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -181,11 +183,22 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
     public void FolhaSolteira_RepetePorEntidade_NaoBloqueia()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        FaseCronograma fase = FaseCronograma.Criar(
+            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Propria,
+            agrupaEtapas: false, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
+            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        GrupoColetado composicao = GrupoColetado.Criar(
+            "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
+            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!]).Value!;
+        Result formulario = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase.Id, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente);
+        formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
+        processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
         NoExigencia folha = NoExigencia.CriarFolha(
-            DocumentoQualquer(fase.Id), 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+            DocumentoQualquer(fase.Id), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);

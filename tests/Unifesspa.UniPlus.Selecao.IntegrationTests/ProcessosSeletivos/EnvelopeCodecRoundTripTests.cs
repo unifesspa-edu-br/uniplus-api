@@ -980,8 +980,14 @@ public sealed class EnvelopeCodecRoundTripTests
         NoExigencia folhaRg = NoExigencia.CriarFolha(
             rg, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal,
             dataReferencia: new DateOnly(2026, 3, 31)).Value!;
+        processo.DefinirItens([], grupos:
+        [
+            GrupoColetado.Criar(
+                "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
+                [FatoColetado.Criar("SEM_RENDA", 0, "Sem renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!]).Value!,
+        ]).IsSuccess.Should().BeTrue();
         NoExigencia folhaRenda = NoExigencia.CriarFolha(
-            comprovanteRenda, 1, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+            comprovanteRenda, 1, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
         NoExigenciaBaseLegal baseLegalDoGrupo = NoExigenciaBaseLegal.Criar(
             "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna").Value!;
         NoExigencia raiz = NoExigencia.CriarGrupo(
@@ -1042,7 +1048,7 @@ public sealed class EnvelopeCodecRoundTripTests
         folhaRgRecarregada.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("RG");
 
         NoExigencia folhaRendaRecarregada = raizRecarregada.Filhos.Should().ContainSingle(static f => f.RepetePorEntidade != null).Which;
-        folhaRendaRecarregada.RepetePorEntidade.Should().Be(TipoEntidade.MembroNucleoFamiliar);
+        folhaRendaRecarregada.RepetePorEntidade.Should().Be("COMPOSICAO_FAMILIAR");
         folhaRendaRecarregada.DocumentoExigido.Should().NotBeNull();
         folhaRendaRecarregada.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("COMPROVANTE_RENDA");
     }

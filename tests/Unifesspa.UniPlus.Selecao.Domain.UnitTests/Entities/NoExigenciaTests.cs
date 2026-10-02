@@ -263,26 +263,6 @@ public sealed class NoExigenciaTests
         resultado.Value!.OcorrenciasEsperadas.Should().Equal("a", "b");
     }
 
-    [Fact(DisplayName = "CriarFolha aceita repetePorEntidade do catálogo fechado")]
-    public void CriarFolha_RepetePorEntidade_Aceita()
-    {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
-            Documento(), ordem: 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar);
-
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.RepetePorEntidade.Should().Be(TipoEntidade.MembroNucleoFamiliar);
-    }
-
-    [Fact(DisplayName = "CriarFolha recusa repetePorEntidade forjado fora do catálogo fechado")]
-    public void CriarFolha_RepetePorEntidadeForjado_Recusa()
-    {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
-            Documento(), ordem: 0, repetePorEntidade: (TipoEntidade)99);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
-    }
-
     [Theory(DisplayName = "CriarGrupo recusa grupo sem filhos, E ou OU")]
     [InlineData(TipoNo.GrupoE)]
     [InlineData(TipoNo.GrupoOu)]
@@ -429,38 +409,14 @@ public sealed class NoExigenciaTests
         resultado.Value!.DeterminaResultado().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "CriarGrupo aceita repetePorEntidade do catálogo fechado")]
-    public void CriarGrupo_RepetePorEntidade_Aceita()
-    {
-        NoExigencia folha = NoExigencia.CriarFolha(Documento(), 0).Value!;
-
-        Result<NoExigencia> resultado = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [folha], repetePorEntidade: TipoEntidade.PessoaJuridicaVinculada);
-
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.RepetePorEntidade.Should().Be(TipoEntidade.PessoaJuridicaVinculada);
-    }
-
-    [Fact(DisplayName = "CriarGrupo recusa repetePorEntidade forjado fora do catálogo fechado")]
-    public void CriarGrupo_RepetePorEntidadeForjado_Recusa()
-    {
-        NoExigencia folha = NoExigencia.CriarFolha(Documento(), 0).Value!;
-
-        Result<NoExigencia> resultado = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [folha], repetePorEntidade: (TipoEntidade)99);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
-    }
-
     [Fact(DisplayName = "CriarGrupo recusa repetição aninhada — grupo repetido com filho folha também repetido")]
     public void CriarGrupo_RepeticaoAninhadaDireta_Recusa()
     {
         NoExigencia folhaRepetida = NoExigencia.CriarFolha(
-            Documento(), 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+            Documento(), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
 
         Result<NoExigencia> resultado = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [folhaRepetida], repetePorEntidade: TipoEntidade.PessoaJuridicaVinculada);
+            TipoNo.GrupoE, 0, null, null, [], [folhaRepetida], repetePorEntidade: "PESSOAS_JURIDICAS");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.RepeticaoDeEntidadeAninhada");
@@ -470,11 +426,11 @@ public sealed class NoExigenciaTests
     public void CriarGrupo_RepeticaoAninhadaProfunda_Recusa()
     {
         NoExigencia folhaRepetida = NoExigencia.CriarFolha(
-            Documento(), 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+            Documento(), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
         NoExigencia grupoIntermediario = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folhaRepetida]).Value!;
 
         Result<NoExigencia> resultado = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [grupoIntermediario], repetePorEntidade: TipoEntidade.PessoaJuridicaVinculada);
+            TipoNo.GrupoE, 0, null, null, [], [grupoIntermediario], repetePorEntidade: "PESSOAS_JURIDICAS");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.RepeticaoDeEntidadeAninhada");
@@ -488,7 +444,7 @@ public sealed class NoExigenciaTests
         NoExigencia folhaB = NoExigencia.CriarFolha(Documento(faseId), 1).Value!;
 
         Result<NoExigencia> resultado = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [folhaA, folhaB], repetePorEntidade: TipoEntidade.MembroNucleoFamiliar);
+            TipoNo.GrupoE, 0, null, null, [], [folhaA, folhaB], repetePorEntidade: "COMPOSICAO_FAMILIAR");
 
         resultado.IsSuccess.Should().BeTrue();
     }

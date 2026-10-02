@@ -316,6 +316,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "referencia_temporal_fim_inscricao_indisponivel",
                 "derivacao_fatos_citados_inexistentes",
                 "formulario_campo_opcional_alimenta_regra",
+                "exigencia_repete_por_grupo_do_formulario",
                 "fato_coletavel_sem_valores_ofertados",
                 "fato_coletavel_municipio_citado_fora_da_area_do_bonus",
                 "termo_exigido_sem_forma_de_aceite",

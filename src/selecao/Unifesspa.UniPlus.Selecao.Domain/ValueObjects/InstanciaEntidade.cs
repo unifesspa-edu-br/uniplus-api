@@ -5,18 +5,15 @@ using System.Text.Json;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Story #922 — uma instância declarada pelo candidato de um <see cref="Enums.TipoEntidade"/>
-/// repetível (ex.: "membro 2" do núcleo familiar, "PJ 1" vinculada). O runtime de declaração em
-/// si — formulário, validação de schema por tipo — é fora de escopo desta Story (mesmo
-/// raciocínio de <see cref="ApresentacaoDocumento"/>: este VO só carrega o que o resolvedor
-/// precisa, já resolvido).
+/// Uma ocorrência que o candidato respondeu num grupo repetível do formulário (ex.: "membro 2" da
+/// composição familiar), instância da exigência repetida por esse grupo (ADR-0138). Montá-la a
+/// partir das respostas é da execução da inscrição; este VO só carrega o que o resolvedor precisa,
+/// já resolvido (mesmo raciocínio de <see cref="ApresentacaoDocumento"/>).
 /// </summary>
-/// <param name="EntidadeId">Identidade estável da instância — chave da correlação <c>(exigencia_id, tipoEntidade, entidade_id)</c> com <see cref="ApresentacaoDocumento.EntidadeId"/>.</param>
+/// <param name="EntidadeId">Identidade estável da ocorrência — chave da correlação <c>(exigencia_id, grupo, entidade_id)</c> com <see cref="ApresentacaoDocumento.EntidadeId"/>.</param>
 /// <param name="Atributos">
-/// Os "fatos de escopo-entidade" desta instância (ex.: <c>MAIOR_IDADE</c>, <c>SEM_RENDA</c> para
-/// <see cref="Enums.TipoEntidade.MembroNucleoFamiliar"/>) — mesclados sobre os fatos do candidato
-/// ao resolver gatilhos DENTRO da subárvore repetida (sujeito trocado, mesmo motor da folha
-/// irmã). Vazio para <see cref="Enums.TipoEntidade.PessoaJuridicaVinculada"/> (repetição pura,
-/// sem atributos). O vocabulário fechado por tipo é validado fora do domínio (Application).
+/// Os campos resolvidos da ocorrência (ex.: <c>MAIOR_IDADE</c>, <c>SOB_GUARDA</c>), mesclados
+/// sobre os fatos do candidato ao resolver gatilhos dentro da subárvore repetida (sujeito trocado,
+/// mesmo motor da folha irmã).
 /// </param>
 public sealed record InstanciaEntidade(string EntidadeId, IReadOnlyDictionary<string, FatoResolvido> Atributos);

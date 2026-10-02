@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Regras.Formularios;
+
 /// <summary>
 /// Configuração EF Core de <see cref="NoExigencia"/> (Story #920) — árvore de satisfação:
 /// coleção PLANA de todos os nós do processo (não só raízes), FK obrigatória para
@@ -78,15 +80,16 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
             .HasConversion(OcorrenciasEsperadasConverter, OcorrenciasEsperadasComparer)
             .HasColumnType("jsonb");
 
-        // Story #922 — repetição por entidade, permitida em qualquer tipo de nó (folha ou
-        // grupo); sem acoplamento com outros campos (ao contrário de chave_distincao), então
+        // Repetição por entidade: o código do grupo repetível do formulário do processo, permitida
+        // em qualquer tipo de nó (folha ou grupo); que o grupo exista é conferido pelo processo.
+        // Sem acoplamento com outros campos (ao contrário de chave_distincao), então
         // sem CHECK de coerência adicional. O aninhamento (um nó repetido não pode ter
         // descendente também repetido) é invariante de ÁRVORE — não expressável em CHECK
         // por linha sobre uma tabela self-referencing sem CTE recursiva; validado no domínio
         // (NoExigencia.CriarGrupo) na construção, antes de chegar ao banco.
         builder.Property(n => n.RepetePorEntidade)
             .HasColumnName("repete_por_entidade")
-            .HasConversion<int?>();
+            .HasMaxLength(FormaDoGrupo.CodigoMaxLength);
 
         // Self-FK — árvore. Restrict: a exclusão de um nó é sempre disparada pela coleção do
         // PROCESSO (ProcessoSeletivoId, configurada em ProcessoSeletivoConfiguration como

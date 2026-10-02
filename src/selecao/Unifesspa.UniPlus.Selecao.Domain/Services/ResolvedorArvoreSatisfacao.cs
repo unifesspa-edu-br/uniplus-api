@@ -36,9 +36,9 @@ using ValueObjects;
 /// pendente/indeterminada/impossível emite a própria consequência; OU/N-de opaco pendente emite a
 /// SUA própria (filhos viram só pendência de orientação, não vigente); E transparente não emite e
 /// desce para os filhos não satisfeitos e não-não-aplicáveis (nunca pai e filho juntos).</item>
-/// <item><b>Repetição por entidade</b> (Story #922): uma subárvore <c>repetePorEntidade</c> é
-/// avaliada UMA VEZ POR INSTÂNCIA que o candidato declarar desse tipo — fatos do candidato
-/// mesclados com os atributos da instância (sujeito trocado, mesmo motor de gatilho), apresentações
+/// <item><b>Repetição por entidade</b> (Story #922, ADR-0138): uma subárvore <c>repetePorEntidade</c>
+/// é avaliada UMA VEZ POR OCORRÊNCIA do grupo repetível que ela nomeia — fatos do candidato
+/// mesclados com os campos da ocorrência (sujeito trocado, mesmo motor de gatilho), apresentações
 /// filtradas por <c>entidade_id</c>. O agregado sobe como um <c>E</c> entre instâncias (todas
 /// precisam satisfazer); sem instância declarada, a subárvore é não-aplicável. A fronteira emite
 /// UMA consequência por instância pendente, tagueada com <c>entidade_id</c> — nunca um valor
@@ -52,7 +52,7 @@ public static class ResolvedorArvoreSatisfacao
         ArvoreExigenciasCongelada? arvore,
         IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
-        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>? instanciasPorTipoEntidade = null,
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>>? instanciasPorGrupo = null,
         IReadOnlySet<Guid>? exigenciasBloqueadas = null)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
@@ -95,23 +95,10 @@ public static class ResolvedorArvoreSatisfacao
                 "A árvore congelada tem exigenciaId repetido entre folhas — cada exigência precisa de identidade única (CA-09)."));
         }
 
-        // Story #922 — defesa em profundidade (mesmo raciocínio das duas checagens acima):
-        // NoExigencia.CriarGrupo recusa catálogo forjado e aninhamento na ESCRITA, mas
-        // Reidratar confia no dado congelado sem revalidar — um envelope corrompido não pode
-        // silenciosamente suprimir consequências de uma repetição aninhada não detectada.
-        // `tipo == TipoEntidade.Nenhuma` também é inválido aqui: CriarFolha/CriarGrupo NUNCA
-        // gravam a sentinela — sempre normalizam Nenhuma para null antes de persistir — então
-        // um RepetePorEntidade não-nulo == Nenhuma só existe via Reidratar mal-formado; sem
-        // esta checagem, ResolverNo trataria como "repetido pelo tipo Nenhuma", que nunca tem
-        // instância declarada, e a folha viraria NaoAplicavel silenciosamente em vez de
-        // recusada.
-        if (todosOsNos.Any(static no => no.RepetePorEntidade is { } tipo && (tipo == TipoEntidade.Nenhuma || !Enum.IsDefined(tipo))))
-        {
-            return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
-                "ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida",
-                "A árvore congelada tem repetePorEntidade fora do catálogo fechado — cada nó marcado precisa de um TipoEntidade válido."));
-        }
-
+        // Defesa em profundidade (mesmo raciocínio das duas checagens acima): NoExigencia.CriarGrupo
+        // recusa aninhamento na escrita, mas Reidratar confia no dado congelado sem revalidar — um
+        // envelope corrompido não pode suprimir em silêncio as consequências de uma repetição
+        // aninhada.
         if (arvore.Raizes.Any(ContemRepeticaoAninhada))
         {
             return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
@@ -119,28 +106,28 @@ public static class ResolvedorArvoreSatisfacao
                 "A árvore congelada tem repetição por entidade aninhada — uma subárvore repetePorEntidade não pode conter outra."));
         }
 
-        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias =
-            instanciasPorTipoEntidade ?? new Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>();
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias =
+            instanciasPorGrupo ?? new Dictionary<string, IReadOnlyList<InstanciaEntidade>>(StringComparer.Ordinal);
 
         // Story #922 — defesa em profundidade sobre o insumo do CHAMADOR (não da árvore
         // congelada): duas instâncias do mesmo tipo com o mesmo entidade_id (ou um
-        // entidade_id vazio/em branco) tornariam a correlação (exigencia_id, tipoEntidade,
+        // entidade_id vazio/em branco) tornariam a correlação (exigencia_id, grupo,
         // entidade_id) ambígua — apresentações e estados de uma instância vazariam para outra.
-        foreach ((TipoEntidade tipoEntidade, IReadOnlyList<InstanciaEntidade> instanciasDoTipo) in instancias)
+        foreach ((string grupo, IReadOnlyList<InstanciaEntidade> instanciasDoGrupo) in instancias)
         {
-            List<string> ids = [.. instanciasDoTipo.Select(static i => i.EntidadeId)];
+            List<string> ids = [.. instanciasDoGrupo.Select(static i => i.EntidadeId)];
             if (ids.Any(static id => string.IsNullOrWhiteSpace(id)))
             {
                 return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
                     "ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida",
-                    $"Uma instância de {tipoEntidade} tem EntidadeId vazio ou em branco."));
+                    $"Uma ocorrência do grupo {grupo} tem EntidadeId vazio ou em branco."));
             }
 
             if (ids.Distinct(StringComparer.Ordinal).Count() != ids.Count)
             {
                 return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
                     "ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida",
-                    $"Duas ou mais instâncias de {tipoEntidade} declaram o mesmo EntidadeId — cada instância precisa de identidade única."));
+                    $"Duas ou mais ocorrências do grupo {grupo} declaram o mesmo EntidadeId — cada ocorrência precisa de identidade única."));
             }
         }
 
@@ -179,19 +166,19 @@ public static class ResolvedorArvoreSatisfacao
         NoExigencia no,
         IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
         IReadOnlySet<Guid> bloqueadas,
         Dictionary<Guid, EstadoSatisfacao> estados,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia,
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
-        EstadoSatisfacao estado = no.RepetePorEntidade is { } tipoEntidade
+        EstadoSatisfacao estado = no.RepetePorEntidade is { } grupo
             // Fronteira de disponibilidade não mascara dentro de subárvore repetida (fora do escopo
             // do §6): as instâncias resolvem como antes, sem conjunto de bloqueio.
-            ? ResolverNoRepetido(no, tipoEntidade, fatos, apresentacoes, instanciasPorTipoEntidade, instanciasResolvidasPorNo)
+            ? ResolverNoRepetido(no, grupo, fatos, apresentacoes, instanciasPorGrupo, instanciasResolvidasPorNo)
             : no.Tipo == TipoNo.Folha
                 ? ResolverFolha(no, fatos, apresentacoes, bloqueadas, statusPorExigencia)
-                : ResolverGrupo(no, fatos, apresentacoes, instanciasPorTipoEntidade, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo);
+                : ResolverGrupo(no, fatos, apresentacoes, instanciasPorGrupo, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo);
 
         estados[no.Id] = estado;
         return estado;
@@ -204,13 +191,13 @@ public static class ResolvedorArvoreSatisfacao
     /// </summary>
     private static EstadoSatisfacao ResolverNoRepetido(
         NoExigencia no,
-        TipoEntidade tipoEntidade,
+        string grupo,
         IReadOnlyDictionary<string, FatoResolvido> fatosCandidato,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
-        IReadOnlyList<InstanciaEntidade> instancias = instanciasPorTipoEntidade.GetValueOrDefault(tipoEntidade, []);
+        IReadOnlyList<InstanciaEntidade> instancias = instanciasPorGrupo.GetValueOrDefault(grupo, []);
         if (instancias.Count == 0)
         {
             // Nenhuma instância declarada: nada a multiplicar — mesmo raciocínio de um grupo
@@ -237,7 +224,7 @@ public static class ResolvedorArvoreSatisfacao
             EstadoSatisfacao estadoInstancia = no.Tipo == TipoNo.Folha
                 ? ResolverFolha(no, fatosDaInstancia, apresentacoesDaInstancia, semBloqueio, statusDaInstancia)
                 : ResolverGrupo(
-                    no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorTipoEntidade, semBloqueio,
+                    no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorGrupo, semBloqueio,
                     estadosDaInstancia, statusDaInstancia, semRepeticaoAninhada);
 
             resolvidas.Add(new InstanciaResolvida(instancia.EntidadeId, estadoInstancia, estadosDaInstancia, statusDaInstancia));
@@ -355,14 +342,14 @@ public static class ResolvedorArvoreSatisfacao
         NoExigencia no,
         IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
         IReadOnlySet<Guid> bloqueadas,
         Dictionary<Guid, EstadoSatisfacao> estados,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia,
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
         List<EstadoSatisfacao> estadosFilhos = [.. no.Filhos.Select(filho =>
-            ResolverNo(filho, fatos, apresentacoes, instanciasPorTipoEntidade, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo))];
+            ResolverNo(filho, fatos, apresentacoes, instanciasPorGrupo, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo))];
 
         return no.Tipo == TipoNo.GrupoE
             ? ResolverE(estadosFilhos)

@@ -271,6 +271,13 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             return Result<EnvelopeReidratado>.Failure(vinculoInvalido);
         }
 
+        // A repetição por entidade nomeia um grupo dos formulários repostos ao lado dela, pela
+        // mesma conferência da escrita.
+        if (ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todosOsNos, gruposColetados) is { } repeticaoSemGrupo)
+        {
+            return Result<EnvelopeReidratado>.Failure(repeticaoSemGrupo);
+        }
+
         // Fail-closed do bloco de coleta/derivação (RN08): um envelope adulterado que declare fato
         // duplicado, cite fato inexistente num gatilho/pré-condição/regra, contribua código fora do
         // domínio de modalidades, feche ciclo no grafo conjunto, ou cujo grafo/modalidades congelados

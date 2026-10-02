@@ -21,8 +21,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <param name="EntidadeId">
 /// Story #922 — quando a apresentação satisfaz uma folha dentro de uma subárvore
 /// <see cref="Entities.NoExigencia.RepetePorEntidade"/>, o <c>entidade_id</c> da instância
-/// correlacionada (completa a correlação <c>(exigencia_id, tipoEntidade, entidade_id)</c> — o
-/// <c>tipoEntidade</c> é implícito pela subárvore em que a folha está, não repetido aqui).
+/// correlacionada (completa a correlação <c>(exigencia_id, grupo, entidade_id)</c> — o grupo é
+/// implícito pela subárvore em que a folha está, não repetido aqui).
 /// <see langword="null"/> fora de subárvore repetida.
 /// </param>
 public sealed record ApresentacaoDocumento(Guid Id, string? ChaveDistincao = null, string? EntidadeId = null);

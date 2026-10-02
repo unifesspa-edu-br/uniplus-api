@@ -314,90 +314,73 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.ValorForaDoDominio");
     }
 
-    // ── Repetição por entidade (Story #922) — gatilho por atributo de escopo-entidade ──────
+    // ── Repetição por entidade pelo grupo repetível do formulário (ADR-0138) ──────────────
 
-    [Fact(DisplayName = "Story #922: gatilho por atributo da entidade (MAIOR_IDADE) numa folha repetePorEntidade resolve sem o fato estar no vocabulário global do candidato")]
-    public async Task Handle_GatilhoPorAtributoDeEntidade_ResolveComVocabularioEstendido()
+    /// <summary>Processo com o grupo da composição familiar no formulário, e o catálogo com o campo de membro.</summary>
+    private static (ProcessoSeletivo Processo, FaseCronograma Fase, Mocks Mocks, Guid TipoDocumentoId) ProcessoComComposicaoFamiliar()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        GrupoColetado composicao = GrupoColetado.Criar(
+            "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
+            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!]).Value!;
+        processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
-        // Vocabulário GLOBAL do candidato não conhece MAIOR_IDADE — só o escopo-entidade conhece.
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[]);
-
-        CondicaoGatilhoInput condicao = new(0, "MAIOR_IDADE", "IGUAL", "true");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [condicao], [], null, Qualquer, null);
-        NoExigenciaInput folha = new(
-            "FOLHA", item, null, null, null, null,
-            RepetePorEntidade: "MEMBRO_NUCLEO_FAMILIAR");
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [folha], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        DocumentoExigido exigencia = processo.DocumentosExigidos.Should().ContainSingle().Which;
-        exigencia.Condicoes.Should().ContainSingle(c => c.Fato == "MAIOR_IDADE");
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<FatoCandidatoView>)
+        [
+            new FatoCandidatoView(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", null, "BOOLEANO", "DECLARADO", "ESCALAR",
+                null, "INSCRICAO", "CAMPO_INSCRICAO:MAIOR_IDADE", null, null, Ativo: true, Escopo: "MEMBRO_GRUPO"),
+        ]);
+        return (processo, fase, mocks, tipoDocumentoId);
     }
 
-    [Fact(DisplayName = "Story #922: repetePorEntidade herdado do grupo ancestral também estende o vocabulário da folha filha")]
-    public async Task Handle_GatilhoPorAtributoDeEntidade_HerdaDoGrupoAncestral()
+    [Theory(DisplayName = "O gatilho da folha repetida cita o campo do grupo, marcada na folha ou herdada do grupo ancestral")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Handle_GatilhoPorCampoDoGrupo_AceitoNaSubarvoreRepetida(bool herdadaDoAncestral)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
-        FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
+        ItemDocumentoExigidoInput item = new(
+            fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true")], [], null, Qualquer, null);
+        NoExigenciaInput raiz = herdadaDoAncestral
+            ? new("E", null, null, null, null, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], RepetePorEntidade: "COMPOSICAO_FAMILIAR")
+            : new("FOLHA", item, null, null, null, null, RepetePorEntidade: "COMPOSICAO_FAMILIAR");
 
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        Guid tipoDocumentoId = Guid.CreateVersion7();
-        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
-            .Returns(TipoDocumentoResultado(tipoDocumentoId));
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[]);
-
-        CondicaoGatilhoInput condicao = new(0, "SEM_RENDA", "IGUAL", "true");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [condicao], [], null, Qualquer, null);
-        NoExigenciaInput folha = new("FOLHA", item, null, null, null, null);
-        NoExigenciaInput grupo = new(
-            "E", null, null, null, null, [folha],
-            RepetePorEntidade: "MEMBRO_NUCLEO_FAMILIAR");
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [grupo], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [raiz], PrecondicaoIfMatch.Ausente));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.DocumentosExigidos.Should().ContainSingle(d => d.Condicoes.Any(c => c.Fato == "SEM_RENDA"));
+        processo.DocumentosExigidos.Should().ContainSingle(d => d.Condicoes.Any(c => c.Fato == "MAIOR_IDADE"));
     }
 
-    [Fact(DisplayName = "Story #922: PESSOA_JURIDICA_VINCULADA não estende o vocabulário — gatilho por atributo de MEMBRO continua desconhecido")]
-    public async Task Handle_PessoaJuridicaVinculada_NaoEstendeVocabulario()
+    [Fact(DisplayName = "Fora da subárvore repetida, o campo do grupo não é citável")]
+    public async Task Handle_CampoDoGrupoForaDaRepeticao_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
-        FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
+        ItemDocumentoExigidoInput item = new(
+            fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true")], [], null, Qualquer, null);
 
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        Guid tipoDocumentoId = Guid.CreateVersion7();
-        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
-            .Returns(TipoDocumentoResultado(tipoDocumentoId));
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[]);
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
+            processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente));
 
-        CondicaoGatilhoInput condicao = new(0, "MAIOR_IDADE", "IGUAL", "true");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [condicao], [], null, Qualquer, null);
-        NoExigenciaInput folha = new(
-            "FOLHA", item, null, null, null, null,
-            RepetePorEntidade: "PESSOA_JURIDICA_VINCULADA");
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [folha], PrecondicaoIfMatch.Ausente);
+        resultado.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
+    }
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+    [Fact(DisplayName = "Repetir por grupo inexistente é recusado pelo grupo, antes do gatilho que cita o campo dele")]
+    public async Task Handle_RepeticaoPorGrupoInexistente_RecusaPeloGrupo()
+    {
+        (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
+        ItemDocumentoExigidoInput item = new(
+            fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true")], [], null, Qualquer, null);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
+            processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null, RepetePorEntidade: "PESSOAS_JURIDICAS")], PrecondicaoIfMatch.Ausente));
+
+        resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
 
     [Fact(DisplayName = "Story #917: TIPO_DEFICIENCIA participa do domínio dinâmico igual a MODALIDADE/CONDICAO_ATENDIMENTO")]

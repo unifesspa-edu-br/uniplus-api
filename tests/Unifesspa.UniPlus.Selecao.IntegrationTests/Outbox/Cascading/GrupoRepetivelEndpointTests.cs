@@ -121,9 +121,64 @@ public sealed class GrupoRepetivelEndpointTests
             },
         });
 
-        HttpResponseMessage publicado = await EnviarAsync(client, HttpMethod.Post, $"/api/selecao/processos-seletivos/{processo.Id}/publicacao", exigeSucesso: false, corpo: new
+        HttpResponseMessage publicado = await PublicarAsync(client, processo.Id, documento.Id);
+        publicado.StatusCode.Should().Be(esperado, await publicado.Content.ReadAsStringAsync());
+    }
+
+    [Fact(DisplayName = "Exigência repetida por membro do grupo, com gatilho pelo campo do grupo, é aceita e publicada")]
+    public async Task Publicar_ExigenciaRepetidaPorMembroComGatilhoDoCampo_Publica()
+    {
+        string sufixo = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        string sobGuarda = $"SOB_GUARDA_{sufixo}";
+        FatoCandidato campoDeMembro = FatoCandidato.CriarDoAdministrador(
+            sobGuarda, "Sob guarda", null, DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
+            "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoProtecaoDado.Pessoal, "Composição familiar",
+            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        Guid tipoDocumentoId = await SemearNoCatalogoAsync(campoDeMembro, $"CERT_GUARDA_{sufixo}", "Certidão de guarda");
+        await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
+        (ProcessoSeletivo processo, DocumentoEdital documento) = await SemearProcessoPublicavelAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        await EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processo.Id}/formularios/INSCRICAO/itens", new
         {
-            documentoEditalId = documento.Id,
+            itens = Array.Empty<object>(),
+            grupos = new[]
+            {
+                new
+                {
+                    codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo = "Composição familiar", etapaCodigo = "DADOS",
+                    minimo = 1, maximo = 10, obrigatoriedade = "SEMPRE",
+                    subitens = new[] { new { fatoCodigo = sobGuarda, ordem = 0, rotulo = "Sob guarda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" } },
+                },
+            },
+        });
+        await EnviarAsync(client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processo.Id}/documentos-exigidos", new[]
+        {
+            new
+            {
+                tipo = "FOLHA",
+                repetePorEntidade = "COMPOSICAO_FAMILIAR",
+                documento = new
+                {
+                    exigidoNaFaseId = processo.CronogramaFases.Single().Id,
+                    tipoDocumentoId,
+                    aplicabilidade = "CONDICIONAL",
+                    obrigatorio = true,
+                    condicoes = new[] { new { clausula = 0, fato = sobGuarda, operador = "IGUAL", valor = "true" } },
+                    basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", status = "RESOLVIDO" } },
+                    formatosPermitidos = "QUALQUER",
+                },
+            },
+        });
+
+        HttpResponseMessage publicado = await PublicarAsync(client, processo.Id, documento.Id);
+        publicado.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicado.Content.ReadAsStringAsync());
+    }
+
+    private static Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoEditalId) =>
+        EnviarAsync(client, HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao", exigeSucesso: false, corpo: new
+        {
+            documentoEditalId,
             ato = new
             {
                 orgao = "CEPS",
@@ -134,7 +189,19 @@ public sealed class GrupoRepetivelEndpointTests
                 dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             },
         });
-        publicado.StatusCode.Should().Be(esperado, await publicado.Content.ReadAsStringAsync());
+
+    /// <summary>Grava os fatos e um tipo de documento no catálogo da Configuração; devolve o tipo de documento.</summary>
+    private async Task<Guid> SemearNoCatalogoAsync(FatoCandidato fato, string codigoDoDocumento, string nomeDoDocumento, params FatoCandidato[] outros)
+    {
+        TipoDocumento tipoDocumento = TipoDocumento.Criar(
+            codigoDoDocumento, nomeDoDocumento, descricao: null, categoria: "IDENTIFICACAO",
+            formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null).Value!;
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        db.AddRange([fato, .. outros]);
+        db.Add(tipoDocumento);
+        await db.SaveChangesAsync();
+        return tipoDocumento.Id;
     }
 
     private async Task<Guid> SemearCatalogoDoAgregadoAsync(string membro, string agregado, string sufixo)
@@ -146,14 +213,7 @@ public sealed class GrupoRepetivelEndpointTests
         FatoCandidato fatoAgregado = FatoCandidato.CriarAgregadoDoAdministrador(
             agregado, "Categorias de renda da família", null, membro, new CatalogoDeFatos([fatoDeMembro], []),
             "RESULTADO_FINAL", ClassificacaoProtecaoDado.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
-        TipoDocumento tipoDocumento = TipoDocumento.Criar(
-            $"DECL_RURAL_{sufixo}", "Declaração de trabalhador rural", descricao: null, categoria: "IDENTIFICACAO",
-            formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null).Value!;
-        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
-        db.AddRange(fatoDeMembro, fatoAgregado, tipoDocumento);
-        await db.SaveChangesAsync();
-        return tipoDocumento.Id;
+        return await SemearNoCatalogoAsync(fatoDeMembro, $"DECL_RURAL_{sufixo}", "Declaração de trabalhador rural", fatoAgregado);
     }
 
     private async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearProcessoPublicavelAsync()

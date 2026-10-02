@@ -116,6 +116,15 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    [Fact(DisplayName = "Exigência que repete por grupo ausente dos formulários do envelope é recusada, como na escrita")]
+    public void RepeticaoPorGrupoAusente_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["arvoreSatisfacao"]![0]!["repetePorEntidade"] = "GRUPO_AUSENTE", comArvoreSatisfacao: true);
+
+        resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
+    }
+
     [Fact(DisplayName = "Algoritmo de hash que o codec não emite é recusado")]
     public void AlgoritmoNaoSuportado_Recusa()
     {
@@ -2274,10 +2283,11 @@ public sealed class EnvelopeCodecRecusaTests
     /// adultera controla a linha inteira. O que sobra para recusar são a canonicidade e a
     /// gramática, e é isso que estes testes exercitam.
     /// </summary>
-    private static Result<EnvelopeReidratado> ReidratarComEnvelopeAdulterado(Action<JsonObject> adulterar)
+    private static Result<EnvelopeReidratado> ReidratarComEnvelopeAdulterado(Action<JsonObject> adulterar, bool comArvoreSatisfacao = false)
     {
         ProcessoSeletivo processo = ProcessoPublicado();
-        byte[] originais = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico())).Bytes;
+        byte[] originais = CorpusEnvelope.Codec.Codificar(
+            CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico(comArvoreSatisfacao: comArvoreSatisfacao))).Bytes;
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(originais))!.AsObject();
         adulterar(envelope);

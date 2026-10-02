@@ -1291,7 +1291,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["ocorrenciasEsperadas"] = no.OcorrenciasEsperadas is { } ocorrencias
             ? OrdenarPorConteudo(ocorrencias.Select(static o => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(o))!))
             : null,
-        ["repetePorEntidade"] = no.RepetePorEntidade?.ToCodigo(),
+        ["repetePorEntidade"] = no.RepetePorEntidade,
         ["filhos"] = new JsonArray([.. no.Filhos.OrderBy(static f => f.Ordem).Select(static f => (JsonNode)SerializarNo(f))]),
     };
 
