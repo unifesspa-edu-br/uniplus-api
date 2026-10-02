@@ -421,7 +421,7 @@ public static class ObterProcessoSeletivoQueryHandler
         no.ChaveDistincao?.ToCodigo(),
         no.DataReferencia,
         no.OcorrenciasEsperadas,
-        no.RepetePorEntidade?.ToCodigo());
+        no.RepetePorEntidade);
 
     private static BaseLegalDto ProjectBaseLegalDeNo(NoExigenciaBaseLegal baseLegal) => new(
         baseLegal.Id, baseLegal.Referencia, baseLegal.Abrangencia.ToCodigo(), baseLegal.Status.ToCodigo(), baseLegal.Observacao);

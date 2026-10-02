@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// No congelamento, os fatos dos gatilhos de exigência são conferidos de novo contra o processo:
-/// cada fato continua coletado, derivado ou calculado pelo sistema, e conhecido até a fase da
+/// cada fato continua coletado, derivado ou calculado pelo sistema — ou é campo do grupo pelo qual
+/// a exigência se repete —, e conhecido até a fase da
 /// exigência que o cita (UNI-REQ-0077, UNI-REQ-0144); e o grupo que alimenta um agregado citado é
 /// obrigatório, ele e o campo (UNI-REQ-0074). Recebe o catálogo inteiro, da mesma
 /// leitura única do congelamento: a fase de um derivado depende da fase das suas dependências,
@@ -30,9 +31,10 @@ internal static class ConferenciaDosFatosDosGatilhos
 
         foreach (DocumentoExigido documento in processo.DocumentosExigidos)
         {
+            IReadOnlySet<string> camposDaRepeticao = processo.CamposDaRepeticao(documento.Id);
             foreach (string fato in documento.Condicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal))
             {
-                if (!noProcesso.Contains(fato))
+                if (!noProcesso.Contains(fato) && !camposDaRepeticao.Contains(fato))
                 {
                     return new DomainError(
                         FatoForaDoProcesso,

@@ -100,10 +100,10 @@ public sealed record ItemDocumentoExigidoInput(
 /// opcional). Ausente ⇒ contagem bruta, sem qualificação.
 /// </remarks>
 /// <remarks>
-/// Story #922 — <see cref="RepetePorEntidade"/> (token canônico
-/// <see cref="Domain.Enums.TipoEntidadeCodigo"/>) marca esta subárvore (folha ou grupo) como
-/// repetível por instância de entidade — em <c>FOLHA</c> ou em grupo (<c>E</c>/<c>OU</c>),
-/// nunca aninhada (uma subárvore marcada não pode conter outra). Ausente ⇒ nó não repete.
+/// <see cref="RepetePorEntidade"/> é o código de um grupo repetível dos formulários do processo
+/// (ADR-0138): marca esta subárvore (folha ou grupo <c>E</c>/<c>OU</c>) como repetida por
+/// ocorrência do grupo, nunca aninhada (uma subárvore marcada não pode conter outra). Grupo que o
+/// processo não tem é recusado como <c>NoExigencia.TipoEntidadeInvalido</c>. Ausente ⇒ nó não repete.
 /// </remarks>
 public sealed record NoExigenciaInput(
     string Tipo,

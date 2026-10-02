@@ -2212,7 +2212,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [\n    {\n      \"fatoCodigo\": \"COR_RACA\",\n      \"ordem\": 0,\n      \"rotulo\": \"Cor ou raça\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\",\n      \"restricoes\": [\n        {\n          \"tipo\": \"OPCOES_PERMITIDAS\",\n          \"entradas\": [\n            {\n              \"quando\": null,\n              \"valores\": [\"BRANCA\", \"PRETA\", \"PARDA\", \"AMARELA\", \"INDIGENA\"]\n            }\n          ]\n        }\n      ]\n    },\n    {\n      \"fatoCodigo\": \"BAIXA_RENDA\",\n      \"ordem\": 1,\n      \"rotulo\": \"Baixa renda\",\n      \"tipoRenderizacao\": \"BOOLEANO\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": [\n        [\n          {\n            \"fato\": \"COR_RACA\",\n            \"operador\": \"IGUAL\",\n            \"valor\": \"PRETA\"\n          }\n        ]\n      ],\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n      \"ordem\": 2,\n      \"rotulo\": \"Condição de atendimento especializado\",\n      \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"SEXO\",\n      \"ordem\": 3,\n      \"rotulo\": \"Sexo\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"NACIONALIDADE\",\n      \"ordem\": 4,\n      \"rotulo\": \"Nacionalidade\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [\n    {\n      \"fatoCodigo\": \"COR_RACA\",\n      \"ordem\": 0,\n      \"rotulo\": \"Cor ou raça\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\",\n      \"restricoes\": [\n        {\n          \"tipo\": \"OPCOES_PERMITIDAS\",\n          \"entradas\": [\n            {\n              \"quando\": null,\n              \"valores\": [\n                \"BRANCA\",\n                \"PRETA\",\n                \"PARDA\",\n                \"AMARELA\",\n                \"INDIGENA\"\n              ]\n            }\n          ]\n        }\n      ]\n    },\n    {\n      \"fatoCodigo\": \"BAIXA_RENDA\",\n      \"ordem\": 1,\n      \"rotulo\": \"Baixa renda\",\n      \"tipoRenderizacao\": \"BOOLEANO\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": [\n        [\n          {\n            \"fato\": \"COR_RACA\",\n            \"operador\": \"IGUAL\",\n            \"valor\": \"PRETA\"\n          }\n        ]\n      ],\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n      \"ordem\": 2,\n      \"rotulo\": \"Condição de atendimento especializado\",\n      \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"SEXO\",\n      \"ordem\": 3,\n      \"rotulo\": \"Sexo\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"NACIONALIDADE\",\n      \"ordem\": 4,\n      \"rotulo\": \"Nacionalidade\",\n      \"tipoRenderizacao\": \"SELECAO_UNICA\",\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    }\n  ],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 5,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2596,7 +2596,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Norma interna do certame\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"AC\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": null\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"EM\",\n          \"valor\": \"[\\\"AC_PCD\\\"]\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 1º\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo que comprova a deficiência\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"CONDICAO_ATENDIMENTO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PCD_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 13.146/2015, art. 30\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo médico com CID\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SEXO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"MASCULINO\"\n        },\n        {\n          \"clausula\": 0,\n          \"fato\": \"FAIXA_ETARIA\",\n          \"operador\": \"MAIOR_IGUAL\",\n          \"valor\": \"18\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Certificado de alistamento/quitação militar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"NACIONALIDADE\",\n          \"operador\": \"DIFERENTE\",\n          \"valor\": \"ESTRANGEIRO\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Quitação com o serviço militar — exigida de candidatos não estrangeiros (PS Principal 2027, PSIQ 2027)\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        {\n          \"formato\": \"PDF\",\n          \"tamanhoMaximoBytesMax\": 3000000\n        },\n        {\n          \"formato\": \"JPEG\",\n          \"tamanhoMaximoBytesMax\": null\n        }\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 15\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda — últimos 3 meses\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": 3,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": \"COMPETENCIA_MENSAL\",\n    \"dataReferencia\": \"2027-03-01\",\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"RG de cada membro do núcleo familiar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Norma interna do certame\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"AC\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": null\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"EM\",\n          \"valor\": \"[\\\"AC_PCD\\\"]\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 1º\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo que comprova a deficiência\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"CONDICAO_ATENDIMENTO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PCD_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 13.146/2015, art. 30\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo médico com CID\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SEXO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"MASCULINO\"\n        },\n        {\n          \"clausula\": 0,\n          \"fato\": \"FAIXA_ETARIA\",\n          \"operador\": \"MAIOR_IGUAL\",\n          \"valor\": \"18\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Certificado de alistamento/quitação militar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"NACIONALIDADE\",\n          \"operador\": \"DIFERENTE\",\n          \"valor\": \"ESTRANGEIRO\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Quitação com o serviço militar — exigida de candidatos não estrangeiros (PS Principal 2027, PSIQ 2027)\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        {\n          \"formato\": \"PDF\",\n          \"tamanhoMaximoBytesMax\": 3000000\n        },\n        {\n          \"formato\": \"JPEG\",\n          \"tamanhoMaximoBytesMax\": null\n        }\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 15\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda — últimos 3 meses\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": 3,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": \"COMPETENCIA_MENSAL\",\n    \"dataReferencia\": \"2027-03-01\",\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"RG de cada membro do núcleo familiar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"COMPOSICAO_FAMILIAR\"\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5136,7 +5136,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_inscricao_id}}\",\n    \"inicio\": \"2025-12-01T00:00:00Z\",\n    \"fim\": \"2025-12-31T00:00:00Z\",\n    \"produtos\": [],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  },\n  {\n    \"ordem\": 2,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5195,7 +5195,8 @@
                   "pm.test('200 OK', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('arvore_fase_id_p2', j.cronogramaFases[0].id);",
+                  "  pm.environment.set('arvore_fase_id_p2', j.cronogramaFases.find(f => f.ordem === 2).id);",
+                  "  pm.environment.set('arvore_fase_inscricao_id_p2', j.cronogramaFases.find(f => f.ordem === 1).id);",
                   "});"
                 ]
               }
@@ -5203,7 +5204,89 @@
           ]
         },
         {
-          "name": "Padrão 2 — E[OU[RG,CPF], Certidão] por membro do núcleo familiar: PUT",
+          "name": "Árvore p2 — Definir Formulário de Inscrição",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"faseId\": \"{{arvore_fase_inscricao_id_p2}}\",\n  \"titulo\": \"Formulário de inscrição (árvore)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{arvore_processo_id_p2}}/formularios/INSCRICAO"
+            }
+          }
+        },
+        {
+          "name": "Árvore p2 — Definir grupo repetível",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{arvore_processo_id_p2}}/formularios/INSCRICAO/itens"
+            }
+          }
+        },
+        {
+          "name": "Padrão 2 — E[OU[RG,CPF], Certidão] por membro da composição familiar: PUT",
           "request": {
             "method": "PUT",
             "header": [
@@ -5243,7 +5326,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"tipo\": \"E\",\n    \"documento\": null,\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": [\n      {\n        \"tipo\": \"OU\",\n        \"documento\": null,\n        \"quantidadeMinima\": 1,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": [\n          {\n            \"tipo\": \"FOLHA\",\n            \"documento\": {\n              \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n              \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n              \"aplicabilidade\": \"CONDICIONAL\",\n              \"obrigatorio\": true,\n              \"consequenciaIndeferimento\": \"ELIMINA\",\n              \"condicoes\": [\n                {\n                  \"clausula\": 0,\n                  \"fato\": \"MAIOR_IDADE\",\n                  \"operador\": \"IGUAL\",\n                  \"valor\": \"false\"\n                }\n              ],\n              \"basesLegais\": [\n                {\n                  \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n                  \"abrangencia\": \"INTERNA_EDITAL\",\n                  \"status\": \"RESOLVIDO\",\n                  \"observacao\": null\n                }\n              ],\n              \"idadeMaximaEmissao\": null,\n              \"formatosPermitidos\": \"QUALQUER\",\n              \"tamanhoMaximoBytes\": null\n            },\n            \"quantidadeMinima\": null,\n            \"consequencia\": null,\n            \"basesLegais\": null,\n            \"filhos\": null,\n            \"chaveDistincao\": null,\n            \"dataReferencia\": null,\n            \"ocorrenciasEsperadas\": null,\n            \"repetePorEntidade\": null\n          },\n          {\n            \"tipo\": \"FOLHA\",\n            \"documento\": {\n              \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n              \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n              \"aplicabilidade\": \"CONDICIONAL\",\n              \"obrigatorio\": true,\n              \"consequenciaIndeferimento\": \"ELIMINA\",\n              \"condicoes\": [\n                {\n                  \"clausula\": 0,\n                  \"fato\": \"MAIOR_IDADE\",\n                  \"operador\": \"IGUAL\",\n                  \"valor\": \"false\"\n                }\n              ],\n              \"basesLegais\": [\n                {\n                  \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n                  \"abrangencia\": \"INTERNA_EDITAL\",\n                  \"status\": \"RESOLVIDO\",\n                  \"observacao\": null\n                }\n              ],\n              \"idadeMaximaEmissao\": null,\n              \"formatosPermitidos\": \"QUALQUER\",\n              \"tamanhoMaximoBytes\": null\n            },\n            \"quantidadeMinima\": null,\n            \"consequencia\": null,\n            \"basesLegais\": null,\n            \"filhos\": null,\n            \"chaveDistincao\": null,\n            \"dataReferencia\": null,\n            \"ocorrenciasEsperadas\": null,\n            \"repetePorEntidade\": null\n          }\n        ],\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": \"ELIMINA\",\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"false\"\n            }\n          ],\n          \"basesLegais\": [\n            {\n              \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n              \"abrangencia\": \"INTERNA_EDITAL\",\n              \"status\": \"RESOLVIDO\",\n              \"observacao\": null\n            }\n          ],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"E\",\n    \"documento\": null,\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": [\n      {\n        \"tipo\": \"OU\",\n        \"documento\": null,\n        \"quantidadeMinima\": 1,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": [\n          {\n            \"tipo\": \"FOLHA\",\n            \"documento\": {\n              \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n              \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n              \"aplicabilidade\": \"CONDICIONAL\",\n              \"obrigatorio\": true,\n              \"consequenciaIndeferimento\": \"ELIMINA\",\n              \"condicoes\": [\n                {\n                  \"clausula\": 0,\n                  \"fato\": \"MAIOR_IDADE\",\n                  \"operador\": \"IGUAL\",\n                  \"valor\": \"false\"\n                }\n              ],\n              \"basesLegais\": [\n                {\n                  \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n                  \"abrangencia\": \"INTERNA_EDITAL\",\n                  \"status\": \"RESOLVIDO\",\n                  \"observacao\": null\n                }\n              ],\n              \"idadeMaximaEmissao\": null,\n              \"formatosPermitidos\": \"QUALQUER\",\n              \"tamanhoMaximoBytes\": null\n            },\n            \"quantidadeMinima\": null,\n            \"consequencia\": null,\n            \"basesLegais\": null,\n            \"filhos\": null,\n            \"chaveDistincao\": null,\n            \"dataReferencia\": null,\n            \"ocorrenciasEsperadas\": null,\n            \"repetePorEntidade\": null\n          },\n          {\n            \"tipo\": \"FOLHA\",\n            \"documento\": {\n              \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n              \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n              \"aplicabilidade\": \"CONDICIONAL\",\n              \"obrigatorio\": true,\n              \"consequenciaIndeferimento\": \"ELIMINA\",\n              \"condicoes\": [\n                {\n                  \"clausula\": 0,\n                  \"fato\": \"MAIOR_IDADE\",\n                  \"operador\": \"IGUAL\",\n                  \"valor\": \"false\"\n                }\n              ],\n              \"basesLegais\": [\n                {\n                  \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n                  \"abrangencia\": \"INTERNA_EDITAL\",\n                  \"status\": \"RESOLVIDO\",\n                  \"observacao\": null\n                }\n              ],\n              \"idadeMaximaEmissao\": null,\n              \"formatosPermitidos\": \"QUALQUER\",\n              \"tamanhoMaximoBytes\": null\n            },\n            \"quantidadeMinima\": null,\n            \"consequencia\": null,\n            \"basesLegais\": null,\n            \"filhos\": null,\n            \"chaveDistincao\": null,\n            \"dataReferencia\": null,\n            \"ocorrenciasEsperadas\": null,\n            \"repetePorEntidade\": null\n          }\n        ],\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": \"ELIMINA\",\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"false\"\n            }\n          ],\n          \"basesLegais\": [\n            {\n              \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n              \"abrangencia\": \"INTERNA_EDITAL\",\n              \"status\": \"RESOLVIDO\",\n              \"observacao\": null\n            }\n          ],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"COMPOSICAO_FAMILIAR\"\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5258,7 +5341,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"204 No Content — E[OU[RG,CPF], Certidão] por membro do núcleo familiar: PUT\", () => {",
+                  "pm.test(\"204 No Content — E[OU[RG,CPF], Certidão] por membro da composição familiar: PUT\", () => {",
                   "  pm.response.to.have.status(204);",
                   "});"
                 ]
@@ -5304,7 +5387,7 @@
                   "pm.test('raiz E repetePorEntidade com filho OU e filho FOLHA', () => {",
                   "  const raiz = pm.response.json().raizesExigencia[0];",
                   "  pm.expect(raiz.tipo).to.eql('E');",
-                  "  pm.expect(raiz.repetePorEntidade).to.eql('MEMBRO_NUCLEO_FAMILIAR');",
+                  "  pm.expect(raiz.repetePorEntidade).to.eql('COMPOSICAO_FAMILIAR');",
                   "  pm.expect(raiz.filhos).to.have.lengthOf(2);",
                   "  const ou = raiz.filhos.find(f => f.tipo === 'OU');",
                   "  pm.expect(ou, 'filho OU (RG ou CPF)').to.not.be.undefined;",
@@ -5671,7 +5754,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_inscricao_id}}\",\n    \"inicio\": \"2025-12-01T00:00:00Z\",\n    \"fim\": \"2025-12-31T00:00:00Z\",\n    \"produtos\": [],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  },\n  {\n    \"ordem\": 2,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5730,12 +5813,95 @@
                   "pm.test('200 OK', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('arvore_fase_id_p3', j.cronogramaFases[0].id);",
+                  "  pm.environment.set('arvore_fase_id_p3', j.cronogramaFases.find(f => f.ordem === 2).id);",
+                  "  pm.environment.set('arvore_fase_inscricao_id_p3', j.cronogramaFases.find(f => f.ordem === 1).id);",
                   "});"
                 ]
               }
             }
           ]
+        },
+        {
+          "name": "Árvore p3 — Definir Formulário de Inscrição",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"faseId\": \"{{arvore_fase_inscricao_id_p3}}\",\n  \"titulo\": \"Formulário de inscrição (árvore)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{arvore_processo_id_p3}}/formularios/INSCRICAO"
+            }
+          }
+        },
+        {
+          "name": "Árvore p3 — Definir grupo repetível",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{arvore_processo_id_p3}}/formularios/INSCRICAO/itens"
+            }
+          }
         },
         {
           "name": "Padrão 3 — Guarda condicional (SOB_GUARDA): PUT",
@@ -5778,7 +5944,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{arvore_fase_id_p3}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SOB_GUARDA\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"true\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 12.711/2012, art. 3º\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Documento judicial de guarda\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{arvore_fase_id_p3}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SOB_GUARDA\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"true\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 12.711/2012, art. 3º\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Documento judicial de guarda\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"COMPOSICAO_FAMILIAR\"\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5839,7 +6005,7 @@
                   "pm.test('folha repetePorEntidade com gatilho por atributo da entidade', () => {",
                   "  const raiz = pm.response.json().raizesExigencia[0];",
                   "  pm.expect(raiz.tipo).to.eql('FOLHA');",
-                  "  pm.expect(raiz.repetePorEntidade).to.eql('MEMBRO_NUCLEO_FAMILIAR');",
+                  "  pm.expect(raiz.repetePorEntidade).to.eql('COMPOSICAO_FAMILIAR');",
                   "  pm.expect(raiz.documento.condicoes[0].fato).to.eql('SOB_GUARDA');",
                   "});"
                 ]
@@ -6199,7 +6365,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_inscricao_id}}\",\n    \"inicio\": \"2025-12-01T00:00:00Z\",\n    \"fim\": \"2025-12-31T00:00:00Z\",\n    \"produtos\": [],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  },\n  {\n    \"ordem\": 2,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6258,12 +6424,95 @@
                   "pm.test('200 OK', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('arvore_fase_id_p4', j.cronogramaFases[0].id);",
+                  "  pm.environment.set('arvore_fase_id_p4', j.cronogramaFases.find(f => f.ordem === 2).id);",
+                  "  pm.environment.set('arvore_fase_inscricao_id_p4', j.cronogramaFases.find(f => f.ordem === 1).id);",
                   "});"
                 ]
               }
             }
           ]
+        },
+        {
+          "name": "Árvore p4 — Definir Formulário de Inscrição",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"faseId\": \"{{arvore_fase_inscricao_id_p4}}\",\n  \"titulo\": \"Formulário de inscrição (árvore)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{arvore_processo_id_p4}}/formularios/INSCRICAO"
+            }
+          }
+        },
+        {
+          "name": "Árvore p4 — Definir grupo repetível",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{arvore_processo_id_p4}}/formularios/INSCRICAO/itens"
+            }
+          }
         },
         {
           "name": "Padrão 4 — IRPF/isento por adulto sem renda: PUT",
@@ -6306,7 +6555,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"tipo\": \"OU\",\n    \"documento\": null,\n    \"quantidadeMinima\": 1,\n    \"consequencia\": \"ELIMINA\",\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021, art. 25\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Isenção de renda para membro adulto sem renda\"\n      }\n    ],\n    \"filhos\": [\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p4}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            },\n            {\n              \"clausula\": 0,\n              \"fato\": \"SEM_RENDA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            }\n          ],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p4}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            },\n            {\n              \"clausula\": 0,\n              \"fato\": \"SEM_RENDA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            }\n          ],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"OU\",\n    \"documento\": null,\n    \"quantidadeMinima\": 1,\n    \"consequencia\": \"ELIMINA\",\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021, art. 25\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Isenção de renda para membro adulto sem renda\"\n      }\n    ],\n    \"filhos\": [\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p4}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            },\n            {\n              \"clausula\": 0,\n              \"fato\": \"SEM_RENDA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            }\n          ],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p4}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            },\n            {\n              \"clausula\": 0,\n              \"fato\": \"SEM_RENDA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            }\n          ],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"COMPOSICAO_FAMILIAR\"\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6369,7 +6618,7 @@
                   "  pm.expect(raiz.tipo).to.eql('OU');",
                   "  pm.expect(raiz.consequencia).to.eql('ELIMINA');",
                   "  pm.expect(raiz.basesLegais).to.have.lengthOf(1);",
-                  "  pm.expect(raiz.repetePorEntidade).to.eql('MEMBRO_NUCLEO_FAMILIAR');",
+                  "  pm.expect(raiz.repetePorEntidade).to.eql('COMPOSICAO_FAMILIAR');",
                   "  pm.expect(raiz.filhos).to.have.lengthOf(2);",
                   "  const fatos = raiz.filhos[0].documento.condicoes.map(c => c.fato).sort();",
                   "  pm.expect(fatos, 'AND entre MAIOR_IDADE e SEM_RENDA na mesma cláusula').to.eql(['MAIOR_IDADE', 'SEM_RENDA']);",
@@ -6731,7 +6980,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_inscricao_id}}\",\n    \"inicio\": \"2025-12-01T00:00:00Z\",\n    \"fim\": \"2025-12-31T00:00:00Z\",\n    \"produtos\": [],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  },\n  {\n    \"ordem\": 2,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"produtos\": [{ \"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\" }],\n    \"faseConcluinteCodigo\": null,\n    \"emiteParecerIndividual\": false,\n    \"bancasRequeridas\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6790,12 +7039,136 @@
                   "pm.test('200 OK', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('arvore_fase_id_p5', j.cronogramaFases[0].id);",
+                  "  pm.environment.set('arvore_fase_id_p5', j.cronogramaFases.find(f => f.ordem === 2).id);",
+                  "  pm.environment.set('arvore_fase_inscricao_id_p5', j.cronogramaFases.find(f => f.ordem === 1).id);",
                   "});"
                 ]
               }
             }
           ]
+        },
+        {
+          "name": "Árvore p5 — Definir Formulário de Inscrição",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"faseId\": \"{{arvore_fase_inscricao_id_p5}}\",\n  \"titulo\": \"Formulário de inscrição (árvore)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{arvore_processo_id_p5}}/formularios/INSCRICAO"
+            }
+          }
+        },
+        {
+          "name": "Árvore p5 — Criar fato de membro CNPJ (tolera 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created ou 409 já existente', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"CNPJ_PJ_VINCULADA\",\n  \"nome\": \"CNPJ da pessoa jurídica vinculada\",\n  \"descricao\": null,\n  \"dominio\": \"TEXTO\",\n  \"cardinalidade\": \"ESCALAR\",\n  \"fonteValores\": null,\n  \"formato\": null,\n  \"pontoResolucao\": \"INSCRICAO\",\n  \"escopo\": \"MEMBRO_GRUPO\",\n  \"classificacaoProtecao\": \"PESSOAL\",\n  \"finalidadeTratamento\": \"Comprovação documental das pessoas jurídicas vinculadas ao candidato.\",\n  \"hipoteseLegal\": \"CUMPRIMENTO_OBRIGACAO_LEGAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/fatos-candidato"
+            }
+          }
+        },
+        {
+          "name": "Árvore p5 — Definir grupo repetível",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"PESSOAS_JURIDICAS\",\n      \"ordem\": 0,\n      \"rotulo\": \"Pessoas jurídicas vinculadas\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"CNPJ_PJ_VINCULADA\",\n          \"ordem\": 0,\n          \"rotulo\": \"CNPJ\",\n          \"tipoRenderizacao\": \"TEXTO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{arvore_processo_id_p5}}/formularios/INSCRICAO/itens"
+            }
+          }
         },
         {
           "name": "Padrão 5 — PF + PJ vinculada (extratos + IRPJ por PJ): PUT",
@@ -6838,7 +7211,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"tipo\": \"E\",\n    \"documento\": null,\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": [\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p5}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"GERAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p5}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"GERAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"PESSOA_JURIDICA_VINCULADA\"\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"E\",\n    \"documento\": null,\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": [\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p5}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"GERAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p5}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"GERAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"PESSOAS_JURIDICAS\"\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6896,10 +7269,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('raiz E repetePorEntidade PESSOA_JURIDICA_VINCULADA', () => {",
+                  "pm.test('raiz E repetePorEntidade PESSOAS_JURIDICAS', () => {",
                   "  const raiz = pm.response.json().raizesExigencia[0];",
                   "  pm.expect(raiz.tipo).to.eql('E');",
-                  "  pm.expect(raiz.repetePorEntidade).to.eql('PESSOA_JURIDICA_VINCULADA');",
+                  "  pm.expect(raiz.repetePorEntidade).to.eql('PESSOAS_JURIDICAS');",
                   "  pm.expect(raiz.filhos).to.have.lengthOf(2);",
                   "});"
                 ]

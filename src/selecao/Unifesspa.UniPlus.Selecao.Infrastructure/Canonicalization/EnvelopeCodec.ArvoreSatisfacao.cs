@@ -48,9 +48,10 @@ public sealed partial class EnvelopeCodec
     }
 
     /// <summary>
-    /// Um nó, recursivamente. <c>tipo</c>/<c>chaveDistincao</c>/<c>repetePorEntidade</c> usam
-    /// o mesmo <c>FromCodigo</c> das demais leituras (RN08: token não reconhecido é envelope
-    /// malformado, nunca coerção silenciosa a um sentinela). <c>exigenciaId</c> resolve contra
+    /// Um nó, recursivamente. <c>tipo</c>/<c>chaveDistincao</c> usam o mesmo <c>FromCodigo</c> das
+    /// demais leituras (RN08: token não reconhecido é envelope malformado, nunca coerção silenciosa
+    /// a um sentinela); <c>repetePorEntidade</c> é o código do grupo, conferido contra os grupos
+    /// repostos ao lado da árvore. <c>exigenciaId</c> resolve contra
     /// <paramref name="exigenciasPorId"/> — presente sse <c>tipo</c> é <c>FOLHA</c> (checagem
     /// simétrica à de <see cref="NoExigencia.CriarFolha"/>/<see cref="NoExigencia.CriarGrupo"/>,
     /// aqui como forma, não semântica: <see cref="NoExigencia.Reidratar"/> não revalida).
@@ -107,17 +108,6 @@ public sealed partial class EnvelopeCodec
             }
         }
 
-        TipoEntidade? repetePorEntidade = null;
-        if (repetePorEntidadeCodigo is not null)
-        {
-            repetePorEntidade = TipoEntidadeCodigo.FromCodigo(repetePorEntidadeCodigo);
-            if (repetePorEntidade == TipoEntidade.Nenhuma)
-            {
-                return leitor.Propagar<NoExigencia>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.repetePorEntidade' não reconhecida: '{repetePorEntidadeCodigo}'."));
-            }
-        }
-
         DocumentoExigido? documentoExigido = null;
         if (tipo == TipoNo.Folha)
         {
@@ -161,7 +151,7 @@ public sealed partial class EnvelopeCodec
 
         return NoExigencia.Reidratar(
             id, tipo, ordem, exigenciaId, documentoExigido, quantidadeMinima, consequencia,
-            chaveDistincao, dataReferencia, ocorrenciasEsperadas, repetePorEntidade, basesLegais, filhos);
+            chaveDistincao, dataReferencia, ocorrenciasEsperadas, repetePorEntidadeCodigo, basesLegais, filhos);
     }
 
     /// <summary>Mesma técnica de <c>LerValoresDominio</c> para o campo nulo-ou-array.</summary>

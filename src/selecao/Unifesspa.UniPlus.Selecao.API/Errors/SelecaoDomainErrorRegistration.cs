@@ -791,8 +791,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // mesmos dois gates de DocumentoExigido acima, mesmo ponto de chamada.
         new("NoExigencia.RemoveVantagemSemVantagemViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.remove_vantagem_sem_vantagem_viva", "O grupo declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva para remover")),
         new("NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.consequencia_incoerente_com_acao_da_vaga", "A consequência do grupo é incoerente com a ação de indeferimento da modalidade que ele alcança")),
-        // Repetição por entidade (Story #922) — NoExigencia.CriarFolha/CriarGrupo.
-        new("NoExigencia.TipoEntidadeInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.tipo_entidade_invalido", "repetePorEntidade fora do catálogo fechado")),
+        // Repetição por entidade pelas ocorrências de um grupo repetível do formulário (ADR-0138).
+        new("NoExigencia.TipoEntidadeInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.tipo_entidade_invalido", "repetePorEntidade não nomeia grupo repetível dos formulários do processo")),
         new("NoExigencia.RepeticaoDeEntidadeAninhada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.repeticao_de_entidade_aninhada", "Uma subárvore repetePorEntidade não pode conter outra — repetição não aninha")),
         // Base legal 1:N PRÓPRIA de grupo OU/N-de (Story #920) — mesmo shape/mensagens de
         // DocumentoExigidoBaseLegal acima.

@@ -858,10 +858,10 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         // (RepeticaoDeEntidadeAninhada); Reidratar não revalida.
         NoExigencia folhaRepetida = NoExigencia.Reidratar(
             Guid.CreateVersion7(), TipoNo.Folha, 0, documento.Id, documento, 1, null, null, null, null,
-            TipoEntidade.MembroNucleoFamiliar, [], []);
+            "COMPOSICAO_FAMILIAR", [], []);
         NoExigencia grupoRepetido = NoExigencia.Reidratar(
             Guid.CreateVersion7(), TipoNo.GrupoE, 0, null, null, null, null, null, null, null,
-            TipoEntidade.PessoaJuridicaVinculada, [], [folhaRepetida]);
+            "PESSOAS_JURIDICAS", [], [folhaRepetida]);
 
         GrafoConfiguracao invalido = GrafoComArvore(fase, [documento], [grupoRepetido, folhaRepetida]);
 
