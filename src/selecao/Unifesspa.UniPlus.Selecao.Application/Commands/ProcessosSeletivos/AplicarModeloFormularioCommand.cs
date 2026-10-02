@@ -31,8 +31,8 @@ public sealed record AplicacaoDeModeloDto(
     IReadOnlyList<string> DerivacoesMantidas);
 
 /// <summary>
-/// Uma parte do modelo que ficou fora da cópia: o item (<c>ITEM</c>, pelo fato) ou o termo
-/// (<c>TERMO</c>, pelo código), com o motivo — <c>FATO_DESATIVADO</c>, <c>FATO_NAO_COLETAVEL</c> ou
+/// Uma parte do modelo que ficou fora da cópia: o item (<c>ITEM</c>, pelo fato), o grupo repetível
+/// (<c>GRUPO</c>, pelo código, quando um campo dele saiu) ou o termo (<c>TERMO</c>, pelo código), com o motivo — <c>FATO_DESATIVADO</c>, <c>FATO_NAO_COLETAVEL</c> ou
 /// <c>VERSAO_DE_TERMO_REMOVIDA</c>. A correção é editar o modelo.
 /// </summary>
 public sealed record ParteDescartadaDto(string Parte, string Codigo, string Motivo);

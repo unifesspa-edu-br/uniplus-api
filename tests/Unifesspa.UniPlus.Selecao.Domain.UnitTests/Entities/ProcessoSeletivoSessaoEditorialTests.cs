@@ -536,7 +536,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     {
         ProcessoSeletivo processo = ComSessaoAberta(out _);
         CopiaDeModeloDeFormulario copia = new(
-            FinalidadeFormulario.Inscricao, "Inscrição", FormularioDeTeste.Etapas(), [], [], [], Guid.CreateVersion7(), "INSCRICAO_MEDICINA");
+            FinalidadeFormulario.Inscricao, "Inscrição", FormularioDeTeste.Etapas(), [], [], [], [], Guid.CreateVersion7(), "INSCRICAO_MEDICINA");
 
         Result resultado = processo.AplicarModeloDeFormulario(copia, PrecondicaoIfMatch.Ausente);
 

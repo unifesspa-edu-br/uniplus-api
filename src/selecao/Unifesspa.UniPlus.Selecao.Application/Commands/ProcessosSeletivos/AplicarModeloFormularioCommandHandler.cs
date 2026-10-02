@@ -44,6 +44,7 @@ public static partial class AplicarModeloFormularioCommandHandler
 {
     private const string Item = "ITEM";
     private const string Termo = "TERMO";
+    private const string Grupo = "GRUPO";
     private const string FatoDesativado = "FATO_DESATIVADO";
     private const string FatoNaoColetavel = "FATO_NAO_COLETAVEL";
     private const string VersaoDeTermoRemovida = "VERSAO_DE_TERMO_REMOVIDA";
@@ -108,7 +109,7 @@ public static partial class AplicarModeloFormularioCommandHandler
         for (int i = 0; i < itensDoModelo.Count; i++)
         {
             FatoColetadoInput item = itensDoModelo[i];
-            if (DescarteDoItem(item.FatoCodigo, contexto, vinculados) is { } motivo)
+            if (DescarteDoCampo(item.FatoCodigo, contexto, vinculados, ConferenciaNoCatalogo.EhColetavel) is { } motivo)
             {
                 relatorio.Descartados.Add(new ParteDescartadaDto(Item, item.FatoCodigo, motivo));
                 continue;
@@ -131,6 +132,28 @@ public static partial class AplicarModeloFormularioCommandHandler
 
         (List<FatoColetado> itens, List<FieldError> errosDosItens) = EscritaDosItens.Resolver(EscritaDosItens.Ler(itensACopiar), contexto);
         erros.AddRange(errosDosItens.Select(e => NoModelo(e, "itens", indicesDosItens)));
+
+        // Grupos: o grupo com campo que o catálogo mudou sai da cópia inteiro — a ocorrência sem o
+        // campo seria outra lista que o modelo não compôs.
+        List<int> indicesDosGrupos = [];
+        List<GrupoColetadoInput> gruposACopiar = [];
+        IReadOnlyList<GrupoColetadoInput> gruposDoModelo = conteudo.Grupos ?? [];
+        for (int i = 0; i < gruposDoModelo.Count; i++)
+        {
+            GrupoColetadoInput grupo = gruposDoModelo[i];
+            if ((grupo.Subitens ?? []).Select(s => DescarteDoCampo(s?.FatoCodigo, contexto, vinculados, ConferenciaNoCatalogo.EhColetavelEmGrupo))
+                    .FirstOrDefault(static m => m is not null) is { } motivo)
+            {
+                relatorio.Descartados.Add(new ParteDescartadaDto(Grupo, grupo.Codigo, motivo));
+                continue;
+            }
+
+            indicesDosGrupos.Add(i);
+            gruposACopiar.Add(grupo);
+        }
+
+        (List<GrupoColetado> grupos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(EscritaDosItens.LerGrupos(gruposACopiar), contexto);
+        erros.AddRange(errosDosGrupos.Select(e => NoModelo(e, "grupos", indicesDosGrupos)));
 
         EtapasLidas etapas = EscritaDasEtapas.Ler(conteudo.Etapas ?? []);
         erros.AddRange(etapas.Erros.Concat(EscritaDasEtapas.ConferirExibicoes(etapas, contexto)).Select(static e => NoModelo(e)));
@@ -163,7 +186,7 @@ public static partial class AplicarModeloFormularioCommandHandler
             await fatoCandidatoReader.ListarRegrasPadraoAsync(cancellationToken).ConfigureAwait(false);
         // Os citados vêm da entrada das partes que entram na cópia, inclusive das que serão recusadas:
         // o que falta configurar aparece junto das outras recusas, e o que saiu da cópia não pesa.
-        string[] citados = [.. FatosCitados(itensACopiar, conteudo.Etapas ?? [], termosACopiar).Distinct(StringComparer.Ordinal)];
+        string[] citados = [.. FatosCitados(itensACopiar, gruposACopiar, conteudo.Etapas ?? [], termosACopiar).Distinct(StringComparer.Ordinal)];
         List<ConfiguracaoDerivacaoInput> derivacoesACopiar = EscolherDerivacoes(citados, processo, contexto, regrasPadrao, relatorio, erros);
 
         // A modalidade pode vir pela cópia ou pelas regras padrão que ela traz.
@@ -212,8 +235,9 @@ public static partial class AplicarModeloFormularioCommandHandler
             contexto.Fatos,
             processo.Vinculos(),
             VinculosDeFatos.De(
-                itens.Select(static i => i.FatoCodigo).Concat(derivacoes.Select(static d => d.CodigoFato)),
+                itens.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static i => i.FatoCodigo).Concat(derivacoes.Select(static d => d.CodigoFato)),
                 itens.SelectMany(static i => i.Condicoes)
+                    .Concat(grupos.SelectMany(static g => g.Condicoes))
                     .Concat(etapas.Etapas.SelectMany(static e => e.Condicoes))
                     .Concat(termos.SelectMany(static t => t.Condicoes))
                     .Select(static c => (c.Fato, c.Valor))
@@ -225,13 +249,14 @@ public static partial class AplicarModeloFormularioCommandHandler
         }
 
         Result aplicar = processo.AplicarModeloDeFormulario(
-            new CopiaDeModeloDeFormulario(finalidade, conteudo.Titulo, etapas.Etapas, itens, termos, derivacoes, modelo.Id, modelo.Codigo),
+            new CopiaDeModeloDeFormulario(finalidade, conteudo.Titulo, etapas.Etapas, itens, grupos, termos, derivacoes, modelo.Id, modelo.Codigo),
             command.Precondicao);
         if (aplicar.IsFailure)
         {
             // O agregado indexa a cópia, sem o que saiu dela: cada recusa volta à posição no modelo.
             return Result<AplicacaoDeModeloDto>.ValidationFailure(
-                aplicar.Errors.Select(e => NoModelo(NaPosicaoDoModelo(NaPosicaoDoModelo(e, "itens", indicesDosItens), "termos", indicesDosTermos))).ToList());
+                aplicar.Errors.Select(e => NoModelo(NaPosicaoDoModelo(
+                    NaPosicaoDoModelo(NaPosicaoDoModelo(e, "itens", indicesDosItens), "grupos", indicesDosGrupos), "termos", indicesDosTermos))).ToList());
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -275,9 +300,14 @@ public static partial class AplicarModeloFormularioCommandHandler
 
     /// <summary>Os fatos que as regras das partes citam, na entrada: exibições, obrigatoriedades e restrições.</summary>
     private static IEnumerable<string> FatosCitados(
-        IEnumerable<FatoColetadoInput> itens, IEnumerable<EtapaFormularioInput> etapas, IEnumerable<TermoExigidoInput> termos) =>
-        itens.SelectMany(static i => Citados(i.Precondicao).Concat(Citados(i.PredicadoObrigatoriedade))
-                .Concat((i.Restricoes ?? []).SelectMany(static r => (r.Fatos ?? []).Concat((r.Entradas ?? []).SelectMany(static e => Citados(e.Quando))))))
+        IEnumerable<FatoColetadoInput> itens,
+        IEnumerable<GrupoColetadoInput> grupos,
+        IEnumerable<EtapaFormularioInput> etapas,
+        IEnumerable<TermoExigidoInput> termos) =>
+        itens.Concat(grupos.SelectMany(static g => g.Subitens ?? []))
+            .SelectMany(static i => Citados(i?.Precondicao).Concat(Citados(i?.PredicadoObrigatoriedade))
+                .Concat((i?.Restricoes ?? []).SelectMany(static r => (r.Fatos ?? []).Concat((r.Entradas ?? []).SelectMany(static e => Citados(e.Quando))))))
+            .Concat(grupos.SelectMany(static g => Citados(g.Exibicao).Concat(Citados(g.PredicadoObrigatoriedade))))
             .Concat(etapas.SelectMany(static e => Citados(e?.Exibicao)))
             .Concat(termos.SelectMany(static t => Citados(t.Exibicao).Concat(Citados(t.PredicadoObrigatoriedade))));
 
@@ -285,12 +315,14 @@ public static partial class AplicarModeloFormularioCommandHandler
         (predicado ?? []).SelectMany(static clausula => clausula ?? []).Select(static c => c?.Fato).OfType<string>();
 
     /// <summary>
-    /// O motivo de o item sair da cópia, quando o catálogo mudou depois da composição do modelo. O
-    /// fato desativado que o processo já vincula não é vínculo novo e fica.
+    /// O motivo de o campo — item ou campo de grupo, conforme <paramref name="coletavel"/> — sair da
+    /// cópia, quando o catálogo mudou depois da composição do modelo. O fato desativado que o processo
+    /// já vincula não é vínculo novo e fica.
     /// </summary>
-    private static string? DescarteDoItem(string? fatoCodigo, ContextoDoCatalogo contexto, IReadOnlySet<string> vinculados)
+    private static string? DescarteDoCampo(
+        string? fatoCodigo, ContextoDoCatalogo contexto, IReadOnlySet<string> vinculados, Func<FatoDoCatalogo, bool> coletavel)
     {
-        if (fatoCodigo is null || !contexto.FatosDasRegras.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato) || !ConferenciaNoCatalogo.EhColetavel(fato))
+        if (fatoCodigo is null || !contexto.FatosDasRegras.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato) || !coletavel(fato))
         {
             return FatoNaoColetavel;
         }

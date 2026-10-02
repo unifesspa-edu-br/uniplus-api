@@ -1197,9 +1197,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         FormularioProcesso novo = formulario.Value!;
         HashSet<string> daCopia = new(copia.Itens.Select(static i => i.FatoCodigo), StringComparer.Ordinal);
-        List<FieldError> erros = [.. FormaDoItem.ValidarQuantidade(copia.Itens.Count)];
-        erros.AddRange(EstruturaFormulario.ValidarItens(
-            novo.Estrutura, [.. copia.Itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo))], secaoObrigatoria: false));
+        List<FieldError> erros = [.. FormaDoItem.ValidarQuantidade(QuantidadeNoTeto(copia.Itens.Count, copia.Grupos))];
+        erros.AddRange(EstruturaFormulario.ValidarItens(novo.Estrutura, ParaEstrutura(copia.Itens, copia.Grupos), secaoObrigatoria: false));
         if (finalidade != FinalidadeFormulario.Inscricao)
         {
             erros.AddRange(Itens
@@ -1210,17 +1209,30 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"O fato '{f.FatoCodigo}' já é coletado pelo formulário de {EstruturaFormulario.ParaToken(f.Finalidade)}."))));
         }
 
-        // A cópia substitui os grupos do próprio formulário; os dos outros continuam, e nem item nem
-        // derivação da cópia repete o código de um deles ou de um campo deles.
+        // A cópia substitui os grupos do próprio formulário; os dos outros continuam, e nem item, nem
+        // grupo, nem campo de grupo, nem derivação da cópia repete o código de um deles ou de um campo
+        // deles. O grupo e o campo de grupo da cópia também não repetem fato de outro formulário:
+        // diferente do item, não são trazidos de outra finalidade.
         HashSet<string> dosGruposDeOutros = new(
             _gruposColetados.Where(g => g.Finalidade != finalidade).SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)),
             StringComparer.Ordinal);
+        static DomainError CodigoDeOutroFormulario(string codigo) => new(
+            FatoColetadoErrorCodes.FatoDuplicado, $"O código '{codigo}' já é usado por um fato ou grupo de outro formulário do processo.");
         erros.AddRange(copia.Itens.Select(static i => i.FatoCodigo).Concat(copia.DerivacoesNovas.Select(static c => c.CodigoFato))
             .Where(dosGruposDeOutros.Contains)
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)
-            .Select(static codigo => new FieldError("itens", new DomainError(
-                FatoColetadoErrorCodes.FatoDuplicado, $"O código '{codigo}' já é usado por um grupo de outro formulário do processo."))));
+            .Select(static codigo => new FieldError("itens", CodigoDeOutroFormulario(codigo))));
+        HashSet<string> deOutros = new(
+            dosGruposDeOutros.Concat(Itens.Where(f => f.Finalidade != finalidade).Select(static f => f.FatoCodigo)), StringComparer.Ordinal);
+        for (int indice = 0; indice < copia.Grupos.Count; indice++)
+        {
+            GrupoColetado grupo = copia.Grupos[indice];
+            if (grupo.Subitens.Select(static s => s.FatoCodigo).Prepend(grupo.Codigo).FirstOrDefault(deOutros.Contains) is { } repetido)
+            {
+                erros.Add(new($"grupos[{indice}]", CodigoDeOutroFormulario(repetido)));
+            }
+        }
 
         HashSet<string> derivados = new(_regrasDerivacao.Select(static c => c.CodigoFato), StringComparer.Ordinal);
         erros.AddRange(copia.DerivacoesNovas
@@ -1238,6 +1250,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             item.VincularFinalidade(finalidade);
         }
 
+        foreach (GrupoColetado grupo in copia.Grupos)
+        {
+            grupo.VincularFinalidade(finalidade);
+        }
+
         foreach (TermoExigidoFormulario termo in copia.Termos)
         {
             termo.VincularFinalidade(finalidade);
@@ -1247,13 +1264,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         FatoColetado[] itensFinais = [.. Itens.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
         ConfiguracaoDerivacaoFato[] derivacoesFinais = [.. _regrasDerivacao, .. copia.DerivacoesNovas];
         TermoExigidoFormulario[] termosFinais = [.. _termosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
+        GrupoColetado[] gruposFinais = [.. _gruposColetados.Where(g => g.Finalidade != finalidade), .. copia.Grupos];
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
             derivacoesFinais.ToDictionary(static c => c.CodigoFato, static c => c.FatosCitados, StringComparer.Ordinal);
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
             : FatosDaInscricao(itensFinais);
 
-        if (ValidarGrafoDeFatos(novo.Etapas, copia.Itens, [], daInscricao, dependenciasDasDerivacoes) is { } grafo)
+        if (ValidarGrafoDeFatos(novo.Etapas, copia.Itens, copia.Grupos, daInscricao, dependenciasDasDerivacoes) is { } grafo)
         {
             return Result.ValidationFailure([new("itens", grafo)]);
         }
@@ -1280,7 +1298,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             ? CitacoesQueFicariamOrfas(daCopia, outra => [.. itensFinais.Where(f => f.Finalidade == outra)], dependenciasDasDerivacoes)
             : [];
         FieldError[] orfas = [.. orfasDosOutros
-            .Concat(CitacaoInvalidaNosFormularios([novo], itensFinais, termosFinais, derivacoesFinais) is { } doNovo ? [doNovo] : [])
+            .Concat(CitacaoInvalidaNosFormularios([novo], itensFinais, termosFinais, derivacoesFinais, gruposFinais) is { } doNovo ? [doNovo] : [])
             .Select(static recusa => new FieldError(string.Empty, recusa))];
         if (orfas.Length > 0)
         {
@@ -1305,8 +1323,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _campos.Add(item);
         }
 
-        // A cópia substitui o formulário inteiro, e o modelo ainda não tem grupos repetíveis.
-        _gruposColetados.RemoveAll(g => g.Finalidade == finalidade);
+        SubstituirGrupos(finalidade, copia.Grupos);
 
         _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
         foreach (TermoExigidoFormulario termo in copia.Termos)
@@ -2373,6 +2390,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _campos.Add(fato);
         }
 
+        SubstituirGrupos(finalidade, grupos);
+
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Os grupos da finalidade passam a ser os dados, com os campos de cada um entre os campos do
+    /// processo; quem chama já retirou os campos que a finalidade coletava.
+    /// </summary>
+    private void SubstituirGrupos(FinalidadeFormulario finalidade, IEnumerable<GrupoColetado> grupos)
+    {
         _gruposColetados.RemoveAll(g => g.Finalidade == finalidade);
         foreach (GrupoColetado grupo in grupos)
         {
@@ -2381,9 +2410,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _gruposColetados.Add(grupo);
             _campos.AddRange(grupo.Subitens);
         }
-
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
     }
 
     /// <summary>
