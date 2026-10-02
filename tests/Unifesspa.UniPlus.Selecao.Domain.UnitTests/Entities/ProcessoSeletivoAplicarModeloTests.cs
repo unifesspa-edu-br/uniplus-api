@@ -154,7 +154,7 @@ public sealed class ProcessoSeletivoAplicarModeloTests
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
     private static CopiaDeModeloDeFormulario Copia(FinalidadeFormulario finalidade, params FatoColetado[] itens) =>
-        new(finalidade, "Formulário", FormularioDeTeste.Etapas(), itens, [], [], ModeloId, "INSCRICAO_MEDICINA");
+        new(finalidade, "Formulário", FormularioDeTeste.Etapas(), itens, [], [], [], ModeloId, "INSCRICAO_MEDICINA");
 
     private static FatoColetado Item(string fato, int ordem, string? exibidoQuando = null) => FatoColetado.Criar(
         fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre,

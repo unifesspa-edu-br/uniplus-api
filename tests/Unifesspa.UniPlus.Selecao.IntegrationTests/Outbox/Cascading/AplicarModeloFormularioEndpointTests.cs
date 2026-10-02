@@ -84,6 +84,31 @@ public sealed class AplicarModeloFormularioEndpointTests
         processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().NotBeNull("o formulário de habilitação continua, só sem o fato");
     }
 
+    [Fact(DisplayName = "O grupo repetível do modelo é gravado no processo, e reaplicar o modelo o substitui na mesma gravação")]
+    public async Task AplicarModelo_ComGrupo_GravaESubstitui()
+    {
+        Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_ComGrupo_GravaESubstitui));
+        Guid modeloId = await SemearModeloAsync(
+            FinalidadeFormulario.Inscricao,
+            Conteudo("QUILOMBOLA") with
+            {
+                Grupos =
+                [
+                    new GrupoDoModelo(
+                        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
+                        [new ItemDoModelo("MAIOR_IDADE", 0, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)]),
+                ],
+            });
+
+        (await AplicarAsync(processoId, modeloId)).StatusCode.Should().Be(HttpStatusCode.OK);
+        HttpResponseMessage reaplicado = await AplicarAsync(processoId, modeloId);
+
+        reaplicado.StatusCode.Should().Be(HttpStatusCode.OK, await reaplicado.Content.ReadAsStringAsync());
+        ProcessoSeletivo processo = await LerProcessoAsync(processoId);
+        processo.GruposColetados.Should().ContainSingle().Which.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MAIOR_IDADE");
+        processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
+    }
+
     private async Task<Guid> SemearProcessoAsync(string nome)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
@@ -92,10 +117,12 @@ public sealed class AplicarModeloFormularioEndpointTests
         return processo.Id;
     }
 
-    private async Task<Guid> SemearModeloAsync(FinalidadeFormulario finalidade, params string[] fatos)
+    private Task<Guid> SemearModeloAsync(FinalidadeFormulario finalidade, params string[] fatos) => SemearModeloAsync(finalidade, Conteudo(fatos));
+
+    private async Task<Guid> SemearModeloAsync(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            $"MODELO_{Guid.NewGuid():N}"[..30], "Modelo", null, finalidade, null, Conteudo(fatos),
+            $"MODELO_{Guid.NewGuid():N}"[..30], "Modelo", null, finalidade, null, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
@@ -122,6 +149,7 @@ public sealed class AplicarModeloFormularioEndpointTests
         return await db.ProcessosSeletivos.AsNoTracking()
             .Include(static p => p.Formularios)
             .Include(static p => p.Campos)
+            .Include(static p => p.GruposColetados).ThenInclude(static g => g.Subitens)
             .SingleAsync(p => p.Id == processoId);
     }
 

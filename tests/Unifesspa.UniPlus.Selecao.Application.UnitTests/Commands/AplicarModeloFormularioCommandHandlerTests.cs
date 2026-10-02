@@ -42,6 +42,8 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [
         Declarado("QUILOMBOLA"),
         Declarado("CERTIFICADO"),
+        Declarado("MAIOR_IDADE") with { Escopo = "MEMBRO_GRUPO" },
+        Declarado("SOB_GUARDA") with { Escopo = "MEMBRO_GRUPO", Ativo = false },
         Declarado("BAIXA_RENDA") with { Ativo = false },
         new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR", ["PRETA", "AMARELA", "INDIGENA"], "INSCRICAO",
             "CAMPO_INSCRICAO:COR_RACA", [new("PRETA", "Preta", 0, true), new("AMARELA", "Amarela", 1, false), new("INDIGENA", "Indígena", 2, false)], "GLOBAL", Ativo: true),
@@ -102,6 +104,42 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(modelo);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.pressupostos[0]");
+    }
+
+    [Fact(DisplayName = "O grupo repetível do modelo é copiado para o formulário do processo")]
+    public async Task Handle_ModeloComGrupo_CopiaOGrupo()
+    {
+        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0)], grupos: [Composicao(Campo("MAIOR_IDADE", 0))]);
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(modelo);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        _processo.GruposColetados.Single().Subitens.Single().FatoCodigo.Should().Be("MAIOR_IDADE");
+    }
+
+    [Fact(DisplayName = "Grupo com campo de fato desativado sai da cópia inteiro e volta no relatório")]
+    public async Task Handle_GrupoComCampoDesativado_DescartaOGrupo()
+    {
+        ModeloFormularioView modelo = Modelo(
+            FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0)], grupos: [Composicao(Campo("MAIOR_IDADE", 0), Campo("SOB_GUARDA", 1))]);
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(modelo);
+
+        resultado.Value!.Descartados.Should().BeEquivalentTo([new ParteDescartadaDto("GRUPO", "COMPOSICAO_FAMILIAR", "FATO_DESATIVADO")]);
+        _processo.GruposColetados.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O derivado citado só pelo campo do grupo recebe a regra padrão do catálogo")]
+    public async Task Handle_DerivadoCitadoPeloCampoDoGrupo_CopiaARegra()
+    {
+        ModeloFormularioView modelo = Modelo(
+            FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)],
+            grupos: [Composicao(Campo("MAIOR_IDADE", 0) with { Precondicao = [[new CondicaoPrecondicaoInput("PERFIL", "IGUAL", JsonSerializer.SerializeToElement("A"))]] })]);
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(modelo);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.DerivacoesCopiadas.Should().Equal("PERFIL");
     }
 
     [Fact(DisplayName = "Item de fato desativado e termo de versão removida saem da cópia e voltam no relatório")]
@@ -276,12 +314,18 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         FinalidadeFormulario finalidade,
         IReadOnlyList<FatoColetadoInput> itens,
         IReadOnlyList<TermoExigidoInput>? termos = null,
-        IReadOnlyList<string>? pressupostos = null) =>
+        IReadOnlyList<string>? pressupostos = null,
+        IReadOnlyList<GrupoColetadoInput>? grupos = null) =>
         new(Guid.NewGuid(), "MODELO", "Modelo", null, EstruturaFormulario.ParaToken(finalidade), null, true,
             new ConteudoDoModeloInput(
                 "Formulário",
                 [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
-                itens, termos ?? [], pressupostos ?? []));
+                itens, termos ?? [], pressupostos ?? [], grupos ?? []));
+
+    private static GrupoColetadoInput Composicao(params FatoColetadoInput[] campos) =>
+        new("COMPOSICAO_FAMILIAR", 1, "Composição familiar", "DADOS", 1, 10, null, "SEMPRE", null, campos);
+
+    private static FatoColetadoInput Campo(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
 
     private static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") =>
         new(fato, ordem, fato, tipo, "SEMPRE", null, EtapaCodigo: "DADOS");
