@@ -17,8 +17,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// execuções — o mesmo molde de <c>RegraCatalogoSeed</c>.
 /// </para>
 /// <para>
-/// Todos são fatos de <b>sistema</b>, no escopo do candidato: só nome e descrição são editáveis
-/// (ADR-0136). A fonte dos valores do categórico está em <see cref="FatoCandidatoSeedItem.FonteValores"/>;
+/// Todos são fatos de <b>sistema</b>: só nome e descrição são editáveis (ADR-0136). São do escopo
+/// do candidato, exceto maior de idade, sem renda e sob guarda, que são campos de membro de um
+/// grupo repetível do formulário, como a composição familiar (ADR-0138). A fonte dos valores do categórico está em <see cref="FatoCandidatoSeedItem.FonteValores"/>;
 /// os valores do categórico global são os <see cref="Domain.Entities.FatoValorDominio"/> de
 /// <see cref="FatoValorDominioSeed"/>. Cor ou raça, autodeclaração quilombola, deficiência,
 /// atendimento especializado, os opt-ins que os revelam e a modalidade que deles deriva são
@@ -65,6 +66,9 @@ public static class FatoCandidatoSeed
 
     private const string FinalidadeResidencia =
         "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.";
+
+    private const string FinalidadeComposicaoFamiliar =
+        "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.";
 
     private const string FinalidadeRequisitos =
         "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.";
@@ -201,6 +205,23 @@ public static class FatoCandidatoSeed
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.Modalidade,
             PontoResolucaoResultadoFinal, "CLASSIFICACAO:MODALIDADE_CONVOCACAO",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
+
+        // Campos de membro da composição familiar: a exigência repetida por membro cita cada um
+        // na ocorrência do grupo, como a certidão pedida só do membro sob guarda.
+        new(SeedId(23), "MAIOR_IDADE", "Maior de idade", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, "CAMPO_INSCRICAO:MAIOR_IDADE",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
+
+        new(SeedId(24), "SEM_RENDA", "Sem renda", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, "CAMPO_INSCRICAO:SEM_RENDA",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
+
+        new(SeedId(25), "SOB_GUARDA", "Sob guarda", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, "CAMPO_INSCRICAO:SOB_GUARDA",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
     ];
 }
 
@@ -222,4 +243,5 @@ public sealed record FatoCandidatoSeedItem(
     string PontoResolucao,
     string Binding,
     ClassificacaoProtecaoDado ClassificacaoProtecao,
-    string FinalidadeTratamento);
+    string FinalidadeTratamento,
+    EscopoFato Escopo = EscopoFato.Candidato);

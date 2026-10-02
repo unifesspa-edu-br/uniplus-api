@@ -59,7 +59,7 @@ public sealed class FatoCandidatoPersistenceTests
                 formato: null,
                 item.PontoResolucao,
                 item.Binding,
-                EscopoFato.Candidato,
+                item.Escopo,
                 item.ClassificacaoProtecao,
                 item.FinalidadeTratamento,
                 FatoCandidatoSeed.HipoteseLegal,
@@ -164,7 +164,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(22);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(25);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -178,10 +178,10 @@ public sealed class FatoCandidatoPersistenceTests
             persistido.Binding.Should().Be(item.Binding);
 
             persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
+            persistido.Escopo.Should().Be(item.Escopo);
             persistido.FinalidadeTratamento.Should().Be(item.FinalidadeTratamento);
             persistido.Sistema.Should().BeTrue($"{item.Codigo} é semeado pelo sistema");
             persistido.Ativo.Should().BeTrue();
-            persistido.Escopo.Should().Be(EscopoFato.Candidato);
         }
     }
 
@@ -419,7 +419,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
 
-        views.Should().HaveCount(22);
+        views.Should().HaveCount(25);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -541,12 +541,18 @@ public sealed class FatoCandidatoPersistenceTests
             ("UF_RESIDENCIA", "020", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA", "INSCRICAO"),
             ("MUNICIPIO_RESIDENCIA", "021", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA", "INSCRICAO"),
             ("MODALIDADE_CONVOCACAO", "022", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "CLASSIFICACAO:MODALIDADE_CONVOCACAO", "RESULTADO_FINAL"),
+            ("MAIOR_IDADE", "023", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:MAIOR_IDADE", "INSCRICAO"),
+            ("SEM_RENDA", "024", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SEM_RENDA", "INSCRICAO"),
+            ("SOB_GUARDA", "025", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SOB_GUARDA", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
 
         fatos.Should().HaveCount(esperado.Length);
+
+        // Os campos de membro da composição familiar; todos os demais são do candidato.
+        HashSet<string> deMembroDeGrupo = ["MAIOR_IDADE", "SEM_RENDA", "SOB_GUARDA"];
 
         foreach ((string codigo, string idSufixo, DominioFato dominio, OrigemFato origem, CardinalidadeFato cardinalidade, string binding, string pontoResolucao) in esperado)
         {
@@ -557,6 +563,7 @@ public sealed class FatoCandidatoPersistenceTests
             fato.Cardinalidade.Should().Be(cardinalidade);
             fato.PontoResolucao.Should().Be(pontoResolucao);
             fato.Binding.Should().Be(binding);
+            fato.Escopo.Should().Be(deMembroDeGrupo.Contains(codigo) ? EscopoFato.MembroGrupo : EscopoFato.Candidato);
         }
     }
 

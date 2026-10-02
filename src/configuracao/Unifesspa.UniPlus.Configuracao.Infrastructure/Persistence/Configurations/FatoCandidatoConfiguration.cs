@@ -216,7 +216,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             item.FonteValores,
             item.PontoResolucao,
             item.Binding,
-            Escopo = EscopoFato.Candidato,
+            item.Escopo,
             item.ClassificacaoProtecao,
             item.FinalidadeTratamento,
             FatoCandidatoSeed.HipoteseLegal,
