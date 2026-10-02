@@ -107,27 +107,42 @@ internal static class VocabularioDeFatos
     /// <summary>Se o vínculo é de fato que a classificação produz, como o grupo em que o candidato foi convocado.</summary>
     public static bool ProduzidoPelaClassificacao(string binding) => VinculoDeFato.Usa(binding, VinculoDeFato.Classificacao);
 
+    /// <summary>O fato de membro de cada agregado sobre grupo repetível do catálogo, pelo código do agregado.</summary>
+    public static Dictionary<string, string> MembroPorAgregado(IEnumerable<FatoCandidatoView> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+        return catalogo
+            .Select(static f => (f.Codigo, Membro: VinculoDeFato.Nomeado(f.Binding, VinculoDeFato.AgregacaoDeGrupo)))
+            .Where(static a => a.Membro is not null)
+            .ToDictionary(static a => a.Codigo, static a => a.Membro!, StringComparer.Ordinal);
+    }
+
     /// <summary>
     /// Os fatos que o processo resolve para um candidato — o universo contra o qual um gatilho é
     /// conferido.
     /// </summary>
     /// <remarks>
-    /// São quatro conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
+    /// São cinco conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
     /// coleta nos formulários; o que ele deriva por regra declarada (a modalidade de
-    /// concorrência); o que o sistema calcula de atributos do candidato (faixa etária, renda per
-    /// capita); e o que a classificação produz (o grupo em que o candidato foi convocado). Os dois
-    /// últimos nunca aparecem nas regras de derivação, porque não há o que declarar sobre eles; a
-    /// fase em que ficam conhecidos é a do catálogo.
+    /// concorrência); o agregado cujo fato de membro é campo de um grupo do processo; o que o
+    /// sistema calcula de atributos do candidato (faixa etária, renda per capita); e o que a
+    /// classificação produz (o grupo em que o candidato foi convocado). Os dois últimos nunca
+    /// aparecem nas regras de derivação, porque não há o que declarar sobre eles; a fase em que
+    /// ficam conhecidos é a do catálogo.
     /// </remarks>
     public static HashSet<string> QueOProcessoResolve(ProcessoSeletivo processo, IEnumerable<FatoCandidatoView> catalogo)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogo);
 
+        List<FatoCandidatoView> fatos = [.. catalogo];
+        HashSet<string> camposDeGrupo = new(
+            processo.GruposColetados.SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo), StringComparer.Ordinal);
         return new(
             processo.FatosColetados.Select(static f => f.FatoCodigo)
                 .Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato))
-                .Concat(catalogo
+                .Concat(MembroPorAgregado(fatos).Where(a => camposDeGrupo.Contains(a.Value)).Select(static a => a.Key))
+                .Concat(fatos
                     .Where(static f => f.Binding is { } binding && (CalculadoDeAtributo(binding) || ProduzidoPelaClassificacao(binding)))
                     .Select(static f => f.Codigo)),
             StringComparer.Ordinal);
@@ -167,7 +182,8 @@ internal static class VocabularioDeFatos
     /// O domínio de cada fato categórico dinâmico do catálogo neste processo: as opções que o
     /// processo declara, as modalidades que ele oferta, os municípios do bônus regional ou, nos
     /// derivados de residência, as UFs e os municípios do Geo. Uma condição que cite o fato é
-    /// validada contra esse conjunto, nunca contra um catálogo global.
+    /// validada contra esse conjunto, nunca contra um catálogo global. O agregado sobre grupo
+    /// repetível não tem opções próprias: as do processo são as do fato de membro.
     /// </summary>
     public static Dictionary<string, DominioDeValores> DominiosDinamicos(
         ProcessoSeletivo processo, IEnumerable<FatoCandidatoView> catalogo)
@@ -182,7 +198,8 @@ internal static class VocabularioDeFatos
             {
                 case { Dominio: DominioCategorico, FonteValores: FonteProcesso }:
                     dominios[fato.Codigo] = DominioDeValores.Enumerado(
-                        processo.OpcoesDoProcesso(fato.Codigo).Select(static o => o.Codigo));
+                        processo.OpcoesDoProcesso(VinculoDeFato.Nomeado(fato.Binding, VinculoDeFato.AgregacaoDeGrupo) ?? fato.Codigo)
+                            .Select(static o => o.Codigo));
                     break;
                 case { Dominio: DominioCategorico, FonteValores: FonteModalidade }:
                     dominios[fato.Codigo] = DominioDeValores.Enumerado(

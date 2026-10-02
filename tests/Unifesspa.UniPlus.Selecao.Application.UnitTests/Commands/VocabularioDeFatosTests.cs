@@ -4,11 +4,13 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Texto, data e endereço nunca são citados em regra configurada (ADR-0136): o dado pessoal não
@@ -70,6 +72,40 @@ public sealed class VocabularioDeFatosTests
         VocabularioDeFatos.DominioDeContribuicao(Derivado("MODALIDADE", "MODALIDADE"), dinamicos)
             .Should().BeEquivalentTo(["AC", "LB_PPI"]);
     }
+
+    [Fact(DisplayName = "O agregado é resolvido pelo processo quando o fato de membro é campo de um grupo dele")]
+    public void QueOProcessoResolve_AgregadoDeCampoDeGrupo_Incluido()
+    {
+        ProcessoSeletivo processo = Processo();
+        GrupoColetado grupo = GrupoColetado.Criar(
+            "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
+            [FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!]).Value!;
+        processo.DefinirItens([], grupos: [grupo]).IsSuccess.Should().BeTrue();
+
+        VocabularioDeFatos.QueOProcessoResolve(processo, [Agregado("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA"), Agregado("SOB_GUARDA_NA_FAMILIA", "MENOR_SOB_GUARDA")])
+            .Should().BeEquivalentTo(["CATEGORIAS_RENDA_FAMILIA"], "o fato de membro do outro agregado não é campo de grupo do processo");
+    }
+
+    [Fact(DisplayName = "As opções do processo de um agregado são as do fato de membro")]
+    public void DominiosDinamicos_AgregadoComOpcoesDoProcesso_OpcoesDoMembro()
+    {
+        ProcessoSeletivo processo = Processo();
+        processo.DefinirOpcoesDeclaradas(
+            "CATEGORIA_RENDA", [OpcaoDeclaradaFato.Criar("CATEGORIA_RENDA", "RURAL", "Trabalhador rural", 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        VocabularioDeFatos.DominiosDinamicos(processo, [Agregado("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA")])["CATEGORIAS_RENDA_FAMILIA"]
+            .Contem("RURAL").Should().BeTrue();
+    }
+
+    private static ProcessoSeletivo Processo() => ProcessoSeletivo.Criar(
+        "PS Agregado", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+
+    private static FatoCandidatoView Agregado(string codigo, string membro) => new(
+        Guid.CreateVersion7(), codigo, codigo, null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
+        ValoresDominio: null, "HABILITACAO", $"AGREGACAO_GRUPO:{membro}", ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true);
 
     [Fact(DisplayName = "Os fatos cujos valores são modalidades são escolhidos pela fonte, não pelo código")]
     public void ComValoresDeModalidade_PelaFonte()

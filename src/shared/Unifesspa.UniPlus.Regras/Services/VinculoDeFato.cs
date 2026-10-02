@@ -40,4 +40,8 @@ public static class VinculoDeFato
             && binding.StartsWith(prefixo, StringComparison.Ordinal)
             && binding[prefixo.Length] == ':';
     }
+
+    /// <summary>O que o vínculo do mecanismo dado nomeia, ou <see langword="null"/> quando o vínculo é de outro mecanismo.</summary>
+    public static string? Nomeado(string binding, string prefixo) =>
+        Usa(binding, prefixo) ? binding[(prefixo.Length + 1)..] : null;
 }

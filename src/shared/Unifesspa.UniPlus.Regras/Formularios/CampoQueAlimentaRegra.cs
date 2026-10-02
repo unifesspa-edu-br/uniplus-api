@@ -8,7 +8,9 @@ using Unifesspa.UniPlus.Regras.Errors;
 /// Campo opcional sem resposta resolve sem valor, e todo operador sobre ele dá falso — inclusive
 /// <c>DIFERENTE</c> e <c>NAO_EM</c> (UNI-REQ-0074). Por isso o campo cujo fato é dependência de uma
 /// derivação, ou é citado por negação em qualquer regra, precisa ser obrigatório sempre que exibido:
-/// sem resposta, a derivação e a negação dariam resultado que o candidato não declarou. A mesma
+/// sem resposta, a derivação e a negação dariam resultado que o candidato não declarou. Pelo mesmo
+/// motivo, o grupo repetível cujo campo alimenta um agregado precisa ser obrigatório sempre, ele e o
+/// campo: grupo ou campo sem resposta faria o agregado dizer que nenhum membro tem o valor. A mesma
 /// regra vale no processo e no modelo.
 /// </summary>
 public static class CampoQueAlimentaRegra
@@ -38,7 +40,37 @@ public static class CampoQueAlimentaRegra
             .Where(i => i.Obrigatoriedade != TipoObrigatoriedade.Sempre && alimentamRegra.Contains(i.FatoCodigo))
             .Select(static i => new DomainError(
                 ItemFormularioErrorCodes.OpcionalQueAlimentaRegra,
-                $"O campo '{i.FatoCodigo}' alimenta uma derivação ou uma condição de negação e precisa ser obrigatório sempre que exibido."))
+                $"O campo '{i.FatoCodigo}' alimenta uma derivação, um agregado ou uma condição de negação e precisa ser obrigatório sempre que exibido."))
             .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// O primeiro grupo, na ordem dada, com campo que alimenta agregado (<paramref name="membrosQueAlimentam"/>)
+    /// sem que o grupo ou o campo seja obrigatório sempre.
+    /// </summary>
+    public static DomainError? PrimeiroGrupoOpcional(
+        IEnumerable<(string Codigo, TipoObrigatoriedade Obrigatoriedade, IEnumerable<(string FatoCodigo, TipoObrigatoriedade Obrigatoriedade)> Campos)> grupos,
+        IReadOnlySet<string> membrosQueAlimentam)
+    {
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(membrosQueAlimentam);
+
+        foreach ((string codigo, TipoObrigatoriedade obrigatoriedade, IEnumerable<(string FatoCodigo, TipoObrigatoriedade Obrigatoriedade)> campos) in grupos)
+        {
+            List<(string FatoCodigo, TipoObrigatoriedade Obrigatoriedade)> doGrupo = [.. campos];
+            if (PrimeiroOpcional(doGrupo, membrosQueAlimentam) is { } campoOpcional)
+            {
+                return campoOpcional;
+            }
+
+            if (obrigatoriedade != TipoObrigatoriedade.Sempre && doGrupo.Any(c => membrosQueAlimentam.Contains(c.FatoCodigo)))
+            {
+                return new DomainError(
+                    ItemFormularioErrorCodes.OpcionalQueAlimentaRegra,
+                    $"O grupo '{codigo}' tem campo que alimenta um agregado e precisa ser obrigatório sempre que exibido.");
+            }
+        }
+
+        return null;
     }
 }

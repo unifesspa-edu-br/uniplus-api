@@ -104,6 +104,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         bool existeGatilho = ExisteGatilho(command.Raizes);
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null;
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
+        IReadOnlyDictionary<string, string>? membroPorAgregado = null;
         IReadOnlySet<string>? fatosResolviveis = null;
         IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos = null;
         IReadOnlyDictionary<string, FatoCandidatoView>? catalogoFatos = null;
@@ -114,6 +115,7 @@ public static class DefinirDocumentosExigidosCommandHandler
                 .ConfigureAwait(false);
 
             pontoResolucaoPorFato = VocabularioDeFatos.PontoResolucaoPorFato(catalogo);
+            membroPorAgregado = VocabularioDeFatos.MembroPorAgregado(catalogo);
             fatosResolviveis = VocabularioDeFatos.QueOProcessoResolve(processo, catalogo);
             dominiosDinamicos = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
             catalogoFatos = catalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
@@ -139,7 +141,7 @@ public static class DefinirDocumentosExigidosCommandHandler
 
                 Result<DocumentoExigido> documentoResult = await ConstruirDocumentoExigidoAsync(
                         documentoInput, processo, tipoDocumentoReader, vocabularioFatos, pontoResolucaoPorFato,
-                        dominiosDinamicos, fatosResolviveis, tipoEntidadeEfetivo, cancellationToken)
+                        membroPorAgregado, dominiosDinamicos, fatosResolviveis, tipoEntidadeEfetivo, cancellationToken)
                     .ConfigureAwait(false);
                 if (documentoResult.IsFailure)
                 {
@@ -323,6 +325,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         ITipoDocumentoReader tipoDocumentoReader,
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato,
+        IReadOnlyDictionary<string, string>? membroPorAgregado,
         IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos,
         IReadOnlySet<string>? fatosResolviveis,
         TipoEntidade? tipoEntidadeRepeticao,
@@ -376,7 +379,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         if (condicoesResult.Value!.Count > 0)
         {
             Result gateDeFaseResult = ValidarGateDeFase(
-                condicoesResult.Value!, input.ExigidoNaFaseId, processo, pontoResolucaoPorFato!);
+                condicoesResult.Value!, input.ExigidoNaFaseId, processo, pontoResolucaoPorFato!, membroPorAgregado!);
             if (gateDeFaseResult.IsFailure)
             {
                 return Result<DocumentoExigido>.Failure(gateDeFaseResult.Error!);
@@ -504,8 +507,9 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyList<CondicaoGatilho> condicoes,
         Guid exigidoNaFaseId,
         ProcessoSeletivo processo,
-        IReadOnlyDictionary<string, string> pontoResolucaoPorFato) =>
-        condicoes.Select(c => processo.RecusaDeFaseDoGatilho(c.Fato, exigidoNaFaseId, pontoResolucaoPorFato))
+        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
+        IReadOnlyDictionary<string, string> membroPorAgregado) =>
+        condicoes.Select(c => processo.RecusaDeFaseDoGatilho(c.Fato, exigidoNaFaseId, pontoResolucaoPorFato, membroPorAgregado))
             .FirstOrDefault(static r => r is not null) is { } recusa
             ? Result.Failure(recusa)
             : Result.Success();
