@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -124,6 +125,13 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             .HasDefaultValueSql("'[]'::jsonb")
             .IsRequired();
 
+        // Dependências do derivado do sistema (ADR-0136), declaradas pelo seed a partir do mecanismo
+        // que calcula o fato.
+        builder.Property(f => f.Dependencias)
+            .HasColumnName("dependencias")
+            .HasDefaultValueSql("'{}'::text[]")
+            .IsRequired();
+
         // Coleção filha (ADR-0116): descrição por valor de um categórico estático.
         // Cascade porque o filho não tem sentido sem o pai (mesmo padrão de
         // OfertaAtendimentoEspecializado.Condicoes).
@@ -223,6 +231,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             Sistema = true,
             Ativo = true,
             RegrasPadrao = (IReadOnlyList<RegraDerivacao>)[],
+            Dependencias = DerivadosDoSistema.Dependencias.GetValueOrDefault(item.Codigo) ?? [],
             CreatedAt = seedCriadoEm,
         });
     }

@@ -554,6 +554,14 @@ public sealed class FatoCandidatoPersistenceTests
         // Os campos de membro da composição familiar; todos os demais são do candidato.
         HashSet<string> deMembroDeGrupo = ["MAIOR_IDADE", "SEM_RENDA", "SOB_GUARDA"];
 
+        // As dependências dos derivados do sistema (ADR-0136, UNI-REQ-0075); os demais fatos não têm.
+        Dictionary<string, string[]> dependencias = new(StringComparer.Ordinal)
+        {
+            ["FAIXA_ETARIA"] = ["DATA_NASCIMENTO"],
+            ["UF_RESIDENCIA"] = ["ENDERECO_RESIDENCIAL"],
+            ["MUNICIPIO_RESIDENCIA"] = ["ENDERECO_RESIDENCIAL"],
+        };
+
         foreach ((string codigo, string idSufixo, DominioFato dominio, OrigemFato origem, CardinalidadeFato cardinalidade, string binding, string pontoResolucao) in esperado)
         {
             FatoCandidato fato = fatos.Single(f => f.Codigo == codigo);
@@ -564,6 +572,7 @@ public sealed class FatoCandidatoPersistenceTests
             fato.PontoResolucao.Should().Be(pontoResolucao);
             fato.Binding.Should().Be(binding);
             fato.Escopo.Should().Be(deMembroDeGrupo.Contains(codigo) ? EscopoFato.MembroGrupo : EscopoFato.Candidato);
+            fato.Dependencias.Should().Equal(dependencias.GetValueOrDefault(codigo) ?? []);
         }
     }
 

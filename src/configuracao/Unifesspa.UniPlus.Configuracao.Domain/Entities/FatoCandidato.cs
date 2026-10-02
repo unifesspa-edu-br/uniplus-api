@@ -111,6 +111,12 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     public IReadOnlyList<RegraDerivacao> RegrasPadrao { get; private set; } = [];
 
     /// <summary>
+    /// Os fatos de que o derivado do sistema depende (<see cref="DerivadosDoSistema"/>), registrados
+    /// pelo seed; vazio nos demais fatos.
+    /// </summary>
+    public IReadOnlyList<string> Dependencias { get; private set; } = [];
+
+    /// <summary>
     /// O fato de membro que o agregado aponta (ADR-0138), ou <see langword="null"/> quando o fato não
     /// é agregado sobre grupo repetível.
     /// </summary>
