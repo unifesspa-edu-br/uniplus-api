@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Uma regra de derivação configurada num processo (Story #927): quando o predicado
 /// <c>quando</c> — formado pelas <see cref="Condicoes"/> — é verdadeiro, a regra contribui o código
-/// <see cref="Contribui"/> para o conjunto derivado. É a forma persistida de
+/// <see cref="Contribui"/> para o conjunto derivado; no derivado booleano a regra não contribui
+/// código, e a ativa torna o derivado verdadeiro. É a forma persistida de
 /// <see cref="Regras.ValueObjects.RegraDerivacao"/>.
 /// </summary>
 /// <remarks>
@@ -24,8 +25,11 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
     /// <summary>Ordinal da regra na configuração — total e único, para serialização determinística.</summary>
     public int Ordem { get; private set; }
 
-    /// <summary>Código de valor do domínio do fato que a regra contribui quando ativa.</summary>
-    public string Contribui { get; private set; } = string.Empty;
+    /// <summary>
+    /// Código de valor do domínio do fato que a regra contribui quando ativa; nulo no derivado
+    /// booleano.
+    /// </summary>
+    public string? Contribui { get; private set; }
 
     public IReadOnlyCollection<CondicaoRegraDerivacao> Condicoes => _condicoes.AsReadOnly();
 
@@ -37,7 +41,7 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
     /// </summary>
     public static Result<RegraDerivacaoConfigurada> Criar(
         int ordem,
-        string contribui,
+        string? contribui,
         IReadOnlyList<CondicaoRegraDerivacao>? condicoes)
     {
         List<FieldError> erros = ValidarFormaBasica(ordem, contribui);
@@ -46,7 +50,7 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
             return Result<RegraDerivacaoConfigurada>.ValidationFailure(erros);
         }
 
-        RegraDerivacaoConfigurada regra = new() { Ordem = ordem, Contribui = contribui.Trim() };
+        RegraDerivacaoConfigurada regra = new() { Ordem = ordem, Contribui = contribui?.Trim() };
         foreach (CondicaoRegraDerivacao condicao in condicoes ?? [])
         {
             condicao.VincularRegra(regra.Id);
@@ -75,11 +79,13 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
                 "A ordem da regra não pode ser negativa.")));
         }
 
-        if (string.IsNullOrWhiteSpace(contribui))
+        // Nula é a regra do derivado booleano; em branco é um código mal preenchido, nunca um
+        // booleano implícito.
+        if (contribui is not null && string.IsNullOrWhiteSpace(contribui))
         {
             erros.Add(new("contribui", new DomainError(
-                RegraDerivacaoConfiguradaErrorCodes.ContribuiObrigatorio,
-                "Uma regra de derivação precisa contribuir um código.")));
+                RegraDerivacaoConfiguradaErrorCodes.ContribuiEmBranco,
+                "O código contribuído pela regra não pode ficar em branco; omita-o só no derivado booleano.")));
         }
 
         return erros;
@@ -112,7 +118,9 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
             return Result<RegraDerivacao>.Failure(quandoResult.Error!);
         }
 
-        return RegraDerivacao.Criar(quandoResult.Value!, Contribui);
+        return Contribui is null
+            ? Result<RegraDerivacao>.Success(RegraDerivacao.CriarBooleana(quandoResult.Value!))
+            : RegraDerivacao.Criar(quandoResult.Value!, Contribui);
     }
 }
 
@@ -120,5 +128,5 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
 public static class RegraDerivacaoConfiguradaErrorCodes
 {
     public const string OrdemInvalida = "RegraDerivacaoConfigurada.OrdemInvalida";
-    public const string ContribuiObrigatorio = "RegraDerivacaoConfigurada.ContribuiObrigatorio";
+    public const string ContribuiEmBranco = "RegraDerivacaoConfigurada.ContribuiEmBranco";
 }

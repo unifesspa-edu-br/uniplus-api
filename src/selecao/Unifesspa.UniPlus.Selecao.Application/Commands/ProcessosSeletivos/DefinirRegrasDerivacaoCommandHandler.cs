@@ -72,7 +72,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
         {
             ConfiguracaoDerivacaoInput configInput = command.Configuracoes[indiceConfig];
             List<FieldError> configErros = ConfiguracaoDerivacaoFato.ValidarFormaBasica(
-                configInput.CodigoFato, configInput.Regras.Count, configInput.Regras.Select(static r => r.Ordem));
+                configInput.CodigoFato, [.. configInput.Regras.Select(static r => (r.Ordem, r.Contribui))]);
             formaErros.AddRange(configErros.Select(erro => erro with { Field = $"configuracoes[{indiceConfig}].{erro.Field}" }));
 
             for (int indiceRegra = 0; indiceRegra < configInput.Regras.Count; indiceRegra++)
@@ -129,7 +129,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
             VinculosDeFatos.De(
                 configuracoes.Select(static c => c.CodigoFato),
                 configuracoes.SelectMany(static c => c.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor)),
-                configuracoes.SelectMany(static c => c.Regras.Select(r => (c.CodigoFato, r.Contribui)))));
+                configuracoes.SelectMany(static c => c.CodigosContribuidos)));
         if (vinculoNovo.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
@@ -168,8 +168,8 @@ public static class DefinirRegrasDerivacaoCommandHandler
         {
             return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
                 DerivabilidadeDeFato.FatoNaoDerivavel,
-                $"O fato '{configInput.CodigoFato}' não é um alvo de derivação — só um fato categórico derivado com "
-                + "binding de regra de derivação pode ter regras configuradas."));
+                $"O fato '{configInput.CodigoFato}' não é um alvo de derivação — só um fato categórico ou booleano "
+                + "derivado com binding de regra de derivação pode ter regras configuradas."));
         }
 
         List<RegraDerivacaoConfigurada> regras = [];
@@ -189,6 +189,19 @@ public static class DefinirRegrasDerivacaoCommandHandler
         if (configResult.IsFailure)
         {
             return configResult;
+        }
+
+        // O domínio do fato no catálogo decide a forma das regras, inclusive na fonte que o servidor
+        // não enumera: inferir o booleano só das regras deixaria um categórico sem código virar
+        // booleano.
+        bool alvoBooleano = string.Equals(view.Dominio, VocabularioDeFatos.DominioBooleano, StringComparison.Ordinal);
+        if (configResult.Value!.Booleano != alvoBooleano)
+        {
+            return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
+                DerivabilidadeDeFato.ContribuicaoIncoerenteComODominio,
+                alvoBooleano
+                    ? $"O fato '{configInput.CodigoFato}' é booleano: as regras não contribuem código, e a ativa torna o derivado verdadeiro."
+                    : $"O fato '{configInput.CodigoFato}' é categórico: toda regra contribui um código do domínio do fato."));
         }
 
         // Domínio de contribuição: todo código contribuído pertence aos valores que o fato tem no
@@ -312,22 +325,23 @@ internal static class DerivabilidadeDeFato
 {
     public const string FatoDesconhecido = "ConfiguracaoDerivacaoFato.FatoDesconhecido";
     public const string FatoNaoDerivavel = "ConfiguracaoDerivacaoFato.FatoNaoDerivavel";
+    public const string ContribuicaoIncoerenteComODominio = "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio";
 
     private const string OrigemDerivado = "DERIVADO";
 
     private const string DominioCategorico = "CATEGORICO";
 
     /// <summary>
-    /// A regra do processo contribui código, então o alvo é categórico: o derivado booleano ainda
-    /// não tem regra configurável no processo, e aceitá-lo gravaria contribuições que o motor
-    /// emitiria como lista num fato declarado booleano.
+    /// O derivado por regra é categórico, por união dos códigos contribuídos, ou booleano,
+    /// verdadeiro quando alguma regra ativa (ADR-0136).
     /// </summary>
     public static bool EhAlvoDeDerivacao(FatoCandidatoView fato)
     {
         ArgumentNullException.ThrowIfNull(fato);
 
         return string.Equals(fato.Origem, OrigemDerivado, StringComparison.Ordinal)
-            && string.Equals(fato.Dominio, DominioCategorico, StringComparison.Ordinal)
+            && (string.Equals(fato.Dominio, DominioCategorico, StringComparison.Ordinal)
+                || string.Equals(fato.Dominio, VocabularioDeFatos.DominioBooleano, StringComparison.Ordinal))
             && string.Equals(fato.Binding, VinculoDeFato.De(VinculoDeFato.RegraDeDerivacao, fato.Codigo), StringComparison.Ordinal);
     }
 }

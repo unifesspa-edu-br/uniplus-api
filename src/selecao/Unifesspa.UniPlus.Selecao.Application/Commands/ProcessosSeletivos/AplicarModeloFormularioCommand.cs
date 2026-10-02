@@ -44,7 +44,6 @@ public static class AplicacaoDeModeloErrorCodes
     public const string ModeloInativo = "AplicacaoDeModelo.ModeloInativo";
     public const string TipoDeProcessoDiferente = "AplicacaoDeModelo.TipoDeProcessoDiferente";
     public const string PressupostoAusente = "AplicacaoDeModelo.PressupostoAusente";
-    public const string DerivadoBooleano = "AplicacaoDeModelo.DerivadoBooleano";
     public const string DerivadoSemRegra = "AplicacaoDeModelo.DerivadoSemRegra";
     public const string SemDistribuicaoDeVagas = "AplicacaoDeModelo.SemDistribuicaoDeVagas";
 }

@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 internal static class VocabularioDeFatos
 {
-    private const string DominioBooleano = "BOOLEANO";
+    internal const string DominioBooleano = "BOOLEANO";
     private const string DominioNumerico = "NUMERICO";
     private const string DominioCategorico = "CATEGORICO";
     private const string FonteGlobal = "GLOBAL";

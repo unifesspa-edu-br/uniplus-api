@@ -13783,7 +13783,10 @@
             "format": "int32"
           },
           "contribui": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "quando": {
             "type": [
@@ -13816,7 +13819,10 @@
             "format": "int32"
           },
           "contribui": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "quando": {
             "type": [

@@ -809,6 +809,18 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ItemDaExclusividadeOk(processo).Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Pré-canonicalização: o derivado booleano é escalar, e IGUAL a verdadeiro e a falso separa cota de ação afirmativa")]
+    public void PreCanon_DerivadoBooleano_ProvaExclusao()
+    {
+        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
+        ConfiguracaoDerivacaoFato egresso = ConfiguracaoDerivacaoFato.Criar(
+            "EGRESSO_ESCOLA_PUBLICA", [RegraDerivacaoConfigurada.Criar(0, contribui: null, condicoes: null).Value!]).Value!;
+        processo.DefinirRegrasDerivacao(
+            [egresso, CotaEAcaoAfirmativaPor("EGRESSO_ESCOLA_PUBLICA", true, false)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ItemDaExclusividadeOk(processo).Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Pré-canonicalização: 1 e 1.0 são o mesmo número e não separam cota de ação afirmativa")]
     public void PreCanon_NumeroEquivalente_NaoProvaExclusao()
     {

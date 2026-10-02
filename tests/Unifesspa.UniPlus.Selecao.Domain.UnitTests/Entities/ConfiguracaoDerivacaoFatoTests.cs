@@ -1,9 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="ConfiguracaoDerivacaoFato.Criar"/> (Story #927, ADR-0125) — código
@@ -69,7 +75,7 @@ public sealed class ConfiguracaoDerivacaoFatoTests
     [Fact(DisplayName = "ValidarFormaBasica sem violações retorna lote vazio")]
     public void ValidarFormaBasica_SemViolacoes_Vazio()
     {
-        List<FieldError> erros = ConfiguracaoDerivacaoFato.ValidarFormaBasica("MODALIDADE", 1, [0]);
+        List<FieldError> erros = ConfiguracaoDerivacaoFato.ValidarFormaBasica("MODALIDADE", [(0, "AC")]);
 
         erros.Should().BeEmpty();
     }
@@ -77,8 +83,30 @@ public sealed class ConfiguracaoDerivacaoFatoTests
     [Fact(DisplayName = "ValidarFormaBasica detecta ordens duplicadas sem precisar de regras resolvidas")]
     public void ValidarFormaBasica_OrdensDuplicadas_Detecta()
     {
-        List<FieldError> erros = ConfiguracaoDerivacaoFato.ValidarFormaBasica("MODALIDADE", 2, [0, 0]);
+        List<FieldError> erros = ConfiguracaoDerivacaoFato.ValidarFormaBasica("MODALIDADE", [(0, "AC"), (0, "LB_PPI")]);
 
         erros.Select(e => e.Error.Code).Should().BeEquivalentTo([ConfiguracaoDerivacaoFatoErrorCodes.OrdemRegraDuplicada]);
+    }
+
+    [Fact(DisplayName = "ValidarFormaBasica recusa regras com e sem código na mesma derivação")]
+    public void ValidarFormaBasica_RegrasComESemCodigo_Recusa()
+    {
+        List<FieldError> erros = ConfiguracaoDerivacaoFato.ValidarFormaBasica("EGRESSO_ESCOLA_PUBLICA", [(0, null), (1, "SIM")]);
+
+        erros.Select(e => e.Error.Code).Should().BeEquivalentTo([ConfiguracaoDerivacaoFatoErrorCodes.RegrasComESemCodigo]);
+    }
+
+    [Fact(DisplayName = "A derivação sem código resolve como booleano: falso quando nenhuma regra ativa")]
+    public void ParaRegrasDerivacao_RegrasSemCodigo_ResolveBooleano()
+    {
+        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar(
+            "EGRESSO_ESCOLA_PUBLICA",
+            [RegraDerivacaoConfigurada.Criar(0, null, [CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("INDIGENA")).Value!]).Value!]).Value!;
+
+        RegrasDerivacaoFato regras = config.ParaRegrasDerivacao([]).Value!;
+        ResultadoDerivacao resultado = MotorDerivacao.Derivar(
+            regras, new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["COR_RACA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("PRETA")) });
+
+        resultado.ValorBooleano.Should().BeFalse();
     }
 }

@@ -21,6 +21,14 @@ public sealed class RegraDerivacaoConfiguradaTests
         resultado.Value!.Contribui.Should().Be("AC");
     }
 
+    [Fact(DisplayName = "Criar sem contribuição é a regra do derivado booleano")]
+    public void Criar_SemContribuicao_Aceita()
+    {
+        Result<RegraDerivacaoConfigurada> resultado = RegraDerivacaoConfigurada.Criar(0, null, null);
+
+        resultado.Value!.Contribui.Should().BeNull();
+    }
+
     [Fact(DisplayName = "Criar com ordem negativa falha")]
     public void Criar_OrdemNegativa_Recusa()
     {
@@ -36,7 +44,7 @@ public sealed class RegraDerivacaoConfiguradaTests
         Result<RegraDerivacaoConfigurada> resultado = RegraDerivacaoConfigurada.Criar(0, "", null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(RegraDerivacaoConfiguradaErrorCodes.ContribuiObrigatorio);
+        resultado.Error!.Code.Should().Be(RegraDerivacaoConfiguradaErrorCodes.ContribuiEmBranco);
     }
 
     [Fact(DisplayName = "ADR-0125: ordem negativa e contribuição vazia acumulam no mesmo lote")]
@@ -48,7 +56,7 @@ public sealed class RegraDerivacaoConfiguradaTests
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
             RegraDerivacaoConfiguradaErrorCodes.OrdemInvalida,
-            RegraDerivacaoConfiguradaErrorCodes.ContribuiObrigatorio,
+            RegraDerivacaoConfiguradaErrorCodes.ContribuiEmBranco,
         ]);
     }
 

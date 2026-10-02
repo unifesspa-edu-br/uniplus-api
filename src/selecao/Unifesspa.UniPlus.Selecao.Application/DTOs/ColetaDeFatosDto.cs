@@ -64,11 +64,12 @@ public sealed record CondicaoDerivacaoDto(string Fato, string Operador, JsonElem
 
 /// <summary>
 /// DTO de leitura de uma regra de derivação (Story #987). A regra incondicional (âncora) tem
-/// <see cref="Quando"/> <see langword="null"/> — nunca uma lista vazia.
+/// <see cref="Quando"/> <see langword="null"/> — nunca uma lista vazia. A regra do derivado
+/// booleano tem <see cref="Contribui"/> <see langword="null"/>.
 /// </summary>
 public sealed record RegraDerivacaoDto(
     int Ordem,
-    string Contribui,
+    string? Contribui,
     IReadOnlyList<IReadOnlyList<CondicaoDerivacaoDto>>? Quando);
 
 /// <summary>

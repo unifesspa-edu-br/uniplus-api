@@ -421,6 +421,8 @@ public sealed class ManifestoDoEnvelopeTests
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("FatosCitados", "Derivada das condições das regras — recomputada, nunca persistida."),
+                ("Booleano", "Derivada das contribuições das regras — recomputada, nunca persistida."),
+                ("CodigosContribuidos", "Derivada das contribuições das regras — recomputada, nunca persistida."),
             ]),
 
         [typeof(RegraDerivacaoConfigurada)] = (

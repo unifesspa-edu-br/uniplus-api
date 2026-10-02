@@ -253,19 +253,28 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         _processo.RegrasDerivacao.Should().ContainSingle().Which.CodigoFato.Should().Be("PERFIL");
     }
 
-    [Fact(DisplayName = "Derivado booleano e derivado sem regra padrão nem configuração são recusados")]
-    public async Task Handle_DerivadoBooleanoOuSemRegra_Recusa()
+    [Fact(DisplayName = "O derivado booleano citado é copiado com as regras padrão, que não contribuem código")]
+    public async Task Handle_DerivadoBooleanoCitado_CopiaAsRegrasPadrao()
     {
-        FatoColetadoInput porFlag = Item("CERTIFICADO", 1) with { Precondicao = [[new CondicaoPrecondicaoInput("FLAG_SEM_REGRA", "IGUAL", JsonSerializer.SerializeToElement(true))]] };
-        FatoColetadoInput porSemRegra = Item("COR_RACA", 2, "SELECAO_UNICA") with
+        FatoColetadoInput porFlag = Item("CERTIFICADO", 1) with { Precondicao = [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]] };
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), porFlag]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        _processo.RegrasDerivacao.Should().ContainSingle().Which.Booleano.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Derivado sem regra padrão nem configuração é recusado")]
+    public async Task Handle_DerivadoSemRegra_Recusa()
+    {
+        FatoColetadoInput porSemRegra = Item("COR_RACA", 1, "SELECAO_UNICA") with
         {
             Precondicao = [[new CondicaoPrecondicaoInput("SEM_REGRA", "EM", JsonSerializer.SerializeToElement(new[] { "X" }))]],
         };
 
-        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), porFlag, porSemRegra]));
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), porSemRegra]));
 
-        resultado.Errors.Select(static e => e.Error.Code).Should().Contain(
-            [AplicacaoDeModeloErrorCodes.DerivadoBooleano, AplicacaoDeModeloErrorCodes.DerivadoSemRegra]);
+        resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.DerivadoSemRegra);
     }
 
     [Fact(DisplayName = "Os valores desativados no catálogo citados nas regras são recusados juntos, como vínculo novo")]

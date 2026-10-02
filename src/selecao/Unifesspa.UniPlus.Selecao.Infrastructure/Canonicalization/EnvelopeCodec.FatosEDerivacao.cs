@@ -577,7 +577,7 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(item, path, "ordem", "contribui", "quando");
 
             int ordem = leitor.Inteiro(item, "ordem", path);
-            string contribui = leitor.TextoNaoVazio(item, "contribui", path, LimitesDoEnvelope.Fato);
+            string? contribui = leitor.TextoOpcional(item, "contribui", path, LimitesDoEnvelope.Fato);
             if (leitor.Falhou)
             {
                 return [];

@@ -253,6 +253,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// conteúdo da versão (nome, texto, base legal, forma de aceite e hash) e as condições de exibição
     /// e de obrigatoriedade, ordenados pela ordem. Cada item de <c>fatosColetados[]</c> traz
     /// <c>finalidade</c> e <c>etapaCodigo</c>, e a lista sai ordenada por finalidade e ordem.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>contribui</c> passa a aceitar
+    /// nulo nas regras de <c>regrasDerivacao[]</c>: a regra do derivado booleano não contribui
+    /// código, e a ativa torna o derivado verdadeiro.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -1938,7 +1941,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 regras.Add(new JsonObject
                 {
                     ["ordem"] = regra.Ordem,
-                    ["contribui"] = HashCanonicalComputer.NormalizeNfc(regra.Contribui),
+                    ["contribui"] = regra.Contribui is { } contribui ? HashCanonicalComputer.NormalizeNfc(contribui) : null,
                     ["quando"] = SerializarDnf(regra.Condicoes.Select(
                         static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
                 });
