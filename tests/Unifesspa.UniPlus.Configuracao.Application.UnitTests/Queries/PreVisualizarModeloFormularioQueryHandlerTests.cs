@@ -129,7 +129,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     {
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação", null, FinalidadeFormulario.Habilitacao, null,
-            new ConteudoDoModelo("Habilitação", [Dados, Revisao], itens, termos ?? [], pressupostos ?? []),
+            new ConteudoDoModelo("Habilitação", [Dados, Revisao], itens, termos ?? [], pressupostos ?? [], []),
             derivacoes ?? new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);
         return modelo.Value!;

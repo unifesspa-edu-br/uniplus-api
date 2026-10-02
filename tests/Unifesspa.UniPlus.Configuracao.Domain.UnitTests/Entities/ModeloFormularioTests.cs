@@ -31,11 +31,83 @@ public sealed class ModeloFormularioTests
         new(fato, ordem, etapa, fato, TipoRenderizacao.Booleano, null, null, obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, [], false);
 
     private static ConteudoDoModelo Conteudo(IReadOnlyList<ItemDoModelo> itens, params string[] pressupostos) =>
-        new("Habilitação", [Dados, Revisao], itens, [], pressupostos);
+        new("Habilitação", [Dados, Revisao], itens, [], pressupostos, []);
 
     private static Result<ModeloFormulario> Criar(
         FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
         ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, finalidade, "PSR", conteudo, derivacoes ?? SemDerivacoes);
+
+    private static GrupoDoModelo Composicao(params ItemDoModelo[] campos) =>
+        new("COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre, campos);
+
+    private static ItemDoModelo Campo(string fato, int ordem, Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null) =>
+        Item(fato, ordem, obrigatoriedade, exibicao, etapa: null);
+
+    [Fact(DisplayName = "O grupo repetível entra no modelo, e o campo do grupo cita o campo anterior da mesma ocorrência")]
+    public void Grupo_CampoCitaCampoAnteriorDaOcorrencia_Aceita()
+    {
+        Result<ModeloFormulario> modelo = Criar(
+            FinalidadeFormulario.Habilitacao,
+            Conteudo([Item("RENDA_FAMILIAR", 0)]) with
+            {
+                Grupos = [Composicao(Campo("MAIOR_IDADE", 0), Campo("SEM_RENDA", 1, exibicao: Quando("MAIOR_IDADE")))],
+            });
+
+        modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);
+        modelo.Value!.Conteudo.Grupos.Should().ContainSingle().Which.Subitens.Should().HaveCount(2);
+    }
+
+    [Fact(DisplayName = "Item que cita campo do grupo é recusado: fora da ocorrência, o membro não tem valor único")]
+    public void Grupo_ItemCitaCampoDoGrupo_Recusa()
+    {
+        Result<ModeloFormulario> modelo = Criar(
+            FinalidadeFormulario.Habilitacao,
+            Conteudo([Item("RENDA_FAMILIAR", 2, exibicao: Quando("MAIOR_IDADE"))]) with { Grupos = [Composicao(Campo("MAIOR_IDADE", 0))] });
+
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoDeMembroForaDoGrupo);
+    }
+
+    [Fact(DisplayName = "Campo do grupo opcional citado por negação na ocorrência é recusado, como o item")]
+    public void Grupo_CampoOpcionalQueAlimentaNegacao_Recusa()
+    {
+        Result<ModeloFormulario> modelo = Criar(
+            FinalidadeFormulario.Habilitacao,
+            Conteudo([]) with
+            {
+                Grupos = [Composicao(Campo("MAIOR_IDADE", 0, Obrigatoriedade.Nunca), Campo("SEM_RENDA", 1, exibicao: Quando("MAIOR_IDADE", Operador.Diferente)))],
+            });
+
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
+    }
+
+    [Fact(DisplayName = "Item opcional que alimenta derivado citado por campo do grupo é recusado")]
+    public void Grupo_CampoCitaDerivadoDeItemOpcional_Recusa()
+    {
+        Dictionary<string, IReadOnlyCollection<string>> derivacoes = new(StringComparer.Ordinal) { ["BAIXA_RENDA"] = ["RENDA_DECLARADA"] };
+
+        Result<ModeloFormulario> modelo = Criar(
+            FinalidadeFormulario.Habilitacao,
+            Conteudo([Item("RENDA_DECLARADA", 0, Obrigatoriedade.Nunca)]) with
+            {
+                Grupos = [Composicao(Campo("SEM_RENDA", 0, exibicao: Quando("BAIXA_RENDA")))],
+            },
+            derivacoes);
+
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
+    }
+
+    [Fact(DisplayName = "O teto do formulário conta cada grupo e cada campo de grupo")]
+    public void Grupo_TetoContaGrupoECampos_Recusa()
+    {
+        Result<ModeloFormulario> modelo = Criar(
+            FinalidadeFormulario.Habilitacao,
+            Conteudo([.. Enumerable.Range(0, FormaDoItem.MaximoDeItens - 2).Select(static i => Item($"ITEM_{i}", i + 1))]) with
+            {
+                Grupos = [Composicao(Campo("MAIOR_IDADE", 0), Campo("SEM_RENDA", 1)) with { Ordem = 0 }],
+            });
+
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
+    }
 
     [Fact(DisplayName = "Modelo de habilitação cita fato pressuposto da inscrição e nasce ativo")]
     public void Habilitacao_CitaPressuposto_Aceita()
@@ -138,7 +210,7 @@ public sealed class ModeloFormularioTests
         EtapaDoModelo outraDados = Dados with { Codigo = " DADOS", Ordem = 2 };
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, outraDados, Revisao with { Ordem = 3 }], [Item("CERTIFICADO", 0)], [], []));
+            FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, outraDados, Revisao with { Ordem = 3 }], [Item("CERTIFICADO", 0)], [], [], []));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.EtapaCodigoDuplicado);
     }
@@ -195,7 +267,7 @@ public sealed class ModeloFormularioTests
         TermoDoModelo termo = new("LGPD\uD800", 0, Guid.NewGuid(), Guid.NewGuid(), null, Obrigatoriedade.Sempre);
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, Revisao], [Item("CERTIFICADO", 0)], [termo], []));
+            FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, Revisao], [Item("CERTIFICADO", 0)], [termo], [], []));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
     }
@@ -232,7 +304,7 @@ public sealed class ModeloFormularioTests
     {
         Result<ModeloFormulario> etapa = Criar(
             FinalidadeFormulario.Habilitacao,
-            new ConteudoDoModelo("Habilitação", [Dados with { Tipo = (TipoEtapaFormulario)99 }, Revisao], [Item("CERTIFICADO", 0)], [], []));
+            new ConteudoDoModelo("Habilitação", [Dados with { Tipo = (TipoEtapaFormulario)99 }, Revisao], [Item("CERTIFICADO", 0)], [], [], []));
         Result<ModeloFormulario> campo = Criar(
             FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0) with { TipoRenderizacao = (TipoRenderizacao)99 }]));
 

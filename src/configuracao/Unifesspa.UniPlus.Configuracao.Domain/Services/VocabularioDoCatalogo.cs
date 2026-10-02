@@ -18,14 +18,26 @@ public static class VocabularioDoCatalogo
 {
     /// <summary>
     /// Os fatos que um predicado sabe avaliar: booleano, numérico e categórico do candidato; o
-    /// categórico global só quando já tem valores.
+    /// categórico global só quando já tem valores. É o vocabulário das regras padrão dos derivados,
+    /// que não citam fato de membro de grupo.
     /// </summary>
-    public static Dictionary<string, DescritorFatoCandidato> Descritores(IEnumerable<FatoCandidato> fatos)
+    public static Dictionary<string, DescritorFatoCandidato> Descritores(IEnumerable<FatoCandidato> fatos) =>
+        Descritores(fatos, static f => f.Escopo == EscopoFato.Candidato);
+
+    /// <summary>
+    /// O vocabulário das regras do formulário: o do candidato e os fatos de membro de grupo, que o
+    /// campo do grupo cita na mesma ocorrência. A citação de membro fora do grupo é do grafo do
+    /// formulário.
+    /// </summary>
+    public static Dictionary<string, DescritorFatoCandidato> DescritoresDoFormulario(IEnumerable<FatoCandidato> fatos) =>
+        Descritores(fatos, static _ => true);
+
+    private static Dictionary<string, DescritorFatoCandidato> Descritores(IEnumerable<FatoCandidato> fatos, Func<FatoCandidato, bool> noVocabulario)
     {
         ArgumentNullException.ThrowIfNull(fatos);
         Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
         Dictionary<string, DescritorFatoCandidato> vocabulario = new(StringComparer.Ordinal);
-        foreach (FatoCandidato fato in porCodigo.Values.Where(static f => f.Escopo == EscopoFato.Candidato))
+        foreach (FatoCandidato fato in porCodigo.Values.Where(noVocabulario))
         {
             TipoDominioFato? tipo = fato switch
             {

@@ -98,11 +98,9 @@ internal static class EscritaDosItens
 
             erros.AddRange(FormaDoGrupo.Conferir(
                     input.Codigo, input.Ordem, input.Rotulo, input.Minimo, input.Maximo,
-                    [.. subitens.Where(static s => s is not null).Select(static s => s.FatoCodigo)],
+                    [.. subitens.Select(static s => (s?.FatoCodigo, s?.EtapaCodigo))],
                     exibicao.IsSuccess ? exibicao.Value?.FatosCitados ?? [] : [],
                     obrigatoriedade ?? Obrigatoriedade.Nunca)
-                .Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
-            erros.AddRange(GrupoColetado.CamposComSecaoPropria([.. subitens.Select(static s => (s?.FatoCodigo, s?.EtapaCodigo))])
                 .Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
             formaValida[indice] = erros.Count == recusasAntes;
 

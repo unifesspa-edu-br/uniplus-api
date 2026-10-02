@@ -26,13 +26,19 @@ public static class ModeloFormularioMapping
                 [.. conteudo.Etapas.Select(static e => new EtapaFormularioInput(
                     e.Codigo, e.Ordem, EstruturaFormulario.ParaToken(e.Tipo), EstruturaFormulario.ParaToken(e.Bloco),
                     e.Titulo, e.Descricao, e.Aviso, EntradaDeRegras.ParaEntrada(e.Exibicao)))],
-                [.. conteudo.Itens.Select(static i => new FatoColetadoInput(
-                    i.FatoCodigo, i.Ordem, i.Rotulo, i.TipoRenderizacao.ToCodigo(), EntradaDeRegras.ParaEntrada(i.Obrigatoriedade),
-                    EntradaDeRegras.ParaEntrada(i.Exibicao), i.EtapaCodigo, EntradaDeRegras.ParaEntrada(i.Obrigatoriedade.Predicado),
-                    i.Ajuda, i.PedirConfirmacao, [.. i.Restricoes.Select(EntradaDeRegras.ParaEntrada)]))],
+                [.. conteudo.Itens.Select(ParaEntrada)],
                 [.. conteudo.Termos.Select(static t => new TermoExigidoInput(
                     t.Codigo, t.Ordem, t.TermoId, t.VersaoId, EntradaDeRegras.ParaEntrada(t.Exibicao),
                     EntradaDeRegras.ParaEntrada(t.Obrigatoriedade), EntradaDeRegras.ParaEntrada(t.Obrigatoriedade.Predicado)))],
-                conteudo.Pressupostos));
+                conteudo.Pressupostos,
+                [.. conteudo.Grupos.Select(static g => new GrupoColetadoInput(
+                    g.Codigo, g.Ordem, g.Rotulo, g.EtapaCodigo, g.Minimo, g.Maximo, EntradaDeRegras.ParaEntrada(g.Exibicao),
+                    EntradaDeRegras.ParaEntrada(g.Obrigatoriedade), EntradaDeRegras.ParaEntrada(g.Obrigatoriedade.Predicado),
+                    [.. g.Subitens.Select(ParaEntrada)]))]));
     }
+
+    private static FatoColetadoInput ParaEntrada(ItemDoModelo campo) => new(
+        campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao.ToCodigo(), EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade),
+        EntradaDeRegras.ParaEntrada(campo.Exibicao), campo.EtapaCodigo, EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade.Predicado),
+        campo.Ajuda, campo.PedirConfirmacao, [.. campo.Restricoes.Select(EntradaDeRegras.ParaEntrada)]);
 }

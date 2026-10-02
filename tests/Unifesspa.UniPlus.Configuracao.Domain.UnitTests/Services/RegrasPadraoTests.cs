@@ -109,6 +109,16 @@ public sealed class RegrasPadraoTests
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.RegraCitaFatoNaoCitavel);
     }
 
+    [Fact(DisplayName = "Fato de membro de grupo não entra em predicado de regra padrão: fora da ocorrência, não tem valor único")]
+    public void Definir_CitaFatoDeMembro_Recusa()
+    {
+        FatoCandidato sobGuarda = Declarado("SOB_GUARDA", escopo: EscopoFato.MembroGrupo);
+        FatoCandidato derivado = Derivado("TEM_MENOR_SOB_GUARDA");
+
+        derivado.DefinirRegrasPadrao([Booleana(("SOB_GUARDA", true))], Catalogo(sobGuarda, derivado))
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.RegraCitaFatoNaoCitavel);
+    }
+
     [Fact(DisplayName = "O derivado não protege menos que um fato que ele cita")]
     public void Definir_ClassificacaoMaisFraca_Recusa()
     {
@@ -219,9 +229,10 @@ public sealed class RegrasPadraoTests
         DominioFato dominio = DominioFato.Booleano,
         string ponto = "INSCRICAO",
         ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal,
-        FormatoTexto? formato = null) =>
+        FormatoTexto? formato = null,
+        EscopoFato escopo = EscopoFato.Candidato) =>
         FatoCandidato.CriarDoAdministrador(
-            codigo, codigo, null, dominio, CardinalidadeFato.Escalar, null, formato, ponto, EscopoFato.Candidato,
+            codigo, codigo, null, dominio, CardinalidadeFato.Escalar, null, formato, ponto, escopo,
             classificacao, Finalidade, Hipotese).Value!;
 
     private static CatalogoDeFatos Catalogo(params FatoCandidato[] fatos) => new(fatos, []);

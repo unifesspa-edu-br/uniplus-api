@@ -31,6 +31,16 @@ public static class FormaDoItem
     public const int MaximoDeItens = 200;
 
     /// <summary>
+    /// O que o teto do formulário conta: cada item, cada grupo e cada campo de grupo, dados os
+    /// itens e a quantidade de campos de cada grupo.
+    /// </summary>
+    public static int QuantidadeNoTeto(int itens, IEnumerable<int> camposPorGrupo)
+    {
+        ArgumentNullException.ThrowIfNull(camposPorGrupo);
+        return itens + camposPorGrupo.Sum(static campos => 1 + campos);
+    }
+
+    /// <summary>
     /// A quantidade de itens não depende do catálogo: existe separada para quem recebe a lista
     /// recusá-la acima do teto antes de ler o catálogo e de conferir item a item.
     /// </summary>
@@ -220,8 +230,9 @@ public static class FormaDoGrupo
 
     /// <summary>
     /// Código e rótulo obrigatórios e limitados, ordem não negativa, mínimo de zero até o máximo,
-    /// máximo de um até o teto, ao menos um campo e no máximo o teto, e nenhuma regra do grupo
-    /// citando o próprio grupo ou os campos dele — fora da ocorrência, eles não têm valor único.
+    /// máximo de um até o teto, ao menos um campo e no máximo o teto, nenhum campo com seção
+    /// própria — o campo aparece onde o grupo aparece — e nenhuma regra do grupo citando o próprio
+    /// grupo ou os campos dele — fora da ocorrência, eles não têm valor único.
     /// </summary>
     public static List<FieldError> Conferir(
         string? codigo,
@@ -229,11 +240,11 @@ public static class FormaDoGrupo
         string? rotulo,
         int minimo,
         int maximo,
-        IReadOnlyCollection<string> codigosDosSubitens,
+        IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo)> subitens,
         IEnumerable<string> fatosCitadosPelaExibicao,
         Obrigatoriedade obrigatoriedade)
     {
-        ArgumentNullException.ThrowIfNull(codigosDosSubitens);
+        ArgumentNullException.ThrowIfNull(subitens);
         ArgumentNullException.ThrowIfNull(fatosCitadosPelaExibicao);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
 
@@ -267,13 +278,22 @@ public static class FormaDoGrupo
             Recusar("maximo", GrupoFormularioErrorCodes.ContagemIncoerente, contagem);
         }
 
-        if (!QuantidadeDeCamposValida(codigosDosSubitens.Count))
+        if (!QuantidadeDeCamposValida(subitens.Count))
         {
             Recusar("subitens", GrupoFormularioErrorCodes.SubitensForaDoLimite,
                 $"O grupo tem de um a {MaximoDeSubitens} campos por ocorrência.");
         }
 
-        HashSet<string> doGrupo = new(codigosDosSubitens.Append(codigoAparado), StringComparer.Ordinal);
+        for (int indice = 0; indice < subitens.Count; indice++)
+        {
+            if (subitens[indice].EtapaCodigo is not null)
+            {
+                Recusar($"subitens[{indice}].etapaCodigo", GrupoFormularioErrorCodes.CampoComSecaoPropria,
+                    $"O campo '{subitens[indice].FatoCodigo}' segue a seção do grupo e não declara seção própria.");
+            }
+        }
+
+        HashSet<string> doGrupo = new(subitens.Select(static s => s.FatoCodigo).OfType<string>().Append(codigoAparado), StringComparer.Ordinal);
         foreach ((string campo, IEnumerable<string> citados) in new[] { ("exibicao", fatosCitadosPelaExibicao), ("predicadoObrigatoriedade", obrigatoriedade.FatosCitados) })
         {
             if (citados.FirstOrDefault(doGrupo.Contains) is { } citado)

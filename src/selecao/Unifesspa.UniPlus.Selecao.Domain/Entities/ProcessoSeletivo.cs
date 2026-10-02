@@ -2571,7 +2571,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>A quantidade que o teto do formulário conta: cada item, cada grupo e cada campo de grupo.</summary>
     private static int QuantidadeNoTeto(int itens, IEnumerable<GrupoColetado> grupos) =>
-        itens + grupos.Sum(static g => 1 + g.Subitens.Count);
+        FormaDoItem.QuantidadeNoTeto(itens, grupos.Select(static g => g.Subitens.Count));
 
     /// <summary>Os itens e os grupos, na forma que a estrutura confere: o grupo ocupa uma posição na ordem dos itens.</summary>
     private static IReadOnlyList<ItemEstrutura> ParaEstrutura(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>

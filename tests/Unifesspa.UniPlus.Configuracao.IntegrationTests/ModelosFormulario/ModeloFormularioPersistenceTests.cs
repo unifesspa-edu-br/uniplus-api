@@ -53,7 +53,16 @@ public sealed class ModeloFormularioPersistenceTests
                     [RestricoesDeValor.Opcoes([(Quando("FORMA_CONCLUSAO", "REGULAR"), ["HISTORICO"])]).Value!], PedirConfirmacao: false),
             ],
             [new("VERACIDADE", 0, Guid.CreateVersion7(), Guid.CreateVersion7(), Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre)],
-            ["FORMA_CONCLUSAO"]);
+            ["FORMA_CONCLUSAO"],
+            [
+                new("COMPOSICAO_FAMILIAR", 2, "ESCOLA", "Composição familiar", 1, 10, Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre,
+                [
+                    new("PARENTESCO", 0, null, "Parentesco", TipoRenderizacao.SelecaoUnica, null, "Em relação ao candidato",
+                        Obrigatoriedade.Sempre, null, [], PedirConfirmacao: false),
+                    new("RENDA_MEMBRO", 1, null, "Renda", TipoRenderizacao.Booleano, null, null,
+                        Obrigatoriedade.Quando(Quando("PARENTESCO", "CONJUGE")), Quando("PARENTESCO", "CONJUGE"), [], PedirConfirmacao: false),
+                ]),
+            ]);
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
             codigo, "Habilitação Medicina 2027", "Modelo do PSR", FinalidadeFormulario.Habilitacao, "PSR", conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));

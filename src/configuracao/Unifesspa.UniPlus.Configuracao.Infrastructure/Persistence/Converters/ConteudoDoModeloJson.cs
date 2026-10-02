@@ -42,20 +42,7 @@ internal static class ConteudoDoModeloJson
             ["aviso"] = e.Aviso,
             ["exibicao"] = e.Exibicao is null ? null : PredicadoDnfJson.ParaJson(e.Exibicao),
         })]),
-        ["itens"] = new JsonArray([.. conteudo.Itens.Select(static i => (JsonNode)new JsonObject
-        {
-            ["fatoCodigo"] = i.FatoCodigo,
-            ["ordem"] = i.Ordem,
-            ["etapaCodigo"] = i.EtapaCodigo,
-            ["rotulo"] = i.Rotulo,
-            ["tipoRenderizacao"] = i.TipoRenderizacao.ToCodigo(),
-            ["formato"] = i.Formato,
-            ["ajuda"] = i.Ajuda,
-            ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(i.Obrigatoriedade),
-            ["exibicao"] = i.Exibicao is null ? null : PredicadoDnfJson.ParaJson(i.Exibicao),
-            ["restricoes"] = RestricaoValorJson.ParaJson(i.Restricoes),
-            ["pedirConfirmacao"] = i.PedirConfirmacao,
-        })]),
+        ["itens"] = new JsonArray([.. conteudo.Itens.Select(static i => (JsonNode)CampoParaJson(i))]),
         ["termos"] = new JsonArray([.. conteudo.Termos.Select(static t => (JsonNode)new JsonObject
         {
             ["codigo"] = t.Codigo,
@@ -66,7 +53,34 @@ internal static class ConteudoDoModeloJson
             ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(t.Obrigatoriedade),
         })]),
         ["pressupostos"] = new JsonArray([.. conteudo.Pressupostos.Select(static p => (JsonNode)p)]),
+        ["grupos"] = new JsonArray([.. conteudo.Grupos.Select(static g => (JsonNode)new JsonObject
+        {
+            ["codigo"] = g.Codigo,
+            ["ordem"] = g.Ordem,
+            ["etapaCodigo"] = g.EtapaCodigo,
+            ["rotulo"] = g.Rotulo,
+            ["minimo"] = g.Minimo,
+            ["maximo"] = g.Maximo,
+            ["exibicao"] = g.Exibicao is null ? null : PredicadoDnfJson.ParaJson(g.Exibicao),
+            ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(g.Obrigatoriedade),
+            ["subitens"] = new JsonArray([.. g.Subitens.Select(static s => (JsonNode)CampoParaJson(s))]),
+        })]),
     }.ToJsonString();
+
+    private static JsonObject CampoParaJson(ItemDoModelo campo) => new()
+    {
+        ["fatoCodigo"] = campo.FatoCodigo,
+        ["ordem"] = campo.Ordem,
+        ["etapaCodigo"] = campo.EtapaCodigo,
+        ["rotulo"] = campo.Rotulo,
+        ["tipoRenderizacao"] = campo.TipoRenderizacao.ToCodigo(),
+        ["formato"] = campo.Formato,
+        ["ajuda"] = campo.Ajuda,
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Obrigatoriedade),
+        ["exibicao"] = campo.Exibicao is null ? null : PredicadoDnfJson.ParaJson(campo.Exibicao),
+        ["restricoes"] = RestricaoValorJson.ParaJson(campo.Restricoes),
+        ["pedirConfirmacao"] = campo.PedirConfirmacao,
+    };
 
     /// <summary>
     /// Remonta o conteúdo gravado. O documento só é escrito por <see cref="Serializar"/>, sobre um
@@ -87,18 +101,7 @@ internal static class ConteudoDoModeloJson
                 Texto(e, "descricao"),
                 Texto(e, "aviso"),
                 Predicado(e, "exibicao")))],
-            [.. raiz.GetProperty("itens").EnumerateArray().Select(static i => new ItemDoModelo(
-                i.GetProperty("fatoCodigo").GetString()!,
-                i.GetProperty("ordem").GetInt32(),
-                Texto(i, "etapaCodigo"),
-                i.GetProperty("rotulo").GetString()!,
-                TipoRenderizacaoCodigo.FromCodigo(i.GetProperty("tipoRenderizacao").GetString()),
-                Texto(i, "formato"),
-                Texto(i, "ajuda"),
-                Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(i.GetProperty("obrigatoriedade"))),
-                Predicado(i, "exibicao"),
-                Remontar(RestricaoValorJson.ListaDeJson(i.GetProperty("restricoes"))),
-                i.GetProperty("pedirConfirmacao").GetBoolean()))],
+            [.. raiz.GetProperty("itens").EnumerateArray().Select(CampoDeJson)],
             [.. raiz.GetProperty("termos").EnumerateArray().Select(static t => new TermoDoModelo(
                 t.GetProperty("codigo").GetString()!,
                 t.GetProperty("ordem").GetInt32(),
@@ -106,8 +109,31 @@ internal static class ConteudoDoModeloJson
                 t.GetProperty("versaoId").GetGuid(),
                 Predicado(t, "exibicao"),
                 Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(t.GetProperty("obrigatoriedade")))))],
-            [.. raiz.GetProperty("pressupostos").EnumerateArray().Select(static p => p.GetString()!)]);
+            [.. raiz.GetProperty("pressupostos").EnumerateArray().Select(static p => p.GetString()!)],
+            [.. raiz.GetProperty("grupos").EnumerateArray().Select(static g => new GrupoDoModelo(
+                g.GetProperty("codigo").GetString()!,
+                g.GetProperty("ordem").GetInt32(),
+                Texto(g, "etapaCodigo"),
+                g.GetProperty("rotulo").GetString()!,
+                g.GetProperty("minimo").GetInt32(),
+                g.GetProperty("maximo").GetInt32(),
+                Predicado(g, "exibicao"),
+                Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(g.GetProperty("obrigatoriedade"))),
+                [.. g.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)]))]);
     }
+
+    private static ItemDoModelo CampoDeJson(JsonElement campo) => new(
+        campo.GetProperty("fatoCodigo").GetString()!,
+        campo.GetProperty("ordem").GetInt32(),
+        Texto(campo, "etapaCodigo"),
+        campo.GetProperty("rotulo").GetString()!,
+        TipoRenderizacaoCodigo.FromCodigo(campo.GetProperty("tipoRenderizacao").GetString()),
+        Texto(campo, "formato"),
+        Texto(campo, "ajuda"),
+        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade"))),
+        Predicado(campo, "exibicao"),
+        Remontar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes"))),
+        campo.GetProperty("pedirConfirmacao").GetBoolean());
 
     private static string? Texto(JsonElement objeto, string chave) =>
         objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.String ? valor.GetString() : null;
