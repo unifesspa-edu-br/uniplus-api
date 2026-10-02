@@ -113,7 +113,7 @@ public sealed class AplicarModeloFormularioEndpointTests
         [.. fatos.Select(static (fato, ordem) => new ItemDoModelo(
             fato, ordem, "DADOS", fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false))],
         [],
-        []);
+        [], []);
 
     private async Task<ProcessoSeletivo> LerProcessoAsync(Guid processoId)
     {

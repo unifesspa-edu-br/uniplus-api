@@ -32,5 +32,5 @@ public sealed record DefinirFatosColetadosCommand(
     /// o pedido é recusado inteiro pela quantidade, antes de qualquer conferência por elemento.
     /// </summary>
     public int QuantidadeNoTeto =>
-        (Itens?.Count ?? 0) + (Grupos ?? []).Sum(static g => 1 + (g?.Subitens?.Count ?? 0));
+        FormaDoItem.QuantidadeNoTeto(Itens?.Count ?? 0, (Grupos ?? []).Select(static g => g?.Subitens?.Count ?? 0));
 }

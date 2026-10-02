@@ -21,10 +21,12 @@ internal sealed record ConteudoLido(
     IReadOnlyList<(int Indice, ItemDoModelo Item)> Itens,
     IReadOnlyList<(int Indice, TermoDoModelo Termo)> Termos,
     IReadOnlyList<string> Pressupostos,
+    IReadOnlyList<(int Indice, GrupoDoModelo Grupo)> Grupos,
     IReadOnlyList<FieldError> Erros)
 {
     public ConteudoDoModelo ParaConteudo() => new(
-        Titulo, [.. Etapas.Select(static e => e.Etapa)], [.. Itens.Select(static i => i.Item)], [.. Termos.Select(static t => t.Termo)], Pressupostos);
+        Titulo, [.. Etapas.Select(static e => e.Etapa)], [.. Itens.Select(static i => i.Item)], [.. Termos.Select(static t => t.Termo)], Pressupostos,
+        [.. Grupos.Select(static g => g.Grupo)]);
 
     /// <summary>
     /// Lê a entrada pela forma das regras do formulário (<see cref="EntradaDeRegras"/>): token
@@ -67,7 +69,45 @@ internal sealed record ConteudoLido(
             }
         }
 
-        return new(entrada?.Titulo, etapas, itens, termos, [.. (entrada?.Pressupostos ?? []).Select(static p => p ?? string.Empty)], erros);
+        List<(int, GrupoDoModelo)> grupos = [];
+        IReadOnlyList<GrupoColetadoInput?> gruposDeEntrada = entrada?.Grupos ?? [];
+        for (int i = 0; i < gruposDeEntrada.Count; i++)
+        {
+            if (LerGrupo(gruposDeEntrada[i], $"grupos[{i}]", formatos, erros) is { } grupo)
+            {
+                grupos.Add((i, grupo));
+            }
+        }
+
+        return new(entrada?.Titulo, etapas, itens, termos, [.. (entrada?.Pressupostos ?? []).Select(static p => p ?? string.Empty)], grupos, erros);
+    }
+
+    private static GrupoDoModelo? LerGrupo(
+        GrupoColetadoInput? entrada, string campo, IReadOnlyDictionary<string, string> formatos, List<FieldError> erros)
+    {
+        if (entrada is null)
+        {
+            erros.Add(Nula(campo));
+            return null;
+        }
+
+        int recusasAntes = erros.Count;
+        PredicadoDnf? exibicao = LerPredicado(entrada.Exibicao, $"{campo}.exibicao", erros, out _);
+        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, campo, erros);
+        List<ItemDoModelo> subitens = [];
+        IReadOnlyList<FatoColetadoInput?> subitensDeEntrada = entrada.Subitens ?? [];
+        for (int j = 0; j < subitensDeEntrada.Count; j++)
+        {
+            if (LerItem(subitensDeEntrada[j], $"{campo}.subitens[{j}]", formatos, erros) is { } subitem)
+            {
+                subitens.Add(subitem);
+            }
+        }
+
+        return erros.Count > recusasAntes
+            ? null
+            : new GrupoDoModelo(
+                entrada.Codigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, entrada.Minimo, entrada.Maximo, exibicao, obrigatoriedade!, subitens);
     }
 
     private static EtapaDoModelo? LerEtapa(EtapaFormularioInput? entrada, string campo, List<FieldError> erros)
@@ -177,5 +217,5 @@ internal sealed record ConteudoLido(
     }
 
     private static FieldError Nula(string campo) => new(campo, new DomainError(
-        ModeloFormularioErrorCodes.EntradaMalformada, "A etapa, o item ou o termo veio nulo."));
+        ModeloFormularioErrorCodes.EntradaMalformada, "A etapa, o item, o grupo ou o termo veio nulo."));
 }

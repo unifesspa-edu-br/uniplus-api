@@ -101,18 +101,6 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     }
 
     [Fact]
-    public void GrupoColetado_CampoComSecaoPropria_Recusa()
-    {
-        FatoColetado comSecao = FatoColetado.Criar(
-            "PARENTESCO", 0, "Parentesco", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao).Value!;
-
-        Result<GrupoColetado> grupo = GrupoColetado.Criar(
-            "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Nunca, [comSecao]);
-
-        grupo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrupoColetadoErrorCodes.CampoComSecaoPropria);
-    }
-
-    [Fact]
     public void DefinirFatosColetados_GrupoForaDeSecao_Recusa()
     {
         Result resultado = NovoProcesso().DefinirItens([], grupos: [Grupo("COMPOSICAO", 0, secao: "INEXISTENTE", campos: Campo("PARENTESCO", 0))]);

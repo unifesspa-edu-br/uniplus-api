@@ -70,9 +70,7 @@ public sealed class GrupoColetado : EntityBase
         ArgumentNullException.ThrowIfNull(subitens);
 
         List<FieldError> erros = FormaDoGrupo.Conferir(
-            codigo, ordem, rotulo, minimo, maximo, [.. subitens.Select(static s => s.FatoCodigo)], exibicao?.FatosCitados ?? [], obrigatoriedade);
-
-        erros.AddRange(CamposComSecaoPropria([.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo))]));
+            codigo, ordem, rotulo, minimo, maximo, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo))], exibicao?.FatosCitados ?? [], obrigatoriedade);
         if (erros.Count > 0)
         {
             return Result<GrupoColetado>.ValidationFailure(erros);
@@ -98,20 +96,6 @@ public sealed class GrupoColetado : EntityBase
         // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
         grupo.VincularFinalidade(finalidade);
         return Result<GrupoColetado>.Success(grupo);
-    }
-
-    /// <summary>
-    /// O campo aparece onde o grupo aparece: a seção é do grupo, nunca do campo. Uma recusa por
-    /// campo com seção, no caminho dele dentro do grupo.
-    /// </summary>
-    public static IEnumerable<FieldError> CamposComSecaoPropria(IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo)> campos)
-    {
-        ArgumentNullException.ThrowIfNull(campos);
-        return campos
-            .Select(static (c, indice) => (c, indice))
-            .Where(static p => p.c.EtapaCodigo is not null)
-            .Select(static p => new FieldError($"subitens[{p.indice}].etapaCodigo", new DomainError(
-                GrupoColetadoErrorCodes.CampoComSecaoPropria, $"O campo '{p.c.FatoCodigo}' segue a seção do grupo e não declara seção própria.")));
     }
 
     /// <summary>Os fatos que a exibição e a obrigatoriedade do grupo citam, sem repetição.</summary>
@@ -151,10 +135,4 @@ public sealed class GrupoColetado : EntityBase
             subitem.VincularFinalidade(finalidade);
         }
     }
-}
-
-/// <summary>Códigos de erro de <see cref="GrupoColetado"/>.</summary>
-public static class GrupoColetadoErrorCodes
-{
-    public const string CampoComSecaoPropria = "GrupoColetado.CampoComSecaoPropria";
 }

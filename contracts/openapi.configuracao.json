@@ -14172,6 +14172,15 @@
             "items": {
               "type": "string"
             }
+          },
+          "grupos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GrupoColetadoInput"
+            }
           }
         }
       },
@@ -16193,6 +16202,95 @@
           },
           "rotulo": {
             "type": "string"
+          }
+        }
+      },
+      "GrupoColetadoInput": {
+        "required": [
+          "codigo",
+          "ordem",
+          "rotulo",
+          "etapaCodigo",
+          "minimo",
+          "maximo",
+          "exibicao",
+          "obrigatoriedade",
+          "predicadoObrigatoriedade",
+          "subitens"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maximo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "obrigatoriedade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "predicadoObrigatoriedade": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "subitens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FatoColetadoInput"
+            }
           }
         }
       },

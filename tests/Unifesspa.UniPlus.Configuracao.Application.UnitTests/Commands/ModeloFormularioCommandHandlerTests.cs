@@ -41,6 +41,8 @@ public sealed class ModeloFormularioCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private readonly FatoCandidato _certificado = Declarado("CERTIFICADO");
+    private readonly FatoCandidato _maiorIdade = Declarado("MAIOR_IDADE", escopo: EscopoFato.MembroGrupo);
+    private readonly FatoCandidato _semRenda = Declarado("SEM_RENDA", escopo: EscopoFato.MembroGrupo);
     private readonly FatoCandidato _cpf = Declarado("CPF_RESPONSAVEL", DominioFato.Texto, FormatoTexto.Cpf);
     private readonly FatoCandidato _idade = FatoCandidato.Criar(
         "IDADE", "Idade", null, DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
@@ -48,7 +50,7 @@ public sealed class ModeloFormularioCommandHandlerTests
 
     public ModeloFormularioCommandHandlerTests()
     {
-        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, _cpf, _idade]);
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, _cpf, _idade, _maiorIdade, _semRenda]);
         _termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
         _tipos.ObterAtivoPorCodigoAsync("PSR", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), "PSR", "PSR", null));
     }
@@ -63,6 +65,37 @@ public sealed class ModeloFormularioCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         gravado!.Conteudo.Itens.Single().Formato.Should().Be("CPF");
+    }
+
+    [Fact(DisplayName = "O campo do grupo cita o campo anterior da mesma ocorrência, e o grupo é gravado")]
+    public async Task Criar_CampoDoGrupoCitaCampoAnterior_Grava()
+    {
+        ModeloFormulario? gravado = null;
+        await _repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
+
+        Result<Guid> resultado = await CriarAsync(ComComposicao(
+            Campo("MAIOR_IDADE", 0), Campo("SEM_RENDA", 1) with { Precondicao = Quando("MAIOR_IDADE", true) }));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        gravado!.Conteudo.Grupos.Single().Subitens.Select(static s => s.FatoCodigo).Should().Equal("MAIOR_IDADE", "SEM_RENDA");
+    }
+
+    [Fact(DisplayName = "Campo do grupo com fato do candidato não é coletável na ocorrência")]
+    public async Task Criar_CampoDoGrupoComFatoDoCandidato_Recusa()
+    {
+        Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("CPF_RESPONSAVEL", 0) with { TipoRenderizacao = "TEXTO" }));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.grupos[0].subitens[0].fatoCodigo");
+    }
+
+    [Fact(DisplayName = "Campo do grupo com fato de membro desativado é recusado como vínculo novo")]
+    public async Task Criar_CampoDoGrupoDesativado_Recusa()
+    {
+        _maiorIdade.Desativar().IsSuccess.Should().BeTrue();
+
+        Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("MAIOR_IDADE", 0)));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
     }
 
     [Fact(DisplayName = "Item de fato calculado pelo sistema não é coletável")]
@@ -115,7 +148,7 @@ public sealed class ModeloFormularioCommandHandlerTests
         ItemDoModelo item = new("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
         ModeloFormulario existente = ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
-            new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [gravado], []),
+            new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [gravado], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         TermoExigidoInput mantido = new(gravado.Codigo, 0, gravado.TermoId, gravado.VersaoId, null, "SEMPRE", null);
         TermoExigidoInput novo = new("IMAGEM", 1, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
@@ -272,7 +305,7 @@ public sealed class ModeloFormularioCommandHandlerTests
         ItemDoModelo item = new("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
         return ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, tipo,
-            new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], []),
+            new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }
 
@@ -286,14 +319,23 @@ public sealed class ModeloFormularioCommandHandlerTests
         [],
         []);
 
+    private static ConteudoDoModeloInput ComComposicao(params FatoColetadoInput[] campos) =>
+        Conteudo(Item("CERTIFICADO", 0)) with
+        {
+            Grupos = [new GrupoColetadoInput("COMPOSICAO_FAMILIAR", 1, "Composição familiar", "DADOS", 1, 10, null, "SEMPRE", null, campos)],
+        };
+
+    private static FatoColetadoInput Campo(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
+
     private static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") =>
         new(fato, ordem, fato, tipo, "SEMPRE", null, EtapaCodigo: "DADOS");
 
     private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, object valor) =>
         [[new CondicaoPrecondicaoInput(fato, "IGUAL", JsonSerializer.SerializeToElement(valor))]];
 
-    private static FatoCandidato Declarado(string codigo, DominioFato dominio = DominioFato.Booleano, FormatoTexto? formato = null) =>
+    private static FatoCandidato Declarado(
+        string codigo, DominioFato dominio = DominioFato.Booleano, FormatoTexto? formato = null, EscopoFato escopo = EscopoFato.Candidato) =>
         FatoCandidato.CriarDoAdministrador(
-            codigo, codigo, null, dominio, CardinalidadeFato.Escalar, null, formato, "INSCRICAO", EscopoFato.Candidato,
+            codigo, codigo, null, dominio, CardinalidadeFato.Escalar, null, formato, "INSCRICAO", escopo,
             ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
 }

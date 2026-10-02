@@ -30,6 +30,7 @@ public static class GrupoFormularioErrorCodes
     public const string ContagemIncoerente = "GrupoFormulario.ContagemIncoerente";
     public const string SubitensForaDoLimite = "GrupoFormulario.SubitensForaDoLimite";
     public const string RegraAutorreferente = "GrupoFormulario.RegraAutorreferente";
+    public const string CampoComSecaoPropria = "GrupoFormulario.CampoComSecaoPropria";
 }
 
 /// <summary>Códigos de recusa de vínculo novo a fato ou valor desativado no catálogo, no processo e no modelo.</summary>

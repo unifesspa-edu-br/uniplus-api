@@ -41,6 +41,27 @@ public sealed record ItemDoModelo(
             .Distinct(StringComparer.Ordinal)];
 }
 
+/// <summary>
+/// Um grupo repetível do modelo (ADR-0138, UNI-REQ-0146): a lista de ocorrências de um mesmo conjunto
+/// de campos de fatos de membro, como a composição familiar, com mínimo e máximo de ocorrências. A
+/// seção é a do grupo; os campos não declaram seção própria.
+/// </summary>
+public sealed record GrupoDoModelo(
+    string Codigo,
+    int Ordem,
+    string? EtapaCodigo,
+    string Rotulo,
+    int Minimo,
+    int Maximo,
+    PredicadoDnf? Exibicao,
+    Obrigatoriedade Obrigatoriedade,
+    IReadOnlyList<ItemDoModelo> Subitens)
+{
+    /// <summary>Os fatos que as regras do próprio grupo citam — a exibição e a obrigatoriedade.</summary>
+    public IReadOnlyCollection<string> FatosCitados =>
+        [.. (Exibicao?.FatosCitados ?? []).Concat(Obrigatoriedade.FatosCitados).Distinct(StringComparer.Ordinal)];
+}
+
 /// <summary>Um termo exigido pelo modelo: a versão do catálogo escolhida e as condições de exibição e de obrigatoriedade.</summary>
 public sealed record TermoDoModelo(string Codigo, int Ordem, Guid TermoId, Guid VersaoId, PredicadoDnf? Exibicao, Obrigatoriedade Obrigatoriedade)
 {
@@ -49,15 +70,17 @@ public sealed record TermoDoModelo(string Codigo, int Ordem, Guid TermoId, Guid 
 }
 
 /// <summary>
-/// O conteúdo do modelo, lido e gravado inteiro: o título, as etapas, os itens, os termos e os fatos
-/// pressupostos — coletados pela inscrição, que o modelo de outra finalidade pode citar (UNI-REQ-0144).
+/// O conteúdo do modelo, lido e gravado inteiro: o título, as etapas, os itens, os termos, os fatos
+/// pressupostos — coletados pela inscrição, que o modelo de outra finalidade pode citar (UNI-REQ-0144)
+/// — e os grupos repetíveis.
 /// </summary>
 public sealed record ConteudoDoModelo(
     string? Titulo,
     IReadOnlyList<EtapaDoModelo> Etapas,
     IReadOnlyList<ItemDoModelo> Itens,
     IReadOnlyList<TermoDoModelo> Termos,
-    IReadOnlyList<string> Pressupostos);
+    IReadOnlyList<string> Pressupostos,
+    IReadOnlyList<GrupoDoModelo> Grupos);
 
 /// <summary>
 /// Modelo de formulário composto pelo administrador para um tipo de processo — ou para todos — e uma
@@ -86,7 +109,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     /// <summary>O tipo de processo a que o modelo se destina; nulo quando serve a todos.</summary>
     public string? TipoProcessoCodigo { get; private set; }
 
-    public ConteudoDoModelo Conteudo { get; private set; } = new(null, [], [], [], []);
+    public ConteudoDoModelo Conteudo { get; private set; } = new(null, [], [], [], [], []);
     public bool Ativo { get; private set; }
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -218,7 +241,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         erros.Select(static e => e with { Field = string.IsNullOrEmpty(e.Field) ? "conteudo" : $"conteudo.{e.Field}" });
 
     /// <summary>
-    /// O cabeçalho, a forma de cada etapa, item e termo, o teto de itens e os pressupostos acumulam; a
+    /// O cabeçalho, a forma de cada etapa, item, grupo e termo, o teto de itens e os pressupostos acumulam; a
     /// estrutura por finalidade e o grafo de coleta só são conferidos sobre partes bem formadas, porque
     /// dependem delas.
     /// </summary>
@@ -235,17 +258,28 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
                 .Select(e => e with { Field = $"etapas[{i}].{e.Field}" }));
         }
 
-        List<FieldError> excesso = FormaDoItem.ValidarQuantidade(conteudo.Itens.Count);
+        List<FieldError> excesso = FormaDoItem.ValidarQuantidade(
+            FormaDoItem.QuantidadeNoTeto(conteudo.Itens.Count, conteudo.Grupos.Select(static g => g.Subitens.Count)));
         erros.AddRange(excesso);
         if (excesso.Count == 0)
         {
             for (int i = 0; i < conteudo.Itens.Count; i++)
             {
-                ItemDoModelo item = conteudo.Itens[i];
-                erros.AddRange(FormaDoItem.Conferir(
-                        item.FatoCodigo, item.Ordem, item.Rotulo, item.TipoRenderizacao, item.Formato, item.Ajuda,
-                        item.Exibicao?.FatosCitados ?? [], item.Obrigatoriedade, item.Restricoes)
-                    .Select(e => e with { Field = $"itens[{i}].{e.Field}" }));
+                erros.AddRange(FormaDoCampo(conteudo.Itens[i], $"itens[{i}]"));
+            }
+
+            for (int i = 0; i < conteudo.Grupos.Count; i++)
+            {
+                GrupoDoModelo grupo = conteudo.Grupos[i];
+                erros.AddRange(FormaDoGrupo.Conferir(
+                        grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.Minimo, grupo.Maximo,
+                        [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo))],
+                        grupo.Exibicao?.FatosCitados ?? [], grupo.Obrigatoriedade)
+                    .Select(e => e with { Field = $"grupos[{i}].{e.Field}" }));
+                for (int j = 0; j < grupo.Subitens.Count; j++)
+                {
+                    erros.AddRange(FormaDoCampo(grupo.Subitens[j], $"grupos[{i}].subitens[{j}]"));
+                }
             }
         }
 
@@ -272,7 +306,12 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         }
 
         erros.AddRange(EstruturaFormulario.ValidarItens(
-            estrutura, [.. conteudo.Itens.Select(static i => new ItemEstrutura(i.FatoCodigo, i.Ordem, i.EtapaCodigo))], secaoObrigatoria: true));
+            estrutura,
+            [
+                .. conteudo.Itens.Select(static i => new ItemEstrutura(i.FatoCodigo, i.Ordem, i.EtapaCodigo)),
+                .. conteudo.Grupos.Select(static g => new ItemEstrutura(g.Codigo, g.Ordem, g.EtapaCodigo)),
+            ],
+            secaoObrigatoria: true));
         if (erros.Count > 0)
         {
             return erros;
@@ -286,17 +325,26 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         return erros;
     }
 
+    /// <summary>A forma de um campo do modelo, item ou campo de grupo, no caminho dele.</summary>
+    private static IEnumerable<FieldError> FormaDoCampo(ItemDoModelo campo, string caminho) =>
+        FormaDoItem.Conferir(
+                campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao, campo.Formato, campo.Ajuda,
+                campo.Exibicao?.FatosCitados ?? [], campo.Obrigatoriedade, campo.Restricoes)
+            .Select(e => e with { Field = $"{caminho}.{e.Field}" });
+
     /// <summary>
     /// O grafo de coleta pelas regras do formulário: os pressupostos são os fatos conhecidos antes dele,
     /// e as derivações, as do catálogo. Depois, o campo opcional que alimenta derivação ou negação.
     /// </summary>
     private static DomainError? ConferirGrafo(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
-        ItemDoGrafo[] itens = [.. conteudo.Itens.Select(static i => new ItemDoGrafo(i.FatoCodigo, i.Ordem, i.EtapaCodigo, i.FatosCitados))];
+        ItemDoGrafo[] itens = [.. conteudo.Itens.Select(ParaGrafo)];
         EtapaDoGrafo[] etapas = [.. conteudo.Etapas.Select(static e => new EtapaDoGrafo(e.Codigo, e.Ordem, e.FatosCitados))];
+        GrupoDoGrafo[] grupos = [.. conteudo.Grupos.Select(static g => new GrupoDoGrafo(
+            g.Codigo, g.Ordem, g.EtapaCodigo, g.FatosCitados, [.. g.Subitens.OrderBy(static s => s.Ordem).Select(ParaGrafo)]))];
         HashSet<string> pressupostos = new(conteudo.Pressupostos, StringComparer.Ordinal);
 
-        if (GrafoDoFormulario.ValidarColeta(itens, etapas, pressupostos, derivacoes) is { } coleta)
+        if (GrafoDoFormulario.ValidarColeta(itens, etapas, pressupostos, derivacoes, grupos) is { } coleta)
         {
             return coleta;
         }
@@ -309,9 +357,17 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         }
 
         return CampoQueAlimentaRegra.PrimeiroOpcional(
-            conteudo.Itens.OrderBy(static i => i.Ordem).Select(static i => (i.FatoCodigo, i.Obrigatoriedade.Tipo)),
+            conteudo.Itens.OrderBy(static i => i.Ordem)
+                .Concat(conteudo.Grupos.OrderBy(static g => g.Ordem).SelectMany(static g => g.Subitens.OrderBy(static s => s.Ordem)))
+                .Select(static i => (i.FatoCodigo, i.Obrigatoriedade.Tipo)),
             CampoQueAlimentaRegra.Fatos(DependenciasCitadas(conteudo, derivacoes), CondicoesDasRegras(conteudo)));
     }
+
+    private static ItemDoGrafo ParaGrafo(ItemDoModelo campo) => new(campo.FatoCodigo, campo.Ordem, campo.EtapaCodigo, campo.FatosCitados);
+
+    /// <summary>Os campos do modelo, itens e campos de grupo.</summary>
+    private static IEnumerable<ItemDoModelo> Campos(ConteudoDoModelo conteudo) =>
+        conteudo.Itens.Concat(conteudo.Grupos.SelectMany(static g => g.Subitens));
 
     /// <summary>
     /// As dependências dos derivados que as regras do modelo citam, direta ou transitivamente — só elas
@@ -340,16 +396,18 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     }
 
     private static IEnumerable<string> TodosOsCitados(ConteudoDoModelo conteudo) =>
-        conteudo.Itens.SelectMany(static i => i.FatosCitados)
+        Campos(conteudo).SelectMany(static i => i.FatosCitados)
+            .Concat(conteudo.Grupos.SelectMany(static g => g.FatosCitados))
             .Concat(conteudo.Etapas.SelectMany(static e => e.FatosCitados))
             .Concat(conteudo.Termos.SelectMany(static t => t.FatosCitados));
 
     /// <summary>As condições de todas as regras do modelo, com o operador — a negação é o que importa aqui.</summary>
     private static IEnumerable<(string Fato, Operador Operador)> CondicoesDasRegras(ConteudoDoModelo conteudo)
     {
-        IEnumerable<PredicadoDnf?> predicados = conteudo.Itens
+        IEnumerable<PredicadoDnf?> predicados = Campos(conteudo)
             .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado }
                 .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
+            .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
             .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
             .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }));
         return predicados.OfType<PredicadoDnf>()
@@ -451,7 +509,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         return erros;
     }
 
-    /// <summary>Grava o descritivo e o conteúdo já normalizado, com etapas, itens e termos na ordem declarada e as restrições de cada item na ordem do tipo.</summary>
+    /// <summary>Grava o descritivo e o conteúdo já normalizado, com etapas, itens, grupos, campos de grupo e termos na ordem declarada e as restrições de cada campo na ordem do tipo.</summary>
     private void Aplicar(string nome, string? descricao, string? tipoProcessoCodigo, ConteudoDoModelo conteudo)
     {
         Nome = nome.Trim();
@@ -460,10 +518,15 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         Conteudo = conteudo with
         {
             Etapas = [.. conteudo.Etapas.OrderBy(static e => e.Ordem)],
-            Itens = [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(static i => i with { Restricoes = [.. i.Restricoes.OrderBy(static r => r.Tipo)] })],
+            Itens = [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(ComRestricoesOrdenadas)],
             Termos = [.. conteudo.Termos.OrderBy(static t => t.Ordem)],
+            Grupos = [.. conteudo.Grupos.OrderBy(static g => g.Ordem)
+                .Select(static g => g with { Subitens = [.. g.Subitens.OrderBy(static s => s.Ordem).Select(ComRestricoesOrdenadas)] })],
         };
     }
+
+    private static ItemDoModelo ComRestricoesOrdenadas(ItemDoModelo campo) =>
+        campo with { Restricoes = [.. campo.Restricoes.OrderBy(static r => r.Tipo)] };
 
     /// <summary>
     /// A forma em que o conteúdo é conferido e gravado: textos aparados, códigos em NFC, ausente como
@@ -479,17 +542,26 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             Descricao = FormaDoItem.TextoOpcional(e.Descricao),
             Aviso = FormaDoItem.TextoOpcional(e.Aviso),
         })],
-        [.. (conteudo.Itens ?? []).Select(static i => i with
-        {
-            FatoCodigo = Normalizar(i.FatoCodigo),
-            EtapaCodigo = i.EtapaCodigo is null ? null : Normalizar(i.EtapaCodigo),
-            Rotulo = (i.Rotulo ?? string.Empty).Trim(),
-            Formato = FormaDoItem.TextoOpcional(i.Formato),
-            Ajuda = FormaDoItem.TextoOpcional(i.Ajuda),
-            Restricoes = i.Restricoes ?? [],
-        })],
+        [.. (conteudo.Itens ?? []).Select(NormalizarCampo)],
         [.. (conteudo.Termos ?? []).Select(static t => t with { Codigo = Normalizar(t.Codigo) })],
-        [.. (conteudo.Pressupostos ?? []).Select(static p => Normalizar(p))]);
+        [.. (conteudo.Pressupostos ?? []).Select(static p => Normalizar(p))],
+        [.. (conteudo.Grupos ?? []).Select(static g => g with
+        {
+            Codigo = Normalizar(g.Codigo),
+            EtapaCodigo = g.EtapaCodigo is null ? null : Normalizar(g.EtapaCodigo),
+            Rotulo = (g.Rotulo ?? string.Empty).Trim(),
+            Subitens = [.. (g.Subitens ?? []).Select(NormalizarCampo)],
+        })]);
+
+    private static ItemDoModelo NormalizarCampo(ItemDoModelo campo) => campo with
+    {
+        FatoCodigo = Normalizar(campo.FatoCodigo),
+        EtapaCodigo = campo.EtapaCodigo is null ? null : Normalizar(campo.EtapaCodigo),
+        Rotulo = (campo.Rotulo ?? string.Empty).Trim(),
+        Formato = FormaDoItem.TextoOpcional(campo.Formato),
+        Ajuda = FormaDoItem.TextoOpcional(campo.Ajuda),
+        Restricoes = campo.Restricoes ?? [],
+    };
 
     /// <summary>O código aparado e em NFC; o que não se normaliza fica como veio, para a recusa de texto não gravável.</summary>
     private static string Normalizar(string? codigo)
@@ -511,20 +583,30 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
                     ($"etapas[{i}].codigo", e.Codigo), ($"etapas[{i}].titulo", e.Titulo),
                     ($"etapas[{i}].descricao", e.Descricao), ($"etapas[{i}].aviso", e.Aviso),
                 }.Concat(TextosDoPredicado($"etapas[{i}].exibicao", e.Exibicao))))
-            .Concat(conteudo.Itens.SelectMany(static (item, i) => new (string, string?)[]
+            .Concat(conteudo.Itens.SelectMany(static (item, i) => TextosDoCampo($"itens[{i}]", item)))
+            .Concat(conteudo.Grupos.SelectMany(static (g, i) => new (string, string?)[]
                 {
-                    ($"itens[{i}].fatoCodigo", item.FatoCodigo), ($"itens[{i}].etapaCodigo", item.EtapaCodigo),
-                    ($"itens[{i}].rotulo", item.Rotulo), ($"itens[{i}].formato", item.Formato), ($"itens[{i}].ajuda", item.Ajuda),
+                    ($"grupos[{i}].codigo", g.Codigo), ($"grupos[{i}].etapaCodigo", g.EtapaCodigo), ($"grupos[{i}].rotulo", g.Rotulo),
                 }
-                .Concat(TextosDoPredicado($"itens[{i}].exibicao", item.Exibicao))
-                .Concat(TextosDoPredicado($"itens[{i}].obrigatoriedade", item.Obrigatoriedade.Predicado))
-                .Concat(item.Restricoes.SelectMany((r, j) => TextosDaRestricao($"itens[{i}].restricoes[{j}]", r)))))
+                .Concat(TextosDoPredicado($"grupos[{i}].exibicao", g.Exibicao))
+                .Concat(TextosDoPredicado($"grupos[{i}].obrigatoriedade", g.Obrigatoriedade.Predicado))
+                .Concat(g.Subitens.SelectMany((s, j) => TextosDoCampo($"grupos[{i}].subitens[{j}]", s)))))
             .Concat(conteudo.Termos.SelectMany(static (t, i) => new (string, string?)[] { ($"termos[{i}].codigo", t.Codigo) }
                 .Concat(TextosDoPredicado($"termos[{i}].exibicao", t.Exibicao))
                 .Concat(TextosDoPredicado($"termos[{i}].obrigatoriedade", t.Obrigatoriedade.Predicado))))
             .Concat(conteudo.Pressupostos.Select(static (p, i) => ($"pressupostos[{i}]", (string?)p)));
         return textos.SelectMany(static t => NaoGravavel(t.Campo, t.Texto)).DistinctBy(static e => e.Field);
     }
+
+    private static IEnumerable<(string Campo, string? Texto)> TextosDoCampo(string caminho, ItemDoModelo campo) =>
+        new (string, string?)[]
+        {
+            ($"{caminho}.fatoCodigo", campo.FatoCodigo), ($"{caminho}.etapaCodigo", campo.EtapaCodigo),
+            ($"{caminho}.rotulo", campo.Rotulo), ($"{caminho}.formato", campo.Formato), ($"{caminho}.ajuda", campo.Ajuda),
+        }
+        .Concat(TextosDoPredicado($"{caminho}.exibicao", campo.Exibicao))
+        .Concat(TextosDoPredicado($"{caminho}.obrigatoriedade", campo.Obrigatoriedade.Predicado))
+        .Concat(campo.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r)));
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDaRestricao(string campo, RestricaoValor restricao) => restricao switch
     {

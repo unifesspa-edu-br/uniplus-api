@@ -25,7 +25,7 @@ internal sealed record CatalogoDoModelo(
 {
     public static CatalogoDoModelo De(IReadOnlyList<FatoCandidato> fatos) => new(
         VocabularioDoCatalogo.ParaRegras(fatos),
-        VocabularioDoCatalogo.Descritores(fatos),
+        VocabularioDoCatalogo.DescritoresDoFormulario(fatos),
         VocabularioDoCatalogo.DominiosDinamicos(fatos),
         VocabularioDoCatalogo.Derivacoes(fatos),
         VocabularioDoCatalogo.Formatos(fatos));
@@ -41,7 +41,7 @@ internal sealed record VinculosDoModelo(VinculosDeFatos Fatos, IReadOnlySet<(Gui
 /// <summary>
 /// A conferência do conteúdo do modelo contra o catálogo, pelas mesmas regras do formulário do
 /// processo (<see cref="ConferenciaNoCatalogo"/>, <see cref="CoerenciaDoCampo"/>,
-/// <see cref="PredicadoDnfValidador"/>). Cobre o fato que cada item coleta, o tipo do campo, as
+/// <see cref="PredicadoDnfValidador"/>). Cobre o fato que cada item e cada campo de grupo coleta, o tipo do campo, as
 /// regras, as restrições, os pressupostos, a versão dos termos e o vínculo novo a fato ou valor
 /// desativado. O item de forma inválida não é conferido: a recusa dele é a de forma, do modelo.
 /// </summary>
@@ -66,7 +66,26 @@ internal static class ConferenciaDoModelo
         List<FieldError> erros = [];
         foreach ((int indice, ItemDoModelo item) in conteudo.Itens)
         {
-            erros.AddRange(ConferirItem(item, catalogo).Select(e => e with { Field = Prefixar($"itens[{indice}]", e.Field) }));
+            erros.AddRange(ConferirCampo(item, catalogo, ConferenciaNoCatalogo.FatoDoItem).Select(e => e with { Field = Prefixar($"itens[{indice}]", e.Field) }));
+        }
+
+        foreach ((int indice, GrupoDoModelo grupo) in conteudo.Grupos)
+        {
+            if (ConferirPredicado(grupo.Exibicao, catalogo) is { } exibicao)
+            {
+                erros.Add(new($"grupos[{indice}].exibicao", exibicao));
+            }
+
+            if (ConferirPredicado(grupo.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
+            {
+                erros.Add(new($"grupos[{indice}].predicadoObrigatoriedade", obrigatoriedade));
+            }
+
+            for (int j = 0; j < grupo.Subitens.Count; j++)
+            {
+                erros.AddRange(ConferirCampo(grupo.Subitens[j], catalogo, ConferenciaNoCatalogo.FatoDoSubitem)
+                    .Select(e => e with { Field = Prefixar($"grupos[{indice}].subitens[{j}]", e.Field) }));
+            }
         }
 
         foreach ((int indice, EtapaDoModelo etapa) in conteudo.Etapas)
@@ -109,31 +128,38 @@ internal static class ConferenciaDoModelo
     }
 
     /// <summary>
-    /// O que o conteúdo vincula no catálogo: os fatos dos itens e dos pressupostos, os fatos e
-    /// valores citados pelas regras, os fatos cujas respostas formam opções e os valores das opções
-    /// permitidas de cada item.
+    /// O que o conteúdo vincula no catálogo: os fatos dos campos — itens e campos de grupo — e dos
+    /// pressupostos, os fatos e valores citados pelas regras, os fatos cujas respostas formam opções
+    /// e os valores das opções permitidas de cada campo.
     /// </summary>
     public static VinculosDeFatos Vinculos(ConteudoDoModelo conteudo)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
-        IEnumerable<PredicadoDnf> predicados = conteudo.Itens
+        ItemDoModelo[] campos = [.. conteudo.Itens, .. conteudo.Grupos.SelectMany(static g => g.Subitens)];
+        IEnumerable<PredicadoDnf> predicados = campos
             .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado }
                 .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
+            .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
             .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
             .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }))
             .OfType<PredicadoDnf>();
         IEnumerable<(string Fato, JsonElement Valor)> condicoes = predicados
             .SelectMany(static p => p.Clausulas).SelectMany(static c => c.Condicoes).Select(static c => (c.Fato, c.Valor));
-        IEnumerable<(string Fato, string Valor)> opcoes = conteudo.Itens
+        IEnumerable<(string Fato, string Valor)> opcoes = campos
             .SelectMany(static i => i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas)
                 .SelectMany(e => e.Valores.Select(v => (i.FatoCodigo, v))));
-        IEnumerable<string> fatos = conteudo.Itens.Select(static i => i.FatoCodigo)
+        IEnumerable<string> fatos = campos.Select(static i => i.FatoCodigo)
             .Concat(conteudo.Pressupostos)
-            .Concat(conteudo.Itens.SelectMany(static i => i.Restricoes.SelectMany(static r => r.FatosCitados)));
+            .Concat(campos.SelectMany(static i => i.Restricoes.SelectMany(static r => r.FatosCitados)));
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
 
-    private static IEnumerable<FieldError> ConferirItem(ItemDoModelo item, CatalogoDoModelo catalogo)
+    /// <summary>
+    /// O campo do modelo contra o catálogo: o fato coletável — como item ou como campo de grupo,
+    /// conforme <paramref name="recusaDeColetavel"/> —, o tipo do campo, as regras e as restrições.
+    /// </summary>
+    private static IEnumerable<FieldError> ConferirCampo(
+        ItemDoModelo item, CatalogoDoModelo catalogo, Func<string, IReadOnlyDictionary<string, FatoDoCatalogo>, DomainError?> recusaDeColetavel)
     {
         if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Rotulo, item.TipoRenderizacao).Count > 0)
         {
@@ -141,7 +167,7 @@ internal static class ConferenciaDoModelo
         }
 
         string codigo = ModeloFormulario.CodigoNaFormaGravada(item.FatoCodigo);
-        if (ConferenciaNoCatalogo.FatoDoItem(codigo, catalogo.Fatos) is { } naoColetavel)
+        if (recusaDeColetavel(codigo, catalogo.Fatos) is { } naoColetavel)
         {
             yield return new("fatoCodigo", naoColetavel);
             yield break;
