@@ -132,11 +132,12 @@ public static class VocabularioDoCatalogo
         fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
 
     /// <summary>
-    /// As dependências de cada derivado por regra que o catálogo sabe derivar: os fatos citados pelas
-    /// regras padrão dele. O derivado sem regra padrão não entra — quem o deriva é o processo.
+    /// As dependências de cada derivado que o catálogo sabe derivar: os fatos citados pelas regras
+    /// padrão do derivado por regra, e os declarados pelo mecanismo do derivado do sistema. O derivado
+    /// por regra sem regra padrão não entra — quem o deriva é o processo.
     /// </summary>
     public static Dictionary<string, IReadOnlyCollection<string>> Derivacoes(IEnumerable<FatoCandidato> fatos) =>
-        RegrasDeDerivacao(fatos).ToDictionary(static r => r.CodigoFato, static r => r.DependenciasDeclaradas, StringComparer.Ordinal);
+        DerivadosDoSistema.ComAsDoSistema(RegrasDeDerivacao(fatos).Select(static r => KeyValuePair.Create(r.CodigoFato, r.DependenciasDeclaradas)));
 
     /// <summary>O formato da resposta de cada fato de texto, em token canônico.</summary>
     public static Dictionary<string, string> Formatos(IEnumerable<FatoCandidato> fatos)

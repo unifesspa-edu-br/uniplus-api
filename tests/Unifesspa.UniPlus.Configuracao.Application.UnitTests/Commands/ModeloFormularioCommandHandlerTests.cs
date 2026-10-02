@@ -41,6 +41,10 @@ public sealed class ModeloFormularioCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private readonly FatoCandidato _certificado = Declarado("CERTIFICADO");
+    private readonly FatoCandidato _dataNascimento = Declarado("DATA_NASCIMENTO", DominioFato.Data);
+    private readonly FatoCandidato _faixaEtaria = FatoCandidato.Criar(
+        "FAIXA_ETARIA", "Faixa etária", null, DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
+        "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese, sistema: true).Value!;
     private readonly FatoCandidato _maiorIdade = Declarado("MAIOR_IDADE", escopo: EscopoFato.MembroGrupo);
     private readonly FatoCandidato _semRenda = Declarado("SEM_RENDA", escopo: EscopoFato.MembroGrupo);
     private readonly FatoCandidato _cpf = Declarado("CPF_RESPONSAVEL", DominioFato.Texto, FormatoTexto.Cpf);
@@ -50,7 +54,7 @@ public sealed class ModeloFormularioCommandHandlerTests
 
     public ModeloFormularioCommandHandlerTests()
     {
-        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, _cpf, _idade, _maiorIdade, _semRenda]);
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, _cpf, _idade, _maiorIdade, _semRenda, _dataNascimento, _faixaEtaria]);
         _termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
         _tipos.ObterAtivoPorCodigoAsync("PSR", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), "PSR", "PSR", null));
     }
@@ -96,6 +100,26 @@ public sealed class ModeloFormularioCommandHandlerTests
         Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("MAIOR_IDADE", 0)));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
+    }
+
+    [Theory(DisplayName = "Regra cita a faixa etária quando a data de nascimento é coletada antes; sem ela, é recusada")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Criar_RegraCitaFaixaEtaria_PelaDataDeNascimento(bool coletaDataDeNascimento)
+    {
+        FatoColetadoInput cita = Item("CERTIFICADO", 1) with { Precondicao = Quando("FAIXA_ETARIA", 18) };
+        ConteudoDoModeloInput conteudo = coletaDataDeNascimento ? Conteudo(Item("DATA_NASCIMENTO", 0, "DATA"), cita) : Conteudo(cita);
+
+        Result<Guid> resultado = await CriarAsync(conteudo);
+
+        if (coletaDataDeNascimento)
+        {
+            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        }
+        else
+        {
+            resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
+        }
     }
 
     [Fact(DisplayName = "Item de fato calculado pelo sistema não é coletável")]

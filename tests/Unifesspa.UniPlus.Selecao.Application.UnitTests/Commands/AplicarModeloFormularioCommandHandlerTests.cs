@@ -42,6 +42,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [
         Declarado("QUILOMBOLA"),
         Declarado("CERTIFICADO"),
+        Declarado("DATA_NASCIMENTO") with { Dominio = "DATA" },
         Declarado("MAIOR_IDADE") with { Escopo = "MEMBRO_GRUPO" },
         Declarado("SOB_GUARDA") with { Escopo = "MEMBRO_GRUPO", Ativo = false },
         Declarado("BAIXA_RENDA") with { Ativo = false },
@@ -104,6 +105,24 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(modelo);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.pressupostos[0]");
+    }
+
+    [Theory(DisplayName = "O termo da cópia cita a faixa etária quando a cópia coleta a data de nascimento")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Handle_TermoCitaFaixaEtaria_PelaDataDeNascimento(bool coletaDataDeNascimento)
+    {
+        Guid termoId = Guid.NewGuid();
+        Guid versaoId = Guid.NewGuid();
+        _termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
+            [new VersaoTermoConsentimentoView(termoId, versaoId, "Consulta", "Autorizo.", "Lei 12.711/2012", "REGISTRO_DIGITAL_COM_LOG_IP", new string('b', 64))]);
+        TermoExigidoInput termo = new(
+            "CONSULTA", 0, termoId, versaoId, [[new CondicaoPrecondicaoInput("FAIXA_ETARIA", "MAIOR_IGUAL", JsonSerializer.SerializeToElement(18))]], "SEMPRE", null);
+        FatoColetadoInput[] itens = coletaDataDeNascimento ? [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")] : [Item("QUILOMBOLA", 0)];
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, itens, termos: [termo]));
+
+        resultado.IsSuccess.Should().Be(coletaDataDeNascimento, resultado.Error?.Message);
     }
 
     [Fact(DisplayName = "O grupo repetível do modelo é copiado para o formulário do processo")]

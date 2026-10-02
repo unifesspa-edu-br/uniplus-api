@@ -50,8 +50,10 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
                 ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null, "GLOBAL", Ativo: true),
             new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
                 null, "INSCRICAO", "CAMPO_INSCRICAO:BAIXA_RENDA", null, null, Ativo: true),
-            new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "CATEGORICO", "DERIVADO", "ESCALAR",
-                ["MENOR_DE_18", "DE_18_A_59"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, "GLOBAL", Ativo: true),
+            new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
+                null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true),
+            new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", null, "CATEGORICO", "DERIVADO", "ESCALAR",
+                ["MENOR_DE_18", "DE_18_A_59"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true),
         ]);
         mocks.TermoReader.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
         [
@@ -76,6 +78,28 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
+    }
+
+    [Theory(DisplayName = "Condição do termo cita a faixa etária quando o processo coleta a data de nascimento")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Handle_CondicaoCitaFaixaEtaria_PelaDataDeNascimento(bool coletaDataDeNascimento)
+    {
+        ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
+        if (coletaDataDeNascimento)
+        {
+            processo.DefinirItens(
+                [
+                    FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+                    FatoColetado.Criar("DATA_NASCIMENTO", 1, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null).Value!,
+                ],
+                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }
+
+        Result<MutacaoAceita> resultado = await HandleAsync(
+            NovosMocks(processo), processo, new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("FAIXA_ETARIA", 18), "SEMPRE", null));
+
+        resultado.IsSuccess.Should().Be(coletaDataDeNascimento, resultado.Error?.Message);
     }
 
     private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, object valor) =>
@@ -126,14 +150,14 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         processo.TermosExigidos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Condição que cita fato calculado de atributos do candidato é recusada pelo nome, sem esconder a outra condição")]
+    [Fact(DisplayName = "Condição que cita fato calculado de atributos do candidato sem dependências declaradas é recusada pelo nome, sem esconder a outra condição")]
     public async Task Handle_CondicaoCitaAtributoDoCandidato_RecusaNomeadaEAcumula()
     {
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
         Mocks mocks = NovosMocks(processo);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
-            new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("FAIXA_ETARIA", "DE_18_A_59"), "QUANDO", Quando("BAIXA_RENDA", true)));
+            new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("FAIXA_DE_RENDA", "DE_18_A_59"), "QUANDO", Quando("BAIXA_RENDA", true)));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [

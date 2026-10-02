@@ -97,18 +97,20 @@ public static class ConferenciaNoCatalogo
 
     /// <summary>
     /// A recusa de citar, numa regra do formulário, um fato que o sistema calcula de atributos do
-    /// candidato, como a faixa etária: as dependências dele não são declaradas, e o formulário não
-    /// tem como saber em que ponto ele fica conhecido.
+    /// candidato sem dependências declaradas (<see cref="DerivadosDoSistema"/>), como a renda per
+    /// capita: o formulário não tem como saber em que ponto ele fica conhecido. O que declara as
+    /// dependências é conferido pelo grafo do formulário, como o derivado por regra.
     /// </summary>
     public static DomainError? CitacaoDeAtributoDoCandidato(IEnumerable<string> citados, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo)
     {
         ArgumentNullException.ThrowIfNull(citados);
         ArgumentNullException.ThrowIfNull(catalogo);
         return citados.FirstOrDefault(c => c is not null && catalogo.TryGetValue(c, out FatoDoCatalogo? fato)
-                && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.AtributoDoCandidato)) is { } atributo
+                && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.AtributoDoCandidato)
+                && !DerivadosDoSistema.Dependencias.ContainsKey(c)) is { } atributo
             ? new DomainError(
                 GrafoFormularioErrorCodes.CitaAtributoDoCandidato,
-                $"O fato '{atributo}' é calculado pelo sistema a partir de atributos do candidato e ainda não pode ser citado em regra do formulário.")
+                $"O fato '{atributo}' é calculado pelo sistema a partir de atributos do candidato sem dependências declaradas e não pode ser citado em regra do formulário.")
             : null;
     }
 

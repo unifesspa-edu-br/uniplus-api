@@ -204,16 +204,24 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     }
 
     /// <summary>
-    /// A faixa etária é derivada por ATRIBUTO do candidato — não é coletada no formulário nem
-    /// declarada em regra de derivação, e não tem como ser. Exigi-la no universo recusaria o
-    /// gatilho etário, que é o caso mais comum de exigência condicionada.
+    /// A faixa etária é calculada pelo sistema da data de nascimento (dependência declarada pelo
+    /// mecanismo do derivado): o gatilho que a cita só é aceito quando o processo coleta a data de
+    /// nascimento — sem ela, a faixa etária nunca se resolve.
     /// </summary>
-    [Fact(DisplayName = "Gatilho por faixa etária é aceito sem coleta nem regra de derivação")]
-    public async Task Handle_GatilhoPorFaixaEtaria_Aceita()
+    [Theory(DisplayName = "Gatilho por faixa etária é aceito só quando o processo coleta a data de nascimento")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Handle_GatilhoPorFaixaEtaria_DependeDaDataDeNascimento(bool coletaDataDeNascimento)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        if (coletaDataDeNascimento)
+        {
+            processo.DefinirItens(
+                [FatoColetado.Criar("DATA_NASCIMENTO", 0, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null).Value!])
+                .IsSuccess.Should().BeTrue();
+        }
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -228,7 +236,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.IsSuccess.Should().Be(coletaDataDeNascimento, resultado.Error?.Message);
     }
 
     /// <summary>A faixa etária como o catálogo a publica: derivada, por atributo do candidato.</summary>

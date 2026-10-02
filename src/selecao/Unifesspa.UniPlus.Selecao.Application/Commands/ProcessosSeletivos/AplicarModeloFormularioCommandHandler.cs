@@ -222,8 +222,12 @@ public static partial class AplicarModeloFormularioCommandHandler
             }
         }
 
+        // O termo cita também o derivado do sistema cujas dependências o processo coleta depois da
+        // cópia; a regra de derivação, não.
+        HashSet<string> coletados = new(processo.FatosColetados.Select(static f => f.FatoCodigo).Concat(itens.Select(static i => i.FatoCodigo)), StringComparer.Ordinal);
         (List<TermoExigidoFormulario> termos, List<FieldError> errosDosTermos) =
-            EscritaDosTermos.Resolver(termosLidos, contexto, versaoPorId, universo);
+            EscritaDosTermos.Resolver(
+                termosLidos, contexto, versaoPorId, new HashSet<string>(universo.Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)), StringComparer.Ordinal));
         erros.AddRange(errosDosTermos.Select(e => NoModelo(e, "termos", indicesDosTermos)));
         if (erros.Count > 0)
         {

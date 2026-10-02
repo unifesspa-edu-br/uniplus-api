@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -119,6 +120,24 @@ public sealed class GrafoDependenciaConjunta
             fatosExistentes.Add(config.CodigoFato);
         }
 
+        // O derivado do sistema citado por alguma regra existe quando o processo tem todas as
+        // dependências declaradas pelo mecanismo dele; o que nenhuma regra cita fica fora do grafo.
+        HashSet<string> citados = new(
+            fatosColetados.SelectMany(static f => f.FatosCitados)
+                .Concat(grupos.SelectMany(static g => g.FatosCitados.Concat(g.Subitens.SelectMany(static s => s.FatosCitados))))
+                .Concat(regrasDerivacao.SelectMany(static r => r.FatosCitados))
+                .Concat(documentosExigidos.SelectMany(FatosDoGatilho))
+                .Concat(formularios.SelectMany(static f => f.Etapas).SelectMany(static e => e.FatosCitados))
+                .Concat(termos.SelectMany(static t => t.FatosCitados)),
+            StringComparer.Ordinal);
+        KeyValuePair<string, IReadOnlyList<string>>[] derivadosDoSistema = [.. DerivadosDoSistema.Dependencias
+            .Where(d => citados.Contains(d.Key) && d.Value.All(fatosExistentes.Contains))
+            .OrderBy(static d => d.Key, StringComparer.Ordinal)];
+        foreach ((string derivado, _) in derivadosDoSistema)
+        {
+            fatosExistentes.Add(derivado);
+        }
+
         // (1) Fatos declarados: nó de campo + nó de fato + aresta de produção campo → fato; e a
         // pré-condição vira aresta fato → campo (o campo é gatado pelos fatos que a pré-condição cita).
         // O campo de grupo é gatado também pelas regras do grupo dele.
@@ -153,6 +172,16 @@ public sealed class GrafoDependenciaConjunta
                     arestas.Add(new ArestaGrafoDependencia(
                         TipoArestaGrafo.Derivacao, No(ClasseNoGrafo.Fato, citado), derivado));
                 }
+            }
+        }
+
+        // (2b) Derivados do sistema: aresta de derivação dependência → derivado.
+        foreach ((string derivado, IReadOnlyList<string> dependencias) in derivadosDoSistema)
+        {
+            NoGrafoDependencia noDerivado = No(ClasseNoGrafo.Fato, derivado);
+            foreach (string dependencia in dependencias)
+            {
+                arestas.Add(new ArestaGrafoDependencia(TipoArestaGrafo.Derivacao, No(ClasseNoGrafo.Fato, dependencia), noDerivado));
             }
         }
 

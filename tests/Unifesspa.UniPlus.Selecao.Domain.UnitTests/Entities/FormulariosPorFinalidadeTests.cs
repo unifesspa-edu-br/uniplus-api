@@ -333,6 +333,42 @@ public sealed class FormulariosPorFinalidadeTests
     private static FatoColetado Opcional(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
         FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes, etapaCodigo: FormularioDeTeste.Secao).Value!;
 
+    private static FatoColetado DataDeNascimento(Obrigatoriedade obrigatoriedade) =>
+        FatoColetado.Criar("DATA_NASCIMENTO", 0, "Data de nascimento", TipoRenderizacao.Data, obrigatoriedade, null, etapaCodigo: FormularioDeTeste.Secao).Value!;
+
+    private static FatoColetado CitaFaixaEtaria(int ordem) => Opcional(
+        "MENOR_SOB_RESPONSAVEL", ordem, CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MenorIgual, JsonSerializer.SerializeToElement(17)).Value!);
+
+    [Fact(DisplayName = "Regra do formulário que cita a faixa etária exige a data de referência, como o gatilho")]
+    public void Publicacao_RegraDoFormularioCitaFaixaEtariaSemReferencia_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.Inscricao, [DataDeNascimento(Obrigatoriedade.Sempre), CitaFaixaEtaria(1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
+    }
+
+    [Fact(DisplayName = "Data de nascimento opcional que alimenta a faixa etária citada recusa a publicação; obrigatória, aceita")]
+    public void Publicacao_DataDeNascimentoOpcionalQueAlimentaFaixaEtaria_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirReferenciaTemporalFatos(
+                ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 12, 31), null).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.Inscricao, [DataDeNascimento(Obrigatoriedade.Nunca), CitaFaixaEtaria(1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
+
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.Inscricao, [DataDeNascimento(Obrigatoriedade.Sempre), CitaFaixaEtaria(1)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();
+    }
+
     [Fact(DisplayName = "Campo opcional que alimenta derivação recusa a publicação; obrigatório sempre que exibido, aceita")]
     public void Publicacao_CampoOpcionalQueAlimentaDerivacao_Recusa()
     {
