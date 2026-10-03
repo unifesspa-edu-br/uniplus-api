@@ -10,22 +10,27 @@ using Unifesspa.UniPlus.Regras.Errors;
 /// derivação, ou é citado por negação em qualquer regra, precisa ser obrigatório sempre que exibido:
 /// sem resposta, a derivação e a negação dariam resultado que o candidato não declarou. Pelo mesmo
 /// motivo, o grupo repetível cujo campo alimenta um agregado precisa ser obrigatório sempre, ele e o
-/// campo: grupo ou campo sem resposta faria o agregado dizer que nenhum membro tem o valor. A mesma
-/// regra vale no processo e no modelo.
+/// campo: grupo ou campo sem resposta faria o agregado dizer que nenhum membro tem o valor. O campo
+/// com impedimento também: em branco, o impedimento nunca se cumpriria. A mesma regra vale no
+/// processo e no modelo.
 /// </summary>
 public static class CampoQueAlimentaRegra
 {
     /// <summary>
     /// Os fatos que alimentam regra: toda dependência de derivação — o que já cobre o fato citado por
-    /// negação por meio de um derivado — e todo fato citado por negação.
+    /// negação por meio de um derivado —, todo fato citado por negação e o de todo campo com impedimento.
     /// </summary>
-    public static HashSet<string> Fatos(IEnumerable<string> dependenciasDasDerivacoes, IEnumerable<(string Fato, Operador Operador)> condicoes)
+    public static HashSet<string> Fatos(
+        IEnumerable<string> dependenciasDasDerivacoes, IEnumerable<(string Fato, Operador Operador)> condicoes, IEnumerable<string> comImpedimento)
     {
         ArgumentNullException.ThrowIfNull(dependenciasDasDerivacoes);
         ArgumentNullException.ThrowIfNull(condicoes);
+        ArgumentNullException.ThrowIfNull(comImpedimento);
 
         return new(
-            dependenciasDasDerivacoes.Concat(condicoes.Where(static c => c.Operador is Operador.Diferente or Operador.NaoEm).Select(static c => c.Fato)),
+            dependenciasDasDerivacoes
+                .Concat(condicoes.Where(static c => c.Operador is Operador.Diferente or Operador.NaoEm).Select(static c => c.Fato))
+                .Concat(comImpedimento),
             StringComparer.Ordinal);
     }
 
@@ -40,7 +45,7 @@ public static class CampoQueAlimentaRegra
             .Where(i => i.Obrigatoriedade != TipoObrigatoriedade.Sempre && alimentamRegra.Contains(i.FatoCodigo))
             .Select(static i => new DomainError(
                 ItemFormularioErrorCodes.OpcionalQueAlimentaRegra,
-                $"O campo '{i.FatoCodigo}' alimenta uma derivação, um agregado ou uma condição de negação e precisa ser obrigatório sempre que exibido."))
+                $"O campo '{i.FatoCodigo}' alimenta uma derivação, um agregado, uma condição de negação ou um impedimento e precisa ser obrigatório sempre que exibido."))
             .FirstOrDefault();
     }
 

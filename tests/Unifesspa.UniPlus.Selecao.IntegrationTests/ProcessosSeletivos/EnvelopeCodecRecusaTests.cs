@@ -1878,6 +1878,16 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    [Fact(DisplayName = "Impedimento em item de formulário que não é o de inscrição é recusado, como o agregado recusa")]
+    public void ImpedimentoForaDaInscricao_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            FatoColetadoPorCodigo(envelope, "RENDA")["finalidade"] = "HABILITACAO");
+
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain(".impedimento'");
+    }
+
     [Fact(DisplayName = "Código contribuído por MODALIDADE fora do domínio de modalidades ofertadas é recusado")]
     public void ContribuiForaDoDominioDeModalidades_Recusa()
     {

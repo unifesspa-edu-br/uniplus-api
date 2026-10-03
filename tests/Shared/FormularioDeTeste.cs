@@ -202,7 +202,7 @@ internal static class FormularioDeTeste
                 fato.TipoRenderizacao, fato.Obrigatoriedade,
                 [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
                 fato.OrigemValores, ConjuntoBasicoDaInscricao.CodigoDaSecao, formato: fato.Formato, ajuda: fato.Ajuda,
-                pedirConfirmacao: fato.PedirConfirmacao, restricoes: fato.Restricoes).Value!;
+                pedirConfirmacao: fato.PedirConfirmacao, restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!;
 
     private static FatoColetado NaSecao(FatoColetado fato, int deslocamento) =>
         fato.EtapaCodigo is not null && deslocamento == 0
@@ -211,7 +211,7 @@ internal static class FormularioDeTeste
                 fato.FatoCodigo, fato.Ordem + deslocamento, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatoriedade,
                 [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
                 fato.OrigemValores, fato.EtapaCodigo ?? Secao, formato: fato.Formato, ajuda: fato.Ajuda, pedirConfirmacao: fato.PedirConfirmacao,
-                restricoes: fato.Restricoes).Value!;
+                restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!;
 
     private static GrupoColetado Deslocar(GrupoColetado grupo, int deslocamento) =>
         deslocamento == 0

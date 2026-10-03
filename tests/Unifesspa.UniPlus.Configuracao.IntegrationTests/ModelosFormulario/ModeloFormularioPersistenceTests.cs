@@ -89,6 +89,38 @@ public sealed class ModeloFormularioPersistenceTests
             .Using<JsonElement>(c => c.Subject.GetRawText().Should().Be(c.Expectation.GetRawText())).WhenTypeIs<JsonElement>());
     }
 
+    [Fact(DisplayName = "O impedimento do item do modelo de inscrição volta do documento jsonb igual ao gravado")]
+    public async Task Impedimento_IdaEVolta()
+    {
+        Impedimento impedimento = new(
+            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
+            "Quem tem vínculo com o PARFOR não pode se inscrever neste processo.");
+        Result<ModeloFormulario> criado = ModeloFormulario.Criar(
+            $"INS_{Guid.NewGuid():N}"[..30], "Inscrição PSIQ 2027", null, FinalidadeFormulario.Inscricao, "PSIQ",
+            new ConteudoDoModelo(
+                "Inscrição",
+                [
+                    new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
+                    new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+                ],
+                [new("VINCULO_PARFOR", 0, "DADOS", "Vínculo com o PARFOR", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [],
+                    PedirConfirmacao: false, Impedimento: impedimento)],
+                [], [], []),
+            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
+        criado.IsSuccess.Should().BeTrue(criado.Error?.Message);
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-a"))
+        {
+            ctx.ModelosFormulario.Add(criado.Value!);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext leitura = _fixture.CreateDbContext(userId: null);
+        ModeloFormulario lido = await leitura.ModelosFormulario.SingleAsync(m => m.Id == criado.Value!.Id);
+
+        lido.Conteudo.Itens.Single().Impedimento.Should().BeEquivalentTo(impedimento, opcoes => opcoes.ComparingByMembers<JsonElement>()
+            .Using<JsonElement>(c => c.Subject.GetRawText().Should().Be(c.Expectation.GetRawText())).WhenTypeIs<JsonElement>());
+    }
+
     [Fact(DisplayName = "O código do modelo é único entre todos os modelos")]
     public async Task CodigoRepetido_Recusado()
     {

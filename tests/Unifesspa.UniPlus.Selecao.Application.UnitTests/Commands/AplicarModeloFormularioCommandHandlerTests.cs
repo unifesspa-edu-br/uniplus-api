@@ -353,6 +353,28 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         _processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.FatosCitados.Should().Equal("COR_RACA");
     }
 
+    [Fact(DisplayName = "O impedimento do item do modelo é copiado, e só a resposta anterior que ele cita é dependência do campo")]
+    public async Task Handle_ItemComImpedimento_CopiaOImpedimento()
+    {
+        const string Mensagem = "Quem é quilombola e se declarou preto concorre pelo processo próprio.";
+        FatoColetadoInput impedido = Item("QUILOMBOLA", FormularioDeTeste.PrimeiraOrdemDeInscricao) with
+        {
+            Impedimento = new ImpedimentoInput(
+                [[
+                    new CondicaoPrecondicaoInput("QUILOMBOLA", "IGUAL", JsonSerializer.SerializeToElement(true)),
+                    new CondicaoPrecondicaoInput("COR_RACA", "IGUAL", JsonSerializer.SerializeToElement("PRETA")),
+                ]],
+                Mensagem),
+        };
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens, impedido]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        FatoColetado copiado = _processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Subject;
+        copiado.Impedimento!.Mensagem.Should().Be(Mensagem);
+        copiado.FatosCitados.Should().Equal("COR_RACA");
+    }
+
     [Fact(DisplayName = "O modelo de inscrição que altera um dado básico é recusado na posição do item no modelo")]
     public async Task Handle_ModeloDeInscricaoComDadoBasicoAlterado_Recusa()
     {

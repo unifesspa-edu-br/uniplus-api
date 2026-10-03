@@ -366,12 +366,19 @@ internal static class CorpusEnvelope
         // RENDA=ATE_1_SM. Exercita, no mesmo snapshot, as arestas de produção, pré-condição e
         // derivação, com predicado DNF de duas condições numa cláusula. Ambos os códigos
         // contribuídos (AC, LB_PPI) são ofertados. A seção traz também a UF do Geo, seleção com as
-        // UFs congeladas, e o município, sem lista, que cita a UF.
+        // UFs congeladas, e o município, sem lista, que cita a UF. A renda acima de dez salários
+        // impede a inscrição de quem se declarou preto, com a mensagem ao candidato.
         processo.DefinirItens(Ordem([
             .. FormularioDeTeste.DadosBasicos(),
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ]).Value!,
+            ], impedimento: new Impedimento(
+                PredicadoDnf.CriarDeCondicoesAgrupadas(
+                [
+                    (0, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ACIMA_10_SM")).Value!),
+                    (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
+                ]).Value!,
+                "A renda declarada está acima do limite deste processo.")).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e

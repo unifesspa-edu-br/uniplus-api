@@ -130,7 +130,8 @@ public static class AvaliadorFormulario
             if (itemPorFato.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoItem Item) par))
             {
                 avaliacaoPorFato[codigo] = new AvaliacaoItem(
-                    codigo, par.Etapa.Codigo, Ternario.Indeterminado, Ternario.Indeterminado, []);
+                    codigo, par.Etapa.Codigo, Ternario.Indeterminado, Ternario.Indeterminado, [],
+                    par.Item.Impedimento is null ? Ternario.Falso : Ternario.Indeterminado);
             }
         }
 
@@ -268,15 +269,19 @@ public static class AvaliadorFormulario
         Ternario visivel = E(visivelDoContentor, item.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
         Ternario obrigatorio = ObrigatorioSeVisivel(visivel, item.Obrigatoriedade, fatos);
 
-        AvaliacaoItem Avaliacao(IReadOnlyList<RestricaoValor> violadas) =>
-            new(item.FatoCodigo, etapaCodigo, visivel, obrigatorio, violadas);
+        // O impedimento se avalia com a resposta do próprio campo já resolvida: o campo oculto ou sem
+        // resposta não impede, porque nenhuma condição se cumpre sobre ele (UNI-REQ-0074).
+        (FatoResolvido Fato, AvaliacaoItem Avaliacao) Resultado(FatoResolvido fato, IReadOnlyList<RestricaoValor> violadas) =>
+            (fato, new(item.FatoCodigo, etapaCodigo, visivel, obrigatorio, violadas,
+                item.Impedimento?.Avaliar(new Dictionary<string, FatoResolvido>(fatos, StringComparer.Ordinal) { [item.FatoCodigo] = fato })
+                    ?? Ternario.Falso));
 
         switch (visivel)
         {
             case Ternario.Falso:
-                return (FatoResolvido.NaoAplicavel(), Avaliacao([]));
+                return Resultado(FatoResolvido.NaoAplicavel(), []);
             case Ternario.Indeterminado:
-                return (FatoResolvido.Indeterminado(), Avaliacao([]));
+                return Resultado(FatoResolvido.Indeterminado(), []);
             case Ternario.Verdadeiro:
             default:
                 break;
@@ -304,7 +309,7 @@ public static class AvaliadorFormulario
 
             if (violadas.Count == 0)
             {
-                return (algumaIndeterminada ? FatoResolvido.Indeterminado() : FatoResolvido.Resolvido(respondida), Avaliacao([]));
+                return Resultado(algumaIndeterminada ? FatoResolvido.Indeterminado() : FatoResolvido.Resolvido(respondida), []);
             }
         }
 
@@ -313,7 +318,7 @@ public static class AvaliadorFormulario
         FatoResolvido semResposta = obrigatorio == Ternario.Falso && etapaConcluida
             ? FatoResolvido.NaoInformado()
             : FatoResolvido.Indeterminado();
-        return (semResposta, Avaliacao(violadas));
+        return Resultado(semResposta, violadas);
     }
 
     /// <summary>

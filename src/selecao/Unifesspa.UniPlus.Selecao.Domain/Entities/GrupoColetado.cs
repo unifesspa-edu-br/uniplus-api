@@ -76,7 +76,7 @@ public sealed class GrupoColetado : EntityBase
         ArgumentNullException.ThrowIfNull(subitens);
 
         List<FieldError> erros = FormaDoGrupo.Conferir(
-            codigo, ordem, rotulo, minimo, maximo, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo))], exibicao?.FatosCitados ?? [], obrigatoriedade);
+            codigo, ordem, rotulo, minimo, maximo, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Impedimento is not null))], exibicao?.FatosCitados ?? [], obrigatoriedade);
         if (incluiCandidato)
         {
             erros.AddRange(ConferirCandidatoComoMembro(minimo, subitens));

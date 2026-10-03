@@ -314,7 +314,7 @@ public static partial class AplicarModeloFormularioCommandHandler
         }
     }
 
-    /// <summary>Os fatos que as regras das partes citam, na entrada: exibições, obrigatoriedades e restrições.</summary>
+    /// <summary>Os fatos que as regras das partes citam, na entrada: exibições, obrigatoriedades, restrições e impedimentos.</summary>
     private static IEnumerable<string> FatosCitados(
         IEnumerable<FatoColetadoInput> itens,
         IEnumerable<GrupoColetadoInput> grupos,
@@ -322,6 +322,7 @@ public static partial class AplicarModeloFormularioCommandHandler
         IEnumerable<TermoExigidoInput> termos) =>
         itens.Concat(grupos.SelectMany(static g => g.Subitens ?? []))
             .SelectMany(static i => Citados(i?.Precondicao).Concat(Citados(i?.PredicadoObrigatoriedade))
+                .Concat(Citados(i?.Impedimento?.Quando).Where(f => !string.Equals(f, i?.FatoCodigo, StringComparison.Ordinal)))
                 .Concat((i?.Restricoes ?? []).SelectMany(static r => (r.Fatos ?? []).Concat((r.Entradas ?? []).SelectMany(static e => Citados(e.Quando))))))
             .Concat(grupos.SelectMany(static g => Citados(g.Exibicao).Concat(Citados(g.PredicadoObrigatoriedade))))
             .Concat(etapas.SelectMany(static e => Citados(e?.Exibicao)))

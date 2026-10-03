@@ -256,6 +256,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>contribui</c> passa a aceitar
     /// nulo nas regras de <c>regrasDerivacao[]</c>: a regra do derivado booleano não contribui
     /// código, e a ativa torna o derivado verdadeiro.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, cada item de
+    /// <c>fatosColetados[]</c> traz <c>impedimento</c>: a condição em DNF sobre a resposta do próprio
+    /// campo, e se preciso as anteriores, que impede a inscrição, e a mensagem ao candidato — nulo
+    /// quando o campo não tem impedimento, o que vale para todo formulário que não é o de inscrição.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.21";
 
@@ -419,6 +423,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         ["tipo"] = PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo),
         ["predicado"] = obrigatoriedade.Predicado is { } predicado ? SerializarDnf(LinhasDoPredicado(predicado)) : null,
+    };
+
+    /// <summary>A resposta que impede a inscrição: a condição, como as demais regras, e a mensagem ao candidato.</summary>
+    private static JsonObject SerializarImpedimento(Impedimento impedimento) => new()
+    {
+        ["quando"] = SerializarDnf(LinhasDoPredicado(impedimento.Quando)),
+        ["mensagem"] = HashCanonicalComputer.NormalizeNfc(impedimento.Mensagem),
     };
 
     /// <summary>
@@ -1885,6 +1896,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["ajuda"] = fato.Ajuda is { } ajuda ? HashCanonicalComputer.NormalizeNfc(ajuda) : null,
                 ["pedirConfirmacao"] = fato.PedirConfirmacao,
                 ["restricoes"] = SerializarRestricoes(fato.Restricoes),
+                ["impedimento"] = fato.Impedimento is { } impedimento ? SerializarImpedimento(impedimento) : null,
                 ["origemValores"] = fato.OrigemValores.ToString(),
                 ["formato"] = fato.Formato,
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(

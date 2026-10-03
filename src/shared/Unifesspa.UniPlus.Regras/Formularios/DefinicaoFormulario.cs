@@ -170,8 +170,8 @@ public sealed record DefinicaoGrupo
 }
 
 /// <summary>
-/// Um item do formulário: o fato que ele produz e as regras do item — exibição, obrigatoriedade e
-/// restrições de valor (UNI-REQ-0145).
+/// Um item do formulário: o fato que ele produz e as regras do item — exibição, obrigatoriedade,
+/// restrições de valor e impedimento (UNI-REQ-0145).
 /// </summary>
 public sealed record DefinicaoItem
 {
@@ -179,7 +179,8 @@ public sealed record DefinicaoItem
         string fatoCodigo,
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
-        IReadOnlyList<RestricaoValor> restricoes)
+        IReadOnlyList<RestricaoValor> restricoes,
+        Impedimento? impedimento = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
@@ -189,6 +190,7 @@ public sealed record DefinicaoItem
         Exibicao = exibicao;
         Obrigatoriedade = obrigatoriedade;
         Restricoes = [.. restricoes];
+        Impedimento = impedimento;
     }
 
     public string FatoCodigo { get; }
@@ -200,11 +202,18 @@ public sealed record DefinicaoItem
 
     public IReadOnlyList<RestricaoValor> Restricoes { get; }
 
-    /// <summary>Os fatos citados pelas regras do próprio item, sem a exibição da etapa.</summary>
+    /// <summary>A resposta que impede a inscrição — nulo quando nenhuma impede.</summary>
+    public Impedimento? Impedimento { get; }
+
+    /// <summary>
+    /// Os fatos citados pelas regras do próprio item, sem a exibição da etapa. O impedimento cita a
+    /// resposta do próprio campo, que não é dependência dele: só as respostas anteriores entram.
+    /// </summary>
     public IReadOnlyCollection<string> FatosCitados =>
         [.. (Exibicao?.FatosCitados ?? [])
             .Concat(Obrigatoriedade.FatosCitados)
             .Concat(Restricoes.SelectMany(static r => r.FatosCitados))
+            .Concat((Impedimento?.FatosCitados ?? []).Where(f => !string.Equals(f, FatoCodigo, StringComparison.Ordinal)))
             .Distinct(StringComparer.Ordinal)];
 }
 

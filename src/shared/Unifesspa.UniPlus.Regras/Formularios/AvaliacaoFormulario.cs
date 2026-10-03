@@ -71,15 +71,17 @@ public sealed record AvaliacaoOcorrencia(
     EstadoFato Estado);
 
 /// <summary>
-/// A avaliação de um item: se aparece, se é obrigatório e quais restrições a resposta viola. Uma
-/// resposta que viola restrição não vale — o fato do item é resolvido como se não houvesse resposta.
+/// A avaliação de um item: se aparece, se é obrigatório, quais restrições a resposta viola e se a
+/// resposta impede a inscrição. Uma resposta que viola restrição não vale — o fato do item é
+/// resolvido como se não houvesse resposta.
 /// </summary>
 public sealed record AvaliacaoItem(
     string FatoCodigo,
     string EtapaCodigo,
     Ternario Visivel,
     Ternario Obrigatorio,
-    IReadOnlyList<RestricaoValor> RestricoesVioladas);
+    IReadOnlyList<RestricaoValor> RestricoesVioladas,
+    Ternario Impedido = Ternario.Falso);
 
 /// <summary>A avaliação de um termo: se aparece e se é obrigatório.</summary>
 public sealed record AvaliacaoTermo(string Codigo, Ternario Visivel, Ternario Obrigatorio);

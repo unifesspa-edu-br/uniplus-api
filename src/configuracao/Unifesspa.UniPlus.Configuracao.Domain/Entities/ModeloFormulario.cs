@@ -19,9 +19,9 @@ public sealed record EtapaDoModelo(
 }
 
 /// <summary>
-/// Um item do modelo: o fato que o campo coleta, com as regras do item — exibição, obrigatoriedade e
-/// restrições de valor — sobre fatos anteriores (UNI-REQ-0145). O formato do campo de texto é o do
-/// fato no catálogo.
+/// Um item do modelo: o fato que o campo coleta, com as regras do item — exibição, obrigatoriedade,
+/// restrições de valor e impedimento — sobre fatos anteriores (UNI-REQ-0145). O formato do campo de
+/// texto é o do fato no catálogo; o impedimento cita também a resposta do próprio campo.
 /// </summary>
 public sealed record ItemDoModelo(
     string FatoCodigo,
@@ -34,10 +34,12 @@ public sealed record ItemDoModelo(
     Obrigatoriedade Obrigatoriedade,
     PredicadoDnf? Exibicao,
     IReadOnlyList<RestricaoValor> Restricoes,
-    bool PedirConfirmacao)
+    bool PedirConfirmacao,
+    Impedimento? Impedimento = null)
 {
     public IReadOnlyCollection<string> FatosCitados =>
         [.. (Exibicao?.FatosCitados ?? []).Concat(Obrigatoriedade.FatosCitados).Concat(Restricoes.SelectMany(static r => r.FatosCitados))
+            .Concat((Impedimento?.FatosCitados ?? []).Where(f => !string.Equals(f, FatoCodigo, StringComparison.Ordinal)))
             .Distinct(StringComparer.Ordinal)];
 }
 
@@ -211,7 +213,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         ILookup<string?, ItemDoModelo> itensPorEtapa = Conteudo.Itens.ToLookup(static i => i.EtapaCodigo, StringComparer.Ordinal);
         return new DefinicaoFormulario(
             [.. Conteudo.Etapas.Select(e => new DefinicaoEtapa(
-                e.Codigo, e.Exibicao, [.. itensPorEtapa[e.Codigo].Select(static i => new DefinicaoItem(i.FatoCodigo, i.Exibicao, i.Obrigatoriedade, i.Restricoes))]))],
+                e.Codigo, e.Exibicao, [.. itensPorEtapa[e.Codigo].Select(static i => new DefinicaoItem(i.FatoCodigo, i.Exibicao, i.Obrigatoriedade, i.Restricoes, i.Impedimento))]))],
             [.. Conteudo.Termos.Select(static t => new DefinicaoTermo(t.Codigo, t.Exibicao, t.Obrigatoriedade))],
             derivacoes);
     }
@@ -270,12 +272,14 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
                 erros.AddRange(FormaDoCampo(conteudo.Itens[i], $"itens[{i}]"));
             }
 
+            erros.AddRange(Impedimento.ConferirFinalidade(finalidade, conteudo.Itens.Select(static i => i.Impedimento)));
+
             for (int i = 0; i < conteudo.Grupos.Count; i++)
             {
                 GrupoDoModelo grupo = conteudo.Grupos[i];
                 erros.AddRange(FormaDoGrupo.Conferir(
                         grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.Minimo, grupo.Maximo,
-                        [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo))],
+                        [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Impedimento is not null))],
                         grupo.Exibicao?.FatosCitados ?? [], grupo.Obrigatoriedade)
                     .Select(e => e with { Field = $"grupos[{i}].{e.Field}" }));
                 if (grupo.IncluiCandidato)
@@ -338,7 +342,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     private static IEnumerable<FieldError> FormaDoCampo(ItemDoModelo campo, string caminho) =>
         FormaDoItem.Conferir(
                 campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao, campo.Formato, campo.Ajuda,
-                campo.Exibicao?.FatosCitados ?? [], campo.Obrigatoriedade, campo.Restricoes)
+                campo.Exibicao?.FatosCitados ?? [], campo.Obrigatoriedade, campo.Restricoes, campo.Impedimento)
             .Select(e => e with { Field = $"{caminho}.{e.Field}" });
 
     /// <summary>
@@ -369,7 +373,9 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             conteudo.Itens.OrderBy(static i => i.Ordem)
                 .Concat(conteudo.Grupos.OrderBy(static g => g.Ordem).SelectMany(static g => g.Subitens.OrderBy(static s => s.Ordem)))
                 .Select(static i => (i.FatoCodigo, i.Obrigatoriedade.Tipo)),
-            CampoQueAlimentaRegra.Fatos(DependenciasCitadas(conteudo, derivacoes), CondicoesDasRegras(conteudo)));
+            CampoQueAlimentaRegra.Fatos(
+                DependenciasCitadas(conteudo, derivacoes), CondicoesDasRegras(conteudo),
+                conteudo.Itens.Where(static i => i.Impedimento is not null).Select(static i => i.FatoCodigo)));
     }
 
     private static ItemDoGrafo ParaGrafo(ItemDoModelo campo) => new(campo.FatoCodigo, campo.Ordem, campo.EtapaCodigo, campo.FatosCitados);
@@ -414,7 +420,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     private static IEnumerable<(string Fato, Operador Operador)> CondicoesDasRegras(ConteudoDoModelo conteudo)
     {
         IEnumerable<PredicadoDnf?> predicados = Campos(conteudo)
-            .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado }
+            .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado, i.Impedimento?.Quando }
                 .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
             .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
             .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
@@ -615,7 +621,10 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         }
         .Concat(TextosDoPredicado($"{caminho}.exibicao", campo.Exibicao))
         .Concat(TextosDoPredicado($"{caminho}.obrigatoriedade", campo.Obrigatoriedade.Predicado))
-        .Concat(campo.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r)));
+        .Concat(campo.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r)))
+        .Concat(campo.Impedimento is { } impedimento
+            ? TextosDoPredicado($"{caminho}.impedimento.quando", impedimento.Quando).Append(($"{caminho}.impedimento.mensagem", impedimento.Mensagem))
+            : []);
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDaRestricao(string campo, RestricaoValor restricao) => restricao switch
     {

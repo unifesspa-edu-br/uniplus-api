@@ -61,9 +61,11 @@ public static class PreVisualizarModeloFormularioQueryHandler
                 conhecidos));
 
         return new PreVisualizacaoDoModeloDto(
-            [.. avaliacao.Itens.Select(static i => new ItemPreVisualizadoDto(
+            [.. avaliacao.Itens.Select(i => new ItemPreVisualizadoDto(
                 i.FatoCodigo, i.EtapaCodigo, i.Visivel.ToCodigo(), i.Obrigatorio.ToCodigo(),
-                [.. i.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))]))],
+                [.. i.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
+                i.Impedido.ToCodigo(),
+                modelo.Conteudo.Itens.First(item => item.FatoCodigo == i.FatoCodigo).Impedimento?.Mensagem))],
             [.. avaliacao.Termos.Select(static t => new TermoPreVisualizadoDto(t.Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))]);
     }
 }

@@ -67,6 +67,33 @@ public static class EntradaDeRegras
             _ => null,
         };
 
+    /// <summary>
+    /// O impedimento da entrada; nulo quando o campo não tem. A condição é obrigatória; a mensagem e
+    /// as cláusulas sobre o próprio campo são conferidas pela forma do item.
+    /// </summary>
+    public static Result<Impedimento?> Impedimento(ImpedimentoInput? input)
+    {
+        if (input is null)
+        {
+            return Result<Impedimento?>.Success(null);
+        }
+
+        Result<PredicadoDnf?> quando = Predicado(input.Quando);
+        if (quando.IsFailure)
+        {
+            return Result<Impedimento?>.Failure(quando.Error!);
+        }
+
+        return quando.Value is { } condicao
+            ? Result<Impedimento?>.Success(new Formularios.Impedimento(condicao, FormaDoItem.TextoOpcional(input.Mensagem) ?? string.Empty))
+            : Result<Impedimento?>.Failure(new DomainError(
+                ItemFormularioErrorCodes.ImpedimentoSemCondicao, "O impedimento tem a condição sobre a resposta do campo."));
+    }
+
+    /// <summary>O impedimento na forma da entrada; nulo quando o campo não tem.</summary>
+    public static ImpedimentoInput? ParaEntrada(Formularios.Impedimento? impedimento) =>
+        impedimento is null ? null : new(ParaEntrada(impedimento.Quando), impedimento.Mensagem);
+
     /// <summary>A restrição de valor da entrada, pelo tipo; os valores e fatos citados são conferidos depois.</summary>
     public static Result<RestricaoValor> Restricao(RestricaoValorInput input)
     {

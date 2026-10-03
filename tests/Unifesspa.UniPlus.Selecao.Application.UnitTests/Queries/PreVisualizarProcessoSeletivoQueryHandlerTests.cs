@@ -111,6 +111,29 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         ]);
     }
 
+    [Theory(DisplayName = "A resposta que cumpre o impedimento marca o item como impedido; o item traz a mensagem ao candidato")]
+    [InlineData(true, "VERDADEIRO")]
+    [InlineData(false, "FALSO")]
+    public async Task Handle_ItemComImpedimento_MarcaImpedidoComAMensagem(bool vinculo, string impedido)
+    {
+        const string Mensagem = "Quem tem vínculo com o PARFOR não pode se inscrever neste processo.";
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PSIQ 2027");
+        FatoColetado parfor = FatoColetado.Criar(
+            "VINCULO_PARFOR", FormularioDeTeste.PrimeiraOrdemDeInscricao, "Vínculo com o PARFOR", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+            etapaCodigo: FormularioDeTeste.Secao,
+            impedimento: new Impedimento(
+                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, Json(true)).Value!)]).Value!,
+                Mensagem)).Value!;
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), parfor], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result<PreVisualizacaoDoProcessoDto> resultado = await HandleAsync(
+            new(new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["VINCULO_PARFOR"] = Json(vinculo) }, null, null, null), processo);
+
+        resultado.Value!.Formularios.Single(static f => f.Finalidade == "INSCRICAO").Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR")
+            .Should().BeEquivalentTo(new { Impedido = impedido, MensagemDoImpedimento = Mensagem });
+    }
+
     [Fact(DisplayName = "Processo inexistente é recusado como não encontrado")]
     public async Task Handle_ProcessoInexistente_NaoEncontrado()
     {
@@ -128,12 +151,13 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         return resultado.Value!;
     }
 
-    private Task<Result<PreVisualizacaoDoProcessoDto>> HandleAsync(PreVisualizacaoDoProcessoInput perfil)
+    private Task<Result<PreVisualizacaoDoProcessoDto>> HandleAsync(PreVisualizacaoDoProcessoInput perfil, ProcessoSeletivo? processo = null)
     {
+        processo ??= _processo;
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns(_processo);
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         return PreVisualizarProcessoSeletivoQueryHandler.Handle(
-            new PreVisualizarProcessoSeletivoQuery(_processo.Id, perfil), repository, Leitor(), CancellationToken.None);
+            new PreVisualizarProcessoSeletivoQuery(processo.Id, perfil), repository, Leitor(), CancellationToken.None);
     }
 
     /// <summary>Os documentos exigidos, pelo código, com a identidade da ocorrência quando repetidos por membro.</summary>
@@ -226,7 +250,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     private static CondicaoGatilho Condicao(int clausula, string fato, Operador operador, object valor) =>
         CondicaoGatilho.Criar(clausula, fato, operador, JsonSerializer.SerializeToElement(valor)).Value!;
 
-    /// <summary>O catálogo com o conjunto básico, a modalidade da convocação, os campos de membro e o agregado da renda.</summary>
+    /// <summary>O catálogo com o conjunto básico, a modalidade da convocação, os campos de membro, o agregado da renda e o vínculo com o PARFOR.</summary>
     private static IFatoCandidatoReader Leitor()
     {
         IFatoCandidatoReader leitor = Substitute.For<IFatoCandidatoReader>();
@@ -235,6 +259,8 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             .. CadastrosVivos.FatosDeModalidade(),
             Membro("CATEGORIA_RENDA", "CATEGORICO", ["URBANO", "RURAL"]),
             Membro("MENOR_SOB_GUARDA", "BOOLEANO", null),
+            new(Guid.CreateVersion7(), "VINCULO_PARFOR", "Vínculo com o PARFOR", null, "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
+                "CAMPO_INSCRICAO:VINCULO_PARFOR", null, null, Ativo: true),
             new(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
                 null, "HABILITACAO", "AGREGACAO_GRUPO:CATEGORIA_RENDA", null, "GLOBAL", Ativo: true),
         ]));

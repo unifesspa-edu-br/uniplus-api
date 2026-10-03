@@ -21,6 +21,11 @@ public static class ItemFormularioErrorCodes
     public const string OpcoesDeOutroDominio = "ItemFormulario.OpcoesDeOutroDominio";
     public const string MunicipioSemUf = "ItemFormulario.MunicipioSemUf";
     public const string UfDoMunicipioInvalida = "ItemFormulario.UfDoMunicipioInvalida";
+    public const string ImpedimentoSemCondicao = "ItemFormulario.ImpedimentoSemCondicao";
+    public const string ImpedimentoSemOProprioCampo = "ItemFormulario.ImpedimentoSemOProprioCampo";
+    public const string ImpedimentoMensagemInvalida = "ItemFormulario.ImpedimentoMensagemInvalida";
+    public const string ImpedimentoNaoCabeNoCampo = "ItemFormulario.ImpedimentoNaoCabeNoCampo";
+    public const string ImpedimentoForaDaInscricao = "ItemFormulario.ImpedimentoForaDaInscricao";
 }
 
 /// <summary>Códigos de recusa da forma de um grupo repetível do formulário, no processo e no modelo.</summary>
@@ -34,6 +39,7 @@ public static class GrupoFormularioErrorCodes
     public const string RegraAutorreferente = "GrupoFormulario.RegraAutorreferente";
     public const string CampoComSecaoPropria = "GrupoFormulario.CampoComSecaoPropria";
     public const string CandidatoComoMembroIncompleto = "GrupoFormulario.CandidatoComoMembroIncompleto";
+    public const string CampoComImpedimento = "GrupoFormulario.CampoComImpedimento";
 }
 
 /// <summary>Códigos de recusa de vínculo novo a fato ou valor desativado no catálogo, no processo e no modelo.</summary>

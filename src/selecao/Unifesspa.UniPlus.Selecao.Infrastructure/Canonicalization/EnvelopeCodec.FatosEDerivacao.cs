@@ -313,7 +313,7 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(
                 item, path,
                 "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatoriedade", "ajuda",
-                "pedirConfirmacao", "restricoes", "origemValores", "formato", "precondicao", "valoresSelecionaveis");
+                "pedirConfirmacao", "restricoes", "impedimento", "origemValores", "formato", "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -375,9 +375,23 @@ public sealed partial class EnvelopeCodec
                 return [];
             }
 
+            Impedimento? impedimento = LerImpedimento(leitor, item, path);
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            // A forma do item não conhece a finalidade; o agregado recusa o impedimento fora da
+            // inscrição ao definir os itens, e o decoder tem de recusar o mesmo.
+            if (Impedimento.ConferirFinalidade(finalidade, [impedimento]) is [{ } foraDaInscricao, ..])
+            {
+                return leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.impedimento': {foraDaInscricao.Error.Message}")) ?? [];
+            }
+
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
                 fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, origemValores, etapaCodigo, finalidade, formato,
-                ajuda, pedirConfirmacao, restricoes);
+                ajuda, pedirConfirmacao, restricoes, impedimento);
             if (fatoColetado.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [];
@@ -392,6 +406,38 @@ public sealed partial class EnvelopeCodec
         }
 
         return fatos;
+    }
+
+    /// <summary>
+    /// A resposta que impede a inscrição, congelada no item; nula quando o item não tem. A forma — a
+    /// mensagem e as cláusulas sobre o próprio campo — é reconferida por <see cref="FatoColetado.Criar"/>.
+    /// </summary>
+    private static Impedimento? LerImpedimento(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        JsonObject? bloco = leitor.ObjetoOpcional(item, "impedimento", path);
+        if (leitor.Falhou || bloco is null)
+        {
+            return null;
+        }
+
+        string pathImpedimento = $"{path}.impedimento";
+        leitor.ExigirChaves(bloco, pathImpedimento, "quando", "mensagem");
+        string mensagem = leitor.TextoNaoVazio(bloco, "mensagem", pathImpedimento, LimitesDoEnvelope.MensagemDoImpedimento);
+        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> linhas = LerDnf(leitor, bloco, "quando", pathImpedimento);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        Result<PredicadoDnf?> quando = PredicadoOpcional(linhas);
+        if (quando.IsFailure)
+        {
+            return leitor.Propagar<Impedimento>(quando.Error!);
+        }
+
+        return quando.Value is { } condicao
+            ? new Impedimento(condicao, mensagem)
+            : leitor.Propagar<Impedimento>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{pathImpedimento}.quando' sem condição."));
     }
 
     /// <summary>

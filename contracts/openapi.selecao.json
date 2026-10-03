@@ -11353,7 +11353,8 @@
           "formato",
           "ajuda",
           "pedirConfirmacao",
-          "restricoes"
+          "restricoes",
+          "impedimento"
         ],
         "type": "object",
         "properties": {
@@ -11424,6 +11425,16 @@
             "items": {
               "$ref": "#/components/schemas/RestricaoValorDto"
             }
+          },
+          "impedimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImpedimentoDto"
+              }
+            ]
           }
         }
       },
@@ -11509,6 +11520,16 @@
             "items": {
               "$ref": "#/components/schemas/RestricaoValorInput"
             }
+          },
+          "impedimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImpedimentoInput"
+              }
+            ]
           }
         }
       },
@@ -11525,7 +11546,8 @@
           "formato",
           "ajuda",
           "pedirConfirmacao",
-          "restricoes"
+          "restricoes",
+          "impedimento"
         ],
         "type": "object",
         "properties": {
@@ -11597,6 +11619,16 @@
             "items": {
               "$ref": "#/components/schemas/RestricaoValorDto"
             }
+          },
+          "impedimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImpedimentoDto"
+              }
+            ]
           }
         }
       },
@@ -12251,6 +12283,54 @@
           }
         }
       },
+      "ImpedimentoDto": {
+        "required": [
+          "quando",
+          "mensagem"
+        ],
+        "type": "object",
+        "properties": {
+          "quando": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          },
+          "mensagem": {
+            "type": "string"
+          }
+        }
+      },
+      "ImpedimentoInput": {
+        "required": [
+          "quando",
+          "mensagem"
+        ],
+        "type": "object",
+        "properties": {
+          "quando": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "mensagem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "IniciarUploadDocumentoEditalDto": {
         "required": [
           "documentoEditalId",
@@ -12391,7 +12471,9 @@
           "etapaCodigo",
           "visivel",
           "obrigatorio",
-          "restricoesVioladas"
+          "restricoesVioladas",
+          "impedido",
+          "mensagemDoImpedimento"
         ],
         "type": "object",
         "properties": {
@@ -12415,6 +12497,15 @@
             "items": {
               "type": "string"
             }
+          },
+          "impedido": {
+            "type": "string"
+          },
+          "mensagemDoImpedimento": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

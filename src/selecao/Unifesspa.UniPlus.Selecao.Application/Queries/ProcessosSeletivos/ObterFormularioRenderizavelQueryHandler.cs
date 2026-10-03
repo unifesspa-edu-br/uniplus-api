@@ -215,6 +215,7 @@ public static class ObterFormularioRenderizavelQueryHandler
             || !TentarStringOpcional(fato, "ajuda", out string? ajuda)
             || !TentarBool(fato, "pedirConfirmacao", out bool pedirConfirmacao)
             || !TentarRestricoes(fato, out List<RestricaoValorDto>? restricoes)
+            || !TentarImpedimento(fato, out ImpedimentoDto? impedimento)
             || !TentarPredicado(fato, "precondicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
             || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
             || !FormatoCoerente(tipoRenderizacao, formato))
@@ -224,7 +225,33 @@ public static class ObterFormularioRenderizavelQueryHandler
 
         dto = new FatoFormularioRenderizavelDto(
             fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade!, precondicao, valoresSelecionaveis, etapaCodigo, formato,
-            ajuda, pedirConfirmacao, restricoes!);
+            ajuda, pedirConfirmacao, restricoes!, impedimento);
+        return true;
+    }
+
+    /// <summary>A resposta que impede a inscrição, congelada no item: nula quando o item não tem.</summary>
+    private static bool TentarImpedimento(JsonObject fato, out ImpedimentoDto? impedimento)
+    {
+        impedimento = null;
+        if (!fato.TryGetPropertyValue("impedimento", out JsonNode? node))
+        {
+            return false;
+        }
+
+        if (node is null)
+        {
+            return true;
+        }
+
+        if (node is not JsonObject bloco
+            || !TentarString(bloco, "mensagem", out string mensagem)
+            || !TentarPredicado(bloco, "quando", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? quando)
+            || quando is null)
+        {
+            return false;
+        }
+
+        impedimento = new ImpedimentoDto(quando, mensagem);
         return true;
     }
 

@@ -407,6 +407,11 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             // configuração. O limite vem dos validators de publicar e de retificar (60), e é
             // deles que o decoder tem de ser tão estrito quanto.
             "NumeroDoAto",
+
+            // MensagemDoImpedimento também não é coluna: o impedimento é gravado em jsonb. O
+            // limite é o da forma do item, que o domínio confere ao criar o campo, e a constante
+            // é definida pela mesma constante da forma — não há segunda cópia que possa divergir.
+            "MensagemDoImpedimento",
         ];
 
         declaradas.Except(confrontadas).Should().BeEmpty(

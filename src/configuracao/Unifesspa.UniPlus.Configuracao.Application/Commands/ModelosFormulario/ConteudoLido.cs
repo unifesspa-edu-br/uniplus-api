@@ -157,6 +157,12 @@ internal sealed record ConteudoLido(
             }
         }
 
+        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(entrada.Impedimento);
+        if (impedimento.IsFailure)
+        {
+            erros.Add(new($"{campo}.impedimento.quando", impedimento.Error!));
+        }
+
         if (erros.Count > recusasAntes)
         {
             return null;
@@ -165,7 +171,7 @@ internal sealed record ConteudoLido(
         string? formato = entrada.FatoCodigo is { } codigo && formatos.TryGetValue(ModeloFormulario.CodigoNaFormaGravada(codigo), out string? doCatalogo) ? doCatalogo : null;
         return new ItemDoModelo(
             entrada.FatoCodigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, TipoRenderizacaoCodigo.FromCodigo(entrada.TipoRenderizacao),
-            formato, entrada.Ajuda, obrigatoriedade!, exibicao, restricoes, entrada.PedirConfirmacao);
+            formato, entrada.Ajuda, obrigatoriedade!, exibicao, restricoes, entrada.PedirConfirmacao, impedimento.Value);
     }
 
     private static TermoDoModelo? LerTermo(TermoExigidoInput? entrada, string campo, List<FieldError> erros)

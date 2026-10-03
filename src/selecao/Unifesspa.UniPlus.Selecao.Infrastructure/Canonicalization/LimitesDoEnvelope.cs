@@ -184,6 +184,9 @@ public static class LimitesDoEnvelope
     public const int TextoEtapaFormulario = FormaDaEtapa.TextoMaxLength;
     public const int AjudaDoCampo = FormaDoItem.AjudaMaxLength;
 
+    /// <summary><c>FatoColetado.Impedimento.Mensagem</c>.</summary>
+    public const int MensagemDoImpedimento = FormaDoItem.MensagemDoImpedimentoMaxLength;
+
     /// <summary><c>FormularioProcesso.ModeloOrigemCodigo</c>.</summary>
     public const int CodigoModeloDeFormulario = Domain.Entities.FormularioProcesso.ModeloOrigemCodigoMaxLength;
 

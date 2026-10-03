@@ -35,7 +35,8 @@ public sealed record FatoFormularioRenderizavelDto(
     string? Formato,
     string? Ajuda,
     bool PedirConfirmacao,
-    IReadOnlyList<RestricaoValorDto> Restricoes);
+    IReadOnlyList<RestricaoValorDto> Restricoes,
+    ImpedimentoDto? Impedimento);
 
 /// <summary>
 /// Um grupo repetível pronto para renderização (UNI-REQ-0146): a posição na ordem dos itens, a

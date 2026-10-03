@@ -98,6 +98,9 @@ public sealed class FatoColetado : EntityBase
 
     public IReadOnlyCollection<CondicaoPrecondicaoFato> Precondicoes => _precondicoes.AsReadOnly();
 
+    /// <summary>A resposta que impede a inscrição e a mensagem ao candidato; nulo quando nenhuma impede.</summary>
+    public Impedimento? Impedimento { get; private set; }
+
     /// <summary>A finalidade do formulário que produz o fato; atribuída pelo processo ao definir os itens.</summary>
     public FinalidadeFormulario Finalidade { get; private set; }
 
@@ -124,14 +127,16 @@ public sealed class FatoColetado : EntityBase
         string? formato = null,
         string? ajuda = null,
         bool pedirConfirmacao = false,
-        IReadOnlyList<RestricaoValor>? restricoes = null)
+        IReadOnlyList<RestricaoValor>? restricoes = null,
+        Impedimento? impedimento = null)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
 
         IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
         List<FieldError> erros = FormaDoItem.Conferir(
-            fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, condicoes.Select(static c => c.Fato), obrigatoriedade, restricoesDoItem);
+            fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, condicoes.Select(static c => c.Fato), obrigatoriedade, restricoesDoItem,
+            impedimento);
 
         if (erros.Count > 0)
         {
@@ -148,6 +153,7 @@ public sealed class FatoColetado : EntityBase
             Ajuda = FormaDoItem.TextoOpcional(ajuda),
             PedirConfirmacao = pedirConfirmacao,
             Restricoes = [.. restricoesDoItem.OrderBy(static r => r.Tipo)],
+            Impedimento = impedimento,
             OrigemValores = origemValores,
             Formato = FormaDoItem.TextoOpcional(formato),
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
@@ -170,17 +176,22 @@ public sealed class FatoColetado : EntityBase
     /// <summary>Indica se o fato é coletado incondicionalmente.</summary>
     public bool SemPrecondicao => _precondicoes.Count == 0;
 
-    /// <summary>Códigos dos fatos citados pela pré-condição, pela obrigatoriedade e pelas restrições, sem repetição.</summary>
+    /// <summary>
+    /// Códigos dos fatos citados pela pré-condição, pela obrigatoriedade, pelas restrições e pelo
+    /// impedimento, sem repetição. O impedimento cita a resposta do próprio campo, que não é
+    /// dependência: só as respostas anteriores entram.
+    /// </summary>
     public IReadOnlyCollection<string> FatosCitados =>
         [.. _precondicoes.Select(static c => c.Fato)
             .Concat(Obrigatoriedade.FatosCitados)
             .Concat(Restricoes.SelectMany(static r => r.FatosCitados))
+            .Concat((Impedimento?.FatosCitados ?? []).Where(f => !string.Equals(f, FatoCodigo, StringComparison.Ordinal)))
             .Distinct(StringComparer.Ordinal)];
 
     /// <summary>
     /// As condições das regras do item, para os vínculos e as referências a valor do processo: a
-    /// pré-condição, a obrigatoriedade, as condições das opções e, porque as opções permitidas citam
-    /// valores do próprio fato, a pertinência do fato a esses valores.
+    /// pré-condição, a obrigatoriedade, o impedimento, as condições das opções e, porque as opções
+    /// permitidas citam valores do próprio fato, a pertinência do fato a esses valores.
     /// </summary>
     public IEnumerable<CondicaoDnf> Condicoes
     {
@@ -194,6 +205,7 @@ public sealed class FatoColetado : EntityBase
                         FatoCodigo, Operador.Em, JsonSerializer.SerializeToElement(opcoes.ValoresCitados.Order(StringComparer.Ordinal))).Value!);
             return _precondicoes.Select(static c => c.ParaCondicaoDnf())
                 .Concat((Obrigatoriedade.Predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes))
+                .Concat((Impedimento?.Quando.Clausulas ?? []).SelectMany(static c => c.Condicoes))
                 .Concat(dasOpcoes);
         }
     }
