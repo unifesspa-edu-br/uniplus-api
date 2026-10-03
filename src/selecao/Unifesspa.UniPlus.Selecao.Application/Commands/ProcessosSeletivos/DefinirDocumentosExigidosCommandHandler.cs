@@ -6,6 +6,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Errors;
 using Domain.Interfaces;
 using Domain.Services;
 using Domain.ValueObjects;
@@ -58,6 +59,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ITipoDocumentoReader tipoDocumentoReader,
         IFatoCandidatoReader fatoCandidatoReader,
+        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider clock,
         CancellationToken cancellationToken)
@@ -66,6 +68,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
+        ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
 
@@ -106,6 +109,14 @@ public static class DefinirDocumentosExigidosCommandHandler
         {
             return Result<MutacaoAceita>.Failure(semGrupo);
         }
+
+        // Os modelos citados pelas folhas são lidos numa consulta só, e só os deste processo: o
+        // de outro processo cai na mesma recusa do inexistente.
+        HashSet<Guid> idsDosModelos = ModelosCitados(command.Raizes);
+        IReadOnlyDictionary<Guid, ModeloDeDocumento> modelos = idsDosModelos.Count == 0
+            ? new Dictionary<Guid, ModeloDeDocumento>()
+            : (await modeloDeDocumentoRepository.ListarDoProcessoAsync(processo.Id, idsDosModelos, cancellationToken).ConfigureAwait(false))
+                .ToDictionary(static m => m.Id);
 
         // O vocabulário só é resolvido (I/O cross-módulo) quando alguma folha declara
         // gatilho — mesmo princípio de DefinirCriteriosDesempateCommandHandler.
@@ -148,7 +159,7 @@ public static class DefinirDocumentosExigidosCommandHandler
 
                 Result<DocumentoExigido> documentoResult = await ConstruirDocumentoExigidoAsync(
                         documentoInput, processo, tipoDocumentoReader, vocabularioFatos, pontoResolucaoPorFato,
-                        membroPorAgregado, dominiosDinamicos, fatosResolviveis, grupoDaRepeticao, cancellationToken)
+                        membroPorAgregado, dominiosDinamicos, fatosResolviveis, grupoDaRepeticao, modelos, cancellationToken)
                     .ConfigureAwait(false);
                 if (documentoResult.IsFailure)
                 {
@@ -251,6 +262,31 @@ public static class DefinirDocumentosExigidosCommandHandler
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 
+    /// <summary>Os modelos de documento que as folhas da floresta citam.</summary>
+    private static HashSet<Guid> ModelosCitados(IReadOnlyList<NoExigenciaInput> nos) =>
+        [.. nos.SelectMany(static no => (no.Documento?.ModeloId is { } id ? [id] : Array.Empty<Guid>()).Concat(ModelosCitados(no.Filhos ?? [])))];
+
+    /// <summary>
+    /// O modelo que a folha cita, copiado por valor; nulo quando ela não cita. Recusa o modelo que
+    /// não é deste processo — a mesma recusa do inexistente — e o que ainda não foi confirmado.
+    /// </summary>
+    private static Result<ModeloDaExigencia?> ResolverModelo(Guid? modeloId, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelos)
+    {
+        if (modeloId is not { } id)
+        {
+            return Result<ModeloDaExigencia?>.Success(null);
+        }
+
+        if (!modelos.TryGetValue(id, out ModeloDeDocumento? modelo))
+        {
+            return Result<ModeloDaExigencia?>.Failure(new DomainError(
+                "DocumentoExigido.ModeloNaoEncontrado", $"O modelo de documento {id} não existe neste Processo Seletivo."));
+        }
+
+        Result<ModeloDaExigencia> copia = ModeloDaExigencia.Do(modelo);
+        return copia.IsSuccess ? Result<ModeloDaExigencia?>.Success(copia.Value) : Result<ModeloDaExigencia?>.Failure(copia.Error!);
+    }
+
     /// <summary>Resolve o vocabulário de gatilho recursivamente na floresta — só a presença de gatilho, ainda sem I/O.</summary>
     private static bool ExisteGatilho(IReadOnlyList<NoExigenciaInput> nos) =>
         nos.Any(no => (no.Documento?.Condicoes.Count ?? 0) > 0 || ExisteGatilho(no.Filhos ?? []));
@@ -332,6 +368,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos,
         IReadOnlySet<string>? fatosResolviveis,
         string? grupoDaRepeticao,
+        IReadOnlyDictionary<Guid, ModeloDeDocumento> modelos,
         CancellationToken cancellationToken)
     {
         TipoDocumentoView? tipoDocumento = await tipoDocumentoReader
@@ -403,6 +440,12 @@ public static class DefinirDocumentosExigidosCommandHandler
             return Result<DocumentoExigido>.Failure(formatosPermitidosResult.Error!);
         }
 
+        Result<ModeloDaExigencia?> modeloResult = ResolverModelo(input.ModeloId, modelos);
+        if (modeloResult.IsFailure)
+        {
+            return Result<DocumentoExigido>.Failure(modeloResult.Error!);
+        }
+
         return DocumentoExigido.Criar(
             input.ExigidoNaFaseId,
             tipoDocumento.Id,
@@ -417,7 +460,8 @@ public static class DefinirDocumentosExigidosCommandHandler
             idadeMaximaEmissaoResult.Value,
             formatosPermitidosResult.Value!,
             input.TamanhoMaximoBytes,
-            input.ExigidoNaEtapaId);
+            input.ExigidoNaEtapaId,
+            modeloResult.Value);
     }
 
     /// <summary>

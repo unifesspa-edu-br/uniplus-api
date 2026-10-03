@@ -187,6 +187,9 @@ public static class LimitesDoEnvelope
     /// <summary><c>FatoColetado.Impedimento.Mensagem</c>.</summary>
     public const int MensagemDoImpedimento = FormaDoItem.MensagemDoImpedimentoMaxLength;
 
+    /// <summary><c>DocumentoExigido.Modelo.NomeArquivo</c>.</summary>
+    public const int NomeArquivoDoModelo = Domain.Entities.ModeloDeDocumento.NomeArquivoMaxLength;
+
     /// <summary><c>FormularioProcesso.ModeloOrigemCodigo</c>.</summary>
     public const int CodigoModeloDeFormulario = Domain.Entities.FormularioProcesso.ModeloOrigemCodigoMaxLength;
 

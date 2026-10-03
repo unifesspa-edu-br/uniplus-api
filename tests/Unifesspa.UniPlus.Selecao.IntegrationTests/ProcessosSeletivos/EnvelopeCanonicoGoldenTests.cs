@@ -277,7 +277,9 @@ public sealed class EnvelopeCanonicoGoldenTests
             basesLegais: [baseLegal],
             idadeMaximaEmissao: idadeMaximaEmissao,
             formatosPermitidos: formatosPermitidos,
-            tamanhoMaximoBytes: 5_000_000).Value!;
+            tamanhoMaximoBytes: 5_000_000,
+            modelo: new ModeloDaExigencia(
+                Guid.Parse("0199a000-0000-7000-8000-0000000000d1"), "Declaração de residência.odt", FormatoDeModelo.Odt, new string('d', 64))).Value!;
     }
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoDeReferencia() =>

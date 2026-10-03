@@ -307,7 +307,7 @@ public sealed class ManifestoDoEnvelopeTests
             [
                 "ExigidoNaFaseId", "ExigidoNaEtapaId", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
-                "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos",
+                "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos", "Modelo",
                 "TamanhoMaximoBytes",
             ],
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
@@ -347,6 +347,7 @@ public sealed class ManifestoDoEnvelopeTests
         // Formatos permitidos (Story #918) — substitui o campo singular FormatoPermitido?
         // (enum, fora do alcance deste manifesto — EDoDominio exclui enums).
         [typeof(FormatosPermitidos)] = (["Qualquer", "Lista"], []),
+        [typeof(ModeloDaExigencia)] = (["ModeloId", "NomeArquivo", "Formato", "HashSha256"], []),
         [typeof(FormatoPermitidoEntry)] = (["Formato", "TamanhoMaximoBytesMax"], []),
 
         // A POLÍTICA crua (B-03) — insumo de ProcessoSeletivo.ResolverDataReferenciaFatos.

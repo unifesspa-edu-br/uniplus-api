@@ -16,4 +16,8 @@ public interface IModeloDeDocumentoRepository : IRepository<ModeloDeDocumento>
     /// as duas: a perdedora afeta zero linhas e não chega a escrever no storage.
     /// </summary>
     Task<bool> TentarReivindicarConfirmacaoAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Os modelos do processo entre os ids dados, numa consulta só, sem rastreamento.</summary>
+    Task<IReadOnlyList<ModeloDeDocumento>> ListarDoProcessoAsync(
+        Guid processoSeletivoId, IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
 }

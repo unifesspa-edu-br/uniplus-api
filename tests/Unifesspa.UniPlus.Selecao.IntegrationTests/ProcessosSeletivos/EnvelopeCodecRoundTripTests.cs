@@ -973,9 +973,12 @@ public sealed class EnvelopeCodecRoundTripTests
         DocumentoExigido rg = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+        // A declaração de renda vem com o modelo editável que o candidato preenche — o decoder tem
+        // de remontá-lo, senão a recanonicalização o perderia.
         DocumentoExigido comprovanteRenda = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null,
+            modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeModelo.Docx, new string('e', 64))).Value!;
 
         NoExigencia folhaRg = NoExigencia.CriarFolha(
             rg, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal,
@@ -1015,7 +1018,12 @@ public sealed class EnvelopeCodecRoundTripTests
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(v1);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
-        processo.RestaurarConfiguracaoCongelada(v1, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
+        // A restauração reaproveita a exigência viva de mesmo Id, então a recanonicalização abaixo
+        // não enxerga o que o decoder perde numa exigência: o modelo é conferido no grafo.
+        reidratado.Value!.Grafo.DocumentosExigidos.Single(static d => d.TipoDocumentoCodigo == "COMPROVANTE_RENDA").Modelo
+            .Should().Be(comprovanteRenda.Modelo);
+
+        processo.RestaurarConfiguracaoCongelada(v1, reidratado.Value.Grafo).IsSuccess.Should().BeTrue();
 
         byte[] recodificado = CorpusEnvelope.Registro.Recodificar(
             v1.SchemaVersion,

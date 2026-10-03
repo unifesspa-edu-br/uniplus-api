@@ -30,7 +30,15 @@ public sealed record DocumentoExigidoDto(
     IdadeMaximaEmissaoDto? IdadeMaximaEmissao,
     JsonElement FormatosPermitidos,
     int? TamanhoMaximoBytes,
-    Guid? ExigidoNaEtapaId);
+    Guid? ExigidoNaEtapaId,
+    ModeloDaExigenciaDto? Modelo);
+
+/// <summary>
+/// O modelo de documento que a exigência oferece ao candidato. O <see cref="ModeloId"/> volta no
+/// PUT, que substitui as exigências inteiras: omiti-lo retira o modelo da exigência.
+/// </summary>
+/// <param name="Formato"><c>DOCX</c> ou <c>ODT</c>.</param>
+public sealed record ModeloDaExigenciaDto(Guid ModeloId, string NomeArquivo, string Formato, string HashSha256);
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.ValueObjects.IdadeMaximaEmissao"/> (Story #554,

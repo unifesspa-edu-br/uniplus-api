@@ -83,6 +83,12 @@ public sealed class DocumentoExigido : EntityBase
     /// <summary>Tamanho máximo em bytes do arquivo apresentado (Story #554, PR #900) — congelado na exigência.</summary>
     public int? TamanhoMaximoBytes { get; private set; }
 
+    /// <summary>
+    /// O modelo editável que a exigência oferece ao candidato para preencher, assinar e enviar de
+    /// volta (UNI-REQ-0016) — nulo quando a exigência não tem modelo.
+    /// </summary>
+    public ModeloDaExigencia? Modelo { get; private set; }
+
     private readonly List<CondicaoGatilho> _condicoes = [];
 
     /// <summary>Gatilho DNF (Story #554, PR #896) — vazia significa "sem gatilho": GERAL é sempre exigida, CONDICIONAL vazia é exigida de ninguém.</summary>
@@ -166,7 +172,8 @@ public sealed class DocumentoExigido : EntityBase
         IdadeMaximaEmissao? idadeMaximaEmissao,
         FormatosPermitidos formatosPermitidos,
         int? tamanhoMaximoBytes,
-        Guid? exigidoNaEtapaId = null)
+        Guid? exigidoNaEtapaId = null,
+        ModeloDaExigencia? modelo = null)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -205,6 +212,7 @@ public sealed class DocumentoExigido : EntityBase
             IdadeMaximaEmissao = idadeMaximaEmissao,
             FormatosPermitidos = formatosPermitidos,
             TamanhoMaximoBytes = tamanhoMaximoBytes,
+            Modelo = modelo,
         };
 
         // Já confirmada em ValidarFormaBasica — chamada mantida como defesa em
@@ -263,7 +271,8 @@ public sealed class DocumentoExigido : EntityBase
         IdadeMaximaEmissao? idadeMaximaEmissao,
         FormatosPermitidos formatosPermitidos,
         int? tamanhoMaximoBytes,
-        Guid? exigidoNaEtapaId = null)
+        Guid? exigidoNaEtapaId = null,
+        ModeloDaExigencia? modelo = null)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -291,6 +300,7 @@ public sealed class DocumentoExigido : EntityBase
             IdadeMaximaEmissao = idadeMaximaEmissao,
             FormatosPermitidos = formatosPermitidos,
             TamanhoMaximoBytes = tamanhoMaximoBytes,
+            Modelo = modelo,
         };
 
         foreach (CondicaoGatilho condicao in condicoes)

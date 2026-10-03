@@ -34,7 +34,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "2";
+    public const string Versao = "3";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta.
@@ -476,7 +476,8 @@ internal static class ProjecaoDoCertamePublicado
                 || !TentarTexto(exigencia, "tipoDocumentoNome", out string rotulo)
                 || !TentarTexto(exigencia, "aplicabilidade", out string aplicabilidade)
                 || !TentarBooleano(exigencia, "obrigatorio", out bool obrigatorio)
-                || !TentarFormatos(exigencia, out FormatosAceitosCertameDto? formatos))
+                || !TentarFormatos(exigencia, out FormatosAceitosCertameDto? formatos)
+                || !TentarModelo(exigencia, out ModeloDocumentalCertameDto? modelo))
             {
                 return false;
             }
@@ -486,12 +487,41 @@ internal static class ProjecaoDoCertamePublicado
                 case null:
                     return false;
                 case true:
-                    lidas.Add(new ExigenciaDocumentalCertameDto(rotulo, aplicabilidade, obrigatorio, formatos));
+                    lidas.Add(new ExigenciaDocumentalCertameDto(rotulo, aplicabilidade, obrigatorio, formatos, modelo));
                     break;
             }
         }
 
         exigencias = lidas;
+        return true;
+    }
+
+    /// <summary>
+    /// O modelo que a exigência oferece ao candidato: a chave é obrigatória, nula quando a
+    /// exigência não tem modelo. O id do modelo fica fora — é referência interna do cadastro.
+    /// </summary>
+    private static bool TentarModelo(JsonObject exigencia, out ModeloDocumentalCertameDto? modelo)
+    {
+        modelo = null;
+        if (!exigencia.TryGetPropertyValue("modelo", out JsonNode? node))
+        {
+            return false;
+        }
+
+        if (node is null)
+        {
+            return true;
+        }
+
+        if (node is not JsonObject bloco
+            || !TentarTexto(bloco, "nomeArquivo", out string nomeArquivo)
+            || !TentarTexto(bloco, "formato", out string formato)
+            || !TentarTexto(bloco, "hashSha256", out string hash))
+        {
+            return false;
+        }
+
+        modelo = new ModeloDocumentalCertameDto(nomeArquivo, formato, hash);
         return true;
     }
 
