@@ -116,7 +116,7 @@ internal static class ConteudoDoModeloJson
                 Texto(g, "etapaCodigo"),
                 g.GetProperty("rotulo").GetString()!,
                 g.GetProperty("minimo").GetInt32(),
-                g.GetProperty("maximo").GetInt32(),
+                Inteiro(g, "maximo"),
                 Predicado(g, "exibicao"),
                 Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(g.GetProperty("obrigatoriedade"))),
                 [.. g.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)]))]);
@@ -134,6 +134,9 @@ internal static class ConteudoDoModeloJson
         Predicado(campo, "exibicao"),
         Remontar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes"))),
         campo.GetProperty("pedirConfirmacao").GetBoolean());
+
+    private static int? Inteiro(JsonElement objeto, string chave) =>
+        objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.Number ? valor.GetInt32() : null;
 
     private static string? Texto(JsonElement objeto, string chave) =>
         objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.String ? valor.GetString() : null;

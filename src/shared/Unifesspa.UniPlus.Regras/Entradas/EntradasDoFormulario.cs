@@ -72,7 +72,7 @@ public sealed record GrupoColetadoInput(
     string Rotulo,
     string? EtapaCodigo,
     int Minimo,
-    int Maximo,
+    int? Maximo,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
     string? Obrigatoriedade,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade,

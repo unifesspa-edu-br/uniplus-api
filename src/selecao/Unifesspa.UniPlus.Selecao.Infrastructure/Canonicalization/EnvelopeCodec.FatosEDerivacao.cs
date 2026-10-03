@@ -246,7 +246,7 @@ public sealed partial class EnvelopeCodec
             int ordem = leitor.Inteiro(item, "ordem", path);
             string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
             int minimo = leitor.Inteiro(item, "minimo", path);
-            int maximo = leitor.Inteiro(item, "maximo", path);
+            int? maximo = leitor.InteiroOpcional(item, "maximo", path);
             IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> exibicao = LerDnf(leitor, item, "exibicao", path);
             JsonArray subitens = leitor.Array(item, "subitens", path);
             if (leitor.Falhou)

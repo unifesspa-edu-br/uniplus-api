@@ -43,7 +43,8 @@ public sealed record ItemDoModelo(
 
 /// <summary>
 /// Um grupo repetível do modelo (ADR-0138, UNI-REQ-0146): a lista de ocorrências de um mesmo conjunto
-/// de campos de fatos de membro, como a composição familiar, com mínimo e máximo de ocorrências. A
+/// de campos de fatos de membro, como a composição familiar, com mínimo e, quando declarado, máximo
+/// de ocorrências. A
 /// seção é a do grupo; os campos não declaram seção própria.
 /// </summary>
 public sealed record GrupoDoModelo(
@@ -52,7 +53,7 @@ public sealed record GrupoDoModelo(
     string? EtapaCodigo,
     string Rotulo,
     int Minimo,
-    int Maximo,
+    int? Maximo,
     PredicadoDnf? Exibicao,
     Obrigatoriedade Obrigatoriedade,
     IReadOnlyList<ItemDoModelo> Subitens)

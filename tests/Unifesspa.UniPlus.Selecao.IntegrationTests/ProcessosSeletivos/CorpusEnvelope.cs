@@ -838,10 +838,11 @@ internal static class CorpusEnvelope
     /// <summary>
     /// O grupo repetível do corpus rico (UNI-REQ-0146): exibido por um fato do candidato, com um
     /// campo exibido pelo campo anterior da mesma ocorrência — o decoder remonta o grupo, as regras
-    /// dele e os campos, e o grafo conjunto liga os campos às regras.
+    /// dele e os campos, e o grafo conjunto liga os campos às regras. Sem máximo, o envelope grava
+    /// o máximo nulo.
     /// </summary>
     private static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 10,
+        "COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, null,
         PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!,
         Obrigatoriedade.Nunca,

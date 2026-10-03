@@ -48,7 +48,7 @@ public sealed record GrupoFormularioRenderizavelDto(
     string? EtapaCodigo,
     string Rotulo,
     int Minimo,
-    int Maximo,
+    int? Maximo,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
     ObrigatoriedadeDto Obrigatoriedade,
     IReadOnlyList<FatoFormularioRenderizavelDto> Subitens);

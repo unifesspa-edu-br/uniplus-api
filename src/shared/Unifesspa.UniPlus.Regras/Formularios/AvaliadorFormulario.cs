@@ -192,7 +192,7 @@ public static class AvaliadorFormulario
 
         AvaliacaoOcorrencia[] ocorrencias = [.. respondidas.Select(o => AvaliarOcorrencia(etapa.Codigo, grupo, o, etapaConcluida, fatos))];
         int quantas = ocorrencias.Length;
-        bool contagemValida = quantas <= grupo.Maximo && (quantas >= grupo.Minimo || (quantas == 0 && obrigatorio == Ternario.Falso));
+        bool contagemValida = (grupo.Maximo is not { } maximo || quantas <= maximo) && (quantas >= grupo.Minimo || (quantas == 0 && obrigatorio == Ternario.Falso));
         if (!contagemValida)
         {
             return Avaliacao(semResposta, contagemValida: false, ocorrencias);

@@ -25,7 +25,7 @@ public sealed record GrupoColetadoDto(
     string? EtapaCodigo,
     string Rotulo,
     int Minimo,
-    int Maximo,
+    int? Maximo,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
     ObrigatoriedadeDto Obrigatoriedade,
     IReadOnlyList<FatoColetadoDto> Subitens);
