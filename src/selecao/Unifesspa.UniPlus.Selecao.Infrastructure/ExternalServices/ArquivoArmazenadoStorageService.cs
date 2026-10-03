@@ -4,33 +4,31 @@ using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// Implementação de <see cref="IDocumentoEditalStorage"/> (Story #759, T3
-/// #784) que envolve o <see cref="IStorageService"/> compartilhado de
+/// Implementação de <see cref="IArquivoArmazenadoStorage"/> que envolve o <see cref="IStorageService"/> compartilhado de
 /// <c>Infrastructure.Core</c>, resolvendo o bucket via
 /// <see cref="StorageOptions.BucketName"/> — a única peça deste fluxo que
 /// conhece o vendor MinIO/S3, mantendo o port em <c>Application.Abstractions</c>
 /// livre de conceitos de infraestrutura.
 /// </summary>
-public sealed class DocumentoEditalStorageService : IDocumentoEditalStorage
+public sealed class ArquivoArmazenadoStorageService : IArquivoArmazenadoStorage
 {
     private readonly IStorageService _storageService;
     private readonly string _bucket;
 
-    public DocumentoEditalStorageService(IStorageService storageService, IOptions<StorageOptions> options)
+    public ArquivoArmazenadoStorageService(IStorageService storageService, IOptions<StorageOptions> options)
     {
         ArgumentNullException.ThrowIfNull(storageService);
         ArgumentNullException.ThrowIfNull(options);
 
         _storageService = storageService;
         _bucket = options.Value.BucketName
-            ?? throw new InvalidOperationException("Storage:BucketName não configurado — obrigatório para o upload de documentos do Edital.");
+            ?? throw new InvalidOperationException("Storage:BucketName não configurado — obrigatório para o envio de arquivos do processo seletivo.");
     }
 
-    public Task<string> GerarUrlUploadAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
-        _storageService.GerarUrlUploadTemporariaAsync(_bucket, objectKey, expiracao, DocumentoEdital.ContentTypeEsperado, cancellationToken);
+    public Task<string> GerarUrlUploadAsync(string objectKey, string contentType, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
+        _storageService.GerarUrlUploadTemporariaAsync(_bucket, objectKey, expiracao, contentType, cancellationToken);
 
     public Task<string> GerarUrlLeituraAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
         _storageService.GerarUrlTemporariaAsync(_bucket, objectKey, expiracao, cancellationToken);
@@ -47,11 +45,11 @@ public sealed class DocumentoEditalStorageService : IDocumentoEditalStorage
     public Task<Stream> AbrirLeituraAsync(string objectKey, long limiteBytes, CancellationToken cancellationToken = default) =>
         _storageService.DownloadLimitadoAsync(_bucket, objectKey, limiteBytes, cancellationToken);
 
-    public async Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, CancellationToken cancellationToken = default)
+    public async Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, string contentType, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
 
         using MemoryStream stream = new(conteudo);
-        await _storageService.UploadAsync(_bucket, objectKey, stream, DocumentoEdital.ContentTypeEsperado, cancellationToken).ConfigureAwait(false);
+        await _storageService.UploadAsync(_bucket, objectKey, stream, contentType, cancellationToken).ConfigureAwait(false);
     }
 }

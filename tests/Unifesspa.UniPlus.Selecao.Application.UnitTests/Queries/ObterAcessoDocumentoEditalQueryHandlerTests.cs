@@ -34,7 +34,7 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
 
         Result<AcessoDocumentoEditalDto> resultado = await ObterAcessoDocumentoEditalQueryHandler.Handle(
@@ -53,7 +53,7 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
         Guid processoId = Guid.CreateVersion7();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         documentos.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DocumentoEdital?)null);
 
@@ -80,7 +80,7 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         documentos.ObterPorIdAsync(deOutroProcesso.Id, Arg.Any<CancellationToken>()).Returns(deOutroProcesso);
 
@@ -106,7 +106,7 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         documentos.ObterPorIdAsync(pendente.Id, Arg.Any<CancellationToken>()).Returns(pendente);
 
@@ -128,7 +128,7 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         documentos.ObterPorIdAsync(confirmado.Id, Arg.Any<CancellationToken>()).Returns(confirmado);
         storage.GerarUrlLeituraAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())

@@ -9,6 +9,8 @@ using DTOs;
 
 using Kernel.Results;
 
+using Services;
+
 /// <summary>
 /// Handler convention-based de <see cref="IniciarUploadDocumentoEditalCommand"/>:
 /// valida que o processo existe, cria o registro pendente e devolve a URL
@@ -26,16 +28,16 @@ public static class IniciarUploadDocumentoEditalCommandHandler
     /// devolve uma URL já expirada e o cliente fica sem como reobter uma
     /// válida sem criar outro registro pendente com nova Idempotency-Key.
     /// </summary>
-    public const int TtlUploadSegundos = 900;
+    public const int TtlUploadSegundos = PrazosDoArquivoEnviado.EnvioSegundos;
 
     /// <summary>TTL da URL pre-assinada de upload como <see cref="TimeSpan"/> — ver <see cref="TtlUploadSegundos"/>.</summary>
-    public static readonly TimeSpan TtlUpload = TimeSpan.FromSeconds(TtlUploadSegundos);
+    public static readonly TimeSpan TtlUpload = PrazosDoArquivoEnviado.Envio;
 
     public static async Task<Result<IniciarUploadDocumentoEditalDto>> Handle(
         IniciarUploadDocumentoEditalCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoEditalRepository documentoEditalRepository,
-        IDocumentoEditalStorage storage,
+        IArquivoArmazenadoStorage storage,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider clock,
         CancellationToken cancellationToken)
@@ -64,7 +66,7 @@ public static class IniciarUploadDocumentoEditalCommandHandler
         // linha pendente órfã e, sob retry com a mesma Idempotency-Key, o
         // filtro trataria a exceção como pré-conclusão e criaria outra.
         string urlUpload = await storage
-            .GerarUrlUploadAsync(documento.ObjectKey, TtlUpload, cancellationToken)
+            .GerarUrlUploadAsync(documento.ObjectKey, DocumentoEdital.ContentTypeEsperado, TtlUpload, cancellationToken)
             .ConfigureAwait(false);
 
         await documentoEditalRepository.AdicionarAsync(documento, cancellationToken).ConfigureAwait(false);

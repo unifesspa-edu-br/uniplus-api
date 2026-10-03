@@ -29,7 +29,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     public async Task Handle_DocumentoInexistente_Recusa()
     {
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DocumentoEdital?)null);
 
@@ -46,7 +46,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     {
         (DocumentoEdital documento, _) = NovoDocumentoPendente();
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
 
@@ -63,7 +63,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     {
         (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>()).Returns((InfoObjetoArmazenado?)null);
@@ -81,7 +81,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     {
         (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
@@ -106,7 +106,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
         byte[] conteudoFalso = [.. "não é um pdf de verdade"u8];
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
@@ -122,7 +122,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
         repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
-        await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>());
+        await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         // Conteúdo inválido nunca chega a reivindicar a confirmação — senão o
         // registro travaria como Confirmado sem hash caso a validação recuse.
         await repository.DidNotReceive().TentarReivindicarConfirmacaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
@@ -137,7 +137,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     {
         (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(true);
@@ -162,7 +162,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         // URL de upload original ainda aponta para ObjectKey, sobrescrevível
         // até o TTL expirar.
         await storage.Received(1).SalvarConteudoSeladoAsync(
-            documento.ObjectKeyConfirmado!, Arg.Is<byte[]>(b => b.SequenceEqual(ConteudoPdfValido)), Arg.Any<CancellationToken>());
+            documento.ObjectKeyConfirmado!, Arg.Is<byte[]>(b => b.SequenceEqual(ConteudoPdfValido)), DocumentoEdital.ContentTypeEsperado, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle recusa quando perde a reivindicação atômica sem escrever no storage")]
@@ -174,7 +174,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     {
         (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         // Simula outra confirmação concorrente já tendo vencido a reivindicação.
@@ -191,7 +191,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoEdital.StatusInvalidoParaConfirmacao");
-        await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>());
+        await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
     }
 
@@ -204,7 +204,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     {
         (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>())
@@ -229,7 +229,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage($"*{documento.Id}*DocumentoEdital.StatusInvalidoParaConfirmacao*");
         await storage.DidNotReceive()
-            .SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>());
+            .SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -243,7 +243,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     {
         (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         // Stat relata um tamanho pequeno — simula o objeto de staging tendo
@@ -270,7 +270,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
     {
         (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())

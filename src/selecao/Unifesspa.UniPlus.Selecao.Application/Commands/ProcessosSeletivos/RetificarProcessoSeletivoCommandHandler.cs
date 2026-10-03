@@ -83,7 +83,7 @@ public static class RetificarProcessoSeletivoCommandHandler
                 $"Documento do Edital {command.DocumentoEditalId} não encontrado ou não pertence a este processo.")), []);
         }
 
-        if (documento.Status != Domain.Enums.StatusDocumentoEdital.Confirmado)
+        if (documento.Status != Domain.Enums.StatusArquivoEnviado.Confirmado)
         {
             return (Result.Failure(new DomainError(
                 "ProcessoSeletivo.DocumentoNaoConfirmado",

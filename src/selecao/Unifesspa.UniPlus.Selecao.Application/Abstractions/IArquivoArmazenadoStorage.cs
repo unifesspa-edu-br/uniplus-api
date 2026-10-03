@@ -1,20 +1,18 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 /// <summary>
-/// Port de storage de objeto para o documento do Edital (Story #759, T3
-/// #784). Não expõe conceitos de vendor (bucket, cliente MinIO) — só
-/// operações por <c>objectKey</c>, resolvido pela implementação em
-/// <c>Selecao.Infrastructure</c> (que é quem conhece o bucket via
-/// <c>StorageOptions</c> e envolve o <c>IStorageService</c> compartilhado de
-/// <c>Infrastructure.Core</c>). Application não referencia
-/// <c>Infrastructure.Core</c> diretamente (ADR-0042 — Application depende
-/// só de Domain/SharedKernel; a fitness test R3 do módulo protege a
-/// direção de dependência).
+/// Port de storage de objeto para os arquivos que o administrador envia ao processo — o
+/// documento do Edital e o modelo de documento de uma exigência. Não expõe conceitos de vendor
+/// (bucket, cliente MinIO) — só operações por <c>objectKey</c>, resolvido pela implementação em
+/// <c>Selecao.Infrastructure</c> (que é quem conhece o bucket via <c>StorageOptions</c> e envolve
+/// o <c>IStorageService</c> compartilhado de <c>Infrastructure.Core</c>). Application não
+/// referencia <c>Infrastructure.Core</c> diretamente (ADR-0042 — Application depende só de
+/// Domain/SharedKernel; a fitness test R3 do módulo protege a direção de dependência).
 /// </summary>
-public interface IDocumentoEditalStorage
+public interface IArquivoArmazenadoStorage
 {
-    /// <summary>Gera a URL pre-assinada de PUT para upload direto do cliente.</summary>
-    Task<string> GerarUrlUploadAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default);
+    /// <summary>Gera a URL pre-assinada de PUT para upload direto do cliente, com o content-type do arquivo.</summary>
+    Task<string> GerarUrlUploadAsync(string objectKey, string contentType, TimeSpan expiracao, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gera a URL pre-assinada de GET para leitura direta pelo cliente. É
@@ -30,7 +28,7 @@ public interface IDocumentoEditalStorage
     Task<InfoObjetoArmazenado?> ObterInfoAsync(string objectKey, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Abre o conteúdo do objeto para leitura (hash + validação de assinatura),
+    /// Abre o conteúdo do objeto para leitura (hash + validação de conteúdo),
     /// nunca lendo mais que <paramref name="limiteBytes"/> — o limite é
     /// imposto pelo storage (Range request), não depois de já ter
     /// bufferizado o objeto inteiro em memória.
@@ -39,11 +37,11 @@ public interface IDocumentoEditalStorage
 
     /// <summary>
     /// Grava o conteúdo já validado numa chave que nunca foi (nem será) alvo
-    /// de uma URL pre-assinada de PUT — a cópia que torna o documento
+    /// de uma URL pre-assinada de PUT — a cópia que torna o arquivo
     /// confirmado imutável de fato, mesmo que a URL de upload original ainda
-    /// não tenha expirado (ver <see cref="Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoEdital.ObjectKeyConfirmado"/>).
+    /// não tenha expirado.
     /// </summary>
-    Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, CancellationToken cancellationToken = default);
+    Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, string contentType, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Metadados de um objeto de storage, sem o conteúdo.</summary>

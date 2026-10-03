@@ -11,8 +11,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// pre-assinada de PUT); a API nunca recebe os bytes. Vinculado ao processo
 /// por <see cref="ProcessoSeletivoId"/>, mas não é entidade filha do
 /// agregado: tem ciclo de vida e repositório próprios, pois nasce
-/// <see cref="StatusDocumentoEdital.Pendente"/> (URL gerada) e só se torna
-/// dado de negócio real ao ser <see cref="StatusDocumentoEdital.Confirmado"/>
+/// <see cref="StatusArquivoEnviado.Pendente"/> (URL gerada) e só se torna
+/// dado de negócio real ao ser <see cref="StatusArquivoEnviado.Confirmado"/>
 /// (conteúdo lido do MinIO, validado e hasheado server-side). Um documento
 /// confirmado é imutável — um novo envio sempre cria um novo registro com
 /// nova <see cref="ObjectKey"/>, nunca sobrescreve.
@@ -37,7 +37,7 @@ public sealed class DocumentoEdital : EntityBase
 
     public Guid ProcessoSeletivoId { get; private set; }
     public string ObjectKey { get; private set; } = string.Empty;
-    public StatusDocumentoEdital Status { get; private set; }
+    public StatusArquivoEnviado Status { get; private set; }
     public DateTimeOffset ExpiraEm { get; private set; }
     public long? TamanhoBytes { get; private set; }
     public string? HashSha256 { get; private set; }
@@ -79,7 +79,7 @@ public sealed class DocumentoEdital : EntityBase
         DocumentoEdital documento = new()
         {
             ProcessoSeletivoId = processoSeletivoId,
-            Status = StatusDocumentoEdital.Pendente,
+            Status = StatusArquivoEnviado.Pendente,
             ExpiraEm = clock.GetUtcNow().Add(ttl),
         };
         documento.ObjectKey = $"selecao/documentos-edital/{processoSeletivoId:D}/{documento.Id:D}.pdf";
@@ -89,7 +89,7 @@ public sealed class DocumentoEdital : EntityBase
     /// <summary>
     /// Finaliza o documento como confirmado e imutável (passo 3 do fluxo) e
     /// determina a <see cref="ObjectKeyConfirmado"/> selada. Só é permitido a
-    /// partir de <see cref="StatusDocumentoEdital.Pendente"/> — a validação
+    /// partir de <see cref="StatusArquivoEnviado.Pendente"/> — a validação
     /// do conteúdo (<see cref="ValidarConteudo"/>) já deve ter passado antes
     /// desta chamada. O caller (handler) ainda precisa copiar o conteúdo já
     /// validado para <see cref="ObjectKeyConfirmado"/> no storage — este
@@ -100,7 +100,7 @@ public sealed class DocumentoEdital : EntityBase
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashSha256);
 
-        if (Status != StatusDocumentoEdital.Pendente)
+        if (Status != StatusArquivoEnviado.Pendente)
         {
             return Result.Failure(new DomainError(
                 "DocumentoEdital.StatusInvalidoParaConfirmacao",
@@ -109,7 +109,7 @@ public sealed class DocumentoEdital : EntityBase
 
         TamanhoBytes = tamanhoBytes;
         HashSha256 = hashSha256;
-        Status = StatusDocumentoEdital.Confirmado;
+        Status = StatusArquivoEnviado.Confirmado;
         ConfirmadoEm = clock.GetUtcNow();
         ObjectKeyConfirmado = $"selecao/documentos-edital/{ProcessoSeletivoId:D}/{Id:D}/confirmado.pdf";
         return Result.Success();

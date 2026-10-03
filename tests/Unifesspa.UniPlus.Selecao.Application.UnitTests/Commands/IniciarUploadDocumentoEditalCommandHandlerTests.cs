@@ -20,7 +20,7 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
     {
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         processoRepository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((ProcessoSeletivo?)null);
 
@@ -39,10 +39,10 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         processoRepository.ObterPorIdAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+        storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns("https://minio.local/uniplus-documentos/x.pdf?X-Amz-Signature=fake");
 
         Result<IniciarUploadDocumentoEditalDto> resultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
@@ -53,7 +53,7 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
         resultado.Value!.UrlUpload.Should().Be(new Uri("https://minio.local/uniplus-documentos/x.pdf?X-Amz-Signature=fake"));
         resultado.Value!.ContentTypeExigido.Should().Be(DocumentoEdital.ContentTypeEsperado);
         await documentoRepository.Received(1).AdicionarAsync(
-            Arg.Is<DocumentoEdital>(d => d.ProcessoSeletivoId == processo.Id && d.Status == StatusDocumentoEdital.Pendente),
+            Arg.Is<DocumentoEdital>(d => d.ProcessoSeletivoId == processo.Id && d.Status == StatusArquivoEnviado.Pendente),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -64,10 +64,10 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
-        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         processoRepository.ObterPorIdAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+        storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns<Task<string>>(_ => throw new InvalidOperationException("MinIO indisponível (simulado)"));
 
         Func<Task> act = () => IniciarUploadDocumentoEditalCommandHandler.Handle(
