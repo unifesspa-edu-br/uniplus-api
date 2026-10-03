@@ -351,6 +351,17 @@ public sealed class AvaliadorFormularioTests
     }
 
     [Fact]
+    public void GrupoOpcionalQueIncluiOCandidato_ListaVazia_EhNaoInformado()
+    {
+        DefinicaoGrupo grupo = new("COMPOSICAO", exibicao: null, Obrigatoriedade.Nunca, minimo: 1, maximo: null, [Item("PARENTESCO")], incluiCandidato: true);
+
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: false, [])).Grupos.Single();
+
+        avaliacao.OcorrenciaDoCandidatoValida.Should().BeTrue("a lista vazia não tem ocorrência do candidato a conferir");
+        avaliacao.Estado.Should().Be(EstadoFato.NaoInformado);
+    }
+
+    [Fact]
     public void GrupoOculto_EhNaoAplicavel_MesmoComOcorrenciaGravada()
     {
         DefinicaoGrupo grupo = new(

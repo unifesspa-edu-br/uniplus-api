@@ -79,8 +79,7 @@ public sealed class GrupoColetado : EntityBase
             codigo, ordem, rotulo, minimo, maximo, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo))], exibicao?.FatosCitados ?? [], obrigatoriedade);
         if (incluiCandidato)
         {
-            erros.AddRange(CandidatoComoMembro.Conferir(
-                minimo, [.. subitens.Select(static s => (s.FatoCodigo, !s.SemPrecondicao, s.Obrigatoriedade, s.Restricoes))]));
+            erros.AddRange(ConferirCandidatoComoMembro(minimo, subitens));
         }
 
         if (erros.Count > 0)
@@ -110,6 +109,10 @@ public sealed class GrupoColetado : EntityBase
         grupo.VincularFinalidade(finalidade);
         return Result<GrupoColetado>.Success(grupo);
     }
+
+    /// <summary>A identificação da ocorrência do candidato no grupo que o inclui, pelos campos montados.</summary>
+    private static List<FieldError> ConferirCandidatoComoMembro(int minimo, IEnumerable<FatoColetado> subitens) =>
+        CandidatoComoMembro.Conferir(minimo, [.. subitens.Select(static s => (s.FatoCodigo, !s.SemPrecondicao, s.Obrigatoriedade, s.Restricoes))]);
 
     /// <summary>Os fatos que a exibição e a obrigatoriedade do grupo citam, sem repetição.</summary>
     public IReadOnlyCollection<string> FatosCitados =>

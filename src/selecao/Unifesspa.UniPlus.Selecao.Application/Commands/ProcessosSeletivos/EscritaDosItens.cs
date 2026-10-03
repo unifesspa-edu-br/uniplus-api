@@ -102,14 +102,31 @@ internal static class EscritaDosItens
                     exibicao.IsSuccess ? exibicao.Value?.FatosCitados ?? [] : [],
                     obrigatoriedade ?? Obrigatoriedade.Nunca)
                 .Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
-            formaValida[indice] = erros.Count == recusasAntes;
 
+            // A identificação da ocorrência do candidato depende só do mínimo e da forma lida dos
+            // campos, e sai no mesmo lote das demais recusas, mesmo com campo recusado (ADR-0125).
             campos[indice] = Ler(subitens, $"{caminho}.subitens");
+            if (input.IncluiCandidato)
+            {
+                erros.AddRange(ConferirCandidatoComoMembro(input.Minimo, subitens, campos[indice])
+                    .Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
+            }
+
+            formaValida[indice] = erros.Count == recusasAntes;
             erros.AddRange(campos[indice].Erros);
         }
 
         return new GruposLidos(entradas, regras, formaValida, campos, erros);
     }
+
+    /// <summary>
+    /// O candidato como membro pela forma lida dos campos. O campo de forma recusada já tem a
+    /// própria recusa e conta aqui como conforme, para que só a falta do parentesco seja acusada.
+    /// </summary>
+    private static List<FieldError> ConferirCandidatoComoMembro(int minimo, IReadOnlyList<FatoColetadoInput> subitens, ItensLidos lidos) =>
+        CandidatoComoMembro.Conferir(minimo, [.. subitens.Select((subitem, indice) => lidos.Regras[indice] is { } regras
+            ? (subitem.FatoCodigo, subitem.Precondicao is { Count: > 0 }, regras.Obrigatoriedade, regras.Restricoes)
+            : (subitem.FatoCodigo, false, Obrigatoriedade.Sempre, (IReadOnlyList<RestricaoValor>)[]))]);
 
     /// <summary>
     /// Os grupos conferidos contra o catálogo, acumulando tudo no mesmo lote (ADR-0125): os campos
@@ -155,19 +172,12 @@ internal static class EscritaDosItens
                 continue;
             }
 
-            // A forma do grupo já foi conferida na leitura; a fábrica confere ainda, com os campos
-            // resolvidos, a identificação da ocorrência do candidato.
+            // A forma do grupo e a identificação do candidato já foram conferidas na leitura; a
+            // fábrica as repete e devolve o grupo.
             GrupoColetadoInput input = lidos.Entradas[indice];
-            Result<GrupoColetado> grupo = GrupoColetado.Criar(
+            grupos.Add(GrupoColetado.Criar(
                 input.Codigo, input.Ordem, input.EtapaCodigo, input.Rotulo, input.Minimo, input.Maximo, regras.Exibicao, regras.Obrigatoriedade, campos,
-                incluiCandidato: input.IncluiCandidato);
-            if (grupo.IsFailure)
-            {
-                erros.AddRange(grupo.Errors.Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
-                continue;
-            }
-
-            grupos.Add(grupo.Value!);
+                incluiCandidato: input.IncluiCandidato).Value!);
         }
 
         return (grupos, erros);
