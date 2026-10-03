@@ -64,7 +64,7 @@ public sealed class AgregadoDeGrupoTests
     private static FatoResolvido Resolvido(object valor) => FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(valor));
 
     private static AvaliacaoGrupo Grupo(EstadoFato estado, IReadOnlyList<FatoResolvido> fatosDasOcorrencias) => new(
-        "COMPOSICAO", "DADOS", Ternario.Verdadeiro, Ternario.Falso, estado, ContagemValida: true,
+        "COMPOSICAO", "DADOS", Ternario.Verdadeiro, Ternario.Falso, estado, ContagemValida: true, OcorrenciaDoCandidatoValida: true,
         [.. fatosDasOcorrencias.Select(static (f, i) => new AvaliacaoOcorrencia(
             $"m{i}", [], new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["MENOR_SOB_GUARDA"] = f }, EstadoFato.Resolvido))]);
 }

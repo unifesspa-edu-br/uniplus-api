@@ -335,6 +335,21 @@ public sealed class AvaliadorFormularioTests
         criar.Should().Throw<ArgumentException>();
     }
 
+    [Theory]
+    [InlineData(new[] { "PROPRIO_CANDIDATO", "PAI_OU_MAE" }, true)]
+    [InlineData(new[] { "PAI_OU_MAE" }, false)]
+    [InlineData(new[] { "PROPRIO_CANDIDATO", "PROPRIO_CANDIDATO" }, false)]
+    public void GrupoQueIncluiOCandidato_ValeSoComExatamenteUmaOcorrenciaDele(string[] parentescos, bool valida)
+    {
+        DefinicaoGrupo grupo = new("COMPOSICAO", exibicao: null, Obrigatoriedade.Sempre, minimo: 1, maximo: null, [Item("PARENTESCO")], incluiCandidato: true);
+        (string, (string, object)[])[] ocorrencias = [.. parentescos.Select((p, i) => Ocorrencia($"m{i}", ("PARENTESCO", p)))];
+
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+
+        avaliacao.OcorrenciaDoCandidatoValida.Should().Be(valida);
+        avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
+    }
+
     [Fact]
     public void GrupoOculto_EhNaoAplicavel_MesmoComOcorrenciaGravada()
     {

@@ -111,7 +111,8 @@ public static class AvaliadorFormulario
             if (grupoPorCodigo.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo) doGrupo))
             {
                 avaliacaoPorGrupo[codigo] = new AvaliacaoGrupo(
-                    codigo, doGrupo.Etapa.Codigo, Ternario.Indeterminado, Ternario.Indeterminado, EstadoFato.Indeterminado, ContagemValida: true, []);
+                    codigo, doGrupo.Etapa.Codigo, Ternario.Indeterminado, Ternario.Indeterminado, EstadoFato.Indeterminado,
+                    ContagemValida: true, OcorrenciaDoCandidatoValida: true, []);
                 continue;
             }
 
@@ -154,8 +155,9 @@ public static class AvaliadorFormulario
 
     /// <summary>
     /// O grupo no estado do candidato e, se aparece e foi respondido, cada ocorrência com os fatos do
-    /// candidato e os subitens anteriores dela. A contagem fora do mínimo e do máximo não vale como
-    /// resposta, do mesmo modo que a resposta que viola restrição.
+    /// candidato e os subitens anteriores dela. A contagem fora do mínimo e do máximo, e a lista do
+    /// grupo que inclui o candidato sem exatamente uma ocorrência dele, não valem como resposta, do
+    /// mesmo modo que a resposta que viola restrição.
     /// </summary>
     private static AvaliacaoGrupo AvaliarGrupo(
         DefinicaoEtapa etapa, DefinicaoGrupo grupo, EntradaAvaliacaoFormulario entrada, IReadOnlyDictionary<string, FatoResolvido> fatos)
@@ -163,15 +165,15 @@ public static class AvaliadorFormulario
         Ternario visivel = E(etapa.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro, grupo.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
         Ternario obrigatorio = ObrigatorioSeVisivel(visivel, grupo.Obrigatoriedade, fatos);
 
-        AvaliacaoGrupo Avaliacao(EstadoFato estado, bool contagemValida, IReadOnlyList<AvaliacaoOcorrencia> ocorrencias) =>
-            new(grupo.Codigo, etapa.Codigo, visivel, obrigatorio, estado, contagemValida, ocorrencias);
+        AvaliacaoGrupo Avaliacao(EstadoFato estado, IReadOnlyList<AvaliacaoOcorrencia> ocorrencias, bool contagemValida = true, bool candidatoValido = true) =>
+            new(grupo.Codigo, etapa.Codigo, visivel, obrigatorio, estado, contagemValida, candidatoValido, ocorrencias);
 
         switch (visivel)
         {
             case Ternario.Falso:
-                return Avaliacao(EstadoFato.NaoAplicavel, contagemValida: true, []);
+                return Avaliacao(EstadoFato.NaoAplicavel, []);
             case Ternario.Indeterminado:
-                return Avaliacao(EstadoFato.Indeterminado, contagemValida: true, []);
+                return Avaliacao(EstadoFato.Indeterminado, []);
             case Ternario.Verdadeiro:
             default:
                 break;
@@ -181,7 +183,7 @@ public static class AvaliadorFormulario
         EstadoFato semResposta = obrigatorio == Ternario.Falso && etapaConcluida ? EstadoFato.NaoInformado : EstadoFato.Indeterminado;
         if (entrada.RespostasDosGrupos is null || !entrada.RespostasDosGrupos.TryGetValue(grupo.Codigo, out IReadOnlyList<OcorrenciaRespondida>? respondidas))
         {
-            return Avaliacao(semResposta, contagemValida: true, []);
+            return Avaliacao(semResposta, []);
         }
 
         if (respondidas.GroupBy(static o => o.Id, StringComparer.Ordinal).FirstOrDefault(static g => g.Count() > 1) is { } repetida)
@@ -193,9 +195,10 @@ public static class AvaliadorFormulario
         AvaliacaoOcorrencia[] ocorrencias = [.. respondidas.Select(o => AvaliarOcorrencia(etapa.Codigo, grupo, o, etapaConcluida, fatos))];
         int quantas = ocorrencias.Length;
         bool contagemValida = (grupo.Maximo is not { } maximo || quantas <= maximo) && (quantas >= grupo.Minimo || (quantas == 0 && obrigatorio == Ternario.Falso));
-        if (!contagemValida)
+        bool candidatoValido = !grupo.IncluiCandidato || CandidatoComoMembro.TemUmaOcorrenciaDoCandidato(respondidas);
+        if (!contagemValida || !candidatoValido)
         {
-            return Avaliacao(semResposta, contagemValida: false, ocorrencias);
+            return Avaliacao(semResposta, ocorrencias, contagemValida, candidatoValido);
         }
 
         // A lista vazia é resposta: no opcional, não informado; no obrigatório de mínimo zero, a
@@ -208,7 +211,7 @@ public static class AvaliadorFormulario
                 _ => EstadoFato.Indeterminado,
             }
             : ocorrencias.All(static o => o.Estado == EstadoFato.Resolvido) ? EstadoFato.Resolvido : EstadoFato.Indeterminado;
-        return Avaliacao(estado, contagemValida: true, ocorrencias);
+        return Avaliacao(estado, ocorrencias);
     }
 
     /// <summary>

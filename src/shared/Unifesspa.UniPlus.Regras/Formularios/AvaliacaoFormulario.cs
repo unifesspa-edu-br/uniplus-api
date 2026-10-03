@@ -40,8 +40,9 @@ public sealed record AvaliacaoFormulario(
 
 /// <summary>
 /// A avaliação de um grupo repetível: se aparece, se é obrigatório, se a contagem de ocorrências cabe
-/// no mínimo e no máximo, o estado do grupo inteiro e cada ocorrência avaliada. Os fatos de membro
-/// não entram nos fatos do candidato: ficam em cada ocorrência.
+/// no mínimo e no máximo, se o grupo que inclui o candidato tem exatamente uma ocorrência dele, o
+/// estado do grupo inteiro e cada ocorrência avaliada. Os fatos de membro não entram nos fatos do
+/// candidato: ficam em cada ocorrência.
 /// </summary>
 /// <remarks>
 /// O estado segue o UNI-REQ-0074: oculto, não aplicável; sem resposta ou com contagem que não vale,
@@ -56,6 +57,7 @@ public sealed record AvaliacaoGrupo(
     Ternario Obrigatorio,
     EstadoFato Estado,
     bool ContagemValida,
+    bool OcorrenciaDoCandidatoValida,
     IReadOnlyList<AvaliacaoOcorrencia> Ocorrencias);
 
 /// <summary>

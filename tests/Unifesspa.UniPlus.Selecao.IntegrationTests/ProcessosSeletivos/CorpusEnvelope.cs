@@ -821,17 +821,24 @@ internal static class CorpusEnvelope
             new ValorDominioDeclaradoCongelado("ATE_1_SM", "Renda familiar per capita de até 1 salário mínimo.", 0),
             new ValorDominioDeclaradoCongelado("ACIMA_1_SM", "Renda familiar per capita acima de 1 salário mínimo.", 1),
         ];
+        List<ValorDominioDeclaradoCongelado> parentesco =
+        [
+            new ValorDominioDeclaradoCongelado(CandidatoComoMembro.ProprioCandidato, "O próprio candidato.", 0),
+            new ValorDominioDeclaradoCongelado("PAI_OU_MAE", "Pai ou mãe do candidato.", 1),
+        ];
 
         if (permutarValores)
         {
             corRaca.Reverse();
             renda.Reverse();
+            parentesco.Reverse();
         }
 
         return new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
         {
             ["COR_RACA"] = corRaca,
             ["RENDA"] = renda,
+            [CandidatoComoMembro.FatoParentesco] = parentesco,
         };
     }
 
@@ -839,10 +846,10 @@ internal static class CorpusEnvelope
     /// O grupo repetível do corpus rico (UNI-REQ-0146): exibido por um fato do candidato, com um
     /// campo exibido pelo campo anterior da mesma ocorrência — o decoder remonta o grupo, as regras
     /// dele e os campos, e o grafo conjunto liga os campos às regras. Sem máximo, o envelope grava
-    /// o máximo nulo.
+    /// o máximo nulo; o grupo inclui o candidato, identificado pelo parentesco.
     /// </summary>
     private static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, null,
+        "COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 1, null,
         PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!,
         Obrigatoriedade.Nunca,
@@ -851,7 +858,9 @@ internal static class CorpusEnvelope
             FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "TRABALHADOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!,
             ]).Value!,
-        ], permutar)).Value!;
+            FatoColetado.Criar(CandidatoComoMembro.FatoParentesco, 2, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+        ], permutar),
+        incluiCandidato: true).Value!;
 
     /// <summary>
     /// Calendário congelado do corpus rico (UNI-REQ-0080). Traz <b>uma data de cada abrangência</b>

@@ -164,7 +164,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(25);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(26);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -359,13 +359,13 @@ public sealed class FatoCandidatoPersistenceTests
             .Should().OnlyContain(f => f.Cardinalidade == CardinalidadeFato.Escalar);
     }
 
-    [Fact(DisplayName = "Seed de FatoValorDominio: COR_RACA (6), SEXO (3) e NACIONALIDADE (3) têm os valores filhos esperados")]
-    public async Task Seed_FatoValorDominio_MaterializaAsDozeLinhas()
+    [Fact(DisplayName = "Seed de FatoValorDominio: COR_RACA (6), SEXO (3), NACIONALIDADE (3) e PARENTESCO (12) têm os valores filhos esperados")]
+    public async Task Seed_FatoValorDominio_MaterializaOsValoresDosCategoricosEstaticos()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking().ToListAsync();
-        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(12);
+        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(24);
 
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
         string[] codigosCorRaca = [.. valores
@@ -388,6 +388,15 @@ public sealed class FatoCandidatoPersistenceTests
             .OrderBy(v => v.Ordem)
             .Select(v => v.Codigo)];
         codigosNacionalidade.Should().Equal("NATO", "NATURALIZADO", "ESTRANGEIRO");
+
+        FatoCandidato parentesco = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "PARENTESCO");
+        string[] codigosParentesco = [.. valores
+            .Where(v => v.FatoCandidatoId == parentesco.Id)
+            .OrderBy(v => v.Ordem)
+            .Select(v => v.Codigo)];
+        codigosParentesco.Should().Equal(
+            "PROPRIO_CANDIDATO", "CONJUGE_OU_COMPANHEIRO", "FILHO_OU_ENTEADO", "PAI_OU_MAE", "PADRASTO_OU_MADRASTA", "IRMAO",
+            "AVO", "NETO", "SOGRO", "GENRO_OU_NORA", "OUTRO_PARENTE", "NAO_PARENTE");
 
         FatoCandidato modalidade = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "MODALIDADE");
         valores.Should().NotContain(v => v.FatoCandidatoId == modalidade.Id,
@@ -419,7 +428,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
 
-        views.Should().HaveCount(25);
+        views.Should().HaveCount(26);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -544,6 +553,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("MAIOR_IDADE", "023", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:MAIOR_IDADE", "INSCRICAO"),
             ("SEM_RENDA", "024", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SEM_RENDA", "INSCRICAO"),
             ("SOB_GUARDA", "025", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SOB_GUARDA", "INSCRICAO"),
+            ("PARENTESCO", "026", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:PARENTESCO", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -552,7 +562,7 @@ public sealed class FatoCandidatoPersistenceTests
         fatos.Should().HaveCount(esperado.Length);
 
         // Os campos de membro da composição familiar; todos os demais são do candidato.
-        HashSet<string> deMembroDeGrupo = ["MAIOR_IDADE", "SEM_RENDA", "SOB_GUARDA"];
+        HashSet<string> deMembroDeGrupo = ["MAIOR_IDADE", "SEM_RENDA", "SOB_GUARDA", "PARENTESCO"];
 
         // As dependências dos derivados do sistema (ADR-0136, UNI-REQ-0075); os demais fatos não têm.
         Dictionary<string, string[]> dependencias = new(StringComparer.Ordinal)

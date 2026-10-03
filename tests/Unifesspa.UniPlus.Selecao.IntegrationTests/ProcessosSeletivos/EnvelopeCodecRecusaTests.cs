@@ -1082,6 +1082,7 @@ public sealed class EnvelopeCodecRecusaTests
             JsonArray grupos = envelope["gruposColetados"]!.AsArray();
             JsonObject copia = grupos[0]!.DeepClone().AsObject();
             copia["ordem"] = 3;
+            copia["incluiCandidato"] = false;
             foreach (JsonNode? campo in copia["subitens"]!.AsArray())
             {
                 campo!["fatoCodigo"] = $"{campo["fatoCodigo"]!.GetValue<string>()}_2";

@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
@@ -33,29 +34,14 @@ public sealed class GrupoRepetivelEndpointTests
 
     public GrupoRepetivelEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "O PUT dos itens grava o grupo com os campos de membro, e o GET do processo o devolve")]
+    [Fact(DisplayName = "O PUT dos itens grava o grupo sem máximo que inclui o candidato, e o GET do processo o devolve")]
     public async Task DefinirItens_ComGrupo_GravaEDevolveNoFormulario()
     {
         string campo = await SemearFatoDeMembroAsync();
         Guid processoId = await SemearProcessoAsync();
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage put = Requisicao(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens");
-        put.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        put.Content = JsonContent.Create(new
-        {
-            itens = Array.Empty<object>(),
-            grupos = new[]
-            {
-                new
-                {
-                    codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo = "Composição familiar", etapaCodigo = "DADOS",
-                    minimo = 0, maximo = 10, obrigatoriedade = "NUNCA",
-                    subitens = new[] { new { fatoCodigo = campo, ordem = 0, rotulo = "Trabalha no campo", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" } },
-                },
-            },
-        });
-        HttpResponseMessage gravado = await client.SendAsync(put);
+        HttpResponseMessage gravado = await DefinirGrupoAsync(client, processoId, campo, comParentesco: true);
         gravado.StatusCode.Should().Be(HttpStatusCode.NoContent, await gravado.Content.ReadAsStringAsync());
 
         using HttpRequestMessage get = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
@@ -68,8 +54,49 @@ public sealed class GrupoRepetivelEndpointTests
             .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO");
         JsonElement grupo = inscricao.GetProperty("grupos").EnumerateArray().Single();
         grupo.GetProperty("codigo").GetString().Should().Be("COMPOSICAO_FAMILIAR");
-        grupo.GetProperty("subitens").EnumerateArray().Single().GetProperty("fatoCodigo").GetString().Should().Be(campo);
+        grupo.GetProperty("maximo").ValueKind.Should().Be(JsonValueKind.Null);
+        grupo.GetProperty("incluiCandidato").GetBoolean().Should().BeTrue();
+        grupo.GetProperty("subitens").EnumerateArray().Select(static s => s.GetProperty("fatoCodigo").GetString())
+            .Should().Equal(CandidatoComoMembro.FatoParentesco, campo);
         inscricao.GetProperty("fatosColetados").GetArrayLength().Should().Be(0, "o campo do grupo não é item do formulário");
+    }
+
+    [Fact(DisplayName = "O grupo que inclui o candidato sem o campo de parentesco é recusado")]
+    public async Task DefinirItens_GrupoQueIncluiOCandidatoSemParentesco_Recusa()
+    {
+        string campo = await SemearFatoDeMembroAsync();
+        Guid processoId = await SemearProcessoAsync();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage recusado = await DefinirGrupoAsync(client, processoId, campo, comParentesco: false);
+
+        recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await recusado.Content.ReadAsStringAsync()).Should().Contain("uniplus.grupo_formulario.candidato_como_membro_incompleto")
+            .And.Contain("grupos[0].subitens");
+    }
+
+    /// <summary>O PUT dos itens com a composição familiar sem máximo que inclui o candidato.</summary>
+    private static Task<HttpResponseMessage> DefinirGrupoAsync(HttpClient client, Guid processoId, string campo, bool comParentesco)
+    {
+        object[] subitens =
+        [
+            .. comParentesco
+                ? new object[] { new { fatoCodigo = CandidatoComoMembro.FatoParentesco, ordem = 0, rotulo = "Parentesco", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE" } }
+                : [],
+            new { fatoCodigo = campo, ordem = 1, rotulo = "Trabalha no campo", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" },
+        ];
+        return EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", new
+        {
+            itens = Array.Empty<object>(),
+            grupos = new[]
+            {
+                new
+                {
+                    codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo = "Composição familiar", etapaCodigo = "DADOS",
+                    minimo = 1, maximo = (int?)null, incluiCandidato = true, obrigatoriedade = "NUNCA", subitens,
+                },
+            },
+        }, exigeSucesso: false);
     }
 
     [Theory(DisplayName = "Documento exigido pelo agregado do grupo, com as opções do fato de membro, publica só com o grupo obrigatório")]

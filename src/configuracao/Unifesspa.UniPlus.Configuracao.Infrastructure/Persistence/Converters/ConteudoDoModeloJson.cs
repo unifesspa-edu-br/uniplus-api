@@ -61,6 +61,7 @@ internal static class ConteudoDoModeloJson
             ["rotulo"] = g.Rotulo,
             ["minimo"] = g.Minimo,
             ["maximo"] = g.Maximo,
+            ["incluiCandidato"] = g.IncluiCandidato,
             ["exibicao"] = g.Exibicao is null ? null : PredicadoDnfJson.ParaJson(g.Exibicao),
             ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(g.Obrigatoriedade),
             ["subitens"] = new JsonArray([.. g.Subitens.Select(static s => (JsonNode)CampoParaJson(s))]),
@@ -119,7 +120,8 @@ internal static class ConteudoDoModeloJson
                 InteiroOuNulo(g.GetProperty("maximo")),
                 Predicado(g, "exibicao"),
                 Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(g.GetProperty("obrigatoriedade"))),
-                [.. g.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)]))]);
+                [.. g.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)],
+                g.GetProperty("incluiCandidato").GetBoolean()))]);
     }
 
     private static ItemDoModelo CampoDeJson(JsonElement campo) => new(

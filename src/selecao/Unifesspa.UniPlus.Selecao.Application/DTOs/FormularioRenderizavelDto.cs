@@ -39,8 +39,9 @@ public sealed record FatoFormularioRenderizavelDto(
 
 /// <summary>
 /// Um grupo repetível pronto para renderização (UNI-REQ-0146): a posição na ordem dos itens, a
-/// seção, o rótulo, o mínimo e o máximo de ocorrências, a exibição — nula quando sempre aparece —,
-/// a obrigatoriedade e os campos que cada ocorrência responde, na forma dos itens.
+/// seção, o rótulo, o mínimo e o máximo de ocorrências, se o próprio candidato é um dos membros, a
+/// exibição — nula quando sempre aparece —, a obrigatoriedade e os campos que cada ocorrência
+/// responde, na forma dos itens.
 /// </summary>
 public sealed record GrupoFormularioRenderizavelDto(
     string Codigo,
@@ -49,6 +50,7 @@ public sealed record GrupoFormularioRenderizavelDto(
     string Rotulo,
     int Minimo,
     int? Maximo,
+    bool IncluiCandidato,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
     ObrigatoriedadeDto Obrigatoriedade,
     IReadOnlyList<FatoFormularioRenderizavelDto> Subitens);

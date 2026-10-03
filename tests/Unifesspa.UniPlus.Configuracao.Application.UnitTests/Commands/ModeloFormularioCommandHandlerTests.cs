@@ -84,6 +84,18 @@ public sealed class ModeloFormularioCommandHandlerTests
         gravado!.Conteudo.Grupos.Single().Subitens.Select(static s => s.FatoCodigo).Should().Equal("MAIOR_IDADE", "SEM_RENDA");
     }
 
+    [Fact(DisplayName = "Grupo que inclui o candidato sem o campo de parentesco é recusado no modelo")]
+    public async Task Criar_GrupoQueIncluiOCandidatoSemParentesco_Recusa()
+    {
+        ConteudoDoModeloInput conteudo = ComComposicao(Campo("MAIOR_IDADE", 0));
+        conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { IncluiCandidato = true }] };
+
+        Result<Guid> resultado = await CriarAsync(conteudo);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(static e =>
+            e.Field == "conteudo.grupos[0].subitens" && e.Error.Code == GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto);
+    }
+
     [Fact(DisplayName = "Campo do grupo com fato do candidato não é coletável na ocorrência")]
     public async Task Criar_CampoDoGrupoComFatoDoCandidato_Recusa()
     {

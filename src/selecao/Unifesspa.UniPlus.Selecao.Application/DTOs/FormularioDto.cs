@@ -16,8 +16,9 @@ public sealed record EtapaFormularioDto(
 
 /// <summary>
 /// Um grupo repetível do formulário (UNI-REQ-0146): a posição na ordem dos itens, a seção, o
-/// rótulo, o mínimo e o máximo de ocorrências, a exibição — nula quando sempre aparece —, a
-/// obrigatoriedade e os campos de cada ocorrência, na ordem dentro do grupo.
+/// rótulo, o mínimo e o máximo de ocorrências, se o próprio candidato é um dos membros, a
+/// exibição — nula quando sempre aparece —, a obrigatoriedade e os campos de cada ocorrência, na
+/// ordem dentro do grupo.
 /// </summary>
 public sealed record GrupoColetadoDto(
     string Codigo,
@@ -26,6 +27,7 @@ public sealed record GrupoColetadoDto(
     string Rotulo,
     int Minimo,
     int? Maximo,
+    bool IncluiCandidato,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
     ObrigatoriedadeDto Obrigatoriedade,
     IReadOnlyList<FatoColetadoDto> Subitens);

@@ -155,10 +155,19 @@ internal static class EscritaDosItens
                 continue;
             }
 
-            // A forma do grupo já foi conferida na leitura; a fábrica a repete e devolve o grupo.
+            // A forma do grupo já foi conferida na leitura; a fábrica confere ainda, com os campos
+            // resolvidos, a identificação da ocorrência do candidato.
             GrupoColetadoInput input = lidos.Entradas[indice];
-            grupos.Add(GrupoColetado.Criar(
-                input.Codigo, input.Ordem, input.EtapaCodigo, input.Rotulo, input.Minimo, input.Maximo, regras.Exibicao, regras.Obrigatoriedade, campos).Value!);
+            Result<GrupoColetado> grupo = GrupoColetado.Criar(
+                input.Codigo, input.Ordem, input.EtapaCodigo, input.Rotulo, input.Minimo, input.Maximo, regras.Exibicao, regras.Obrigatoriedade, campos,
+                incluiCandidato: input.IncluiCandidato);
+            if (grupo.IsFailure)
+            {
+                erros.AddRange(grupo.Errors.Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
+                continue;
+            }
+
+            grupos.Add(grupo.Value!);
         }
 
         return (grupos, erros);

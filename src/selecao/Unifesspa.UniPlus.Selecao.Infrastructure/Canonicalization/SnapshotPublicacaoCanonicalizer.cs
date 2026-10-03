@@ -1919,6 +1919,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["rotulo"] = HashCanonicalComputer.NormalizeNfc(g.Rotulo),
             ["minimo"] = g.Minimo,
             ["maximo"] = g.Maximo,
+            ["incluiCandidato"] = g.IncluiCandidato,
             ["exibicao"] = g.Exibicao is { } exibicao ? SerializarDnf(LinhasDoPredicado(exibicao)) : null,
             ["obrigatoriedade"] = SerializarObrigatoriedade(g.Obrigatoriedade),
             ["subitens"] = SerializarFatosColetados(g.Subitens, valoresSelecionaveisCongelados),

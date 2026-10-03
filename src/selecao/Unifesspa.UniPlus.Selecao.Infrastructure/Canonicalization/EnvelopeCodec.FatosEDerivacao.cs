@@ -238,7 +238,7 @@ public sealed partial class EnvelopeCodec
             string path = $"gruposColetados[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "gruposColetados");
             leitor.ExigirChaves(
-                item, path, "codigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "minimo", "maximo", "exibicao", "obrigatoriedade", "subitens");
+                item, path, "codigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens");
 
             string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -247,6 +247,7 @@ public sealed partial class EnvelopeCodec
             string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
             int minimo = leitor.Inteiro(item, "minimo", path);
             int? maximo = leitor.InteiroOpcional(item, "maximo", path);
+            bool incluiCandidato = leitor.Booleano(item, "incluiCandidato", path);
             IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> exibicao = LerDnf(leitor, item, "exibicao", path);
             JsonArray subitens = leitor.Array(item, "subitens", path);
             if (leitor.Falhou)
@@ -285,7 +286,7 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<GrupoColetado> grupo = GrupoColetado.Criar(
-                codigo, ordem, etapaCodigo, rotulo, minimo, maximo, exibicaoLida.Value, obrigatoriedade, campos, finalidade);
+                codigo, ordem, etapaCodigo, rotulo, minimo, maximo, exibicaoLida.Value, obrigatoriedade, campos, finalidade, incluiCandidato);
             if (grupo.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<GrupoColetado>>(grupo.Error!) ?? [];
