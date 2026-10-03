@@ -16125,6 +16125,16 @@
             "items": {
               "$ref": "#/components/schemas/RestricaoValorInput"
             }
+          },
+          "impedimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImpedimentoInput"
+              }
+            ]
           }
         }
       },
@@ -16299,13 +16309,42 @@
           }
         }
       },
+      "ImpedimentoInput": {
+        "required": [
+          "quando",
+          "mensagem"
+        ],
+        "type": "object",
+        "properties": {
+          "quando": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "mensagem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ItemPreVisualizadoDto": {
         "required": [
           "fatoCodigo",
           "etapaCodigo",
           "visivel",
           "obrigatorio",
-          "restricoesVioladas"
+          "restricoesVioladas",
+          "impedido",
+          "mensagemDoImpedimento"
         ],
         "type": "object",
         "properties": {
@@ -16326,6 +16365,15 @@
             "items": {
               "type": "string"
             }
+          },
+          "impedido": {
+            "type": "string"
+          },
+          "mensagemDoImpedimento": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

@@ -137,7 +137,8 @@ public static class ObterProcessoSeletivoQueryHandler
         fato.Formato,
         fato.Ajuda,
         fato.PedirConfirmacao,
-        [.. fato.Restricoes.Select(static r => r.ToDto())]);
+        [.. fato.Restricoes.Select(static r => r.ToDto())],
+        fato.Impedimento?.ToDto());
 
     private static ConfiguracaoDerivacaoDto ProjectConfiguracaoDerivacao(ConfiguracaoDerivacaoFato config) => new(
         config.CodigoFato,

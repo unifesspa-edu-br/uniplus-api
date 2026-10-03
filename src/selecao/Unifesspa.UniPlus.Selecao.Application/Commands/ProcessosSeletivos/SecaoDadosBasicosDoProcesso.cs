@@ -44,5 +44,6 @@ internal static class SecaoDadosBasicosDoProcesso
             EntradaDeRegras.ParaEntrada(fato.Obrigatoriedade.Predicado),
             fato.Ajuda,
             fato.PedirConfirmacao,
-            [.. fato.Restricoes.Select(EntradaDeRegras.ParaEntrada)]);
+            [.. fato.Restricoes.Select(EntradaDeRegras.ParaEntrada)],
+            EntradaDeRegras.ParaEntrada(fato.Impedimento));
 }

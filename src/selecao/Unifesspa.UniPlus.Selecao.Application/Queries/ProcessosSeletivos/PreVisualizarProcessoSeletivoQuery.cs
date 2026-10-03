@@ -220,21 +220,24 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
             EstruturaFormulario.ParaToken(formulario.Finalidade),
             [.. avaliacao.Itens
                 .Where(i => itemPorFato[i.FatoCodigo].Finalidade == formulario.Finalidade)
-                .Select(i => Item(i, itemPorFato[i.FatoCodigo].EtapaCodigo))],
+                .Select(i => Item(i, itemPorFato[i.FatoCodigo]))],
             [.. avaliacao.Grupos
                 .Where(g => grupoPorCodigo[g.Codigo].Finalidade == formulario.Finalidade)
                 .Select(g => new GrupoSimuladoDto(
                     g.Codigo, grupoPorCodigo[g.Codigo].EtapaCodigo, g.Visivel.ToCodigo(), g.Obrigatorio.ToCodigo(),
                     g.ContagemValida, g.OcorrenciaDoCandidatoValida,
-                    [.. g.Ocorrencias.Select(o => new OcorrenciaSimuladaDto(o.Id, [.. o.Itens.Select(i => Item(i, grupoPorCodigo[g.Codigo].EtapaCodigo))]))]))],
+                    [.. g.Ocorrencias.Select(o => new OcorrenciaSimuladaDto(o.Id, [.. o.Itens.Select(i => Item(
+                        i, grupoPorCodigo[g.Codigo].Subitens.Single(s => s.FatoCodigo == i.FatoCodigo), grupoPorCodigo[g.Codigo].EtapaCodigo))]))]))],
             [.. avaliacao.Termos
                 .Where(t => termoPorCodigo[t.Codigo].Finalidade == formulario.Finalidade)
                 .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))]))];
     }
 
-    private static ItemSimuladoDto Item(AvaliacaoItem item, string? etapaCodigo) => new(
-        item.FatoCodigo, etapaCodigo, item.Visivel.ToCodigo(), item.Obrigatorio.ToCodigo(),
-        [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))]);
+    /// <summary>O item avaliado; o campo de grupo segue a seção do grupo.</summary>
+    private static ItemSimuladoDto Item(AvaliacaoItem item, FatoColetado campo, string? etapaDoGrupo = null) => new(
+        item.FatoCodigo, etapaDoGrupo ?? campo.EtapaCodigo, item.Visivel.ToCodigo(), item.Obrigatorio.ToCodigo(),
+        [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
+        item.Impedido.ToCodigo(), campo.Impedimento?.Mensagem);
 
     /// <summary>
     /// Cada folha da árvore com a situação dela diante do perfil: a de fora de repetição pelo status

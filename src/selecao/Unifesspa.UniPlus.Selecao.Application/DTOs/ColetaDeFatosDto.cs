@@ -21,6 +21,8 @@ public sealed record CondicaoPrecondicaoDto(string Fato, string Operador, JsonEl
 /// opções que o processo oferece ao fato cuja fonte dos valores é o processo (issue #1619), ou
 /// <see langword="null"/> quando os valores não vêm do processo. <see cref="Formato"/> é o formato
 /// da resposta do campo de texto (livre, CPF, e-mail…), <see langword="null"/> nos demais campos.
+/// <see cref="Impedimento"/> é a resposta que impede a inscrição, com a mensagem ao candidato, ou
+/// <see langword="null"/> quando nenhuma impede.
 /// </summary>
 public sealed record FatoColetadoDto(
     string FatoCodigo,
@@ -34,7 +36,11 @@ public sealed record FatoColetadoDto(
     string? Formato,
     string? Ajuda,
     bool PedirConfirmacao,
-    IReadOnlyList<RestricaoValorDto> Restricoes);
+    IReadOnlyList<RestricaoValorDto> Restricoes,
+    ImpedimentoDto? Impedimento);
+
+/// <summary>A resposta do campo que impede a inscrição e a mensagem que explica o motivo ao candidato.</summary>
+public sealed record ImpedimentoDto(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>> Quando, string Mensagem);
 
 /// <summary>
 /// Uma restrição sobre o valor respondido no item, pelo <see cref="Tipo"/>: <c>FAIXA_NUMERICA</c>

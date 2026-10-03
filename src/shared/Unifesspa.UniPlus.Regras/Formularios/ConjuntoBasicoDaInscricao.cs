@@ -178,7 +178,7 @@ public static class ConjuntoBasicoDaInscricao
 
     /// <summary>A condição sem valor não tem forma canônica, e o item que a traz não é o de referência.</summary>
     private static bool TemValorAusente(FatoColetadoInput item) =>
-        new[] { item.Precondicao, item.PredicadoObrigatoriedade }
+        new[] { item.Precondicao, item.PredicadoObrigatoriedade, item.Impedimento?.Quando }
             .Concat((item.Restricoes ?? []).SelectMany(static r => (r?.Entradas ?? []).Select(static e => e?.Quando)))
             .SelectMany(static predicado => predicado ?? [])
             .SelectMany(static clausula => clausula ?? [])

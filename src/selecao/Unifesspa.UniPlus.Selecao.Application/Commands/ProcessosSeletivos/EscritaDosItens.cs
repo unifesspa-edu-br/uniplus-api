@@ -21,8 +21,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>Os itens lidos pela forma, sem leitura externa: as regras de cada item cuja forma foi aceita.</summary>
 internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IReadOnlyList<RegrasDoItem?> Regras, IReadOnlyList<FieldError> Erros);
 
-/// <summary>A obrigatoriedade e as restrições de um item cuja forma foi aceita.</summary>
-internal sealed record RegrasDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes);
+/// <summary>A obrigatoriedade, as restrições e o impedimento de um item cuja forma foi aceita.</summary>
+internal sealed record RegrasDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null);
 
 /// <summary>
 /// Os grupos lidos pela forma, sem leitura externa: a exibição e a obrigatoriedade de cada grupo
@@ -63,7 +63,13 @@ internal static class EscritaDosItens
 
             Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input.Obrigatoriedade, input.PredicadoObrigatoriedade, campo, erros);
             IReadOnlyList<RestricaoValor> restricoes = ConferirRestricoes(input, campo, erros);
-            regras[indice] = erros.Count == recusasAntes ? new RegrasDoItem(obrigatoriedade!, restricoes) : null;
+            Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(input.Impedimento);
+            if (impedimento.IsFailure)
+            {
+                erros.Add(new($"{campo}.impedimento.quando", impedimento.Error!));
+            }
+
+            regras[indice] = erros.Count == recusasAntes ? new RegrasDoItem(obrigatoriedade!, restricoes, impedimento.Value) : null;
         }
 
         return new ItensLidos(entradas, regras, erros);
@@ -98,7 +104,7 @@ internal static class EscritaDosItens
 
             erros.AddRange(FormaDoGrupo.Conferir(
                     input.Codigo, input.Ordem, input.Rotulo, input.Minimo, input.Maximo,
-                    [.. subitens.Select(static s => (s?.FatoCodigo, s?.EtapaCodigo))],
+                    [.. subitens.Select(static s => (s?.FatoCodigo, s?.EtapaCodigo, s?.Impedimento is not null))],
                     exibicao.IsSuccess ? exibicao.Value?.FatosCitados ?? [] : [],
                     obrigatoriedade ?? Obrigatoriedade.Nunca)
                 .Select(erro => erro with { Field = $"{caminho}.{erro.Field}" }));
@@ -303,9 +309,16 @@ internal static class EscritaDosItens
         erros.AddRange(ConferenciaNoCatalogo.SemanticaDasRestricoes(
             catalogoDasRegras[view.Codigo], tipoRenderizacao, regras.Restricoes, catalogoDasRegras, vocabulario, dominiosDinamicos));
 
+        if (regras.Impedimento is { } impedimento
+            && PredicadoDnfValidador.Validar(impedimento.Quando, vocabulario, null, dominiosDinamicos) is { IsFailure: true } semanticaDoImpedimento)
+        {
+            erros.Add(new("impedimento.quando", semanticaDoImpedimento.Error!));
+        }
+
         IEnumerable<string> citados = (input.Precondicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato)
             .Concat(regras.Obrigatoriedade.FatosCitados)
-            .Concat(regras.Restricoes.SelectMany(static r => r.FatosCitados));
+            .Concat(regras.Restricoes.SelectMany(static r => r.FatosCitados))
+            .Concat(regras.Impedimento?.FatosCitados ?? []);
         if (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(citados, catalogo) is { } atributo)
         {
             erros.Add(new(string.Empty, atributo));
@@ -317,7 +330,7 @@ internal static class EscritaDosItens
             input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, regras.Obrigatoriedade,
             precondicoesResult.IsSuccess ? precondicoesResult.Value : null,
             origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato,
-            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: regras.Restricoes);
+            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: regras.Restricoes, impedimento: regras.Impedimento);
         return erros.Count == 0
             ? fato
             : Result<FatoColetado>.ValidationFailure([.. erros, .. fato.IsFailure ? fato.Errors : []]);

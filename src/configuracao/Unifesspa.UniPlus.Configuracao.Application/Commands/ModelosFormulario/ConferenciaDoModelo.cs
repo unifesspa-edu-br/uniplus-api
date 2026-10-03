@@ -137,7 +137,7 @@ internal static class ConferenciaDoModelo
         ArgumentNullException.ThrowIfNull(conteudo);
         ItemDoModelo[] campos = [.. conteudo.Itens, .. conteudo.Grupos.SelectMany(static g => g.Subitens)];
         IEnumerable<PredicadoDnf> predicados = campos
-            .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado }
+            .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado, i.Impedimento?.Quando }
                 .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
             .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
             .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
@@ -187,6 +187,11 @@ internal static class ConferenciaDoModelo
         if (ConferirPredicado(item.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
         {
             yield return new("predicadoObrigatoriedade", obrigatoriedade);
+        }
+
+        if (ConferirPredicado(item.Impedimento?.Quando, catalogo) is { } impedimento)
+        {
+            yield return new("impedimento.quando", impedimento);
         }
 
         foreach (FieldError restricao in ConferenciaNoCatalogo.SemanticaDasRestricoes(

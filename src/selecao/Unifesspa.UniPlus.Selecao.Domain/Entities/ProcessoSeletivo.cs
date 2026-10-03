@@ -2369,6 +2369,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.ValidationFailure([excesso]);
         }
 
+        if (Impedimento.ConferirFinalidade(finalidade, fatosColetados.Select(static f => f.Impedimento)) is { Count: > 0 } foraDaInscricao)
+        {
+            return Result.ValidationFailure(foraDaInscricao);
+        }
+
         // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
@@ -3238,7 +3243,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
-        new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação ou negação é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
+        new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação, negação ou impedimento é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
         new ItemConformidade("exigencia_repete_por_grupo_do_formulario", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: repete por grupo dos formulários, conhecido até a fase da exigência", PendenciaDaRepeticaoPorGrupo() is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
@@ -4327,7 +4332,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Campo opcional que alimenta derivação ou negação, em qualquer regra viva do processo — a regra
+    /// Campo opcional que alimenta derivação, negação ou impedimento, em qualquer regra viva do processo — a regra
     /// é a de <see cref="CampoQueAlimentaRegra"/>, avaliada sobre os formulários na ordem.
     /// </summary>
     private DomainError? PendenciaDeCampoOpcionalQueAlimentaRegra() =>
@@ -4337,7 +4342,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     .SelectMany(static g => g.Subitens).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))),
             CampoQueAlimentaRegra.Fatos(
                 _regrasDerivacao.SelectMany(static c => c.FatosCitados).Concat(DependenciasDosDerivadosDoSistemaCitados()),
-                CondicoesVivasComOperador().Select(static c => (c.Fato, c.Operador))));
+                CondicoesVivasComOperador().Select(static c => (c.Fato, c.Operador)),
+                Itens.Where(static f => f.Impedimento is not null).Select(static f => f.FatoCodigo)));
 
     /// <summary>Os fatos de que dependem os derivados do sistema que uma regra viva do processo cita.</summary>
     private IEnumerable<string> DependenciasDosDerivadosDoSistemaCitados() =>

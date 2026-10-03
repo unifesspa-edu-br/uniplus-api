@@ -187,6 +187,23 @@ public sealed class ModeloFormularioTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }
 
+    [Fact(DisplayName = "O item com impedimento fora do modelo de inscrição é recusado")]
+    public void ImpedimentoNaHabilitacao_Recusa()
+    {
+        ItemDoModelo comImpedimento = Item("CERTIFICADO_EMITIDO", 0) with
+        {
+            Impedimento = new Impedimento(Quando("CERTIFICADO_EMITIDO"), "Quem já tem o certificado não se habilita por este processo."),
+        };
+
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([comImpedimento]));
+
+        modelo.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "conteudo.itens[0].impedimento",
+            Error = new { Code = ItemFormularioErrorCodes.ImpedimentoForaDaInscricao },
+        });
+    }
+
     [Fact(DisplayName = "O teto de itens do formulário vale para o modelo")]
     public void ItensAcimaDoTeto_Recusa()
     {

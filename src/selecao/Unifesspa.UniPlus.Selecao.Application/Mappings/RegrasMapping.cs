@@ -36,6 +36,12 @@ internal static class RegrasMapping
         };
     }
 
+    public static ImpedimentoDto ToDto(this Impedimento impedimento)
+    {
+        ArgumentNullException.ThrowIfNull(impedimento);
+        return new(impedimento.Quando.ToDto(), impedimento.Mensagem);
+    }
+
     public static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>> ToDto(this PredicadoDnf predicado)
     {
         ArgumentNullException.ThrowIfNull(predicado);

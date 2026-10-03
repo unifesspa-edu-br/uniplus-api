@@ -111,6 +111,38 @@ public static class PredicadoDnfJson
         };
     }
 
+    /// <summary>O impedimento: a condição e a mensagem ao candidato.</summary>
+    public static JsonObject ParaJson(Impedimento impedimento)
+    {
+        ArgumentNullException.ThrowIfNull(impedimento);
+        return new JsonObject
+        {
+            ["quando"] = ParaJson(impedimento.Quando),
+            ["mensagem"] = impedimento.Mensagem,
+        };
+    }
+
+    /// <summary>O impedimento do JSON; nulo quando o campo não tem.</summary>
+    public static Result<Impedimento?> ImpedimentoDeJson(JsonElement json)
+    {
+        if (json.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+        {
+            return Result<Impedimento?>.Success(null);
+        }
+
+        if (json.ValueKind != JsonValueKind.Object
+            || !json.TryGetProperty("quando", out JsonElement quando)
+            || !json.TryGetProperty("mensagem", out JsonElement mensagem) || mensagem.ValueKind != JsonValueKind.String)
+        {
+            return Result<Impedimento?>.Failure(Erro("O impedimento tem a condição e a mensagem."));
+        }
+
+        Result<PredicadoDnf> lido = DeJson(quando);
+        return lido.IsSuccess
+            ? Result<Impedimento?>.Success(new Impedimento(lido.Value!, mensagem.GetString()!))
+            : Result<Impedimento?>.Failure(lido.Error!);
+    }
+
     /// <summary>O token do tipo de obrigatoriedade; o sentinela não tem token.</summary>
     public static string ParaToken(TipoObrigatoriedade tipo) => tipo switch
     {

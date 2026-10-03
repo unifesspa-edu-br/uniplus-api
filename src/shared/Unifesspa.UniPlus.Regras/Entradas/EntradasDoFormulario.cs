@@ -59,7 +59,14 @@ public sealed record FatoColetadoInput(
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade = null,
     string? Ajuda = null,
     bool PedirConfirmacao = false,
-    IReadOnlyList<RestricaoValorInput>? Restricoes = null);
+    IReadOnlyList<RestricaoValorInput>? Restricoes = null,
+    ImpedimentoInput? Impedimento = null);
+
+/// <summary>
+/// A resposta do campo que impede a inscrição: a condição, cujas cláusulas citam a resposta do
+/// próprio campo, e a mensagem ao candidato.
+/// </summary>
+public sealed record ImpedimentoInput(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando, string? Mensagem);
 
 /// <summary>
 /// Um grupo repetível do formulário (UNI-REQ-0146): o código, a posição na ordem dos itens, a

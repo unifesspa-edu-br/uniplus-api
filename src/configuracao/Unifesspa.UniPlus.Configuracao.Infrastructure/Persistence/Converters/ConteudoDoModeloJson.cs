@@ -81,6 +81,7 @@ internal static class ConteudoDoModeloJson
         ["exibicao"] = campo.Exibicao is null ? null : PredicadoDnfJson.ParaJson(campo.Exibicao),
         ["restricoes"] = RestricaoValorJson.ParaJson(campo.Restricoes),
         ["pedirConfirmacao"] = campo.PedirConfirmacao,
+        ["impedimento"] = campo.Impedimento is null ? null : PredicadoDnfJson.ParaJson(campo.Impedimento),
     };
 
     /// <summary>
@@ -135,7 +136,8 @@ internal static class ConteudoDoModeloJson
         Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade"))),
         Predicado(campo, "exibicao"),
         Remontar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes"))),
-        campo.GetProperty("pedirConfirmacao").GetBoolean());
+        campo.GetProperty("pedirConfirmacao").GetBoolean(),
+        Remontar(PredicadoDnfJson.ImpedimentoDeJson(campo.TryGetProperty("impedimento", out JsonElement impedimento) ? impedimento : default)));
 
     /// <summary>Só o nulo explícito é ausência; qualquer outro valor que não seja inteiro falha, como o resto da leitura.</summary>
     private static int? InteiroOuNulo(JsonElement valor) =>

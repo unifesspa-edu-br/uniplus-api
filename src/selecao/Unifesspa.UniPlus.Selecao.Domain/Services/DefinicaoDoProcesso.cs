@@ -95,5 +95,5 @@ public static class DefinicaoDoProcesso
             [.. grupos.OrderBy(static g => g.Ordem).Select(static g => new DefinicaoGrupo(
                 g.Codigo, g.Exibicao, g.Obrigatoriedade, g.Minimo, g.Maximo, [.. g.Subitens.OrderBy(static s => s.Ordem).Select(Item)], g.IncluiCandidato))]);
 
-    private static DefinicaoItem Item(FatoColetado fato) => new(fato.FatoCodigo, fato.Exibicao, fato.Obrigatoriedade, fato.Restricoes);
+    private static DefinicaoItem Item(FatoColetado fato) => new(fato.FatoCodigo, fato.Exibicao, fato.Obrigatoriedade, fato.Restricoes, fato.Impedimento);
 }

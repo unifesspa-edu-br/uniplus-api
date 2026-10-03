@@ -40,5 +40,5 @@ public static class ModeloFormularioMapping
     private static FatoColetadoInput ParaEntrada(ItemDoModelo campo) => new(
         campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao.ToCodigo(), EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade),
         EntradaDeRegras.ParaEntrada(campo.Exibicao), campo.EtapaCodigo, EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade.Predicado),
-        campo.Ajuda, campo.PedirConfirmacao, [.. campo.Restricoes.Select(EntradaDeRegras.ParaEntrada)]);
+        campo.Ajuda, campo.PedirConfirmacao, [.. campo.Restricoes.Select(EntradaDeRegras.ParaEntrada)], EntradaDeRegras.ParaEntrada(campo.Impedimento));
 }

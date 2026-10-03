@@ -33,7 +33,7 @@ public sealed class FormaDoGrupoTests
     [InlineData(FormaDoGrupo.MaximoDeSubitens + 1)]
     public void Conferir_QuantidadeDeCampos_ForaDoLimite_Recusa(int quantidade)
     {
-        List<FieldError> erros = Conferir(subitens: [.. Enumerable.Range(0, quantidade).Select(static i => ((string?)$"CAMPO_{i}", (string?)null))]);
+        List<FieldError> erros = Conferir(subitens: [.. Enumerable.Range(0, quantidade).Select(static i => ((string?)$"CAMPO_{i}", (string?)null, false))]);
 
         erros.Should().ContainSingle().Which.Error.Code.Should().Be(GrupoFormularioErrorCodes.SubitensForaDoLimite);
     }
@@ -70,18 +70,18 @@ public sealed class FormaDoGrupoTests
 
     [Fact]
     public void Conferir_CampoComSecaoPropria_Recusa() =>
-        Conferir(subitens: [("PARENTESCO", "DADOS")]).Should().ContainSingle()
+        Conferir(subitens: [("PARENTESCO", "DADOS", false)]).Should().ContainSingle()
             .Which.Should().Be(new FieldError("subitens[0].etapaCodigo", new DomainError(
                 GrupoFormularioErrorCodes.CampoComSecaoPropria, "O campo 'PARENTESCO' segue a seção do grupo e não declara seção própria.")));
 
     private static List<FieldError> Conferir(
         int minimo = 0,
         int? maximo = 5,
-        IReadOnlyList<(string?, string?)>? subitens = null,
+        IReadOnlyList<(string?, string?, bool)>? subitens = null,
         IEnumerable<string>? citados = null,
         Obrigatoriedade? obrigatoriedade = null) =>
         FormaDoGrupo.Conferir(
-            "COMPOSICAO", 1, "Composição familiar", minimo, maximo, subitens ?? [("PARENTESCO", null)], citados ?? [], obrigatoriedade ?? Obrigatoriedade.Sempre);
+            "COMPOSICAO", 1, "Composição familiar", minimo, maximo, subitens ?? [("PARENTESCO", null, false)], citados ?? [], obrigatoriedade ?? Obrigatoriedade.Sempre);
 
     private static PredicadoDnf Predicado(string fato) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;

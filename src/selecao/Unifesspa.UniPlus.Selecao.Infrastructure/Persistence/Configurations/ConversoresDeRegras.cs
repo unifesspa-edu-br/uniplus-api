@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Predicado, obrigatoriedade e restrições de valor das regras do formulário gravados em
+/// Predicado, obrigatoriedade, restrições de valor e impedimento das regras do formulário gravados em
 /// <c>jsonb</c>, na forma de <see cref="PredicadoDnfJson"/> e <see cref="RestricaoValorJson"/>: são
 /// lidos e gravados sempre inteiros, junto do item ou do termo que os declara.
 /// </summary>
@@ -44,6 +44,24 @@ internal static class ConversoresDeRegras
             (a, b) => SerializarRestricoes(a!) == SerializarRestricoes(b!),
             r => SerializarRestricoes(r).GetHashCode(StringComparison.Ordinal),
             r => LerRestricoes(SerializarRestricoes(r)));
+
+    // O EF não chama o conversor para nulo: a coluna nula é o item sem impedimento.
+    public static readonly ValueConverter<Impedimento?, string?> Impedimento =
+        new(impedimento => SerializarImpedimento(impedimento!), json => LerImpedimento(json!));
+
+    public static readonly ValueComparer<Impedimento?> ComparadorDeImpedimento =
+        new(
+            (a, b) => (a == null ? null : SerializarImpedimento(a)) == (b == null ? null : SerializarImpedimento(b)),
+            i => i == null ? 0 : SerializarImpedimento(i).GetHashCode(StringComparison.Ordinal),
+            i => i == null ? null : LerImpedimento(SerializarImpedimento(i)));
+
+    private static string SerializarImpedimento(Impedimento impedimento) => PredicadoDnfJson.ParaJson(impedimento).ToJsonString();
+
+    private static Impedimento LerImpedimento(string json)
+    {
+        using JsonDocument documento = JsonDocument.Parse(json);
+        return Exigir(PredicadoDnfJson.ImpedimentoDeJson(documento.RootElement))!;
+    }
 
     private static string SerializarRestricoes(IReadOnlyList<RestricaoValor> restricoes) =>
         RestricaoValorJson.ParaJson(restricoes).ToJsonString();

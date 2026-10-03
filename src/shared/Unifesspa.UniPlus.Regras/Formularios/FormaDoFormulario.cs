@@ -20,6 +20,9 @@ public static class FormaDoItem
     public const int FormatoMaxLength = 30;
     public const int AjudaMaxLength = 1000;
 
+    /// <summary>A mensagem que explica ao candidato por que a resposta impede a inscrição.</summary>
+    public const int MensagemDoImpedimentoMaxLength = 500;
+
     /// <summary>As casas decimais dos limites da faixa numérica, as mesmas com que o edital os congela.</summary>
     public const int CasasDecimaisDaFaixa = 4;
 
@@ -103,6 +106,7 @@ public static class FormaDoItem
     /// A forma inteira do item: a básica, a ajuda, o formato (só o campo de texto tem), nenhuma
     /// regra citando o próprio fato e as restrições cabendo no campo. A autorreferência é ciclo de
     /// comprimento um, recusada aqui com um erro específico, sem precisar conhecer os outros itens.
+    /// O impedimento é a exceção: cada cláusula dele cita a resposta do próprio campo.
     /// </summary>
     public static List<FieldError> Conferir(
         string? fatoCodigo,
@@ -113,7 +117,8 @@ public static class FormaDoItem
         string? ajuda,
         IEnumerable<string> fatosCitadosPelaExibicao,
         Obrigatoriedade obrigatoriedade,
-        IReadOnlyList<RestricaoValor> restricoes)
+        IReadOnlyList<RestricaoValor> restricoes,
+        Impedimento? impedimento = null)
     {
         ArgumentNullException.ThrowIfNull(fatosCitadosPelaExibicao);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
@@ -149,7 +154,46 @@ public static class FormaDoItem
         }
 
         erros.AddRange(ConferirRestricoes(codigo, tipoRenderizacao, restricoes));
+        if (impedimento is not null)
+        {
+            erros.AddRange(ConferirImpedimento(codigo, tipoRenderizacao, impedimento));
+        }
+
         return erros;
+    }
+
+    /// <summary>
+    /// O impedimento cabe no tipo do campo, cada cláusula dele cita a resposta do próprio campo, e a
+    /// mensagem ao candidato é obrigatória e limitada.
+    /// </summary>
+    private static IEnumerable<FieldError> ConferirImpedimento(string codigo, TipoRenderizacao tipoRenderizacao, Impedimento impedimento)
+    {
+        if (!Impedimento.CabeNoCampo(tipoRenderizacao))
+        {
+            yield return new("impedimento", new DomainError(
+                ItemFormularioErrorCodes.ImpedimentoNaoCabeNoCampo,
+                "O impedimento só cabe em campo booleano, numérico, de seleção ou de município: texto, data e endereço não entram em regra."));
+        }
+
+        // Sem cláusula, o OU sobre elas nunca se cumpre, e o "toda cláusula cita o campo" aprovaria em vazio.
+        if (impedimento.Quando.Clausulas.Count == 0)
+        {
+            yield return new("impedimento.quando", new DomainError(
+                ItemFormularioErrorCodes.ImpedimentoSemCondicao, "O impedimento tem a condição sobre a resposta do campo."));
+        }
+        else if (impedimento.Quando.Clausulas.Any(clausula => !clausula.Condicoes.Any(c => string.Equals(c.Fato, codigo, StringComparison.Ordinal))))
+        {
+            yield return new("impedimento.quando", new DomainError(
+                ItemFormularioErrorCodes.ImpedimentoSemOProprioCampo,
+                "Cada cláusula do impedimento cita a resposta do próprio campo; o bloqueio só por resposta anterior é da exibição."));
+        }
+
+        if (TextoOpcional(impedimento.Mensagem) is not { Length: <= MensagemDoImpedimentoMaxLength } mensagem || mensagem.Contains('\0', StringComparison.Ordinal))
+        {
+            yield return new("impedimento.mensagem", new DomainError(
+                ItemFormularioErrorCodes.ImpedimentoMensagemInvalida,
+                $"A mensagem que explica o impedimento ao candidato é obrigatória e tem no máximo {MensagemDoImpedimentoMaxLength} caracteres."));
+        }
     }
 
     /// <summary>Se o tipo de restrição se aplica ao tipo de campo.</summary>
@@ -245,7 +289,7 @@ public static class FormaDoGrupo
         string? rotulo,
         int minimo,
         int? maximo,
-        IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo)> subitens,
+        IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens,
         IEnumerable<string> fatosCitadosPelaExibicao,
         Obrigatoriedade obrigatoriedade)
     {
@@ -295,6 +339,12 @@ public static class FormaDoGrupo
             {
                 Recusar($"subitens[{indice}].etapaCodigo", GrupoFormularioErrorCodes.CampoComSecaoPropria,
                     $"O campo '{subitens[indice].FatoCodigo}' segue a seção do grupo e não declara seção própria.");
+            }
+
+            if (subitens[indice].TemImpedimento)
+            {
+                Recusar($"subitens[{indice}].impedimento", GrupoFormularioErrorCodes.CampoComImpedimento,
+                    $"O campo '{subitens[indice].FatoCodigo}' é de membro: o impedimento é da inscrição do candidato, não de um membro.");
             }
         }
 
