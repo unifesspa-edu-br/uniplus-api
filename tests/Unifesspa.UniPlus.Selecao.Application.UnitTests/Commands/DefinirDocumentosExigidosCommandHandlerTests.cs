@@ -159,7 +159,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]));
 
         ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
@@ -190,7 +190,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]));
 
         // O fato existe no catálogo, mas este processo não o coleta.
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
@@ -228,7 +228,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoFaixaEtaria()]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoFaixaEtaria()]));
 
         CondicaoGatilhoInput condicao = new(0, "FAIXA_ETARIA", "MAIOR_IGUAL", "18");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
@@ -281,7 +281,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[]));
 
         CondicaoGatilhoInput condicao = new(0, "FATO_INEXISTENTE", "IGUAL", "\"X\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
@@ -306,7 +306,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]));
 
         // A modalidade é fato derivado POR REGRA: sem regra declarada, o processo não a resolve
         // e a recusa seria outra. Declarar a derivação é o que deixa este teste chegar à
@@ -339,11 +339,11 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         Guid tipoDocumentoId = Guid.CreateVersion7();
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<FatoCandidatoView>)
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)
         [
             new FatoCandidatoView(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", null, "BOOLEANO", "DECLARADO", "ESCALAR",
                 null, "INSCRICAO", "CAMPO_INSCRICAO:MAIOR_IDADE", null, null, Ativo: true, Escopo: "MEMBRO_GRUPO"),
-        ]);
+        ]));
         return (processo, fase, mocks, tipoDocumentoId);
     }
 
@@ -408,7 +408,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]));
 
         ColetarFato(processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"");
@@ -446,7 +446,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]));
 
         ColetarFato(processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput porCodigo = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"DEFICIENCIA_VISUAL\"");
@@ -479,7 +479,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]));
 
         CondicaoGatilhoInput porNome = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"Deficiência visual\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [porNome], [], null, Qualquer, null);
@@ -503,7 +503,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]));
 
         ColetarFato(processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"");
@@ -899,7 +899,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         // fase INSCRICAO (ordem 1) — anterior. O gatilho nunca teria como já ter sido
         // resolvido para o candidato.
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]));
 
         ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
@@ -927,7 +927,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao(pontoResolucao)]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao(pontoResolucao)]));
 
         // O documento é exigido na fase HOMOLOGACAO (ordem 2) — SEXO conhecido na própria
         // fase ou numa fase anterior (INSCRICAO, ordem 1) satisfaz o gate.
@@ -954,7 +954,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         // SEXO resolve numa fase ("HOMOLOGACAO") que não existe no cronograma deste processo.
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]));
 
         ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
@@ -1005,7 +1005,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CadastrosVivos.FatosDeModalidade());
+            .Returns(CatalogoDoConjuntoBasico.Com(CadastrosVivos.FatosDeModalidade()));
         return (processo, mocks, tipoDocumentoId);
     }
 

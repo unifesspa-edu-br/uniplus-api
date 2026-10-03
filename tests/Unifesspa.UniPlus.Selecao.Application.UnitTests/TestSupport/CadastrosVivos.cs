@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cadastros de Configuração como os testes de outro assunto precisam vê-los: contendo os
@@ -98,7 +99,7 @@ internal static class CadastrosVivos
     public static IFatoCandidatoReader CatalogoDeFatos()
     {
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
-        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(FatosDeModalidade());
+        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(FatosDeModalidade()));
         return reader;
     }
 

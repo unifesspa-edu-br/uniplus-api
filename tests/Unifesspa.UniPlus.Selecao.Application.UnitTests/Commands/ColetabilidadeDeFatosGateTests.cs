@@ -73,9 +73,6 @@ public sealed class ColetabilidadeDeFatosGateTests
     private static FatoColetado FatoColetadoModalidade() =>
         FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!;
 
-    private static FatoColetado FatoColetadoCorRaca() =>
-        FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!;
-
     [Fact(DisplayName = "Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar — o gate precede a canonicalização")]
     public async Task Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar()
     {
@@ -208,7 +205,8 @@ public sealed class ColetabilidadeDeFatosGateTests
     public async Task Publicar_ComFatoColetadoAindaDeclarado_Aprova()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.DefinirItens([FatoColetadoCorRaca()], PrecondicaoIfMatch.Ausente)
+        // COR_RACA é coletado pela seção dos dados básicos do formulário de inscrição.
+        processo.DefinirItens([], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         IFatoCandidatoReader fatoCandidatoReader = ReaderCom(FatoCorRacaAindaDeclarado());
@@ -246,7 +244,7 @@ public sealed class ColetabilidadeDeFatosGateTests
     private static IFatoCandidatoReader ReaderCom(params FatoCandidatoView[] catalogo)
     {
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
-        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<FatoCandidatoView>)catalogo);
+        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)catalogo));
         return reader;
     }
 

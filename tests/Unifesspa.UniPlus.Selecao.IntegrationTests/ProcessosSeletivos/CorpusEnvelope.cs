@@ -360,21 +360,18 @@ internal static class CorpusEnvelope
             Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4): COR_RACA é coletado sem
-        // gate; RENDA é gatado por COR_RACA (pré-condição); MODALIDADE é derivado — âncora AC e a
-        // regra que contribui LB_PPI quando COR_RACA=PRETA E RENDA=ATE_1_SM. Exercita, no mesmo
-        // snapshot, as arestas de produção, pré-condição e derivação, com predicado DNF de duas
-        // condições numa cláusula. Ambos os códigos contribuídos (AC, LB_PPI) são ofertados.
+        // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4): COR_RACA vem da seção do
+        // conjunto básico, sem gate; RENDA é gatado por COR_RACA (pré-condição); MODALIDADE é
+        // derivado — âncora AC e a regra que contribui LB_PPI quando COR_RACA=PRETA E
+        // RENDA=ATE_1_SM. Exercita, no mesmo snapshot, as arestas de produção, pré-condição e
+        // derivação, com predicado DNF de duas condições numa cláusula. Ambos os códigos
+        // contribuídos (AC, LB_PPI) são ofertados. A seção traz também a UF do Geo, seleção com as
+        // UFs congeladas, e o município, sem lista, que cita a UF.
         processo.DefinirItens(Ordem([
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+            .. FormularioDeTeste.DadosBasicos(),
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
-            // A UF do Geo é seleção com as UFs congeladas; o município, sem lista, cita a UF.
-            FatoColetado.Criar("NATURALIDADE_UF", 3, "UF de nascimento", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.UnidadesFederativas).Value!,
-            FatoColetado.Criar("NATURALIDADE_MUNICIPIO", 4, "Município de nascimento", TipoRenderizacao.Municipio, Obrigatoriedade.Sempre, null,
-                restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
@@ -392,9 +389,10 @@ internal static class CorpusEnvelope
         processo.DefinirFormulario(
             FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
             [
-                EtapaFormulario.Criar(FormularioDeTeste.Secao, 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-                EtapaFormulario.Criar("PERTENCIMENTO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Pertencimento", null, null, corPreta).Value!,
-                EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+                FormularioDeTeste.Etapas()[0],
+                EtapaFormulario.Criar(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
+                EtapaFormulario.Criar("PERTENCIMENTO", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Pertencimento", null, null, corPreta).Value!,
+                EtapaFormulario.Criar("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
             ],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -845,13 +843,13 @@ internal static class CorpusEnvelope
             ufs.Reverse();
         }
 
-        return new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+        return CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
         {
             ["COR_RACA"] = corRaca,
             ["RENDA"] = renda,
             [CandidatoComoMembro.FatoParentesco] = parentesco,
             ["NATURALIDADE_UF"] = ufs,
-        };
+        });
     }
 
     /// <summary>

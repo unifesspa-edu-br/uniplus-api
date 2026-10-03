@@ -356,7 +356,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     /// — é o mesmo fato do catálogo, congelado nos dois blocos.
     /// </summary>
     internal static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveisDeReferencia() =>
-        new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+        CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
         {
             ["COR_RACA"] = [
                 new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
@@ -367,7 +367,7 @@ public sealed class EnvelopeCanonicoGoldenTests
                 new ValorDominioDeclaradoCongelado("ATE_1_SM", "Renda familiar per capita de até 1 salário mínimo.", 0),
                 new ValorDominioDeclaradoCongelado("ACIMA_1_SM", "Renda familiar per capita acima de 1 salário mínimo.", 1),
             ],
-        };
+        });
 
     internal static SnapshotCanonico CanonicalizarReferencia() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
@@ -583,9 +583,9 @@ public sealed class EnvelopeCanonicoGoldenTests
             new EntradaCanonicalizacao(processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
 
         canonicalizarSemDicionario.Should().Throw<InvalidOperationException>()
-            .WithMessage("*COR_RACA*",
-                "COR_RACA é o primeiro fato de seleção coletado (Ordem 0) — a ausência de entrada para ele é o " +
-                "primeiro erro de programação que o encoder encontra");
+            .WithMessage("*NACIONALIDADE*",
+                "NACIONALIDADE é o primeiro fato de seleção coletado, na seção do conjunto básico — a ausência de " +
+                "entrada para ele é o primeiro erro de programação que o encoder encontra");
     }
 
     /// <summary>issue #1077 — §3, CA-12: o canonicalizer nunca serializa uma lista vazia para um fato de seleção.</summary>
@@ -663,7 +663,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             new(ValoresSelecionaveisDeReferencia()) { ["COR_RACA"] = empatados };
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis));
+            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis)));
 
         JsonArray valoresCorRaca = EnvelopeCodecRoundTripTests.Envelope(canonico)["fatosColetados"]!.AsArray()
             .Single(f => f!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["valoresSelecionaveis"]!.AsArray();
@@ -821,7 +821,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         processo.DefinirClassificacao(classificacao.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId)).Bytes;
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados())).Bytes;
     }
 
     private static JsonObject EnvelopeComoObjeto() =>

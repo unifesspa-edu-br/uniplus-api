@@ -81,7 +81,7 @@ public sealed class DesativacaoNoCatalogoTests
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         processo.DefinirItens(
             [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = Catalogo(CorRaca());
 
         ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["COR_RACA"]!
@@ -91,7 +91,7 @@ public sealed class DesativacaoNoCatalogoTests
             [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
              FatoColetado.Criar("BAIXA_RENDA", 1, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
                  [CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!]).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         catalogo["BAIXA_RENDA"] = new FatoCandidatoView(
             Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
             null, "INSCRICAO", "CAMPO_INSCRICAO:BAIXA_RENDA", null, null, true);

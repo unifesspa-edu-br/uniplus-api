@@ -45,7 +45,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM",
             [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "ENEM 2025", 0).Value!,
@@ -76,7 +76,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!,
             FatoColetado.Criar("OPCAO_LISTA_ESPERA", 1, "Lista de espera", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso, restricoes: [new OpcoesDasRespostas(["OPCAO_CURSO_1"])]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("OPCAO_CURSO_1",
             [.. opcoesDaFonte.Select(static (o, i) => OpcaoDeclaradaFato.Criar("OPCAO_CURSO_1", o, o, i).Value!)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -113,7 +113,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         processo.DefinirItens(
             [FatoColetado.Criar("MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.MunicipiosDoBonus).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
@@ -134,7 +134,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         processo.DefinirItens(
             [FatoColetado.Criar("NATURALIDADE_UF", 0, "UF de nascimento", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.UnidadesFederativas).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
@@ -159,7 +159,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
@@ -183,7 +183,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {

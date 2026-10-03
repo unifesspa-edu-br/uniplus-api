@@ -98,7 +98,8 @@ public sealed class PoliticaDeOrdenacaoTests
     private static EntradaCanonicalizacao Entrada(
         ProcessoSeletivo processo,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatos = null) =>
-        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadadosFatos);
+        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadadosFatos,
+            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
 
     /// <summary>
     /// Um Guid com só o último dígito hexadecimal variando por <paramref name="sufixo"/> — as
@@ -464,7 +465,8 @@ public sealed class PoliticaDeOrdenacaoTests
 
         JsonArray fatosJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["fatosColetados"]!.AsArray();
 
-        fatosJson.Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Should().Equal(
+        // O formulário de inscrição traz também a seção do conjunto básico, que vem antes.
+        fatosJson.Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Where(static c => c is "ZETA_FATO" or "ALFA_FATO").Should().Equal(
             ["ZETA_FATO", "ALFA_FATO"],
             "Ordem (0 para ZETA_FATO, 1 para ALFA_FATO) governa a posição — o FatoCodigo, em ordem alfabética, apontaria para o oposto");
     }
@@ -804,7 +806,8 @@ public sealed class PoliticaDeOrdenacaoTests
         JsonObject grafoJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
             ["grafoDependencia"]!.AsObject();
 
-        List<string> ordemTopologica = [.. grafoJson["ordemTopologica"]!.AsArray().Select(static n => n!.GetValue<string>())];
+        // Só os nós do caso: o formulário de inscrição traz também os do conjunto básico.
+        List<string> ordemTopologica = [.. grafoJson["ordemTopologica"]!.AsArray().Select(static n => n!.GetValue<string>()).Where(DoCaso)];
         ordemTopologica.Should().HaveCountGreaterThanOrEqualTo(2, "pré-condição: o caminho existe e tem nós de A_FATO e de B_FATO");
 
         List<string> ordenadosAlfabeticamente = [.. ordemTopologica.OrderBy(static r => r, StringComparer.Ordinal)];
@@ -826,13 +829,14 @@ public sealed class PoliticaDeOrdenacaoTests
             "a ordem topológica é CALCULADA por GrafoDependenciaConjunta (Kahn, produtor antes do consumidor) e apenas PRESERVADA " +
             "pela projeção — nunca recalculada nem reordenada alfabeticamente aqui");
 
-        grafoJson["nos"]!.AsArray().Select(static n => n!["idCanonico"]!.GetValue<string>()).Should().Equal(
+        grafoJson["nos"]!.AsArray().Select(static n => n!["idCanonico"]!.GetValue<string>()).Where(DoCaso).Should().Equal(
             ["CAMPO/B_FATO", "FATO/B_FATO", "CAMPO/A_FATO", "FATO/A_FATO"],
             "os nós saem na MESMA ordem canônica que GrafoDependenciaConjunta calcula (ordem de coleta efetiva, depois Classe/Codigo) — " +
             "não a ordem alfabética, que poria CAMPO/A_FATO primeiro");
 
         grafoJson["arestas"]!.AsArray()
             .Select(static a => (Tipo: a!["tipo"]!.GetValue<string>(), Origem: a["origem"]!.GetValue<string>(), Destino: a["destino"]!.GetValue<string>()))
+            .Where(static a => DoCaso(a.Origem))
             .Should().Equal(
                 [
                     ("PRODUCAO", "CAMPO/B_FATO", "FATO/B_FATO"),
@@ -842,6 +846,9 @@ public sealed class PoliticaDeOrdenacaoTests
                 "as arestas saem ordenadas por (Tipo, Origem, Destino) canônicos — as duas de PRODUCAO desempatam pela ordem de coleta " +
                 "efetiva da origem (B_FATO antes de A_FATO), o oposto da ordem alfabética da pré-condição acima");
     }
+
+    private static bool DoCaso(string idCanonico) =>
+        idCanonico.EndsWith("/A_FATO", StringComparison.Ordinal) || idCanonico.EndsWith("/B_FATO", StringComparison.Ordinal);
 
     // ── camada 1 — Bônus regional (Story #1466) ──
 

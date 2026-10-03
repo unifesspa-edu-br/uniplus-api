@@ -13,6 +13,7 @@ using Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -30,17 +31,20 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
 {
     private const string ProcessoMediaType = "application/vnd.uniplus.processo-seletivo.v1+json";
 
+    // Os itens do processo, depois da seção do conjunto básico, que ocupa as primeiras ordens.
+    private static readonly int PrimeiraOrdem = ConjuntoBasicoDaInscricao.Itens.Count;
+
     private static readonly object[] FatosOriginais =
     [
-        new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null },
-        new { fatoCodigo = "BAIXA_RENDA", ordem = 1, rotulo = "Baixa renda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "NUNCA", precondicao = (object?)null },
+        new { fatoCodigo = "QUILOMBOLA", ordem = PrimeiraOrdem, rotulo = "Quilombola", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "NUNCA", precondicao = (object?)null },
+        new { fatoCodigo = "BAIXA_RENDA", ordem = PrimeiraOrdem + 1, rotulo = "Baixa renda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "NUNCA", precondicao = (object?)null },
     ];
 
     // Mesmas duas coletas, ORDENS TROCADAS — o que a sessão edita e o descarte tem de desfazer.
     private static readonly object[] FatosTrocados =
     [
-        new { fatoCodigo = "BAIXA_RENDA", ordem = 0, rotulo = "Baixa renda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "NUNCA", precondicao = (object?)null },
-        new { fatoCodigo = "COR_RACA", ordem = 1, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null },
+        new { fatoCodigo = "BAIXA_RENDA", ordem = PrimeiraOrdem, rotulo = "Baixa renda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "NUNCA", precondicao = (object?)null },
+        new { fatoCodigo = "QUILOMBOLA", ordem = PrimeiraOrdem + 1, rotulo = "Quilombola", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "NUNCA", precondicao = (object?)null },
     ];
 
     private static readonly object[] RegrasOriginais =
@@ -86,13 +90,12 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
         (await ctx.PutFatosAsync(FatosTrocados, ifMatch: etag)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using JsonDocument doc = await ctx.ObterProcessoAsync();
-        JsonElement fatos = doc.RootElement.GetProperty("formularios")[0].GetProperty("fatosColetados");
-        fatos.EnumerateArray().Select(f => f.GetProperty("fatoCodigo").GetString())
-            .Should().Equal(["BAIXA_RENDA", "COR_RACA"], "a troca de ordens sob sessão persistiu");
+        ItensForaDoConjuntoBasico(doc).Select(f => f.GetProperty("fatoCodigo").GetString())
+            .Should().Equal(["BAIXA_RENDA", "QUILOMBOLA"], "a troca de ordens sob sessão persistiu");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        db.Set<FatoColetado>().Count(f => f.ProcessoSeletivoId == ctx.ProcessoId).Should().Be(2, "sem linha órfã");
+        db.Set<FatoColetado>().Count(f => f.ProcessoSeletivoId == ctx.ProcessoId).Should().Be(PrimeiraOrdem + 2, "sem linha órfã");
     }
 
     [Fact(DisplayName = "Editar fatos de um processo publicado SEM sessão é 422")]
@@ -121,18 +124,24 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
 
         // A coleta voltou byte-a-byte à ordem congelada.
         using JsonDocument doc = await ctx.ObterProcessoAsync();
-        JsonElement fatos = doc.RootElement.GetProperty("formularios")[0].GetProperty("fatosColetados");
-        fatos.EnumerateArray().Select(f => f.GetProperty("fatoCodigo").GetString())
-            .Should().Equal(["COR_RACA", "BAIXA_RENDA"], "as ordens congeladas voltaram");
-        fatos[0].GetProperty("ordem").GetInt32().Should().Be(0);
-        fatos[1].GetProperty("ordem").GetInt32().Should().Be(1);
+        JsonElement[] fatos = ItensForaDoConjuntoBasico(doc);
+        fatos.Select(f => f.GetProperty("fatoCodigo").GetString())
+            .Should().Equal(["QUILOMBOLA", "BAIXA_RENDA"], "as ordens congeladas voltaram");
+        fatos[0].GetProperty("ordem").GetInt32().Should().Be(PrimeiraOrdem);
+        fatos[1].GetProperty("ordem").GetInt32().Should().Be(PrimeiraOrdem + 1);
 
-        // Sem órfãos: exatamente dois fatos coletados persistidos.
+        // Sem órfãos: exatamente os básicos e os dois fatos coletados persistidos.
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         int total = db.Set<FatoColetado>().Count(f => f.ProcessoSeletivoId == ctx.ProcessoId);
-        total.Should().Be(2, "o descarte não deixa linha órfã");
+        total.Should().Be(PrimeiraOrdem + 2, "o descarte não deixa linha órfã");
     }
+
+    private static JsonElement[] ItensForaDoConjuntoBasico(JsonDocument processo) =>
+    [
+        .. processo.RootElement.GetProperty("formularios")[0].GetProperty("fatosColetados").EnumerateArray()
+            .Where(static f => !ConjuntoBasicoDaInscricao.Fatos.Contains(f.GetProperty("fatoCodigo").GetString()!)),
+    ];
 
     private static async Task<HttpResponseMessage> Aceito(Task<HttpResponseMessage> chamada)
     {

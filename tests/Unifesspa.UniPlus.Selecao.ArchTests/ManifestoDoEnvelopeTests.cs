@@ -369,6 +369,7 @@ public sealed class ManifestoDoEnvelopeTests
                 ("FatosCitados", "Derivada das Precondicoes, da Obrigatoriedade e das Restricoes — a lista de citações é recomputada, nunca persistida."),
                 ("Condicoes", "Derivada das Precondicoes, da Obrigatoriedade e das Restricoes — recomputada, nunca persistida."),
                 ("OpcoesDoProcesso", "Derivada de OrigemValores — congelá-la duplicaria a fonte de verdade."),
+                ("Exibicao", "Derivada das Precondicoes — o predicado é recomputado, nunca persistido."),
             ]),
 
         // Grupos repetíveis (UNI-REQ-0146) — congelados no bloco de topo `gruposColetados`, com os

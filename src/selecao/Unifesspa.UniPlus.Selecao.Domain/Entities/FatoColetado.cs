@@ -205,6 +205,9 @@ public sealed class FatoColetado : EntityBase
 
     internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
 
+    /// <summary>A pré-condição de exibição na forma avaliável; nula quando o item sempre aparece.</summary>
+    public Regras.ValueObjects.PredicadoDnf? Exibicao => ParaPredicado();
+
     /// <summary>
     /// O predicado de pré-condição na forma avaliável, ou <see langword="null"/> quando o fato é
     /// coletado incondicionalmente. Um predicado sem cláusula nenhuma avaliaria falso — que é o

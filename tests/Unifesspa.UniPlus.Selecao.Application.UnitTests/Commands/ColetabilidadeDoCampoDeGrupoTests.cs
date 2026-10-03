@@ -30,7 +30,7 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
         FatoColetado campo = FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!;
         GrupoColetado grupo = GrupoColetado.Criar(
             "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Nunca, [campo]).Value!;
-        processo.DefinirItens([], grupos: [grupo]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
             ["PARENTESCO"] = new(

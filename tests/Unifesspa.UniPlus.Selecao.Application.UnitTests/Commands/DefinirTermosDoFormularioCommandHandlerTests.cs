@@ -23,7 +23,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Termos exigidos pelo formulário (UNI-REQ-0086): a versão vem do catálogo e o conteúdo dela é
 /// congelado; as condições citam só o que o processo coleta ou deriva; a obrigatoriedade tem
-/// predicado se, e só se, é <c>QUANDO</c>.
+/// predicado se, e só se, é <c>QUANDO</c>. Os casos usam o formulário de habilitação, que não tem a
+/// seção do conjunto básico e coleta só o que o caso declara.
 /// </summary>
 public sealed class DefinirTermosDoFormularioCommandHandlerTests
 {
@@ -44,7 +45,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             Substitute.For<ITermoConsentimentoReader>(),
             Substitute.For<ISelecaoUnitOfWork>());
         mocks.Repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
                 ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", null, "GLOBAL", Ativo: true),
@@ -54,7 +55,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
                 null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true),
             new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", null, "CATEGORICO", "DERIVADO", "ESCALAR",
                 ["MENOR_DE_18", "DE_18_A_59"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true),
-        ]);
+        ]));
         mocks.TermoReader.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
         [
             new VersaoTermoConsentimentoView(TermoId, VersaoId, "Autorização de consulta", "Autorizo a consulta.", "Lei 12.711/2012",
@@ -65,7 +66,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
     private static Task<Result<MutacaoAceita>> HandleAsync(Mocks mocks, ProcessoSeletivo processo, params TermoExigidoInput[] termos) =>
         DefinirTermosDoFormularioCommandHandler.Handle(
-            new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Inscricao, termos, PrecondicaoIfMatch.Ausente),
+            new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao, termos, PrecondicaoIfMatch.Ausente),
             mocks.Repository, mocks.FatoCandidatoReader, mocks.TermoReader, mocks.UnitOfWork, CancellationToken.None);
 
     private static ProcessoSeletivo ProcessoQueColetaCorRaca()
@@ -76,7 +77,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         processo.DefinirItens(
             [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.Ausente, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -93,7 +94,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
                     FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
                     FatoColetado.Criar("DATA_NASCIMENTO", 1, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null).Value!,
                 ],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                PrecondicaoIfMatch.Ausente, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         }
 
         Result<MutacaoAceita> resultado = await HandleAsync(

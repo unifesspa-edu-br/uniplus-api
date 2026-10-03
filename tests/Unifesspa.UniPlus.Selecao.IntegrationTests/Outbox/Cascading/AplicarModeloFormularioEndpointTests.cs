@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A aplicação do modelo de formulário ao processo pelo HTTP, contra o Postgres (UNI-REQ-0144): a
@@ -66,7 +67,7 @@ public sealed class AplicarModeloFormularioEndpointTests
         }
 
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
-        processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
+        processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
         processo.FormularioDe(FinalidadeFormulario.Inscricao)!.ModeloOrigemId.Should().Be(modeloId);
     }
 
@@ -80,7 +81,7 @@ public sealed class AplicarModeloFormularioEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
-        processo.FatosColetados.Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
+        processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
         processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().NotBeNull("o formulário de habilitação continua, só sem o fato");
     }
 
@@ -106,7 +107,7 @@ public sealed class AplicarModeloFormularioEndpointTests
         reaplicado.StatusCode.Should().Be(HttpStatusCode.OK, await reaplicado.Content.ReadAsStringAsync());
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
         processo.GruposColetados.Should().ContainSingle().Which.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MAIOR_IDADE");
-        processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
+        processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
     }
 
     private async Task<Guid> SemearProcessoAsync(string nome)

@@ -12,6 +12,7 @@ using Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -38,14 +39,14 @@ public sealed class LeituraTipadaColetaEndpointTests
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Get_ProjetaColetaEDerivacaoTipadas));
 
-        // Coleta: COR_RACA (ordem 0, sem pré-condição); BAIXA_RENDA (ordem 1, com pré-condição citando o anterior).
+        // Coleta: COR_RACA vem da seção do conjunto básico, sem pré-condição; BAIXA_RENDA, depois
+        // dela, com pré-condição citando COR_RACA.
         (await ctx.PutFatosAsync(
         [
-            new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE", precondicao = (object?)null },
             new
             {
                 fatoCodigo = "BAIXA_RENDA",
-                ordem = 1,
+                ordem = 0,
                 rotulo = "Baixa renda",
                 tipoRenderizacao = "BOOLEANO",
                 obrigatoriedade = "NUNCA",
@@ -78,16 +79,16 @@ public sealed class LeituraTipadaColetaEndpointTests
         // Fatos coletados — dentro do formulário de inscrição, ordenados por ordem, precondicao
         // ausente é null.
         JsonElement fatos = root.GetProperty("formularios")[0].GetProperty("fatosColetados");
-        fatos.GetArrayLength().Should().Be(2);
+        fatos.GetArrayLength().Should().Be(ConjuntoBasicoDaInscricao.Itens.Count + 1);
 
-        JsonElement corRaca = fatos[0];
+        JsonElement corRaca = fatos.EnumerateArray().Single(static f => f.GetProperty("fatoCodigo").GetString() == "COR_RACA");
         corRaca.GetProperty("fatoCodigo").GetString().Should().Be("COR_RACA");
         corRaca.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
         corRaca.GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
         corRaca.GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
         corRaca.GetProperty("precondicao").ValueKind.Should().Be(JsonValueKind.Null, "fato sem pré-condição é null, nunca []");
 
-        JsonElement baixaRenda = fatos[1];
+        JsonElement baixaRenda = fatos[ConjuntoBasicoDaInscricao.Itens.Count];
         baixaRenda.GetProperty("fatoCodigo").GetString().Should().Be("BAIXA_RENDA");
         JsonElement precondicao = baixaRenda.GetProperty("precondicao");
         precondicao.ValueKind.Should().Be(JsonValueKind.Array);
@@ -108,7 +109,7 @@ public sealed class LeituraTipadaColetaEndpointTests
         regras[1].GetProperty("quando").ValueKind.Should().Be(JsonValueKind.Array);
     }
 
-    [Fact(DisplayName = "GET de um processo sem coleta devolve listas vazias tipadas")]
+    [Fact(DisplayName = "GET de um processo sem itens próprios devolve só os dados básicos e listas vazias tipadas")]
     public async Task Get_SemColeta_ListasVazias()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Get_SemColeta_ListasVazias));
@@ -116,7 +117,8 @@ public sealed class LeituraTipadaColetaEndpointTests
         using JsonDocument doc = await ctx.ObterProcessoAsync();
         JsonElement root = doc.RootElement;
 
-        root.GetProperty("formularios")[0].GetProperty("fatosColetados").GetArrayLength().Should().Be(0);
+        root.GetProperty("formularios")[0].GetProperty("fatosColetados").EnumerateArray()
+            .Select(static f => f.GetProperty("fatoCodigo").GetString()).Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo));
         root.GetProperty("regrasDerivacao").GetArrayLength().Should().Be(0);
     }
 

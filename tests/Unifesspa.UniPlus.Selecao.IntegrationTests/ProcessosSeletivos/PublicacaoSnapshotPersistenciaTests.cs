@@ -140,7 +140,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
@@ -307,7 +307,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
             canonico.Bytes,

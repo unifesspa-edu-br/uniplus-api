@@ -1022,11 +1022,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Define ou substitui o formulário de uma finalidade: a fase em que é respondido, o título e
     /// as etapas (UNI-REQ-0144). Sob retificação, acrescentar formulário é permitido. A fase, quando
     /// informada, está no cronograma e é a que a finalidade pede; o rascunho pode ainda não a ter.
-    /// Os itens que já estão em seções do formulário continuam em seções dele, na ordem delas.
+    /// Os itens que já estão em seções do formulário continuam em seções dele, na ordem delas. O
+    /// formulário que nasce com <paramref name="itensDaCriacao"/> — o de inscrição, com o conjunto
+    /// básico do candidato — nasce com eles, numa operação só, e as exibições das seções já os citam.
     /// </summary>
     public Result DefinirFormulario(
         FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<EtapaFormulario> etapas,
-        PrecondicaoIfMatch precondicao)
+        PrecondicaoIfMatch precondicao, IReadOnlyList<FatoColetado>? itensDaCriacao = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
@@ -1036,7 +1038,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        IReadOnlyList<FieldError> recusas = ConferirFormulario(finalidade, faseId, titulo, etapas);
+        IReadOnlyList<FatoColetado>? itensIniciais = FormularioDe(finalidade) is null && itensDaCriacao is { Count: > 0 } ? itensDaCriacao : null;
+        IReadOnlyList<FieldError> recusas = ConferirFormulario(finalidade, faseId, titulo, etapas, itensDaCriacao: itensIniciais);
         if (recusas.Count > 0)
         {
             return Result.ValidationFailure(recusas);
@@ -1050,8 +1053,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
         else
         {
+            if (itensIniciais is not null && ConferirFatosColetados(novo, finalidade, itensIniciais, []) is { IsFailure: true } recusaDosItens)
+            {
+                return recusaDosItens;
+            }
+
             novo.VincularProcessoSeletivo(Id);
             _formularios.Add(novo);
+            if (itensIniciais is not null)
+            {
+                GravarFatosColetados(finalidade, itensIniciais, []);
+            }
         }
 
         Rascunho?.IncrementarRevisao();
@@ -1065,7 +1077,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// recusada — a estrutura não é conferida, porque recusaria a etapa que falta.
     /// </summary>
     public IReadOnlyList<FieldError> ConferirFormulario(
-        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<EtapaFormulario> etapas, bool etapasCompletas = true)
+        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<EtapaFormulario> etapas, bool etapasCompletas = true,
+        IReadOnlyList<FatoColetado>? itensDaCriacao = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
@@ -1085,12 +1098,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 // Os itens não estão no corpo do formulário: a recusa aponta as etapas que os
                 // deixariam fora de seção, e a mensagem nomeia o item.
                 recusas.AddRange(EstruturaFormulario
-                    .ValidarItens(estrutura, ItensDaFinalidade(finalidade), secaoObrigatoria: false)
+                    .ValidarItens(
+                        estrutura,
+                        itensDaCriacao is null ? ItensDaFinalidade(finalidade) : ParaEstrutura(itensDaCriacao, []),
+                        secaoObrigatoria: false)
                     .Select(static recusa => recusa with { Field = "etapas" }));
             }
 
-            // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais.
-            FatoColetado[] itens = [.. Itens.Where(f => f.Finalidade == finalidade)];
+            // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais
+            // ou, na criação, com os que o formulário recebe ao nascer.
+            FatoColetado[] itens = [.. itensDaCriacao ?? [.. Itens.Where(f => f.Finalidade == finalidade)]];
             DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, FatosDaInscricao(Itens));
             EtapaDoGrafo[] etapasDoGrafo = [.. etapas.Select(static e => e.ParaGrafo())];
             ItemDoGrafo[] itensDoGrafo = [.. itens.Select(static i => i.ParaGrafo())];
@@ -2330,6 +2347,23 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(FormularioInexistente(finalidade));
         }
 
+        if (ConferirFatosColetados(formulario, finalidade, fatosColetados, grupos) is { IsFailure: true } recusa)
+        {
+            return recusa;
+        }
+
+        GravarFatosColetados(finalidade, fatosColetados, grupos);
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Confere os itens e os grupos que o formulário passa a coletar, sem mutar o processo: o teto,
+    /// o grafo, as citações, o código e o produtor únicos e as seções.
+    /// </summary>
+    private Result ConferirFatosColetados(
+        FormularioProcesso formulario, FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
+    {
         if (FormaDoItem.ValidarQuantidade(QuantidadeNoTeto(fatosColetados.Count, grupos)) is [var excesso, ..])
         {
             return Result.ValidationFailure([excesso]);
@@ -2371,18 +2405,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         HashSet<string> novos = new(fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
         if (_campos.FirstOrDefault(f => f.Finalidade != finalidade && novos.Contains(f.FatoCodigo)) is { } jaProduzido)
         {
+            string outro = EstruturaFormulario.ParaToken(jaProduzido.Finalidade);
             return Result.Failure(new DomainError(
                 FatoColetadoErrorCodes.FatoDuplicado,
-                $"O fato '{jaProduzido.FatoCodigo}' já é coletado pelo formulário de {EstruturaFormulario.ParaToken(jaProduzido.Finalidade)}."));
+                finalidade == FinalidadeFormulario.Inscricao && ConjuntoBasicoDaInscricao.Fatos.Contains(jaProduzido.FatoCodigo)
+                    ? $"O fato '{jaProduzido.FatoCodigo}' é dos dados básicos do candidato, que o formulário de inscrição coleta; tire-o do formulário de {outro} antes."
+                    : $"O fato '{jaProduzido.FatoCodigo}' já é coletado pelo formulário de {outro}."));
         }
 
         IReadOnlyList<FieldError> itensForaDasSecoes = EstruturaFormulario.ValidarItens(
             formulario.Estrutura, ParaEstrutura(fatosColetados, grupos), secaoObrigatoria: false);
-        if (itensForaDasSecoes.Count > 0)
-        {
-            return Result.ValidationFailure(itensForaDasSecoes);
-        }
+        return itensForaDasSecoes.Count > 0 ? Result.ValidationFailure(itensForaDasSecoes) : Result.Success();
+    }
 
+    /// <summary>Os itens e os grupos já conferidos passam a ser os que o formulário coleta.</summary>
+    private void GravarFatosColetados(FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
+    {
         // Sai tudo o que o formulário coletava, itens e campos dos grupos, e entra o novo.
         _campos.RemoveAll(f => f.Finalidade == finalidade);
         foreach (FatoColetado fato in fatosColetados)
@@ -2393,9 +2431,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         SubstituirGrupos(finalidade, grupos);
-
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
     }
 
     /// <summary>
@@ -3209,6 +3244,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
         new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciaDeTermoSemFormaDeAceite() is null),
         new ItemConformidade("formulario_inscricao_ausente", DimensaoConformidade.ColetaDeFatos, "Formulários: processo com inscrição própria tem formulário de inscrição", PendenciaDoFormularioDeInscricao() is null),
+        new ItemConformidade("formulario_inscricao_sem_conjunto_basico", DimensaoConformidade.ColetaDeFatos, "Formulários: o de inscrição coleta o conjunto básico de dados do candidato", PendenciaDoConjuntoBasico() is null),
         new ItemConformidade("formulario_fase_incoerente", DimensaoConformidade.ColetaDeFatos, "Formulários: cada um na fase do cronograma que a finalidade pede", PendenciaDaFaseDosFormularios() is null),
         new ItemConformidade("formulario_isencao_sem_taxa", DimensaoConformidade.ColetaDeFatos, "Formulários: isenção de taxa só em processo que cobra taxa", PendenciaDaIsencaoSemTaxa() is null),
         new ItemConformidade("formulario_item_fora_de_secao", DimensaoConformidade.ColetaDeFatos, "Formulários: todo item numa seção, na ordem das seções", PendenciaDosItensForaDeSecao() is null),
@@ -4072,6 +4108,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return semFormularioDeInscricao;
         }
 
+        if (PendenciaDoConjuntoBasico() is { } semConjuntoBasico)
+        {
+            return semConjuntoBasico;
+        }
+
         if (PendenciaDaFaseDosFormularios() is { } faseDoFormulario)
         {
             return faseDoFormulario;
@@ -4366,6 +4407,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         OrigemCandidatos == OrigemCandidatos.InscricaoPropria && FormularioDe(FinalidadeFormulario.Inscricao) is null
             ? new DomainError(FormularioProcessoErrorCodes.InscricaoSemFormulario, "O processo tem inscrição própria e ainda não tem formulário de inscrição.")
             : null;
+
+    /// <summary>
+    /// O formulário de inscrição coleta todo o conjunto básico de dados do candidato, na seção
+    /// reservada: a escrita o garante, e a publicação recusa o formulário a que falta algum dado
+    /// básico nela.
+    /// </summary>
+    private DomainError? PendenciaDoConjuntoBasico()
+    {
+        if (FormularioDe(FinalidadeFormulario.Inscricao) is null)
+        {
+            return null;
+        }
+
+        HashSet<string> coletados = new(
+            Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
+                    && string.Equals(f.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal))
+                .Select(static f => f.FatoCodigo),
+            StringComparer.Ordinal);
+        int faltam = ConjuntoBasicoDaInscricao.Fatos.Count(f => !coletados.Contains(f));
+        return faltam == 0
+            ? null
+            : new DomainError(
+                FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico,
+                $"O formulário de inscrição não coleta {faltam} dos dados básicos do candidato. Grave de novo o formulário e, depois, os itens dele: a gravação repõe a seção dos dados básicos.");
+    }
 
     /// <summary>
     /// Todo formulário tem a fase que a finalidade pede e que continua no cronograma — a definição

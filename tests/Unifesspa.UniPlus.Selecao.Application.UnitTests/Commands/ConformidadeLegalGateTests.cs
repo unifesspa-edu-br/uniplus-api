@@ -78,7 +78,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -119,7 +119,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -164,7 +164,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -204,7 +204,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -248,7 +248,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -283,7 +283,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -323,7 +323,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -367,7 +367,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -412,7 +412,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
+            CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);

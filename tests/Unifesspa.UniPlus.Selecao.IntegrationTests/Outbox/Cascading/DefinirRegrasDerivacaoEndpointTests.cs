@@ -37,9 +37,8 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_DerivacaoValida_204));
 
-        // A condição cita COR_RACA — precisa estar coletado no processo.
-        (await ctx.PutFatosAsync([new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null }]))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        // A condição cita COR_RACA, que o formulário de inscrição coleta na seção do conjunto básico.
+        (await ctx.PutFatosAsync([])).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         object[] corpo =
         [

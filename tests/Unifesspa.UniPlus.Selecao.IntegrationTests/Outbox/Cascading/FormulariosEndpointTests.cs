@@ -147,10 +147,7 @@ public sealed class FormulariosEndpointTests
 
         (await ctx.PutFormularioAsync("Formulário de Inscrição"))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ctx.PutFatosAsync(
-        [
-            new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE", precondicao = (object?)null },
-        ])).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ctx.PutFatosAsync([])).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await ctx.PublicarAsync();
 
         // O formulário segue a divulgação, que chega pela fila durável — o 204 da publicação volta
@@ -166,16 +163,16 @@ public sealed class FormulariosEndpointTests
         root.GetProperty("finalidade").GetString().Should().Be("INSCRICAO");
         root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
         root.GetProperty("etapas").EnumerateArray().Select(static e => e.GetProperty("codigo").GetString())
-            .Should().Equal("DADOS", "REVISAO");
+            .Should().Equal(ConjuntoBasicoDaInscricao.CodigoDaSecao, "DADOS", "REVISAO");
         root.GetProperty("termos").GetArrayLength().Should().Be(0);
         JsonElement fatos = root.GetProperty("fatosColetados");
-        fatos.GetArrayLength().Should().Be(1);
-        JsonElement fato = fatos[0];
+        fatos.GetArrayLength().Should().Be(ConjuntoBasicoDaInscricao.Itens.Count);
+        JsonElement fato = fatos.EnumerateArray().Single(static f => f.GetProperty("fatoCodigo").GetString() == "COR_RACA");
         fato.GetProperty("fatoCodigo").GetString().Should().Be("COR_RACA");
         fato.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
         fato.GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
         fato.GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
-        fato.GetProperty("etapaCodigo").GetString().Should().Be("DADOS");
+        fato.GetProperty("etapaCodigo").GetString().Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
     [Fact(DisplayName = "GET público exige revalidação, inclusive na recusa anterior à divulgação")]

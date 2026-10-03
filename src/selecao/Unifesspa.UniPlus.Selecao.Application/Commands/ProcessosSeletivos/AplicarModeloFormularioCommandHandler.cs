@@ -105,6 +105,20 @@ public static partial class AplicarModeloFormularioCommandHandler
         List<int> indicesDosItens = [];
         List<FatoColetadoInput> itensACopiar = [];
         IReadOnlyList<FatoColetadoInput> itensDoModelo = conteudo.Itens ?? [];
+        IReadOnlyList<GrupoColetadoInput> gruposDoModelo = conteudo.Grupos ?? [];
+        IReadOnlyList<EtapaFormularioInput> etapasDoModelo = conteudo.Etapas ?? [];
+
+        // O formulário de inscrição coleta o conjunto básico na seção reservada: o básico que o
+        // modelo não traz entra como o conjunto básico o define.
+        if (finalidade == FinalidadeFormulario.Inscricao)
+        {
+            (itensDoModelo, gruposDoModelo, List<FieldError> mescla) =
+                ConjuntoBasicoDaInscricao.MesclarItens(itensDoModelo, gruposDoModelo, ConjuntoBasicoDaInscricao.Referencia(itensDoModelo));
+            (etapasDoModelo, List<FieldError> mesclaDasEtapas) =
+                ConjuntoBasicoDaInscricao.MesclarEtapas(etapasDoModelo, ConjuntoBasicoDaInscricao.SecaoDe(etapasDoModelo));
+            erros.AddRange(mescla.Concat(mesclaDasEtapas).Select(static e => NoModelo(e)));
+        }
+
         for (int i = 0; i < itensDoModelo.Count; i++)
         {
             FatoColetadoInput item = itensDoModelo[i];
@@ -136,7 +150,6 @@ public static partial class AplicarModeloFormularioCommandHandler
         // campo seria outra lista que o modelo não compôs.
         List<int> indicesDosGrupos = [];
         List<GrupoColetadoInput> gruposACopiar = [];
-        IReadOnlyList<GrupoColetadoInput> gruposDoModelo = conteudo.Grupos ?? [];
         for (int i = 0; i < gruposDoModelo.Count; i++)
         {
             GrupoColetadoInput grupo = gruposDoModelo[i];
@@ -154,7 +167,7 @@ public static partial class AplicarModeloFormularioCommandHandler
         (List<GrupoColetado> grupos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(EscritaDosItens.LerGrupos(gruposACopiar), contexto);
         erros.AddRange(errosDosGrupos.Select(e => NoModelo(e, "grupos", indicesDosGrupos)));
 
-        EtapasLidas etapas = EscritaDasEtapas.Ler(conteudo.Etapas ?? []);
+        EtapasLidas etapas = EscritaDasEtapas.Ler(etapasDoModelo);
         erros.AddRange(etapas.Erros.Concat(EscritaDasEtapas.ConferirExibicoes(etapas, contexto)).Select(static e => NoModelo(e)));
 
         // Termos: a versão removida do catálogo sai da cópia.

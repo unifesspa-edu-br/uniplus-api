@@ -29,7 +29,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         Result resultado = processo.DefinirItens([Item("RENDA", 0)], grupos: [Grupo("COMPOSICAO", 1, Campo("PARENTESCO", 0))]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("RENDA");
+        processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("RENDA");
         GrupoColetado grupo = processo.GruposColetados.Should().ContainSingle().Subject;
         grupo.ProcessoSeletivoId.Should().Be(processo.Id);
         grupo.Subitens.Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
@@ -46,7 +46,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         processo.DefinirItens([Item("RENDA", 0)], grupos: listaVazia ? [] : null).IsSuccess.Should().BeTrue();
 
         processo.GruposColetados.Should().HaveCount(esperados);
-        processo.Campos.Should().HaveCount(1 + esperados);
+        processo.Campos.ForaDoConjuntoBasico().Should().HaveCount(1 + esperados);
     }
 
     [Fact]
@@ -113,7 +113,11 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([], grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
-        EtapaFormulario[] semADeDados = [EtapaFormulario.Criar("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!];
+        EtapaFormulario[] semADeDados =
+        [
+            FormularioDeTeste.Etapas()[0],
+            EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
+        ];
 
         Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, semADeDados, PrecondicaoIfMatch.Ausente);
 
@@ -169,7 +173,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         processo.AplicarModeloDeFormulario(copia, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.GruposColetados.Single().Subitens.Select(static s => s.FatoCodigo).Should().Equal("PARENTESCO", "MAIOR_IDADE");
-        processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("RENDA");
+        processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("RENDA");
     }
 
     [Fact]
