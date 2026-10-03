@@ -339,6 +339,20 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         _processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Ordem.Should().Be(FormularioDeTeste.PrimeiraOrdemDeInscricao);
     }
 
+    [Fact(DisplayName = "O modelo de inscrição gravado com a seção dos dados básicos e um item que cita um deles é aplicado")]
+    public async Task Handle_ModeloDeInscricaoComASecao_CitaDadoBasico()
+    {
+        FatoColetadoInput porCor = Item("QUILOMBOLA", FormularioDeTeste.PrimeiraOrdemDeInscricao) with
+        {
+            Precondicao = [[new CondicaoPrecondicaoInput("COR_RACA", "IGUAL", JsonSerializer.SerializeToElement("PRETA"))]],
+        };
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens, porCor]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        _processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.FatosCitados.Should().Equal("COR_RACA");
+    }
+
     [Fact(DisplayName = "O modelo de inscrição que altera um dado básico é recusado na posição do item no modelo")]
     public async Task Handle_ModeloDeInscricaoComDadoBasicoAlterado_Recusa()
     {

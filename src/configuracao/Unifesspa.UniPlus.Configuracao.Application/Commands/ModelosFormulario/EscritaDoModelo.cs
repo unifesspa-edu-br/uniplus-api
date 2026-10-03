@@ -8,6 +8,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -20,12 +22,16 @@ internal static class EscritaDoModelo
     private const string IndiceUnicoDoCodigo = "ix_modelos_formulario_codigo";
 
     /// <summary>
-    /// O conteúdo lido e as recusas da leitura e do catálogo, acumuladas (ADR-0125). O tipo de
-    /// processo é conferido só quando muda: desativar o tipo recusa vínculo novo, e o modelo que já
-    /// o usava continua com ele.
+    /// O conteúdo lido e as recusas da leitura e do catálogo, acumuladas (ADR-0125). O modelo de
+    /// inscrição coleta o conjunto básico na seção reservada, como o formulário do processo: o item
+    /// básico omitido entra como está gravado no modelo, e o enviado tem de ser igual a ele. O tipo
+    /// de processo é conferido só quando muda: desativar o tipo recusa vínculo novo, e o modelo que
+    /// já o usava continua com ele.
     /// </summary>
     public static async Task<(ConteudoLido Conteudo, CatalogoDoModelo Catalogo, List<FieldError> Erros)> LerEConferirAsync(
         ConteudoDoModeloInput? entrada,
+        FinalidadeFormulario finalidade,
+        ConteudoDoModeloInput? gravado,
         string? tipoProcessoCodigo,
         string? tipoProcessoAnterior,
         VinculosDoModelo existentes,
@@ -36,13 +42,14 @@ internal static class EscritaDoModelo
     {
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         CatalogoDoModelo catalogo = CatalogoDoModelo.De(fatos);
-        ConteudoLido conteudo = ConteudoLido.Ler(entrada, catalogo.Formatos);
+        (ConteudoDoModeloInput? mesclada, List<FieldError> daSecao) = ComASecaoDosDadosBasicos(entrada, finalidade, gravado);
+        ConteudoLido conteudo = ConteudoLido.Ler(mesclada, catalogo.Formatos);
 
         IReadOnlyList<VersaoTermoConsentimentoView> versoes = await termoReader
             .ListarVersoesAsync([.. conteudo.Termos.Select(static t => t.Termo.VersaoId).Distinct()], cancellationToken)
             .ConfigureAwait(false);
         List<FieldError> erros = [.. ModeloFormulario.NoConteudo(
-            conteudo.Erros.Concat(ConferenciaDoModelo.Conferir(conteudo, catalogo, versoes.ToDictionary(static v => v.VersaoId), existentes)))];
+            daSecao.Concat(conteudo.Erros).Concat(ConferenciaDoModelo.Conferir(conteudo, catalogo, versoes.ToDictionary(static v => v.VersaoId), existentes)))];
 
         // O texto que o banco não grava não é consultado: a recusa dele é a do modelo. O código é
         // comparado aparado, a forma em que o modelo e o cadastro de tipo de processo o gravam.
@@ -58,6 +65,21 @@ internal static class EscritaDoModelo
         }
 
         return (conteudo, catalogo, erros);
+    }
+
+    private static (ConteudoDoModeloInput? Entrada, List<FieldError> Erros) ComASecaoDosDadosBasicos(
+        ConteudoDoModeloInput? entrada, FinalidadeFormulario finalidade, ConteudoDoModeloInput? gravado)
+    {
+        if (entrada is null || finalidade != FinalidadeFormulario.Inscricao)
+        {
+            return (entrada, []);
+        }
+
+        (IReadOnlyList<FatoColetadoInput> itens, IReadOnlyList<GrupoColetadoInput> grupos, List<FieldError> erros) =
+            ConjuntoBasicoDaInscricao.MesclarItens(entrada.Itens ?? [], entrada.Grupos ?? [], ConjuntoBasicoDaInscricao.Referencia(gravado?.Itens ?? []));
+        (IReadOnlyList<EtapaFormularioInput> etapas, List<FieldError> daSecao) =
+            ConjuntoBasicoDaInscricao.MesclarEtapas(entrada.Etapas ?? [], ConjuntoBasicoDaInscricao.SecaoDe(gravado?.Etapas ?? []));
+        return (entrada with { Itens = itens, Grupos = grupos, Etapas = etapas }, [.. erros, .. daSecao]);
     }
 
     /// <summary>Grava o modelo novo: o código é único entre todos os modelos, desativados inclusive.</summary>
