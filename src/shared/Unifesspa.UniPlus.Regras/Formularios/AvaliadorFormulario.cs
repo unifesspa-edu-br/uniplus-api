@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Avalia um formulário contra as respostas de um candidato: resolve cada fato em ordem topológica,
-/// com os fatos derivados intercalados assim que as suas dependências estão resolvidas, e diz, por
+/// com os fatos derivados e os agregados sobre grupos intercalados assim que as suas dependências
+/// estão resolvidas, e diz, por
 /// item, se ele aparece, se é obrigatório e quais restrições a resposta viola; por termo, se aparece e
 /// se é obrigatório; e, por grupo repetível, o mesmo para cada ocorrência (UNI-REQ-0074,
 /// UNI-REQ-0145, UNI-REQ-0146, ADR-0135).
@@ -59,6 +60,8 @@ public static class AvaliadorFormulario
             [.. definicao.Etapas.SelectMany(static etapa => etapa.Grupos.Select(grupo => (etapa, grupo)))];
         Dictionary<string, (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo)> grupoPorCodigo =
             grupos.ToDictionary(static par => par.Grupo.Codigo, StringComparer.Ordinal);
+        Dictionary<string, DefinicaoAgregado> agregadoPorFato =
+            definicao.Agregados.ToDictionary(static a => a.Codigo, StringComparer.Ordinal);
 
         List<NoDoGrafo> nos =
         [
@@ -71,6 +74,7 @@ public static class AvaliadorFormulario
                 [.. (par.Etapa.Exibicao?.FatosCitados ?? []).Concat(par.Grupo.FatosDoCandidatoCitados)],
                 itens.Count + posicao)),
             .. definicao.Derivacoes.Select(static d => new NoDoGrafo(d.CodigoFato, d.DependenciasDeclaradas, PrioridadeDerivado)),
+            .. definicao.Agregados.Select(static a => new NoDoGrafo(a.Codigo, [a.GrupoCodigo], PrioridadeDerivado)),
         ];
         OrdemTopologica ordem = GrafoDeFatos.Ordenar(nos);
 
@@ -83,6 +87,12 @@ public static class AvaliadorFormulario
             if (derivacaoPorFato.TryGetValue(codigo, out RegrasDerivacaoFato? derivacao))
             {
                 fatos[codigo] = Derivar(derivacao, fatos);
+                continue;
+            }
+
+            if (agregadoPorFato.TryGetValue(codigo, out DefinicaoAgregado? agregado))
+            {
+                fatos[codigo] = AgregadoDeGrupo.Calcular(avaliacaoPorGrupo[agregado.GrupoCodigo], agregado.FatoDeMembro, agregado.Operacao);
                 continue;
             }
 
