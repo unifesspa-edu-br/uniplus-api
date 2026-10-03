@@ -78,6 +78,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // especializado (ADR-0067). Vagas/bônus/desempate/classificação entram
         // nas fatias F2–F4 sobre o rol_de_regras, com seus próprios códigos.
         new("ProcessoSeletivo.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.nao_encontrado", "Processo Seletivo não encontrado")),
+        new("ProcessoSeletivo.OcorrenciaSimuladaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida", "Ocorrência simulada sem identidade própria no grupo")),
         new("ProcessoSeletivo.LocalidadeAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.localidade_ausente", "Localidade que rege a contagem dos prazos não declarada")),
         new("ProcessoSeletivo.FusoInstitucionalNaoReconhecido", new DomainErrorMapping(StatusCodes.Status500InternalServerError, "uniplus.selecao.processo_seletivo.fuso_institucional_nao_reconhecido", "O fuso institucional aplicado não é uma zona reconhecida")),
         new("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_declarado", "Convenção de contagem dos prazos não declarada")),

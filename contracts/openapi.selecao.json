@@ -3959,6 +3959,121 @@
         ]
       }
     },
+    "/api/selecao/processos-seletivos/{id}/pre-visualizacao": {
+      "post": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreVisualizacaoDoProcessoInput"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreVisualizacaoDoProcessoInput"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/PreVisualizacaoDoProcessoInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.pre-visualizacao-processo-seletivo.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreVisualizacaoDoProcessoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem a autoriza\u00E7\u00E3o exigida pela rota (ex.: a role plataforma-admin).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/criterios-desempate": {
       "put": {
         "tags": [
@@ -8055,6 +8170,27 @@
           }
         }
       },
+      "AlternativasSimuladasDto": {
+        "required": [
+          "grupoId",
+          "minimo"
+        ],
+        "type": "object",
+        "properties": {
+          "grupoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "AncoraDoRecurso": {
         "enum": [
           "nenhuma",
@@ -10483,6 +10619,61 @@
           }
         }
       },
+      "DocumentoSimuladoDto": {
+        "required": [
+          "exigenciaId",
+          "tipoDocumentoCodigo",
+          "tipoDocumentoNome",
+          "obrigatorio",
+          "faseId",
+          "etapaId",
+          "situacao",
+          "entidadeId",
+          "alternativas"
+        ],
+        "type": "object",
+        "properties": {
+          "exigenciaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoDocumentoCodigo": {
+            "type": "string"
+          },
+          "tipoDocumentoNome": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "faseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "etapaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "entidadeId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "alternativas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlternativasSimuladasDto"
+            }
+          }
+        }
+      },
       "EtapaCertameDto": {
         "required": [
           "nome",
@@ -10550,6 +10741,21 @@
           },
           "emiteParecerIndividual": {
             "type": "boolean"
+          }
+        }
+      },
+      "EtapaConcluidaInput": {
+        "required": [
+          "finalidade",
+          "etapa"
+        ],
+        "type": "object",
+        "properties": {
+          "finalidade": {
+            "type": "string"
+          },
+          "etapa": {
+            "type": "string"
           }
         }
       },
@@ -11579,6 +11785,38 @@
           }
         }
       },
+      "FormularioSimuladoDto": {
+        "required": [
+          "finalidade",
+          "itens",
+          "grupos",
+          "termos"
+        ],
+        "type": "object",
+        "properties": {
+          "finalidade": {
+            "type": "string"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemSimuladoDto"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoSimuladoDto"
+            }
+          },
+          "termos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermoSimuladoDto"
+            }
+          }
+        }
+      },
       "FundamentoIsencaoDto": {
         "required": [
           "codigo",
@@ -11885,6 +12123,47 @@
           }
         }
       },
+      "GrupoSimuladoDto": {
+        "required": [
+          "codigo",
+          "etapaCodigo",
+          "visivel",
+          "obrigatorio",
+          "contagemValida",
+          "ocorrenciaDoCandidatoValida",
+          "ocorrencias"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "visivel": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "string"
+          },
+          "contagemValida": {
+            "type": "boolean"
+          },
+          "ocorrenciaDoCandidatoValida": {
+            "type": "boolean"
+          },
+          "ocorrencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OcorrenciaSimuladaDto"
+            }
+          }
+        }
+      },
       "IdadeMaximaEmissaoDto": {
         "required": [
           "valor",
@@ -12103,6 +12382,39 @@
               "string"
             ],
             "format": "uuid"
+          }
+        }
+      },
+      "ItemSimuladoDto": {
+        "required": [
+          "fatoCodigo",
+          "etapaCodigo",
+          "visivel",
+          "obrigatorio",
+          "restricoesVioladas"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "visivel": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "string"
+          },
+          "restricoesVioladas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -12571,6 +12883,45 @@
           }
         }
       },
+      "OcorrenciaSimuladaDto": {
+        "required": [
+          "id",
+          "itens"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemSimuladoDto"
+            }
+          }
+        }
+      },
+      "OcorrenciaSimuladaInput": {
+        "required": [
+          "id",
+          "respostas"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "respostas": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
       "OfertaAtendimentoEspecializadoDto": {
         "required": [
           "id",
@@ -12969,6 +13320,71 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "PreVisualizacaoDoProcessoDto": {
+        "required": [
+          "formularios",
+          "documentos"
+        ],
+        "type": "object",
+        "properties": {
+          "formularios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormularioSimuladoDto"
+            }
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoSimuladoDto"
+            }
+          }
+        }
+      },
+      "PreVisualizacaoDoProcessoInput": {
+        "required": [
+          "respostas",
+          "grupos",
+          "etapasConcluidas",
+          "pressupostos"
+        ],
+        "type": "object",
+        "properties": {
+          "respostas": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "grupos": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/OcorrenciaSimuladaInput"
+              }
+            }
+          },
+          "etapasConcluidas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/EtapaConcluidaInput"
+            }
+          },
+          "pressupostos": {
+            "type": [
+              "null",
+              "object"
+            ]
           }
         }
       },
@@ -14492,6 +14908,25 @@
                 "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
               }
             }
+          }
+        }
+      },
+      "TermoSimuladoDto": {
+        "required": [
+          "codigo",
+          "visivel",
+          "obrigatorio"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "visivel": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "string"
           }
         }
       },
