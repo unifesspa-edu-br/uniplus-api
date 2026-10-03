@@ -61,29 +61,32 @@ public sealed class GrupoRepetivelEndpointTests
         inscricao.GetProperty("fatosColetados").GetArrayLength().Should().Be(0, "o campo do grupo não é item do formulário");
     }
 
-    [Fact(DisplayName = "O grupo que inclui o candidato sem o campo de parentesco é recusado")]
-    public async Task DefinirItens_GrupoQueIncluiOCandidatoSemParentesco_Recusa()
+    [Fact(DisplayName = "O grupo que inclui o candidato sem o campo de parentesco é recusado no mesmo lote das demais recusas do grupo")]
+    public async Task DefinirItens_GrupoQueIncluiOCandidatoSemParentesco_RecusaJuntoDasDemais()
     {
         string campo = await SemearFatoDeMembroAsync();
         Guid processoId = await SemearProcessoAsync();
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage recusado = await DefinirGrupoAsync(client, processoId, campo, comParentesco: false);
+        HttpResponseMessage recusado = await DefinirGrupoAsync(client, processoId, campo, comParentesco: false, rotulo: "", minimo: 0, rotuloDoCampo: "");
 
         recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await recusado.Content.ReadAsStringAsync()).Should().Contain("uniplus.grupo_formulario.candidato_como_membro_incompleto")
-            .And.Contain("grupos[0].subitens");
+        using JsonDocument problema = JsonDocument.Parse(await recusado.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
+            .Should().Contain(["grupos[0].rotulo", "grupos[0].minimo", "grupos[0].subitens", "grupos[0].subitens[0].rotulo"]);
     }
 
     /// <summary>O PUT dos itens com a composição familiar sem máximo que inclui o candidato.</summary>
-    private static Task<HttpResponseMessage> DefinirGrupoAsync(HttpClient client, Guid processoId, string campo, bool comParentesco)
+    private static Task<HttpResponseMessage> DefinirGrupoAsync(
+        HttpClient client, Guid processoId, string campo, bool comParentesco,
+        string rotulo = "Composição familiar", int minimo = 1, string rotuloDoCampo = "Trabalha no campo")
     {
         object[] subitens =
         [
             .. comParentesco
                 ? new object[] { new { fatoCodigo = CandidatoComoMembro.FatoParentesco, ordem = 0, rotulo = "Parentesco", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE" } }
                 : [],
-            new { fatoCodigo = campo, ordem = 1, rotulo = "Trabalha no campo", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" },
+            new { fatoCodigo = campo, ordem = 1, rotulo = rotuloDoCampo, tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" },
         ];
         return EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", new
         {
@@ -92,8 +95,8 @@ public sealed class GrupoRepetivelEndpointTests
             {
                 new
                 {
-                    codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo = "Composição familiar", etapaCodigo = "DADOS",
-                    minimo = 1, maximo = (int?)null, incluiCandidato = true, obrigatoriedade = "NUNCA", subitens,
+                    codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo, etapaCodigo = "DADOS",
+                    minimo, maximo = (int?)null, incluiCandidato = true, obrigatoriedade = "NUNCA", subitens,
                 },
             },
         }, exigeSucesso: false);

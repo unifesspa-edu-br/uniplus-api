@@ -195,7 +195,8 @@ public static class AvaliadorFormulario
         AvaliacaoOcorrencia[] ocorrencias = [.. respondidas.Select(o => AvaliarOcorrencia(etapa.Codigo, grupo, o, etapaConcluida, fatos))];
         int quantas = ocorrencias.Length;
         bool contagemValida = (grupo.Maximo is not { } maximo || quantas <= maximo) && (quantas >= grupo.Minimo || (quantas == 0 && obrigatorio == Ternario.Falso));
-        bool candidatoValido = !grupo.IncluiCandidato || CandidatoComoMembro.TemUmaOcorrenciaDoCandidato(respondidas);
+        // A lista vazia, que só vale no grupo opcional, não tem ocorrência do candidato a conferir.
+        bool candidatoValido = !grupo.IncluiCandidato || quantas == 0 || CandidatoComoMembro.TemUmaOcorrenciaDoCandidato(respondidas);
         if (!contagemValida || !candidatoValido)
         {
             return Avaliacao(semResposta, ocorrencias, contagemValida, candidatoValido);
