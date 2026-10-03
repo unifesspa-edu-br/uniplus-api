@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -31,10 +32,10 @@ public static class CriarModeloFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await EscritaDoModelo.LerEConferirAsync(
-            command.Conteudo, command.TipoProcessoCodigo, tipoProcessoAnterior: null, VinculosDoModelo.Nenhum,
-            fatoRepository, termoReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
         FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(command.Finalidade);
+        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await EscritaDoModelo.LerEConferirAsync(
+            command.Conteudo, finalidade, gravado: null, command.TipoProcessoCodigo, tipoProcessoAnterior: null, VinculosDoModelo.Nenhum,
+            fatoRepository, termoReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
         if (conteudo.Erros.Count > 0)
         {
             erros.AddRange(ModeloFormulario.ConferirCadastro(command.Codigo, command.Nome, command.Descricao, command.TipoProcessoCodigo, finalidade));
@@ -81,7 +82,8 @@ public static class AtualizarModeloFormularioCommandHandler
             async modelo =>
             {
                 (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await EscritaDoModelo.LerEConferirAsync(
-                    command.Conteudo, command.TipoProcessoCodigo, modelo.TipoProcessoCodigo, ConferenciaDoModelo.VinculosGravados(modelo.Conteudo),
+                    command.Conteudo, modelo.Finalidade, modelo.ToView().Conteudo, command.TipoProcessoCodigo, modelo.TipoProcessoCodigo,
+                    ConferenciaDoModelo.VinculosGravados(modelo.Conteudo),
                     fatoRepository, termoReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
                 if (conteudo.Erros.Count > 0)
                 {

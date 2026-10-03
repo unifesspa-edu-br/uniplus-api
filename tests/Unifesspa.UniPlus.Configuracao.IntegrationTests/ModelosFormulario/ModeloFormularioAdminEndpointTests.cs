@@ -74,6 +74,31 @@ public sealed class ModeloFormularioAdminEndpointTests
         (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao", corpo: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
+    [Fact(DisplayName = "O modelo de inscrição ganha a seção dos dados básicos, cita um deles sem declará-lo e recusa alterá-lo")]
+    public async Task ModeloDeInscricao_SecaoDosDadosBasicos()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, ModeloDeInscricao(CodigoUnico()));
+        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        JsonObject lido = await ObterAsync(client, id);
+        lido["conteudo"]!["etapas"]![0]!["codigo"]!.GetValue<string>().Should().Be("DADOS_BASICOS");
+        JsonArray itens = lido["conteudo"]!["itens"]!.AsArray();
+        itens.Where(static i => i!["etapaCodigo"]!.GetValue<string>() == "DADOS_BASICOS").Should().HaveCount(22);
+
+        // O conteúdo lido volta à escrita sem conversão; o dado básico alterado é recusado.
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Inscrição", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo = lido["conteudo"] }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        JsonNode alterado = lido["conteudo"]!.DeepClone();
+        alterado["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["rotulo"] = "Raça";
+        HttpResponseMessage recusada = await EnviarAsync(
+            client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Inscrição", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo = alterado });
+
+        recusada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await recusada.Content.ReadAsStringAsync()).Should().Contain("uniplus.estrutura_formulario.dado_basico_alterado");
+    }
+
     [Fact(DisplayName = "Item de fato derivado é recusado pela conferência contra o catálogo")]
     public async Task Criar_ItemDeFatoDerivado_Retorna422()
     {
@@ -197,6 +222,39 @@ public sealed class ModeloFormularioAdminEndpointTests
                     tipoRenderizacao = "BOOLEANO",
                     obrigatoriedade = "SEMPRE",
                     precondicao = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } },
+                    etapaCodigo = "DADOS",
+                },
+            },
+        },
+    };
+
+    /// <summary>
+    /// Um modelo de inscrição com a pergunta de renda exibida a quem se declarou preto: cor ou raça
+    /// vem da seção dos dados básicos, que o modelo não declara.
+    /// </summary>
+    private static object ModeloDeInscricao(string codigo) => new
+    {
+        codigo,
+        nome = "Inscrição",
+        finalidade = "INSCRICAO",
+        conteudo = new
+        {
+            titulo = "Inscrição",
+            etapas = new object[]
+            {
+                new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados", descricao = (string?)null, aviso = (string?)null },
+                new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão", descricao = (string?)null, aviso = (string?)null },
+            },
+            itens = new object[]
+            {
+                new
+                {
+                    fatoCodigo = "BAIXA_RENDA",
+                    ordem = 0,
+                    rotulo = "Baixa renda",
+                    tipoRenderizacao = "BOOLEANO",
+                    obrigatoriedade = "SEMPRE",
+                    precondicao = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
                     etapaCodigo = "DADOS",
                 },
             },
