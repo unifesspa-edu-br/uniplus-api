@@ -34,7 +34,7 @@ public static class ModeloFormularioMapping
                 [.. conteudo.Grupos.Select(static g => new GrupoColetadoInput(
                     g.Codigo, g.Ordem, g.Rotulo, g.EtapaCodigo, g.Minimo, g.Maximo, EntradaDeRegras.ParaEntrada(g.Exibicao),
                     EntradaDeRegras.ParaEntrada(g.Obrigatoriedade), EntradaDeRegras.ParaEntrada(g.Obrigatoriedade.Predicado),
-                    [.. g.Subitens.Select(ParaEntrada)]))]));
+                    [.. g.Subitens.Select(ParaEntrada)], g.IncluiCandidato))]));
     }
 
     private static FatoColetadoInput ParaEntrada(ItemDoModelo campo) => new(

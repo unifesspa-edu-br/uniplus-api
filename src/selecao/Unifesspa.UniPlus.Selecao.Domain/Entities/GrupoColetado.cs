@@ -46,14 +46,18 @@ public sealed class GrupoColetado : EntityBase
 
     public Obrigatoriedade Obrigatoriedade { get; private set; } = Obrigatoriedade.Nunca;
 
+    /// <summary>O próprio candidato é um dos membros, identificado pelo parentesco (UNI-REQ-0146).</summary>
+    public bool IncluiCandidato { get; private set; }
+
     /// <summary>Os campos de cada ocorrência; a ordem dentro do grupo é a de cada um.</summary>
     public IReadOnlyCollection<FatoColetado> Subitens => _subitens.AsReadOnly();
 
     private GrupoColetado() { }
 
     /// <summary>
-    /// Acumula as violações da forma do grupo (ADR-0125); a citação dos campos e a posição do grupo
-    /// são do formulário inteiro, conferidas pelo processo.
+    /// Acumula as violações da forma do grupo e, quando ele inclui o candidato, as da identificação
+    /// da ocorrência dele (ADR-0125); a citação dos campos e a posição do grupo são do formulário
+    /// inteiro, conferidas pelo processo.
     /// </summary>
     public static Result<GrupoColetado> Criar(
         string codigo,
@@ -65,13 +69,20 @@ public sealed class GrupoColetado : EntityBase
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
         IReadOnlyList<FatoColetado> subitens,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma)
+        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
+        bool incluiCandidato = false)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         ArgumentNullException.ThrowIfNull(subitens);
 
         List<FieldError> erros = FormaDoGrupo.Conferir(
             codigo, ordem, rotulo, minimo, maximo, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo))], exibicao?.FatosCitados ?? [], obrigatoriedade);
+        if (incluiCandidato)
+        {
+            erros.AddRange(CandidatoComoMembro.Conferir(
+                minimo, [.. subitens.Select(static s => (s.FatoCodigo, !s.SemPrecondicao, s.Obrigatoriedade, s.Restricoes))]));
+        }
+
         if (erros.Count > 0)
         {
             return Result<GrupoColetado>.ValidationFailure(erros);
@@ -87,6 +98,7 @@ public sealed class GrupoColetado : EntityBase
             Maximo = maximo,
             Exibicao = exibicao,
             Obrigatoriedade = obrigatoriedade,
+            IncluiCandidato = incluiCandidato,
         };
         foreach (FatoColetado subitem in subitens)
         {

@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -60,8 +61,10 @@ public sealed class ModeloFormularioReaderTests
         tipoNaoGravavel.Should().BeEmpty();
         lidoDesativado!.Ativo.Should().BeFalse();
         lidoDesativado.Conteudo.Itens!.Single().FatoCodigo.Should().Be("CERTIFICADO");
-        lidoDesativado.Conteudo.Grupos!.Single().Subitens.Single().FatoCodigo.Should().Be("MAIOR_IDADE");
-        lidoDesativado.Conteudo.Grupos!.Single().Maximo.Should().BeNull("o grupo sem máximo é gravado e lido sem máximo");
+        GrupoColetadoInput grupo = lidoDesativado.Conteudo.Grupos!.Single();
+        grupo.Subitens.Select(static s => s.FatoCodigo).Should().Equal(CandidatoComoMembro.FatoParentesco, "MAIOR_IDADE");
+        grupo.Maximo.Should().BeNull("o grupo sem máximo é gravado e lido sem máximo");
+        grupo.IncluiCandidato.Should().BeTrue();
     }
 
     private static ModeloFormulario Novo(string prefixo, string? tipoProcessoCodigo)
@@ -81,7 +84,11 @@ public sealed class ModeloFormularioReaderTests
                 [
                     new GrupoDoModelo(
                         "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
-                        [new("MAIOR_IDADE", 0, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)]),
+                        [
+                            new(CandidatoComoMembro.FatoParentesco, 0, null, "Parentesco", TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Sempre, null, [], false),
+                            new("MAIOR_IDADE", 1, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false),
+                        ],
+                        IncluiCandidato: true),
                 ]),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }

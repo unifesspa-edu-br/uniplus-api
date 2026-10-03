@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
+using Unifesspa.UniPlus.Regras.Formularios;
+
 /// <summary>
 /// Fonte única do seed de <c>fato_valor_dominio</c> (ADR-0116): a descrição por
 /// valor dos fatos categóricos <b>estáticos</b> desta colheita —
-/// <c>COR_RACA</c> (6), <c>SEXO</c> (3) e <c>NACIONALIDADE</c> (3). Consumida pela
+/// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>NACIONALIDADE</c> (3) e <c>PARENTESCO</c> (12). Consumida pela
 /// configuração EF Core (<c>HasData</c> na migration) e pelos testes de
 /// integração, mesmo papel de <see cref="FatoCandidatoSeed"/> para o pai.
 /// </summary>
@@ -23,7 +25,7 @@ public static class FatoValorDominioSeed
     private static Guid FatoCandidatoId(string codigo) =>
         FatoCandidatoSeed.Itens.Single(item => item.Codigo == codigo).Id;
 
-    /// <summary>As doze linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE).</summary>
+    /// <summary>As linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE + 12 PARENTESCO).</summary>
     public static IReadOnlyList<FatoValorDominioSeedItem> Itens { get; } =
     [
         // ── COR_RACA ───────────────────────────────────────────────────────
@@ -57,6 +59,34 @@ public static class FatoValorDominioSeed
             "Brasileiro naturalizado, conforme processo de naturalização reconhecido.", 1, true),
         new(SeedId(12), FatoCandidatoId("NACIONALIDADE"), "ESTRANGEIRO",
             "Cidadão estrangeiro, não brasileiro.", 2, true),
+
+        // ── PARENTESCO ───────────────────────────────────────────────────
+        // A relação de cada membro com o candidato; o próprio candidato é o membro que o grupo que
+        // o inclui identifica.
+        new(SeedId(13), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), CandidatoComoMembro.ProprioCandidato,
+            "O próprio candidato.", 0, true),
+        new(SeedId(14), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "CONJUGE_OU_COMPANHEIRO",
+            "Cônjuge ou companheiro(a) do candidato.", 1, true),
+        new(SeedId(15), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "FILHO_OU_ENTEADO",
+            "Filho(a) ou enteado(a) do candidato.", 2, true),
+        new(SeedId(16), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "PAI_OU_MAE",
+            "Pai ou mãe do candidato.", 3, true),
+        new(SeedId(17), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "PADRASTO_OU_MADRASTA",
+            "Padrasto ou madrasta do candidato.", 4, true),
+        new(SeedId(18), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "IRMAO",
+            "Irmão ou irmã do candidato.", 5, true),
+        new(SeedId(19), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "AVO",
+            "Avô ou avó do candidato.", 6, true),
+        new(SeedId(20), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "NETO",
+            "Neto(a) do candidato.", 7, true),
+        new(SeedId(21), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "SOGRO",
+            "Sogro ou sogra do candidato.", 8, true),
+        new(SeedId(22), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "GENRO_OU_NORA",
+            "Genro ou nora do candidato.", 9, true),
+        new(SeedId(23), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "OUTRO_PARENTE",
+            "Outro parente do candidato.", 10, true),
+        new(SeedId(24), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "NAO_PARENTE",
+            "Pessoa sem parentesco com o candidato que integra o grupo familiar.", 11, true),
     ];
 }
 

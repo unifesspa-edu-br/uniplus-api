@@ -76,7 +76,8 @@ public sealed record GrupoColetadoInput(
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
     string? Obrigatoriedade,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade,
-    IReadOnlyList<FatoColetadoInput> Subitens);
+    IReadOnlyList<FatoColetadoInput> Subitens,
+    bool IncluiCandidato = false);
 
 /// <summary>
 /// Uma etapa do formulário: seção (<c>SECAO</c>) ou bloco de sistema (<c>BLOCO</c>, com o bloco em

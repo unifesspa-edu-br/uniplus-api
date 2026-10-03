@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Fonte única do seed do catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0077,
@@ -221,6 +222,13 @@ public static class FatoCandidatoSeed
         new(SeedId(25), "SOB_GUARDA", "Sob guarda", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_INSCRICAO:SOB_GUARDA",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
+
+        // O parentesco de cada membro identifica, no grupo que inclui o candidato, a ocorrência
+        // dele próprio.
+        new(SeedId(26), CandidatoComoMembro.FatoParentesco, "Parentesco", null,
+            DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
+            PontoResolucaoInscricao, $"CAMPO_INSCRICAO:{CandidatoComoMembro.FatoParentesco}",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
     ];
 }

@@ -16292,6 +16292,10 @@
             "items": {
               "$ref": "#/components/schemas/FatoColetadoInput"
             }
+          },
+          "incluiCandidato": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

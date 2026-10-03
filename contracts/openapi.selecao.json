@@ -11621,6 +11621,7 @@
           "rotulo",
           "minimo",
           "maximo",
+          "incluiCandidato",
           "exibicao",
           "obrigatoriedade",
           "subitens"
@@ -11663,6 +11664,9 @@
               "string"
             ],
             "format": "int32"
+          },
+          "incluiCandidato": {
+            "type": "boolean"
           },
           "exibicao": {
             "type": [
@@ -11774,6 +11778,10 @@
             "items": {
               "$ref": "#/components/schemas/FatoColetadoInput"
             }
+          },
+          "incluiCandidato": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -11785,6 +11793,7 @@
           "rotulo",
           "minimo",
           "maximo",
+          "incluiCandidato",
           "exibicao",
           "obrigatoriedade",
           "subitens"
@@ -11827,6 +11836,9 @@
               "string"
             ],
             "format": "int32"
+          },
+          "incluiCandidato": {
+            "type": "boolean"
           },
           "exibicao": {
             "type": [

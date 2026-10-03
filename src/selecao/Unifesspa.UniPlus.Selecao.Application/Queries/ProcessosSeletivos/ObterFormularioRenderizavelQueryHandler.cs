@@ -259,6 +259,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarString(grupo, "rotulo", out string rotulo)
                 || !TentarInt(grupo, "minimo", out int minimo)
                 || !grupo.ContainsKey("maximo") || !TentarIntOpcional(grupo, "maximo", out int? maximo)
+                || !TentarBool(grupo, "incluiCandidato", out bool incluiCandidato)
                 || !TentarPredicado(grupo, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao)
                 || !TentarObrigatoriedade(grupo, out ObrigatoriedadeDto? obrigatoriedade)
                 || !grupo.TryGetPropertyValue("subitens", out JsonNode? subitensNode) || subitensNode is not JsonArray subitens)
@@ -286,7 +287,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 return false;
             }
 
-            lidos.Add(new GrupoFormularioRenderizavelDto(codigo, ordem, etapaCodigo, rotulo, minimo, maximo, exibicao, obrigatoriedade!, campos));
+            lidos.Add(new GrupoFormularioRenderizavelDto(codigo, ordem, etapaCodigo, rotulo, minimo, maximo, incluiCandidato, exibicao, obrigatoriedade!, campos));
         }
 
         grupos = lidos;

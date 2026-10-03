@@ -395,7 +395,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         fato.PedirConfirmacao.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O grupo repetível da finalidade é projetado com as regras e os campos de cada ocorrência, e sem máximo quando não o declara")]
+    [Fact(DisplayName = "O grupo repetível da finalidade é projetado com as regras e os campos de cada ocorrência, sem máximo quando não o declara e com o candidato como membro")]
     public async Task Handle_GrupoRepetivel_ProjetaComOsCampos()
     {
         const string envelope = """
@@ -408,7 +408,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               "fatosColetados": [],
               "gruposColetados": [
                 {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": 0, "maximo": null, "exibicao": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]],
+                 "minimo": 0, "maximo": null, "incluiCandidato": true, "exibicao": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]],
                  "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
                  "subitens": [
                    {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
@@ -416,7 +416,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                     "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
                  ]},
                 {"codigo": "OUTRO", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Outro",
-                 "minimo": 0, "maximo": 1, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null}, "subitens": []}
+                 "minimo": 0, "maximo": 1, "incluiCandidato": false, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null}, "subitens": []}
               ]
             }
             """;
@@ -428,6 +428,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         GrupoFormularioRenderizavelDto grupo = resultado.Value!.Grupos.Should().ContainSingle("só o grupo da finalidade pedida").Which;
         grupo.Codigo.Should().Be("COMPOSICAO_FAMILIAR");
         grupo.Maximo.Should().BeNull();
+        grupo.IncluiCandidato.Should().BeTrue();
         grupo.Exibicao.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("COR_RACA");
         grupo.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MENOR_SOB_GUARDA");
     }
@@ -446,7 +447,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               "fatosColetados": [],
               "gruposColetados": [
                 {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": 0, "maximo": 10, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
+                 "minimo": 0, "maximo": 10, "incluiCandidato": false, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
                  "subitens": [
                    {"fatoCodigo": "MENOR_SOB_GUARDA", {{donoDoCampo}}, "formato": null, "ordem": 0,
                     "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
@@ -483,7 +484,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               "fatosColetados": [],
               "gruposColetados": [
                 {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": {{minimo}}, "maximo": {{maximo}}, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
+                 "minimo": {{minimo}}, "maximo": {{maximo}}, "incluiCandidato": false, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
                  "subitens": [{{(comCampo ? campo : string.Empty)}}]}
               ]
             }
@@ -508,7 +509,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               "fatosColetados": [],
               "gruposColetados": [
                 {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": 0, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
+                 "minimo": 0, "incluiCandidato": false, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
                  "subitens": [
                    {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
                     "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},

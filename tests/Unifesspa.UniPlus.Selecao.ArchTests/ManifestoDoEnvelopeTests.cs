@@ -374,7 +374,7 @@ public sealed class ManifestoDoEnvelopeTests
         // Grupos repetíveis (UNI-REQ-0146) — congelados no bloco de topo `gruposColetados`, com os
         // campos de cada ocorrência na mesma forma dos itens de `fatosColetados`.
         [typeof(GrupoColetado)] = (
-            ["Codigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "Minimo", "Maximo", "Exibicao", "Obrigatoriedade", "Subitens"],
+            ["Codigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "Minimo", "Maximo", "IncluiCandidato", "Exibicao", "Obrigatoriedade", "Subitens"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),

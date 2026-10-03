@@ -91,7 +91,7 @@ public sealed record DefinicaoEtapa
 /// <summary>
 /// Um grupo repetível: uma lista de ocorrências, cada uma com os subitens — fatos de membro —, com
 /// exibição e obrigatoriedade do grupo, o mínimo e, quando declarado, o máximo de ocorrências
-/// (ADR-0138, UNI-REQ-0146).
+/// (ADR-0138, UNI-REQ-0146), e se o próprio candidato é um dos membros.
 /// As regras dos subitens citam fatos do candidato ou subitens anteriores da mesma ocorrência.
 /// </summary>
 public sealed record DefinicaoGrupo
@@ -102,7 +102,8 @@ public sealed record DefinicaoGrupo
         Obrigatoriedade obrigatoriedade,
         int minimo,
         int? maximo,
-        IReadOnlyList<DefinicaoItem> subitens)
+        IReadOnlyList<DefinicaoItem> subitens,
+        bool incluiCandidato = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
@@ -119,6 +120,7 @@ public sealed record DefinicaoGrupo
         Minimo = minimo;
         Maximo = maximo;
         Subitens = [.. subitens];
+        IncluiCandidato = incluiCandidato;
     }
 
     public string Codigo { get; }
@@ -132,6 +134,9 @@ public sealed record DefinicaoGrupo
     /// <summary>O máximo de ocorrências; nulo quando o grupo aceita qualquer quantidade.</summary>
     public int? Maximo { get; }
     public IReadOnlyList<DefinicaoItem> Subitens { get; }
+
+    /// <summary>O próprio candidato é um dos membros: a lista tem exatamente uma ocorrência dele.</summary>
+    public bool IncluiCandidato { get; }
 
     /// <summary>
     /// Os fatos do candidato de que o grupo depende: os da exibição e da obrigatoriedade dele e os

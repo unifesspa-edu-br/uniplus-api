@@ -44,8 +44,8 @@ public sealed record ItemDoModelo(
 /// <summary>
 /// Um grupo repetível do modelo (ADR-0138, UNI-REQ-0146): a lista de ocorrências de um mesmo conjunto
 /// de campos de fatos de membro, como a composição familiar, com mínimo e, quando declarado, máximo
-/// de ocorrências. A
-/// seção é a do grupo; os campos não declaram seção própria.
+/// de ocorrências, e se o próprio candidato é um dos membros. A seção é a do grupo; os campos não
+/// declaram seção própria.
 /// </summary>
 public sealed record GrupoDoModelo(
     string Codigo,
@@ -56,7 +56,8 @@ public sealed record GrupoDoModelo(
     int? Maximo,
     PredicadoDnf? Exibicao,
     Obrigatoriedade Obrigatoriedade,
-    IReadOnlyList<ItemDoModelo> Subitens)
+    IReadOnlyList<ItemDoModelo> Subitens,
+    bool IncluiCandidato = false)
 {
     /// <summary>Os fatos que as regras do próprio grupo citam — a exibição e a obrigatoriedade.</summary>
     public IReadOnlyCollection<string> FatosCitados =>
@@ -277,6 +278,13 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
                         [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo))],
                         grupo.Exibicao?.FatosCitados ?? [], grupo.Obrigatoriedade)
                     .Select(e => e with { Field = $"grupos[{i}].{e.Field}" }));
+                if (grupo.IncluiCandidato)
+                {
+                    erros.AddRange(CandidatoComoMembro.Conferir(
+                            grupo.Minimo, [.. grupo.Subitens.Select(static s => (s.FatoCodigo, s.Exibicao is not null, s.Obrigatoriedade, s.Restricoes))])
+                        .Select(e => e with { Field = $"grupos[{i}].{e.Field}" }));
+                }
+
                 for (int j = 0; j < grupo.Subitens.Count; j++)
                 {
                     erros.AddRange(FormaDoCampo(grupo.Subitens[j], $"grupos[{i}].subitens[{j}]"));

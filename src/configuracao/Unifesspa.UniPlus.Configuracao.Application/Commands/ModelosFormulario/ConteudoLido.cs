@@ -107,7 +107,8 @@ internal sealed record ConteudoLido(
         return erros.Count > recusasAntes
             ? null
             : new GrupoDoModelo(
-                entrada.Codigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, entrada.Minimo, entrada.Maximo, exibicao, obrigatoriedade!, subitens);
+                entrada.Codigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, entrada.Minimo, entrada.Maximo, exibicao, obrigatoriedade!, subitens,
+                entrada.IncluiCandidato);
     }
 
     private static EtapaDoModelo? LerEtapa(EtapaFormularioInput? entrada, string campo, List<FieldError> erros)
