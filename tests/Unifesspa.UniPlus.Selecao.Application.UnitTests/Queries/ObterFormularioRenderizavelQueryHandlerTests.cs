@@ -496,6 +496,35 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
     }
 
+    [Fact(DisplayName = "Grupo sem a chave do máximo não tem apresentação — só o máximo nulo explícito é grupo sem limite")]
+    public async Task Handle_GrupoSemChaveDoMaximo_VersaoSemApresentacao()
+    {
+        const string envelope = """
+            {
+              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+                "etapas": [
+                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
+                ]}],
+              "fatosColetados": [],
+              "gruposColetados": [
+                {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
+                 "minimo": 0, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
+                 "subitens": [
+                   {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
+                    "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
+                    "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
+                 ]}
+              ]
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
+
+        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+    }
+
     [Fact(DisplayName = "Envelope sem o bloco de grupos não tem apresentação")]
     public async Task Handle_SemBlocoDeGrupos_VersaoSemApresentacao()
     {

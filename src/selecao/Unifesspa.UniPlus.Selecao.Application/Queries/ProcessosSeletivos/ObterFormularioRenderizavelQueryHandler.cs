@@ -258,7 +258,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarStringOpcional(grupo, "etapaCodigo", out string? etapaCodigo)
                 || !TentarString(grupo, "rotulo", out string rotulo)
                 || !TentarInt(grupo, "minimo", out int minimo)
-                || !TentarIntOpcional(grupo, "maximo", out int? maximo)
+                || !grupo.ContainsKey("maximo") || !TentarIntOpcional(grupo, "maximo", out int? maximo)
                 || !TentarPredicado(grupo, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao)
                 || !TentarObrigatoriedade(grupo, out ObrigatoriedadeDto? obrigatoriedade)
                 || !grupo.TryGetPropertyValue("subitens", out JsonNode? subitensNode) || subitensNode is not JsonArray subitens)
