@@ -3004,6 +3004,235 @@
       ]
     },
     {
+      "name": "ProcessoSeletivo — Modelo de documento da exigência",
+      "item": [
+        {
+          "name": "Modelo: Iniciar envio (ODT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/modelos-de-documento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "modelos-de-documento"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeArquivo\": \"Declaração de pertencimento\",\n  \"formato\": \"ODT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com URL pré-assinada e o content-type do ODT', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.contentTypeExigido).to.eql('application/vnd.oasis.opendocument.text');",
+                  "  pm.environment.set('modelo_documento_id', j.modeloDeDocumentoId);",
+                  "  pm.environment.set('url_upload_modelo', j.urlUpload);",
+                  "  pm.environment.set('content_type_modelo', j.contentTypeExigido);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modelo: PUT de um arquivo que não é ODT direto no MinIO",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "{{content_type_modelo}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url_upload_modelo}}",
+              "host": [
+                "{{url_upload_modelo}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "texto que não é um pacote ODT"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK (PUT direto ao storage, fora da API)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Modelo: Confirmar envio recusa o conteúdo fora do formato",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/modelos-de-documento/{{modelo_documento_id}}/confirmacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "modelos-de-documento",
+                "{{modelo_documento_id}}",
+                "confirmacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 com o conteúdo fora do formato', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.modelo_de_documento.conteudo_diverge_do_formato');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modelo: Iniciar envio com formato não editável (PDF)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/modelos-de-documento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "modelos-de-documento"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeArquivo\": \"Autodeclaração\",\n  \"formato\": \"PDF\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 formato não editável', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.modelo_de_documento.formato_nao_editavel');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "ProcessoSeletivo — Publicação",
       "item": [
         {
