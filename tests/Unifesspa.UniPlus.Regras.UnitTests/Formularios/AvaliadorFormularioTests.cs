@@ -267,6 +267,17 @@ public sealed class AvaliadorFormularioTests
         avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
     }
 
+    [Fact]
+    public void Grupo_SemMaximo_AceitaQualquerQuantidadeDeOcorrencias()
+    {
+        DefinicaoGrupo grupo = Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: null, Item("PARENTESCO"));
+        (string, (string, object)[])[] ocorrencias = [.. Enumerable.Range(0, 1000).Select(i => Ocorrencia($"m{i}", ("PARENTESCO", "MAE")))];
+
+        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+
+        avaliacao.ContagemValida.Should().BeTrue();
+    }
+
     [Theory]
     [InlineData(0, EstadoFato.Resolvido)]
     [InlineData(1, EstadoFato.Indeterminado)]
@@ -346,7 +357,7 @@ public sealed class AvaliadorFormularioTests
         avaliacao.Ocorrencias.Should().BeEmpty();
     }
 
-    private static DefinicaoGrupo Grupo(Obrigatoriedade obrigatoriedade, int minimo, int maximo, params DefinicaoItem[] subitens) =>
+    private static DefinicaoGrupo Grupo(Obrigatoriedade obrigatoriedade, int minimo, int? maximo, params DefinicaoItem[] subitens) =>
         new("COMPOSICAO", exibicao: null, obrigatoriedade, minimo, maximo, subitens);
 
     private static DefinicaoFormulario ComGrupo(DefinicaoGrupo grupo) =>

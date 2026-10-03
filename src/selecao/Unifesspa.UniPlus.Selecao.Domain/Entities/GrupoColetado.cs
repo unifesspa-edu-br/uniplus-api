@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Um grupo repetível do formulário (UNI-REQ-0146), como a composição familiar: uma lista de
-/// ocorrências, cada uma com os mesmos campos, com o mínimo e o máximo de ocorrências e a exibição
-/// e a obrigatoriedade do grupo inteiro.
+/// ocorrências, cada uma com os mesmos campos, com o mínimo e, quando declarado, o máximo de
+/// ocorrências e a exibição e a obrigatoriedade do grupo inteiro.
 /// </summary>
 /// <remarks>
 /// O grupo é dono dos seus campos: cada campo é um <see cref="FatoColetado"/> de fato de membro,
@@ -38,7 +38,8 @@ public sealed class GrupoColetado : EntityBase
 
     public int Minimo { get; private set; }
 
-    public int Maximo { get; private set; }
+    /// <summary>O máximo de ocorrências; <see langword="null"/> aceita qualquer quantidade.</summary>
+    public int? Maximo { get; private set; }
 
     /// <summary>Quando o grupo aparece; <see langword="null"/> é sempre.</summary>
     public PredicadoDnf? Exibicao { get; private set; }
@@ -60,7 +61,7 @@ public sealed class GrupoColetado : EntityBase
         string? etapaCodigo,
         string rotulo,
         int minimo,
-        int maximo,
+        int? maximo,
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
         IReadOnlyList<FatoColetado> subitens,

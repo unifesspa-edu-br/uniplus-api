@@ -395,7 +395,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         fato.PedirConfirmacao.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O grupo repetível da finalidade é projetado com as regras e os campos de cada ocorrência")]
+    [Fact(DisplayName = "O grupo repetível da finalidade é projetado com as regras e os campos de cada ocorrência, e sem máximo quando não o declara")]
     public async Task Handle_GrupoRepetivel_ProjetaComOsCampos()
     {
         const string envelope = """
@@ -408,7 +408,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               "fatosColetados": [],
               "gruposColetados": [
                 {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": 0, "maximo": 10, "exibicao": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]],
+                 "minimo": 0, "maximo": null, "exibicao": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]],
                  "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
                  "subitens": [
                    {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
@@ -427,7 +427,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
 
         GrupoFormularioRenderizavelDto grupo = resultado.Value!.Grupos.Should().ContainSingle("só o grupo da finalidade pedida").Which;
         grupo.Codigo.Should().Be("COMPOSICAO_FAMILIAR");
-        grupo.Maximo.Should().Be(10);
+        grupo.Maximo.Should().BeNull();
         grupo.Exibicao.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("COR_RACA");
         grupo.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MENOR_SOB_GUARDA");
     }

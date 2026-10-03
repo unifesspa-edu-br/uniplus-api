@@ -31,7 +31,7 @@ A habilitação do edital de Medicina 2027 pede a composição familiar como lis
 
 **Escolhida:** "Grupo repetível no formulário como fonte das instâncias", porque a mesma lista serve à coleta e à exigência por membro, e os agregados levam a informação da lista às regras do candidato sem ambiguidade.
 
-- **Item de grupo repetível:** tem mínimo e máximo de ocorrências e não aninha outro grupo. Os subitens coletam fatos de escopo membro, e as suas regras citam fatos do candidato anteriores ou subitens anteriores da mesma ocorrência.
+- **Item de grupo repetível:** tem mínimo e, opcionalmente, máximo de ocorrências, e não aninha outro grupo. Sem máximo, aceita qualquer quantidade. Os subitens coletam fatos de escopo membro, e as suas regras citam fatos do candidato anteriores ou subitens anteriores da mesma ocorrência.
 - **Fato de membro** nunca é citado fora do grupo. Fora dele, citam-se os **agregados** sobre a lista: `EXISTE` (booleano, "existe membro que...") e `VALORES_PRESENTES` (categórico multivalorado, "categorias presentes na família").
 - **Exigência por membro:** as ocorrências do grupo são as instâncias da exigência repetida por entidade (UNI-REQ-0069), e o gatilho interno avalia os subitens de cada ocorrência. Os tipos de entidade e atributos fixos em código passam a vir do grupo. Não há mecanismo novo de exigência.
 - **Pessoa jurídica vinculada** passa a ser um grupo de sistema.
@@ -55,7 +55,7 @@ O vínculo `AGREGACAO_GRUPO:`, que a ADR-0136 deixou reservado, passa a ser acei
 
 ## Confirmação
 
-- Teste de domínio: lista abaixo do mínimo ou acima do máximo é recusada; grupo dentro de grupo é recusado; fato de membro citado fora do grupo é recusado, e os agregados são citáveis.
+- Teste de domínio: lista abaixo do mínimo ou acima do máximo declarado é recusada; grupo dentro de grupo é recusado; fato de membro citado fora do grupo é recusado, e os agregados são citáveis.
 - Teste de domínio: a exigência repetida por membro é pedida uma vez por ocorrência que satisfaz o gatilho.
 
 ## Prós e contras das opções
@@ -73,4 +73,5 @@ O vínculo `AGREGACAO_GRUPO:`, que a ADR-0136 deixou reservado, passa a ser acei
 ## Mais informações
 
 - UNI-REQ-0069, UNI-REQ-0075 e UNI-REQ-0146.
+- Emenda (03/10/2026, #1776): o máximo de ocorrências passa a ser opcional, para a composição familiar aceitar quantos membros o candidato informar.
 - ADR-0135 (projeto compartilhado de regras), ADR-0136 (catálogo de fatos administrável) e ADR-0137 (formulários por finalidade).

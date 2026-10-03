@@ -15,12 +15,12 @@ public sealed class FormaDoGrupoTests
 {
     [Theory]
     [InlineData(0, 1, null)]
-    [InlineData(0, FormaDoGrupo.MaximoDeOcorrencias, null)]
+    [InlineData(0, null, null)]
+    [InlineData(1, null, null)]
     [InlineData(-1, 3, GrupoFormularioErrorCodes.ContagemIncoerente)]
     [InlineData(0, 0, GrupoFormularioErrorCodes.ContagemIncoerente)]
     [InlineData(3, 2, GrupoFormularioErrorCodes.ContagemIncoerente)]
-    [InlineData(0, FormaDoGrupo.MaximoDeOcorrencias + 1, GrupoFormularioErrorCodes.ContagemIncoerente)]
-    public void Conferir_MinimoEMaximo_CabemEntreZeroEOTeto(int minimo, int maximo, string? esperado)
+    public void Conferir_MinimoEMaximoOpcional_MinimoNaoNegativoEMaximoNaoAbaixoDele(int minimo, int? maximo, string? esperado)
     {
         List<FieldError> erros = Conferir(minimo: minimo, maximo: maximo);
 
@@ -76,7 +76,7 @@ public sealed class FormaDoGrupoTests
 
     private static List<FieldError> Conferir(
         int minimo = 0,
-        int maximo = 5,
+        int? maximo = 5,
         IReadOnlyList<(string?, string?)>? subitens = null,
         IEnumerable<string>? citados = null,
         Obrigatoriedade? obrigatoriedade = null) =>

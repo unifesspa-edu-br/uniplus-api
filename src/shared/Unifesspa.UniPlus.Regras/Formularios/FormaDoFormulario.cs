@@ -205,32 +205,30 @@ public static class FormaDoItem
 
 /// <summary>
 /// A forma de um grupo repetível do formulário, a mesma no processo e no modelo (UNI-REQ-0146): o
-/// código, a ordem, o rótulo, o mínimo e o máximo de ocorrências e os campos de cada ocorrência.
+/// código, a ordem, o rótulo, o mínimo e, quando declarado, o máximo de ocorrências e os campos de
+/// cada ocorrência.
 /// Acumula toda violação independente em vez de parar na primeira (ADR-0125).
 /// </summary>
 public static class FormaDoGrupo
 {
     public const int CodigoMaxLength = 60;
 
-    /// <summary>
-    /// Teto de ocorrências de um grupo. A composição familiar, maior grupo do edital de Medicina
-    /// 2027, cabe com folga; acima disso a lista de membros deixa de ser formulário de candidato.
-    /// </summary>
-    public const int MaximoDeOcorrencias = 20;
-
     /// <summary>Teto de campos de cada ocorrência: um membro da família tem poucos dados declarados.</summary>
     public const int MaximoDeSubitens = 30;
 
-    /// <summary>O mínimo vai de zero até o máximo, e o máximo, de um até o teto de ocorrências.</summary>
-    public static bool ContagemValida(int minimo, int maximo) =>
-        minimo >= 0 && maximo >= 1 && maximo >= minimo && maximo <= MaximoDeOcorrencias;
+    /// <summary>
+    /// O mínimo não é negativo, e o máximo, quando declarado, é ao menos um e não fica abaixo do
+    /// mínimo. Sem máximo, o grupo aceita qualquer quantidade de ocorrências.
+    /// </summary>
+    public static bool ContagemValida(int minimo, int? maximo) =>
+        minimo >= 0 && (maximo is not { } teto || (teto >= 1 && teto >= minimo));
 
     /// <summary>O grupo tem de um até o teto de campos por ocorrência.</summary>
     public static bool QuantidadeDeCamposValida(int quantidade) => quantidade is >= 1 and <= MaximoDeSubitens;
 
     /// <summary>
-    /// Código e rótulo obrigatórios e limitados, ordem não negativa, mínimo de zero até o máximo,
-    /// máximo de um até o teto, ao menos um campo e no máximo o teto, nenhum campo com seção
+    /// Código e rótulo obrigatórios e limitados, ordem não negativa, mínimo não negativo e até o
+    /// máximo, máximo opcional e de ao menos um, ao menos um campo e no máximo o teto, nenhum campo com seção
     /// própria — o campo aparece onde o grupo aparece — e nenhuma regra do grupo citando o próprio
     /// grupo ou os campos dele — fora da ocorrência, eles não têm valor único.
     /// </summary>
@@ -239,7 +237,7 @@ public static class FormaDoGrupo
         int ordem,
         string? rotulo,
         int minimo,
-        int maximo,
+        int? maximo,
         IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo)> subitens,
         IEnumerable<string> fatosCitadosPelaExibicao,
         Obrigatoriedade obrigatoriedade)
@@ -268,7 +266,7 @@ public static class FormaDoGrupo
                 $"O rótulo do grupo é obrigatório e tem no máximo {FormaDoItem.RotuloMaxLength} caracteres.");
         }
 
-        string contagem = $"O grupo admite de zero a {MaximoDeOcorrencias} ocorrências: o mínimo não passa do máximo, e o máximo é ao menos um.";
+        const string contagem = "O mínimo de ocorrências não é negativo, e o máximo, quando declarado, é ao menos um e não fica abaixo do mínimo.";
         if (minimo < 0)
         {
             Recusar("minimo", GrupoFormularioErrorCodes.ContagemIncoerente, contagem);

@@ -28,7 +28,7 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.Property(g => g.EtapaCodigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength);
         builder.Property(g => g.Rotulo).HasMaxLength(FormaDoItem.RotuloMaxLength).IsRequired();
         builder.Property(g => g.Minimo).IsRequired();
-        builder.Property(g => g.Maximo).IsRequired();
+        builder.Property(g => g.Maximo);
         builder.Property(g => g.Exibicao)
             .HasConversion(ConversoresDeRegras.Predicado, ConversoresDeRegras.ComparadorDePredicado)
             .HasColumnType("jsonb");

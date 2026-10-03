@@ -61,6 +61,7 @@ public sealed class ModeloFormularioReaderTests
         lidoDesativado!.Ativo.Should().BeFalse();
         lidoDesativado.Conteudo.Itens!.Single().FatoCodigo.Should().Be("CERTIFICADO");
         lidoDesativado.Conteudo.Grupos!.Single().Subitens.Single().FatoCodigo.Should().Be("MAIOR_IDADE");
+        lidoDesativado.Conteudo.Grupos!.Single().Maximo.Should().BeNull("o grupo sem máximo é gravado e lido sem máximo");
     }
 
     private static ModeloFormulario Novo(string prefixo, string? tipoProcessoCodigo)
@@ -79,7 +80,7 @@ public sealed class ModeloFormularioReaderTests
                 [],
                 [
                     new GrupoDoModelo(
-                        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
+                        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
                         [new("MAIOR_IDADE", 0, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)]),
                 ]),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;

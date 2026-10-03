@@ -11658,6 +11658,7 @@
           "maximo": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
+              "null",
               "integer",
               "string"
             ],
@@ -11732,6 +11733,7 @@
           "maximo": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
+              "null",
               "integer",
               "string"
             ],
@@ -11820,6 +11822,7 @@
           "maximo": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
+              "null",
               "integer",
               "string"
             ],
