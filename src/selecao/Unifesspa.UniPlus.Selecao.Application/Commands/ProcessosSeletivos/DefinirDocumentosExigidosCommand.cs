@@ -77,7 +77,8 @@ public sealed record ItemDocumentoExigidoInput(
     IdadeMaximaEmissaoInput? IdadeMaximaEmissao,
     JsonElement? FormatosPermitidos,
     int? TamanhoMaximoBytes,
-    Guid? ExigidoNaEtapaId = null);
+    Guid? ExigidoNaEtapaId = null,
+    Guid? ModeloId = null);
 
 /// <summary>
 /// Entrada de um nó da árvore de satisfação (Story #920) — substitui o antigo

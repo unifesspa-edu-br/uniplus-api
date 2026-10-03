@@ -44,6 +44,14 @@ public sealed class ModeloDeDocumentoRepository : IModeloDeDocumentoRepository
         return linhasAfetadas == 1;
     }
 
+    public async Task<IReadOnlyList<ModeloDeDocumento>> ListarDoProcessoAsync(
+        Guid processoSeletivoId, IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default) =>
+        await _context.ModelosDeDocumento
+            .AsNoTracking()
+            .Where(m => m.ProcessoSeletivoId == processoSeletivoId && ids.Contains(m.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public void Remover(ModeloDeDocumento entity)
     {
         ArgumentNullException.ThrowIfNull(entity);

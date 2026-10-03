@@ -300,7 +300,11 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             """;
     }
 
-    [Fact(DisplayName = "O bloco de comprovação documental lista as exigências da fase do formulário, na forma pública; sem o bloco, nada")]
+    private const string Modelo = """
+        {"modeloId": "0199a000-0000-7000-8000-0000000000aa", "nomeArquivo": "Autodeclaração.odt", "formato": "ODT", "hashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+        """;
+
+    [Fact(DisplayName = "O bloco de comprovação documental lista as exigências da fase do formulário, na forma pública e com o modelo editável; sem o bloco, nada")]
     public async Task Handle_BlocoDeComprovacao_ListaAsExigenciasDaFaseDoFormulario()
     {
         const string faseHabilitacao = "0199a000-0000-7000-8000-0000000000f2";
@@ -318,7 +322,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               "documentosExigidos": {"exigencias": [
                 {{Exigencia("Documento de identidade", "Geral", faseHabilitacao)}},
                 {{Exigencia("Comprovante de inscrição", "Geral", "0199a000-0000-7000-8000-0000000000f1")}},
-                {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao)}}
+                {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, Modelo)}}
               ]}
             }
             """;
@@ -331,11 +335,14 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         habilitacao.Value!.ComprovacaoDocumental!.Select(static e => (e.Rotulo, e.Aplicabilidade)).Should().Equal(
             [("Documento de identidade", "Geral"), ("Autodeclaração étnico-racial", "Condicional")],
             "só as exigências da fase da habilitação, na ordem congelada");
+        habilitacao.Value.ComprovacaoDocumental!.Select(static e => e.Modelo).Should().BeEquivalentTo(
+            [null, new ModeloDocumentalCertameDto("Autodeclaração.odt", "ODT", new string('a', 64))],
+            "a exigência com modelo o traz, sem o id do cadastro; a sem modelo, nulo");
         inscricao.Value!.ComprovacaoDocumental.Should().BeNull("o formulário de inscrição não tem o bloco");
 
-        static string Exigencia(string nome, string aplicabilidade, string fase) => $$"""
+        static string Exigencia(string nome, string aplicabilidade, string fase, string modelo = "null") => $$"""
             {"tipoDocumentoNome": "{{nome}}", "aplicabilidade": "{{aplicabilidade}}", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
-             "formatosPermitidos": {"lista": null, "qualquer": true} }
+             "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": {{modelo}} }
             """;
     }
 

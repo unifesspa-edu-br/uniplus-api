@@ -68,15 +68,30 @@ public sealed class ModeloDeDocumentoEnvioIntegrationTests : IClassFixture<Proce
             provider.GetRequiredService<IStorageService>(), provider.GetRequiredService<IOptions<StorageOptions>>());
     }
 
+    [Fact(DisplayName = "Os modelos citados são lidos só do processo: o modelo de outro processo não volta")]
+    public async Task ListarDoProcesso_SoDevolveOsModelosDoProcesso()
+    {
+        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        ProcessoSeletivo processoA = NovoProcesso("PS A — modelo de documento");
+        ProcessoSeletivo processoB = NovoProcesso("PS B — modelo de documento");
+        context.ProcessosSeletivos.AddRange(processoA, processoB);
+        ModeloDeDocumento doA = ModeloDeDocumento.IniciarPendente(processoA.Id, "Autodeclaração", "ODT", TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        ModeloDeDocumento doB = ModeloDeDocumento.IniciarPendente(processoB.Id, "Autodeclaração", "ODT", TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        context.ModelosDeDocumento.AddRange(doA, doB);
+        await context.SaveChangesAsync();
+
+        IReadOnlyList<ModeloDeDocumento> lidos = await new ModeloDeDocumentoRepository(context)
+            .ListarDoProcessoAsync(processoA.Id, [doA.Id, doB.Id], CancellationToken.None);
+
+        lidos.Select(static m => m.Id).Should().Equal(doA.Id);
+    }
+
     [Fact(DisplayName = "Fluxo completo: o ODT enviado é confirmado com o hash local, e a URL de acesso abre a cópia selada")]
     public async Task FluxoCompleto_OdtConfirmado_AcessoAbreACopiaSelada()
     {
         byte[] odt = ArquivosDeModeloDeTeste.Odt();
         await using SelecaoDbContext context = _dbFixture.CreateDbContext();
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2027 — modelo de documento", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = NovoProcesso("PS 2027 — modelo de documento");
         context.ProcessosSeletivos.Add(processo);
         await context.SaveChangesAsync();
         ModeloDeDocumentoRepository modelos = new(context);
@@ -106,4 +121,9 @@ public sealed class ModeloDeDocumentoEnvioIntegrationTests : IClassFixture<Proce
         byte[] baixado = await http.GetByteArrayAsync(acesso.Value!.Url);
         baixado.Should().Equal(odt);
     }
+
+    private static ProcessoSeletivo NovoProcesso(string nome) => ProcessoSeletivo.Criar(
+        nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 }

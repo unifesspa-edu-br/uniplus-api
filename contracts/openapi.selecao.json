@@ -10935,7 +10935,8 @@
           "idadeMaximaEmissao",
           "formatosPermitidos",
           "tamanhoMaximoBytes",
-          "exigidoNaEtapaId"
+          "exigidoNaEtapaId",
+          "modelo"
         ],
         "type": "object",
         "properties": {
@@ -11012,6 +11013,16 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "modelo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModeloDaExigenciaDto"
+              }
+            ]
           }
         }
       },
@@ -11487,7 +11498,8 @@
           "rotulo",
           "aplicabilidade",
           "obrigatorio",
-          "formatos"
+          "formatos",
+          "modelo"
         ],
         "type": "object",
         "properties": {
@@ -11502,6 +11514,16 @@
           },
           "formatos": {
             "$ref": "#/components/schemas/FormatosAceitosCertameDto"
+          },
+          "modelo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModeloDocumentalCertameDto"
+              }
+            ]
           }
         }
       },
@@ -12905,6 +12927,13 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "modeloId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -13095,6 +13124,30 @@
           }
         }
       },
+      "ModeloDaExigenciaDto": {
+        "required": [
+          "modeloId",
+          "nomeArquivo",
+          "formato",
+          "hashSha256"
+        ],
+        "type": "object",
+        "properties": {
+          "modeloId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nomeArquivo": {
+            "type": "string"
+          },
+          "formato": {
+            "type": "string"
+          },
+          "hashSha256": {
+            "type": "string"
+          }
+        }
+      },
       "ModeloDeDocumentoDto": {
         "required": [
           "id",
@@ -13156,6 +13209,25 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "ModeloDocumentalCertameDto": {
+        "required": [
+          "nomeArquivo",
+          "formato",
+          "hashSha256"
+        ],
+        "type": "object",
+        "properties": {
+          "nomeArquivo": {
+            "type": "string"
+          },
+          "formato": {
+            "type": "string"
+          },
+          "hashSha256": {
+            "type": "string"
           }
         }
       },

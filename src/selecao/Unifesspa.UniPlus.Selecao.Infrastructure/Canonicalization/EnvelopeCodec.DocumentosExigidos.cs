@@ -106,7 +106,7 @@ public sealed partial class EnvelopeCodec
                 "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome",
                 "tipoDocumentoCategoria", "exigidoNaFaseId", "exigidoNaEtapaId", "aplicabilidade", "obrigatorio",
                 "consequenciaIndeferimento", "condicaoGatilho", "basesLegais",
-                "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes");
+                "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes", "modelo");
 
             Guid exigenciaId = leitor.Identificador(item, "exigenciaId", path);
             Guid tipoDocumentoOrigemId = leitor.Identificador(item, "tipoDocumentoOrigemId", path);
@@ -149,6 +149,12 @@ public sealed partial class EnvelopeCodec
                 return [];
             }
 
+            ModeloDaExigencia? modelo = LerModelo(leitor, item, path);
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
             if (tamanhoMaximoBytes is <= 0)
             {
                 return leitor.Propagar<IReadOnlyList<DocumentoExigido>>(new DomainError(
@@ -171,10 +177,42 @@ public sealed partial class EnvelopeCodec
                 idadeMaximaEmissao,
                 formatosPermitidos!,
                 tamanhoMaximoBytes,
-                exigidoNaEtapaId));
+                exigidoNaEtapaId,
+                modelo));
         }
 
         return exigencias;
+    }
+
+    /// <summary>
+    /// O modelo que a exigência oferece ao candidato; nulo quando ela não tem. O hash é o do
+    /// arquivo confirmado — SHA-256 em hexadecimal minúsculo —, e o formato, um dos editáveis.
+    /// </summary>
+    private static ModeloDaExigencia? LerModelo(LeitorEnvelope leitor, JsonObject item, string pathPai)
+    {
+        JsonObject? bloco = leitor.ObjetoOpcional(item, "modelo", pathPai);
+        if (leitor.Falhou || bloco is null)
+        {
+            return null;
+        }
+
+        string path = $"{pathPai}.modelo";
+        leitor.ExigirChaves(bloco, path, "modeloId", "nomeArquivo", "formato", "hashSha256");
+        Guid modeloId = leitor.Identificador(bloco, "modeloId", path);
+        string nomeArquivo = leitor.TextoNaoVazio(bloco, "nomeArquivo", path, LimitesDoEnvelope.NomeArquivoDoModelo);
+        string formato = leitor.Texto(bloco, "formato", path);
+        string hash = leitor.Texto(bloco, "hashSha256", path);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        FormatoDeModelo formatoDoModelo = ModeloDeDocumento.FormatoDoToken(formato);
+        bool hashValido = hash.Length == 64 && hash.All(static c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
+        return formatoDoModelo != FormatoDeModelo.Nenhum && hashValido
+            ? new ModeloDaExigencia(modeloId, nomeArquivo, formatoDoModelo, hash)
+            : leitor.Propagar<ModeloDaExigencia>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' com formato fora dos editáveis ou hash que não é SHA-256 em hexadecimal minúsculo."));
     }
 
     /// <summary>

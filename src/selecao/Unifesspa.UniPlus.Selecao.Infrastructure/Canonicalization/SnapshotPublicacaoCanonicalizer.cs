@@ -256,6 +256,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, <c>contribui</c> passa a aceitar
     /// nulo nas regras de <c>regrasDerivacao[]</c>: a regra do derivado booleano não contribui
     /// código, e a ativa torna o derivado verdadeiro.
+    /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, cada exigência de
+    /// <c>documentosExigidos.exigencias[]</c> traz <c>modelo</c>: nulo, ou o modelo editável que ela
+    /// oferece ao candidato — id, nome do arquivo, formato (<c>DOCX</c> ou <c>ODT</c>) e o hash
+    /// SHA-256 do arquivo confirmado, que é o que a publicação atesta.
     /// Ainda sob a MESMA <c>0.0.21</c>, no mesmo trem de mudanças, cada item de
     /// <c>fatosColetados[]</c> traz <c>impedimento</c>: a condição em DNF sobre a resposta do próprio
     /// campo, e se preciso as anteriores, que impede a inscrição, e a mensagem ao candidato — nulo
@@ -1382,6 +1386,16 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["idadeMaximaEmissao"] = exigencia.IdadeMaximaEmissao is { } idade ? SerializarIdadeMaximaEmissao(idade) : null,
         ["formatosPermitidos"] = SerializarFormatosPermitidos(exigencia.FormatosPermitidos),
         ["tamanhoMaximoBytes"] = exigencia.TamanhoMaximoBytes,
+        ["modelo"] = exigencia.Modelo is { } modelo ? SerializarModelo(modelo) : null,
+    };
+
+    /// <summary>O modelo de documento que a exigência oferece ao candidato, com o hash do arquivo.</summary>
+    private static JsonObject SerializarModelo(ModeloDaExigencia modelo) => new()
+    {
+        ["modeloId"] = modelo.ModeloId,
+        ["nomeArquivo"] = HashCanonicalComputer.NormalizeNfc(modelo.NomeArquivo),
+        ["formato"] = ModeloDeDocumento.TokenDe(modelo.Formato),
+        ["hashSha256"] = modelo.HashSha256,
     };
 
     /// <summary>

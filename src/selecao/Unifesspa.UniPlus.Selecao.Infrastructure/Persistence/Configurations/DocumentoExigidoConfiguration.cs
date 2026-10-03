@@ -143,6 +143,17 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Navigation(d => d.FormatosPermitidos).IsRequired();
 
         builder.Property(d => d.TamanhoMaximoBytes);
+
+        // O modelo de documento que a exigência oferece ao candidato — cópia por valor do modelo
+        // confirmado, como o tipo de documento: colunas nullable, 0..1 por exigência, sem FK, porque
+        // o modelo confirmado é imutável e não tem remoção.
+        builder.OwnsOne(d => d.Modelo, modelo =>
+        {
+            modelo.Property(m => m.ModeloId).HasColumnName("modelo_id");
+            modelo.Property(m => m.NomeArquivo).HasColumnName("modelo_nome_arquivo").HasMaxLength(ModeloDeDocumento.NomeArquivoMaxLength);
+            modelo.Property(m => m.Formato).HasColumnName("modelo_formato").HasConversion<int>();
+            modelo.Property(m => m.HashSha256).HasColumnName("modelo_hash_sha256").HasMaxLength(64);
+        });
     }
 
     private static readonly ValueConverter<UnidadeIdade, string?> UnidadeConverter =

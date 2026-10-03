@@ -35,6 +35,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         IProcessoSeletivoRepository Repository,
         ITipoDocumentoReader TipoDocumentoReader,
         IFatoCandidatoReader FatoCandidatoReader,
+        IModeloDeDocumentoRepository Modelos,
         ISelecaoUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
@@ -46,6 +47,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             repository,
             Substitute.For<ITipoDocumentoReader>(),
             Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<IModeloDeDocumentoRepository>(),
             Substitute.For<ISelecaoUnitOfWork>());
     }
 
@@ -55,6 +57,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             mocks.Repository,
             mocks.TipoDocumentoReader,
             mocks.FatoCandidatoReader,
+            mocks.Modelos,
             mocks.UnitOfWork,
             TimeProvider.System,
             CancellationToken.None);
@@ -122,6 +125,39 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.TipoDocumentoNaoEncontrado");
+    }
+
+    [Theory(DisplayName = "A exigência copia o modelo confirmado do processo; o modelo pendente e o de outro processo são recusados")]
+    [InlineData(true, true, null)]
+    [InlineData(false, true, "ModeloDeDocumento.NaoConfirmado")]
+    [InlineData(true, false, "DocumentoExigido.ModeloNaoEncontrado")]
+    public async Task Handle_ModeloDaExigencia(bool confirmado, bool doProcesso, string? recusa)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>()).Returns(TipoDocumentoResultado(tipoDocumentoId));
+        ModeloDeDocumento modelo = ModeloDeDocumento.IniciarPendente(processo.Id, "Autodeclaração", "ODT", TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        if (confirmado)
+        {
+            modelo.Confirmar(10, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
+        }
+
+        mocks.Modelos.ListarDoProcessoAsync(processo.Id, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(doProcesso ? [modelo] : []);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, Qualquer, null, ModeloId: modelo.Id);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(
+            mocks, new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente));
+
+        (resultado.Error?.Code).Should().Be(recusa);
+        if (recusa is null)
+        {
+            processo.DocumentosExigidos.Should().ContainSingle().Which.Modelo
+                .Should().Be(new ModeloDaExigencia(modelo.Id, "Autodeclaração.odt", FormatoDeModelo.Odt, new string('a', 64)));
+        }
     }
 
     [Fact(DisplayName = "Handle com item válido (sem gatilho) define os documentos exigidos e persiste")]
