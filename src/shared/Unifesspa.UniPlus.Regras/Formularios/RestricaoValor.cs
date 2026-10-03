@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using System.Collections.Frozen;
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -267,4 +268,51 @@ public sealed record OpcoesDasRespostas : RestricaoValor
 
     internal static string? Violacao(IReadOnlyCollection<string> fatos) =>
         fatos.Count == 0 || fatos.Any(string.IsNullOrWhiteSpace) ? "As opções formadas pelas respostas precisam citar ao menos um fato." : null;
+}
+
+/// <summary>
+/// A resposta é um município da UF respondida no item <see cref="FatoUf"/>, conferido pelo prefixo
+/// do código IBGE (UNI-REQ-0145). A lista de municípios vem do Geo no cliente; o servidor confere
+/// a forma e a UF (ADR-0096).
+/// </summary>
+/// <remarks>
+/// Como nas opções formadas pelas respostas, a UF não aplicável ou não informada não admite
+/// município, e a UF ainda indeterminada deixa a conferência indeterminada. Trocar a UF faz a
+/// resposta deixar de valer em vez de ficar pendente.
+/// </remarks>
+public sealed record MunicipiosDaUf : RestricaoValor
+{
+    public MunicipiosDaUf(string fatoUf)
+    {
+        if (Violacao([fatoUf]) is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(fatoUf));
+        }
+
+        FatoUf = fatoUf;
+    }
+
+    public override TipoRestricaoValor Tipo => TipoRestricaoValor.MunicipiosDaUf;
+
+    /// <summary>O fato da UF de que o município depende.</summary>
+    public string FatoUf { get; }
+
+    public override IReadOnlyCollection<string> FatosCitados => [FatoUf];
+
+    public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    {
+        if (!fatos.TryGetValue(FatoUf, out FatoResolvido? uf) || uf is null || uf.Estado == EstadoFato.Indeterminado)
+        {
+            return Ternario.Indeterminado;
+        }
+
+        return ComoTernario(uf.Estado == EstadoFato.Resolvido
+            && uf.Valor!.Value.ValueKind == JsonValueKind.String
+            && resposta.ValueKind == JsonValueKind.String
+            && ReferenciaCidadeGeo.UfDoCodigoIbge(resposta.GetString()!) is { } ufDoMunicipio
+            && string.Equals(ufDoMunicipio, uf.Valor.Value.GetString(), StringComparison.Ordinal));
+    }
+
+    internal static string? Violacao(IReadOnlyCollection<string> fatos) =>
+        fatos.Count != 1 || fatos.Any(string.IsNullOrWhiteSpace) ? "Os municípios da UF citam exatamente um fato, o da UF." : null;
 }

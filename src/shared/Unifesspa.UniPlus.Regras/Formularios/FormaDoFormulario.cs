@@ -159,6 +159,7 @@ public static class FormaDoItem
             TipoRestricaoValor.FaixaNumerica => campo == TipoRenderizacao.Numero,
             TipoRestricaoValor.TamanhoTexto => campo == TipoRenderizacao.Texto,
             TipoRestricaoValor.OpcoesPermitidas or TipoRestricaoValor.OpcoesDasRespostas => campo.EhSelecao(),
+            TipoRestricaoValor.MunicipiosDaUf => campo == TipoRenderizacao.Municipio,
             TipoRestricaoValor.Nenhuma => false,
             _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao, "Tipo de restrição desconhecido."),
         };
@@ -168,8 +169,8 @@ public static class FormaDoItem
 
     /// <summary>
     /// As restrições cabem no tipo do campo — faixa só no numérico, tamanho só no de texto, opções
-    /// só no de seleção —, não se repetem por tipo, não citam o próprio fato, e os limites da faixa
-    /// cabem nas casas decimais do edital.
+    /// só no de seleção, municípios da UF só no de município, onde são obrigatórios —, não se repetem
+    /// por tipo, não citam o próprio fato, e os limites da faixa cabem nas casas decimais do edital.
     /// </summary>
     private static IEnumerable<FieldError> ConferirRestricoes(string codigo, TipoRenderizacao tipoRenderizacao, IReadOnlyList<RestricaoValor> restricoes)
     {
@@ -178,13 +179,19 @@ public static class FormaDoItem
             yield return new("restricoes", repetido);
         }
 
+        if (tipoRenderizacao == TipoRenderizacao.Municipio && !restricoes.Any(static r => r is MunicipiosDaUf))
+        {
+            yield return new("restricoes", new DomainError(
+                ItemFormularioErrorCodes.MunicipioSemUf, "O campo de município cita a UF respondida antes, pelos municípios da UF."));
+        }
+
         for (int indice = 0; indice < restricoes.Count; indice++)
         {
             if (!RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
             {
                 yield return new($"restricoes[{indice}]", new DomainError(
                     ItemFormularioErrorCodes.RestricaoIncoerente,
-                    "A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto e as opções só ao de seleção."));
+                    "A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto, as opções só ao de seleção e os municípios da UF só ao de município."));
             }
 
             if (restricoes[indice] is FaixaNumerica faixa

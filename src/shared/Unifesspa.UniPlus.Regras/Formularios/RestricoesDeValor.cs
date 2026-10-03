@@ -45,6 +45,14 @@ public static class RestricoesDeValor
             : Result<RestricaoValor>.Success(new OpcoesDasRespostas(fatos));
     }
 
+    public static Result<RestricaoValor> DaUf(IReadOnlyCollection<string> fatos)
+    {
+        ArgumentNullException.ThrowIfNull(fatos);
+        return MunicipiosDaUf.Violacao(fatos) is { } violacao
+            ? Recusa(RestricaoValorErrorCodes.FatosVazios, violacao)
+            : Result<RestricaoValor>.Success(new MunicipiosDaUf(fatos.Single()));
+    }
+
     /// <summary>A recusa quando o item declara mais de uma restrição do mesmo tipo.</summary>
     public static DomainError? TipoRepetido(IEnumerable<RestricaoValor> restricoes)
     {

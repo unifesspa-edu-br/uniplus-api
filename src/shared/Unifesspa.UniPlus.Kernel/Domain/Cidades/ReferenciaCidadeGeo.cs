@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 using System.Collections.Frozen;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -41,39 +42,39 @@ public static class ReferenciaCidadeGeo
     public const string OrigemGeoApi = "geo-api";
 
     /// <summary>
-    /// Mapa prefixo (2 primeiros dígitos do código IBGE) → sigla da UF. É a fonte
-    /// de verdade do intervalo válido de prefixos (11–53, com lacunas) e da
-    /// coerência prefixo↔UF. Sem consultar o Geo.
+    /// Mapa prefixo (2 primeiros dígitos do código IBGE) → UF, com a sigla e o nome. É a
+    /// fonte de verdade do intervalo válido de prefixos (11–53, com lacunas), da coerência
+    /// prefixo↔UF e dos nomes das UFs. Sem consultar o Geo.
     /// </summary>
-    private static readonly FrozenDictionary<string, string> UfPorPrefixo = new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly FrozenDictionary<string, UnidadeFederativa> UfPorPrefixo = new Dictionary<string, UnidadeFederativa>(StringComparer.Ordinal)
     {
-        ["11"] = "RO",
-        ["12"] = "AC",
-        ["13"] = "AM",
-        ["14"] = "RR",
-        ["15"] = "PA",
-        ["16"] = "AP",
-        ["17"] = "TO",
-        ["21"] = "MA",
-        ["22"] = "PI",
-        ["23"] = "CE",
-        ["24"] = "RN",
-        ["25"] = "PB",
-        ["26"] = "PE",
-        ["27"] = "AL",
-        ["28"] = "SE",
-        ["29"] = "BA",
-        ["31"] = "MG",
-        ["32"] = "ES",
-        ["33"] = "RJ",
-        ["35"] = "SP",
-        ["41"] = "PR",
-        ["42"] = "SC",
-        ["43"] = "RS",
-        ["50"] = "MS",
-        ["51"] = "MT",
-        ["52"] = "GO",
-        ["53"] = "DF",
+        ["11"] = new("RO", "Rondônia"),
+        ["12"] = new("AC", "Acre"),
+        ["13"] = new("AM", "Amazonas"),
+        ["14"] = new("RR", "Roraima"),
+        ["15"] = new("PA", "Pará"),
+        ["16"] = new("AP", "Amapá"),
+        ["17"] = new("TO", "Tocantins"),
+        ["21"] = new("MA", "Maranhão"),
+        ["22"] = new("PI", "Piauí"),
+        ["23"] = new("CE", "Ceará"),
+        ["24"] = new("RN", "Rio Grande do Norte"),
+        ["25"] = new("PB", "Paraíba"),
+        ["26"] = new("PE", "Pernambuco"),
+        ["27"] = new("AL", "Alagoas"),
+        ["28"] = new("SE", "Sergipe"),
+        ["29"] = new("BA", "Bahia"),
+        ["31"] = new("MG", "Minas Gerais"),
+        ["32"] = new("ES", "Espírito Santo"),
+        ["33"] = new("RJ", "Rio de Janeiro"),
+        ["35"] = new("SP", "São Paulo"),
+        ["41"] = new("PR", "Paraná"),
+        ["42"] = new("SC", "Santa Catarina"),
+        ["43"] = new("RS", "Rio Grande do Sul"),
+        ["50"] = new("MS", "Mato Grosso do Sul"),
+        ["51"] = new("MT", "Mato Grosso"),
+        ["52"] = new("GO", "Goiás"),
+        ["53"] = new("DF", "Distrito Federal"),
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>
@@ -82,10 +83,24 @@ public static class ReferenciaCidadeGeo
     /// duplicar a lista.
     /// </summary>
     private static readonly FrozenSet<string> UfsValidas =
-        UfPorPrefixo.Values.ToFrozenSet(StringComparer.Ordinal);
+        UfPorPrefixo.Values.Select(static uf => uf.Sigla).ToFrozenSet(StringComparer.Ordinal);
 
     /// <summary>As 27 siglas de UF válidas.</summary>
     public static IReadOnlyCollection<string> Ufs => UfsValidas;
+
+    /// <summary>As 27 unidades federativas, com sigla e nome, em ordem alfabética do nome.</summary>
+    public static IReadOnlyList<UnidadeFederativa> UnidadesFederativas { get; } =
+        [.. UfPorPrefixo.Values.OrderBy(static uf => OrdemAlfabetica.Chave(uf.Nome), StringComparer.Ordinal)];
+
+    /// <summary>
+    /// A sigla da UF do município pelo prefixo do código IBGE; nula quando o código não tem a
+    /// forma de código de município.
+    /// </summary>
+    public static string? UfDoCodigoIbge(string codigoIbge)
+    {
+        ArgumentNullException.ThrowIfNull(codigoIbge);
+        return EhCodigoMunicipioValido(codigoIbge) ? UfPorPrefixo[codigoIbge[..2]].Sigla : null;
+    }
 
     /// <summary>
     /// Indica se <paramref name="codigoIbge"/> tem a forma de um código IBGE de município: sete
@@ -186,11 +201,15 @@ public static class ReferenciaCidadeGeo
                     CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido,
                     $"Código IBGE da cidade deve ter exatamente {CodigoIbgeLength} dígitos numéricos.")));
             }
-            else if (!UfPorPrefixo.TryGetValue(codigo[..2], out ufDoPrefixo))
+            else if (UfPorPrefixo.GetValueOrDefault(codigo[..2])?.Sigla is not { } sigla)
             {
                 erros.Add(new(null, new DomainError(
                     CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido,
                     "Os dois primeiros dígitos do código IBGE não correspondem a uma UF válida.")));
+            }
+            else
+            {
+                ufDoPrefixo = sigla;
             }
         }
 
@@ -216,3 +235,6 @@ public static class ReferenciaCidadeGeo
     public static bool EhValida(string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf) =>
         Validar(cidadeCodigoIbge, cidadeNome, cidadeUf).IsSuccess;
 }
+
+/// <summary>Uma unidade federativa do Brasil: a sigla e o nome.</summary>
+public sealed record UnidadeFederativa(string Sigla, string Nome);

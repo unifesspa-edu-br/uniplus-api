@@ -370,6 +370,11 @@ internal static class CorpusEnvelope
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
+            // A UF do Geo é seleção com as UFs congeladas; o município, sem lista, cita a UF.
+            FatoColetado.Criar("NATURALIDADE_UF", 3, "UF de nascimento", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+                origemValores: OrigemValoresColeta.UnidadesFederativas).Value!,
+            FatoColetado.Criar("NATURALIDADE_MUNICIPIO", 4, "Município de nascimento", TipoRenderizacao.Municipio, Obrigatoriedade.Sempre, null,
+                restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
@@ -821,6 +826,11 @@ internal static class CorpusEnvelope
             new ValorDominioDeclaradoCongelado("ATE_1_SM", "Renda familiar per capita de até 1 salário mínimo.", 0),
             new ValorDominioDeclaradoCongelado("ACIMA_1_SM", "Renda familiar per capita acima de 1 salário mínimo.", 1),
         ];
+        List<ValorDominioDeclaradoCongelado> ufs =
+        [
+            new ValorDominioDeclaradoCongelado("AC", "Acre", 0),
+            new ValorDominioDeclaradoCongelado("PA", "Pará", 1),
+        ];
         List<ValorDominioDeclaradoCongelado> parentesco =
         [
             new ValorDominioDeclaradoCongelado(CandidatoComoMembro.ProprioCandidato, "O próprio candidato.", 0),
@@ -832,6 +842,7 @@ internal static class CorpusEnvelope
             corRaca.Reverse();
             renda.Reverse();
             parentesco.Reverse();
+            ufs.Reverse();
         }
 
         return new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
@@ -839,6 +850,7 @@ internal static class CorpusEnvelope
             ["COR_RACA"] = corRaca,
             ["RENDA"] = renda,
             [CandidatoComoMembro.FatoParentesco] = parentesco,
+            ["NATURALIDADE_UF"] = ufs,
         };
     }
 

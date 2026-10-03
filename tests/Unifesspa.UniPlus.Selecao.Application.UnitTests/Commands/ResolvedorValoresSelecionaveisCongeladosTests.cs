@@ -127,6 +127,30 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             ("1500131", "Água Azul do Norte/PA"), ("1504208", "Marabá/PA"), ("1505536", "Parauapebas/PA"));
     }
 
+    [Fact(DisplayName = "Resolver congela, para fato de fonte das UFs do Geo, as 27 UFs pela sigla, em ordem de nome")]
+    public void Resolver_FatoDasUfsDoGeo_CongelaAsVinteESeteUfs()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirItens(
+            [FatoColetado.Criar("NATURALIDADE_UF", 0, "UF de nascimento", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+                origemValores: OrigemValoresColeta.UnidadesFederativas).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
+        {
+            ["NATURALIDADE_UF"] = FatoCategoricoDeEscopoProcesso("NATURALIDADE_UF") with { Cardinalidade = "ESCALAR", FonteValores = "GEO_UF" },
+        };
+
+        IReadOnlyList<ValorDominioDeclaradoCongelado>? valores =
+            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["NATURALIDADE_UF"];
+
+        valores.Should().HaveCount(27);
+        valores!.Take(4).Select(static v => (v.Codigo, v.Descricao)).Should().Equal(("AC", "Acre"), ("AL", "Alagoas"), ("AP", "Amapá"), ("AM", "Amazonas"));
+        valores.Select(static v => v.Ordem).Should().BeInAscendingOrder();
+        valores.Select(static v => v.Codigo).Where(static c => c is "PA" or "PB" or "PR" or "SC" or "SP" or "SE")
+            .Should().Equal(["PA", "PB", "PR", "SC", "SP", "SE"], "a ordem é alfabética sem acento: Pará, Paraíba, Paraná; Santa Catarina, São Paulo, Sergipe");
+    }
+
     [Fact(DisplayName = "Resolver recusa CONDICAO_ATENDIMENTO coletável sem nenhuma condição ofertada")]
     public void Resolver_CondicaoAtendimentoSemOferta_Recusa()
     {

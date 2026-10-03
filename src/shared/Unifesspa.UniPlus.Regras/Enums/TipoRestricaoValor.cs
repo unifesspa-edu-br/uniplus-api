@@ -16,4 +16,7 @@ public enum TipoRestricaoValor
 
     /// <summary>A resposta escolhe entre as respostas dadas a itens anteriores.</summary>
     OpcoesDasRespostas = 4,
+
+    /// <summary>A resposta é um município da UF respondida num item anterior.</summary>
+    MunicipiosDaUf = 5,
 }

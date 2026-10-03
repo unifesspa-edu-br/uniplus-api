@@ -281,7 +281,7 @@ internal static class EscritaDosItens
 
         FatoCandidatoView view = catalogo[input.FatoCodigo];
         TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao);
-        if (CoerenciaDoCampo.Validar(view.Codigo, tipoRenderizacao, view.Dominio, view.Cardinalidade) is { } incoerencia)
+        if (CoerenciaDoCampo.Validar(view.Codigo, tipoRenderizacao, view.Dominio, view.Cardinalidade, view.FonteValores) is { } incoerencia)
         {
             return Result<FatoColetado>.ValidationFailure([new("tipoRenderizacao", incoerencia)]);
         }

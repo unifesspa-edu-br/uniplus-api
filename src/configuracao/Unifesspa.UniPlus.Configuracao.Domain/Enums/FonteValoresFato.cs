@@ -28,9 +28,12 @@ public enum FonteValoresFato
     /// </summary>
     MunicipiosBonus,
 
-    /// <summary>As UFs do módulo Geo, pela sigla (derivado de residência).</summary>
+    /// <summary>As 27 UFs, pela sigla: as do derivado de residência e as que o candidato declara.</summary>
     GeoUf,
 
-    /// <summary>Os municípios do módulo Geo, pelo código IBGE (derivado de residência).</summary>
+    /// <summary>
+    /// Os municípios do módulo Geo, pelo código IBGE: os do derivado de residência e os que o
+    /// candidato declara entre os da UF respondida antes.
+    /// </summary>
     GeoMunicipio,
 }

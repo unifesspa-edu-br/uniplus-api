@@ -451,6 +451,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             case OpcoesDasRespostas respostas:
                 json["fatos"] = CodigosEmOrdem(respostas.Fatos);
                 break;
+            case MunicipiosDaUf daUf:
+                json["fatos"] = CodigosEmOrdem([daUf.FatoUf]);
+                break;
             default:
                 throw new InvalidOperationException($"Restrição de valor sem forma canônica: {restricao.Tipo}.");
         }

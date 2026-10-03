@@ -174,7 +174,7 @@ internal static class ConferenciaDoModelo
         }
 
         FatoDoCatalogo fato = catalogo.Fatos[codigo];
-        if (CoerenciaDoCampo.Validar(codigo, item.TipoRenderizacao, fato.Dominio, fato.Cardinalidade) is { } incoerencia)
+        if (CoerenciaDoCampo.Validar(codigo, item.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia)
         {
             yield return new("tipoRenderizacao", incoerencia);
         }

@@ -239,9 +239,9 @@ public static class FatoCandidatoSeed
             ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
         // O conjunto básico que todo formulário de inscrição coleta: a identificação, a filiação e
-        // os contatos do candidato. A UF do RG e a naturalidade não estão aqui: as opções delas vêm
-        // do Geo, que o formulário ainda não coleta. O nome social é público, porque é a
-        // identificação que o titular escolhe para aparecer (ADR-0082); os demais são pessoais.
+        // os contatos do candidato. A UF do RG e a naturalidade têm as UFs e os municípios do Geo
+        // como opções. O nome social é público, porque é a identificação que o titular escolhe para
+        // aparecer (ADR-0082); os demais são pessoais.
         DadoBasico(27, "NOME", "Nome", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
         DadoBasico(28, "DESEJA_NOME_SOCIAL", "Deseja usar nome social", DominioFato.Booleano, FinalidadeIdentificacao),
         DadoBasico(29, FatoCandidato.CodigoDoNomeSocial, "Nome social", DominioFato.Texto, FinalidadeIdentificacao,
@@ -259,6 +259,10 @@ public static class FatoCandidatoSeed
         DadoBasico(38, "ESTADO_CIVIL", "Estado civil", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
         DadoBasico(39, "EMAIL", "E-mail", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Email),
         DadoBasico(40, "TELEFONE", "Telefone", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Telefone),
+        DadoBasico(41, "RG_UF", "UF de emissão do RG", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
+        DadoBasico(42, "NATURALIDADE_UF", "UF de nascimento", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
+        DadoBasico(43, "NATURALIDADE_MUNICIPIO", "Município de nascimento", DominioFato.Categorico, FinalidadeIdentificacao,
+            fonte: FonteValoresFato.GeoMunicipio),
     ];
 
     /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>

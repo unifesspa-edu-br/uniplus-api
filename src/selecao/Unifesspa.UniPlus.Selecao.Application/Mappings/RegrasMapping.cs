@@ -31,6 +31,7 @@ internal static class RegrasMapping
             OpcoesPermitidas opcoes => new RestricaoValorDto(tipo, null, null, [.. opcoes.Entradas.Select(static e =>
                 new OpcoesCondicionadasDto(e.Quando?.ToDto(), [.. e.Valores.Order(StringComparer.Ordinal)]))], null),
             OpcoesDasRespostas respostas => new RestricaoValorDto(tipo, null, null, null, respostas.Fatos),
+            MunicipiosDaUf daUf => new RestricaoValorDto(tipo, null, null, null, [daUf.FatoUf]),
             _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Tipo de restrição sem forma de leitura."),
         };
     }

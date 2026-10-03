@@ -19,6 +19,8 @@ public static class ItemFormularioErrorCodes
     public const string FatoNaoColetavel = "ItemFormulario.FatoNaoColetavel";
     public const string ItensEmExcesso = "ItemFormulario.ItensEmExcesso";
     public const string OpcoesDeOutroDominio = "ItemFormulario.OpcoesDeOutroDominio";
+    public const string MunicipioSemUf = "ItemFormulario.MunicipioSemUf";
+    public const string UfDoMunicipioInvalida = "ItemFormulario.UfDoMunicipioInvalida";
 }
 
 /// <summary>Códigos de recusa da forma de um grupo repetível do formulário, no processo e no modelo.</summary>

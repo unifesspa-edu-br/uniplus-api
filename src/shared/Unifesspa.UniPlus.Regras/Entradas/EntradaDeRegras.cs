@@ -81,9 +81,10 @@ public static class EntradaDeRegras
                     RestricaoValorErrorCodes.LimitesIncoerentes, "Os limites de tamanho de texto são números inteiros.")),
             TipoRestricaoValor.OpcoesPermitidas => Opcoes(input.Entradas ?? []),
             TipoRestricaoValor.OpcoesDasRespostas => RestricoesDeValor.DasRespostas(input.Fatos ?? []),
+            TipoRestricaoValor.MunicipiosDaUf => RestricoesDeValor.DaUf(input.Fatos ?? []),
             _ => Result<RestricaoValor>.Failure(new DomainError(
                 RestricaoValorErrorCodes.TipoDesconhecido,
-                "O tipo da restrição é FAIXA_NUMERICA, TAMANHO_TEXTO, OPCOES_PERMITIDAS ou OPCOES_DAS_RESPOSTAS.")),
+                "O tipo da restrição é FAIXA_NUMERICA, TAMANHO_TEXTO, OPCOES_PERMITIDAS, OPCOES_DAS_RESPOSTAS ou MUNICIPIOS_DA_UF.")),
         };
     }
 
@@ -139,6 +140,7 @@ public static class EntradaDeRegras
             OpcoesPermitidas opcoes => new(tipo, Entradas: [.. opcoes.Entradas.Select(static e =>
                 new OpcoesCondicionadasInput(ParaEntrada(e.Quando), [.. e.Valores.Order(StringComparer.Ordinal)]))]),
             OpcoesDasRespostas respostas => new(tipo, Fatos: respostas.Fatos),
+            MunicipiosDaUf daUf => new(tipo, Fatos: [daUf.FatoUf]),
             _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Restrição de valor fora do vocabulário."),
         };
     }

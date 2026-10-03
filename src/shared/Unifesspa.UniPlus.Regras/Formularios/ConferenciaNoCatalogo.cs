@@ -207,6 +207,14 @@ public static class ConferenciaNoCatalogo
                         ItemFormularioErrorCodes.OpcoesDeOutroDominio,
                         "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."));
                     break;
+                case MunicipiosDaUf daUf
+                    when !catalogo.TryGetValue(daUf.FatoUf, out FatoDoCatalogo? uf)
+                        || !string.Equals(uf.FonteValores, DominioDoCatalogo.FonteGeoUf, StringComparison.Ordinal)
+                        || !string.Equals(uf.Cardinalidade, DominioDoCatalogo.Escalar, StringComparison.Ordinal):
+                    yield return new($"{campo}.fatos", new DomainError(
+                        ItemFormularioErrorCodes.UfDoMunicipioInvalida,
+                        "Os municípios da UF citam um campo de UF de resposta única, com as UFs do Geo."));
+                    break;
                 default:
                     break;
             }

@@ -5,6 +5,7 @@ using Abstractions;
 using Domain.Entities;
 using Domain.Enums;
 
+using Kernel.Domain.Cidades;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -179,6 +180,9 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             case OrigemValoresColeta.MunicipiosDoBonus:
                 return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success([.. VocabularioDeFatos.MunicipiosDoBonus(processo)
                     .Select(static (m, ordem) => new ValorDominioDeclaradoCongelado(m.CodigoIbge, $"{m.Nome}/{m.Uf}", ordem))]);
+            case OrigemValoresColeta.UnidadesFederativas:
+                return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success([.. ReferenciaCidadeGeo.UnidadesFederativas
+                    .Select(static (uf, ordem) => new ValorDominioDeclaradoCongelado(uf.Sigla, uf.Nome, ordem))]);
             case OrigemValoresColeta.Catalogo:
             default:
                 break;

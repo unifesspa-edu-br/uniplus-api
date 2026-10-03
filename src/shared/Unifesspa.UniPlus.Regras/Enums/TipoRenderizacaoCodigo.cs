@@ -14,6 +14,7 @@ public static class TipoRenderizacaoCodigo
     public const string Texto = "TEXTO";
     public const string Data = "DATA";
     public const string Endereco = "ENDERECO";
+    public const string Municipio = "MUNICIPIO";
 
     /// <summary>
     /// Converte para o código canônico. O <c>switch</c> é exaustivo: um valor novo quebra a build
@@ -28,6 +29,7 @@ public static class TipoRenderizacaoCodigo
         TipoRenderizacao.Texto => Texto,
         TipoRenderizacao.Data => Data,
         TipoRenderizacao.Endereco => Endereco,
+        TipoRenderizacao.Municipio => Municipio,
         TipoRenderizacao.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(tipo), tipo, "TipoRenderizacao.Nenhuma é sentinela e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoRenderizacao desconhecido."),
@@ -48,6 +50,7 @@ public static class TipoRenderizacaoCodigo
         Texto => TipoRenderizacao.Texto,
         Data => TipoRenderizacao.Data,
         Endereco => TipoRenderizacao.Endereco,
+        Municipio => TipoRenderizacao.Municipio,
         _ => TipoRenderizacao.Nenhuma,
     };
 }

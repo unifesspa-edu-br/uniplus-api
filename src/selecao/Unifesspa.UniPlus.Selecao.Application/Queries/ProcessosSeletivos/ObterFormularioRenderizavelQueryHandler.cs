@@ -468,7 +468,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 => new RestricaoValorDto(tipo, minimo, maximo, null, null),
             TipoRestricaoValor.OpcoesPermitidas when TentarEntradas(restricao, out List<OpcoesCondicionadasDto>? entradas)
                 => new RestricaoValorDto(tipo, null, null, entradas, null),
-            TipoRestricaoValor.OpcoesDasRespostas when TentarTextos(restricao, "fatos", out List<string>? fatos)
+            TipoRestricaoValor.OpcoesDasRespostas or TipoRestricaoValor.MunicipiosDaUf when TentarTextos(restricao, "fatos", out List<string>? fatos)
                 => new RestricaoValorDto(tipo, null, null, null, fatos),
             _ => null,
         };

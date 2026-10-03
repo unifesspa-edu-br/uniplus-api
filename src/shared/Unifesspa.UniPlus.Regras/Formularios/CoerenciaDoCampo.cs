@@ -7,7 +7,8 @@ using Unifesspa.UniPlus.Regras.Errors;
 /// <summary>
 /// O tipo de campo segue o domínio e a cardinalidade do fato no catálogo, no processo e no modelo:
 /// booleano em campo de sim/não, numérico em campo numérico, texto, data e endereço de resposta
-/// única nos campos deles, e categórico em seleção única ou múltipla conforme a cardinalidade.
+/// única nos campos deles, e categórico em seleção única ou múltipla conforme a cardinalidade — salvo
+/// o município do Geo, de resposta única no campo de município.
 /// </summary>
 public static class CoerenciaDoCampo
 {
@@ -23,9 +24,10 @@ public static class CoerenciaDoCampo
     /// Recusa o tipo de campo incoerente com o domínio e a cardinalidade do fato, dados pelos
     /// tokens do catálogo. O campo de texto recolhe uma resposta só: não há várias respostas de texto.
     /// </summary>
-    public static DomainError? Validar(string fatoCodigo, TipoRenderizacao tipoRenderizacao, string dominio, string cardinalidade)
+    public static DomainError? Validar(string fatoCodigo, TipoRenderizacao tipoRenderizacao, string dominio, string cardinalidade, string? fonteValores)
     {
         bool multivalorado = string.Equals(cardinalidade, Multivalorado, StringComparison.Ordinal);
+        bool municipio = string.Equals(fonteValores, DominioDoCatalogo.FonteGeoMunicipio, StringComparison.Ordinal);
         bool coerente = dominio switch
         {
             Booleano => tipoRenderizacao == TipoRenderizacao.Booleano,
@@ -33,6 +35,7 @@ public static class CoerenciaDoCampo
             Texto => tipoRenderizacao == TipoRenderizacao.Texto && !multivalorado,
             Data => tipoRenderizacao == TipoRenderizacao.Data && !multivalorado,
             Endereco => tipoRenderizacao == TipoRenderizacao.Endereco && !multivalorado,
+            Categorico when municipio => tipoRenderizacao == TipoRenderizacao.Municipio && !multivalorado,
             Categorico => tipoRenderizacao == (multivalorado ? TipoRenderizacao.SelecaoMultipla : TipoRenderizacao.SelecaoUnica),
             _ => false,
         };

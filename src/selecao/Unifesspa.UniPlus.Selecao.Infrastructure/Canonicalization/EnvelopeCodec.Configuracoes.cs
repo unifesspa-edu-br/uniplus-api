@@ -234,7 +234,8 @@ public sealed partial class EnvelopeCodec
                 TipoRestricaoValor.FaixaNumerica => LerFaixa(leitor, bloco, pathRestricao),
                 TipoRestricaoValor.TamanhoTexto => LerTamanho(leitor, bloco, pathRestricao),
                 TipoRestricaoValor.OpcoesPermitidas => LerOpcoesPermitidas(leitor, bloco, pathRestricao),
-                TipoRestricaoValor.OpcoesDasRespostas => LerOpcoesDasRespostas(leitor, bloco, pathRestricao),
+                TipoRestricaoValor.OpcoesDasRespostas => LerFatosDaRestricao(leitor, bloco, pathRestricao, RestricoesDeValor.DasRespostas),
+                TipoRestricaoValor.MunicipiosDaUf => LerFatosDaRestricao(leitor, bloco, pathRestricao, RestricoesDeValor.DaUf),
                 _ => leitor.Propagar<Result<RestricaoValor>?>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado, $"'{pathRestricao}.tipo' não é um tipo de restrição de valor.")),
             };
@@ -299,11 +300,13 @@ public sealed partial class EnvelopeCodec
         return leitor.Falhou ? null : RestricoesDeValor.Opcoes(lidas);
     }
 
-    private static Result<RestricaoValor>? LerOpcoesDasRespostas(LeitorEnvelope leitor, JsonObject bloco, string path)
+    /// <summary>A restrição que cita fatos — as opções formadas pelas respostas ou os municípios da UF.</summary>
+    private static Result<RestricaoValor>? LerFatosDaRestricao(
+        LeitorEnvelope leitor, JsonObject bloco, string path, Func<IReadOnlyCollection<string>, Result<RestricaoValor>> montar)
     {
         leitor.ExigirChaves(bloco, path, "tipo", "fatos");
         IReadOnlyList<string> fatos = leitor.Textos(bloco, "fatos", path);
-        return leitor.Falhou ? null : RestricoesDeValor.DasRespostas(fatos);
+        return leitor.Falhou ? null : montar(fatos);
     }
 
     private static TermoExigidoFormulario? LerTermoExigido(
