@@ -61,48 +61,14 @@ public static class ResolvedorEstadoFatos
         ArgumentNullException.ThrowIfNull(respostasBrutas);
         ArgumentNullException.ThrowIfNull(valoresOfertados);
 
-        // Uma etapa por seção de cada formulário, na ordem das finalidades e das seções, com a
-        // exibição da seção; o item fora de seção fica numa etapa sem exibição da sua finalidade.
-        DefinicaoEtapa[] etapas = [.. fatosColetados
-            .GroupBy(static f => f.Finalidade)
-            .OrderBy(static g => g.Key)
-            .SelectMany(g => EtapasDaFinalidade(g.Key, formularios.FirstOrDefault(f => f.Finalidade == g.Key), g))];
-
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
-            new DefinicaoFormulario(etapas, termos: [], derivacoes),
+            DefinicaoDoProcesso.Montar(formularios, fatosColetados, grupos: [], termos: [], derivacoes, agregados: []),
             new EntradaAvaliacaoFormulario(
-                RespostasDentroDaOferta(respostasBrutas, valoresOfertados),
+                RespostaDeCampo.DentroDaOferta(respostasBrutas, valoresOfertados),
                 EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
                 FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
 
         // Os derivados entram só na avaliação; o resultado é o estado dos fatos coletados.
         return fatosColetados.ToDictionary(static f => f.FatoCodigo, f => avaliacao.Fatos[f.FatoCodigo], StringComparer.Ordinal);
     }
-
-    private static IEnumerable<DefinicaoEtapa> EtapasDaFinalidade(
-        FinalidadeFormulario finalidade, FormularioProcesso? formulario, IEnumerable<FatoColetado> itens)
-    {
-        Dictionary<string, EtapaFormulario> secoes = (formulario?.Etapas ?? [])
-            .ToDictionary(static e => e.Codigo, StringComparer.Ordinal);
-        return itens
-            .GroupBy(i => i.EtapaCodigo is { } codigo && secoes.ContainsKey(codigo) ? codigo : string.Empty)
-            .OrderBy(g => g.Key.Length == 0 ? -1 : secoes[g.Key].Ordem)
-            .Select(g => new DefinicaoEtapa(
-                g.Key.Length == 0 ? finalidade.ToString() : $"{finalidade}:{g.Key}",
-                g.Key.Length == 0 ? null : secoes[g.Key].Exibicao,
-                [.. g.OrderBy(static f => f.Ordem).Select(static fato => new DefinicaoItem(
-                    fato.FatoCodigo,
-                    fato.ParaPredicado(),
-                    fato.Obrigatoriedade,
-                    fato.Restricoes))]));
-    }
-
-    private static Dictionary<string, JsonElement> RespostasDentroDaOferta(
-        IReadOnlyDictionary<string, JsonElement> respostas,
-        IReadOnlyDictionary<string, IReadOnlySet<string>> valoresOfertados) =>
-        respostas
-            .Where(resposta => !valoresOfertados.TryGetValue(resposta.Key, out IReadOnlySet<string>? oferta)
-                || RespostaDeCampo.EstaVazia(resposta.Value)
-                || RespostaDeCampo.Codigos(resposta.Value) is { } codigos && codigos.All(oferta.Contains))
-            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
 }

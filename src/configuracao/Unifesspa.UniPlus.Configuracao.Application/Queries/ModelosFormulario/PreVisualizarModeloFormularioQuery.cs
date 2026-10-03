@@ -51,12 +51,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         PreVisualizacaoDoModeloInput simulacao = query.Simulacao ?? new(null, null, null);
 
-        // O pressuposto em branco não é resposta: é não informado, e nenhuma condição sobre ele se cumpre.
-        Dictionary<string, FatoResolvido> conhecidos = (simulacao.Pressupostos ?? new Dictionary<string, JsonElement>())
-            .ToDictionary(
-                static p => p.Key,
-                static p => RespostaDeCampo.EstaVazia(p.Value) ? FatoResolvido.NaoInformado() : FatoResolvido.Resolvido(p.Value.Clone()),
-                StringComparer.Ordinal);
+        Dictionary<string, FatoResolvido> conhecidos = RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos);
 
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
             modelo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos)),

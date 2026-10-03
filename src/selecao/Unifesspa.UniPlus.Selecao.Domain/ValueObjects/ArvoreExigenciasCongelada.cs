@@ -8,7 +8,8 @@ using Entities;
 /// Substitui <c>BlocoExigenciasCongelado</c> (grupo plano) pela floresta de raízes da árvore de
 /// satisfação. Tipo próprio (não <c>IReadOnlyList&lt;NoExigencia&gt;</c> cru) pela mesma razão do
 /// antecessor: marca no sistema de tipos a fronteira entre evidência CONGELADA de uma versão
-/// publicada e a configuração viva do agregado.
+/// publicada e a configuração viva do agregado. A pré-visualização do processo é a exceção nomeada:
+/// avalia a árvore da configuração viva, por <see cref="DaConfiguracaoViva"/>.
 /// </summary>
 public sealed record ArvoreExigenciasCongelada
 {
@@ -29,5 +30,15 @@ public sealed record ArvoreExigenciasCongelada
     {
         ArgumentNullException.ThrowIfNull(raizes);
         return new ArvoreExigenciasCongelada([.. raizes]);
+    }
+
+    /// <summary>
+    /// A floresta da configuração viva do processo — rascunho ou sessão de retificação —, para a
+    /// pré-visualização: mostra o que a configuração em edição exigiria, não o que foi publicado.
+    /// </summary>
+    public static ArvoreExigenciasCongelada DaConfiguracaoViva(ProcessoSeletivo processo)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        return new ArvoreExigenciasCongelada([.. processo.RaizesDeExigencia]);
     }
 }

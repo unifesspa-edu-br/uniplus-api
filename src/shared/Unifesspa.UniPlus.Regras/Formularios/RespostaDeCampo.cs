@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
 /// <summary>
 /// Leitura da resposta que o candidato deu a um campo do formulário. Centraliza o que conta como
 /// "sem resposta" e como extrair os códigos escolhidos, para que o avaliador e as restrições leiam a
@@ -52,4 +54,33 @@ public static class RespostaDeCampo
 
         return codigos;
     }
+
+    /// <summary>
+    /// As respostas que valem diante da oferta: a de um fato ofertado só vale com códigos da oferta
+    /// — uma opção retirada ou um município fora da área do bônus não satisfaz condição alguma. A
+    /// resposta em branco e a de fato sem oferta passam como estão.
+    /// </summary>
+    public static Dictionary<string, JsonElement> DentroDaOferta(
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlySet<string>> valoresOfertados)
+    {
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(valoresOfertados);
+        return respostas
+            .Where(resposta => !valoresOfertados.TryGetValue(resposta.Key, out IReadOnlySet<string>? oferta)
+                || EstaVazia(resposta.Value)
+                || Codigos(resposta.Value) is { } codigos && codigos.All(oferta.Contains))
+            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// Os fatos que a simulação dá como conhecidos, fora do formulário: o valor dado resolve o fato,
+    /// e o valor em branco é não informado — nenhuma condição sobre ele se cumpre.
+    /// </summary>
+    public static Dictionary<string, FatoResolvido> ComoFatosConhecidos(IReadOnlyDictionary<string, JsonElement>? simulados) =>
+        (simulados ?? new Dictionary<string, JsonElement>())
+            .ToDictionary(
+                static p => p.Key,
+                static p => EstaVazia(p.Value) ? FatoResolvido.NaoInformado() : FatoResolvido.Resolvido(p.Value.Clone()),
+                StringComparer.Ordinal);
 }
