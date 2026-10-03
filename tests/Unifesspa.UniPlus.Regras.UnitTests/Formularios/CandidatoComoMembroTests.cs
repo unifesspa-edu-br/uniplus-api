@@ -18,6 +18,7 @@ public sealed class CandidatoComoMembroTests
     [InlineData("parentescoOpcional", "subitens[0]")]
     [InlineData("parentescoComExibicao", "subitens[0]")]
     [InlineData("opcoesSemOCandidato", "subitens[0].restricoes")]
+    [InlineData("opcoesDasRespostas", "subitens[0].restricoes")]
     public void Conferir_GrupoQueIncluiOCandidato_RecusaOQueNaoIdentificaAOcorrenciaDele(string caso, string? campoRecusado)
     {
         Subitem parentesco = new(Parentesco, false, Obrigatoriedade.Sempre, []);
@@ -28,6 +29,7 @@ public sealed class CandidatoComoMembroTests
             "parentescoOpcional" => (1, [parentesco with { Obrigatoriedade = Obrigatoriedade.Nunca }]),
             "parentescoComExibicao" => (1, [parentesco with { TemExibicao = true }]),
             "opcoesSemOCandidato" => (1, [parentesco with { Restricoes = [Opcoes("PAI_OU_MAE")] }]),
+            "opcoesDasRespostas" => (1, [parentesco with { Restricoes = [new OpcoesDasRespostas(["PARENTESCOS_DECLARADOS"])] }]),
             _ => (1, [parentesco with { Restricoes = [Opcoes(CandidatoComoMembro.ProprioCandidato, "PAI_OU_MAE")] }]),
         };
 

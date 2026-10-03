@@ -19,7 +19,8 @@ public static class CandidatoComoMembro
     /// <summary>
     /// O grupo que inclui o candidato tem ao menos uma ocorrência e um campo de parentesco sempre
     /// exibido e obrigatório; se o campo restringe as opções, o próprio candidato está entre as que
-    /// valem sempre. Sem isso, nenhuma resposta identificaria a ocorrência do candidato.
+    /// valem sempre — opções formadas pelas respostas anteriores não o garantem. Sem isso, nenhuma
+    /// resposta identificaria a ocorrência do candidato.
     /// </summary>
     public static List<FieldError> Conferir(
         int minimo,
@@ -49,7 +50,8 @@ public static class CandidatoComoMembro
             Recusar($"subitens[{indice}]", "O parentesco do grupo que inclui o candidato é sempre exibido e obrigatório.");
         }
 
-        if (restricoes.OfType<OpcoesPermitidas>().Any(static o => !o.Entradas.Any(static e => e.Quando is null && e.Valores.Contains(ProprioCandidato))))
+        if (restricoes.Any(static r => r is OpcoesDasRespostas
+            || (r is OpcoesPermitidas permitidas && !permitidas.Entradas.Any(static e => e.Quando is null && e.Valores.Contains(ProprioCandidato)))))
         {
             Recusar($"subitens[{indice}].restricoes",
                 $"As opções de parentesco do grupo que inclui o candidato admitem sempre o próprio candidato ({ProprioCandidato}).");
