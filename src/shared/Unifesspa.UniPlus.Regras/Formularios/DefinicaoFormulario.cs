@@ -3,16 +3,17 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Descrição de um formulário para avaliação: etapas ordenadas com os seus itens, termos e as
-/// derivações por regra que o formulário usa (UNI-REQ-0144, UNI-REQ-0145). Não é entidade: o módulo
+/// Descrição de um formulário para avaliação: etapas ordenadas com os seus itens, termos, as
+/// derivações por regra que o formulário usa e os agregados sobre os grupos repetíveis dele
+/// (UNI-REQ-0144, UNI-REQ-0145, UNI-REQ-0146). Não é entidade: o módulo
 /// dono a monta a partir da configuração que ele já validou, e o avaliador trabalha só sobre ela
 /// (ADR-0135).
 /// </summary>
 /// <remarks>
 /// As invariantes que tornariam a avaliação ambígua são protegidas com
 /// <see cref="ArgumentException"/>: um fato produzido por dois itens ou subitens, um fato que é ao
-/// mesmo tempo item e derivado, um grupo com o código de um fato, e código de etapa ou de termo
-/// repetido. A recusa com mensagem ao administrador é
+/// mesmo tempo item e derivado, um grupo com o código de um fato, um agregado sobre grupo que o
+/// formulário não tem, e código de etapa ou de termo repetido. A recusa com mensagem ao administrador é
 /// do cadastro, antes de a descrição existir.
 /// </remarks>
 public sealed record DefinicaoFormulario
@@ -20,11 +21,13 @@ public sealed record DefinicaoFormulario
     public DefinicaoFormulario(
         IReadOnlyList<DefinicaoEtapa> etapas,
         IReadOnlyList<DefinicaoTermo> termos,
-        IReadOnlyList<RegrasDerivacaoFato> derivacoes)
+        IReadOnlyList<RegrasDerivacaoFato> derivacoes,
+        IReadOnlyList<DefinicaoAgregado>? agregados = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(termos);
         ArgumentNullException.ThrowIfNull(derivacoes);
+        IReadOnlyList<DefinicaoAgregado> sobreGrupos = agregados ?? [];
 
         GarantirUnicos(etapas.Select(static e => e.Codigo), "etapa");
         GarantirUnicos(termos.Select(static t => t.Codigo), "termo");
@@ -32,12 +35,20 @@ public sealed record DefinicaoFormulario
             etapas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo)
                 .Concat(etapas.SelectMany(static e => e.Grupos).SelectMany(static g => g.Subitens).Select(static i => i.FatoCodigo))
                 .Concat(derivacoes.Select(static d => d.CodigoFato))
+                .Concat(sobreGrupos.Select(static a => a.Codigo))
                 .Concat(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo)),
             "fato produzido ou grupo do formulário");
+
+        HashSet<string> codigosDosGrupos = new(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
+        if (sobreGrupos.FirstOrDefault(a => !codigosDosGrupos.Contains(a.GrupoCodigo)) is { } semGrupo)
+        {
+            throw new ArgumentException($"O agregado '{semGrupo.Codigo}' é sobre o grupo '{semGrupo.GrupoCodigo}', que o formulário não tem.");
+        }
 
         Etapas = [.. etapas];
         Termos = [.. termos];
         Derivacoes = [.. derivacoes];
+        Agregados = [.. sobreGrupos];
     }
 
     public IReadOnlyList<DefinicaoEtapa> Etapas { get; }
@@ -45,6 +56,9 @@ public sealed record DefinicaoFormulario
     public IReadOnlyList<DefinicaoTermo> Termos { get; }
 
     public IReadOnlyList<RegrasDerivacaoFato> Derivacoes { get; }
+
+    /// <summary>Os fatos agregados sobre os grupos repetíveis, citáveis fora do grupo (ADR-0138).</summary>
+    public IReadOnlyList<DefinicaoAgregado> Agregados { get; }
 
     private static void GarantirUnicos(IEnumerable<string> codigos, string oQue)
     {
@@ -192,6 +206,37 @@ public sealed record DefinicaoItem
             .Concat(Obrigatoriedade.FatosCitados)
             .Concat(Restricoes.SelectMany(static r => r.FatosCitados))
             .Distinct(StringComparer.Ordinal)];
+}
+
+/// <summary>
+/// Um fato agregado sobre um grupo repetível: o fato de membro que ele agrega nas ocorrências do
+/// grupo e a operação (UNI-REQ-0146, ADR-0138).
+/// </summary>
+public sealed record DefinicaoAgregado
+{
+    public DefinicaoAgregado(string codigo, string grupoCodigo, string fatoDeMembro, OperacaoAgregado operacao)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(grupoCodigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fatoDeMembro);
+        if (operacao == OperacaoAgregado.Nenhuma || !Enum.IsDefined(operacao))
+        {
+            throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "O agregado é EXISTE ou VALORES_PRESENTES.");
+        }
+
+        Codigo = codigo;
+        GrupoCodigo = grupoCodigo;
+        FatoDeMembro = fatoDeMembro;
+        Operacao = operacao;
+    }
+
+    public string Codigo { get; }
+
+    public string GrupoCodigo { get; }
+
+    public string FatoDeMembro { get; }
+
+    public OperacaoAgregado Operacao { get; }
 }
 
 /// <summary>
