@@ -26,7 +26,7 @@ public sealed class DocumentoEditalTests
             ProcessoSeletivoId, clock, ttl);
 
         documento.ProcessoSeletivoId.Should().Be(ProcessoSeletivoId);
-        documento.Status.Should().Be(StatusDocumentoEdital.Pendente);
+        documento.Status.Should().Be(StatusArquivoEnviado.Pendente);
         documento.ExpiraEm.Should().BeCloseTo(clock.GetUtcNow().Add(ttl), TimeSpan.FromSeconds(5));
         documento.HashSha256.Should().BeNull();
         documento.TamanhoBytes.Should().BeNull();
@@ -43,7 +43,7 @@ public sealed class DocumentoEditalTests
         Result resultado = documento.Confirmar(1024, "hash-sha256-fake", clock);
 
         resultado.IsSuccess.Should().BeTrue();
-        documento.Status.Should().Be(StatusDocumentoEdital.Confirmado);
+        documento.Status.Should().Be(StatusArquivoEnviado.Confirmado);
         documento.TamanhoBytes.Should().Be(1024);
         documento.HashSha256.Should().Be("hash-sha256-fake");
         documento.ConfirmadoEm.Should().BeCloseTo(clock.GetUtcNow(), TimeSpan.FromSeconds(5));

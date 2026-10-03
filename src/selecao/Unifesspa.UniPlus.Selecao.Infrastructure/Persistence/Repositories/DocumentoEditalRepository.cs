@@ -59,8 +59,8 @@ public sealed class DocumentoEditalRepository : IDocumentoEditalRepository
     public async Task<bool> TentarReivindicarConfirmacaoAsync(Guid id, CancellationToken cancellationToken = default)
     {
         int linhasAfetadas = await _context.DocumentosEdital
-            .Where(d => d.Id == id && d.Status == StatusDocumentoEdital.Pendente)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(d => d.Status, StatusDocumentoEdital.Confirmado), cancellationToken)
+            .Where(d => d.Id == id && d.Status == StatusArquivoEnviado.Pendente)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(d => d.Status, StatusArquivoEnviado.Confirmado), cancellationToken)
             .ConfigureAwait(false);
 
         return linhasAfetadas == 1;

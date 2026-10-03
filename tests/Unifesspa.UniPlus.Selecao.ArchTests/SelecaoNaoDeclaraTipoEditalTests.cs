@@ -11,8 +11,7 @@ using AwesomeAssertions;
 /// Fitness test da issue #850: o vocabulário <c>Edital</c> que a #804 eliminou do módulo
 /// Seleção não pode reaparecer como identificador de código C#. Detecção por identificador
 /// EXATO (<c>\bEdital\b</c> e o resto da lista negra), nunca por substring — o que faz
-/// <c>DocumentoEdital</c>/<c>DocumentoEditalId</c>/<c>StatusDocumentoEdital</c> ficarem de
-/// fora sem precisar de allowlist: não há fronteira de palavra entre "Documento" e "Edital"
+/// <c>DocumentoEdital</c>/<c>DocumentoEditalId</c> ficarem de fora sem precisar de allowlist: não há fronteira de palavra entre "Documento" e "Edital"
 /// (os dois são caracteres \w), então o regex já os ignora pela própria definição de
 /// <c>\b</c>.
 /// </summary>

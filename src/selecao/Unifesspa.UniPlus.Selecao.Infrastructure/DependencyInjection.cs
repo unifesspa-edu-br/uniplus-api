@@ -79,7 +79,7 @@ public static class SelecaoInfrastructureRegistration
         // IStorageService compartilhado (registrado uma vez no host via
         // AddUniPlusStorage). Não registra AddUniPlusStorage aqui: é
         // cross-cutting compartilhado entre módulos, já ligado no host.
-        services.AddScoped<IDocumentoEditalStorage, DocumentoEditalStorageService>();
+        services.AddScoped<IArquivoArmazenadoStorage, ArquivoArmazenadoStorageService>();
 
         return services;
     }

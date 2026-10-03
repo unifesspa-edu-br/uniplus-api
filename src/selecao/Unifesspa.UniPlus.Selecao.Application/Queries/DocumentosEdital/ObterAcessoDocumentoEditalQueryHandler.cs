@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosEdital;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -22,16 +23,16 @@ public static class ObterAcessoDocumentoEditalQueryHandler
     /// PDF de até 20 MB numa conexão ruim, enquanto a leitura só precisa
     /// cobrir o intervalo entre o clique e o navegador seguir o link.
     /// </summary>
-    public const int TtlLeituraSegundos = 300;
+    public const int TtlLeituraSegundos = PrazosDoArquivoEnviado.LeituraSegundos;
 
     /// <summary>TTL da URL pre-assinada de leitura como <see cref="TimeSpan"/> — ver <see cref="TtlLeituraSegundos"/>.</summary>
-    public static readonly TimeSpan TtlLeitura = TimeSpan.FromSeconds(TtlLeituraSegundos);
+    public static readonly TimeSpan TtlLeitura = PrazosDoArquivoEnviado.Leitura;
 
     public static async Task<Result<AcessoDocumentoEditalDto>> Handle(
         ObterAcessoDocumentoEditalQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoEditalRepository documentoEditalRepository,
-        IDocumentoEditalStorage storage,
+        IArquivoArmazenadoStorage storage,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {
@@ -74,7 +75,7 @@ public static class ObterAcessoDocumentoEditalQueryHandler
         // O pendente não passou pela validação de conteúdo: o que está na
         // chave de upload pode não ser PDF, pode exceder o limite, e pode ter
         // sido sobrescrito enquanto a URL de PUT ainda valia.
-        if (documento.Status != StatusDocumentoEdital.Confirmado || documento.ObjectKeyConfirmado is null)
+        if (documento.Status != StatusArquivoEnviado.Confirmado || documento.ObjectKeyConfirmado is null)
         {
             return Result<AcessoDocumentoEditalDto>.Failure(new DomainError(
                 "DocumentoEdital.NaoConfirmado",

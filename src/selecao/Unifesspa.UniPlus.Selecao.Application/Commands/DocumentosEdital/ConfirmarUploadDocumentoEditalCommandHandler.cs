@@ -13,6 +13,8 @@ using Kernel.Results;
 
 using Mappings;
 
+using Services;
+
 /// <summary>
 /// Handler convention-based de <see cref="ConfirmarUploadDocumentoEditalCommand"/>.
 /// </summary>
@@ -21,7 +23,7 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
     public static async Task<Result<DocumentoEditalDto>> Handle(
         ConfirmarUploadDocumentoEditalCommand command,
         IDocumentoEditalRepository documentoEditalRepository,
-        IDocumentoEditalStorage storage,
+        IArquivoArmazenadoStorage storage,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider clock,
         CancellationToken cancellationToken)
@@ -41,66 +43,26 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
                 "DocumentoEdital.NaoEncontrado", "Documento do Edital não encontrado."));
         }
 
-        InfoObjetoArmazenado? info = await storage
-            .ObterInfoAsync(documento.ObjectKey, cancellationToken)
+        ArquivoEnviadoLido lido = await LeituraDoArquivoEnviado
+            .LerAsync(storage, documento.ObjectKey, DocumentoEdital.TamanhoMaximoBytes, cancellationToken)
             .ConfigureAwait(false);
-        if (info is null)
+        if (lido.Situacao == SituacaoDoArquivoEnviado.Ausente)
         {
             return Result<DocumentoEditalDto>.Failure(new DomainError(
                 "DocumentoEdital.ObjetoNaoEncontrado",
                 "O objeto ainda não foi enviado ao storage ou expirou antes da confirmação."));
         }
 
-        // Atalho: o stat (HEAD) não traz o conteúdo, então barrar cedo pelo
-        // tamanho já reportado evita abrir o stream no caso comum de um
-        // envio já obviamente grande demais. Não é a proteção definitiva —
-        // ObjectKey segue sobrescrevível até o TTL expirar (ver
-        // ObjectKeyConfirmado), então o tamanho pode mudar entre este stat e
-        // a leitura abaixo; quem garante o limite de fato é a leitura
-        // limitada, não este atalho.
-        if (info.TamanhoBytes > DocumentoEdital.TamanhoMaximoBytes)
+        if (lido.Situacao == SituacaoDoArquivoEnviado.Excedido)
         {
             return Result<DocumentoEditalDto>.Failure(new DomainError(
                 "DocumentoEdital.TamanhoExcedido",
                 $"O documento excede o tamanho máximo permitido de {DocumentoEdital.TamanhoMaximoBytes / (1024 * 1024)} MB."));
         }
 
-        // Objeto de 0 bytes: um Range GET (byte 0 a N) não é satisfazível
-        // sobre um objeto vazio (o servidor recusa com 416) — não há o que
-        // ler, e o resultado já é conhecido (ValidarConteudo recusa conteúdo
-        // vazio por assinatura ausente), então nem tenta a leitura.
-        byte[] conteudo;
-        if (info.TamanhoBytes == 0)
-        {
-            conteudo = [];
-        }
-        else
-        {
-            // AbrirLeituraAsync nunca traz mais que TamanhoMaximoBytes+1 — o
-            // limite é imposto pelo storage via Range request (byte 0 a
-            // limiteBytes-1), não depois de já ter bufferizado o objeto inteiro
-            // em memória. Sem isso, um objeto substituído por algo muito maior
-            // depois do stat acima faria a leitura bufferizar o arquivo inteiro
-            // antes de ValidarConteudo rejeitar pelo tamanho.
-            Stream stream = await storage
-                .AbrirLeituraAsync(documento.ObjectKey, DocumentoEdital.TamanhoMaximoBytes + 1, cancellationToken)
-                .ConfigureAwait(false);
-            await using (stream.ConfigureAwait(false))
-            {
-                using MemoryStream buffer = new();
-                await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-                conteudo = buffer.ToArray();
-            }
-        }
+        byte[] conteudo = lido.Conteudo;
 
-        if (conteudo.LongLength > DocumentoEdital.TamanhoMaximoBytes)
-        {
-            return Result<DocumentoEditalDto>.Failure(new DomainError(
-                "DocumentoEdital.TamanhoExcedido",
-                $"O documento excede o tamanho máximo permitido de {DocumentoEdital.TamanhoMaximoBytes / (1024 * 1024)} MB."));
-        }
-
-        Result validacao = DocumentoEdital.ValidarConteudo(conteudo.LongLength, info.ContentType, conteudo);
+        Result validacao = DocumentoEdital.ValidarConteudo(conteudo.LongLength, lido.ContentType, conteudo);
         if (validacao.IsFailure)
         {
             return Result<DocumentoEditalDto>.Failure(validacao.Error!);
@@ -144,7 +106,7 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
         // fato: ObjectKey (o alvo da URL de upload original) segue
         // sobrescrevível até o TTL expirar, mas ObjectKeyConfirmado nunca foi
         // exposto por nenhuma URL pre-assinada — só o handler grava nele.
-        await storage.SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, conteudo, cancellationToken).ConfigureAwait(false);
+        await storage.SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, conteudo, DocumentoEdital.ContentTypeEsperado, cancellationToken).ConfigureAwait(false);
 
         documentoEditalRepository.Atualizar(documento);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

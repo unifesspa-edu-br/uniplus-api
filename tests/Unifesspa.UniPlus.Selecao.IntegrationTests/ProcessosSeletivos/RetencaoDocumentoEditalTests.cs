@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// <para>
 /// O substituto é mais forte que a FK antiga: um documento <b>confirmado</b> não se remove,
 /// tenha ele sido publicado ou não. É o que o próprio ciclo de vida já declarava —
-/// <c>StatusDocumentoEdital.Confirmado</c> não tem caminho de volta. O pendente, que é um
+/// <c>StatusArquivoEnviado.Confirmado</c> não tem caminho de volta. O pendente, que é um
 /// upload que nunca se completou, segue removível (a limpeza dos expirados depende disso).
 /// </para>
 /// </remarks>
@@ -87,7 +87,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
 
         await using SelecaoDbContext contexto = _fixture.CreateDbContext();
         DocumentoEdital? documento = await contexto.DocumentosEdital.FindAsync(documentoId);
-        documento!.Status.Should().Be(Domain.Enums.StatusDocumentoEdital.Confirmado);
+        documento!.Status.Should().Be(Domain.Enums.StatusArquivoEnviado.Confirmado);
     }
 
     [Fact(DisplayName = "TRUNCATE da tabela de documentos é recusado — não dispara trigger de linha, e levaria os confirmados junto")]
@@ -138,7 +138,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
 
         await using SelecaoDbContext contexto = _fixture.CreateDbContext();
         DocumentoEdital? documento = await contexto.DocumentosEdital.FindAsync(documentoId);
-        documento!.Status.Should().Be(Domain.Enums.StatusDocumentoEdital.Confirmado);
+        documento!.Status.Should().Be(Domain.Enums.StatusArquivoEnviado.Confirmado);
     }
 
     private async Task<Guid> SemearDocumentoAsync(bool confirmado)

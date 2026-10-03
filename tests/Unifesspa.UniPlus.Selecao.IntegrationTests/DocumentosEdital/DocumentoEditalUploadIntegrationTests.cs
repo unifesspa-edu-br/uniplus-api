@@ -47,8 +47,8 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     [SuppressMessage(
         "Performance",
         "CA1859:Use concrete types when possible for improved performance",
-        Justification = "Intencional: o teste exercita o port da Application (IDocumentoEditalStorage), não o tipo concreto de Infrastructure — é o mesmo contrato que os handlers reais consomem.")]
-    private readonly IDocumentoEditalStorage _storage;
+        Justification = "Intencional: o teste exercita o port da Application (IArquivoArmazenadoStorage), não o tipo concreto de Infrastructure — é o mesmo contrato que os handlers reais consomem.")]
+    private readonly IArquivoArmazenadoStorage _storage;
 
     public DocumentoEditalUploadIntegrationTests(ProcessoSeletivoDbFixture dbFixture, MinioContainerFixture minio)
     {
@@ -70,7 +70,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         ServiceProvider provider = services.BuildServiceProvider();
         IStorageService storageService = provider.GetRequiredService<IStorageService>();
         IOptions<StorageOptions> options = provider.GetRequiredService<IOptions<StorageOptions>>();
-        _storage = new DocumentoEditalStorageService(storageService, options);
+        _storage = new ArquivoArmazenadoStorageService(storageService, options);
     }
 
     private async Task<(SelecaoDbContext Context, ProcessoSeletivo Processo)> NovoProcessoAsync()
@@ -380,7 +380,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         await using SelecaoDbContext contextoIndependente = _dbFixture.CreateDbContext();
         DocumentoEdital documentoAposRollback = await contextoIndependente.DocumentosEdital
             .FirstAsync(d => d.Id == documento.Id);
-        documentoAposRollback.Status.Should().Be(StatusDocumentoEdital.Pendente);
+        documentoAposRollback.Status.Should().Be(StatusArquivoEnviado.Pendente);
     }
 
     [Fact(DisplayName = "Falha após reivindicação reverte para pendente e retry converge na mesma cópia selada")]
@@ -414,7 +414,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         await using SelecaoDbContext contextoAposFalha = _dbFixture.CreateDbContext();
         DocumentoEdital documentoAposFalha = await contextoAposFalha.DocumentosEdital
             .FirstAsync(d => d.Id == iniciar.Value.DocumentoEditalId);
-        documentoAposFalha.Status.Should().Be(StatusDocumentoEdital.Pendente);
+        documentoAposFalha.Status.Should().Be(StatusArquivoEnviado.Pendente);
         documentoAposFalha.HashSha256.Should().BeNull();
         documentoAposFalha.ObjectKeyConfirmado.Should().BeNull();
 
@@ -444,10 +444,10 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         buffer.ToArray().Should().Equal(ConteudoPdfValido);
     }
 
-    private sealed class FailingSealedStorage(IDocumentoEditalStorage inner) : IDocumentoEditalStorage
+    private sealed class FailingSealedStorage(IArquivoArmazenadoStorage inner) : IArquivoArmazenadoStorage
     {
-        public Task<string> GerarUrlUploadAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
-            inner.GerarUrlUploadAsync(objectKey, expiracao, cancellationToken);
+        public Task<string> GerarUrlUploadAsync(string objectKey, string contentType, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
+            inner.GerarUrlUploadAsync(objectKey, contentType, expiracao, cancellationToken);
 
         public Task<string> GerarUrlLeituraAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
             inner.GerarUrlLeituraAsync(objectKey, expiracao, cancellationToken);
@@ -458,9 +458,9 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         public Task<Stream> AbrirLeituraAsync(string objectKey, long limiteBytes, CancellationToken cancellationToken = default) =>
             inner.AbrirLeituraAsync(objectKey, limiteBytes, cancellationToken);
 
-        public async Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, CancellationToken cancellationToken = default)
+        public async Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, string contentType, CancellationToken cancellationToken = default)
         {
-            await inner.SalvarConteudoSeladoAsync(objectKey, conteudo, cancellationToken);
+            await inner.SalvarConteudoSeladoAsync(objectKey, conteudo, contentType, cancellationToken);
             throw new InvalidOperationException("Falha simulada depois de salvar a cópia selada.");
         }
     }
