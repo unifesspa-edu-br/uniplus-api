@@ -56,7 +56,7 @@ public sealed class FatoCandidatoPersistenceTests
                 item.Origem,
                 item.Cardinalidade,
                 item.FonteValores,
-                formato: null,
+                item.Formato,
                 item.PontoResolucao,
                 item.Binding,
                 item.Escopo,
@@ -164,7 +164,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(26);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(40);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -176,6 +176,7 @@ public sealed class FatoCandidatoPersistenceTests
             persistido.Cardinalidade.Should().Be(item.Cardinalidade);
             persistido.PontoResolucao.Should().Be(item.PontoResolucao);
             persistido.Binding.Should().Be(item.Binding);
+            persistido.Formato.Should().Be(item.Formato);
 
             persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
             persistido.Escopo.Should().Be(item.Escopo);
@@ -185,7 +186,7 @@ public sealed class FatoCandidatoPersistenceTests
         }
     }
 
-    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e o que os revela são sensíveis; os demais, pessoais")]
+    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e o que os revela são sensíveis; o nome social é público; os demais, pessoais")]
     public async Task Seed_ClassificacaoDeProtecao()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -196,7 +197,9 @@ public sealed class FatoCandidatoPersistenceTests
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONDICAO_ATENDIMENTO", "COR_RACA", "MODALIDADE",
                 "MODALIDADE_CONVOCACAO", "PCD", "QUILOMBOLA", "TIPO_DEFICIENCIA");
-        fatos.Where(f => f.ClassificacaoProtecao != ClassificacaoProtecaoDado.Sensivel)
+        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Publico)
+            .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
+        fatos.Where(f => f.ClassificacaoProtecao is not (ClassificacaoProtecaoDado.Sensivel or ClassificacaoProtecaoDado.Publico))
             .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Pessoal);
     }
 
@@ -217,6 +220,25 @@ public sealed class FatoCandidatoPersistenceTests
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "a fonte do categórico e o formato do texto são obrigatórios também no banco — NULL não pode passar pelo IN");
+    }
+
+    [Theory(DisplayName = "CHECK recusa texto público que não seja o nome social de sistema, via SQL cru")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Check_RecusaTextoPublicoForaDoNomeSocial(bool sistema)
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO configuracao.rol_de_fatos_candidato
+                (id, codigo, nome, dominio, origem, cardinalidade, formato, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"ESCALAR"}, {"LIVRE"},
+                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PUBLICO"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {sistema}, true, {DateTimeOffset.UtcNow})
+            """);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "só o nome social de sistema foge da classificação mínima do texto");
     }
 
     [Fact(DisplayName = "CHECK recusa classificação de proteção fora do domínio via SQL cru")]
@@ -359,13 +381,13 @@ public sealed class FatoCandidatoPersistenceTests
             .Should().OnlyContain(f => f.Cardinalidade == CardinalidadeFato.Escalar);
     }
 
-    [Fact(DisplayName = "Seed de FatoValorDominio: COR_RACA (6), SEXO (3), NACIONALIDADE (3) e PARENTESCO (12) têm os valores filhos esperados")]
+    [Fact(DisplayName = "Seed de FatoValorDominio: os categóricos estáticos de sistema têm os valores filhos esperados")]
     public async Task Seed_FatoValorDominio_MaterializaOsValoresDosCategoricosEstaticos()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking().ToListAsync();
-        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(24);
+        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(32);
 
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
         string[] codigosCorRaca = [.. valores
@@ -398,6 +420,14 @@ public sealed class FatoCandidatoPersistenceTests
             "PROPRIO_CANDIDATO", "CONJUGE_OU_COMPANHEIRO", "FILHO_OU_ENTEADO", "PAI_OU_MAE", "PADRASTO_OU_MADRASTA", "IRMAO",
             "AVO", "NETO", "SOGRO", "GENRO_OU_NORA", "OUTRO_PARENTE", "NAO_PARENTE");
 
+        FatoCandidato documentoEstrangeiro = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "DOCUMENTO_ESTRANGEIRO_TIPO");
+        valores.Where(v => v.FatoCandidatoId == documentoEstrangeiro.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
+            .Should().Equal("PASSAPORTE", "RNM");
+
+        FatoCandidato estadoCivil = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "ESTADO_CIVIL");
+        valores.Where(v => v.FatoCandidatoId == estadoCivil.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
+            .Should().Equal("SOLTEIRO", "CASADO", "UNIAO_ESTAVEL", "SEPARADO", "DIVORCIADO", "VIUVO");
+
         FatoCandidato modalidade = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "MODALIDADE");
         valores.Should().NotContain(v => v.FatoCandidatoId == modalidade.Id,
             "MODALIDADE é escopo-processo — não tem FatoValorDominio filhos");
@@ -428,7 +458,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
 
-        views.Should().HaveCount(26);
+        views.Should().HaveCount(40);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -554,6 +584,20 @@ public sealed class FatoCandidatoPersistenceTests
             ("SEM_RENDA", "024", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SEM_RENDA", "INSCRICAO"),
             ("SOB_GUARDA", "025", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SOB_GUARDA", "INSCRICAO"),
             ("PARENTESCO", "026", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:PARENTESCO", "INSCRICAO"),
+            ("NOME", "027", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NOME", "INSCRICAO"),
+            ("DESEJA_NOME_SOCIAL", "028", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DESEJA_NOME_SOCIAL", "INSCRICAO"),
+            ("NOME_SOCIAL", "029", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NOME_SOCIAL", "INSCRICAO"),
+            ("CPF", "030", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CPF", "INSCRICAO"),
+            ("RG_NUMERO", "031", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:RG_NUMERO", "INSCRICAO"),
+            ("RG_ORGAO_EMISSOR", "032", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:RG_ORGAO_EMISSOR", "INSCRICAO"),
+            ("RG_DATA_EMISSAO", "033", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:RG_DATA_EMISSAO", "INSCRICAO"),
+            ("DOCUMENTO_ESTRANGEIRO_TIPO", "034", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DOCUMENTO_ESTRANGEIRO_TIPO", "INSCRICAO"),
+            ("DOCUMENTO_ESTRANGEIRO_NUMERO", "035", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DOCUMENTO_ESTRANGEIRO_NUMERO", "INSCRICAO"),
+            ("NOME_MAE", "036", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NOME_MAE", "INSCRICAO"),
+            ("NOME_PAI", "037", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NOME_PAI", "INSCRICAO"),
+            ("ESTADO_CIVIL", "038", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:ESTADO_CIVIL", "INSCRICAO"),
+            ("EMAIL", "039", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:EMAIL", "INSCRICAO"),
+            ("TELEFONE", "040", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:TELEFONE", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

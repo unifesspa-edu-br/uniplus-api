@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -73,6 +74,12 @@ public static class FatoCandidatoSeed
 
     private const string FinalidadeRequisitos =
         "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.";
+
+    private const string FinalidadeIdentificacao =
+        "Identificação do candidato no processo seletivo.";
+
+    private const string FinalidadeComunicacao =
+        "Comunicação com o candidato sobre o processo seletivo.";
 
     // Prefixo determinístico próprio do catálogo de fatos (distinto do
     // rol_de_regras, para não confundir identidades entre tabelas).
@@ -230,7 +237,42 @@ public static class FatoCandidatoSeed
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             PontoResolucaoInscricao, $"CAMPO_INSCRICAO:{CandidatoComoMembro.FatoParentesco}",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
+
+        // O conjunto básico que todo formulário de inscrição coleta: a identificação, a filiação e
+        // os contatos do candidato. A UF do RG e a naturalidade não estão aqui: as opções delas vêm
+        // do Geo, que o formulário ainda não coleta. O nome social é público, porque é a
+        // identificação que o titular escolhe para aparecer (ADR-0082); os demais são pessoais.
+        DadoBasico(27, "NOME", "Nome", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
+        DadoBasico(28, "DESEJA_NOME_SOCIAL", "Deseja usar nome social", DominioFato.Booleano, FinalidadeIdentificacao),
+        DadoBasico(29, FatoCandidato.CodigoDoNomeSocial, "Nome social", DominioFato.Texto, FinalidadeIdentificacao,
+            formato: FormatoTexto.NomePessoa, classificacao: ClassificacaoProtecaoDado.Publico),
+        DadoBasico(30, "CPF", "CPF", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Cpf),
+        DadoBasico(31, "RG_NUMERO", "Número do RG", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre),
+        DadoBasico(32, "RG_ORGAO_EMISSOR", "Órgão emissor do RG", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre),
+        DadoBasico(33, "RG_DATA_EMISSAO", "Data de emissão do RG", DominioFato.Data, FinalidadeIdentificacao),
+        DadoBasico(34, "DOCUMENTO_ESTRANGEIRO_TIPO", "Documento de identificação do estrangeiro", DominioFato.Categorico,
+            FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
+        DadoBasico(35, "DOCUMENTO_ESTRANGEIRO_NUMERO", "Número do documento do estrangeiro", DominioFato.Texto,
+            FinalidadeIdentificacao, formato: FormatoTexto.Livre),
+        DadoBasico(36, "NOME_MAE", "Nome da mãe", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
+        DadoBasico(37, "NOME_PAI", "Nome do pai", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
+        DadoBasico(38, "ESTADO_CIVIL", "Estado civil", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
+        DadoBasico(39, "EMAIL", "E-mail", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Email),
+        DadoBasico(40, "TELEFONE", "Telefone", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Telefone),
     ];
+
+    /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>
+    private static FatoCandidatoSeedItem DadoBasico(
+        int n,
+        string codigo,
+        string nome,
+        DominioFato dominio,
+        string finalidade,
+        FonteValoresFato? fonte = null,
+        FormatoTexto? formato = null,
+        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal) =>
+        new(SeedId(n), codigo, nome, null, dominio, OrigemFato.Declarado, CardinalidadeFato.Escalar, fonte,
+            PontoResolucaoInscricao, $"CAMPO_INSCRICAO:{codigo}", classificacao, finalidade, Formato: formato);
 }
 
 /// <summary>
@@ -252,4 +294,5 @@ public sealed record FatoCandidatoSeedItem(
     string Binding,
     ClassificacaoProtecaoDado ClassificacaoProtecao,
     string FinalidadeTratamento,
-    EscopoFato Escopo = EscopoFato.Candidato);
+    EscopoFato Escopo = EscopoFato.Candidato,
+    FormatoTexto? Formato = null);

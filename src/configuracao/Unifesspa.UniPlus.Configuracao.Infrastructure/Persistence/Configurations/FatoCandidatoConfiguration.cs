@@ -179,10 +179,12 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             $"(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ({TokensSql(FormatosTexto.TokensCanonicos)})) "
             + "OR (dominio <> 'TEXTO' AND formato IS NULL)");
 
-        // Texto, data e endereço nunca são menos que dado pessoal (invariante da factory).
+        // Texto, data e endereço nunca são menos que dado pessoal (invariante da factory), salvo o
+        // nome social de sistema, texto público (ADR-0082, ADR-0136).
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_classificacao_minima_do_dominio",
-            "dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') OR classificacao_protecao IN ('PESSOAL', 'SENSIVEL')");
+            $"(sistema AND codigo = '{FatoCandidato.CodigoDoNomeSocial}' AND dominio = 'TEXTO' AND classificacao_protecao = 'PUBLICO') "
+            + "OR dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') OR classificacao_protecao IN ('PESSOAL', 'SENSIVEL')");
 
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_escopo",
@@ -222,6 +224,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             item.Origem,
             item.Cardinalidade,
             item.FonteValores,
+            item.Formato,
             item.PontoResolucao,
             item.Binding,
             item.Escopo,
