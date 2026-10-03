@@ -349,6 +349,18 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DocumentoEdital.TamanhoExcedido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.tamanho_excedido", "Documento excede o tamanho máximo permitido")),
         new("DocumentoEdital.ContentTypeInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.content_type_invalido", "Documento do Edital deve ser do tipo application/pdf")),
         new("DocumentoEdital.AssinaturaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.assinatura_invalida", "Conteúdo do arquivo não corresponde a um PDF válido")),
+        // Modelo de documento da exigência — envio direto por URL pré-assinada, como o documento
+        // do Edital. NaoEncontrado é 404 (inexistente ou de outro processo); as demais são recusas
+        // de validação (422).
+        new(ModeloDeDocumentoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.modelo_de_documento.nao_encontrado", "Modelo de documento não encontrado")),
+        new(ModeloDeDocumentoErrorCodes.NaoConfirmado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.nao_confirmado", "Modelo de documento ainda não confirmado")),
+        new(ModeloDeDocumentoErrorCodes.StatusInvalidoParaConfirmacao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.status_invalido_para_confirmacao", "Somente um modelo pendente pode ser confirmado")),
+        new(ModeloDeDocumentoErrorCodes.ObjetoNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.objeto_nao_encontrado", "Arquivo ainda não enviado ao storage ou expirado")),
+        new(ModeloDeDocumentoErrorCodes.TamanhoExcedido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.tamanho_excedido", "Modelo excede o tamanho máximo permitido")),
+        new(ModeloDeDocumentoErrorCodes.FormatoNaoEditavel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.formato_nao_editavel", "O modelo é um documento editável: DOCX ou ODT")),
+        new(ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.conteudo_diverge_do_formato", "O conteúdo do arquivo não é um documento de texto do formato declarado")),
+        new(ModeloDeDocumentoErrorCodes.ContemMacro, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.contem_macro", "O modelo não pode conter macro")),
+        new(ModeloDeDocumentoErrorCodes.NomeArquivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.nome_arquivo_invalido", "Nome do arquivo do modelo inválido")),
         // Publicação do Processo Seletivo — RN08 (Story #759, T4 #785). Todo
         // 422: status dominante do módulo para violação de regra de negócio,
         // inclusive quando a origem física é constraint de banco (ADR-0102).

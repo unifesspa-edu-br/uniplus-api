@@ -70,6 +70,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
         services.AddScoped<IMotivoDecisaoIsencaoRepository, MotivoDecisaoIsencaoRepository>();
         services.AddScoped<IDocumentoEditalRepository, DocumentoEditalRepository>();
+        services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
         services.AddScoped<IRetificacaoEmCursoReader, RetificacaoEmCursoReader>();

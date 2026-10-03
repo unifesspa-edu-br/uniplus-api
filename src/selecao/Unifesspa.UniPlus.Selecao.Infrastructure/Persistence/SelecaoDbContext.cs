@@ -117,6 +117,9 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// </summary>
     public DbSet<DocumentoEdital> DocumentosEdital => Set<DocumentoEdital>();
 
+    /// <summary>Modelos de documento que as exigências oferecem ao candidato — fora do agregado, como o documento do Edital.</summary>
+    public DbSet<ModeloDeDocumento> ModelosDeDocumento => Set<ModeloDeDocumento>();
+
     /// <summary>
     /// Versões congeladas da configuração do certame (RN08, ADR-0104/0100) —
     /// <see cref="VersaoConfiguracao"/> é <c>IForensicEntity</c> e agregado
