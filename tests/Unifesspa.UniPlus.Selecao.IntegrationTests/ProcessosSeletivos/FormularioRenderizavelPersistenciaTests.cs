@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -156,7 +158,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         };
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: valoresSelecionaveis));
+            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis)));
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -216,7 +218,9 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             "o formulário lido do banco traz os SEIS valores congelados na publicação, na ordem canônica — " +
             "os mesmos que o catálogo declarava íntegro no instante em que o certame foi publicado");
 
-        segunda.Should().BeEquivalentTo(primeira,
+        // O valor de uma condição é JSON: as duas leituras se comparam pelo texto dele.
+        segunda.Should().BeEquivalentTo(primeira, opcoes => opcoes
+                .Using<JsonElement>(c => c.Subject.GetRawText().Should().Be(c.Expectation.GetRawText())).WhenTypeIs<JsonElement>(),
             "duas leituras independentes da MESMA versão publicada — sem catálogo algum na assinatura do " +
             "handler — não têm de onde divergir: o formulário é função pura dos bytes persistidos");
     }

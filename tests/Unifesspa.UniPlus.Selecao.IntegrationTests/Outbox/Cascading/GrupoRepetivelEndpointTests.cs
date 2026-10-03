@@ -58,7 +58,8 @@ public sealed class GrupoRepetivelEndpointTests
         grupo.GetProperty("incluiCandidato").GetBoolean().Should().BeTrue();
         grupo.GetProperty("subitens").EnumerateArray().Select(static s => s.GetProperty("fatoCodigo").GetString())
             .Should().Equal(CandidatoComoMembro.FatoParentesco, campo);
-        inscricao.GetProperty("fatosColetados").GetArrayLength().Should().Be(0, "o campo do grupo não é item do formulário");
+        inscricao.GetProperty("fatosColetados").EnumerateArray().Select(static f => f.GetProperty("fatoCodigo").GetString())
+            .Should().NotContain(campo, "o campo do grupo não é item do formulário");
     }
 
     [Fact(DisplayName = "O grupo que inclui o candidato sem o campo de parentesco é recusado no mesmo lote das demais recusas do grupo")]

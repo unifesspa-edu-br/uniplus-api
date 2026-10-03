@@ -41,6 +41,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.Formato).HasMaxLength(FormaDoItem.FormatoMaxLength);
         builder.Ignore(f => f.OpcoesDoProcesso);
         builder.Ignore(f => f.Condicoes);
+        builder.Ignore(f => f.Exibicao);
         builder.Property(f => f.Finalidade).HasConversion<int>().IsRequired();
         builder.Property(f => f.EtapaCodigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength);
 

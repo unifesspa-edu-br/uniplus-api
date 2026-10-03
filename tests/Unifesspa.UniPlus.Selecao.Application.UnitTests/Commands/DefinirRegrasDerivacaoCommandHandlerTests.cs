@@ -40,7 +40,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
 
         Mocks mocks = new(repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<ISelecaoUnitOfWork>());
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(VocabularioSeed());
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(VocabularioSeed()));
         return mocks;
     }
 
@@ -174,12 +174,12 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             .. VocabularioSeed(),
             new FatoCandidatoView(Guid.CreateVersion7(), "INDIGENA_DECLARADO", "Indígena declarado", null, dominio,
                 "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:INDIGENA_DECLARADO", [], dominio == "BOOLEANO" ? null : "GEO_UF", Ativo: true),
-        ]);
+        ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
             [new ConfiguracaoDerivacaoInput("INDIGENA_DECLARADO",
                 [new RegraDerivacaoInput(0, contribui, [[Condicao("COR_RACA", "IGUAL", "INDIGENA")]])])],
@@ -198,14 +198,14 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             .. VocabularioSeed(),
             new FatoCandidatoView(Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", null, "CATEGORICO", "DERIVADO",
                 "MULTIVALORADO", ["EJA", "PROFICIENCIA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
                 [new FatoValorDominioViewItem("EJA", "EJA", 0, true), new FatoValorDominioViewItem("PROFICIENCIA", "Proficiência", 1, false)],
                 "GLOBAL", Ativo: true),
-        ]);
+        ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
             [new ConfiguracaoDerivacaoInput("FORMA_CONCLUSAO", [new RegraDerivacaoInput(0, contribui, null)])], PrecondicaoIfMatch.Ausente);
 

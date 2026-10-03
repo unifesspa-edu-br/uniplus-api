@@ -50,7 +50,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca,
             [Precondicao(0, "BAIXA_RENDA", Operador.Igual, true)]).Value!;
         // Passa fora de ordem de propósito — a projeção é quem ordena.
-        processo.DefinirItens([corRaca, baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([corRaca, baixaRenda], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
         IReadOnlyList<FatoColetadoDto> fatos = dto.Formularios.Should().ContainSingle().Which.FatosColetados;

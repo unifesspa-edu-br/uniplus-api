@@ -37,9 +37,8 @@ public sealed class ValoresSelecionaveisResolverTests
     public async Task Publicar_ComCorRacaColetadoSemGatilho_ResolveOsSeisValores()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        FatoColetado corRaca = FatoColetado.Criar(
-            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!;
-        processo.DefinirItens([corRaca], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        // COR_RACA é coletado pela seção dos dados básicos do formulário de inscrição.
+        processo.DefinirItens([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Should().BeEmpty("pré-condição: COR_RACA não é citado em gatilho algum");
 
         FatoValorDominioViewItem[] seisValores =
@@ -61,7 +60,7 @@ public sealed class ValoresSelecionaveisResolverTests
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[corRacaNoCatalogo]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[corRacaNoCatalogo]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -95,7 +94,7 @@ public sealed class ValoresSelecionaveisResolverTests
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[baixaRendaNoCatalogo]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[baixaRendaNoCatalogo]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -139,7 +138,7 @@ public sealed class ValoresSelecionaveisResolverTests
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[condicaoAtendimentoNoCatalogo]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[condicaoAtendimentoNoCatalogo]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -186,7 +185,7 @@ public sealed class ValoresSelecionaveisResolverTests
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[condicaoAtendimentoNoCatalogo]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[condicaoAtendimentoNoCatalogo]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 

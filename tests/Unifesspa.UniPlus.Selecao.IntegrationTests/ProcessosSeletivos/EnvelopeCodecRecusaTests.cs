@@ -1018,7 +1018,7 @@ public sealed class EnvelopeCodecRecusaTests
             "088/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));
+            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(congelado.Bytes))!.AsObject();
         JsonArray exigencias = envelope["documentosExigidos"]!["exigencias"]!.AsArray();
@@ -1048,7 +1048,7 @@ public sealed class EnvelopeCodecRecusaTests
     [Theory(DisplayName = "gruposColetados com código ou campo repetido entre fatos e grupos, ou na ordem de um item, é recusado")]
     [InlineData("codigo", "RENDA")]
     [InlineData("campo", "RENDA")]
-    [InlineData("ordem", "1")]
+    [InlineData("ordem", "RENDA")]
     public void GruposColetados_ColisaoComItens_Recusa(string chave, string valor)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -1063,7 +1063,8 @@ public sealed class EnvelopeCodecRecusaTests
                     grupo["subitens"]!.AsArray()[0]!["fatoCodigo"] = valor;
                     break;
                 default:
-                    grupo["ordem"] = int.Parse(valor, System.Globalization.CultureInfo.InvariantCulture);
+                    grupo["ordem"] = envelope["fatosColetados"]!.AsArray()
+                        .Single(f => f!["fatoCodigo"]!.GetValue<string>() == valor)!["ordem"]!.GetValue<int>();
                     break;
             }
         });
@@ -1081,7 +1082,7 @@ public sealed class EnvelopeCodecRecusaTests
         {
             JsonArray grupos = envelope["gruposColetados"]!.AsArray();
             JsonObject copia = grupos[0]!.DeepClone().AsObject();
-            copia["ordem"] = 3;
+            copia["ordem"] = grupos[0]!["ordem"]!.GetValue<int>() + 1;
             copia["incluiCandidato"] = false;
             foreach (JsonNode? campo in copia["subitens"]!.AsArray())
             {

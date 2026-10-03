@@ -86,7 +86,7 @@ public sealed class ProcessoSeletivoAplicarModeloTests
         Result resultado = processo.AplicarModeloDeFormulario(Copia(FinalidadeFormulario.Inscricao, Item("COR_RACA", 0)), PrecondicaoIfMatch.Ausente);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
-        processo.FatosColetados.Select(static f => f.FatoCodigo).Should().BeEquivalentTo(["QUILOMBOLA", "DECLARACAO"]);
+        processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().BeEquivalentTo(["QUILOMBOLA", "DECLARACAO"]);
         processo.FormularioDe(FinalidadeFormulario.Inscricao)!.ModeloOrigemId.Should().BeNull();
     }
 

@@ -66,7 +66,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public AplicarModeloFormularioCommandHandlerTests()
     {
         _repository.ObterParaMutacaoAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns(_processo);
-        _fatos.ListarAsync(Arg.Any<CancellationToken>()).Returns(_ => _catalogo);
+        _fatos.ListarAsync(Arg.Any<CancellationToken>()).Returns(_ => CatalogoDoConjuntoBasico.Com(_catalogo));
         _fatos.ListarRegrasPadraoAsync(Arg.Any<CancellationToken>()).Returns(new Dictionary<string, IReadOnlyList<RegraDerivacao>>(StringComparer.Ordinal)
         {
             ["PERFIL"] = [RegraDerivacao.Criar(Quando("QUILOMBOLA", true), "A").Value!],
@@ -120,7 +120,8 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
             "CONSULTA", 0, termoId, versaoId, [[new CondicaoPrecondicaoInput("FAIXA_ETARIA", "MAIOR_IGUAL", JsonSerializer.SerializeToElement(18))]], "SEMPRE", null);
         FatoColetadoInput[] itens = coletaDataDeNascimento ? [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")] : [Item("QUILOMBOLA", 0)];
 
-        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, itens, termos: [termo]));
+        // Na habilitação, que não tem a seção do conjunto básico, a data de nascimento é coletada só se o modelo a pede.
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Habilitacao, itens, termos: [termo]));
 
         resultado.IsSuccess.Should().Be(coletaDataDeNascimento, resultado.Error?.Message);
     }
@@ -172,7 +173,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Descartados.Should().BeEquivalentTo(
             [new ParteDescartadaDto("ITEM", "BAIXA_RENDA", "FATO_DESATIVADO"), new ParteDescartadaDto("TERMO", "LGPD", "VERSAO_DE_TERMO_REMOVIDA")]);
-        _processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
+        _processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -186,7 +187,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Descartados.Should().BeEmpty();
-        _processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("BAIXA_RENDA");
+        _processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("BAIXA_RENDA");
     }
 
     [Fact(DisplayName = "O que o item descartado cita não pede derivação nem distribuição de vagas")]
@@ -236,7 +237,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.FatosTrazidosParaAInscricao.Should().Equal("CERTIFICADO");
-        _processo.FatosColetados.Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
+        _processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
     }
 
     [Fact(DisplayName = "O derivado que a cópia cita recebe as regras padrão do catálogo; o já configurado fica como está")]
@@ -283,7 +284,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         FatoColetadoInput porAmarela = Item("QUILOMBOLA", 1) with { Precondicao = [[new CondicaoPrecondicaoInput("COR_RACA", "IGUAL", JsonSerializer.SerializeToElement("AMARELA"))]] };
         FatoColetadoInput porIndigena = Item("CERTIFICADO", 2) with { Precondicao = [[new CondicaoPrecondicaoInput("COR_RACA", "IGUAL", JsonSerializer.SerializeToElement("INDIGENA"))]] };
 
-        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("COR_RACA", 0, "SELECAO_UNICA"), porAmarela, porIndigena]));
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Habilitacao, [Item("COR_RACA", 0, "SELECAO_UNICA"), porAmarela, porIndigena]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal(VinculoCatalogoErrorCodes.ValorDesativado, VinculoCatalogoErrorCodes.ValorDesativado);
     }
@@ -325,6 +326,29 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), porModalidade]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.SemDistribuicaoDeVagas);
+    }
+
+    [Fact(DisplayName = "O modelo de inscrição sem a seção dos dados básicos é copiado com ela em primeiro")]
+    public async Task Handle_ModeloDeInscricaoSemASecao_CopiaComASecao()
+    {
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        _processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Etapas.MinBy(static e => e.Ordem)!.Codigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        _processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
+        _processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Ordem.Should().Be(FormularioDeTeste.PrimeiraOrdemDeInscricao);
+    }
+
+    [Fact(DisplayName = "O modelo de inscrição que altera um dado básico é recusado na posição do item no modelo")]
+    public async Task Handle_ModeloDeInscricaoComDadoBasicoAlterado_Recusa()
+    {
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")]));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "modelo.itens[1]",
+            Error = new { Code = EstruturaFormularioErrorCodes.DadoBasicoAlterado },
+        });
     }
 
     private Task<Result<AplicacaoDeModeloDto>> AplicarAsync(ModeloFormularioView modelo)

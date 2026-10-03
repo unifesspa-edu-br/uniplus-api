@@ -411,7 +411,7 @@ public sealed class RestauradorDeConfiguracaoTests
         SnapshotCanonico congelado = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
                 processo, dados, hashFixo, FusoInstitucional.ZoneId,
-                CalendarioDiasUteis: CorpusEnvelope.CalendarioRico()));
+                CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashFixo, "user-sub-123", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
@@ -530,7 +530,7 @@ public sealed class RestauradorDeConfiguracaoTests
         new EnvelopeCodec().Codificar(new EntradaCanonicalizacao(
             processo, dados, CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: metadadosFatos,
-            ValoresSelecionaveisCongelados: valoresSelecionaveis,
+            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico())).Bytes
             .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
     }
@@ -616,7 +616,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
             new EntradaCanonicalizacao(processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
-                ValoresSelecionaveisCongelados: valoresSelecionaveis,
+                ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico()));
 
         // Publica DIRETAMENTE com os bytes já codificados acima — CorpusEnvelope.Publicar(..., CorpusEnvelope.ContextoRico())
@@ -663,7 +663,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         CorpusEnvelope.Codec.Codificar(new EntradaCanonicalizacao(
                 processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
-                ValoresSelecionaveisCongelados: valoresSelecionaveis,
+                ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico())).Bytes
             .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
     }

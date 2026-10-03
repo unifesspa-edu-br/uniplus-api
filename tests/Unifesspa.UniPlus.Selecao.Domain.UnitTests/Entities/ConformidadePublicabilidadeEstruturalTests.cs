@@ -976,7 +976,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // rascunho que chega por outro caminho.
         ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
             .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
-                $"FATO_{i}", i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+                $"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
                 etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!));
 
         SoEstesItensVermelhos(processo, "formulario_itens_em_excesso");

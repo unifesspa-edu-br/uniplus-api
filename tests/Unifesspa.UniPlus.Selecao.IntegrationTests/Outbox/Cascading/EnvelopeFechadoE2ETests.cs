@@ -321,6 +321,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "fato_coletavel_municipio_citado_fora_da_area_do_bonus",
                 "termo_exigido_sem_forma_de_aceite",
                 "formulario_inscricao_ausente",
+                "formulario_inscricao_sem_conjunto_basico",
                 "formulario_fase_incoerente",
                 "formulario_isencao_sem_taxa",
                 "formulario_item_fora_de_secao",
@@ -702,13 +703,13 @@ public sealed class EnvelopeFechadoE2ETests
 
         public Task<HttpResponseMessage> PutFatosColetadosAsync()
         {
+            // COR_RACA vem da seção do conjunto básico, que a gravação inclui.
             object[] fatos =
             [
-                new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica, obrigatoriedade = "SEMPRE", precondicao = (object?)null },
                 new
                 {
                     fatoCodigo = "BAIXA_RENDA",
-                    ordem = 1,
+                    ordem = 0,
                     rotulo = "Baixa renda",
                     tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
                     obrigatoriedade = "NUNCA",

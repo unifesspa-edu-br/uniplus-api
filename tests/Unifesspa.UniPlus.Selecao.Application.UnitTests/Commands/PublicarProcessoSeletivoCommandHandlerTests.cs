@@ -101,6 +101,10 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
                 Codigo: "EDITAL_ABERTURA", Nome: "Edital de abertura",
                 CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
 
+        // O formulário de inscrição coleta o conjunto básico, que o catálogo conhece por padrão.
+        IFatoCandidatoReader fatoCandidatoReader = Substitute.For<IFatoCandidatoReader>();
+        fatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Fatos);
+
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
         obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
                 Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
@@ -113,7 +117,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             tipoDeAtoReader,
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
-            Substitute.For<IFatoCandidatoReader>()), documento);
+            fatoCandidatoReader), documento);
     }
 
     /// <summary>
@@ -201,7 +205,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -231,7 +235,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
 
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -243,8 +247,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_DerivadoComDependenciaForaDoCronograma_Recusa()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirFatosColetados(
-            FinalidadeFormulario.Inscricao,
+        processo.DefinirItens(
             [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao(
@@ -270,7 +273,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             FonteValores = null,
         };
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }, temRenda]);
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }, temRenda]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -284,9 +287,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "FATO_INEXISTENTE"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        // O catálogo (D4-bis) não conhece "FATO_INEXISTENTE" — a mesma lista vazia que
-        // NovosMocks já produz por padrão (IFatoCandidatoReader substituto sem ListarAsync
-        // configurado devolve coleção vazia).
+        // O catálogo (D4-bis) não conhece "FATO_INEXISTENTE": NovosMocks traz só o conjunto básico.
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
 
         (Result resposta, IEnumerable<object> eventos) = await HandleAsync(mocks, processo, documento);

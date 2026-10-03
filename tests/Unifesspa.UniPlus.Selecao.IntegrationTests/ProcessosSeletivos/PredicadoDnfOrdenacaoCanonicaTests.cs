@@ -54,7 +54,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         documentoEditalId: Guid.CreateVersion7()).Value!;
 
     private static EntradaCanonicalizacao Entrada(ProcessoSeletivo processo) =>
-        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId);
+        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
 
     private static JsonElement Escalar(string valor) => JsonSerializer.SerializeToElement(valor);
 
@@ -360,7 +360,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
 
         DadosEdital dados = Dados();
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
-        SnapshotCanonico congelado = Canonicalizador.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));
+        SnapshotCanonico congelado = Canonicalizador.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

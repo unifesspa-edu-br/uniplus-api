@@ -1003,7 +1003,7 @@ public sealed class EnvelopeCodecRoundTripTests
         const string hashDocumento = "2222222222222222222222222222222222222222222222222222222222222222";
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));
+            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         congelado.SchemaVersion.Should().Be("0.0.21", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
@@ -1213,7 +1213,8 @@ public sealed class EnvelopeCodecRoundTripTests
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
 
         EntradaCanonicalizacao entrada = new(
-            processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos);
+            processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos,
+            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
         congelado.SchemaVersion.Should().Be("0.0.21", "pré-condição: o codec corrente emite a forma única");
 
@@ -1460,11 +1461,11 @@ public sealed class EnvelopeCodecRoundTripTests
 
         EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo) with
         {
-            ValoresSelecionaveisCongelados = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+            ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
             {
                 ["EDICAO_ENEM"] = [.. processo.OpcoesDoProcesso("EDICAO_ENEM")
                     .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))],
-            },
+            }),
         };
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
         CorpusEnvelope.Publicar(processo, entrada);
@@ -1499,11 +1500,11 @@ public sealed class EnvelopeCodecRoundTripTests
 
         EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo) with
         {
-            ValoresSelecionaveisCongelados = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+            ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
             {
                 ["EDICAO_ENEM"] = [.. processo.OpcoesDoProcesso("EDICAO_ENEM")
                     .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))],
-            },
+            }),
         };
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
         CorpusEnvelope.Publicar(processo, entrada);

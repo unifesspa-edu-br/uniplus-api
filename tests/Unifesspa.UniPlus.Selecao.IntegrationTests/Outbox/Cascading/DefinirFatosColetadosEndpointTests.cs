@@ -38,22 +38,14 @@ public sealed class DefinirFatosColetadosEndpointTests
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ColetaValida_204SemEtag));
 
+        // O conjunto básico entra sem ser enviado, com as restrições dele; o item do cliente cita um
+        // dado básico como anterior.
         object[] corpo =
         [
             new
             {
-                fatoCodigo = "COR_RACA",
-                ordem = 0,
-                rotulo = "Cor ou raça",
-                tipoRenderizacao = "SELECAO_UNICA",
-                obrigatoriedade = "NUNCA",
-                precondicao = (object?)null,
-                restricoes = new[] { new { tipo = "OPCOES_PERMITIDAS", entradas = new[] { new { quando = (object?)null, valores = new[] { "PRETA", "PARDA" } } } } },
-            },
-            new
-            {
                 fatoCodigo = "BAIXA_RENDA",
-                ordem = 1,
+                ordem = 0,
                 rotulo = "Baixa renda",
                 tipoRenderizacao = "BOOLEANO",
                 obrigatoriedade = "NUNCA",
@@ -70,9 +62,9 @@ public sealed class DefinirFatosColetadosEndpointTests
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         List<FatoColetado> fatos = await db.Set<FatoColetado>().AsNoTracking()
             .Where(f => f.ProcessoSeletivoId == ctx.ProcessoId).ToListAsync();
-        fatos.Select(f => f.FatoCodigo).Should().BeEquivalentTo(["COR_RACA", "BAIXA_RENDA"]);
-        fatos.Single(f => f.FatoCodigo == "COR_RACA").Restricoes.Should().ContainSingle()
-            .Which.Should().BeOfType<OpcoesPermitidas>().Which.ValoresCitados.Should().BeEquivalentTo(["PARDA", "PRETA"]);
+        fatos.Select(f => f.FatoCodigo).Should().BeEquivalentTo([.. ConjuntoBasicoDaInscricao.Fatos, "BAIXA_RENDA"]);
+        fatos.Single(f => f.FatoCodigo == "NATURALIDADE_MUNICIPIO").Restricoes.Should().ContainSingle()
+            .Which.Should().BeOfType<MunicipiosDaUf>().Which.FatoUf.Should().Be("NATURALIDADE_UF");
     }
 
     [Fact(DisplayName = "Fato fora do vocabulário é recusado com 422 sem tradução")]
@@ -126,7 +118,7 @@ public sealed class DefinirFatosColetadosEndpointTests
     public async Task Rascunho_ReplayIdempotente_204()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ReplayIdempotente_204));
-        object[] corpo = [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null }];
+        object[] corpo = [new { fatoCodigo = "BAIXA_RENDA", ordem = 0, rotulo = "Baixa renda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "NUNCA", precondicao = (object?)null }];
         string chave = MakeIdempotencyKey();
 
         (await ctx.PutFatosAsync(corpo, idempotencyKey: chave)).StatusCode.Should().Be(HttpStatusCode.NoContent);

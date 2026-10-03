@@ -52,7 +52,7 @@ public sealed class FalharAposPublicarCascadingHandler
             periodoInscricaoFim: DateTimeOffset.UtcNow.AddDays(30),
             documentoEditalId: documento.Id);
 
-        SnapshotCanonico canonico = canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId));
+        SnapshotCanonico canonico = canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,

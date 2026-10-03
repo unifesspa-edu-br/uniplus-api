@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
 {
@@ -69,12 +70,12 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
             "ESCALAR", null, "HABILITACAO", "CAMPO_INSCRICAO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true, Escopo: "MEMBRO_GRUPO");
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ObterPorCodigoAsync("CATEGORIA_RENDA", Arg.Any<CancellationToken>()).Returns(membro);
-        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             membro,
             new FatoCandidatoView(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", null, "CATEGORICO",
                 "DERIVADO", "MULTIVALORADO", null, "HABILITACAO", "AGREGACAO_GRUPO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true),
-        ]);
+        ]));
 
         Result<MutacaoAceita> resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
             new DefinirOpcoesDeclaradasCommand(processo.Id, "CATEGORIA_RENDA", [new OpcaoDeclaradaInput("URBANA", "Urbana")], PrecondicaoIfMatch.Ausente),

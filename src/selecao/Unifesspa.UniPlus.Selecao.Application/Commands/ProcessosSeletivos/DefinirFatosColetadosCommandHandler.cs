@@ -72,15 +72,26 @@ public static class DefinirFatosColetadosCommandHandler
             return Result<MutacaoAceita>.ValidationFailure(excesso);
         }
 
+        // O formulário de inscrição coleta o conjunto básico na seção reservada: o item básico omitido
+        // entra como está gravado, e o enviado tem de ser igual a ele. Os grupos omitidos ficam como
+        // estão gravados, na ordem do formulário, e não sobem com os itens enviados.
+        IReadOnlyList<FatoColetadoInput> itens = command.Itens;
+        List<FieldError> daSecao = [];
+        if (command.Finalidade == FinalidadeFormulario.Inscricao)
+        {
+            (itens, grupos, daSecao) = ConjuntoBasicoDaInscricao.MesclarItens(command.Itens, grupos, SecaoDadosBasicosDoProcesso.Itens(processo));
+        }
+
         // A forma vem antes da leitura do catálogo, sem I/O; o item de forma inválida só não segue
         // para a conferência contra o catálogo, e as recusas acumulam no mesmo errors[] (ADR-0125).
-        ItensLidos lidos = EscritaDosItens.Ler(command.Itens);
+        ItensLidos lidos = EscritaDosItens.Ler(itens);
         GruposLidos gruposLidos = EscritaDosItens.LerGrupos(grupos);
         IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, fatosDoCatalogo);
         (List<FatoColetado> fatos, List<FieldError> erros) = EscritaDosItens.Resolver(lidos, contexto);
         (List<GrupoColetado> gruposResolvidos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(gruposLidos, contexto);
         erros.AddRange(errosDosGrupos);
+        erros.AddRange(daSecao);
 
         if (erros.Count > 0)
         {

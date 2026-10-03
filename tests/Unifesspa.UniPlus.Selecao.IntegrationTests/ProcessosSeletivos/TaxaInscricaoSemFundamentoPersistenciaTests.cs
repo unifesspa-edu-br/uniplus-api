@@ -198,6 +198,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.Classificacao)
             .Include(p => p.Formularios).ThenInclude(f => f.Etapas)
+            .Include(p => p.Campos).ThenInclude(f => f.Precondicoes)
             .Include(p => p.OfertaAtendimento)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.ConfiguracaoTaxaInscricao)

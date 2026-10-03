@@ -80,7 +80,7 @@ public sealed class VocabularioDeFatosTests
         GrupoColetado grupo = GrupoColetado.Criar(
             "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
             [FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!]).Value!;
-        processo.DefinirItens([], grupos: [grupo]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         VocabularioDeFatos.QueOProcessoResolve(processo, [Agregado("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA"), Agregado("SOB_GUARDA_NA_FAMILIA", "MENOR_SOB_GUARDA")])
             .Should().BeEquivalentTo(["CATEGORIAS_RENDA_FAMILIA"], "o fato de membro do outro agregado não é campo de grupo do processo");

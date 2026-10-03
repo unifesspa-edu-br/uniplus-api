@@ -220,6 +220,9 @@ public static class FormularioProcessoErrorCodes
     /// <summary>Processo com inscrição própria publicado sem formulário de inscrição.</summary>
     public const string InscricaoSemFormulario = "ProcessoSeletivo.InscricaoSemFormulario";
 
+    /// <summary>Formulário de inscrição publicado sem algum dado do conjunto básico do candidato.</summary>
+    public const string InscricaoSemConjuntoBasico = "ProcessoSeletivo.InscricaoSemConjuntoBasico";
+
     /// <summary>A fase do cronograma é usada por um formulário e não pode sair.</summary>
     public const string FaseReferenciadaPorFormulario = "ProcessoSeletivo.FaseReferenciadaPorFormulario";
 }
