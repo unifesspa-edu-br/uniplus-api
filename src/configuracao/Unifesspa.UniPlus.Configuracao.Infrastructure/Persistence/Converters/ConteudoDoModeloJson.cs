@@ -116,7 +116,7 @@ internal static class ConteudoDoModeloJson
                 Texto(g, "etapaCodigo"),
                 g.GetProperty("rotulo").GetString()!,
                 g.GetProperty("minimo").GetInt32(),
-                Inteiro(g, "maximo"),
+                InteiroOuNulo(g.GetProperty("maximo")),
                 Predicado(g, "exibicao"),
                 Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(g.GetProperty("obrigatoriedade"))),
                 [.. g.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)]))]);
@@ -135,8 +135,9 @@ internal static class ConteudoDoModeloJson
         Remontar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes"))),
         campo.GetProperty("pedirConfirmacao").GetBoolean());
 
-    private static int? Inteiro(JsonElement objeto, string chave) =>
-        objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.Number ? valor.GetInt32() : null;
+    /// <summary>Só o nulo explícito é ausência; qualquer outro valor que não seja inteiro falha, como o resto da leitura.</summary>
+    private static int? InteiroOuNulo(JsonElement valor) =>
+        valor.ValueKind == JsonValueKind.Null ? null : valor.GetInt32();
 
     private static string? Texto(JsonElement objeto, string chave) =>
         objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.String ? valor.GetString() : null;
