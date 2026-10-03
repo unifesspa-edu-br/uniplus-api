@@ -336,6 +336,34 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Pré-visualiza o processo diante de um perfil simulado de candidato (UNI-REQ-0144,
+    /// UNI-REQ-0145, UNI-REQ-0064): o que cada formulário mostra e exige e os documentos que a
+    /// árvore de exigências pediria. Avalia a configuração viva — rascunho ou sessão de
+    /// retificação —, não o envelope publicado, e não grava nada: o perfil, que carrega fatos
+    /// sensíveis simulados, não é persistido nem registrado.
+    /// </summary>
+    [HttpPost("{id:guid}/pre-visualizacao")]
+    [VendorMediaType(Resource = "pre-visualizacao-processo-seletivo", Versions = [1])]
+    [ProducesResponseType(typeof(PreVisualizacaoDoProcessoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> PreVisualizar(
+        Guid id,
+        [FromBody] PreVisualizacaoDoProcessoInput simulacao,
+        CancellationToken cancellationToken)
+    {
+        Result<PreVisualizacaoDoProcessoDto> resultado = await _queryBus
+            .Send(new PreVisualizarProcessoSeletivoQuery(id, simulacao), cancellationToken)
+            .ConfigureAwait(false);
+
+        return resultado.IsSuccess
+            ? Ok(resultado.Value)
+            : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Substitui integralmente os critérios de desempate do processo (Story
     /// #774). Dimensão opcional (0..*) — lista vazia
     /// remove todos os critérios.
