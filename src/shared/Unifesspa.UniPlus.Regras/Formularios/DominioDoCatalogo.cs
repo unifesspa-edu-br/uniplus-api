@@ -12,4 +12,6 @@ public static class DominioDoCatalogo
 
     public const string Escalar = "ESCALAR";
     public const string Multivalorado = "MULTIVALORADO";
+    public const string FonteGeoUf = "GEO_UF";
+    public const string FonteGeoMunicipio = "GEO_MUNICIPIO";
 }

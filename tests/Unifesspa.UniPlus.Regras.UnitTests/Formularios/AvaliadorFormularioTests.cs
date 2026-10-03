@@ -137,6 +137,39 @@ public sealed class AvaliadorFormularioTests
         avaliacao.Itens[1].RestricoesVioladas.Should().HaveCount(violacoes);
     }
 
+    [Theory]
+    [InlineData("PA", "1504208", EstadoFato.Resolvido, 0)]
+    [InlineData("MA", "1504208", EstadoFato.NaoInformado, 1)]
+    [InlineData(null, "1504208", EstadoFato.NaoInformado, 1)]
+    [InlineData("PA", "9904208", EstadoFato.NaoInformado, 1)]
+    public void MunicipioDaUf_ValeSoComMunicipioDaUfRespondida(string? uf, string municipio, EstadoFato estadoEsperado, int violacoes)
+    {
+        DefinicaoFormulario formulario = Formulario(
+            Item("NATURALIDADE_UF", obrigatoriedade: Obrigatoriedade.Nunca),
+            Item("NATURALIDADE_MUNICIPIO", obrigatoriedade: Obrigatoriedade.Nunca, restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]));
+        (string, object)[] respostas = uf is null
+            ? [("NATURALIDADE_MUNICIPIO", municipio)]
+            : [("NATURALIDADE_UF", uf), ("NATURALIDADE_MUNICIPIO", municipio)];
+
+        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: true, respostas));
+
+        avaliacao.Fatos["NATURALIDADE_MUNICIPIO"].Estado.Should().Be(estadoEsperado);
+        avaliacao.Itens[1].RestricoesVioladas.Should().HaveCount(violacoes);
+    }
+
+    [Fact]
+    public void MunicipioDaUf_ComUfIndeterminada_FicaIndeterminado()
+    {
+        DefinicaoFormulario formulario = Formulario(
+            Item("NATURALIDADE_UF"),
+            Item("NATURALIDADE_MUNICIPIO", restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]));
+
+        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: false, ("NATURALIDADE_MUNICIPIO", "1504208")));
+
+        avaliacao.Fatos["NATURALIDADE_MUNICIPIO"].Estado.Should().Be(EstadoFato.Indeterminado);
+        avaliacao.Itens[1].RestricoesVioladas.Should().BeEmpty();
+    }
+
     [Fact]
     public void OpcoesFiltradasPorRespostaAnterior_RecusamOpcaoDeOutroFiltro()
     {

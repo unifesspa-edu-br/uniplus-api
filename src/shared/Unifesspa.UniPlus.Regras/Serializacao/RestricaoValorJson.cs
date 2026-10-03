@@ -22,6 +22,7 @@ public static class RestricaoValorJson
     public const string TamanhoTexto = "TAMANHO_TEXTO";
     public const string OpcoesPermitidas = "OPCOES_PERMITIDAS";
     public const string OpcoesDasRespostas = "OPCOES_DAS_RESPOSTAS";
+    public const string MunicipiosDaUf = "MUNICIPIOS_DA_UF";
 
     public static string ParaToken(TipoRestricaoValor tipo) => tipo switch
     {
@@ -29,6 +30,7 @@ public static class RestricaoValorJson
         TipoRestricaoValor.TamanhoTexto => TamanhoTexto,
         TipoRestricaoValor.OpcoesPermitidas => OpcoesPermitidas,
         TipoRestricaoValor.OpcoesDasRespostas => OpcoesDasRespostas,
+        TipoRestricaoValor.MunicipiosDaUf => MunicipiosDaUf,
         TipoRestricaoValor.Nenhuma => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "O sentinela não tem token."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de restrição sem token."),
     };
@@ -40,6 +42,7 @@ public static class RestricaoValorJson
         TamanhoTexto => TipoRestricaoValor.TamanhoTexto,
         OpcoesPermitidas => TipoRestricaoValor.OpcoesPermitidas,
         OpcoesDasRespostas => TipoRestricaoValor.OpcoesDasRespostas,
+        MunicipiosDaUf => TipoRestricaoValor.MunicipiosDaUf,
         _ => TipoRestricaoValor.Nenhuma,
     };
 
@@ -72,6 +75,9 @@ public static class RestricaoValorJson
                 break;
             case Formularios.OpcoesDasRespostas respostas:
                 json["fatos"] = new JsonArray([.. respostas.Fatos.Select(static f => (JsonNode)f)]);
+                break;
+            case Formularios.MunicipiosDaUf daUf:
+                json["fatos"] = new JsonArray(daUf.FatoUf);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Tipo de restrição sem forma JSON.");
@@ -123,6 +129,9 @@ public static class RestricaoValorJson
             TipoRestricaoValor.OpcoesDasRespostas => Textos(json, "fatos") is { } fatos
                 ? RestricoesDeValor.DasRespostas(fatos)
                 : Falha("As opções formadas pelas respostas têm a lista de fatos."),
+            TipoRestricaoValor.MunicipiosDaUf => Textos(json, "fatos") is { } fatosDaUf
+                ? RestricoesDeValor.DaUf(fatosDaUf)
+                : Falha("Os municípios da UF têm a lista com o fato da UF."),
             _ => Falha("O tipo da restrição de valor não é reconhecido."),
         };
     }

@@ -14,8 +14,9 @@ public sealed record CondicaoPrecondicaoInput(string Fato, string Operador, Json
 /// <summary>
 /// Uma restrição sobre o valor respondido no item, pelo <see cref="Tipo"/>: <c>FAIXA_NUMERICA</c>
 /// e <c>TAMANHO_TEXTO</c> com <see cref="Minimo"/> e <see cref="Maximo"/> (ao menos um; inteiros no
-/// tamanho), <c>OPCOES_PERMITIDAS</c> com as <see cref="Entradas"/> e <c>OPCOES_DAS_RESPOSTAS</c> com
-/// os <see cref="Fatos"/> cujas respostas formam as opções.
+/// tamanho), <c>OPCOES_PERMITIDAS</c> com as <see cref="Entradas"/>, <c>OPCOES_DAS_RESPOSTAS</c> com
+/// os <see cref="Fatos"/> cujas respostas formam as opções e <c>MUNICIPIOS_DA_UF</c> com o fato da
+/// UF em <see cref="Fatos"/>.
 /// </summary>
 public sealed record RestricaoValorInput(
     string Tipo,

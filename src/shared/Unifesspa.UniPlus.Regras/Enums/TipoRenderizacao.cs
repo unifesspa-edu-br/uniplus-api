@@ -47,4 +47,11 @@ public enum TipoRenderizacao
     /// fato tem domínio <c>ENDERECO</c>.
     /// </summary>
     Endereco = 7,
+
+    /// <summary>
+    /// Município escolhido entre os da UF respondida antes, listados pelo Geo no cliente (ADR-0096) —
+    /// só aceito quando o fato é categórico escalar de fonte <c>GEO_MUNICIPIO</c>. Não congela lista:
+    /// a resposta é o código IBGE, conferido pela UF.
+    /// </summary>
+    Municipio = 8,
 }

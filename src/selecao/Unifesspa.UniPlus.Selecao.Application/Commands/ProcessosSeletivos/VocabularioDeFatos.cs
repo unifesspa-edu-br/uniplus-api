@@ -1,14 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using System.Globalization;
-using System.Text;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -30,8 +28,8 @@ internal static class VocabularioDeFatos
     private const string FonteProcesso = "PROCESSO";
     private const string FonteModalidade = "MODALIDADE";
     private const string FonteMunicipiosBonus = "MUNICIPIOS_BONUS";
-    private const string FonteGeoUf = "GEO_UF";
-    private const string FonteGeoMunicipio = "GEO_MUNICIPIO";
+    private const string FonteGeoUf = DominioDoCatalogo.FonteGeoUf;
+    private const string FonteGeoMunicipio = DominioDoCatalogo.FonteGeoMunicipio;
 
     /// <summary>
     /// O tipo de domínio do fato: estático quando os valores estão no catálogo; dinâmico quando vêm
@@ -184,6 +182,7 @@ internal static class VocabularioDeFatos
         {
             { Dominio: DominioCategorico, FonteValores: FonteProcesso } => OrigemValoresColeta.OpcoesDoProcesso,
             { Dominio: DominioCategorico, FonteValores: FonteMunicipiosBonus } => OrigemValoresColeta.MunicipiosDoBonus,
+            { Dominio: DominioCategorico, FonteValores: FonteGeoUf } => OrigemValoresColeta.UnidadesFederativas,
             _ => OrigemValoresColeta.Catalogo,
         };
     }
@@ -248,24 +247,9 @@ internal static class VocabularioDeFatos
     {
         ArgumentNullException.ThrowIfNull(processo);
         return [.. (processo.BonusRegional?.Municipios ?? [])
-            .OrderBy(static m => ChaveAlfabetica(m.Nome), StringComparer.Ordinal)
+            .OrderBy(static m => OrdemAlfabetica.Chave(m.Nome), StringComparer.Ordinal)
             .ThenBy(static m => m.Nome, StringComparer.Ordinal)
             .ThenBy(static m => m.CodigoIbge, StringComparer.Ordinal)];
-    }
-
-    /// <summary>O nome sem acento e em caixa baixa invariante: chave determinística de ordem alfabética.</summary>
-    private static string ChaveAlfabetica(string nome)
-    {
-        StringBuilder chave = new(nome.Length);
-        foreach (char c in nome.Normalize(NormalizationForm.FormD))
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-            {
-                chave.Append(char.ToLowerInvariant(c));
-            }
-        }
-
-        return chave.ToString();
     }
 
     /// <summary>

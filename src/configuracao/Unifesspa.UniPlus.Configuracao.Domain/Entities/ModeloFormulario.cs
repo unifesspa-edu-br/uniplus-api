@@ -622,6 +622,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         OpcoesPermitidas opcoes => opcoes.Entradas.SelectMany((e, k) => e.Valores.Select(v => ($"{campo}.entradas[{k}].valores", (string?)v))
             .Concat(TextosDoPredicado($"{campo}.entradas[{k}].quando", e.Quando))),
         OpcoesDasRespostas respostas => respostas.Fatos.Select(f => ($"{campo}.fatos", (string?)f)),
+        MunicipiosDaUf daUf => [($"{campo}.fatos", daUf.FatoUf)],
         _ => [],
     };
 

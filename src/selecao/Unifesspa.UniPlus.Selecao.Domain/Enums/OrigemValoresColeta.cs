@@ -16,4 +16,7 @@ public enum OrigemValoresColeta
 
     /// <summary>As opções são os municípios do bônus regional do processo (fonte <c>MUNICIPIOS_BONUS</c>).</summary>
     MunicipiosDoBonus = 2,
+
+    /// <summary>As opções são as unidades federativas (fonte <c>GEO_UF</c>), enumeradas sem consultar o Geo.</summary>
+    UnidadesFederativas = 3,
 }
