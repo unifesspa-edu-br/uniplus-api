@@ -35,6 +35,12 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     private const int BindingMaxLength = 200;
     private const int FinalidadeTratamentoMaxLength = 500;
 
+    /// <summary>
+    /// O nome social preferido pelo titular: o único texto público, porque é a identificação que
+    /// ele escolhe para aparecer (ADR-0082, ADR-0136).
+    /// </summary>
+    public const string CodigoDoNomeSocial = "NOME_SOCIAL";
+
     private const string PrefixoBindingDerivadoAtributo = VinculoDeFato.AtributoDoCandidato;
     private const string PrefixoBindingDerivadoRegra = VinculoDeFato.RegraDeDerivacao;
     private const string PrefixoBindingDerivadoClassificacao = VinculoDeFato.Classificacao;
@@ -299,7 +305,12 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             Recusar("escopo", FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.");
         }
 
-        Result<ProtecaoValidada> protecao = ValidarProtecao(dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
+        Result<ProtecaoValidada> protecao = ValidarProtecao(
+            dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
+            nomeSocialPublico: sistema
+                && string.Equals(codigo?.Trim(), CodigoDoNomeSocial, StringComparison.Ordinal)
+                && dominio == DominioFato.Texto
+                && classificacaoProtecao == ClassificacaoProtecaoDado.Publico);
         erros.AddRange(protecao.Errors);
 
         if (erros.Count > 0)
@@ -707,7 +718,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     }
 
     private static Result<ProtecaoValidada> ValidarProtecao(
-        DominioFato dominio, ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese)
+        DominioFato dominio, ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese, bool nomeSocialPublico)
     {
         List<FieldError> erros = [];
         void Recusar(string campo, string codigo, string mensagem) => erros.Add(new(campo, new DomainError(codigo, mensagem)));
@@ -718,11 +729,13 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria,
                 "Classificação de proteção de dados do fato é obrigatória.");
         }
-        else if (dominio is DominioFato.Texto or DominioFato.Data or DominioFato.Endereco
+        else if (!nomeSocialPublico
+            && dominio is DominioFato.Texto or DominioFato.Data or DominioFato.Endereco
             && classificacao is not (ClassificacaoProtecaoDado.Pessoal or ClassificacaoProtecaoDado.Sensivel))
         {
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
-            // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal.
+            // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. A
+            // exceção é o nome social de sistema, texto público (ADR-0082, ADR-0136).
             Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
                 "Fato de texto, data ou endereço é classificado como pessoal ou sensível.");
         }

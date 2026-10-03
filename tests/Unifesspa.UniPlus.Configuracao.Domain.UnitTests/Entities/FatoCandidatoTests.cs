@@ -90,6 +90,17 @@ public sealed class FatoCandidatoTests
             binding: "CAMPO_INSCRICAO:DADO", classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
+    [Theory(DisplayName = "Só o nome social de sistema é texto público; outro texto de sistema, o nome social do administrador ou outra classificação abaixo de pessoal, não")]
+    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoProtecaoDado.Publico, true)]
+    [InlineData(FatoCandidato.CodigoDoNomeSocial, false, ClassificacaoProtecaoDado.Publico, false)]
+    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoProtecaoDado.Interno, false)]
+    [InlineData("NOME", true, ClassificacaoProtecaoDado.Publico, false)]
+    public void Criar_TextoAbaixoDePessoal_SoONomeSocialPublicoDeSistema(string codigo, bool sistema, ClassificacaoProtecaoDado classificacao, bool aceito) =>
+        Criar(
+            codigo: codigo, dominio: DominioFato.Texto, formato: FormatoTexto.NomePessoa, binding: $"CAMPO_INSCRICAO:{codigo}",
+            classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas, sistema: sistema)
+            .IsSuccess.Should().Be(aceito);
+
     [Fact(DisplayName = "Violações independentes saem juntas, cada uma no seu campo (ADR-0125)")]
     public void Criar_ViolacoesIndependentes_Acumula()
     {

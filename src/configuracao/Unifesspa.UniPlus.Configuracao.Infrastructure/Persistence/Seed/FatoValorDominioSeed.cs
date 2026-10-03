@@ -5,7 +5,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// Fonte única do seed de <c>fato_valor_dominio</c> (ADR-0116): a descrição por
 /// valor dos fatos categóricos <b>estáticos</b> desta colheita —
-/// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>NACIONALIDADE</c> (3) e <c>PARENTESCO</c> (12). Consumida pela
+/// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>NACIONALIDADE</c> (3), <c>PARENTESCO</c> (12),
+/// <c>DOCUMENTO_ESTRANGEIRO_TIPO</c> (2) e <c>ESTADO_CIVIL</c> (6). Consumida pela
 /// configuração EF Core (<c>HasData</c> na migration) e pelos testes de
 /// integração, mesmo papel de <see cref="FatoCandidatoSeed"/> para o pai.
 /// </summary>
@@ -25,7 +26,10 @@ public static class FatoValorDominioSeed
     private static Guid FatoCandidatoId(string codigo) =>
         FatoCandidatoSeed.Itens.Single(item => item.Codigo == codigo).Id;
 
-    /// <summary>As linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE + 12 PARENTESCO).</summary>
+    /// <summary>
+    /// As linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE + 12 PARENTESCO + 2
+    /// DOCUMENTO_ESTRANGEIRO_TIPO + 6 ESTADO_CIVIL).
+    /// </summary>
     public static IReadOnlyList<FatoValorDominioSeedItem> Itens { get; } =
     [
         // ── COR_RACA ───────────────────────────────────────────────────────
@@ -87,6 +91,27 @@ public static class FatoValorDominioSeed
             "Outro parente do candidato.", 10, true),
         new(SeedId(24), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "NAO_PARENTE",
             "Pessoa sem parentesco com o candidato que integra o grupo familiar.", 11, true),
+
+        // ── DOCUMENTO_ESTRANGEIRO_TIPO ───────────────────────────────────
+        // O documento que identifica o estrangeiro no lugar do RG.
+        new(SeedId(25), FatoCandidatoId("DOCUMENTO_ESTRANGEIRO_TIPO"), "PASSAPORTE",
+            "Passaporte.", 0, true),
+        new(SeedId(26), FatoCandidatoId("DOCUMENTO_ESTRANGEIRO_TIPO"), "RNM",
+            "Registro Nacional Migratório.", 1, true),
+
+        // ── ESTADO_CIVIL ─────────────────────────────────────────────────
+        new(SeedId(27), FatoCandidatoId("ESTADO_CIVIL"), "SOLTEIRO",
+            "Solteiro(a).", 0, true),
+        new(SeedId(28), FatoCandidatoId("ESTADO_CIVIL"), "CASADO",
+            "Casado(a).", 1, true),
+        new(SeedId(29), FatoCandidatoId("ESTADO_CIVIL"), "UNIAO_ESTAVEL",
+            "Em união estável.", 2, true),
+        new(SeedId(30), FatoCandidatoId("ESTADO_CIVIL"), "SEPARADO",
+            "Separado(a) judicialmente.", 3, true),
+        new(SeedId(31), FatoCandidatoId("ESTADO_CIVIL"), "DIVORCIADO",
+            "Divorciado(a).", 4, true),
+        new(SeedId(32), FatoCandidatoId("ESTADO_CIVIL"), "VIUVO",
+            "Viúvo(a).", 5, true),
     ];
 }
 
