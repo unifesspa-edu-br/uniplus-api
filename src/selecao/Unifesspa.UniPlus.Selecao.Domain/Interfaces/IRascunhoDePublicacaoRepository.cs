@@ -75,11 +75,9 @@ public interface IRascunhoDePublicacaoRepository : IRepository<RascunhoDePublica
     /// assinaria o ato por tempo indeterminado.
     /// </para>
     /// <para>
-    /// Roda a cada gravação de rascunho, e não num job: não há infraestrutura de tarefa
-    /// recorrente neste repositório (todos os <c>IHostedService</c> são de partida única), e
-    /// prometer um prazo que dependesse de infraestrutura inexistente seria prometer nada. A
-    /// tabela é pequena e o índice por vencimento torna a varredura barata; basta que alguém,
-    /// em algum processo, ainda esteja salvando rascunhos para que os abandonados saiam.
+    /// Roda a cada gravação de rascunho. A tabela é pequena e o índice por vencimento torna a
+    /// varredura barata; basta que alguém, em algum processo, ainda esteja salvando rascunhos
+    /// para que os abandonados saiam.
     /// </para>
     /// </remarks>
     /// <param name="exceto">
