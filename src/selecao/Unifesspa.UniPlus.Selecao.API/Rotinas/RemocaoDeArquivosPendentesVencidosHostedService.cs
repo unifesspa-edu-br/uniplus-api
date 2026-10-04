@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 /// sua: a remoção do registro é condicionada no banco, e a réplica que chega depois a um mesmo
 /// pendente não remove nada.
 /// </summary>
-internal sealed class RemocaoDeArquivosPendentesVencidosHostedService : RotinaPeriodicaHostedService
+internal sealed class RemocaoDeArquivosPendentesVencidosHostedService : PeriodicJobHostedService
 {
     private readonly TimeSpan _intervalo;
 
@@ -28,10 +28,10 @@ internal sealed class RemocaoDeArquivosPendentesVencidosHostedService : RotinaPe
         _intervalo = options.Value.Intervalo;
     }
 
-    protected override string Nome => "remoção dos envios de arquivo pendentes vencidos";
+    protected override string JobName => "remoção dos envios de arquivo pendentes vencidos";
 
-    protected override TimeSpan Intervalo => _intervalo;
+    protected override TimeSpan Interval => _intervalo;
 
-    protected override Task ExecutarAsync(IServiceProvider servicos, CancellationToken cancellationToken) =>
-        servicos.GetRequiredService<RemocaoDeArquivosPendentesVencidos>().ExecutarAsync(cancellationToken);
+    protected override Task RunOnceAsync(IServiceProvider services, CancellationToken cancellationToken) =>
+        services.GetRequiredService<RemocaoDeArquivosPendentesVencidos>().ExecutarAsync(cancellationToken);
 }

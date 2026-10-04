@@ -20,13 +20,13 @@ using Microsoft.Extensions.Logging;
 /// indisponível por um momento não podem derrubar o processo que serve as requisições.
 /// </para>
 /// </remarks>
-public abstract partial class RotinaPeriodicaHostedService : BackgroundService
+public abstract partial class PeriodicJobHostedService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    protected RotinaPeriodicaHostedService(IServiceScopeFactory scopeFactory, TimeProvider timeProvider, ILogger logger)
+    protected PeriodicJobHostedService(IServiceScopeFactory scopeFactory, TimeProvider timeProvider, ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(scopeFactory);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -38,25 +38,25 @@ public abstract partial class RotinaPeriodicaHostedService : BackgroundService
     }
 
     /// <summary>Nome da rotina nos logs.</summary>
-    protected abstract string Nome { get; }
+    protected abstract string JobName { get; }
 
     /// <summary>
     /// Intervalo entre execuções. Uma execução mais longa que ele não sobrepõe a seguinte: os
     /// ciclos perdidos durante ela viram uma única execução logo depois.
     /// </summary>
-    protected abstract TimeSpan Intervalo { get; }
+    protected abstract TimeSpan Interval { get; }
 
     /// <summary>Uma execução da rotina, com os serviços do escopo criado para ela.</summary>
-    protected abstract Task ExecutarAsync(IServiceProvider servicos, CancellationToken cancellationToken);
+    protected abstract Task RunOnceAsync(IServiceProvider services, CancellationToken cancellationToken);
 
     protected sealed override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using PeriodicTimer timer = new(Intervalo, _timeProvider);
+        using PeriodicTimer timer = new(Interval, _timeProvider);
         try
         {
             while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
             {
-                await ExecutarNoEscopoAsync(stoppingToken).ConfigureAwait(false);
+                await RunInScopeAsync(stoppingToken).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -65,22 +65,22 @@ public abstract partial class RotinaPeriodicaHostedService : BackgroundService
         }
     }
 
-    private async Task ExecutarNoEscopoAsync(CancellationToken stoppingToken)
+    private async Task RunInScopeAsync(CancellationToken stoppingToken)
     {
         try
         {
-            AsyncServiceScope escopo = _scopeFactory.CreateAsyncScope();
-            await using (escopo.ConfigureAwait(false))
+            AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
+            await using (scope.ConfigureAwait(false))
             {
-                await ExecutarAsync(escopo.ServiceProvider, stoppingToken).ConfigureAwait(false);
+                await RunOnceAsync(scope.ServiceProvider, stoppingToken).ConfigureAwait(false);
             }
         }
         catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
         {
-            LogExecucaoFalhou(_logger, Nome, ex);
+            LogRunFailed(_logger, JobName, ex);
         }
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "A rotina periódica {Rotina} falhou; nova tentativa no próximo intervalo")]
-    private static partial void LogExecucaoFalhou(ILogger logger, string rotina, Exception exception);
+    private static partial void LogRunFailed(ILogger logger, string rotina, Exception exception);
 }
