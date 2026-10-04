@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// entidade filha do agregado <see cref="ProcessoSeletivo"/> (ver comentário
 /// da entidade).
 /// </summary>
-public interface IDocumentoEditalRepository : IRepository<DocumentoEdital>
+public interface IDocumentoEditalRepository : IRepository<DocumentoEdital>, IArquivoEnviadoRepository
 {
     /// <summary>
     /// Reivindica atomicamente a confirmação do documento — <c>UPDATE ...

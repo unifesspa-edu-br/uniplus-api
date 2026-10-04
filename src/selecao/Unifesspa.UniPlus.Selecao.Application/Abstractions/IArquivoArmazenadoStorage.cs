@@ -42,6 +42,13 @@ public interface IArquivoArmazenadoStorage
     /// não tenha expirado.
     /// </summary>
     Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, string contentType, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Remove o objeto. Idempotente: objeto que já não existe não é erro — a remoção repetida,
+    /// depois de uma tentativa anterior que apagou o objeto e não chegou a apagar o registro, tem
+    /// de concluir.
+    /// </summary>
+    Task RemoverAsync(string objectKey, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Metadados de um objeto de storage, sem o conteúdo.</summary>

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
+using System.Linq.Expressions;
+
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -52,11 +54,38 @@ public sealed class ModeloDeDocumentoRepository : IModeloDeDocumentoRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarPendentesVencidosAsync(
+        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default) =>
+        await _context.ModelosDeDocumento
+            .AsNoTracking()
+            .Where(PendenteVencido(agora))
+            .OrderBy(m => m.ExpiraEm)
+            .ThenBy(m => m.Id)
+            .Take(limite)
+            .Select(m => new ArquivoPendenteVencido(m.Id, m.ObjectKey))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<bool> RemoverSePendenteVencidoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default)
+    {
+        int linhasAfetadas = await _context.ModelosDeDocumento
+            .Where(m => m.Id == id)
+            .Where(PendenteVencido(agora))
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return linhasAfetadas == 1;
+    }
+
     public void Remover(ModeloDeDocumento entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
-        // Nenhum caso de uso remove modelo; a limpeza dos pendentes vencidos é de outra issue.
+        // Nenhum caso de uso remove modelo pela entidade rastreada: o pendente vencido sai por
+        // RemoverSePendenteVencidoAsync, condicionado no banco.
         _context.ModelosDeDocumento.Remove(entity);
     }
+
+    private static Expression<Func<ModeloDeDocumento, bool>> PendenteVencido(DateTimeOffset agora) =>
+        m => m.Status == StatusArquivoEnviado.Pendente && m.ExpiraEm <= agora;
 }

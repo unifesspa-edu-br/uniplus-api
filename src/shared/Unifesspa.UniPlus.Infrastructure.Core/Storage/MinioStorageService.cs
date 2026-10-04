@@ -112,7 +112,19 @@ public sealed class MinioStorageService : IStorageService
             .WithBucket(bucket)
             .WithObject(nomeArquivo);
 
-        await _minioClient.RemoveObjectAsync(args, cancellationToken).ConfigureAwait(false);
+        // O S3 já responde sucesso à remoção de chave inexistente; as duas exceções cobrem o
+        // bucket ausente e o servidor que sinalize a chave ausente, com a mesma semântica de
+        // ObterMetadadosAsync.
+        try
+        {
+            await _minioClient.RemoveObjectAsync(args, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ObjectNotFoundException)
+        {
+        }
+        catch (BucketNotFoundException)
+        {
+        }
     }
 
     public async Task<string> GerarUrlTemporariaAsync(string bucket, string nomeArquivo, TimeSpan expiracao, CancellationToken cancellationToken = default)

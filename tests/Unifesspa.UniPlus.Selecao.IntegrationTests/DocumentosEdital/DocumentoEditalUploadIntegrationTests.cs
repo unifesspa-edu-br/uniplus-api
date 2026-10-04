@@ -463,5 +463,8 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
             await inner.SalvarConteudoSeladoAsync(objectKey, conteudo, contentType, cancellationToken);
             throw new InvalidOperationException("Falha simulada depois de salvar a cópia selada.");
         }
+
+        public Task RemoverAsync(string objectKey, CancellationToken cancellationToken = default) =>
+            inner.RemoverAsync(objectKey, cancellationToken);
     }
 }

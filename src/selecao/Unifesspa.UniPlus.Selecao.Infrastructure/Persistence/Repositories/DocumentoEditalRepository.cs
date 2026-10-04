@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
+using System.Linq.Expressions;
+
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -66,13 +68,41 @@ public sealed class DocumentoEditalRepository : IDocumentoEditalRepository
         return linhasAfetadas == 1;
     }
 
+    public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarPendentesVencidosAsync(
+        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default)
+    {
+        return await _context.DocumentosEdital
+            .AsNoTracking()
+            .Where(PendenteVencido(agora))
+            .OrderBy(d => d.ExpiraEm)
+            .ThenBy(d => d.Id)
+            .Take(limite)
+            .Select(d => new ArquivoPendenteVencido(d.Id, d.ObjectKey))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<bool> RemoverSePendenteVencidoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default)
+    {
+        int linhasAfetadas = await _context.DocumentosEdital
+            .Where(d => d.Id == id)
+            .Where(PendenteVencido(agora))
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return linhasAfetadas == 1;
+    }
+
     public void Remover(DocumentoEdital entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        // Sem soft-delete (EntityBase puro — DocumentoEdital não é ISoftDeletable):
-        // não há caso de uso hoje que remova documento (pendentes expirados são
-        // stub de limpeza futura, ver issue #784); implementado por completude do
-        // contrato IRepository<T>.
+        // Sem soft-delete (EntityBase puro — DocumentoEdital não é ISoftDeletable).
+        // Nenhum caso de uso remove documento pela entidade rastreada: o pendente
+        // vencido sai por RemoverSePendenteVencidoAsync, condicionado no banco.
+        // Implementado por completude do contrato IRepository<T>.
         _context.DocumentosEdital.Remove(entity);
     }
+
+    private static Expression<Func<DocumentoEdital, bool>> PendenteVencido(DateTimeOffset agora) =>
+        d => d.Status == StatusArquivoEnviado.Pendente && d.ExpiraEm <= agora;
 }
