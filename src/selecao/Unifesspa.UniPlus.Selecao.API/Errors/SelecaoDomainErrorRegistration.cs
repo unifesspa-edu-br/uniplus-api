@@ -670,8 +670,9 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RascunhoRetificacao.MotivoMuitoLongo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.motivo_muito_longo", "O motivo da retificação excede o limite de caracteres")),
         // Fatos das versões publicadas (UNI-REQ-0144): o candidato pode ter preenchido um formulário
         // em qualquer versão publicada, então a sessão não usa, de outra finalidade, fato que não foi
-        // coletado em todas elas.
+        // coletado em todas elas, e não retira da inscrição o fato que ela já coletava.
         new("RascunhoRetificacao.FatoAusenteDeVersaoPublicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.fato_ausente_de_versao_publicada", "Fato de outra finalidade não coletado em todas as versões publicadas")),
+        new("RascunhoRetificacao.FatoJaColetadoRemovido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.fato_ja_coletado_removido", "A retificação não retira da inscrição fato que ela já coleta")),
         // A base do rascunho deixou de ser o topo da cadeia. Hoje é inalcançável por
         // invariante (o atalho recusa com sessão aberta; o fechamento encerra a sessão na
         // mesma transação; o FOR UPDATE serializa) — é guard rail contra o dia em que um
