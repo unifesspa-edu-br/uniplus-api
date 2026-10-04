@@ -11,6 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Hosting;
+
 /// <summary>
 /// Base <see cref="WebApplicationFactory{TEntryPoint}"/> that wires up shared integration test
 /// configuration: Development environment, test authentication scheme, and per-module config
@@ -150,6 +152,17 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
                 {
                     services.Remove(svc);
                 }
+            }
+
+            // Rotinas periódicas de manutenção saem sempre, independente do runtime Wolverine:
+            // mesmo as suítes com Postgres real não podem ter uma varredura agindo sobre os dados
+            // que o teste monta. A suíte que exercita uma rotina a chama diretamente.
+            ServiceDescriptor[] rotinas = [.. services
+                .Where(d => d.ServiceType == typeof(IHostedService)
+                    && d.ImplementationType?.IsSubclassOf(typeof(RotinaPeriodicaHostedService)) == true)];
+            foreach (ServiceDescriptor rotina in rotinas)
+            {
+                services.Remove(rotina);
             }
 
             // Filtro de health checks de infra externa — removidos por default porque a maioria
