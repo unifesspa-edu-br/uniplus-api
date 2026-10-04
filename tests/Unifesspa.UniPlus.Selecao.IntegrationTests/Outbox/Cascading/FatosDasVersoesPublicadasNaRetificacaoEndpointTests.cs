@@ -50,6 +50,17 @@ public sealed class FatosDasVersoesPublicadasNaRetificacaoEndpointTests
             .StatusCode.Should().Be(HttpStatusCode.NoContent, "QUILOMBOLA é coletado pela inscrição nas duas versões");
     }
 
+    [Fact(DisplayName = "Retirar da inscrição fato que a versão vigente coleta é 422")]
+    public async Task Inscricao_RetiraFatoJaColetado_422()
+    {
+        Contexto ctx = await DuasVersoesPublicadasAsync(nameof(Inscricao_RetiraFatoJaColetado_422));
+        string etag = await ctx.AbrirAsync();
+
+        HttpResponseMessage resposta = await ctx.PutItensAsync("INSCRICAO", [ItemDaInscricao("QUILOMBOLA", 0)], etag);
+
+        await DeveRecusarAsync(resposta, "uniplus.selecao.retificacao.fato_ja_coletado_removido");
+    }
+
     private static object ItemDaInscricao(string codigo, int posicao) => new
     {
         fatoCodigo = codigo,

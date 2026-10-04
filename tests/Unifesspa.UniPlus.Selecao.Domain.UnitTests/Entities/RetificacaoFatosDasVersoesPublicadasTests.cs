@@ -38,6 +38,39 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private sealed record Cenario(ProcessoSeletivo Processo, FaseCronograma Inscricao, FaseCronograma Habilitacao, FaseCronograma Matricula);
 
     // ══════════════════════════════════════════════════════════════════════════════
+    // CA-01 — a inscrição continua coletando o que já coletava, no mesmo papel
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    [Theory(DisplayName = "A retificação recusa a inscrição que deixa de coletar, no mesmo papel, fato que a versão base coletava")]
+    [InlineData("item retirado")]
+    [InlineData("item passa a campo de grupo")]
+    [InlineData("grupo retirado")]
+    public void Inscricao_DeixaDeColetarFatoDaBase_Recusa(string caso)
+    {
+        ProcessoSeletivo processo = Publicado().Processo;
+
+        Result resultado = caso switch
+        {
+            "item retirado" => processo.DefinirItens([Item(Novo, 1)], Sessao),
+            "item passa a campo de grupo" => processo.DefinirItens([Item(Novo, 1)], Sessao, grupos: [Familia(2, "MEMBRO_RENDA", "TEM_RENDA")]),
+            _ => processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)], Sessao, grupos: []),
+        };
+
+        resultado.Error!.Code.Should().Be("RascunhoRetificacao.FatoJaColetadoRemovido");
+    }
+
+    [Fact(DisplayName = "A retificação acrescenta item antes dos que a inscrição já coletava, deslocando a ordem deles")]
+    public void Inscricao_ItemNovoAntesDosDaBase_Aceita()
+    {
+        ProcessoSeletivo processo = Publicado().Processo;
+
+        Result resultado = processo.DefinirItens(
+            [Item("ANTES", 0), Item("TEM_RENDA", 1), Item(Novo, 2)], Sessao, grupos: [Familia(3, "MEMBRO_RENDA")]);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
     // CA-02 — formulário e exigência de outra finalidade
     // ══════════════════════════════════════════════════════════════════════════════
 

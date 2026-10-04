@@ -2381,6 +2381,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.ValidationFailure(foraDaInscricao);
         }
 
+        // Sob retificação, o fato que a inscrição já coletava continua coletado por ela, no mesmo
+        // papel: quem se inscreveu numa versão anterior o informou, e as outras finalidades e as
+        // versões seguintes contam com ele (UNI-REQ-0144).
+        if (finalidade == FinalidadeFormulario.Inscricao
+            && Rascunho?.FatosDasVersoesPublicadas.PrimeiroDaInscricaoQueDeixaDeSerColetado(fatosColetados, grupos) is { } retirado)
+        {
+            return Result.Failure(new DomainError(
+                "RascunhoRetificacao.FatoJaColetadoRemovido",
+                $"O fato '{retirado}' já é coletado pelo formulário de inscrição do edital publicado: a retificação não o retira do formulário nem o passa de item para campo de grupo, ou de um grupo para outro."));
+        }
+
         // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
