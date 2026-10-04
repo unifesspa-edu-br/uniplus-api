@@ -487,7 +487,7 @@ public sealed class RestauradorDeConfiguracaoTests
                 Origem: "DECLARADO",
                 Cardinalidade: "ESCALAR",
                 PontoResolucao: "INSCRICAO",
-                Binding: "CAMPO_INSCRICAO:TIPO_DEFICIENCIA",
+                Binding: "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
                 ValoresDominio: null,
                 ValoresDominioDeclarados: null),
         };

@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class ConferenciaDoSubitemTests
 {
     [Theory]
-    [InlineData("DECLARADO", "MEMBRO_GRUPO", "CAMPO_INSCRICAO:PARENTESCO", null)]
-    [InlineData("DECLARADO", "CANDIDATO", "CAMPO_INSCRICAO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
+    [InlineData("DECLARADO", "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO", null)]
+    [InlineData("DECLARADO", "CANDIDATO", "CAMPO_FORMULARIO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
     [InlineData("DERIVADO", "MEMBRO_GRUPO", "REGRA_DERIVACAO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
     public void FatoDoSubitem_SoAceitaFatoDeclaradoDeMembro(string origem, string escopo, string binding, string? esperado)
     {
@@ -26,7 +26,7 @@ public sealed class ConferenciaDoSubitemTests
     [Fact]
     public void FatoDoItem_FatoDeMembro_NaoEhColetavel()
     {
-        ConferenciaNoCatalogo.FatoDoItem("PARENTESCO", Catalogo("DECLARADO", "MEMBRO_GRUPO", "CAMPO_INSCRICAO:PARENTESCO"))!.Code
+        ConferenciaNoCatalogo.FatoDoItem("PARENTESCO", Catalogo("DECLARADO", "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO"))!.Code
             .Should().Be(ItemFormularioErrorCodes.FatoNaoColetavel);
     }
 

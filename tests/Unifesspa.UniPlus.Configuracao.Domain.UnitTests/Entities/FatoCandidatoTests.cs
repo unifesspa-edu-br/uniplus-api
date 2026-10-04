@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class FatoCandidatoTests
 {
-    private const string BindingCorRaca = "CAMPO_INSCRICAO:COR_RACA";
+    private const string BindingCorRaca = "CAMPO_FORMULARIO:COR_RACA";
     private const string PontoResolucaoInscricao = "INSCRICAO";
 
     private const string Finalidade = "Enquadramento na reserva de vagas.";
@@ -52,7 +52,7 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "Criar booleano com fonte dos valores é recusado")]
     public void Criar_BooleanoComFonte_Recusa() =>
         FatoCandidato.Criar("PCD", "Pessoa com deficiência", null, DominioFato.Booleano, OrigemFato.Declarado,
-            CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:PCD",
+            CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null, PontoResolucaoInscricao, "CAMPO_FORMULARIO:PCD",
             EscopoFato.Candidato, ClassificacaoProtecaoDado.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
             sistema: false)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico);
@@ -61,7 +61,7 @@ public sealed class FatoCandidatoTests
     public void AdicionarValorDominio_FonteProcesso_Recusa()
     {
         FatoCandidato fato = Criar(
-            codigo: "TIPO_DEFICIENCIA", fonteValores: FonteValoresFato.Processo, binding: "CAMPO_INSCRICAO:TIPO_DEFICIENCIA").Value!;
+            codigo: "TIPO_DEFICIENCIA", fonteValores: FonteValoresFato.Processo, binding: "CAMPO_FORMULARIO:TIPO_DEFICIENCIA").Value!;
 
         fato.AdicionarValorDominio("VISUAL", "Deficiência visual", 0, ativo: true)
             .Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal);
@@ -77,7 +77,7 @@ public sealed class FatoCandidatoTests
     [InlineData(DominioFato.Texto, null, FatoCandidatoErrorCodes.FormatoObrigatorio)]
     [InlineData(DominioFato.Booleano, FormatoTexto.Cpf, FatoCandidatoErrorCodes.FormatoForaDeTexto)]
     public void Criar_FormatoIncoerenteComDominio_Recusa(DominioFato dominio, FormatoTexto? formato, string codigoEsperado) =>
-        Criar(codigo: "CPF", dominio: dominio, formato: formato, binding: "CAMPO_INSCRICAO:CPF")
+        Criar(codigo: "CPF", dominio: dominio, formato: formato, binding: "CAMPO_FORMULARIO:CPF")
             .Error!.Code.Should().Be(codigoEsperado);
 
     [Theory(DisplayName = "Texto, data e endereço não aceitam classificação abaixo de pessoal")]
@@ -87,7 +87,7 @@ public sealed class FatoCandidatoTests
     public void Criar_ClassificacaoAbaixoDoMinimo_Recusa(DominioFato dominio, ClassificacaoProtecaoDado classificacao) =>
         Criar(
             codigo: "DADO", dominio: dominio, formato: dominio == DominioFato.Texto ? FormatoTexto.Livre : null,
-            binding: "CAMPO_INSCRICAO:DADO", classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            binding: "CAMPO_FORMULARIO:DADO", classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
     [Theory(DisplayName = "Só o nome social de sistema é texto público; outro texto de sistema, o nome social do administrador ou outra classificação abaixo de pessoal, não")]
@@ -97,7 +97,7 @@ public sealed class FatoCandidatoTests
     [InlineData("NOME", true, ClassificacaoProtecaoDado.Publico, false)]
     public void Criar_TextoAbaixoDePessoal_SoONomeSocialPublicoDeSistema(string codigo, bool sistema, ClassificacaoProtecaoDado classificacao, bool aceito) =>
         Criar(
-            codigo: codigo, dominio: DominioFato.Texto, formato: FormatoTexto.NomePessoa, binding: $"CAMPO_INSCRICAO:{codigo}",
+            codigo: codigo, dominio: DominioFato.Texto, formato: FormatoTexto.NomePessoa, binding: $"CAMPO_FORMULARIO:{codigo}",
             classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas, sistema: sistema)
             .IsSuccess.Should().Be(aceito);
 
@@ -120,7 +120,7 @@ public sealed class FatoCandidatoTests
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
         fato.Origem.Should().Be(OrigemFato.Declarado);
-        fato.Binding.Should().Be("CAMPO_INSCRICAO:ANO_CONCLUSAO");
+        fato.Binding.Should().Be("CAMPO_FORMULARIO:ANO_CONCLUSAO");
         fato.Sistema.Should().BeFalse();
     }
 
@@ -328,9 +328,9 @@ public sealed class FatoCandidatoTests
     }
 
     [Theory(DisplayName = "Binding sem separador, ou com prefixo/referência vazios, é rejeitado como formato inválido")]
-    [InlineData("CAMPO_INSCRICAO_COR_RACA")]
+    [InlineData("CAMPO_FORMULARIO_COR_RACA")]
     [InlineData(":COR_RACA")]
-    [InlineData("CAMPO_INSCRICAO:")]
+    [InlineData("CAMPO_FORMULARIO:")]
     public void Criar_BindingFormatoInvalido_Falha(string binding)
     {
         Result<FatoCandidato> resultado = Criar(binding: binding);
@@ -342,8 +342,8 @@ public sealed class FatoCandidatoTests
     [Theory(DisplayName = "Binding com prefixo incoerente com a origem é rejeitado")]
     [InlineData(OrigemFato.Declarado, "ATRIBUTO_CANDIDATO:COR_RACA")]
     [InlineData(OrigemFato.Declarado, "REGRA_DERIVACAO:MODALIDADE")]
-    [InlineData(OrigemFato.Derivado, "CAMPO_INSCRICAO:FAIXA_ETARIA")]
-    [InlineData(OrigemFato.Integracao, "CAMPO_INSCRICAO:ANO_ENEM")]
+    [InlineData(OrigemFato.Derivado, "CAMPO_FORMULARIO:FAIXA_ETARIA")]
+    [InlineData(OrigemFato.Integracao, "CAMPO_FORMULARIO:ANO_ENEM")]
     [InlineData(OrigemFato.Integracao, "REGRA_DERIVACAO:ALGO")]
     public void Criar_BindingPrefixoIncoerenteComOrigem_Falha(OrigemFato origem, string binding)
     {
@@ -378,7 +378,7 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "A mensagem de prefixo incoerente lista os dois prefixos aceitos quando a origem é derivada")]
     public void Criar_BindingPrefixoIncoerente_Derivado_MensagemListaOsDois()
     {
-        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Derivado, binding: "CAMPO_INSCRICAO:X");
+        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Derivado, binding: "CAMPO_FORMULARIO:X");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Message.Should().Contain("ATRIBUTO_CANDIDATO")
@@ -387,7 +387,7 @@ public sealed class FatoCandidatoTests
     }
 
     [Theory(DisplayName = "Binding com prefixo coerente com a origem é aceito")]
-    [InlineData(OrigemFato.Declarado, "CAMPO_INSCRICAO:COR_RACA")]
+    [InlineData(OrigemFato.Declarado, "CAMPO_FORMULARIO:COR_RACA")]
     [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA")]
     // REGRA_DERIVACAO referencia o próprio fato: a referência bate com o código FATO_QUALQUER.
     [InlineData(OrigemFato.Derivado, "REGRA_DERIVACAO:FATO_QUALQUER")]
@@ -422,7 +422,7 @@ public sealed class FatoCandidatoTests
     {
         FatoCandidato fato = Criar(
             codigo: "PCD", dominio: DominioFato.Booleano,
-            binding: "CAMPO_INSCRICAO:PCD").Value!;
+            binding: "CAMPO_FORMULARIO:PCD").Value!;
 
         Result resultado = fato.AdicionarValorDominio("SIM", "Descrição", 0, ativo: true);
 

@@ -1208,7 +1208,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 Origem: "DECLARADO",
                 Cardinalidade: "ESCALAR",
                 PontoResolucao: "INSCRICAO",
-                Binding: "CAMPO_INSCRICAO:COR_RACA",
+                Binding: "CAMPO_FORMULARIO:COR_RACA",
                 ValoresDominio: ["ZETA_VALOR", "ALFA_VALOR"],
                 ValoresDominioDeclarados: null),
         };

@@ -29,7 +29,7 @@ public sealed class DesativacaoNoCatalogoTests
 
     private static FatoCandidatoView CorRaca(bool ativo = true) => new(
         Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_INSCRICAO:COR_RACA", [Branca, PretaDesativada, Parda], "GLOBAL", ativo);
+        ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [Branca, PretaDesativada, Parda], "GLOBAL", ativo);
 
     private static Dictionary<string, FatoCandidatoView> Catalogo(FatoCandidatoView fato) =>
         new(StringComparer.Ordinal) { [fato.Codigo] = fato };
@@ -94,7 +94,7 @@ public sealed class DesativacaoNoCatalogoTests
             PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         catalogo["BAIXA_RENDA"] = new FatoCandidatoView(
             Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_INSCRICAO:BAIXA_RENDA", null, null, true);
+            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true);
 
         ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["COR_RACA"]!
             .Select(static v => v.Codigo).Should().Equal("BRANCA", "PRETA", "PARDA");

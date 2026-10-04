@@ -649,7 +649,7 @@ public sealed class PoliticaDeOrdenacaoTests
         {
             ["COR_RACA"] = new MetadadoFatoCongelado(
                 Codigo: "COR_RACA", Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
-                PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:COR_RACA",
+                PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
                 ValoresDominio: null, ValoresDominioDeclarados: [valorAlfa, valorZeta]),
         };
 

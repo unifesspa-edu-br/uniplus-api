@@ -342,7 +342,7 @@ public sealed class EnvelopeCanonicoGoldenTests
                 Origem: "DECLARADO",
                 Cardinalidade: "ESCALAR",
                 PontoResolucao: "INSCRICAO",
-                Binding: "CAMPO_INSCRICAO:COR_RACA",
+                Binding: "CAMPO_FORMULARIO:COR_RACA",
                 ValoresDominio: ["BRANCA", "PRETA", "PARDA"],
                 ValoresDominioDeclarados: [
                     new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),

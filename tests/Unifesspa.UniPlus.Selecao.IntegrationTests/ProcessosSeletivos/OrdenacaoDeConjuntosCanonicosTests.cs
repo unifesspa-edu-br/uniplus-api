@@ -445,7 +445,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         {
             ["COR_RACA"] = new MetadadoFatoCongelado(
                 Codigo: "COR_RACA", Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
-                PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:COR_RACA",
+                PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
                 ValoresDominio: ["PRETA", "AMARELA", "BRANCA"], ValoresDominioDeclarados: null),
         };
         SnapshotCanonico snapshotUm = Canonicalizador.Canonicalizar(
@@ -462,7 +462,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         {
             ["COR_RACA"] = new MetadadoFatoCongelado(
                 Codigo: "COR_RACA", Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
-                PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:COR_RACA",
+                PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
                 ValoresDominio: ["BRANCA", "PRETA", "AMARELA"], ValoresDominioDeclarados: null),
         };
         SnapshotCanonico snapshotDois = Canonicalizador.Canonicalizar(
