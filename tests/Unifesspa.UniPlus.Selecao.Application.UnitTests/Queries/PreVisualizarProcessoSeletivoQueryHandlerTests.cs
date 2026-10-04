@@ -95,6 +95,37 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "INDETERMINADO", EntidadeId = (string?)null });
     }
 
+    [Fact(DisplayName = "Com a composição familiar visível e sem resposta, o documento por membro sai indeterminado, sem ocorrência")]
+    public async Task Handle_ComposicaoVisivelSemResposta_DocumentoPorMembroIndeterminado()
+    {
+        PreVisualizacaoDoProcessoDto previa = await PreVisualizarAsync(Perfil(
+            nacionalidade: "NATO", corRaca: "INDIGENA", convocacao: "LB_PPI", membros: null));
+
+        previa.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
+            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "INDETERMINADO", EntidadeId = (string?)null });
+    }
+
+    [Fact(DisplayName = "Com a composição familiar visível e a lista vazia declarada, o documento por membro não é exigido")]
+    public async Task Handle_ComposicaoVisivelComListaVazia_DocumentoPorMembroNaoExigido()
+    {
+        Result<PreVisualizacaoDoProcessoDto> resultado = await HandleAsync(
+            Perfil(nacionalidade: "NATO", corRaca: "INDIGENA", convocacao: "LB_PPI", membros: []),
+            ProcessoDeMedicina(minimoDaComposicao: 0));
+
+        resultado.Value!.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
+            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "NAO_EXIGIDO", EntidadeId = (string?)null });
+    }
+
+    [Fact(DisplayName = "Com a composição familiar oculta e sem resposta, o documento por membro não é exigido")]
+    public async Task Handle_ComposicaoOcultaSemResposta_DocumentoPorMembroNaoExigido()
+    {
+        PreVisualizacaoDoProcessoDto previa = await PreVisualizarAsync(Perfil(
+            nacionalidade: "NATO", corRaca: "BRANCA", convocacao: "AC", membros: null));
+
+        previa.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
+            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "NAO_EXIGIDO", EntidadeId = (string?)null });
+    }
+
     [Fact(DisplayName = "A ocorrência sem identidade, ou com identidade repetida no grupo, é recusada no campo dela")]
     public async Task Handle_OcorrenciaSemIdentidadePropria_Recusa()
     {
@@ -165,16 +196,21 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         previa.Documentos.Where(static d => d.Situacao == "EXIGIDO")
             .Select(static d => d.EntidadeId is null ? d.TipoDocumentoCodigo : $"{d.TipoDocumentoCodigo}@{d.EntidadeId}");
 
-    /// <summary>Um candidato com a inscrição e a habilitação respondidas e concluídas.</summary>
+    /// <summary>
+    /// Um candidato com a inscrição e a habilitação concluídas; sem membros, a composição familiar
+    /// fica sem resposta.
+    /// </summary>
     private static PreVisualizacaoDoProcessoInput Perfil(
-        string nacionalidade, string corRaca, string convocacao, IReadOnlyList<OcorrenciaSimuladaInput> membros) =>
+        string nacionalidade, string corRaca, string convocacao, IReadOnlyList<OcorrenciaSimuladaInput>? membros) =>
         new(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["NACIONALIDADE"] = Json(nacionalidade),
                 ["COR_RACA"] = Json(corRaca),
             },
-            new Dictionary<string, IReadOnlyList<OcorrenciaSimuladaInput>>(StringComparer.Ordinal) { [Composicao] = membros },
+            membros is null
+                ? null
+                : new Dictionary<string, IReadOnlyList<OcorrenciaSimuladaInput>>(StringComparer.Ordinal) { [Composicao] = membros },
             [
                 new EtapaConcluidaInput("INSCRICAO", ConjuntoBasicoDaInscricao.CodigoDaSecao),
                 new EtapaConcluidaInput("INSCRICAO", FormularioDeTeste.Secao),
@@ -199,13 +235,14 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     /// identidade conforme a nacionalidade. A composição familiar aparece a quem se declarou preto,
     /// pardo ou indígena, e a modalidade derivada da cor ou raça pede um comprovante dela.
     /// </summary>
-    private static ProcessoSeletivo ProcessoDeMedicina()
+    /// <param name="minimoDaComposicao">O mínimo de membros; zero admite declarar que não há membros.</param>
+    private static ProcessoSeletivo ProcessoDeMedicina(int minimoDaComposicao = 1)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Medicina 2027", out Guid fase);
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         GrupoColetado composicao = GrupoColetado.Criar(
-            Composicao, 0, FormularioDeTeste.Secao, "Composição familiar", 1, null,
+            Composicao, 0, FormularioDeTeste.Secao, "Composição familiar", minimoDaComposicao, null,
             PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!,
             Obrigatoriedade.Sempre,
             [
