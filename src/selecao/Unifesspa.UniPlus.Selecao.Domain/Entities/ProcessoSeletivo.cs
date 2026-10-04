@@ -1114,10 +1114,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             GrupoDoGrafo[] gruposDoGrafo = [.. GruposDaFinalidade(finalidade).Select(static g => g.ParaGrafo())];
             for (int indice = 0; indice < etapas.Count; indice++)
             {
-                if (GrafoDoFormulario.CitacaoInvalidaDaEtapa(
-                        etapasDoGrafo[indice],
-                        GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo, gruposDoGrafo),
-                        dependencias) is { } recusa)
+                if ((GrafoDoFormulario.CitacaoInvalidaDaEtapa(
+                            etapasDoGrafo[indice],
+                            GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo, gruposDoGrafo),
+                            dependencias)
+                        ?? CitacaoNaoGarantida(DoFormulario(finalidade, CitacoesDaSecao(etapas[indice])), finalidade, SemCatalogo)) is { } recusa)
                 {
                     recusas.Add(new($"etapas[{indice}].exibicao", recusa));
                 }
@@ -1383,7 +1384,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         DependenciasDoFormulario dependencias = DependenciasDe(finalidade, Itens.Where(f => f.Finalidade == finalidade), FatosDaInscricao(Itens));
         for (int indice = 0; indice < termos.Count; indice++)
         {
-            if (GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias) is { } recusa)
+            if ((GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias)
+                    ?? CitacaoNaoGarantida(DoFormulario(finalidade, CitacoesDoTermo(termos[indice])), finalidade, SemCatalogo)) is { } recusa)
             {
                 erros.Add(new($"termos[{indice}]", recusa));
             }
@@ -2036,7 +2038,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"O fato '{fato}' vem do formulário de isenção e só é citado por documento exigido na fase da isenção.");
         }
 
-        return null;
+        // As exigências de uma finalidade seguem a versão do formulário dela; o fato de outra
+        // finalidade tem de ter sido coletado em todas as versões publicadas (UNI-REQ-0144).
+        return CitacaoNaoGarantida(
+            [($"o gatilho de um documento exigido na fase '{faseDaExigencia.Codigo}'", fato)],
+            FinalidadePropriaDaFase(exigidoNaFaseId),
+            membroPorAgregado);
     }
 
     /// <summary>A fase em que o fato fica conhecido no processo, ou a recusa quando o catálogo o situa fora do cronograma.</summary>
@@ -2383,6 +2390,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(erro);
         }
 
+        if (CitacaoNaoGarantida(
+                DoFormulario(finalidade, CitacoesDosCampos(fatosColetados, grupos).Select(static c => (c.Dono, c.Citado))),
+                finalidade,
+                SemCatalogo) is { } naoGarantida)
+        {
+            return Result.Failure(naoGarantida);
+        }
+
         if (finalidade == FinalidadeFormulario.Inscricao && CitacaoQueFicariaOrfa(fatosColetados) is { } orfa)
         {
             return Result.Failure(orfa);
@@ -2548,6 +2563,116 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new(fatos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
 
     /// <summary>
+    /// Sob retificação, a primeira citação que usa, de outra finalidade, fato que o formulário dela
+    /// não coletou em todas as versões publicadas (UNI-REQ-0144): quem preencheu aquele formulário
+    /// numa versão anterior pode não o ter informado. Vale para o fato citado e para todo fato de que
+    /// ele depende: pela regra de derivação viva, pelo mecanismo do derivado do sistema ou, no
+    /// agregado sobre grupo repetível, pelo fato de membro. Fora da sessão, nula: nenhum candidato
+    /// preencheu versão anterior.
+    /// </summary>
+    /// <param name="citacoes">Cada fato citado, com quem o cita, como a mensagem o nomeia.</param>
+    /// <param name="finalidadePropria">
+    /// A finalidade de quem cita: os fatos dela seguem a versão do próprio formulário. Nula quando
+    /// quem cita não tem finalidade própria, e então todo fato de formulário precisa estar garantido.
+    /// </param>
+    private DomainError? CitacaoNaoGarantida(
+        IEnumerable<(string Citante, string Citado)> citacoes,
+        FinalidadeFormulario? finalidadePropria,
+        IReadOnlyDictionary<string, string> membroPorAgregado)
+    {
+        if (Rascunho?.FatosDasVersoesPublicadas is not { } publicadas)
+        {
+            return null;
+        }
+
+        foreach ((string citante, string citado) in citacoes)
+        {
+            if (FatoNaoGarantido(citado, finalidadePropria, publicadas, membroPorAgregado, []) is { } naoGarantido)
+            {
+                string anterior = EstruturaFormulario.ParaToken(naoGarantido.Produtora);
+                string sujeito = string.Equals(citado, naoGarantido.Fato, StringComparison.Ordinal)
+                    ? $"O fato '{citado}', citado por {citante}, não"
+                    : $"O fato '{citado}', citado por {citante}, depende de '{naoGarantido.Fato}', que não";
+                return new DomainError(
+                    "RascunhoRetificacao.FatoAusenteDeVersaoPublicada",
+                    $"{sujeito} é coletado pelo formulário de {anterior} em todas as versões publicadas do edital: quem preencheu esse formulário numa versão anterior não o informou.");
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// O fato coletado por outra finalidade e fora do que ela garante, entre o fato e as dependências
+    /// dele. O fato coletado encerra a busca: ele não depende de outro.
+    /// </summary>
+    private (string Fato, FinalidadeFormulario Produtora)? FatoNaoGarantido(
+        string fato,
+        FinalidadeFormulario? finalidadePropria,
+        FatosDasVersoesPublicadas publicadas,
+        IReadOnlyDictionary<string, string> membroPorAgregado,
+        HashSet<string> emAvaliacao)
+    {
+        if (_campos.Find(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado)
+        {
+            return coletado.Finalidade != finalidadePropria && !publicadas.Garante(coletado.Finalidade, fato)
+                ? (fato, coletado.Finalidade)
+                : null;
+        }
+
+        if (!emAvaliacao.Add(fato))
+        {
+            return null;
+        }
+
+        foreach (string dependencia in DependenciasDoFato(fato, membroPorAgregado))
+        {
+            if (FatoNaoGarantido(dependencia, finalidadePropria, publicadas, membroPorAgregado, emAvaliacao) is { } naoGarantido)
+            {
+                return naoGarantido;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>As citações das regras de um formulário, com quem cita nomeado junto do formulário.</summary>
+    private static IEnumerable<(string Citante, string Citado)> DoFormulario(
+        FinalidadeFormulario finalidade, IEnumerable<(string Dono, string Citado)> citacoes) =>
+        citacoes.Select(c => ($"{c.Dono} do formulário de {EstruturaFormulario.ParaToken(finalidade)}", c.Citado));
+
+    /// <summary>
+    /// A finalidade cujo formulário é respondido na fase, quando é um só. Com mais de um formulário na
+    /// mesma fase, nenhum é o próprio da exigência: atribuí-la a um deles dependeria da ordem da
+    /// coleção, e escolher o errado aceitaria fato que quem preencheu o outro numa versão anterior não
+    /// informou.
+    /// </summary>
+    private FinalidadeFormulario? FinalidadePropriaDaFase(Guid faseId) =>
+        _formularios.Where(f => f.FaseId == faseId).Select(static f => (FinalidadeFormulario?)f.Finalidade).ToList() is [var unica]
+            ? unica
+            : null;
+
+    /// <summary>
+    /// Sob retificação, a regra de formulário que usa, de outra finalidade, fato fora do que o
+    /// formulário dela coletou em todas as versões publicadas. A conferência das escritas alcança o que
+    /// cada uma escreve; esta alcança o que mudou depois, inclusive a regra de derivação que passou a
+    /// fazer um derivado citado depender de fato novo.
+    /// </summary>
+    private DomainError? PendenciaDeFatoAusenteDeVersaoPublicada() =>
+        _formularios
+            .Select(formulario => CitacaoNaoGarantida(
+                DoFormulario(
+                    formulario.Finalidade,
+                    CitacoesDoFormulario(
+                        formulario,
+                        [.. Itens.Where(f => f.Finalidade == formulario.Finalidade)],
+                        [.. GruposDaFinalidade(formulario.Finalidade)])
+                    .Select(static c => (c.Dono, c.Citado))),
+                formulario.Finalidade,
+                SemCatalogo))
+            .FirstOrDefault(static recusa => recusa is not null);
+
+    /// <summary>
     /// Trocar os itens da inscrição não pode tirar um fato que uma regra de outra finalidade cita,
     /// direta ou por um derivado: ela passaria a depender de uma resposta que ninguém pede. Só a
     /// citação que a troca invalida é recusada; a que já era inválida fica para a publicação.
@@ -2578,20 +2703,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             GrupoColetado[] grupos = [.. GruposDaFinalidade(outra)];
             DependenciasDoFormulario antes = DependenciasDe(outra, Itens.Where(f => f.Finalidade == outra), atuais, derivacoesAntes);
             DependenciasDoFormulario depois = DependenciasDe(outra, itens, daInscricaoDepois, derivacoesDepois);
-            IEnumerable<(string Dono, long Posicao, string Citado)> citacoes = itens
-                .SelectMany(static item => item.FatosCitados.Select(c => ($"o item '{item.FatoCodigo}'", (long)item.Ordem, c)))
-                .Concat(grupos.SelectMany(static grupo => CitacoesDeFora(grupo).Select(c => ($"o grupo '{grupo.Codigo}'", (long)grupo.Ordem, c))))
-                .Concat(formulario.Etapas.SelectMany(secao => secao.FatosCitados
-                    .Select(c => ($"a exibição da seção '{secao.Codigo}'",
-                        GrafoDoFormulario.PosicaoDaEtapa(
-                            secao.ParaGrafo(),
-                            formulario.Etapas.Select(static e => e.ParaGrafo()),
-                            itens.Select(static i => i.ParaGrafo()),
-                            grupos.Select(static g => g.ParaGrafo())),
-                        c))))
-                .Concat(_termosExigidos.Where(t => t.Finalidade == outra)
-                    .SelectMany(static termo => termo.FatosCitados.Select(c => ($"o termo '{termo.Codigo}'", DependenciasDoFormulario.PosicaoDosTermos, c))));
-            foreach ((string dono, long posicao, string citado) in citacoes)
+            foreach ((string dono, long posicao, string citado) in CitacoesDoFormulario(formulario, itens, grupos))
             {
                 if (antes.Conferir(citado, posicao) is null && depois.Conferir(citado, posicao) is not null)
                 {
@@ -2602,6 +2714,36 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
     }
+
+    /// <summary>
+    /// Cada citação das regras do formulário, com quem cita e a posição de onde cita: as dos itens e
+    /// dos grupos dados, a exibição das seções e as condições dos termos da finalidade.
+    /// </summary>
+    private IEnumerable<(string Dono, long Posicao, string Citado)> CitacoesDoFormulario(
+        FormularioProcesso formulario, FatoColetado[] itens, GrupoColetado[] grupos) =>
+        CitacoesDosCampos(itens, grupos)
+            .Concat(formulario.Etapas.SelectMany(secao => CitacoesDaSecao(secao)
+                .Select(c => (c.Dono,
+                    GrafoDoFormulario.PosicaoDaEtapa(
+                        secao.ParaGrafo(),
+                        formulario.Etapas.Select(static e => e.ParaGrafo()),
+                        itens.Select(static i => i.ParaGrafo()),
+                        grupos.Select(static g => g.ParaGrafo())),
+                    c.Citado))))
+            .Concat(_termosExigidos.Where(t => t.Finalidade == formulario.Finalidade)
+                .SelectMany(static termo => CitacoesDoTermo(termo).Select(static c => (c.Dono, DependenciasDoFormulario.PosicaoDosTermos, c.Citado))));
+
+    /// <summary>As citações das regras dos itens e dos grupos, cada uma na posição do item ou do grupo que cita.</summary>
+    private static IEnumerable<(string Dono, long Posicao, string Citado)> CitacoesDosCampos(
+        IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
+        itens.SelectMany(static item => item.FatosCitados.Select(c => ($"o item '{item.FatoCodigo}'", (long)item.Ordem, c)))
+            .Concat(grupos.SelectMany(static grupo => CitacoesDeFora(grupo).Select(c => ($"o grupo '{grupo.Codigo}'", (long)grupo.Ordem, c))));
+
+    private static IEnumerable<(string Dono, string Citado)> CitacoesDaSecao(EtapaFormulario secao) =>
+        secao.FatosCitados.Select(c => ($"a exibição da seção '{secao.Codigo}'", c));
+
+    private static IEnumerable<(string Dono, string Citado)> CitacoesDoTermo(TermoExigidoFormulario termo) =>
+        termo.FatosCitados.Select(c => ($"o termo '{termo.Codigo}'", c));
 
     /// <summary>
     /// O grafo de coleta de um formulário. As regras de um campo citam campo anterior do mesmo
@@ -3243,6 +3385,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
+        new ItemConformidade("formulario_fato_ausente_de_versao_publicada", DimensaoConformidade.ColetaDeFatos, "Formulários: na retificação, fato de outra finalidade só quando coletado em todas as versões publicadas", PendenciaDeFatoAusenteDeVersaoPublicada() is null),
         new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação, negação ou impedimento é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
         new ItemConformidade("exigencia_repete_por_grupo_do_formulario", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: repete por grupo dos formulários, conhecido até a fase da exigência", PendenciaDaRepeticaoPorGrupo() is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
@@ -4081,6 +4224,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDeFatosCitados() is { } fatoCitado)
         {
             return fatoCitado;
+        }
+
+        if (PendenciaDeFatoAusenteDeVersaoPublicada() is { } fatoAusenteDeVersaoPublicada)
+        {
+            return fatoAusenteDeVersaoPublicada;
         }
 
         if (PendenciaDeCampoOpcionalQueAlimentaRegra() is { } campoOpcional)
