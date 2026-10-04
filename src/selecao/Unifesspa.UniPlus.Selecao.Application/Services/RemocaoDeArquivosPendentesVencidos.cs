@@ -31,6 +31,14 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     /// <summary>Quantos registros cada consulta traz, para a execução não carregar a tabela inteira.</summary>
     public const int TamanhoDoLote = 100;
 
+    /// <summary>
+    /// Quanto o registro espera depois do <c>ExpiraEm</c> antes de sair. O prazo é gravado antes de
+    /// a URL de envio ser assinada, e a URL vale o prazo inteiro a partir da assinatura; um envio
+    /// aceito no fim da validade também termina depois dela. Sem a folga, o objeto enviado nessa
+    /// janela chegaria depois da remoção e ficaria sem registro.
+    /// </summary>
+    public static readonly TimeSpan Tolerancia = TimeSpan.FromHours(1);
+
     private readonly IArquivoEnviadoRepository[] _repositorios;
     private readonly IArquivoArmazenadoStorage _storage;
     private readonly TimeProvider _clock;
@@ -55,10 +63,13 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         _logger = logger;
     }
 
-    /// <summary>Remove os pendentes vencidos no instante da chamada; devolve quantos registros saíram.</summary>
+    /// <summary>
+    /// Remove os pendentes vencidos há mais que a <see cref="Tolerancia"/> no instante da chamada;
+    /// devolve quantos registros saíram.
+    /// </summary>
     public async Task<int> ExecutarAsync(CancellationToken cancellationToken)
     {
-        DateTimeOffset agora = _clock.GetUtcNow();
+        DateTimeOffset agora = _clock.GetUtcNow() - Tolerancia;
         int removidos = 0;
         foreach (IArquivoEnviadoRepository repositorio in _repositorios)
         {

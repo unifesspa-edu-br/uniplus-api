@@ -35,7 +35,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     : IClassFixture<ProcessoSeletivoDbFixture>, IClassFixture<MinioContainerFixture>
 {
     private const string TestBucket = "uniplus-pendentes-test";
-    private static readonly TimeSpan Vencido = TimeSpan.FromMinutes(-1);
+    private static readonly TimeSpan Vencido = -(RemocaoDeArquivosPendentesVencidos.Tolerancia + TimeSpan.FromMinutes(1));
     private static readonly TimeSpan NoPrazo = TimeSpan.FromMinutes(15);
     private static readonly byte[] Conteudo = [.. "%PDF-1.7 envio de teste"u8];
 

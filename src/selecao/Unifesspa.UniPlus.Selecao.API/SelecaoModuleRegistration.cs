@@ -91,8 +91,9 @@ public static class SelecaoModuleRegistration
         services.AddOptions<RemocaoDeArquivosPendentesOptions>()
             .Bind(configuration.GetSection(RemocaoDeArquivosPendentesOptions.SectionName))
             .Validate(
-                static options => options.Intervalo >= RemocaoDeArquivosPendentesOptions.IntervaloMinimo,
-                $"{RemocaoDeArquivosPendentesOptions.SectionName}:Intervalo deve ser de pelo menos {RemocaoDeArquivosPendentesOptions.IntervaloMinimo}.")
+                static options => options.Intervalo >= RemocaoDeArquivosPendentesOptions.IntervaloMinimo
+                    && options.Intervalo <= RemocaoDeArquivosPendentesOptions.IntervaloMaximo,
+                $"{RemocaoDeArquivosPendentesOptions.SectionName}:Intervalo deve ficar entre {RemocaoDeArquivosPendentesOptions.IntervaloMinimo} e {RemocaoDeArquivosPendentesOptions.IntervaloMaximo}.")
             .ValidateOnStart();
         services.AddHostedService<RemocaoDeArquivosPendentesVencidosHostedService>();
 
