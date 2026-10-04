@@ -215,7 +215,7 @@ public sealed class FatoCandidatoPersistenceTests
             INSERT INTO configuracao.rol_de_fatos_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {dominio}, {"DECLARADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
@@ -234,7 +234,7 @@ public sealed class FatoCandidatoPersistenceTests
             INSERT INTO configuracao.rol_de_fatos_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, formato, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"ESCALAR"}, {"LIVRE"},
-                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PUBLICO"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {sistema}, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PUBLICO"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {sistema}, true, {DateTimeOffset.UtcNow})
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
@@ -251,7 +251,7 @@ public sealed class FatoCandidatoPersistenceTests
             INSERT INTO configuracao.rol_de_fatos_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"NAO_PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"NAO_PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
@@ -330,7 +330,7 @@ public sealed class FatoCandidatoPersistenceTests
         string codigo = CodigoUnico();
         return FatoCandidato.Criar(
             codigo, "Fato do administrador", null, DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
-            fonteValores: null, formato: null, "INSCRICAO", $"CAMPO_INSCRICAO:{codigo}", EscopoFato.Candidato,
+            fonteValores: null, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
             ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
     }
 
@@ -466,7 +466,7 @@ public sealed class FatoCandidatoPersistenceTests
         corRaca.Origem.Should().Be("DECLARADO");
         corRaca.Cardinalidade.Should().Be("ESCALAR");
         corRaca.PontoResolucao.Should().Be("INSCRICAO");
-        corRaca.Binding.Should().Be("CAMPO_INSCRICAO:COR_RACA");
+        corRaca.Binding.Should().Be("CAMPO_FORMULARIO:COR_RACA");
         // A view projeta os códigos dos valores declarados em ValoresDominio, que o consumidor
         // cross-módulo (PredicadoDnfValidador) usa como domínio do categórico estático.
         corRaca.ValoresDominio.Should().Equal("BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO");
@@ -508,7 +508,7 @@ public sealed class FatoCandidatoPersistenceTests
             INSERT INTO configuracao.rol_de_fatos_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {"COR_RACA"}, {"Duplicata"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_INSCRICAO:DUPLICATA"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:DUPLICATA"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
         Npgsql.PostgresException ex = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
@@ -526,7 +526,7 @@ public sealed class FatoCandidatoPersistenceTests
             INSERT INTO configuracao.rol_de_fatos_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTRO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>("o CHECK ck_rol_de_fatos_candidato_dominio bloqueia 'TEXTO'");
@@ -542,7 +542,7 @@ public sealed class FatoCandidatoPersistenceTests
             INSERT INTO configuracao.rol_de_fatos_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"BRUTO_INFORMADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_INSCRICAO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
@@ -558,49 +558,49 @@ public sealed class FatoCandidatoPersistenceTests
         // não apenas se a migration divergir da fonte.
         (string Codigo, string IdSufixo, DominioFato Dominio, OrigemFato Origem, CardinalidadeFato Cardinalidade, string Binding, string PontoResolucao)[] esperado =
         [
-            ("COR_RACA", "001", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:COR_RACA", "INSCRICAO"),
-            ("QUILOMBOLA", "002", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:QUILOMBOLA", "INSCRICAO"),
-            ("PCD", "003", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:PCD", "INSCRICAO"),
-            ("EGRESSO_ESCOLA_PUBLICA", "004", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:EGRESSO_ESCOLA_PUBLICA", "INSCRICAO"),
+            ("COR_RACA", "001", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:COR_RACA", "INSCRICAO"),
+            ("QUILOMBOLA", "002", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:QUILOMBOLA", "INSCRICAO"),
+            ("PCD", "003", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PCD", "INSCRICAO"),
+            ("EGRESSO_ESCOLA_PUBLICA", "004", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:EGRESSO_ESCOLA_PUBLICA", "INSCRICAO"),
             ("RENDA_PER_CAPITA", "005", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", "INSCRICAO"),
             ("FAIXA_ETARIA", "006", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", "INSCRICAO"),
-            ("SEXO", "007", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SEXO", "INSCRICAO"),
+            ("SEXO", "007", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SEXO", "INSCRICAO"),
             ("MODALIDADE", "008", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, "REGRA_DERIVACAO:MODALIDADE", "INSCRICAO"),
-            ("CONDICAO_ATENDIMENTO", "009", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO", "INSCRICAO"),
-            ("NACIONALIDADE", "010", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NACIONALIDADE", "INSCRICAO"),
-            ("TIPO_DEFICIENCIA", "011", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:TIPO_DEFICIENCIA", "INSCRICAO"),
-            ("BAIXA_RENDA", "012", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:BAIXA_RENDA", "INSCRICAO"),
-            ("CONCORRER_PCD", "013", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PCD", "INSCRICAO"),
-            ("CONCORRER_EP", "014", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_EP", "INSCRICAO"),
-            ("CONCORRER_PPI", "015", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PPI", "INSCRICAO"),
-            ("CONCORRER_Q", "016", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_Q", "INSCRICAO"),
-            ("CONCORRER_RENDA", "017", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_RENDA", "INSCRICAO"),
-            ("ENDERECO_RESIDENCIAL", "018", DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:ENDERECO_RESIDENCIAL", "INSCRICAO"),
-            ("DATA_NASCIMENTO", "019", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DATA_NASCIMENTO", "INSCRICAO"),
+            ("CONDICAO_ATENDIMENTO", "009", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO", "INSCRICAO"),
+            ("NACIONALIDADE", "010", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NACIONALIDADE", "INSCRICAO"),
+            ("TIPO_DEFICIENCIA", "011", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:TIPO_DEFICIENCIA", "INSCRICAO"),
+            ("BAIXA_RENDA", "012", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:BAIXA_RENDA", "INSCRICAO"),
+            ("CONCORRER_PCD", "013", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_PCD", "INSCRICAO"),
+            ("CONCORRER_EP", "014", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_EP", "INSCRICAO"),
+            ("CONCORRER_PPI", "015", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_PPI", "INSCRICAO"),
+            ("CONCORRER_Q", "016", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_Q", "INSCRICAO"),
+            ("CONCORRER_RENDA", "017", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_RENDA", "INSCRICAO"),
+            ("ENDERECO_RESIDENCIAL", "018", DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", "INSCRICAO"),
+            ("DATA_NASCIMENTO", "019", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:DATA_NASCIMENTO", "INSCRICAO"),
             ("UF_RESIDENCIA", "020", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA", "INSCRICAO"),
             ("MUNICIPIO_RESIDENCIA", "021", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA", "INSCRICAO"),
             ("MODALIDADE_CONVOCACAO", "022", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "CLASSIFICACAO:MODALIDADE_CONVOCACAO", "RESULTADO_FINAL"),
-            ("MAIOR_IDADE", "023", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:MAIOR_IDADE", "INSCRICAO"),
-            ("SEM_RENDA", "024", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SEM_RENDA", "INSCRICAO"),
-            ("SOB_GUARDA", "025", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SOB_GUARDA", "INSCRICAO"),
-            ("PARENTESCO", "026", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:PARENTESCO", "INSCRICAO"),
-            ("NOME", "027", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NOME", "INSCRICAO"),
-            ("DESEJA_NOME_SOCIAL", "028", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DESEJA_NOME_SOCIAL", "INSCRICAO"),
-            ("NOME_SOCIAL", "029", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NOME_SOCIAL", "INSCRICAO"),
-            ("CPF", "030", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CPF", "INSCRICAO"),
-            ("RG_NUMERO", "031", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:RG_NUMERO", "INSCRICAO"),
-            ("RG_ORGAO_EMISSOR", "032", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:RG_ORGAO_EMISSOR", "INSCRICAO"),
-            ("RG_DATA_EMISSAO", "033", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:RG_DATA_EMISSAO", "INSCRICAO"),
-            ("DOCUMENTO_ESTRANGEIRO_TIPO", "034", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DOCUMENTO_ESTRANGEIRO_TIPO", "INSCRICAO"),
-            ("DOCUMENTO_ESTRANGEIRO_NUMERO", "035", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:DOCUMENTO_ESTRANGEIRO_NUMERO", "INSCRICAO"),
-            ("NOME_MAE", "036", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NOME_MAE", "INSCRICAO"),
-            ("NOME_PAI", "037", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NOME_PAI", "INSCRICAO"),
-            ("ESTADO_CIVIL", "038", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:ESTADO_CIVIL", "INSCRICAO"),
-            ("EMAIL", "039", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:EMAIL", "INSCRICAO"),
-            ("TELEFONE", "040", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:TELEFONE", "INSCRICAO"),
-            ("RG_UF", "041", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:RG_UF", "INSCRICAO"),
-            ("NATURALIDADE_UF", "042", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NATURALIDADE_UF", "INSCRICAO"),
-            ("NATURALIDADE_MUNICIPIO", "043", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NATURALIDADE_MUNICIPIO", "INSCRICAO"),
+            ("MAIOR_IDADE", "023", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:MAIOR_IDADE", "INSCRICAO"),
+            ("SEM_RENDA", "024", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SEM_RENDA", "INSCRICAO"),
+            ("SOB_GUARDA", "025", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SOB_GUARDA", "INSCRICAO"),
+            ("PARENTESCO", "026", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PARENTESCO", "INSCRICAO"),
+            ("NOME", "027", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME", "INSCRICAO"),
+            ("DESEJA_NOME_SOCIAL", "028", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:DESEJA_NOME_SOCIAL", "INSCRICAO"),
+            ("NOME_SOCIAL", "029", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_SOCIAL", "INSCRICAO"),
+            ("CPF", "030", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CPF", "INSCRICAO"),
+            ("RG_NUMERO", "031", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_NUMERO", "INSCRICAO"),
+            ("RG_ORGAO_EMISSOR", "032", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR", "INSCRICAO"),
+            ("RG_DATA_EMISSAO", "033", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_DATA_EMISSAO", "INSCRICAO"),
+            ("DOCUMENTO_ESTRANGEIRO_TIPO", "034", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:DOCUMENTO_ESTRANGEIRO_TIPO", "INSCRICAO"),
+            ("DOCUMENTO_ESTRANGEIRO_NUMERO", "035", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:DOCUMENTO_ESTRANGEIRO_NUMERO", "INSCRICAO"),
+            ("NOME_MAE", "036", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_MAE", "INSCRICAO"),
+            ("NOME_PAI", "037", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_PAI", "INSCRICAO"),
+            ("ESTADO_CIVIL", "038", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ESTADO_CIVIL", "INSCRICAO"),
+            ("EMAIL", "039", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:EMAIL", "INSCRICAO"),
+            ("TELEFONE", "040", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:TELEFONE", "INSCRICAO"),
+            ("RG_UF", "041", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_UF", "INSCRICAO"),
+            ("NATURALIDADE_UF", "042", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NATURALIDADE_UF", "INSCRICAO"),
+            ("NATURALIDADE_MUNICIPIO", "043", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NATURALIDADE_MUNICIPIO", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

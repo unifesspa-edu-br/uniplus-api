@@ -8,7 +8,7 @@ namespace Unifesspa.UniPlus.Regras.Services;
 public static class VinculoDeFato
 {
     /// <summary>Respondido pelo candidato num campo de formulário — o único vínculo coletável.</summary>
-    public const string CampoDoFormulario = "CAMPO_INSCRICAO";
+    public const string CampoDoFormulario = "CAMPO_FORMULARIO";
 
     /// <summary>Calculado pelo sistema de atributos do candidato, como a faixa etária.</summary>
     public const string AtributoDoCandidato = "ATRIBUTO_CANDIDATO";

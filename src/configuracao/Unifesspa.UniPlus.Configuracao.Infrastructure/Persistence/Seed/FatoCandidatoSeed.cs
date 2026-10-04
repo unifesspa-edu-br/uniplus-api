@@ -91,22 +91,22 @@ public static class FatoCandidatoSeed
     [
         new(SeedId(1), "COR_RACA", "Cor ou raça", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:COR_RACA",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:COR_RACA",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         new(SeedId(2), "QUILOMBOLA", "Quilombola", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:QUILOMBOLA",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:QUILOMBOLA",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         new(SeedId(3), "PCD", "Pessoa com deficiência", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:PCD",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:PCD",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         new(SeedId(4), "EGRESSO_ESCOLA_PUBLICA", "Egresso de escola pública", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:EGRESSO_ESCOLA_PUBLICA",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:EGRESSO_ESCOLA_PUBLICA",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeReservaDeVagas),
 
         new(SeedId(5), "RENDA_PER_CAPITA", "Renda familiar per capita", null,
@@ -121,7 +121,7 @@ public static class FatoCandidatoSeed
 
         new(SeedId(7), "SEXO", "Sexo", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:SEXO",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:SEXO",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeRequisitos),
 
         // MODALIDADE é derivado, não declarado: o candidato declara fatos e opt-ins, e o conjunto
@@ -135,17 +135,17 @@ public static class FatoCandidatoSeed
 
         new(SeedId(9), "CONDICAO_ATENDIMENTO", "Condição de atendimento especializado", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeAtendimento),
 
         new(SeedId(10), "NACIONALIDADE", "Nacionalidade", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:NACIONALIDADE",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:NACIONALIDADE",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeRequisitos),
 
         new(SeedId(11), "TIPO_DEFICIENCIA", "Tipo de deficiência", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Processo,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:TIPO_DEFICIENCIA",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         // ── Pares elegibilidade + opt-in do formulário de cotas (UNI-REQ-0078) ──
@@ -155,32 +155,32 @@ public static class FatoCandidatoSeed
 
         new(SeedId(12), "BAIXA_RENDA", "Renda familiar per capita igual ou inferior a um salário mínimo", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:BAIXA_RENDA",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:BAIXA_RENDA",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeReservaDeVagas),
 
         new(SeedId(13), "CONCORRER_PCD", "Deseja concorrer às vagas reservadas a pessoas com deficiência", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_PCD",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_PCD",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         new(SeedId(14), "CONCORRER_EP", "Deseja concorrer às vagas reservadas a egressos de escola pública", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_EP",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_EP",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeReservaDeVagas),
 
         new(SeedId(15), "CONCORRER_PPI", "Deseja concorrer às vagas reservadas a pretos, pardos e indígenas", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_PPI",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_PPI",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         new(SeedId(16), "CONCORRER_Q", "Deseja concorrer às vagas reservadas a quilombolas", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_Q",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_Q",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         new(SeedId(17), "CONCORRER_RENDA", "Deseja concorrer às vagas reservadas por renda familiar per capita", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_RENDA",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_RENDA",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeReservaDeVagas),
 
         // ── Residência e nascimento (ADR-0136) ──
@@ -188,12 +188,12 @@ public static class FatoCandidatoSeed
         // derivam do endereço e são os que uma regra pode citar — o endereço e a data, não.
         new(SeedId(18), "ENDERECO_RESIDENCIAL", "Endereço residencial", null,
             DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:ENDERECO_RESIDENCIAL",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeResidencia),
 
         new(SeedId(19), "DATA_NASCIMENTO", "Data de nascimento", null,
             DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:DATA_NASCIMENTO",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:DATA_NASCIMENTO",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeRequisitos),
 
         new(SeedId(20), "UF_RESIDENCIA", "UF de residência", null,
@@ -218,24 +218,24 @@ public static class FatoCandidatoSeed
         // na ocorrência do grupo, como a certidão pedida só do membro sob guarda.
         new(SeedId(23), "MAIOR_IDADE", "Maior de idade", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:MAIOR_IDADE",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:MAIOR_IDADE",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
         new(SeedId(24), "SEM_RENDA", "Sem renda", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:SEM_RENDA",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:SEM_RENDA",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
         new(SeedId(25), "SOB_GUARDA", "Sob guarda", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_INSCRICAO:SOB_GUARDA",
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:SOB_GUARDA",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
         // O parentesco de cada membro identifica, no grupo que inclui o candidato, a ocorrência
         // dele próprio.
         new(SeedId(26), CandidatoComoMembro.FatoParentesco, "Parentesco", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            PontoResolucaoInscricao, $"CAMPO_INSCRICAO:{CandidatoComoMembro.FatoParentesco}",
+            PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{CandidatoComoMembro.FatoParentesco}",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
         // O conjunto básico que todo formulário de inscrição coleta: a identificação, a filiação e
@@ -276,7 +276,7 @@ public static class FatoCandidatoSeed
         FormatoTexto? formato = null,
         ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal) =>
         new(SeedId(n), codigo, nome, null, dominio, OrigemFato.Declarado, CardinalidadeFato.Escalar, fonte,
-            PontoResolucaoInscricao, $"CAMPO_INSCRICAO:{codigo}", classificacao, finalidade, Formato: formato);
+            PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{codigo}", classificacao, finalidade, Formato: formato);
 }
 
 /// <summary>

@@ -54,7 +54,7 @@ public sealed class ValoresSelecionaveisResolverTests
             Id: Guid.CreateVersion7(), Codigo: "COR_RACA", Nome: "Cor ou raça", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: [.. seisValores.Select(static v => v.Codigo)],
-            PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:COR_RACA",
+            PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
             ValoresDominioDeclarados: seisValores, FonteValores: "GLOBAL", Ativo: true);
 
         EntradaCanonicalizacao? entradaCapturada = null;
@@ -88,7 +88,7 @@ public sealed class ValoresSelecionaveisResolverTests
         FatoCandidatoView baixaRendaNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "BAIXA_RENDA", Nome: "Baixa renda", Descricao: null,
             Dominio: "BOOLEANO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
-            ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:BAIXA_RENDA",
+            ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:BAIXA_RENDA",
             ValoresDominioDeclarados: null, FonteValores: null, Ativo: true);
 
         EntradaCanonicalizacao? entradaCapturada = null;
@@ -132,7 +132,7 @@ public sealed class ValoresSelecionaveisResolverTests
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO",
-            ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO",
+            ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
             ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true);
 
         EntradaCanonicalizacao? entradaCapturada = null;
@@ -179,7 +179,7 @@ public sealed class ValoresSelecionaveisResolverTests
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO",
-            ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO",
+            ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
             ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true);
 
         EntradaCanonicalizacao? entradaCapturada = null;

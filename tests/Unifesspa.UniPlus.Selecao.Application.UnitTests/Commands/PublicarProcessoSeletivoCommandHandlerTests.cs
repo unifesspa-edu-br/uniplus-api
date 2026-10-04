@@ -269,7 +269,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             Origem = "DECLARADO",
             Cardinalidade = "ESCALAR",
             PontoResolucao = "HABILITACAO",
-            Binding = "CAMPO_INSCRICAO:TEM_RENDA",
+            Binding = "CAMPO_FORMULARIO:TEM_RENDA",
             FonteValores = null,
         };
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())

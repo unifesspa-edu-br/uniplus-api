@@ -73,11 +73,11 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     private static FatoCandidatoView FatoSexo() => new(
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_INSCRICAO:SEXO", null, "GLOBAL", Ativo: true);
+        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true);
 
     private static FatoCandidatoView FatoSexoComPontoResolucao(string pontoResolucao) => new(
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_INSCRICAO:SEXO", null, "GLOBAL", Ativo: true);
+        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true);
 
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(
         ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
@@ -91,7 +91,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     private static FatoCandidatoView FatoTipoDeficiencia() => new(
         Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", null, "CATEGORICO", "DECLARADO", "ESCALAR", null,
-        "INSCRICAO", "CAMPO_INSCRICAO:TIPO_DEFICIENCIA", null, "PROCESSO", Ativo: true);
+        "INSCRICAO", "CAMPO_FORMULARIO:TIPO_DEFICIENCIA", null, "PROCESSO", Ativo: true);
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -378,7 +378,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)
         [
             new FatoCandidatoView(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-                null, "INSCRICAO", "CAMPO_INSCRICAO:MAIOR_IDADE", null, null, Ativo: true, Escopo: "MEMBRO_GRUPO"),
+                null, "INSCRICAO", "CAMPO_FORMULARIO:MAIOR_IDADE", null, null, Ativo: true, Escopo: "MEMBRO_GRUPO"),
         ]));
         return (processo, fase, mocks, tipoDocumentoId);
     }

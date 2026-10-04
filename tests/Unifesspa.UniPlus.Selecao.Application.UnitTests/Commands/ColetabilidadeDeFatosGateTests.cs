@@ -67,7 +67,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         Cardinalidade: "ESCALAR",
         ValoresDominio: [.. ValoresCorRaca.Select(static v => v.Codigo)],
         PontoResolucao: "INSCRICAO",
-        Binding: "CAMPO_INSCRICAO:COR_RACA",
+        Binding: "CAMPO_FORMULARIO:COR_RACA",
         ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL", Ativo: true);
 
     private static FatoColetado FatoColetadoModalidade() =>

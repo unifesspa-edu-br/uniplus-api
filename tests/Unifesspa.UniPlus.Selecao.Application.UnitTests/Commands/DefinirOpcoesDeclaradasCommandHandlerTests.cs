@@ -21,8 +21,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
 {
     [Theory(DisplayName = "Declarar opções para fato cuja fonte não é o processo, fora do catálogo ou agregado de grupo é recusado")]
-    [InlineData("GLOBAL", "CAMPO_INSCRICAO:COR_RACA")]
-    [InlineData(null, "CAMPO_INSCRICAO:COR_RACA")]
+    [InlineData("GLOBAL", "CAMPO_FORMULARIO:COR_RACA")]
+    [InlineData(null, "CAMPO_FORMULARIO:COR_RACA")]
     [InlineData("PROCESSO", "AGREGACAO_GRUPO:COR_RACA_MEMBRO")]
     public async Task Handle_FonteQueNaoEhDoProcesso_Recusa(string? fonte, string binding)
     {
@@ -67,7 +67,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         FatoCandidatoView membro = new(Guid.CreateVersion7(), "CATEGORIA_RENDA", "Categoria de renda", null, "CATEGORICO", "DECLARADO",
-            "ESCALAR", null, "HABILITACAO", "CAMPO_INSCRICAO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true, Escopo: "MEMBRO_GRUPO");
+            "ESCALAR", null, "HABILITACAO", "CAMPO_FORMULARIO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true, Escopo: "MEMBRO_GRUPO");
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ObterPorCodigoAsync("CATEGORIA_RENDA", Arg.Any<CancellationToken>()).Returns(membro);
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(

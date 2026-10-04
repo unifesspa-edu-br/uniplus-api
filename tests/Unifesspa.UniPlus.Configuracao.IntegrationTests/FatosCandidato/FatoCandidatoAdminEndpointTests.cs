@@ -61,7 +61,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         using (JsonDocument fato = await ObterAsync(client, id))
         {
             fato.RootElement.GetProperty("origem").GetString().Should().Be("DECLARADO");
-            fato.RootElement.GetProperty("binding").GetString().Should().Be($"CAMPO_INSCRICAO:{codigo}");
+            fato.RootElement.GetProperty("binding").GetString().Should().Be($"CAMPO_FORMULARIO:{codigo}");
             fato.RootElement.GetProperty("sistema").GetBoolean().Should().BeFalse();
         }
 
