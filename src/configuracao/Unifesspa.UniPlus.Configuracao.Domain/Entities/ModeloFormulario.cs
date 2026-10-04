@@ -121,8 +121,9 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     private ModeloFormulario() { }
 
     /// <summary>
-    /// Cria o modelo, ativo, acumulando toda violação no mesmo lote (ADR-0125). A unicidade do código
-    /// e a conferência contra o catálogo são de quem chama.
+    /// Cria o modelo desativado, acumulando toda violação no mesmo lote (ADR-0125). O modelo só entra
+    /// na escolha de processos novos quando o administrador o ativa, depois de montá-lo. A unicidade do
+    /// código e a conferência contra o catálogo são de quem chama.
     /// </summary>
     /// <param name="derivacoes">As dependências de cada derivado por regra do catálogo, para o grafo.</param>
     public static Result<ModeloFormulario> Criar(
@@ -149,7 +150,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         {
             Codigo = Normalizar(codigo!),
             Finalidade = finalidade,
-            Ativo = true,
+            Ativo = false,
         };
         modelo.Aplicar(nome ?? string.Empty, descricao, tipoProcessoCodigo, normalizado);
         return Result<ModeloFormulario>.Success(modelo);

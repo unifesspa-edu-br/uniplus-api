@@ -125,6 +125,7 @@ public sealed class AplicarModeloFormularioEndpointTests
         ModeloFormulario modelo = ModeloFormulario.Criar(
             $"MODELO_{Guid.NewGuid():N}"[..30], "Modelo", null, finalidade, null, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
+        modelo.Ativar().IsSuccess.Should().BeTrue();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         db.ModelosFormulario.Add(modelo);
