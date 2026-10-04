@@ -132,7 +132,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
 
         return Result<PreVisualizacaoDoProcessoDto>.Success(new PreVisualizacaoDoProcessoDto(
             Formularios(processo, avaliacao),
-            Documentos(processo, arvore.Value!, avaliacao.Grupos.ToDictionary(static g => g.Codigo, static g => g.Visivel, StringComparer.Ordinal))));
+            Documentos(processo, arvore.Value!, avaliacao.Grupos.ToDictionary(static g => g.Codigo, StringComparer.Ordinal))));
     }
 
     /// <summary>
@@ -242,34 +242,32 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
     /// <summary>
     /// Cada folha da árvore com a situação dela diante do perfil: a de fora de repetição pelo status
     /// da exigência; a de dentro de um grupo repetível uma vez por ocorrência, uma vez indeterminada
-    /// quando ainda não se sabe se o grupo aparece, e uma vez não exigida quando o grupo não aparece
-    /// ou não tem ocorrência.
+    /// quando ainda não se sabe se o grupo aparece ou quais membros ele tem, e uma vez não exigida
+    /// quando o grupo não aparece ou a lista dele vale sem ocorrência.
     /// </summary>
     private static List<DocumentoSimuladoDto> Documentos(
-        ProcessoSeletivo processo, ResultadoResolucaoArvore resultado, IReadOnlyDictionary<string, Ternario> visibilidadeDosGrupos)
+        ProcessoSeletivo processo, ResultadoResolucaoArvore resultado, IReadOnlyDictionary<string, AvaliacaoGrupo> grupos)
     {
         List<DocumentoSimuladoDto> documentos = [];
         foreach (NoExigencia raiz in processo.RaizesDeExigencia.OrderBy(static r => r.Ordem))
         {
-            Coletar(raiz, alternativas: [], grupoVisivel: null, resultado, visibilidadeDosGrupos, documentos);
+            Coletar(raiz, alternativas: [], grupoRepetido: null, resultado, grupos, documentos);
         }
 
         return documentos;
     }
 
     /// <param name="alternativas">Os grupos de alternativas que contêm o nó, do mais externo ao mais interno.</param>
-    /// <param name="grupoVisivel">A visibilidade do grupo que a subárvore repete; nula fora de repetição.</param>
+    /// <param name="grupoRepetido">O código do grupo que a subárvore repete; nulo fora de repetição.</param>
     private static void Coletar(
         NoExigencia no,
         IReadOnlyList<AlternativasSimuladasDto> alternativas,
-        Ternario? grupoVisivel,
+        string? grupoRepetido,
         ResultadoResolucaoArvore resultado,
-        IReadOnlyDictionary<string, Ternario> visibilidadeDosGrupos,
+        IReadOnlyDictionary<string, AvaliacaoGrupo> grupos,
         List<DocumentoSimuladoDto> documentos)
     {
-        Ternario? visibilidade = no.RepetePorEntidade is { } grupo
-            ? visibilidadeDosGrupos.GetValueOrDefault(grupo, Ternario.Falso)
-            : grupoVisivel;
+        string? repetido = no.RepetePorEntidade ?? grupoRepetido;
         if (no.Tipo != TipoNo.Folha)
         {
             IReadOnlyList<AlternativasSimuladasDto> dosFilhos = no.Tipo == TipoNo.GrupoOu
@@ -277,7 +275,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
                 : alternativas;
             foreach (NoExigencia filho in no.Filhos.OrderBy(static f => f.Ordem))
             {
-                Coletar(filho, dosFilhos, visibilidade, resultado, visibilidadeDosGrupos, documentos);
+                Coletar(filho, dosFilhos, repetido, resultado, grupos, documentos);
             }
 
             return;
@@ -288,22 +286,34 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
             documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
             documento.ExigidoNaFaseId, documento.ExigidoNaEtapaId, Situacao(status), entidadeId, alternativas);
 
-        switch (visibilidade)
+        if (repetido is null)
         {
-            case null:
-                documentos.Add(Documento(resultado.StatusPorExigencia.GetValueOrDefault(documento.Id), entidadeId: null));
-                return;
-            case Ternario.Indeterminado:
-                documentos.Add(Documento(StatusResolucaoExigencia.AplicabilidadeIndeterminada, entidadeId: null));
-                return;
-            default:
-                break;
+            documentos.Add(Documento(resultado.StatusPorExigencia.GetValueOrDefault(documento.Id), entidadeId: null));
+            return;
+        }
+
+        AvaliacaoGrupo? grupo = grupos.GetValueOrDefault(repetido);
+        if (grupo?.Visivel == Ternario.Indeterminado)
+        {
+            documentos.Add(Documento(StatusResolucaoExigencia.AplicabilidadeIndeterminada, entidadeId: null));
+            return;
         }
 
         List<DocumentoSimuladoDto> porOcorrencia = [.. resultado.StatusPorEntidade
             .Where(s => s.DocumentoExigidoId == documento.Id)
             .Select(s => Documento(s.Status, s.EntidadeId))];
-        documentos.AddRange(porOcorrencia.Count > 0 ? porOcorrencia : [Documento(StatusResolucaoExigencia.NaoAplicavel, entidadeId: null)]);
+        if (porOcorrencia.Count > 0)
+        {
+            documentos.AddRange(porOcorrencia);
+            return;
+        }
+
+        // Sem ocorrência, o grupo pendente — visível e sem resposta, ou com uma lista que não vale —
+        // ainda não diz quais membros existem: a exigência por membro fica indeterminada, nunca
+        // descartada (UNI-REQ-0064). Só o grupo oculto ou a lista vazia que vale a descartam.
+        documentos.Add(Documento(
+            grupo?.Estado == EstadoFato.Indeterminado ? StatusResolucaoExigencia.AplicabilidadeIndeterminada : StatusResolucaoExigencia.NaoAplicavel,
+            entidadeId: null));
     }
 
     private static string Situacao(StatusResolucaoExigencia status) => status switch
