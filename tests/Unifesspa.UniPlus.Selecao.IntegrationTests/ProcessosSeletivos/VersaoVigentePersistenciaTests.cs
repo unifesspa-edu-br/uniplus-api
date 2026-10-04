@@ -498,7 +498,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processoId, CancellationToken.None))!;
 
             Result<RascunhoRetificacao> abertura = carregado.AbrirRetificacao(
-                "Correção da ordem legal de remanejamento", versaoAtual, identificadorDaVersaoBase: null, "integration-test-user", clock.GetUtcNow());
+                "Correção da ordem legal de remanejamento", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(carregado), "integration-test-user", clock.GetUtcNow());
             abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
             carregado.DefinirCascataRemanejamento(CascataDeUmDestinoPorOrigem(), PrecondicaoIfMatch.Curinga)

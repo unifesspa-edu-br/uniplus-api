@@ -61,6 +61,18 @@ public sealed class RascunhoRetificacao : EntityBase
     /// </remarks>
     public bool VersaoBaseComIdentificadorLegivel { get; private set; }
 
+    /// <summary>
+    /// O que os formulários coletaram nas versões publicadas até a base: é contra isso que a sessão
+    /// confere o fato de outra finalidade que um formulário ou uma exigência usa, e o fato que a
+    /// inscrição já coletava.
+    /// </summary>
+    /// <remarks>
+    /// Lido na abertura, dos envelopes das versões, e não recalculado a cada mutação: as versões
+    /// publicadas não mudam enquanto a sessão existe, e um escritor futuro que esquecesse de lê-las
+    /// falharia aberto.
+    /// </remarks>
+    public FatosDasVersoesPublicadas FatosDasVersoesPublicadas { get; private set; } = null!;
+
     public DateTimeOffset AbertoEm { get; private set; }
 
     /// <summary>Sub do usuário autenticado que abriu a sessão (via <c>IUserContext</c>).</summary>
@@ -79,10 +91,12 @@ public sealed class RascunhoRetificacao : EntityBase
         string motivo,
         VersaoConfiguracao versaoBase,
         bool versaoBaseComIdentificadorLegivel,
+        FatosDasVersoesPublicadas fatosDasVersoesPublicadas,
         string abertoPorSub,
         DateTimeOffset abertoEm)
     {
         ArgumentNullException.ThrowIfNull(versaoBase);
+        ArgumentNullException.ThrowIfNull(fatosDasVersoesPublicadas);
         ArgumentException.ThrowIfNullOrWhiteSpace(abertoPorSub);
 
         Result<string> motivoNormalizado = NormalizarMotivo(motivo);
@@ -98,6 +112,7 @@ public sealed class RascunhoRetificacao : EntityBase
             VersaoBaseId = versaoBase.Id,
             NumeroVersaoBase = versaoBase.NumeroVersao,
             VersaoBaseComIdentificadorLegivel = versaoBaseComIdentificadorLegivel,
+            FatosDasVersoesPublicadas = fatosDasVersoesPublicadas,
             AbertoPorSub = abertoPorSub,
             AbertoEm = abertoEm,
             Revisao = 1,

@@ -88,6 +88,19 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Todas as versões de configuração do processo, da primeira à corrente, em ordem de
+    /// <see cref="VersaoConfiguracao.NumeroVersao"/>. Vazia quando o processo nunca foi publicado.
+    /// Leitura <c>AsNoTracking</c>.
+    /// </summary>
+    /// <remarks>
+    /// A retificação lê a cadeia inteira na abertura: um candidato pode ter preenchido um formulário
+    /// em qualquer versão publicada, e só o fato coletado em todas elas é garantido (UNI-REQ-0144).
+    /// </remarks>
+    Task<IReadOnlyList<VersaoConfiguracao>> ObterVersoesAsync(
+        Guid processoSeletivoId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Atos que criaram as versões da configuração do processo — a linhagem de atos do
     /// certame (ADR-0107). Vazio antes da primeira publicação.
     /// </summary>

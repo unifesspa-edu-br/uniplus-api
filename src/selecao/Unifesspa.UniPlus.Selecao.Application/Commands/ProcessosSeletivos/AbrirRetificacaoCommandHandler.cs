@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using DTOs;
 
@@ -49,46 +50,54 @@ public static class AbrirRetificacaoCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A versão corrente é capturada sob o MESMO FOR UPDATE que carregou a raiz: uma
-        // publicação ou retificação concorrente que sucedesse a cadeia entre a leitura da
-        // versão e a gravação do rascunho o deixaria ancorado numa base que já não é o
-        // topo — e o fechamento emendaria um ato já emendado.
-        VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
-            .ObterVersaoAtualAsync(command.ProcessoSeletivoId, cancellationToken)
+        // As versões são lidas sob o MESMO FOR UPDATE que carregou a raiz: uma publicação ou
+        // retificação concorrente que sucedesse a cadeia entre a leitura e a gravação do rascunho o
+        // deixaria ancorado numa base que já não é o topo — e o fechamento emendaria um ato já
+        // emendado. A corrente é a última.
+        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
+            .ObterVersoesAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (versaoAtual is null)
+        if (versoes.Count == 0)
         {
             return Result<RetificacaoEmCursoDto>.Failure(new DomainError(
                 "ProcessoSeletivo.TransicaoInvalida",
                 $"Só é possível retificar um processo publicado — status atual: {processo.Status}."));
         }
 
-        // A base tem de ser REIDRATÁVEL, e a recusa vem AGORA — na abertura, não no
-        // descarte. Uma sessão aberta sobre uma versão que o sistema não sabe reconstruir
-        // (a 1.0, que pode congelar `nao_construido` nos blocos que a ADR-0109 D8 tornou
-        // obrigatórios) é uma sessão IMPOSSÍVEL DE DESCARTAR: o administrador só
-        // descobriria ao tentar desistir, e a única saída seria fechar uma retificação que
-        // ele não queria. Recusar na porta é o que impede o beco sem saída.
-        if (PendenciaDeReidratacao(registroCodecs, versaoAtual.SchemaVersion) is { } pendencia)
-        {
-            return Result<RetificacaoEmCursoDto>.Failure(pendencia);
-        }
+        VersaoConfiguracao versaoAtual = versoes[^1];
 
-        // O identificador legível que a base congelou vem do envelope dela, e não da raiz viva: é
-        // contra o que foi publicado que a sessão decide se ainda pode declará-lo. A base já foi
-        // conferida como reidratável logo acima.
-        Result<EnvelopeReidratado> baseReidratada = registroCodecs.Reidratar(versaoAtual);
-        if (baseReidratada.IsFailure)
+        // Toda versão tem de ser REIDRATÁVEL, e a recusa vem AGORA — na abertura, não no
+        // descarte nem na primeira edição. A base, porque uma sessão aberta sobre uma versão que o
+        // sistema não sabe reconstruir (a 1.0, que pode congelar `nao_construido` nos blocos que a
+        // ADR-0109 D8 tornou obrigatórios) é uma sessão IMPOSSÍVEL DE DESCARTAR. As anteriores,
+        // porque sem lê-las não há como saber que fatos cada formulário coletou em todas as versões
+        // publicadas — e a sessão aceitaria fato que um candidato não informou.
+        List<GrafoConfiguracao> grafos = new(versoes.Count);
+        foreach (VersaoConfiguracao versao in versoes)
         {
-            return Result<RetificacaoEmCursoDto>.Failure(baseReidratada.Error!);
+            if (PendenciaDeReidratacao(registroCodecs, versao, ehBase: versao.Id == versaoAtual.Id) is { } pendencia)
+            {
+                return Result<RetificacaoEmCursoDto>.Failure(pendencia);
+            }
+
+            Result<EnvelopeReidratado> reidratada = registroCodecs.Reidratar(versao);
+            if (reidratada.IsFailure)
+            {
+                return Result<RetificacaoEmCursoDto>.Failure(reidratada.Error!);
+            }
+
+            grafos.Add(reidratada.Value!.Grafo);
         }
 
         string abertoPorSub = userContext.UserId ?? "system";
 
+        // O identificador legível que a base congelou vem do envelope dela, e não da raiz viva: é
+        // contra o que foi publicado que a sessão decide se ainda pode declará-lo.
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
             command.Motivo,
             versaoAtual,
-            baseReidratada.Value!.Grafo.IdentificadorLegivel,
+            grafos[^1].IdentificadorLegivel,
+            FatosDasVersoesPublicadas.De(grafos),
             abertoPorSub,
             timeProvider.GetUtcNow());
         if (abertura.IsFailure)
@@ -114,27 +123,32 @@ public static class AbrirRetificacaoCommandHandler
     }
 
     /// <summary>
-    /// A versão do envelope da base é conhecida <b>e</b> reidratável? A recusa é
-    /// <b>nomeada</b>: quem abre precisa distinguir uma versão que o sistema não conhece de
-    /// uma que ele conhece e não sabe reconstruir.
+    /// A versão do envelope é conhecida <b>e</b> reidratável? A recusa é <b>nomeada</b>: quem abre
+    /// precisa distinguir uma versão que o sistema não conhece de uma que ele conhece e não sabe
+    /// reconstruir; e a mensagem diz por que aquela versão precisa ser lida.
     /// </summary>
-    private static DomainError? PendenciaDeReidratacao(IRegistroCodecsEnvelope registroCodecs, string schemaVersion)
+    private static DomainError? PendenciaDeReidratacao(IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, bool ehBase)
     {
+        string schemaVersion = versao.SchemaVersion;
         CapacidadeCodec? capacidade = registroCodecs.Capacidades
             .FirstOrDefault(c => string.Equals(c.SchemaVersion, schemaVersion, StringComparison.Ordinal));
+
+        string consequencia = ehBase
+            ? "a retificação não poderia ser descartada"
+            : $"sem ler a versão {versao.NumeroVersao}, não há como saber que fatos cada formulário coletou em todas as versões publicadas";
 
         if (capacidade is null)
         {
             return new DomainError(
                 "EnvelopeCodec.VersaoDesconhecida",
-                $"A versão {schemaVersion} do envelope congelado não está no registro de codecs — não há como reconstruir esta configuração, e a retificação não poderia ser descartada.");
+                $"A versão {schemaVersion} do envelope congelado não está no registro de codecs — não há como reconstruir esta configuração, e {consequencia}.");
         }
 
         if (!capacidade.Reidratavel)
         {
             return new DomainError(
                 "EnvelopeCodec.VersaoNaoReidratavel",
-                $"A versão {schemaVersion} do envelope é conhecida, mas não pode ser reidratada ({capacidade.MotivoDaRecusa}) — abrir a retificação criaria uma sessão impossível de descartar.");
+                $"A versão {schemaVersion} do envelope é conhecida, mas não pode ser reidratada ({capacidade.MotivoDaRecusa}) — {consequencia}.");
         }
 
         return null;

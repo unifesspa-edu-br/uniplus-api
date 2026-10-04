@@ -89,7 +89,7 @@ public sealed class FatoColetavelDeEscopoGateTests
         (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicadoSemFatoColetado();
 
         Result<RascunhoRetificacao> rascunho = processo.AbrirRetificacao(
-            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, "user-sub-1", Agora);
+            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora);
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
         processo.DequeueDomainEvents();
 

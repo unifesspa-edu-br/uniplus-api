@@ -73,7 +73,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirIdentificadorLegivel(Identificador("psiq-2026"), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         VersaoConfiguracao versao = Publicar(processo).Value!;
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: processo.IdentificadorLegivel, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: processo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirIdentificadorLegivel(
             Identificador("psiq-2026b"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
@@ -88,7 +88,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         VersaoConfiguracao versao = Publicar(processo).Value!;
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: processo.IdentificadorLegivel, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: processo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirIdentificadorLegivel(
             null, PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
@@ -114,7 +114,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         IdentificadorLegivel identificador = processo.IdentificadorLegivel!.Value;
         VersaoConfiguracao versao = Publicar(processo).Value!;
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: processo.IdentificadorLegivel, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: processo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
         string etag = processo.ETagDaSessaoEditorial!;
 
         processo.DefinirIdentificadorLegivel(identificador, PrecondicaoIfMatch.DeTags([etag]))
@@ -128,7 +128,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         VersaoConfiguracao versao = Publicar(processo).Value!;
         RetirarIdentificador(processo);
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
             ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
@@ -162,7 +162,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         VersaoConfiguracao versao = Publicar(processo).Value!;
         RetirarIdentificador(processo);
-        processo.AbrirRetificacao("Declara o endereço público", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+        processo.AbrirRetificacao("Declara o endereço público", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
 
         string etagInicial = processo.ETagDaSessaoEditorial!;
         processo.DefinirIdentificadorLegivel(Identificador("medicina-2072"), PrecondicaoIfMatch.DeTags([etagInicial]))
@@ -186,7 +186,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         IdentificadorLegivel congelado = processo.IdentificadorLegivel!.Value;
         VersaoConfiguracao versao = Publicar(processo).Value!;
         RetirarIdentificador(processo);
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: congelado, "user-sub-1", Agora)
+        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: congelado, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora)
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirIdentificadorLegivel(
@@ -203,7 +203,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         VersaoConfiguracao versao = Publicar(processo).Value!;
         RetirarIdentificador(processo);
-        processo.AbrirRetificacao("Declara o endereço público", versao, identificadorDaVersaoBase: null, "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+        processo.AbrirRetificacao("Declara o endereço público", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
         processo.DefinirIdentificadorLegivel(
                 Identificador("medicina-2027"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]))
             .IsSuccess.Should().BeTrue();
@@ -214,7 +214,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
             ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
         fechamento.IsSuccess.Should().BeTrue(fechamento.Error?.Message);
 
-        processo.AbrirRetificacao("Nova correção", fechamento.Value!, identificadorDaVersaoBase: Identificador("medicina-2027"), "user-sub-1", Agora.AddMinutes(2))
+        processo.AbrirRetificacao("Nova correção", fechamento.Value!, identificadorDaVersaoBase: Identificador("medicina-2027"), VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora.AddMinutes(2))
             .IsSuccess.Should().BeTrue();
         Result troca = processo.DefinirIdentificadorLegivel(
             Identificador("medicina-2028"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));

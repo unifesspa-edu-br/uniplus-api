@@ -138,7 +138,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         ProcessoSeletivo processo = Processo(RegraDeRecurso());
         VersaoConfiguracao versaoAtual = PublicarComAlgoritmo(processo);
 
-        processo.AbrirRetificacao("Ajustar o prazo", versaoAtual, identificadorDaVersaoBase: null, "teste", DateTimeOffset.UnixEpoch)
+        processo.AbrirRetificacao("Ajustar o prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
 
         RetirarAlgoritmo(processo);
@@ -210,7 +210,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         ProcessoSeletivo processo = Processo(RegraDeRecurso());
         VersaoConfiguracao versaoAtual = PublicarComAlgoritmo(processo);
 
-        processo.AbrirRetificacao("Trocar a convenção", versaoAtual, identificadorDaVersaoBase: null, "teste", DateTimeOffset.UnixEpoch)
+        processo.AbrirRetificacao("Trocar a convenção", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
         string? etagAntes = processo.ETagDaSessaoEditorial;
         etagAntes.Should().NotBeNull("pré-condição: a sessão está aberta e tem ETag");
