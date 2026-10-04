@@ -43,9 +43,9 @@ public sealed class RotinaPeriodicaForaDoHostDeTesteTests
         modulo.Should().Contain(
             d => d.ServiceType == typeof(IHostedService)
                 && d.ImplementationType != null
-                && d.ImplementationType.IsSubclassOf(typeof(RotinaPeriodicaHostedService)));
+                && d.ImplementationType.IsSubclassOf(typeof(PeriodicJobHostedService)));
 
         _fixture.Factory.Services.GetServices<IHostedService>()
-            .Should().NotContain(s => s is RotinaPeriodicaHostedService);
+            .Should().NotContain(s => s is PeriodicJobHostedService);
     }
 }

@@ -159,7 +159,7 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
             // que o teste monta. A suíte que exercita uma rotina a chama diretamente.
             ServiceDescriptor[] rotinas = [.. services
                 .Where(d => d.ServiceType == typeof(IHostedService)
-                    && d.ImplementationType?.IsSubclassOf(typeof(RotinaPeriodicaHostedService)) == true)];
+                    && d.ImplementationType?.IsSubclassOf(typeof(PeriodicJobHostedService)) == true)];
             foreach (ServiceDescriptor rotina in rotinas)
             {
                 services.Remove(rotina);
