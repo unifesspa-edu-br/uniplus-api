@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// Repositório de <see cref="ModeloDeDocumento"/> — independente de
 /// <see cref="IProcessoSeletivoRepository"/> porque o modelo não é filho do agregado.
 /// </summary>
-public interface IModeloDeDocumentoRepository : IRepository<ModeloDeDocumento>
+public interface IModeloDeDocumentoRepository : IRepository<ModeloDeDocumento>, IArquivoEnviadoRepository
 {
     /// <summary>
     /// Reivindica atomicamente a confirmação do modelo — <c>UPDATE ... WHERE id = @id AND status

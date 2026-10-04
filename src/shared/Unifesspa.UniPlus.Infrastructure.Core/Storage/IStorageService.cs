@@ -4,6 +4,10 @@ public interface IStorageService
 {
     Task<string> UploadAsync(string bucket, string nomeArquivo, Stream conteudo, string contentType, CancellationToken cancellationToken = default);
     Task<Stream> DownloadAsync(string bucket, string nomeArquivo, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Remove o objeto. Objeto (ou bucket) inexistente não é erro: o estado pedido — o objeto não
+    /// estar lá — já vale, e quem repete a remoção depois de uma falha parcial não pode travar nele.
+    /// </summary>
     Task RemoverAsync(string bucket, string nomeArquivo, CancellationToken cancellationToken = default);
     Task<string> GerarUrlTemporariaAsync(string bucket, string nomeArquivo, TimeSpan expiracao, CancellationToken cancellationToken = default);
 

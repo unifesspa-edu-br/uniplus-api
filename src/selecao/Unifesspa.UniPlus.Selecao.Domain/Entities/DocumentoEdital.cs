@@ -66,8 +66,9 @@ public sealed class DocumentoEdital : EntityBase
     /// decisão de configuração de infraestrutura (<c>StorageOptions</c>),
     /// fora do alcance do domínio — por isso não é um campo aqui.
     /// <paramref name="ttl"/> é o mesmo prazo assinado na URL — usado aqui só
-    /// para registrar quando o pendente se torna elegível a limpeza futura,
-    /// não para revalidar a assinatura (isso é responsabilidade do MinIO).
+    /// para registrar quando o pendente vencido passa a ser removido pela
+    /// rotina periódica, não para revalidar a assinatura (isso é
+    /// responsabilidade do MinIO).
     /// </summary>
     public static DocumentoEdital IniciarPendente(
         Guid processoSeletivoId,

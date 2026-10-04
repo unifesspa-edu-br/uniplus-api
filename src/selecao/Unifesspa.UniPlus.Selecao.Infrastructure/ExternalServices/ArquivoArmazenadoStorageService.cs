@@ -52,4 +52,7 @@ public sealed class ArquivoArmazenadoStorageService : IArquivoArmazenadoStorage
         using MemoryStream stream = new(conteudo);
         await _storageService.UploadAsync(_bucket, objectKey, stream, contentType, cancellationToken).ConfigureAwait(false);
     }
+
+    public Task RemoverAsync(string objectKey, CancellationToken cancellationToken = default) =>
+        _storageService.RemoverAsync(_bucket, objectKey, cancellationToken);
 }

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.API;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -9,6 +10,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.API.Hateoas;
+using Unifesspa.UniPlus.Selecao.API.Rotinas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
@@ -81,6 +83,18 @@ public static class SelecaoModuleRegistration
         // tests/Unifesspa.UniPlus.ArchTests/Hosting/MigrationBeforeWolverineRuntimeOrderTests
         // trava regressão de ordem nos 3 entry points (Selecao/Ingresso/Portal).
         services.AddDbContextMigrationsOnStartup<SelecaoDbContext>();
+
+        // Rotina periódica que remove os envios de arquivo pendentes vencidos. Registrada depois
+        // das migrations e com a primeira execução um intervalo após a partida; os hosts de teste
+        // a removem pelo tipo base (ApiFactoryBase). A seção é opcional — sem ela vale o padrão.
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddOptions<RemocaoDeArquivosPendentesOptions>()
+            .Bind(configuration.GetSection(RemocaoDeArquivosPendentesOptions.SectionName))
+            .Validate(
+                static options => options.Intervalo >= RemocaoDeArquivosPendentesOptions.IntervaloMinimo,
+                $"{RemocaoDeArquivosPendentesOptions.SectionName}:Intervalo deve ser de pelo menos {RemocaoDeArquivosPendentesOptions.IntervaloMinimo}.")
+            .ValidateOnStart();
+        services.AddHostedService<RemocaoDeArquivosPendentesVencidosHostedService>();
 
         return services;
     }
