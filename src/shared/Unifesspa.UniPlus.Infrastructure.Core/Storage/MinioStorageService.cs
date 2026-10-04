@@ -112,18 +112,15 @@ public sealed class MinioStorageService : IStorageService
             .WithBucket(bucket)
             .WithObject(nomeArquivo);
 
-        // O S3 já responde sucesso à remoção de chave inexistente; as duas exceções cobrem o
-        // bucket ausente e o servidor que sinalize a chave ausente, com a mesma semântica de
-        // ObterMetadadosAsync.
         try
         {
             await _minioClient.RemoveObjectAsync(args, cancellationToken).ConfigureAwait(false);
         }
-        catch (ObjectNotFoundException)
+        catch (Exception ex) when (ex is ObjectNotFoundException or BucketNotFoundException)
         {
-        }
-        catch (BucketNotFoundException)
-        {
+            // Objeto ou bucket ausente é o estado que a remoção pede: o S3 já responde sucesso à
+            // chave inexistente, e esta exceção só vem do servidor que a sinaliza ou do bucket
+            // ausente — a mesma semântica de ObterMetadadosAsync.
         }
     }
 
