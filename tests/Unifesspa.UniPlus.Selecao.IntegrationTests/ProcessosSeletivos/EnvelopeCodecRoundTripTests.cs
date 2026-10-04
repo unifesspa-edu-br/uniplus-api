@@ -1522,7 +1522,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         // A sessão de retificação edita o rótulo e a ordem, acrescenta uma opção e passa a
         // coletar um fato cujas opções já estavam declaradas.
-        processo.AbrirRetificacao("Ajusta as opções", versao, identificadorDaVersaoBase: null, "teste", DateTimeOffset.UtcNow)
+        processo.AbrirRetificacao("Ajusta as opções", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UtcNow)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,

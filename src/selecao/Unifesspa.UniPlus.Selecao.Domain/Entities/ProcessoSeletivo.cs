@@ -6796,16 +6796,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Domain não decodifica — ADR-0042). É ele, e não o valor vivo da raiz, que decide se a sessão
     /// pode declarar o identificador.
     /// </param>
+    /// <param name="fatosDasVersoesPublicadas">
+    /// O que os formulários coletaram nas versões publicadas até a base, lido dos envelopes delas pelo
+    /// handler. É contra isso que a sessão confere o fato de outra finalidade (UNI-REQ-0144).
+    /// </param>
     /// <param name="abertoPorSub">Sub do usuário autenticado (via <c>IUserContext</c>, nunca input do command).</param>
     /// <param name="abertoEm">Instante lido do relógio injetado (ADR-0068).</param>
     public Result<RascunhoRetificacao> AbrirRetificacao(
         string motivo,
         VersaoConfiguracao versaoBase,
         IdentificadorLegivel? identificadorDaVersaoBase,
+        FatosDasVersoesPublicadas fatosDasVersoesPublicadas,
         string abertoPorSub,
         DateTimeOffset abertoEm)
     {
         ArgumentNullException.ThrowIfNull(versaoBase);
+        ArgumentNullException.ThrowIfNull(fatosDasVersoesPublicadas);
 
         if (Status != StatusProcesso.Publicado)
         {
@@ -6827,7 +6833,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         Result<RascunhoRetificacao> rascunho = RascunhoRetificacao.Criar(
-            Id, motivo, versaoBase, identificadorDaVersaoBase is not null, abertoPorSub, abertoEm);
+            Id, motivo, versaoBase, identificadorDaVersaoBase is not null, fatosDasVersoesPublicadas, abertoPorSub, abertoEm);
         if (rascunho.IsFailure)
         {
             return rascunho;

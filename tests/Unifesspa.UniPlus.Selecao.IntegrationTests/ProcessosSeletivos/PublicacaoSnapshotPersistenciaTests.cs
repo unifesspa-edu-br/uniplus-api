@@ -332,7 +332,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         // retificação que redefine a exigência com um TipoDocumento diferente e persiste a
         // mudança no MESMO DbContext que já gravou a versão anterior.
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Corrigir código do tipo de documento exigido", versaoAbertura, identificadorDaVersaoBase: null, "user-sub-123", TimeProvider.System.GetUtcNow());
+            "Corrigir código do tipo de documento exigido", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-123", TimeProvider.System.GetUtcNow());
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         DocumentoExigido exigenciaEditada = DocumentoExigido.Criar(

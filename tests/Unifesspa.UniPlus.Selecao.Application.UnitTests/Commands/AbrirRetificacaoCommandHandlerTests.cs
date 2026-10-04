@@ -70,6 +70,24 @@ public sealed class AbrirRetificacaoCommandHandlerTests
             "a recusa é NOMEADA: quem abre precisa distinguir uma versão que o sistema não conhece de uma que ele conhece e não reidrata");
     }
 
+    [Fact(DisplayName = "Abrir com uma versão anterior que o sistema não reidrata recusa: sem lê-la, não há como saber o que os formulários coletaram em todas as versões")]
+    public async Task Abrir_VersaoAnteriorNaoReidratavel_Recusa()
+    {
+        Cenario cenario = Cenario.ComVersaoBase(
+            schemaVersion: "1.1",
+            capacidades: [
+                new CapacidadeCodec("1.0", TemEncoder: false, TemDecoder: false, MotivoDaRecusa: "pode congelar blocos nao_construido"),
+                new CapacidadeCodec("1.1", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null),
+            ],
+            schemaDaVersaoAnterior: "1.0");
+
+        Result<RetificacaoEmCursoDto> resultado = await cenario.ExecutarAsync();
+
+        resultado.Error!.Code.Should().Be("EnvelopeCodec.VersaoNaoReidratavel");
+        resultado.Error.Message.Should().Contain("em todas as versões publicadas", "o motivo é o da versão anterior, e não o do descarte");
+        cenario.Processo.Rascunho.Should().BeNull("uma abertura recusada não deixa sessão nenhuma para trás");
+    }
+
     [Fact(DisplayName = "Abrir sobre uma base reidratável (1.1) devolve a sessão com o ETag")]
     public async Task Abrir_BaseReidratavel_Aceita()
     {
@@ -132,8 +150,8 @@ public sealed class AbrirRetificacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns((VersaoConfiguracao?)null);
+        repositorio.ObterVersoesAsync(processo.Id, Arg.Any<CancellationToken>())
+            .Returns([]);
 
         Result<RetificacaoEmCursoDto> resultado = await AbrirRetificacaoCommandHandler.Handle(
             new AbrirRetificacaoCommand(processo.Id, "Correção"),
@@ -161,7 +179,8 @@ public sealed class AbrirRetificacaoCommandHandlerTests
         public static Cenario ComVersaoBase(
             string schemaVersion,
             IReadOnlyList<CapacidadeCodec> capacidades,
-            IdentificadorLegivel? identificadorCongelado = null)
+            IdentificadorLegivel? identificadorCongelado = null,
+            string? schemaDaVersaoAnterior = null)
         {
             ProcessoSeletivo processo = NovoProcessoConforme();
             VersaoConfiguracao versao = processo.Publicar(
@@ -171,7 +190,15 @@ public sealed class AbrirRetificacaoCommandHandlerTests
 
             IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
             repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-            repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versao);
+            VersaoConfiguracao[] versoes = schemaDaVersaoAnterior is null
+                ? [versao]
+                :
+                [
+                    VersaoConfiguracao.Abrir(
+                        processo.Id, Bytes, schemaDaVersaoAnterior, "canonical-json/sha256@v1", Guid.CreateVersion7(), HashFixo, "user-sub-1", Agora),
+                    versao,
+                ];
+            repositorio.ObterVersoesAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versoes);
 
             IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
             registro.Capacidades.Returns(capacidades);

@@ -85,7 +85,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         await using SelecaoDbContext novaSessao = fixture.CreateDbContext();
         ProcessoSeletivo processo = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(novaSessao, processoId);
         processo.AbrirRetificacao(
-                "Tenta trocar o endereço", nova, reidratada.Value.Grafo.IdentificadorLegivel, CorpusEnvelope.Ator,
+                "Tenta trocar o endereço", nova, reidratada.Value.Grafo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo), CorpusEnvelope.Ator,
                 DateTimeOffset.UtcNow)
             .IsSuccess.Should().BeTrue();
 
@@ -141,6 +141,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         ProcessoSeletivo tracked = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(sessao, processoId);
         tracked.AbrirRetificacao(
                 "Declara o endereço público", versao, baseReidratada.Value.Grafo.IdentificadorLegivel,
+                VersoesPublicadasDeTeste.SoAVigente(tracked),
                 CorpusEnvelope.Ator, DateTimeOffset.UtcNow)
             .IsSuccess.Should().BeTrue();
         tracked.DefinirIdentificadorLegivel(declarado, PrecondicaoIfMatch.DeTags([tracked.ETagDaSessaoEditorial!]))

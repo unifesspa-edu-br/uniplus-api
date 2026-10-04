@@ -92,7 +92,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
-            tracked.AbrirRetificacao("Insere a homologação no meio do cronograma", versao, identificadorDaVersaoBase: null, "teste", Agora)
+            tracked.AbrirRetificacao("Insere a homologação no meio do cronograma", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(tracked), "teste", Agora)
                 .IsSuccess.Should().BeTrue();
 
             Result deslocamento = tracked.DefinirCronogramaFases(
@@ -226,7 +226,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
             VersaoConfiguracao versaoDoBanco = await sessao.Set<VersaoConfiguracao>().FirstAsync(v => v.Id == versaoId);
-            tracked.AbrirRetificacao("Insere a homologação no meio do cronograma", versaoDoBanco, identificadorDaVersaoBase: null, "teste", Agora)
+            tracked.AbrirRetificacao("Insere a homologação no meio do cronograma", versaoDoBanco, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(tracked), "teste", Agora)
                 .IsSuccess.Should().BeTrue();
 
             ProdutoDaFase preliminarDaSessao = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);

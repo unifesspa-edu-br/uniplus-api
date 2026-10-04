@@ -78,7 +78,7 @@ public sealed class RestauradorDeConfiguracaoTests
         Result<GrafoConfiguracao> grafo = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao);
         grafo.IsSuccess.Should().BeTrue(grafo.Error?.Message);
 
-        processo.AbrirRetificacao("Editar o formulário", versao, identificadorDaVersaoBase: null, CorpusEnvelope.Ator, TimeProvider.System.GetUtcNow())
+        processo.AbrirRetificacao("Editar o formulário", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), CorpusEnvelope.Ator, TimeProvider.System.GetUtcNow())
             .IsSuccess.Should().BeTrue();
         processo.DefinirTitulo("Título editado na sessão", PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
