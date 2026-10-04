@@ -104,8 +104,9 @@ public sealed class ModelosFormularioController : ControllerBase
     }
 
     /// <summary>
-    /// Cadastra o modelo, ativo. O código e a finalidade são imutáveis; o conteúdo é conferido
-    /// contra o catálogo de fatos, de termos e de tipos de processo.
+    /// Cadastra o modelo desativado; ele entra na escolha de processos novos pela ativação. O código
+    /// e a finalidade são imutáveis; o conteúdo é conferido contra o catálogo de fatos, de termos e de
+    /// tipos de processo.
     /// </summary>
     [HttpPost("admin/modelos-formulario")]
     [RequiresIdempotencyKey]

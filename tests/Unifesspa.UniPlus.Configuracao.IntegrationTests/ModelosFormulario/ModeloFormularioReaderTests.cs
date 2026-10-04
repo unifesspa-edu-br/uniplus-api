@@ -41,7 +41,9 @@ public sealed class ModeloFormularioReaderTests
         ModeloFormulario deTodos = Novo("A", tipoProcessoCodigo: null);
         ModeloFormulario desativado = Novo("C", tipo);
         ModeloFormulario deOutroTipo = Novo("D", "OUTRO_TIPO");
-        desativado.Desativar().IsSuccess.Should().BeTrue();
+        doTipo.Ativar().IsSuccess.Should().BeTrue();
+        deTodos.Ativar().IsSuccess.Should().BeTrue();
+        deOutroTipo.Ativar().IsSuccess.Should().BeTrue();
 
         using IServiceScope escopo = _fixture.Factory.Services.CreateScope();
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();

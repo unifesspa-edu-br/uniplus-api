@@ -41,7 +41,7 @@ public sealed class ModeloFormularioAdminEndpointTests
             .StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "Cadastro, leitura no formato da escrita, regravação do lido, desativação e reativação; a lista filtra")]
+    [Fact(DisplayName = "Cadastro desativado, ativação, leitura no formato da escrita, regravação do lido, desativação e reativação; a lista filtra")]
     public async Task CicloDoModelo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -49,7 +49,13 @@ public sealed class ModeloFormularioAdminEndpointTests
         criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
+        JsonObject recemCriado = await ObterAsync(client, id);
+        recemCriado["ativo"]!.GetValue<bool>().Should().BeFalse();
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao", corpo: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao", corpo: null)).StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
         JsonObject lido = await ObterAsync(client, id);
+        lido["ativo"]!.GetValue<bool>().Should().BeTrue();
         lido["finalidade"]!.GetValue<string>().Should().Be("HABILITACAO");
         JsonNode condicao = lido["conteudo"]!["itens"]![1]!["precondicao"]![0]![0]!;
         condicao["fato"]!.GetValue<string>().Should().Be("QUILOMBOLA");

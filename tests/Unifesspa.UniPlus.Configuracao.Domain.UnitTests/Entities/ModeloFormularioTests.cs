@@ -109,14 +109,23 @@ public sealed class ModeloFormularioTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
     }
 
-    [Fact(DisplayName = "Modelo de habilitação cita fato pressuposto da inscrição e nasce ativo")]
+    [Fact(DisplayName = "Modelo de habilitação cita fato pressuposto da inscrição")]
     public void Habilitacao_CitaPressuposto_Aceita()
     {
         Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO_EMITIDO", 0, exibicao: Quando("CONCLUSAO_REGULAR"))], "CONCLUSAO_REGULAR"));
 
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);
-        modelo.Value!.Ativo.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O modelo nasce desativado, fora da escolha de processos novos, e é ativado quando pronto")]
+    public void Criar_NasceDesativado_AtivacaoLiberaParaAEscolha()
+    {
+        ModeloFormulario modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)])).Value!;
+
+        modelo.Ativo.Should().BeFalse();
+        modelo.Ativar().IsSuccess.Should().BeTrue();
+        modelo.Ativo.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Sem o pressuposto, a regra que cita fato da inscrição é recusada")]
@@ -352,6 +361,7 @@ public sealed class ModeloFormularioTests
     public void AtivarDesativar_AlternaERecusaORepetido()
     {
         ModeloFormulario modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)])).Value!;
+        modelo.Ativar().IsSuccess.Should().BeTrue();
 
         modelo.Ativar().Error!.Code.Should().Be(ModeloFormularioErrorCodes.JaAtivo);
         modelo.Desativar().IsSuccess.Should().BeTrue();
