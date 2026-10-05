@@ -109,6 +109,10 @@ internal sealed class RegrasDomainErrorRegistration : IDomainErrorRegistration
         new("RegrasDerivacaoFato.SemRegras", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.regras_derivacao_fato.sem_regras", "A derivação de um fato precisa de ao menos uma regra")),
         new("RegrasDerivacaoFato.ContribuiForaDoDominio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.regras_derivacao_fato.contribui_fora_do_dominio", "Uma regra contribui um código fora do domínio do fato")),
         new("RegrasDerivacaoFato.DependenciasIncoerentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.regras_derivacao_fato.dependencias_incoerentes", "As dependências declaradas não são exatamente os fatos citados")),
+        new(FormularioPortavelErrorCodes.ObrigatoriedadeInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.obrigatoriedade_invalida", "A obrigatoriedade é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele")),
+        new(FormularioPortavelErrorCodes.OperacaoDeAgregadoInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.operacao_de_agregado_invalida", "A operação do agregado é EXISTE ou VALORES_PRESENTES")),
+        new(FormularioPortavelErrorCodes.DerivacaoInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.derivacao_invalida", "A derivação do formulário não forma regras válidas")),
+        new(FormularioPortavelErrorCodes.EstruturaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.estrutura_invalida", "O formulário tem código repetido ou referência a grupo que não existe")),
         new("RegrasDerivacaoFato.DerivacaoAutorreferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.regras_derivacao_fato.derivacao_autorreferente", "Um fato derivado não pode depender de si mesmo")),
     ];
 }

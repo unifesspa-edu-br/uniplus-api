@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// depois do grupo que ele agrega e antes do que o cita, mesmo quando o próprio grupo depende de outro
 /// agregado (UNI-REQ-0146, ADR-0138).
 /// </summary>
-public sealed class AgregadoNaAvaliacaoTests
+public class AgregadoNaAvaliacaoTests : TestesDeAvaliacao
 {
     private const string Etapa = "HABILITACAO";
 
@@ -40,7 +40,7 @@ public sealed class AgregadoNaAvaliacaoTests
                 new DefinicaoAgregado("PROPRIEDADE_NA_FAMILIA", "PROPRIEDADES", "TEM_PROPRIEDADE", OperacaoAgregado.Existe),
             ]);
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, new EntradaAvaliacaoFormulario(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, new EntradaAvaliacaoFormulario(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new HashSet<string>([Etapa], StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),

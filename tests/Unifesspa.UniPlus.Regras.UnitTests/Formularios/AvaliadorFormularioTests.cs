@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
-public sealed class AvaliadorFormularioTests
+public class AvaliadorFormularioTests : TestesDeAvaliacao
 {
     private const string Etapa = "DADOS";
 
@@ -22,7 +22,7 @@ public sealed class AvaliadorFormularioTests
             Item("CONCORRER_RENDA"),
             Item("RENDA_FAMILIAR", obrigatoriedade: Obrigatoriedade.Quando(Predicado(Condicao("CONCORRER_RENDA", Operador.Igual, true)))));
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             formulario, Entrada(etapaConcluida: true, ("CONCORRER_RENDA", concorreRenda)));
 
         avaliacao.Itens[1].Obrigatorio.Should().Be(obrigatorioEsperado);
@@ -38,8 +38,8 @@ public sealed class AvaliadorFormularioTests
             Item("APELIDO", obrigatoriedade: Obrigatoriedade.Nunca),
             Item("DETALHE", exibicao: Predicado(Condicao("APELIDO", operador, JsonDocument.Parse(valor).RootElement))));
 
-        AvaliacaoFormulario concluida = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: true));
-        AvaliacaoFormulario emAberto = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: false));
+        AvaliacaoFormulario concluida = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true));
+        AvaliacaoFormulario emAberto = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false));
 
         concluida.Fatos["APELIDO"].Estado.Should().Be(EstadoFato.NaoInformado);
         concluida.Itens[1].Visivel.Should().Be(Ternario.Falso, "o opcional em branco não satisfaz a negação por omissão");
@@ -55,7 +55,7 @@ public sealed class AvaliadorFormularioTests
     {
         DefinicaoFormulario formulario = Formulario(Item("APELIDO", obrigatoriedade: Obrigatoriedade.Nunca));
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             formulario, Entrada(etapaConcluida: true, ("APELIDO", JsonDocument.Parse(resposta).RootElement)));
 
         avaliacao.Fatos["APELIDO"].Estado.Should().Be(EstadoFato.NaoInformado);
@@ -69,7 +69,7 @@ public sealed class AvaliadorFormularioTests
             termos: [],
             [Derivacao("DERIVADO", Predicado(Condicao("OPCAO", Operador.Igual, "A")), "X")]);
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: true));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true));
 
         avaliacao.Fatos["DERIVADO"].Estado.Should().Be(EstadoFato.Resolvido);
         avaliacao.Fatos["DERIVADO"].Valor!.Value.GetArrayLength().Should().Be(0);
@@ -89,7 +89,7 @@ public sealed class AvaliadorFormularioTests
             termos: [],
             derivacoes: []);
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             formulario, Entrada(etapaConcluida: true, ("ESTRANGEIRO", false), ("PASSAPORTE", "AB123")));
 
         avaliacao.Itens[1].Visivel.Should().Be(Ternario.Falso);
@@ -110,7 +110,7 @@ public sealed class AvaliadorFormularioTests
             termos: [],
             [Derivacao("MODALIDADE", Predicado(Condicao("PCD", Operador.Igual, true)), "AC_PCD")]);
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: false, ("PCD", true)));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, ("PCD", true)));
 
         avaliacao.Itens[1].Visivel.Should().Be(Ternario.Verdadeiro);
         avaliacao.Itens.Select(static i => i.FatoCodigo).Should().Equal("PCD", "LAUDO_MEDICO");
@@ -126,7 +126,7 @@ public sealed class AvaliadorFormularioTests
             Item("CURSOS"),
             Item("LISTA_ESPERA", obrigatoriedade: Obrigatoriedade.Nunca, restricoes: [new OpcoesDasRespostas(["CURSOS"])]));
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             formulario,
             Entrada(
                 etapaConcluida: true,
@@ -151,7 +151,7 @@ public sealed class AvaliadorFormularioTests
             ? [("NATURALIDADE_MUNICIPIO", municipio)]
             : [("NATURALIDADE_UF", uf), ("NATURALIDADE_MUNICIPIO", municipio)];
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: true, respostas));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, respostas));
 
         avaliacao.Fatos["NATURALIDADE_MUNICIPIO"].Estado.Should().Be(estadoEsperado);
         avaliacao.Itens[1].RestricoesVioladas.Should().HaveCount(violacoes);
@@ -164,7 +164,7 @@ public sealed class AvaliadorFormularioTests
             Item("NATURALIDADE_UF"),
             Item("NATURALIDADE_MUNICIPIO", restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]));
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: false, ("NATURALIDADE_MUNICIPIO", "1504208")));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, ("NATURALIDADE_MUNICIPIO", "1504208")));
 
         avaliacao.Fatos["NATURALIDADE_MUNICIPIO"].Estado.Should().Be(EstadoFato.Indeterminado);
         avaliacao.Itens[1].RestricoesVioladas.Should().BeEmpty();
@@ -180,7 +180,7 @@ public sealed class AvaliadorFormularioTests
         ]);
         DefinicaoFormulario formulario = Formulario(Item("UF"), Item("MUNICIPIO", restricoes: [municipios]));
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             formulario, Entrada(etapaConcluida: true, ("UF", "PA"), ("MUNICIPIO", "MANAUS")));
 
         avaliacao.Itens[1].RestricoesVioladas.Should().ContainSingle();
@@ -201,7 +201,7 @@ public sealed class AvaliadorFormularioTests
             Item("UF", obrigatoriedade: Obrigatoriedade.Nunca),
             Item("LOCAL", restricoes: [opcoes]));
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             formulario, Entrada(etapaConcluida: false, ("LOCAL", JsonDocument.Parse(municipio).RootElement)));
 
         avaliacao.Fatos["LOCAL"].Estado.Should().Be(esperado);
@@ -215,7 +215,7 @@ public sealed class AvaliadorFormularioTests
             Item("ESTRANGEIRO"),
             Item("PASSAPORTE", exibicao: Predicado(Condicao("ESTRANGEIRO", Operador.Igual, true)), obrigatoriedade: Obrigatoriedade.Nunca));
 
-        AvaliacaoItem passaporte = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: false)).Itens[1];
+        AvaliacaoItem passaporte = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false)).Itens[1];
 
         passaporte.Visivel.Should().Be(Ternario.Indeterminado);
         passaporte.Obrigatorio.Should().Be(Ternario.Falso);
@@ -231,7 +231,7 @@ public sealed class AvaliadorFormularioTests
             [new DefinicaoTermo("CONSULTA_BANCO_CENTRAL", Predicado(Condicao("CONCORRER_RENDA", Operador.Igual, true)), Obrigatoriedade.Sempre)],
             derivacoes: []);
 
-        AvaliacaoTermo termo = AvaliadorFormulario.Avaliar(
+        AvaliacaoTermo termo = AvaliarDefinicao(
             formulario, Entrada(etapaConcluida: true, ("CONCORRER_RENDA", concorreRenda))).Termos.Single();
 
         termo.Visivel.Should().Be(esperado);
@@ -249,7 +249,7 @@ public sealed class AvaliadorFormularioTests
                 Derivacao("B", Predicado(Condicao("A", Operador.Em, new[] { "X" })), "X"),
             ]);
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, Entrada(etapaConcluida: true));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true));
 
         avaliacao.Fatos["A"].Estado.Should().Be(EstadoFato.Indeterminado);
         avaliacao.Fatos["B"].Estado.Should().Be(EstadoFato.Indeterminado);
@@ -263,7 +263,7 @@ public sealed class AvaliadorFormularioTests
             Item("PARENTESCO"),
             Item("SOB_GUARDA", exibicao: Predicado(Condicao("PARENTESCO", Operador.Igual, "FILHO"))));
 
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             ComGrupo(grupo),
             EntradaComGrupo(etapaConcluida: false, [Ocorrencia("m1", ("PARENTESCO", "FILHO")), Ocorrencia("m2", ("PARENTESCO", "MAE"))])).Grupos.Single();
 
@@ -275,7 +275,7 @@ public sealed class AvaliadorFormularioTests
     [Fact]
     public void Grupo_OsFatosDeMembroNaoEntramNosFatosDoCandidato()
     {
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: 5, Item("PARENTESCO"))),
             EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))]));
 
@@ -294,7 +294,7 @@ public sealed class AvaliadorFormularioTests
         DefinicaoGrupo grupo = Grupo(Obrigatoriedade.Sempre, minimo: 2, maximo: 3, Item("PARENTESCO"));
         (string, (string, object)[])[] ocorrencias = [.. Enumerable.Range(0, quantas).Select(i => Ocorrencia($"m{i}", ("PARENTESCO", "MAE")))];
 
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
 
         avaliacao.ContagemValida.Should().Be(valida);
         avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
@@ -306,7 +306,7 @@ public sealed class AvaliadorFormularioTests
         DefinicaoGrupo grupo = Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: null, Item("PARENTESCO"));
         (string, (string, object)[])[] ocorrencias = [.. Enumerable.Range(0, 1000).Select(i => Ocorrencia($"m{i}", ("PARENTESCO", "MAE")))];
 
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
 
         avaliacao.ContagemValida.Should().BeTrue();
     }
@@ -316,7 +316,7 @@ public sealed class AvaliadorFormularioTests
     [InlineData(1, EstadoFato.Indeterminado)]
     public void GrupoObrigatorio_ListaVazia_ResolveSoComMinimoZero(int minimo, EstadoFato esperado)
     {
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo, maximo: 5, Item("PARENTESCO"))),
             EntradaComGrupo(etapaConcluida: true, [])).Grupos.Single();
 
@@ -328,7 +328,7 @@ public sealed class AvaliadorFormularioTests
     [InlineData(false)]
     public void GrupoOpcional_ListaVazia_EhNaoInformado_MesmoComMinimoAcimaDeZero(bool etapaConcluida)
     {
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Nunca, minimo: 2, maximo: 5, Item("PARENTESCO"))),
             EntradaComGrupo(etapaConcluida, [])).Grupos.Single();
 
@@ -341,7 +341,7 @@ public sealed class AvaliadorFormularioTests
     [InlineData(false, EstadoFato.Indeterminado)]
     public void GrupoOpcional_SemResposta_SoViraNaoInformadoComAEtapaConcluida(bool etapaConcluida, EstadoFato esperado)
     {
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Nunca, minimo: 0, maximo: 5, Item("PARENTESCO"))),
             Entrada(etapaConcluida)).Grupos.Single();
 
@@ -351,7 +351,7 @@ public sealed class AvaliadorFormularioTests
     [Fact]
     public void Grupo_OcorrenciasComAMesmaIdentidade_SaoRecusadas()
     {
-        Action avaliar = () => AvaliadorFormulario.Avaliar(
+        Action avaliar = () => AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: 5, Item("PARENTESCO"))),
             EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE")), Ocorrencia("m1", ("PARENTESCO", "PAI"))]));
 
@@ -377,7 +377,7 @@ public sealed class AvaliadorFormularioTests
         DefinicaoGrupo grupo = new("COMPOSICAO", exibicao: null, Obrigatoriedade.Sempre, minimo: 1, maximo: null, [Item("PARENTESCO")], incluiCandidato: true);
         (string, (string, object)[])[] ocorrencias = [.. parentescos.Select((p, i) => Ocorrencia($"m{i}", ("PARENTESCO", p)))];
 
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
 
         avaliacao.OcorrenciaDoCandidatoValida.Should().Be(valida);
         avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
@@ -388,7 +388,7 @@ public sealed class AvaliadorFormularioTests
     {
         DefinicaoGrupo grupo = new("COMPOSICAO", exibicao: null, Obrigatoriedade.Nunca, minimo: 1, maximo: null, [Item("PARENTESCO")], incluiCandidato: true);
 
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: false, [])).Grupos.Single();
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: false, [])).Grupos.Single();
 
         avaliacao.OcorrenciaDoCandidatoValida.Should().BeTrue("a lista vazia não tem ocorrência do candidato a conferir");
         avaliacao.Estado.Should().Be(EstadoFato.NaoInformado);
@@ -407,7 +407,7 @@ public sealed class AvaliadorFormularioTests
         DefinicaoFormulario formulario = new(
             [new DefinicaoEtapa(Etapa, exibicao: null, [Item("CONCORRER_RENDA")], [grupo])], termos: [], derivacoes: []);
 
-        AvaliacaoGrupo avaliacao = AvaliadorFormulario.Avaliar(
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             formulario,
             EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))], ("CONCORRER_RENDA", false))).Grupos.Single();
 

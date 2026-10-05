@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// anteriores, ativa o impedimento; a forma recusa o impedimento que não cabe no campo, que não cita a
 /// resposta do próprio campo em cada cláusula ou que não tem mensagem.
 /// </summary>
-public sealed class ImpedimentoTests
+public class ImpedimentoTests : TestesDeAvaliacao
 {
     private const string Etapa = "DADOS";
     private const string Mensagem = "Quem tem vínculo com o PARFOR não pode se inscrever neste processo.";
@@ -50,7 +50,7 @@ public sealed class ImpedimentoTests
             respostas["LICENCIATURA"] = JsonSerializer.SerializeToElement(valor);
         }
 
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(formulario, new EntradaAvaliacaoFormulario(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, new EntradaAvaliacaoFormulario(
             respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
 
         avaliacao.Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR").Impedido.Should().Be(impedido);

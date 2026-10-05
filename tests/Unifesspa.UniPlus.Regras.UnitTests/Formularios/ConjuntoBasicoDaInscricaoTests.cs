@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// O formulário de inscrição coleta o conjunto básico do candidato numa seção reservada: o envio
 /// pode omitir ou repetir os itens dela, nunca alterá-los, e os itens do cliente ficam depois dela.
 /// </summary>
-public sealed class ConjuntoBasicoDaInscricaoTests
+public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
 {
     private static readonly int Teto = ConjuntoBasicoDaInscricao.Itens.Count;
 
@@ -180,7 +180,7 @@ public sealed class ConjuntoBasicoDaInscricaoTests
     private static AvaliacaoItem Item(AvaliacaoFormulario avaliacao, string fato) => avaliacao.Itens.Single(i => i.FatoCodigo == fato);
 
     /// <summary>Avalia a seção como a constante a declara, lida pelo mesmo caminho da escrita.</summary>
-    private static AvaliacaoFormulario Avaliar(params (string Fato, object Valor)[] respostas)
+    private AvaliacaoFormulario Avaliar(params (string Fato, object Valor)[] respostas)
     {
         DefinicaoItem[] itens = [.. ConjuntoBasicoDaInscricao.Itens.Select(static item =>
         {
@@ -193,7 +193,7 @@ public sealed class ConjuntoBasicoDaInscricaoTests
         })];
         DefinicaoFormulario definicao = new([new DefinicaoEtapa(ConjuntoBasicoDaInscricao.CodigoDaSecao, exibicao: null, itens)], termos: [], derivacoes: []);
 
-        return AvaliadorFormulario.Avaliar(definicao, new EntradaAvaliacaoFormulario(
+        return AvaliarDefinicao(definicao, new EntradaAvaliacaoFormulario(
             respostas.ToDictionary(static r => r.Fato, static r => JsonSerializer.SerializeToElement(r.Valor), StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
