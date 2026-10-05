@@ -93,6 +93,11 @@ services:
       # o health check o pinga no readiness).
       minio:
         condition: service_healthy
+      # O acervo público precisa existir, com a política de leitura anônima, antes de a API
+      # publicar o primeiro documento nele — a aplicação não o cria. O endereço que os links
+      # divulgam vem do appsettings.Development.json (MinIO local, porta 9000).
+      minio-init:
+        condition: service_completed_successfully
       # Keycloak sobe junto da API (a API valida JWT contra o realm unifesspa).
       keycloak:
         condition: service_healthy
