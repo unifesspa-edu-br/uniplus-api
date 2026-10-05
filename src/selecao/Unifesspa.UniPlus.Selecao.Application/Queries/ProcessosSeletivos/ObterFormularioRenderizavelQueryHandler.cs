@@ -162,7 +162,7 @@ public static class ObterFormularioRenderizavelQueryHandler
         if (!TentarStringOpcional(formulario, "titulo", out string? titulo)
             || !TentarTermos(formulario, out List<TermoExigidoDto> termos)
             || !TentarEtapas(formulario, out List<EtapaFormularioDto> etapas)
-            || !TentarComprovacaoDocumental(envelope, formulario, etapas, out List<ExigenciaDocumentalCertameDto>? comprovacao))
+            || !TentarComprovacaoDocumental(envelope, formulario, token, etapas, out List<ExigenciaDocumentalCertameDto>? comprovacao))
         {
             return VersaoSemApresentacao();
         }
@@ -642,14 +642,14 @@ public static class ObterFormularioRenderizavelQueryHandler
     }
 
     /// <summary>
-    /// As exigências do bloco de comprovação documental (UNI-REQ-0144): as da fase do formulário, na
-    /// forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade e formatos. A condição
+    /// As exigências do bloco de comprovação documental (UNI-REQ-0144): as da fase e da finalidade do
+    /// formulário, na forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade e formatos. A condição
     /// de cada uma e a árvore de satisfação não atravessam este endereço anônimo
     /// (<see cref="ClassificacaoDosBlocosDoCertame"/>): quais documentos cabem a um candidato é
     /// resposta da execução, sobre as respostas dele. Só é lida quando o formulário tem o bloco.
     /// </summary>
     private static bool TentarComprovacaoDocumental(
-        JsonObject envelope, JsonObject formulario, List<EtapaFormularioDto> etapas, out List<ExigenciaDocumentalCertameDto>? comprovacao)
+        JsonObject envelope, JsonObject formulario, string finalidade, List<EtapaFormularioDto> etapas, out List<ExigenciaDocumentalCertameDto>? comprovacao)
     {
         comprovacao = null;
         if (!etapas.Exists(static e => e.Bloco == EstruturaFormulario.BlocoComprovacaoDocumental))
@@ -662,8 +662,26 @@ public static class ObterFormularioRenderizavelQueryHandler
         return TentarGuid(formulario, "faseId", out Guid faseDoFormulario)
             && ProjecaoDoCertamePublicado.TentarExigencias(
                 envelope,
-                exigencia => TentarGuid(exigencia, "exigidoNaFaseId", out Guid fase) ? fase == faseDoFormulario : null,
+                exigencia => DoFormulario(exigencia, faseDoFormulario, finalidade),
                 out comprovacao);
+    }
+
+    /// <summary>
+    /// A exigência é coletada neste formulário: na fase dele e declarada para a finalidade dele, porque
+    /// inscrição e isenção podem dividir a fase. A exigência fora de formulário não entra em bloco
+    /// nenhum. Sem a fase, sem a chave da finalidade ou com finalidade fora do vocabulário, a forma é
+    /// inesperada: nulo, que recusa a leitura em vez de omitir o documento.
+    /// </summary>
+    private static bool? DoFormulario(JsonObject exigencia, Guid faseDoFormulario, string finalidadeDoFormulario)
+    {
+        if (!TentarGuid(exigencia, "exigidoNaFaseId", out Guid fase)
+            || !TentarStringOpcional(exigencia, "finalidade", out string? finalidade)
+            || (finalidade is not null && EstruturaFormulario.FinalidadeDoToken(finalidade) == FinalidadeFormulario.Nenhuma))
+        {
+            return null;
+        }
+
+        return fase == faseDoFormulario && string.Equals(finalidade, finalidadeDoFormulario, StringComparison.Ordinal);
     }
 
     /// <summary>O formato existe se, e só se, o campo é de texto.</summary>

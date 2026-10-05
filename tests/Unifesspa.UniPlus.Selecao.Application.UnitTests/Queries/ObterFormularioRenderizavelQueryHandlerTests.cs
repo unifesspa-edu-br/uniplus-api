@@ -320,9 +320,9 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               ],
               "gruposColetados": [], "fatosColetados": [],
               "documentosExigidos": {"exigencias": [
-                {{Exigencia("Documento de identidade", "Geral", faseHabilitacao)}},
-                {{Exigencia("Comprovante de inscrição", "Geral", "0199a000-0000-7000-8000-0000000000f1")}},
-                {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, Modelo)}}
+                {{Exigencia("Documento de identidade", "Geral", faseHabilitacao, "HABILITACAO")}},
+                {{Exigencia("Comprovante de inscrição", "Geral", "0199a000-0000-7000-8000-0000000000f1", "INSCRICAO")}},
+                {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, "HABILITACAO", Modelo)}}
               ]}
             }
             """;
@@ -340,17 +340,64 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             "a exigência com modelo o traz, sem o id do cadastro; a sem modelo, nulo");
         inscricao.Value!.ComprovacaoDocumental.Should().BeNull("o formulário de inscrição não tem o bloco");
 
-        static string Exigencia(string nome, string aplicabilidade, string fase, string modelo = "null") => $$"""
+        static string Exigencia(string nome, string aplicabilidade, string fase, string finalidade, string modelo = "null") => $$"""
             {"tipoDocumentoNome": "{{nome}}", "aplicabilidade": "{{aplicabilidade}}", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
-             "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": {{modelo}} }
+             "finalidade": "{{finalidade}}", "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": {{modelo}} }
             """;
     }
 
-    [Theory(DisplayName = "Com o bloco de comprovação, fase ausente ou malformada no formulário ou na exigência recusa a versão em vez de omitir documento")]
-    [InlineData("null", "\"0199a000-0000-7000-8000-0000000000f2\"")]
-    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "null")]
-    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "\"nao-e-guid\"")]
-    public async Task Handle_BlocoDeComprovacaoComFaseAusente_Recusa(string faseDoFormulario, string faseDaExigencia)
+    /// <summary>
+    /// Inscrição e isenção respondidas na mesma fase, as duas com o bloco de comprovação: a fase não
+    /// separa os documentos, e cada formulário mostra só os da sua finalidade. O documento fora de
+    /// formulário não aparece em nenhum.
+    /// </summary>
+    [Fact(DisplayName = "Na fase que divide inscrição e isenção, o bloco de comprovação de cada formulário lista só as exigências da sua finalidade")]
+    public async Task Handle_BlocoDeComprovacaoNaFaseCompartilhada_ListaSoAsExigenciasDaFinalidade()
+    {
+        const string fase = "0199a000-0000-7000-8000-0000000000f1";
+        string envelope = $$"""
+            {
+              "formularios": [
+                {{Formulario("INSCRICAO")}},
+                {{Formulario("ISENCAO_TAXA")}}
+              ],
+              "gruposColetados": [], "fatosColetados": [],
+              "documentosExigidos": {"exigencias": [
+                {{Exigencia("Documento de identidade", "\"INSCRICAO\"")}},
+                {{Exigencia("Comprovante de renda", "\"ISENCAO_TAXA\"")}},
+                {{Exigencia("Laudo da banca", "null")}}
+              ]}
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelope);
+
+        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(repository, processoId);
+        Result<FormularioRenderizavelDto> isencao = await HandleAsync(repository, processoId, finalidade: FinalidadeFormulario.IsencaoTaxa);
+
+        inscricao.Value!.ComprovacaoDocumental!.Select(static e => e.Rotulo).Should().Equal("Documento de identidade");
+        isencao.Value!.ComprovacaoDocumental!.Select(static e => e.Rotulo).Should().Equal("Comprovante de renda");
+
+        static string Formulario(string finalidade) => $$"""
+            {"finalidade": "{{finalidade}}", "faseId": "{{fase}}", "titulo": null, "modeloOrigem": null, "termos": [],
+             "etapas": [
+               {"codigo": "DOCUMENTOS", "ordem": 0, "tipo": "BLOCO", "bloco": "COMPROVACAO_DOCUMENTAL", "titulo": "Documentos", "descricao": null, "aviso": null},
+               {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}
+            """;
+
+        static string Exigencia(string nome, string finalidade) => $$"""
+            {"tipoDocumentoNome": "{{nome}}", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
+             "finalidade": {{finalidade}}, "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null }
+            """;
+    }
+
+    [Theory(DisplayName = "Com o bloco de comprovação, fase ou finalidade ausente ou malformada recusa a versão em vez de omitir documento")]
+    [InlineData("null", "\"0199a000-0000-7000-8000-0000000000f2\"", "\"finalidade\": \"HABILITACAO\",")]
+    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "null", "\"finalidade\": \"HABILITACAO\",")]
+    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "\"nao-e-guid\"", "\"finalidade\": \"HABILITACAO\",")]
+    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "\"0199a000-0000-7000-8000-0000000000f2\"", "")]
+    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "\"0199a000-0000-7000-8000-0000000000f2\"", "\"finalidade\": \"MATRICULA\",")]
+    public async Task Handle_BlocoDeComprovacaoComFaseOuFinalidadeAusente_Recusa(string faseDoFormulario, string faseDaExigencia, string finalidadeDaExigencia)
     {
         string envelope = $$"""
             {
@@ -361,7 +408,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
               "gruposColetados": [], "fatosColetados": [],
               "documentosExigidos": {"exigencias": [
                 {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
-                 "formatosPermitidos": {"lista": null, "qualquer": true} }
+                 {{finalidadeDaExigencia}} "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null }
               ]}
             }
             """;

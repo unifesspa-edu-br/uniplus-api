@@ -75,12 +75,18 @@ public sealed record TermoSimuladoDto(string Codigo, string Visivel, string Obri
 /// um grupo repetível aparece uma vez por ocorrência, com a identidade dela; o que está dentro de
 /// grupos de alternativas traz cada um deles, do mais externo ao mais interno, com o mínimo que pede.
 /// </summary>
+/// <param name="Finalidade">
+/// O formulário em que o documento é apresentado (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou
+/// <c>HABILITACAO</c>); nulo quando a fase não responde formulário nenhum. Inscrição e isenção podem
+/// dividir a fase, e é a finalidade que separa os documentos de cada formulário.
+/// </param>
 public sealed record DocumentoSimuladoDto(
     Guid ExigenciaId,
     string TipoDocumentoCodigo,
     string TipoDocumentoNome,
     bool Obrigatorio,
     Guid FaseId,
+    string? Finalidade,
     Guid? EtapaId,
     string Situacao,
     string? EntidadeId,

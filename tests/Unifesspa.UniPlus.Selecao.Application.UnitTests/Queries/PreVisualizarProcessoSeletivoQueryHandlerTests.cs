@@ -46,6 +46,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             ]));
 
         Exigidos(previa).Should().BeEquivalentTo(["PERTENCIMENTO_INDIGENA", "TRABALHADOR_RURAL", "RG", "CERTIDAO_GUARDA@IRMAO", "COMPROVANTE_DA_MODALIDADE"]);
+        previa.Documentos.Should().OnlyContain(static d => d.Finalidade == "INSCRICAO", "cada documento traz o formulário em que é apresentado");
     }
 
     [Fact(DisplayName = "Ampla concorrência: nenhum documento de cota; a identidade e o comprovante da modalidade derivada")]

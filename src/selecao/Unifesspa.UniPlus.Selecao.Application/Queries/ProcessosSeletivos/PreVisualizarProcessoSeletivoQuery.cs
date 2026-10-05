@@ -284,7 +284,8 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         DocumentoExigido documento = no.DocumentoExigido!;
         DocumentoSimuladoDto Documento(StatusResolucaoExigencia status, string? entidadeId) => new(
             documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
-            documento.ExigidoNaFaseId, documento.ExigidoNaEtapaId, Situacao(status), entidadeId, alternativas);
+            documento.ExigidoNaFaseId, documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
+            documento.ExigidoNaEtapaId, Situacao(status), entidadeId, alternativas);
 
         if (repetido is null)
         {
