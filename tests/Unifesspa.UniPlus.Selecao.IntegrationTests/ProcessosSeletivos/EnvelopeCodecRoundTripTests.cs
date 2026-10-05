@@ -435,7 +435,7 @@ public sealed class EnvelopeCodecRoundTripTests
             new EntradaCanonicalizacao(
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
-                envelope.CalendarioDiasUteis));
+                envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         // Os três são independentes no modelo (VersaoConfiguracao guarda schema_version e
@@ -653,7 +653,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos)).Value!.Bytes;
 
         return (congelado.Bytes, bytesMutados, recodificados);
     }
@@ -781,7 +781,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos)).Value!.Bytes;
 
         recodificado.Should().Equal(fixture,
             "a fixture rica é o oráculo do decoder — bytes reais, GUIDs reais, agregado completo. Se ela deixar de " +
@@ -871,7 +871,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma exigência documental rica (condicaoGatilho, basesLegais, " +
@@ -1035,7 +1035,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma árvore com grupo OU, cardinalidade qualificada e repetição por " +
@@ -1383,7 +1383,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos)).Value!.Bytes;
 
         recodificados.Should().NotEqual(congelado.Bytes,
             "o decoder tem de LER 'classificacao.baseadoEmEnem' — se o ignorasse, a recodificação traria o valor " +

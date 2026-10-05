@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -28,7 +29,8 @@ public sealed class EnvelopeReidratado
         ResultadoConformidade? conformidade,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados = null,
-        CalendarioDiasUteisCongelado? calendarioDiasUteis = null)
+        CalendarioDiasUteisCongelado? calendarioDiasUteis = null,
+        IReadOnlyList<DefinicaoAgregado>? agregadosDosGrupos = null)
     {
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -44,7 +46,15 @@ public sealed class EnvelopeReidratado
         MetadadosFatosCongelados = metadadosFatosCongelados;
         ValoresSelecionaveisCongelados = valoresSelecionaveisCongelados;
         CalendarioDiasUteis = calendarioDiasUteis;
+        AgregadosDosGrupos = agregadosDosGrupos ?? [];
     }
+
+    /// <summary>
+    /// Os agregados congelados junto dos grupos repetíveis — fora de <see cref="GrafoConfiguracao"/>
+    /// pela mesma razão que <see cref="ValoresSelecionaveisCongelados"/>: o fato de membro e a
+    /// operação são dado de catálogo, não configuração do agregado vivo.
+    /// </summary>
+    public IReadOnlyList<DefinicaoAgregado> AgregadosDosGrupos { get; }
 
     /// <summary>
     /// Calendário de dias úteis <b>congelado nesta versão</b>, e não o vigente hoje. Como o fuso,

@@ -8,6 +8,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -301,7 +303,8 @@ public static class RetificarProcessoSeletivoCommandHandler
                 conformidadeLegal.Value,
                 metadadosFatosResult.Value,
                 valoresSelecionaveisResult.Value,
-                contexto.CalendarioVigente));
+                contexto.CalendarioVigente,
+                DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo)));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

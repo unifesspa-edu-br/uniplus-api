@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Domain.Entities;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Regras.Formularios;
+
 /// <summary>
 /// Bytes canônicos + metadados de um snapshot de publicação, prontos para
 /// <c>ProcessoSeletivo.Publicar</c> congelar (ADR-0100). Não carrega hash —
@@ -139,7 +141,13 @@ public sealed record EntradaCanonicalizacao(
     /// contagem.
     /// </para>
     /// </summary>
-    CalendarioDiasUteisCongelado? CalendarioDiasUteis = null);
+    CalendarioDiasUteisCongelado? CalendarioDiasUteis = null,
+    /// <summary>
+    /// Os agregados do catálogo sobre os grupos repetíveis do processo — o fato de membro e a
+    /// operação de cada um —, congelados junto do grupo. Na recodificação, são os congelados na
+    /// versão que voltam aqui, porque o catálogo pode ter mudado.
+    /// </summary>
+    IReadOnlyList<DefinicaoAgregado>? AgregadosDosGrupos = null);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).

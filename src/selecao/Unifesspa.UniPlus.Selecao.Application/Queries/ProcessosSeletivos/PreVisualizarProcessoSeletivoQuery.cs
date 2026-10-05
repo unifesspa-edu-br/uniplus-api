@@ -16,6 +16,8 @@ using DTOs;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
