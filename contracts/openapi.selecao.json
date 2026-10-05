@@ -11040,6 +11040,7 @@
           "tipoDocumentoNome",
           "obrigatorio",
           "faseId",
+          "finalidade",
           "etapaId",
           "situacao",
           "entidadeId",
@@ -11063,6 +11064,12 @@
           "faseId": {
             "type": "string",
             "format": "uuid"
+          },
+          "finalidade": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "etapaId": {
             "type": [
