@@ -34,6 +34,25 @@ public static class AgregadoDeGrupo
         _ => OperacaoAgregado.Nenhuma,
     };
 
+    /// <summary>O token da operação no fio e no envelope congelado: <c>EXISTE</c> ou <c>VALORES_PRESENTES</c>.</summary>
+    public static string ParaToken(OperacaoAgregado operacao) => operacao switch
+    {
+        OperacaoAgregado.Existe => TokenExiste,
+        OperacaoAgregado.ValoresPresentes => TokenValoresPresentes,
+        _ => throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "O agregado é EXISTE ou VALORES_PRESENTES."),
+    };
+
+    /// <summary>A operação do token; <see cref="OperacaoAgregado.Nenhuma"/> quando o token não é de operação.</summary>
+    public static OperacaoAgregado DoToken(string? token) => token switch
+    {
+        TokenExiste => OperacaoAgregado.Existe,
+        TokenValoresPresentes => OperacaoAgregado.ValoresPresentes,
+        _ => OperacaoAgregado.Nenhuma,
+    };
+
+    private const string TokenExiste = "EXISTE";
+    private const string TokenValoresPresentes = "VALORES_PRESENTES";
+
     /// <summary>
     /// O agregado no estado do grupo, como o derivado por regra: grupo oculto ou não informado não
     /// contribui, e o agregado resolve vazio — <c>EXISTE</c> falso, <c>VALORES_PRESENTES</c> sem

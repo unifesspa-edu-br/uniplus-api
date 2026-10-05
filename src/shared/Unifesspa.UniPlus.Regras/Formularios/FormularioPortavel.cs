@@ -29,9 +29,6 @@ public sealed record FormularioPortavel(
     IReadOnlyList<DerivacaoPortavel> Derivacoes,
     IReadOnlyList<AgregadoPortavel> Agregados)
 {
-    private const string Existe = "EXISTE";
-    private const string ValoresPresentes = "VALORES_PRESENTES";
-
     /// <summary>
     /// O formulário portável de uma definição. A oferta de valores não está na definição: quem monta a
     /// definição a conhece e a passa aqui, por fato.
@@ -69,7 +66,7 @@ public sealed record FormularioPortavel(
                 a.Codigo,
                 a.GrupoCodigo,
                 a.FatoDeMembro,
-                a.Operacao == OperacaoAgregado.Existe ? Existe : ValoresPresentes))]);
+                AgregadoDeGrupo.ParaToken(a.Operacao)))]);
     }
 
     /// <summary>
@@ -119,17 +116,12 @@ public sealed record FormularioPortavel(
         List<DefinicaoAgregado> agregados = [];
         foreach (AgregadoPortavel agregado in Agregados ?? [])
         {
-            OperacaoAgregado operacao = agregado.Operacao switch
-            {
-                Existe => OperacaoAgregado.Existe,
-                ValoresPresentes => OperacaoAgregado.ValoresPresentes,
-                _ => OperacaoAgregado.Nenhuma,
-            };
+            OperacaoAgregado operacao = AgregadoDeGrupo.DoToken(agregado.Operacao);
             if (operacao == OperacaoAgregado.Nenhuma)
             {
                 return Result<DefinicaoFormulario>.Failure(new DomainError(
                     FormularioPortavelErrorCodes.OperacaoDeAgregadoInvalida,
-                    $"A operação do agregado '{agregado.Codigo}' é {Existe} ou {ValoresPresentes}."));
+                    $"A operação do agregado '{agregado.Codigo}' é EXISTE ou VALORES_PRESENTES."));
             }
 
             agregados.Add(new DefinicaoAgregado(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, operacao));

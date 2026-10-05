@@ -219,12 +219,14 @@ public sealed partial class EnvelopeCodec
     /// <summary>
     /// Os grupos repetíveis (UNI-REQ-0146), reconstruídos por <see cref="GrupoColetado.Criar"/>, que
     /// revalida a forma; os campos de cada um são lidos como os itens, e os valores selecionáveis
-    /// deles entram no mesmo dicionário dos itens.
+    /// deles entram no mesmo dicionário dos itens. Os agregados sobre cada grupo entram em
+    /// <paramref name="agregados"/>: cada um agrega um campo do próprio grupo, na ordem do código.
     /// </summary>
     private static IReadOnlyList<GrupoColetado> LerGruposColetados(
         LeitorEnvelope leitor,
         JsonObject payload,
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
+        List<DefinicaoAgregado> agregados)
     {
         JsonArray array = leitor.Array(payload, "gruposColetados", "$");
         if (leitor.Falhou)
@@ -238,7 +240,7 @@ public sealed partial class EnvelopeCodec
             string path = $"gruposColetados[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "gruposColetados");
             leitor.ExigirChaves(
-                item, path, "codigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens");
+                item, path, "codigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
 
             string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -292,10 +294,49 @@ public sealed partial class EnvelopeCodec
                 return leitor.Propagar<IReadOnlyList<GrupoColetado>>(grupo.Error!) ?? [];
             }
 
+            if (!LerAgregadosDoGrupo(leitor, item, path, grupo.Value!, agregados))
+            {
+                return [];
+            }
+
             grupos.Add(grupo.Value!);
         }
 
         return grupos;
+    }
+
+    private static bool LerAgregadosDoGrupo(LeitorEnvelope leitor, JsonObject item, string path, GrupoColetado grupo, List<DefinicaoAgregado> agregados)
+    {
+        JsonArray array = leitor.Array(item, "agregados", path);
+        string? anterior = null;
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
+        {
+            string caminho = $"{path}.agregados[{i}]";
+            JsonObject agregado = leitor.ItemObjeto(array, i, $"{path}.agregados");
+            leitor.ExigirChaves(agregado, caminho, "codigo", "fatoDeMembro", "operacao");
+            string codigo = leitor.TextoNaoVazio(agregado, "codigo", caminho, LimitesDoEnvelope.Fato);
+            string fatoDeMembro = leitor.TextoNaoVazio(agregado, "fatoDeMembro", caminho, LimitesDoEnvelope.Fato);
+            OperacaoAgregado operacao = AgregadoDeGrupo.DoToken(leitor.TextoNaoVazio(agregado, "operacao", caminho));
+            if (leitor.Falhou)
+            {
+                break;
+            }
+
+            string? defeito = operacao == OperacaoAgregado.Nenhuma ? "a operação não é EXISTE nem VALORES_PRESENTES"
+                : !grupo.Subitens.Any(s => string.Equals(s.FatoCodigo, fatoDeMembro, StringComparison.Ordinal)) ? $"o fato de membro '{fatoDeMembro}' não é campo do grupo"
+                : anterior is not null && string.CompareOrdinal(anterior, codigo) >= 0 ? "os agregados não estão na ordem do código"
+                : null;
+            if (defeito is not null)
+            {
+                _ = leitor.Propagar<object>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{caminho}': {defeito}."));
+                break;
+            }
+
+            agregados.Add(new DefinicaoAgregado(codigo, grupo.Codigo, fatoDeMembro, operacao));
+            anterior = codigo;
+        }
+
+        return !leitor.Falhou;
     }
 
     /// <summary>Uma lista de fatos coletados — os itens ou os campos de um grupo —, na forma congelada.</summary>

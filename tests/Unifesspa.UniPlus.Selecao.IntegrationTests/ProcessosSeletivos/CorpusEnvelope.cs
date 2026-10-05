@@ -912,7 +912,18 @@ internal static class CorpusEnvelope
         new(
             processo, DadosRicos(), HashDocumento, FusoInstitucional.ZoneId, retificacao, conformidade,
             ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis),
-            CalendarioDiasUteis: CalendarioRico());
+            CalendarioDiasUteis: CalendarioRico(),
+            AgregadosDosGrupos: AgregadosRicos);
+
+    /// <summary>
+    /// Os agregados sobre a composição familiar do corpus rico (ADR-0138): um de cada operação, para
+    /// o envelope congelar o fato de membro e a operação de cada um junto do grupo.
+    /// </summary>
+    internal static IReadOnlyList<DefinicaoAgregado> AgregadosRicos { get; } =
+    [
+        new("RURAL_NA_FAMILIA", "COMPOSICAO_FAMILIAR", "TRABALHADOR_RURAL", OperacaoAgregado.Existe),
+        new("PARENTESCOS_NA_FAMILIA", "COMPOSICAO_FAMILIAR", CandidatoComoMembro.FatoParentesco, OperacaoAgregado.ValoresPresentes),
+    ];
 
     /// <summary>
     /// Uma <see cref="VersaoConfiguracao"/> montada com <b>ids de ato fixos</b>, para que

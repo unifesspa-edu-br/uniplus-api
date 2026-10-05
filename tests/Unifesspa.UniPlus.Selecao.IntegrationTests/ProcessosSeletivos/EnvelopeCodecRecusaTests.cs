@@ -1055,6 +1055,9 @@ public sealed class EnvelopeCodecRecusaTests
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             JsonObject grupo = envelope["gruposColetados"]!.AsArray().Single()!.AsObject();
+
+            // Os agregados citam os campos pelo código: sem eles, a recusa é a da colisão.
+            grupo["agregados"] = new JsonArray();
             switch (chave)
             {
                 case "codigo":
@@ -1076,6 +1079,35 @@ public sealed class EnvelopeCodecRecusaTests
             "'gruposColetados'", "a colisão é recusada pela conferência do próprio bloco, que vale mesmo com o grafo congelado recomputado");
     }
 
+    [Theory(DisplayName = "Agregado congelado que não agrega campo do grupo, com operação fora do vocabulário ou fora da ordem é recusado")]
+    [InlineData("membro")]
+    [InlineData("operacao")]
+    [InlineData("ordem")]
+    public void GruposColetados_AgregadoMalformado_Recusa(string defeito)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray agregados = envelope["gruposColetados"]!.AsArray().Single()!["agregados"]!.AsArray();
+            switch (defeito)
+            {
+                case "membro":
+                    agregados[0]!["fatoDeMembro"] = "RENDA";
+                    break;
+                case "operacao":
+                    agregados[0]!["operacao"] = "SOMA";
+                    break;
+                default:
+                    JsonNode primeiro = agregados[0]!.DeepClone();
+                    agregados.RemoveAt(0);
+                    agregados.Add(primeiro);
+                    break;
+            }
+        });
+
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado, "o encoder só congela agregado sobre campo do grupo, com a operação do vocabulário e na ordem do código");
+        resultado.Error.Message.Should().Contain("agregados[");
+    }
+
     [Fact(DisplayName = "gruposColetados com dois grupos de mesmo código é recusado, mesmo com campos distintos")]
     public void GruposColetados_CodigoRepetido_Recusa()
     {
@@ -1085,6 +1117,7 @@ public sealed class EnvelopeCodecRecusaTests
             JsonObject copia = grupos[0]!.DeepClone().AsObject();
             copia["ordem"] = grupos[0]!["ordem"]!.GetValue<int>() + 1;
             copia["incluiCandidato"] = false;
+            copia["agregados"] = new JsonArray();
             foreach (JsonNode? campo in copia["subitens"]!.AsArray())
             {
                 campo!["fatoCodigo"] = $"{campo["fatoCodigo"]!.GetValue<string>()}_2";

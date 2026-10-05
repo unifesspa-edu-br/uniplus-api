@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using Abstractions;
 
@@ -60,9 +60,39 @@ public static class DefinicaoAvaliavelDoProcesso
 
         DefinicaoFormulario definicao = DefinicaoDoProcesso.Montar(
             processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
-            derivacoes.Value!, Agregados(processo.GruposColetados, catalogo, porCodigo));
+            derivacoes.Value!, AgregadosDosGrupos(processo.GruposColetados, porCodigo));
 
         return Result<DefinicaoAvaliavel>.Success(new DefinicaoAvaliavel(definicao, Ofertados(oferta.Value!), oferta.Value!));
+    }
+
+    /// <summary>
+    /// A definição da versão congelada, sem o catálogo vivo (ADR-0070): a oferta e os agregados são
+    /// os congelados na versão, e cada derivação é conferida contra o que ela própria contribui — a
+    /// publicação já conferiu cada contribuição contra o domínio do fato.
+    /// </summary>
+    public static Result<DefinicaoAvaliavel> DoCongelado(EnvelopeReidratado envelope)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+
+        GrafoConfiguracao grafo = envelope.Grafo;
+        List<RegrasDerivacaoFato> derivacoes = [];
+        foreach (ConfiguracaoDerivacaoFato configuracao in grafo.RegrasDerivacao.OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
+        {
+            Result<RegrasDerivacaoFato> regras = configuracao.ParaRegrasDerivacao(Contribuicoes(configuracao));
+            if (regras.IsFailure)
+            {
+                return Result<DefinicaoAvaliavel>.Failure(regras.Error!);
+            }
+
+            derivacoes.Add(regras.Value!);
+        }
+
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores =
+            envelope.ValoresSelecionaveisCongelados ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal);
+        DefinicaoFormulario definicao = DefinicaoDoProcesso.Montar(
+            grafo.Formularios, grafo.FatosColetados, grafo.GruposColetados, grafo.TermosExigidos, derivacoes, envelope.AgregadosDosGrupos);
+
+        return Result<DefinicaoAvaliavel>.Success(new DefinicaoAvaliavel(definicao, Ofertados(valores), valores));
     }
 
     /// <summary>Os códigos ofertados por fato, a partir dos valores selecionáveis.</summary>
@@ -92,7 +122,7 @@ public static class DefinicaoAvaliavelDoProcesso
             IReadOnlyCollection<string> dominio =
                 catalogo.TryGetValue(configuracao.CodigoFato, out FatoCandidatoView? fato) && VocabularioDeFatos.DominioDeContribuicao(fato, dominios) is { } doCatalogo
                     ? doCatalogo
-                    : [.. configuracao.Regras.Select(static r => r.Contribui).OfType<string>().Distinct(StringComparer.Ordinal)];
+                    : Contribuicoes(configuracao);
             Result<RegrasDerivacaoFato> regras = configuracao.ParaRegrasDerivacao(dominio);
             if (regras.IsFailure)
             {
@@ -105,14 +135,24 @@ public static class DefinicaoAvaliavelDoProcesso
         return Result<IReadOnlyList<RegrasDerivacaoFato>>.Success(derivacoes);
     }
 
-    /// <summary>Os agregados do catálogo cujo fato de membro é campo de um grupo do processo.</summary>
-    private static List<DefinicaoAgregado> Agregados(
-        IReadOnlyCollection<GrupoColetado> grupos, IEnumerable<FatoCandidatoView> fatosDoCatalogo, Dictionary<string, FatoCandidatoView> catalogo)
+    /// <summary>Os códigos que as regras da derivação contribuem.</summary>
+    private static string[] Contribuicoes(ConfiguracaoDerivacaoFato configuracao) =>
+        [.. configuracao.Regras.Select(static r => r.Contribui).OfType<string>().Distinct(StringComparer.Ordinal)];
+
+    /// <summary>
+    /// Os agregados do catálogo cujo fato de membro é campo de um grupo do processo — os que a
+    /// publicação congela junto dos grupos.
+    /// </summary>
+    public static IReadOnlyList<DefinicaoAgregado> AgregadosDosGrupos(
+        IReadOnlyCollection<GrupoColetado> grupos, IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
     {
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
         Dictionary<string, string> grupoDoCampo = grupos
             .SelectMany(static g => g.Subitens.Select(s => (Campo: s.FatoCodigo, Grupo: g.Codigo)))
             .ToDictionary(static p => p.Campo, static p => p.Grupo, StringComparer.Ordinal);
-        return [.. VocabularioDeFatos.MembroPorAgregado(fatosDoCatalogo)
+        return [.. VocabularioDeFatos.MembroPorAgregado(catalogo.Values)
             .Where(a => grupoDoCampo.ContainsKey(a.Value) && catalogo.ContainsKey(a.Value))
             .OrderBy(static a => a.Key, StringComparer.Ordinal)
             .Select(a => (Agregado: a.Key, Membro: a.Value, Operacao: AgregadoDeGrupo.OperacaoDoDominio(catalogo[a.Value].Dominio)))

@@ -238,9 +238,10 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         (IReadOnlyList<FatoColetado> Fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
             fatosColetadosLidos = LerFatosColetados(leitor, payload);
         IReadOnlyList<FatoColetado> fatosColetados = fatosColetadosLidos.Fatos;
+        List<DefinicaoAgregado> agregadosDosGrupos = [];
         IReadOnlyList<GrupoColetado> gruposColetados = leitor.Falhou
             ? []
-            : LerGruposColetados(leitor, payload, fatosColetadosLidos.ValoresSelecionaveis);
+            : LerGruposColetados(leitor, payload, fatosColetadosLidos.ValoresSelecionaveis, agregadosDosGrupos);
         IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao = LerRegrasDerivacao(leitor, payload);
         string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
         IReadOnlyList<string> modalidadesOfertadas = leitor.Textos(payload, "modalidadesOfertadas", "$");
@@ -321,7 +322,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,
-                metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis, calendarioDiasUteis));
+                metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis, calendarioDiasUteis, agregadosDosGrupos));
     }
 
     /// <summary>

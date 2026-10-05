@@ -392,7 +392,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
                 processo, reidratado.Value.Dados, reidratado.Value.HashDocumento, FusoInstitucional.ZoneId, reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade, reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis));
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,

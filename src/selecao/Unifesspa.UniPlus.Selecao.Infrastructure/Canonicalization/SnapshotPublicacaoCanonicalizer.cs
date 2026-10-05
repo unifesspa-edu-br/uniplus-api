@@ -316,7 +316,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["cronogramaFases"] = SerializarCronogramaFases(processo),
             ["identidadesUnidade"] = SerializarIdentidadesUnidade(processo),
             ["fatosColetados"] = SerializarFatosColetados(processo.FatosColetados, entrada.ValoresSelecionaveisCongelados),
-            ["gruposColetados"] = SerializarGruposColetados(processo.GruposColetados, entrada.ValoresSelecionaveisCongelados),
+            ["gruposColetados"] = SerializarGruposColetados(processo.GruposColetados, entrada.ValoresSelecionaveisCongelados, entrada.AgregadosDosGrupos),
             ["regrasDerivacao"] = SerializarRegrasDerivacao(processo.RegrasDerivacao),
             ["grafoDependencia"] = SerializarGrafoDependencia(processo),
             ["versaoInterpretador"] = MotorDerivacao.VersaoSemantica,
@@ -1934,12 +1934,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// Os grupos repetíveis (UNI-REQ-0146), na ordem do formulário: o grupo, as regras dele e os
-    /// campos de cada ocorrência, na mesma forma dos itens.
+    /// Os grupos repetíveis (UNI-REQ-0146), na ordem do formulário: o grupo, as regras dele, os
+    /// campos de cada ocorrência, na mesma forma dos itens, e os agregados sobre o grupo — o fato
+    /// de membro e a operação vêm do catálogo, e congelá-los é o que deixa a regra que cita o
+    /// agregado ser avaliada sem o catálogo vivo (ADR-0138).
     /// </summary>
     internal static JsonArray SerializarGruposColetados(
         IEnumerable<GrupoColetado> grupos,
-        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados) =>
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
+        IReadOnlyList<DefinicaoAgregado>? agregados) =>
         [.. grupos.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem).Select(g => (JsonNode)new JsonObject
         {
             ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
@@ -1953,6 +1956,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["exibicao"] = g.Exibicao is { } exibicao ? SerializarDnf(LinhasDoPredicado(exibicao)) : null,
             ["obrigatoriedade"] = SerializarObrigatoriedade(g.Obrigatoriedade),
             ["subitens"] = SerializarFatosColetados(g.Subitens, valoresSelecionaveisCongelados),
+            ["agregados"] = new JsonArray([.. (agregados ?? [])
+                .Where(a => string.Equals(a.GrupoCodigo, g.Codigo, StringComparison.Ordinal))
+                .OrderBy(static a => a.Codigo, StringComparer.Ordinal)
+                .Select(static a => (JsonNode)new JsonObject
+                {
+                    ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
+                    ["fatoDeMembro"] = HashCanonicalComputer.NormalizeNfc(a.FatoDeMembro),
+                    ["operacao"] = AgregadoDeGrupo.ParaToken(a.Operacao),
+                })]),
         })];
 
     /// <summary>
