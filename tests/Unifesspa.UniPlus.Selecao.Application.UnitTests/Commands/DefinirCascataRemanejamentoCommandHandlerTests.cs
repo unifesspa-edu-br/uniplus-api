@@ -154,7 +154,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.RegraTipoInvalido");
     }
 
-    [Fact(DisplayName = "Handle com ordem inválida (RN-CASCATA-4) recusa pela factory, ANTES de comparar contra o esquema_args (achado rodada 3)")]
+    [Fact(DisplayName = "Handle com ordem inválida (RN-CASCATA-4) recusa pela factory, ANTES de comparar contra o esquema_args")]
     public async Task Handle_OrdemInvalida_RecusaPelaFactoryAntesDoEsquemaArgs()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -244,7 +244,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.MatrizDivergenteDaRegra");
     }
 
-    [Fact(DisplayName = "Handle com esquema_args repetindo uma origem não deixa outra origem sem conferir (achado de revisão)")]
+    [Fact(DisplayName = "Handle com esquema_args repetindo uma origem não deixa outra origem sem conferir")]
     public async Task Handle_EsquemaArgsComOrigemRepetida_NaoCobreOrigemNaoConferida()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -275,7 +275,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.MatrizDivergenteDaRegra");
     }
 
-    [Fact(DisplayName = "Handle com item nulo na lista de destinos recusa com CamposObrigatorios, sem lançar (achado de revisão)")]
+    [Fact(DisplayName = "Handle com item nulo na lista de destinos recusa com CamposObrigatorios, sem lançar")]
     public async Task Handle_ItemNuloEmDestinos_RecusaSemLancar()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -390,7 +390,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         ]);
     }
 
-    [Fact(DisplayName = "ADR-0125: Handle acumula fallback inválido junto com item malformado, mesmo sem checagem de coerência entre itens (achado de revisão)")]
+    [Fact(DisplayName = "ADR-0125: Handle acumula fallback inválido junto com item malformado, mesmo sem checagem de coerência entre itens")]
     public async Task Handle_FallbackInvalidoEItemMalformado_AcumulaOsDois()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -413,7 +413,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         ]);
     }
 
-    [Fact(DisplayName = "ADR-0125: validação de forma precede a consulta ao catálogo de regras, mesmo com regra inexistente (achado de revisão)")]
+    [Fact(DisplayName = "ADR-0125: validação de forma precede a consulta ao catálogo de regras, mesmo com regra inexistente")]
     public async Task Handle_FallbackInvalidoComRegraInexistente_ValidacaoVenceAConsultaAoCatalogo()
     {
         ProcessoSeletivo processo = NovoProcesso();
