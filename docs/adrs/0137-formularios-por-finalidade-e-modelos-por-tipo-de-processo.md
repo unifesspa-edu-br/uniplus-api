@@ -44,6 +44,15 @@ Hoje o processo seletivo tem um único formulário, o de inscrição, montado do
 
 O codec único do envelope e a golden fixture só da forma corrente (ADR-0109, Emenda 2), e o regime transitório da ADR-0110, valem até a primeira publicação **em produção**, e não em qualquer ambiente. Os processos de homologação são descartáveis: quando a forma muda, são recriados. A preservação por versão começa na produção.
 
+### Emenda de 2026-10-04: a exigência documental declara o formulário a que pertence
+
+Inscrição e isenção podem dividir a mesma fase do cronograma, e a fase sozinha não diz em qual dos dois formulários o documento é apresentado.
+
+- **Decisão:** a exigência documental guarda, além da fase, a finalidade do formulário a que pertence. A finalidade é declarada por quem configura, nunca deduzida da fase. Ela é obrigatória na fase que responde algum formulário, tem de ser uma das finalidades que essa fase responde e fica nula só fora de formulário. Todos os documentos de um grupo pertencem ao mesmo formulário.
+- **Efeito:** o bloco de comprovação de cada formulário lista só as exigências da sua fase e da sua finalidade, e o fato coletado só pelo formulário de isenção só é citado por exigência da isenção.
+- **Opção rejeitada:** proibir inscrição e isenção na mesma fase, porque o cronograma do edital admite as duas juntas.
+- **Consequência:** a forma do envelope muda e as exigências gravadas antes precisam declarar a finalidade; os processos de homologação são recriados, como prevê a emenda acima.
+
 ## Consequências
 
 ### Positivas
