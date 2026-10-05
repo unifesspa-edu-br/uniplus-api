@@ -8,6 +8,7 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -104,7 +105,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             faseId, Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         Result exigenciaResult = processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga);
         exigenciaResult.IsSuccess.Should().BeTrue(exigenciaResult.Error?.Message);

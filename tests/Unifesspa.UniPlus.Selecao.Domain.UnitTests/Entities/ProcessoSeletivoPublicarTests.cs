@@ -275,7 +275,7 @@ public sealed class ProcessoSeletivoPublicarTests
         aplicabilidade: Aplicabilidade.Condicional,
         obrigatorio: true,
         consequenciaIndeferimento: null,
-        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
         exigidoNaFaseId,
@@ -286,7 +286,7 @@ public sealed class ProcessoSeletivoPublicarTests
         aplicabilidade: Aplicabilidade.Geral,
         obrigatorio: true,
         consequenciaIndeferimento: null,
-        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     [Fact(DisplayName = "CA-01: publicar com exigência CONDICIONAL vazia obrigatória é bloqueado")]
     public void Publicar_CondicionalVaziaObrigatoria_Bloqueia()
@@ -331,7 +331,8 @@ public sealed class ProcessoSeletivoPublicarTests
 
     // ── Story #554 (PR #896, issue #892) — B-03: referência temporal de fatos ──
 
-    private static DocumentoExigido ExigenciaCondicionalComGatilhoPorFaixaEtaria(Guid exigidoNaFaseId)
+    private static DocumentoExigido ExigenciaCondicionalComGatilhoPorFaixaEtaria(
+        Guid exigidoNaFaseId, FinalidadeFormulario? finalidade = FinalidadeFormulario.Inscricao)
     {
         CondicaoGatilho condicao = CondicaoGatilho.Criar(
             0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
@@ -344,7 +345,7 @@ public sealed class ProcessoSeletivoPublicarTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: finalidade).Value!;
     }
 
     [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase de outro processo é recusada")]
@@ -514,7 +515,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(OrigemCandidatos.ImportacaoExterna);
         Guid faseColetaId = DefinirCronogramaSemFaseDeColeta(processo);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId, finalidade: null), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
@@ -765,7 +766,7 @@ public sealed class ProcessoSeletivoPublicarTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
-            condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     private static DocumentoExigido ExigenciaCondicionalPorModalidadeComConsequencia(
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, string tipoDocumentoNome, string tipoDocumentoCategoria,
@@ -780,7 +781,7 @@ public sealed class ProcessoSeletivoPublicarTests
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
             condicoes: [CondicaoGatilho.Criar(0, fatoDeModalidade, Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!],
-            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     [Fact(DisplayName = "Exigência pelo grupo da convocação alcança só esse grupo: ELIMINA para o convocado em AC não confronta a ação da cota")]
     public void AvaliarConformidade_GatilhoPeloGrupoDaConvocacao_SoAlcancaEsseGrupo()
@@ -815,7 +816,7 @@ public sealed class ProcessoSeletivoPublicarTests
                 CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("LB_PPI")).Value!,
                 CondicaoGatilho.Criar(0, "MODALIDADE_CONVOCACAO", Operador.Igual, JsonSerializer.SerializeToElement(ModalidadesFederaisLei12711.Ac)).Value!,
             ],
-            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
@@ -931,7 +932,7 @@ public sealed class ProcessoSeletivoPublicarTests
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
             condicoes: [CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!],
-            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RECLASSIFICAR_AC — achado de revisão da PR #903")]
     public void Publicar_GatilhoPorFaixaEtariaSemCondicaoDeModalidadeElimina_IncoerenteComAcaoDaModalidade()
@@ -1022,7 +1023,7 @@ public sealed class ProcessoSeletivoPublicarTests
         obrigatorio: true,
         consequenciaIndeferimento: null,
         condicoes: [],
-        basesLegais: basesLegais, idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        basesLegais: basesLegais, idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     [Fact(DisplayName = "CA-02: AvaliarConformidade inclui o item 'Base legal das exigências documentais'")]
     public void AvaliarConformidade_IncluiItemBaseLegal()

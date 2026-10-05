@@ -563,7 +563,7 @@ internal static class CorpusEnvelope
             basesLegais: [],
             idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!,
-            tamanhoMaximoBytes: null);
+            tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
 
     /// <summary>
     /// Id fixo de produto — como o das etapas e o das fases, ele entra no envelope, e sortear

@@ -142,6 +142,7 @@ public sealed class GrupoRepetivelEndpointTests
                 documento = new
                 {
                     exigidoNaFaseId = faseId,
+                    finalidade = "INSCRICAO",
                     tipoDocumentoId,
                     aplicabilidade = "CONDICIONAL",
                     obrigatorio = true,
@@ -192,6 +193,7 @@ public sealed class GrupoRepetivelEndpointTests
                 documento = new
                 {
                     exigidoNaFaseId = processo.CronogramaFases.Single().Id,
+                    finalidade = "INSCRICAO",
                     tipoDocumentoId,
                     aplicabilidade = "CONDICIONAL",
                     obrigatorio = true,

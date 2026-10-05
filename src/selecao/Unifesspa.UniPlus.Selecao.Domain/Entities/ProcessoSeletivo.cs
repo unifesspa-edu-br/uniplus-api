@@ -3380,6 +3380,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
         new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
+        new ItemConformidade("exigencia_finalidade_incoerente_com_a_fase", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: declara o formulário a que pertence, entre os que a sua fase responde", PendenciaDaFinalidadeDasExigencias() is null),
         new ItemConformidade("exigencia_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ExisteExigenciaRemoveVantagemSemVantagemViva()),
         new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
         new ItemConformidade("grupo_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ExisteGrupoRemoveVantagemSemVantagemViva()),
@@ -4215,6 +4216,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return exigencias;
         }
 
+        if (PendenciaDaFinalidadeDasExigencias() is { } finalidadeDaExigencia)
+        {
+            return finalidadeDaExigencia;
+        }
+
         if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(fatosDeModalidade) is { } coerencia)
         {
             return coerencia;
@@ -4698,6 +4704,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Result<GrafoDependenciaConjunta> grafo = ConstruirGrafoDependencia();
         return grafo.IsFailure ? grafo.Error : null;
     }
+
+    /// <summary>
+    /// A finalidade de cada exigência continua coerente com a fase dela: a escrita confere, e o
+    /// cronograma pode ter tirado da fase, depois, o formulário que a exigência declara.
+    /// </summary>
+    private DomainError? PendenciaDaFinalidadeDasExigencias() =>
+        _documentosExigidos
+            .Select(exigencia => _cronogramaFases.Find(f => f.Id == exigencia.ExigidoNaFaseId) is { } fase
+                ? Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(exigencia.Finalidade, fase)
+                : null)
+            .FirstOrDefault(static recusa => recusa is not null);
 
     /// <summary>
     /// Pendências dos documentos exigidos (Story #554). Chamado por

@@ -305,7 +305,7 @@ public sealed class ManifestoDoEnvelopeTests
         // bloco) consome para correlacionar apresentação↔exigência.
         [typeof(DocumentoExigido)] = (
             [
-                "ExigidoNaFaseId", "ExigidoNaEtapaId", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
+                "ExigidoNaFaseId", "ExigidoNaEtapaId", "Finalidade", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
                 "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos", "Modelo",
                 "TamanhoMaximoBytes",

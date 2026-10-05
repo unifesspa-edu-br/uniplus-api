@@ -86,9 +86,10 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .Where(static i => !i.Ok && !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal));
 
     /// <summary>Fase mínima e coerente: não agrupa etapas (dispensável sem prova), produz resultado, não coleta inscrição.</summary>
-    private static FaseCronograma FaseBase(bool coletaInscricao = false) => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
+    private static FaseCronograma FaseBase(
+        bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
+        1, faseCanonicaOrigemId ?? Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
+        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao, inicio: null, fim: null,
         produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
@@ -446,6 +447,30 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.CondicionalVaziaDeterminaResultado");
+    }
+
+    [Fact(DisplayName = "Pré-canonicalização: a fase deixou de responder o formulário que a exigência declara — item vermelho e Publicar recusa com FaseIncoerenteComFinalidade")]
+    public void PreCanon_FaseDeixouDeResponderOFormularioDaExigencia()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        Guid origem = processo.CronogramaFases.Single().FaseCanonicaOrigemId;
+        processo.DefinirCronogramaFases([FaseBase(coletaSolicitacaoIsencao: true, faseCanonicaOrigemId: origem)], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            processo.CronogramaFases.Single().Id, Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "RENDA",
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
+            finalidade: FinalidadeFormulario.IsencaoTaxa).Value!;
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirCronogramaFases([FaseBase(faseCanonicaOrigemId: origem)], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        SoEstesItensVermelhos(processo, "exigencia_finalidade_incoerente_com_a_fase");
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);
     }
 
     [Fact(DisplayName = "Pré-canonicalização: exigência (folha) REMOVE_VANTAGEM sem vantagem viva — item vermelho e Publicar recusa com DocumentoExigido.RemoveVantagemSemVantagemViva")]

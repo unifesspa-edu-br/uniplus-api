@@ -306,6 +306,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "cascata_destino_desconhecido",
                 // ── PendenciaPreCanonicalizacao ──
                 "exigencia_condicional_vazia_determina_resultado",
+                "exigencia_finalidade_incoerente_com_a_fase",
                 "exigencia_remove_vantagem_sem_vantagem_viva",
                 "exigencia_consequencia_incoerente_com_acao_da_vaga",
                 "grupo_remove_vantagem_sem_vantagem_viva",

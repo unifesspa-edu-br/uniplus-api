@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -150,7 +151,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             DocumentoExigido documento = DocumentoExigido.Criar(
                 fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
                 Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-                [], [], null, fp, null).Value!;
+                [], [], null, fp, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
             NoExigencia folha = ocorrenciasEsperadas is not null
                 ? NoExigencia.CriarFolha(

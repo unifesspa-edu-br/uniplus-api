@@ -385,7 +385,7 @@ public sealed class ProcessoSeletivoRetificarTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
 
@@ -496,7 +496,7 @@ public sealed class ProcessoSeletivoRetificarTests
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
             condicoes: [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!],
-            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     [Fact(DisplayName = "CA-05 (5/5): mudar o gatilho de AC para LB_PPI numa retificação reavalia a coerência consequência↔ação — não fica cacheada da publicação anterior")]
     public void FecharRetificacao_MudancaDeGatilhoTornaConsequenciaIncoerente_Reavalia()

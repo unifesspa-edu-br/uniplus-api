@@ -282,7 +282,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         fase, Guid.CreateVersion7(), codigo, codigo, "PESSOAL", Aplicabilidade.Condicional,
         obrigatorio: true, consequenciaIndeferimento: null, condicoes,
         [DocumentoExigidoBaseLegal.Criar("Edital, Anexo III", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
-        null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+        null, FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     private static CondicaoGatilho Condicao(int clausula, string fato, Operador operador, object valor) =>
         CondicaoGatilho.Criar(clausula, fato, operador, JsonSerializer.SerializeToElement(valor)).Value!;

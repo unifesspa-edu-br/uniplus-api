@@ -633,6 +633,23 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         await mocks.FatoCandidatoReader.DidNotReceiveWithAnyArgs().ListarAsync(default);
     }
 
+    [Fact(DisplayName = "O formulário do documento fora do vocabulário das finalidades é recusado no campo dele, antes de consultar TipoDocumento")]
+    public async Task Handle_FinalidadeForaDoVocabulario_RecusaNoCampo()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        ItemDocumentoExigidoInput folha = new(fase.Id, Guid.CreateVersion7(), "GERAL", true, null, [], [], null, Qualquer, null, Finalidade: "MATRICULA");
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", folha, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
+        await mocks.TipoDocumentoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+    }
+
     [Fact(DisplayName = "ADR-0125: duas bases legais inválidas na mesma folha acumulam, com o índice prefixado ao field")]
     public async Task Handle_DuasBasesLegaisInvalidasNaMesmaFolha_AcumulaComIndicePrefixado()
     {
@@ -1048,7 +1065,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     private static DefinirDocumentosExigidosCommand ExigenciaPeloGrupoDaConvocacao(ProcessoSeletivo processo, Guid faseId, Guid tipoDocumentoId)
     {
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE_CONVOCACAO", "IGUAL", "\"AC\"");
-        ItemDocumentoExigidoInput item = new(faseId, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        ItemDocumentoExigidoInput item = new(faseId, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null, Finalidade: "HABILITACAO");
         return new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
     }
 }
