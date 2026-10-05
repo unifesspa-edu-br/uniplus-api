@@ -29,9 +29,15 @@ internal static class ProcessoSeletivoPublicavelSeeder
     // recomputado, só precisa satisfazer o formato).
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
+    /// <param name="coletaSolicitacaoIsencao">
+    /// Se a fase única também abre o pedido de isenção, dividindo a fase entre a inscrição e a isenção.
+    /// </param>
+    /// <param name="complementar">Configuração a mais do cenário, aplicada antes de gravar.</param>
     public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearAsync(
         SelecaoDbContext db,
-        string nome)
+        string nome,
+        bool coletaSolicitacaoIsencao = false,
+        Action<ProcessoSeletivo>? complementar = null)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
@@ -102,7 +108,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             origemData: OrigemDataFase.Propria,
             agrupaEtapas: true,
             permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            coletaInscricao: true, coletaSolicitacaoIsencao: coletaSolicitacaoIsencao,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
@@ -121,6 +127,8 @@ internal static class ProcessoSeletivoPublicavelSeeder
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         Result taxaDefinirResult = processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente);
         taxaDefinirResult.IsSuccess.Should().BeTrue(taxaDefinirResult.Error?.Message);
+
+        complementar?.Invoke(processo);
 
         await db.ProcessosSeletivos.AddAsync(processo);
 

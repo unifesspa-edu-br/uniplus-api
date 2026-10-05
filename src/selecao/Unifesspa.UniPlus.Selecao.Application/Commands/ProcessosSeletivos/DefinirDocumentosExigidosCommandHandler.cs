@@ -411,7 +411,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         if (condicoesResult.Value!.Count > 0)
         {
             Result gateDeFaseResult = ValidarGateDeFase(
-                condicoesResult.Value!, input.ExigidoNaFaseId, processo, pontoResolucaoPorFato!, membroPorAgregado!);
+                condicoesResult.Value!, input.ExigidoNaFaseId, FinalidadeDoInput(input.Finalidade), processo, pontoResolucaoPorFato!, membroPorAgregado!);
             if (gateDeFaseResult.IsFailure)
             {
                 return Result<DocumentoExigido>.Failure(gateDeFaseResult.Error!);
@@ -546,17 +546,19 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// <summary>
     /// Gate de fase (UNI-REQ-0077, UNI-REQ-0144): recusa a condição de gatilho cujo fato só é
     /// conhecido numa fase posterior à fase em que o documento é exigido — a fase efetiva do fato
-    /// no processo, conferida por <see cref="ProcessoSeletivo.RecusaDeFaseDoGatilho"/>. A fase da
-    /// própria exigência fora do cronograma não é recusada aqui:
-    /// <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/> já decide esse caso.
+    /// no processo, conferida por <see cref="ProcessoSeletivo.RecusaDeFaseDoGatilho"/>, e o fato só da
+    /// isenção citado por documento de outro formulário. A fase da própria exigência fora do
+    /// cronograma, e a finalidade que falta ou que a fase não responde, não são recusadas aqui:
+    /// <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/> já decide esses casos.
     /// </summary>
     private static Result ValidarGateDeFase(
         IReadOnlyList<CondicaoGatilho> condicoes,
         Guid exigidoNaFaseId,
+        FinalidadeFormulario? finalidade,
         ProcessoSeletivo processo,
         IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
         IReadOnlyDictionary<string, string> membroPorAgregado) =>
-        condicoes.Select(c => processo.RecusaDeFaseDoGatilho(c.Fato, exigidoNaFaseId, pontoResolucaoPorFato, membroPorAgregado))
+        condicoes.Select(c => processo.RecusaDeFaseDoGatilho(c.Fato, exigidoNaFaseId, finalidade, pontoResolucaoPorFato, membroPorAgregado))
             .FirstOrDefault(static r => r is not null) is { } recusa
             ? Result.Failure(recusa)
             : Result.Success();

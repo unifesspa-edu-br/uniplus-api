@@ -41,7 +41,7 @@ internal static class ConferenciaDosFatosDosGatilhos
                         $"O fato '{fato}', citado pelo gatilho de um documento exigido, não é mais coletado nem derivado pelo processo.");
                 }
 
-                if (processo.RecusaDeFaseDoGatilho(fato, documento.ExigidoNaFaseId, pontoResolucaoPorFato, membroPorAgregado) is { } recusa)
+                if (processo.RecusaDeFaseDoGatilho(fato, documento.ExigidoNaFaseId, documento.Finalidade, pontoResolucaoPorFato, membroPorAgregado) is { } recusa)
                 {
                     return recusa;
                 }

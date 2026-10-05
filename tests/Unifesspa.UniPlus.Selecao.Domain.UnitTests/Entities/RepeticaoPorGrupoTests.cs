@@ -21,10 +21,10 @@ public sealed class RepeticaoPorGrupoTests
 
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
-    private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao = false) =>
+    private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao = false, bool coletaIsencao = false) =>
         FaseCronograma.Criar(
             ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Propria,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
+            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: coletaIsencao,
             inicio: new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, ordem + 1, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
@@ -73,6 +73,29 @@ public sealed class RepeticaoPorGrupoTests
         processo.DefinirDocumentosExigidos(
                 [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "Na fase que divide inscrição e isenção, repetir pelo grupo coletado só na isenção vale só no documento da isenção")]
+    [InlineData(FinalidadeFormulario.IsencaoTaxa, true)]
+    [InlineData(FinalidadeFormulario.Inscricao, false)]
+    public void DefinirDocumentosExigidos_GrupoDaIsencaoNaFaseCompartilhada_SegueAFinalidade(FinalidadeFormulario finalidade, bool aceito)
+    {
+        FaseCronograma compartilhada = Fase(1, "INSCRICAO", coletaInscricao: true, coletaIsencao: true);
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: compartilhada);
+        processo.DefinirCronogramaFases([compartilhada], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, compartilhada.Id, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [], PrecondicaoIfMatch.Ausente, [GrupoDaComposicao()])
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(Documento(compartilhada.Id, finalidade), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().Be(aceito, resultado.Error?.Message);
+        if (!aceito)
+        {
+            resultado.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
+        }
     }
 
     [Fact(DisplayName = "Na publicação, a repetição pelo grupo retirado do formulário depois é recusada")]
