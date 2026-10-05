@@ -1427,14 +1427,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return new DomainError(FormularioProcessoErrorCodes.FaseForaDoCronograma, "A fase do formulário não está no cronograma do processo.");
         }
 
-        bool atende = finalidade switch
-        {
-            FinalidadeFormulario.Inscricao => fase.ColetaInscricao,
-            FinalidadeFormulario.IsencaoTaxa => fase.ColetaSolicitacaoIsencao,
-            FinalidadeFormulario.Habilitacao => string.Equals(fase.Codigo, FormularioProcesso.CodigoFaseHabilitacao, StringComparison.Ordinal),
-            _ => false,
-        };
-        return atende
+        return fase.Atende(finalidade)
             ? null
             : new DomainError(
                 FormularioProcessoErrorCodes.FaseIncoerenteComFinalidade,

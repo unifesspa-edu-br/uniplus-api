@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Uma fase do cronograma de um <see cref="ProcessoSeletivo"/> (1..*, Story #851) — o
@@ -73,6 +74,35 @@ public sealed class FaseCronograma : EntityBase
 
     /// <summary>Verdadeiro quando a fase abre a janela de pedido de isenção da taxa.</summary>
     public bool ColetaSolicitacaoIsencao { get; private set; }
+
+    /// <summary>
+    /// As finalidades cujo formulário se responde nesta fase: a inscrição na fase que a coleta, a
+    /// isenção na que abre o pedido e a habilitação na fase de habilitação. Inscrição e isenção podem
+    /// dividir a mesma fase.
+    /// </summary>
+    public IReadOnlyList<FinalidadeFormulario> FinalidadesQueAtende()
+    {
+        List<FinalidadeFormulario> finalidades = [];
+        if (ColetaInscricao)
+        {
+            finalidades.Add(FinalidadeFormulario.Inscricao);
+        }
+
+        if (ColetaSolicitacaoIsencao)
+        {
+            finalidades.Add(FinalidadeFormulario.IsencaoTaxa);
+        }
+
+        if (string.Equals(Codigo, FormularioProcesso.CodigoFaseHabilitacao, StringComparison.Ordinal))
+        {
+            finalidades.Add(FinalidadeFormulario.Habilitacao);
+        }
+
+        return finalidades;
+    }
+
+    /// <summary>Se o formulário da finalidade se responde nesta fase.</summary>
+    public bool Atende(FinalidadeFormulario finalidade) => FinalidadesQueAtende().Contains(finalidade);
 
     /// <summary>
     /// Início da janela, sempre em UTC (<c>Offset</c> zero) — ver o <c>&lt;remarks&gt;</c> da
