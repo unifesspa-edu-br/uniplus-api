@@ -8,6 +8,7 @@ using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -42,6 +43,14 @@ public sealed class DocumentoExigido : EntityBase
     /// uma pede o seu comprovante, não os oito.
     /// </summary>
     public Guid? ExigidoNaEtapaId { get; private set; }
+
+    /// <summary>
+    /// O formulário a que o documento pertence, quando a fase coleta formulário: é no bloco de
+    /// comprovação dele que o candidato o apresenta. A fase diz o momento da coleta e a finalidade
+    /// diz o formulário, porque inscrição e isenção podem dividir a mesma fase. Nula só em fase que
+    /// não coleta formulário nenhum. Declarada por quem configura, nunca deduzida da fase.
+    /// </summary>
+    public FinalidadeFormulario? Finalidade { get; private set; }
 
     /// <summary>Id do <c>TipoDocumento</c> vivo no momento da configuração — snapshot-copy (ADR-0061), sem FK cross-módulo.</summary>
     public Guid TipoDocumentoOrigemId { get; private set; }
@@ -102,7 +111,7 @@ public sealed class DocumentoExigido : EntityBase
     private DocumentoExigido() { }
 
     /// <summary>
-    /// Acumula (ADR-0125) as quatro checagens que dependem só de primitivos do payload cru
+    /// Acumula (ADR-0125) as checagens que dependem só de primitivos do payload cru
     /// (ou de contagens já conhecidas sem I/O) — nenhuma resolve cadastro externo.
     /// <see cref="Entities.CondicaoGatilho.Criar"/> também é 100% I/O-free, então a contagem
     /// de condições (<paramref name="quantidadeCondicoes"/>) já é conhecida direto dos itens
@@ -111,9 +120,12 @@ public sealed class DocumentoExigido : EntityBase
     /// de TODAS as exigências do payload antes de qualquer I/O.
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(
-        Aplicabilidade aplicabilidade, string? consequenciaIndeferimento, int? tamanhoMaximoBytes, int quantidadeCondicoes)
+        Aplicabilidade aplicabilidade, string? consequenciaIndeferimento, int? tamanhoMaximoBytes, int quantidadeCondicoes,
+        FinalidadeFormulario? finalidade = null)
     {
-        List<FieldError> erros = [];
+        // A finalidade da exigência é a do formulário em que o documento é apresentado: o
+        // vocabulário é o mesmo, e a recusa também.
+        List<FieldError> erros = finalidade is { } declarada ? FormaDoCabecalho.ValidarFinalidade(declarada) : [];
 
         if (aplicabilidade == Aplicabilidade.Nenhuma)
         {
@@ -173,7 +185,8 @@ public sealed class DocumentoExigido : EntityBase
         FormatosPermitidos formatosPermitidos,
         int? tamanhoMaximoBytes,
         Guid? exigidoNaEtapaId = null,
-        ModeloDaExigencia? modelo = null)
+        ModeloDaExigencia? modelo = null,
+        FinalidadeFormulario? finalidade = null)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -192,7 +205,7 @@ public sealed class DocumentoExigido : EntityBase
             throw new ArgumentException("O id de origem do tipo de documento é obrigatório.", nameof(tipoDocumentoOrigemId));
         }
 
-        List<FieldError> erros = ValidarFormaBasica(aplicabilidade, consequenciaIndeferimento, tamanhoMaximoBytes, condicoes.Count);
+        List<FieldError> erros = ValidarFormaBasica(aplicabilidade, consequenciaIndeferimento, tamanhoMaximoBytes, condicoes.Count, finalidade);
         if (erros.Count > 0)
         {
             return Result<DocumentoExigido>.ValidationFailure(erros);
@@ -202,6 +215,7 @@ public sealed class DocumentoExigido : EntityBase
         {
             ExigidoNaFaseId = exigidoNaFaseId,
             ExigidoNaEtapaId = exigidoNaEtapaId,
+            Finalidade = finalidade,
             TipoDocumentoOrigemId = tipoDocumentoOrigemId,
             TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
             TipoDocumentoNome = tipoDocumentoNome.Trim(),
@@ -272,7 +286,8 @@ public sealed class DocumentoExigido : EntityBase
         FormatosPermitidos formatosPermitidos,
         int? tamanhoMaximoBytes,
         Guid? exigidoNaEtapaId = null,
-        ModeloDaExigencia? modelo = null)
+        ModeloDaExigencia? modelo = null,
+        FinalidadeFormulario? finalidade = null)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -290,6 +305,7 @@ public sealed class DocumentoExigido : EntityBase
             Id = id,
             ExigidoNaFaseId = exigidoNaFaseId,
             ExigidoNaEtapaId = exigidoNaEtapaId,
+            Finalidade = finalidade,
             TipoDocumentoOrigemId = tipoDocumentoOrigemId,
             TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
             TipoDocumentoNome = tipoDocumentoNome.Trim(),
@@ -487,10 +503,12 @@ public sealed class DocumentoExigido : EntityBase
     }
 }
 
-/// <summary>Códigos de recusa da coerência de fase do gatilho de uma exigência.</summary>
+/// <summary>Códigos de recusa da exigência quanto à fase e ao formulário em que o documento é coletado, inclusive pelo gatilho.</summary>
 public static class DocumentoExigidoErrorCodes
 {
     public const string FatoResolvidoEmFasePosterior = "DocumentoExigido.FatoResolvidoEmFasePosterior";
     public const string PontoResolucaoForaDoCronograma = "DocumentoExigido.PontoResolucaoForaDoCronograma";
     public const string FatoDaIsencaoForaDaFaseDeIsencao = "DocumentoExigido.FatoDaIsencaoForaDaFaseDeIsencao";
+    public const string FinalidadeObrigatoria = "DocumentoExigido.FinalidadeObrigatoria";
+    public const string FaseIncoerenteComFinalidade = "DocumentoExigido.FaseIncoerenteComFinalidade";
 }

@@ -15,6 +15,10 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// ou o array de <c>{formato, tamanhoMaximoBytesMax}</c> — round-tripável direto de volta
 /// pelo mesmo PUT, sem transformação do cliente.
 /// </remarks>
+/// <param name="Finalidade">
+/// O formulário a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou
+/// <c>HABILITACAO</c>); nulo quando a fase não responde formulário nenhum.
+/// </param>
 public sealed record DocumentoExigidoDto(
     Guid Id,
     Guid ExigidoNaFaseId,
@@ -31,7 +35,8 @@ public sealed record DocumentoExigidoDto(
     JsonElement FormatosPermitidos,
     int? TamanhoMaximoBytes,
     Guid? ExigidoNaEtapaId,
-    ModeloDaExigenciaDto? Modelo);
+    ModeloDaExigenciaDto? Modelo,
+    string? Finalidade);
 
 /// <summary>
 /// O modelo de documento que a exigência oferece ao candidato. O <see cref="ModeloId"/> volta no

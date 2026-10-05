@@ -33,9 +33,9 @@ public sealed class RepeticaoPorGrupoTests
         Composicao, 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
         [FatoColetado.Criar("SOB_GUARDA", 0, "Sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!]).Value!;
 
-    private static DocumentoExigido Documento(Guid faseId) => DocumentoExigido.Criar(
+    private static DocumentoExigido Documento(Guid faseId, FinalidadeFormulario finalidade) => DocumentoExigido.Criar(
         faseId, Guid.CreateVersion7(), "CERTIDAO_GUARDA", "Certidão de guarda", "CAT", Aplicabilidade.Geral,
-        obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null).Value!;
+        obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
 
     /// <summary>Processo com inscrição e habilitação, e o grupo da composição familiar no formulário da habilitação.</summary>
     private static (ProcessoSeletivo Processo, FaseCronograma Inscricao, FaseCronograma Habilitacao) Processo()
@@ -57,7 +57,7 @@ public sealed class RepeticaoPorGrupoTests
         (ProcessoSeletivo processo, _, FaseCronograma habilitacao) = Processo();
 
         Result resultado = processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(Documento(habilitacao.Id), 0, repetePorEntidade: "PESSOAS_JURIDICAS").Value!], PrecondicaoIfMatch.Ausente);
+            [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: "PESSOAS_JURIDICAS").Value!], PrecondicaoIfMatch.Ausente);
 
         resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
@@ -68,10 +68,10 @@ public sealed class RepeticaoPorGrupoTests
         (ProcessoSeletivo processo, FaseCronograma inscricao, FaseCronograma habilitacao) = Processo();
 
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(inscricao.Id), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
+                [NoExigencia.CriarFolha(Documento(inscricao.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(habilitacao.Id), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
+                [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
     }
 
@@ -80,7 +80,7 @@ public sealed class RepeticaoPorGrupoTests
     {
         (ProcessoSeletivo processo, _, FaseCronograma habilitacao) = Processo();
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(habilitacao.Id), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
+                [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente, []).IsSuccess.Should().BeTrue();
@@ -92,8 +92,8 @@ public sealed class RepeticaoPorGrupoTests
     public void CamposDaRepeticao_PelaSubarvoreRepetida()
     {
         (ProcessoSeletivo processo, _, FaseCronograma habilitacao) = Processo();
-        DocumentoExigido certidao = Documento(habilitacao.Id);
-        DocumentoExigido avulso = Documento(habilitacao.Id);
+        DocumentoExigido certidao = Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao);
+        DocumentoExigido avulso = Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao);
         NoExigencia repetido = NoExigencia.CriarGrupo(
             TipoNo.GrupoE, 0, null, null, [], [NoExigencia.CriarFolha(certidao, 0).Value!], repetePorEntidade: Composicao).Value!;
         processo.DefinirDocumentosExigidos([repetido, NoExigencia.CriarFolha(avulso, 1).Value!], PrecondicaoIfMatch.Ausente)

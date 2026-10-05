@@ -90,6 +90,10 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.HasIndex(d => d.ExigidoNaEtapaId)
             .HasDatabaseName("ix_documentos_exigidos_exigido_na_etapa_id");
 
+        // O formulário a que o documento pertence — nulo fora de fase de formulário. O
+        // vocabulário e a coerência com a fase são do domínio, sem CHECK no banco.
+        builder.Property(d => d.Finalidade).HasConversion<int?>();
+
         // Gatilho DNF (Story #554, PR #896) — substituível por inteiro junto com o próprio
         // DocumentoExigido, mesmo padrão de FaseCronograma/BancasRequeridas.
         builder.HasMany(d => d.Condicoes)

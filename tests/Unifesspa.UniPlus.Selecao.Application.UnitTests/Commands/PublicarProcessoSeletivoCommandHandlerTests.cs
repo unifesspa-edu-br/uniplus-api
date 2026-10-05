@@ -56,7 +56,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
                 "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
             idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
-            tamanhoMaximoBytes: null).Value!;
+            tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     private static FatoCandidatoView FatoModalidade() => new(
         Id: Guid.CreateVersion7(),

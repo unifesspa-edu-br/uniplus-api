@@ -394,7 +394,7 @@ public sealed class RestauradorDeConfiguracaoTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         processo.DefinirReferenciaTemporalFatos(
@@ -472,7 +472,7 @@ public sealed class RestauradorDeConfiguracaoTests
             basesLegais: [baseLegal],
             idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
-            tamanhoMaximoBytes: null).Value!;
+            tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         // O Binding "X" — resolvido do catálogo NO INSTANTE da publicação, congelado por

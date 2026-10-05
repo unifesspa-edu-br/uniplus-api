@@ -1376,6 +1376,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["tipoDocumentoCategoria"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoCategoria),
         ["exigidoNaFaseId"] = exigencia.ExigidoNaFaseId,
         ["exigidoNaEtapaId"] = exigencia.ExigidoNaEtapaId,
+        ["finalidade"] = exigencia.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
         ["aplicabilidade"] = exigencia.Aplicabilidade.ToString(),
         ["obrigatorio"] = exigencia.Obrigatorio,
         ["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia

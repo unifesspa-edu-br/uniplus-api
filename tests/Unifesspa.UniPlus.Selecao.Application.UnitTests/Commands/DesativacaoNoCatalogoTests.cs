@@ -109,7 +109,7 @@ public sealed class DesativacaoNoCatalogoTests
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoGatilho.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("BRANCA")).Value!],
             basesLegais: [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!],
-            idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 

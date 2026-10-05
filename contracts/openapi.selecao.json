@@ -10936,7 +10936,8 @@
           "formatosPermitidos",
           "tamanhoMaximoBytes",
           "exigidoNaEtapaId",
-          "modelo"
+          "modelo",
+          "finalidade"
         ],
         "type": "object",
         "properties": {
@@ -11022,6 +11023,12 @@
               {
                 "$ref": "#/components/schemas/ModeloDaExigenciaDto"
               }
+            ]
+          },
+          "finalidade": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -12934,6 +12941,12 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "finalidade": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

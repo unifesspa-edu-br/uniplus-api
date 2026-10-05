@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -104,7 +105,7 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(
                 item, path,
                 "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome",
-                "tipoDocumentoCategoria", "exigidoNaFaseId", "exigidoNaEtapaId", "aplicabilidade", "obrigatorio",
+                "tipoDocumentoCategoria", "exigidoNaFaseId", "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio",
                 "consequenciaIndeferimento", "condicaoGatilho", "basesLegais",
                 "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes", "modelo");
 
@@ -115,6 +116,7 @@ public sealed partial class EnvelopeCodec
             string tipoDocumentoCategoria = leitor.TextoNaoVazio(item, "tipoDocumentoCategoria", path, LimitesDoEnvelope.TipoDocumentoCategoria);
             Guid exigidoNaFaseId = leitor.Identificador(item, "exigidoNaFaseId", path);
             Guid? exigidoNaEtapaId = leitor.IdentificadorOpcional(item, "exigidoNaEtapaId", path);
+            string? finalidadeToken = leitor.TextoOpcional(item, "finalidade", path, LimitesDoEnvelope.Token);
             Aplicabilidade aplicabilidade = leitor.Enumeracao<Aplicabilidade>(item, "aplicabilidade", path);
             bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
             string? consequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token);
@@ -155,6 +157,14 @@ public sealed partial class EnvelopeCodec
                 return [];
             }
 
+            FinalidadeFormulario? finalidade = finalidadeToken is null ? null : EstruturaFormulario.FinalidadeDoToken(finalidadeToken);
+            if (finalidade == FinalidadeFormulario.Nenhuma)
+            {
+                return leitor.Propagar<IReadOnlyList<DocumentoExigido>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{path}.finalidade' fora do vocabulário de finalidades.")) ?? [];
+            }
+
             if (tamanhoMaximoBytes is <= 0)
             {
                 return leitor.Propagar<IReadOnlyList<DocumentoExigido>>(new DomainError(
@@ -178,7 +188,8 @@ public sealed partial class EnvelopeCodec
                 formatosPermitidos!,
                 tamanhoMaximoBytes,
                 exigidoNaEtapaId,
-                modelo));
+                modelo,
+                finalidade));
         }
 
         return exigencias;

@@ -8,6 +8,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -1006,10 +1007,10 @@ public sealed class EnvelopeCodecRecusaTests
         FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
         DocumentoExigido rg = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         DocumentoExigido cpf = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "CPF", "CPF", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -2190,6 +2191,30 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.IsFailure.Should().BeTrue(
             "apontar etapa de outra fase diria que a habilitação coleta no dia da prova");
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");
+    }
+
+    /// <summary>
+    /// O formulário a que o documento pertence é parte da forma da exigência: ausente ou fora do
+    /// vocabulário, o bloco de comprovação não saberia em que formulário mostrá-lo.
+    /// </summary>
+    [Theory(DisplayName = "Exigência sem o formulário a que pertence, ou com formulário fora do vocabulário, é recusada na reidratação")]
+    [InlineData(null)]
+    [InlineData("MATRICULA")]
+    public void ExigenciaComFinalidadeAusenteOuDesconhecida_Recusa(string? token)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+        {
+            if (token is null)
+            {
+                PrimeiraExigencia(envelope).Remove("finalidade");
+            }
+            else
+            {
+                PrimeiraExigencia(envelope)["finalidade"] = token;
+            }
+        });
+
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
     private static JsonObject PrimeiraExigencia(JsonObject envelope) =>

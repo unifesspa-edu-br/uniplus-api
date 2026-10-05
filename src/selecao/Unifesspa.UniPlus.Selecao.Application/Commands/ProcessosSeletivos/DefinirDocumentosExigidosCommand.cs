@@ -58,6 +58,13 @@ public sealed record IdadeMaximaEmissaoInput(
 /// fase; a âncora da exigência continua sendo a fase.
 /// </remarks>
 /// <remarks>
+/// <see cref="Finalidade"/> é o token do formulário a que o documento pertence
+/// (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>): obrigatório quando a fase
+/// responde algum formulário, e um dos que ela responde; ausente quando a fase não responde
+/// nenhum. Inscrição e isenção podem dividir a fase, e é a finalidade que diz em qual dos dois
+/// formulários o candidato apresenta o documento.
+/// </remarks>
+/// <remarks>
 /// <see cref="FormatosPermitidos"/> (Story #918) é um valor JSON polimórfico — o mesmo
 /// tratamento já usado por <see cref="CondicaoGatilhoInput.Valor"/>/<c>CondicaoDnf.Valor</c>
 /// (ADR-0111): a string <c>"QUALQUER"</c> OU um array de <c>{formato, tamanhoMaximoBytesMax}</c>,
@@ -78,7 +85,8 @@ public sealed record ItemDocumentoExigidoInput(
     JsonElement? FormatosPermitidos,
     int? TamanhoMaximoBytes,
     Guid? ExigidoNaEtapaId = null,
-    Guid? ModeloId = null);
+    Guid? ModeloId = null,
+    string? Finalidade = null);
 
 /// <summary>
 /// Entrada de um nó da árvore de satisfação (Story #920) — substitui o antigo

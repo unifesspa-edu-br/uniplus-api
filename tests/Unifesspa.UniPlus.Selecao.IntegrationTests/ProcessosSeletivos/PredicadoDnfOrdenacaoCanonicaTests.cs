@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -144,7 +145,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         DocumentoExigido documento = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
             Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes, [], null, qualquer, null).Value!;
+            condicoes, [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
         processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(documento, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

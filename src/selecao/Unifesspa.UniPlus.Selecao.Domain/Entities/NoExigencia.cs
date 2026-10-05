@@ -7,6 +7,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -342,7 +343,7 @@ public sealed class NoExigencia : EntityBase
     /// <summary>
     /// Cria um nó grupo (<see cref="TipoNo.GrupoE"/> ou <see cref="TipoNo.GrupoOu"/>), validando
     /// os invariantes SHALL do cadastro (Story #920, tasks §1.2): grupo não vazio, árvore sem
-    /// ciclo (defensivo — ver remarks), mesma fase entre todos os descendentes,
+    /// ciclo (defensivo — ver remarks), mesma fase e mesmo formulário entre todos os descendentes,
     /// <c>quantidadeMinima</c> por tipo de nó, consequência/base legal só em <c>GrupoOu</c>.
     /// </summary>
     /// <remarks>
@@ -393,6 +394,14 @@ public sealed class NoExigencia : EntityBase
         {
             return Result<NoExigencia>.Failure(new DomainError(
                 "NoExigencia.GrupoComFasesDiferentes", "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma."));
+        }
+
+        // As alternativas de um grupo são satisfeitas num bloco de comprovação só: documentos de
+        // formulários diferentes não se combinam, ainda que dividam a fase.
+        if (!FinalidadeComumDosFilhos(filhos, out _))
+        {
+            return Result<NoExigencia>.Failure(new DomainError(
+                "NoExigencia.GrupoComFinalidadesDiferentes", "Todos os documentos de um grupo pertencem ao mesmo formulário."));
         }
 
         // Story #922: repetição não aninha — construção é bottom-up (folhas/grupos filhos já
@@ -587,6 +596,23 @@ public sealed class NoExigencia : EntityBase
         ? DocumentoExigido?.ExigidoNaFaseId
         : FaseComumDosFilhos(_filhos);
 
+    /// <summary>
+    /// O formulário comum a toda a subárvore (folha: a <see cref="DocumentoExigido.Finalidade"/>;
+    /// grupo: a dos filhos). Devolve falso quando os descendentes divergem; verdadeiro com
+    /// <paramref name="finalidade"/> nula quando a subárvore inteira é de documentos fora de
+    /// formulário, que é um valor e não uma divergência.
+    /// </summary>
+    public bool TentarFinalidadeComum(out FinalidadeFormulario? finalidade)
+    {
+        if (Tipo == TipoNo.Folha)
+        {
+            finalidade = DocumentoExigido?.Finalidade;
+            return true;
+        }
+
+        return FinalidadeComumDosFilhos(_filhos, out finalidade);
+    }
+
     /// <summary>Determina se este nó "conta" para efeito de resultado — só <see cref="TipoNo.GrupoOu"/> com <see cref="Consequencia"/>; <see cref="TipoNo.GrupoE"/> nunca (transparente).</summary>
     public bool DeterminaResultado() => Tipo == TipoNo.GrupoOu && Consequencia is not null;
 
@@ -622,6 +648,31 @@ public sealed class NoExigencia : EntityBase
         }
 
         return fases.Count == 1 ? fases.First() : null;
+    }
+
+    private static bool FinalidadeComumDosFilhos(IReadOnlyList<NoExigencia> filhos, out FinalidadeFormulario? finalidade)
+    {
+        finalidade = null;
+        bool primeiro = true;
+        foreach (NoExigencia filho in filhos)
+        {
+            if (!filho.TentarFinalidadeComum(out FinalidadeFormulario? doFilho))
+            {
+                return false;
+            }
+
+            if (primeiro)
+            {
+                finalidade = doFilho;
+                primeiro = false;
+            }
+            else if (doFilho != finalidade)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool ContemCiclo(IReadOnlyList<NoExigencia> raizes)

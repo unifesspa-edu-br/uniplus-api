@@ -972,13 +972,13 @@ public sealed class EnvelopeCodecRoundTripTests
         FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
         DocumentoExigido rg = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         // A declaração de renda vem com o modelo editável que o candidato preenche — o decoder tem
         // de remontá-lo, senão a recanonicalização o perderia.
         DocumentoExigido comprovanteRenda = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO",
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null,
-            modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeModelo.Docx, new string('e', 64))).Value!;
+            modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeModelo.Docx, new string('e', 64)), finalidade: FinalidadeFormulario.Inscricao).Value!;
 
         NoExigencia folhaRg = NoExigencia.CriarFolha(
             rg, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal,
@@ -1160,7 +1160,7 @@ public sealed class EnvelopeCodecRoundTripTests
         DocumentoExigido documento = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            [], [], null, formatosPermitidos, null).Value!;
+            [], [], null, formatosPermitidos, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         NoExigencia folha = NoExigencia.CriarFolha(
             documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
             ocorrenciasEsperadas: ["ocorrencia_zeta", "ocorrencia_alfa"]).Value!;

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -295,7 +296,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaOriginal, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
@@ -344,7 +345,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaEditada, 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
 

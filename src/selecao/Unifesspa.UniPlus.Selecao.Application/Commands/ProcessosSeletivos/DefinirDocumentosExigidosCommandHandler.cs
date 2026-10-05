@@ -15,6 +15,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -319,7 +320,8 @@ public static class DefinirDocumentosExigidosCommandHandler
                     _ => Aplicabilidade.Nenhuma,
                 };
                 erros.AddRange(DocumentoExigido.ValidarFormaBasica(
-                    aplicabilidade, documentoInput.ConsequenciaIndeferimento, documentoInput.TamanhoMaximoBytes, documentoInput.Condicoes.Count));
+                    aplicabilidade, documentoInput.ConsequenciaIndeferimento, documentoInput.TamanhoMaximoBytes, documentoInput.Condicoes.Count,
+                    FinalidadeDoInput(documentoInput.Finalidade)));
             }
 
             IReadOnlyList<BaseLegalInput> basesLegais = ehFolha
@@ -461,8 +463,16 @@ public static class DefinirDocumentosExigidosCommandHandler
             formatosPermitidosResult.Value!,
             input.TamanhoMaximoBytes,
             input.ExigidoNaEtapaId,
-            modeloResult.Value);
+            modeloResult.Value,
+            FinalidadeDoInput(input.Finalidade));
     }
+
+    /// <summary>
+    /// A finalidade do token, nula quando o cliente não a declarou. O token desconhecido vira o
+    /// sentinela, que a forma do documento recusa.
+    /// </summary>
+    private static FinalidadeFormulario? FinalidadeDoInput(string? token) =>
+        token is null ? null : EstruturaFormulario.FinalidadeDoToken(token);
 
     /// <summary>
     /// Resolve as condições de um item: monta <see cref="CondicaoDnf"/> por linha, agrupa

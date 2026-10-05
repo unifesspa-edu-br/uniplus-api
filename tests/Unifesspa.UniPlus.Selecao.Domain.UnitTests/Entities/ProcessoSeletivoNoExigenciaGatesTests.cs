@@ -31,9 +31,9 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [], regraRecurso: null).Value!;
 
-    private static DocumentoExigido DocumentoQualquer(Guid faseId) => DocumentoExigido.Criar(
+    private static DocumentoExigido DocumentoQualquer(Guid faseId, FinalidadeFormulario? finalidade = null) => DocumentoExigido.Criar(
         faseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", Aplicabilidade.Geral,
-        obrigatorio: false, consequenciaIndeferimento: null, [], [], null, Qualquer, null).Value!;
+        obrigatorio: false, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
 
     private static NoExigenciaBaseLegal BaseLegal(StatusBaseLegal status) =>
         NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
@@ -198,7 +198,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
         NoExigencia folha = NoExigencia.CriarFolha(
-            DocumentoQualquer(fase.Id), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+            DocumentoQualquer(fase.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);

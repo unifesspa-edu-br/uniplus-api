@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -18,7 +19,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class NoExigenciaTests
 {
     private static DocumentoExigido Documento(
-        Guid? faseId = null, string? consequencia = null, bool obrigatorio = true, Aplicabilidade aplicabilidade = Aplicabilidade.Geral) =>
+        Guid? faseId = null, string? consequencia = null, bool obrigatorio = true, Aplicabilidade aplicabilidade = Aplicabilidade.Geral,
+        FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
             faseId ?? Guid.CreateVersion7(),
             Guid.CreateVersion7(),
@@ -32,7 +34,8 @@ public sealed class NoExigenciaTests
             [],
             null,
             FormatosPermitidos.Criar(true, null).Value!,
-            null).Value!;
+            null,
+            finalidade: finalidade).Value!;
 
     private static NoExigenciaBaseLegal BaseLegalResolvida() =>
         NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;
@@ -297,6 +300,25 @@ public sealed class NoExigenciaTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.FaseComum().Should().Be(faseId);
+    }
+
+    [Theory(DisplayName = "CriarGrupo aceita só documentos do mesmo formulário, inclusive todos fora de formulário")]
+    [InlineData(FinalidadeFormulario.Inscricao, FinalidadeFormulario.IsencaoTaxa, false)]
+    [InlineData(FinalidadeFormulario.Inscricao, null, false)]
+    [InlineData(null, null, true)]
+    public void CriarGrupo_MesmaFinalidade(FinalidadeFormulario? primeira, FinalidadeFormulario? segunda, bool aceita)
+    {
+        Guid faseId = Guid.CreateVersion7();
+        NoExigencia folhaA = NoExigencia.CriarFolha(Documento(faseId, finalidade: primeira), 0).Value!;
+        NoExigencia folhaB = NoExigencia.CriarFolha(Documento(faseId, finalidade: segunda), 1).Value!;
+
+        Result<NoExigencia> resultado = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, null, null, [], [folhaA, folhaB]);
+
+        resultado.IsSuccess.Should().Be(aceita);
+        if (!aceita)
+        {
+            resultado.Error!.Code.Should().Be("NoExigencia.GrupoComFinalidadesDiferentes");
+        }
     }
 
     [Fact(DisplayName = "CriarGrupo recusa ciclo (identidade de referência) — defesa em profundidade de chamador interno")]
