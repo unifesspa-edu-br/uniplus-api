@@ -36,7 +36,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "3";
+    public const string Versao = "4";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta.
@@ -155,12 +155,17 @@ internal static class ProjecaoDoCertamePublicado
     /// </summary>
     internal static Result<CertamePublicadoDto> RecusarDocumentoIlegivel() => Recusar("documento do certame");
 
+    /// <param name="enderecoNoAcervo">
+    /// O endereço público de uma chave do acervo. Chega como função, e não como port, para a projeção
+    /// continuar pura: o mesmo envelope e o mesmo endereço base produzem sempre a mesma resposta.
+    /// </param>
     public static Result<CertamePublicadoDto> Projetar(
         Guid processoSeletivoId,
         Guid atoCriadorId,
         string nome,
         string hashConfiguracao,
-        JsonObject envelope)
+        JsonObject envelope,
+        Func<string, Uri> enderecoNoAcervo)
     {
         // Obrigatório na projeção, embora o bloco admita nulo no envelope: publicação e sucessão de
         // versão recusam a ausência, então uma versão divulgável sempre o traz. A regra do cadastro
@@ -231,7 +236,11 @@ internal static class ProjecaoDoCertamePublicado
             return Recusar("cronograma");
         }
 
-        if (!TentarExigencias(envelope, static _ => true, out List<ExigenciaDocumentalCertameDto>? exigencias))
+        if (!TentarExigencias(
+            envelope,
+            static _ => true,
+            new DocumentosDoAtoNoAcervo(processoSeletivoId, atoCriadorId, enderecoNoAcervo),
+            out List<ExigenciaDocumentalCertameDto>? exigencias))
         {
             return Recusar("documentos exigidos");
         }
@@ -458,10 +467,12 @@ internal static class ProjecaoDoCertamePublicado
     /// metadados dos fatos que condicionam cada exigência — não entram. <paramref name="incluir"/>
     /// recorta as exigências projetadas, como as da fase de um formulário; nulo quando a exigência
     /// não tem a forma que o recorte lê, o que recusa a leitura inteira em vez de omiti-la.
+    /// <paramref name="acervo"/> dá o endereço do modelo publicado pelo ato da versão lida.
     /// </summary>
     internal static bool TentarExigencias(
         JsonObject envelope,
         Func<JsonObject, bool?> incluir,
+        DocumentosDoAtoNoAcervo acervo,
         [NotNullWhen(true)] out List<ExigenciaDocumentalCertameDto>? exigencias)
     {
         exigencias = null;
@@ -479,7 +490,7 @@ internal static class ProjecaoDoCertamePublicado
                 || !TentarTexto(exigencia, "aplicabilidade", out string aplicabilidade)
                 || !TentarBooleano(exigencia, "obrigatorio", out bool obrigatorio)
                 || !TentarFormatos(exigencia, out FormatosAceitosCertameDto? formatos)
-                || !TentarModelo(exigencia, out ModeloDocumentalCertameDto? modelo))
+                || !TentarModelo(exigencia, acervo, out ModeloDocumentalCertameDto? modelo))
             {
                 return false;
             }
@@ -500,9 +511,10 @@ internal static class ProjecaoDoCertamePublicado
 
     /// <summary>
     /// O modelo que a exigência oferece ao candidato: a chave é obrigatória, nula quando a
-    /// exigência não tem modelo. O id do modelo fica fora — é referência interna do cadastro.
+    /// exigência não tem modelo. O id do modelo fica fora como campo — é referência interna do
+    /// cadastro —, e só aparece dentro do endereço no acervo.
     /// </summary>
-    private static bool TentarModelo(JsonObject exigencia, out ModeloDocumentalCertameDto? modelo)
+    private static bool TentarModelo(JsonObject exigencia, DocumentosDoAtoNoAcervo acervo, out ModeloDocumentalCertameDto? modelo)
     {
         modelo = null;
         if (!TentarModeloCongelado(exigencia, out ModeloDaExigencia? congelado))
@@ -513,7 +525,10 @@ internal static class ProjecaoDoCertamePublicado
         if (congelado is not null)
         {
             modelo = new ModeloDocumentalCertameDto(
-                congelado.NomeArquivo, ModeloDeDocumento.TokenDe(congelado.Formato), congelado.HashSha256);
+                congelado.NomeArquivo,
+                ModeloDeDocumento.TokenDe(congelado.Formato),
+                congelado.HashSha256,
+                acervo.DoModelo(congelado));
         }
 
         return true;

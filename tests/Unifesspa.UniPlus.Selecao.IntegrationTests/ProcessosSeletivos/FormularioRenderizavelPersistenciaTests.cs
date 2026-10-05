@@ -203,7 +203,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             ProcessoSeletivoRepository repository = new(readContext, TimeProvider.System);
             Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
                 new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), repository,
-                new CertameDivulgadoRepository(readContext), RegistroCodecs, CancellationToken.None);
+                new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
             resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
             return resultado.Value!;
         }

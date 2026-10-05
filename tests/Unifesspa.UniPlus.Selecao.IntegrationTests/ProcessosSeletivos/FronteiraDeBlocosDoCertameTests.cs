@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 using Xunit;
 
@@ -112,7 +113,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsSuccess.Should().BeTrue(
             "o contrato público precisa saber ler o envelope que o canonicalizador de fato emite — recusa: {0}",
@@ -133,7 +134,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["identificadorLegivel"] = identificador;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Message.Should().Contain("identificador legível");
@@ -147,7 +148,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["identificadorLegivel"] = "psiq-2026";
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.Value!.IdentificadorLegivel.Should().Be("psiq-2026");
     }
@@ -307,8 +308,8 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
-    [InlineData("4")]
-    [InlineData("2")]
+    [InlineData("5")]
+    [InlineData("3")]
     public void TentarLerProjecao_QuandoAVersaoNaoEADesteBinario_DeveRecusar(string outraVersao)
     {
         // Num deploy em fases, um processo novo materializa a versão seguinte e um processo antigo
@@ -342,7 +343,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         projecao.IsSuccess.Should().BeTrue(projecao.Error?.Message);
 

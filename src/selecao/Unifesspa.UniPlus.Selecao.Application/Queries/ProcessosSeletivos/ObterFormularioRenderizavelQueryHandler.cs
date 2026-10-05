@@ -53,12 +53,14 @@ public static class ObterFormularioRenderizavelQueryHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
 
         CertameDivulgado? divulgado = await certameDivulgadoRepository
             .ObterParaLeituraAsync(query.ProcessoSeletivoId, cancellationToken)
@@ -109,7 +111,9 @@ public static class ObterFormularioRenderizavelQueryHandler
                 $"A configuração congelada do processo {query.ProcessoSeletivoId} não é um documento legível."));
         }
 
-        return Projetar(envelope, query.Finalidade) ?? NaoEncontrado(query.ProcessoSeletivoId);
+        // O ato da divulgação é o que publicou os modelos que este formulário oferece.
+        DocumentosDoAtoNoAcervo acervo = new(versao.ProcessoSeletivoId, divulgado.AtoCriadorId, enderecoNoAcervo.De);
+        return Projetar(envelope, query.Finalidade, acervo) ?? NaoEncontrado(query.ProcessoSeletivoId);
     }
 
     /// <summary>
@@ -144,7 +148,8 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// que não passou pelo encoder confiável.
     /// </summary>
     /// <remarks>Nulo quando a versão vigente não tem formulário da finalidade pedida.</remarks>
-    private static Result<FormularioRenderizavelDto>? Projetar(JsonObject envelope, FinalidadeFormulario finalidade)
+    private static Result<FormularioRenderizavelDto>? Projetar(
+        JsonObject envelope, FinalidadeFormulario finalidade, DocumentosDoAtoNoAcervo acervo)
     {
         string token = EstruturaFormulario.ParaToken(finalidade);
         if (!envelope.TryGetPropertyValue("formularios", out JsonNode? formulariosNode) || formulariosNode is not JsonArray formularios)
@@ -162,7 +167,7 @@ public static class ObterFormularioRenderizavelQueryHandler
         if (!TentarStringOpcional(formulario, "titulo", out string? titulo)
             || !TentarTermos(formulario, out List<TermoExigidoDto> termos)
             || !TentarEtapas(formulario, out List<EtapaFormularioDto> etapas)
-            || !TentarComprovacaoDocumental(envelope, formulario, token, etapas, out List<ExigenciaDocumentalCertameDto>? comprovacao))
+            || !TentarComprovacaoDocumental(envelope, formulario, token, etapas, acervo, out List<ExigenciaDocumentalCertameDto>? comprovacao))
         {
             return VersaoSemApresentacao();
         }
@@ -649,7 +654,12 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// resposta da execução, sobre as respostas dele. Só é lida quando o formulário tem o bloco.
     /// </summary>
     private static bool TentarComprovacaoDocumental(
-        JsonObject envelope, JsonObject formulario, string finalidade, List<EtapaFormularioDto> etapas, out List<ExigenciaDocumentalCertameDto>? comprovacao)
+        JsonObject envelope,
+        JsonObject formulario,
+        string finalidade,
+        List<EtapaFormularioDto> etapas,
+        DocumentosDoAtoNoAcervo acervo,
+        out List<ExigenciaDocumentalCertameDto>? comprovacao)
     {
         comprovacao = null;
         if (!etapas.Exists(static e => e.Bloco == EstruturaFormulario.BlocoComprovacaoDocumental))
@@ -663,6 +673,7 @@ public static class ObterFormularioRenderizavelQueryHandler
             && ProjecaoDoCertamePublicado.TentarExigencias(
                 envelope,
                 exigencia => DoFormulario(exigencia, faseDoFormulario, finalidade),
+                acervo,
                 out comprovacao);
     }
 

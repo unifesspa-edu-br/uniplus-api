@@ -195,6 +195,7 @@ public sealed class ModeloNoAcervoPublicoIntegrationTests : IClassFixture<Proces
             new RegistroCodecsEnvelope(),
             new ModeloDeDocumentoRepository(context),
             acervo,
+            AcervoDeTeste.Endereco,
             context,
             TimeProvider.System,
             CancellationToken.None);

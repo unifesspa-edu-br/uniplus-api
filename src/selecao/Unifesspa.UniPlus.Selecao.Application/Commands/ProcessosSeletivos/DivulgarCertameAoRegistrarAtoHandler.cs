@@ -52,6 +52,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         IRegistroCodecsEnvelope registroCodecs,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         IAcervoPublico acervoPublico,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -62,6 +63,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(acervoPublico);
+        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -105,7 +107,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         }
 
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            versao.ProcessoSeletivoId, versao.AtoCriadorId, nome, versao.HashConfiguracao, envelope);
+            versao.ProcessoSeletivoId, versao.AtoCriadorId, nome, versao.HashConfiguracao, envelope, enderecoNoAcervo.De);
 
         if (projecao.IsFailure)
         {
