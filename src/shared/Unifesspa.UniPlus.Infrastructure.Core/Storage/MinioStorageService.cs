@@ -1,9 +1,12 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Storage;
 
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using Minio;
 using Minio.DataModel;
@@ -14,18 +17,32 @@ using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 public sealed class MinioStorageService : IStorageService
 {
+    /// <summary>
+    /// Cache perpétuo: o endereço do objeto público é derivado do conteúdo, e o mesmo endereço nunca
+    /// serve outro conteúdo.
+    /// </summary>
+    private const string CacheControlDoObjetoImutavel = "public, max-age=31536000, immutable";
+
+    private const string PrefixoDeMetadado = "x-amz-meta-";
+
     private readonly IMinioClient _minioClient;
     private readonly IMinioClient _presignClient;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IOptions<StorageOptions> _opcoes;
+    private readonly TimeProvider _relogio;
 
     public MinioStorageService(
         [FromKeyedServices(StorageServiceCollectionExtensions.StorageInternalClientKey)] IMinioClient minioClient,
         [FromKeyedServices(StorageServiceCollectionExtensions.StoragePublicClientKey)] IMinioClient presignClient,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IOptions<StorageOptions> opcoes,
+        TimeProvider relogio)
     {
         _minioClient = minioClient;
         _presignClient = presignClient;
         _httpClientFactory = httpClientFactory;
+        _opcoes = opcoes;
+        _relogio = relogio;
     }
 
     public async Task<string> UploadAsync(string bucket, string nomeArquivo, Stream conteudo, string contentType, CancellationToken cancellationToken = default)
@@ -191,6 +208,113 @@ public sealed class MinioStorageService : IStorageService
         {
             return null;
         }
+    }
+
+    public async Task<bool> CopiarComoObjetoPublicoAsync(
+        string bucketOrigem,
+        string chaveOrigem,
+        string bucketDestino,
+        string chaveDestino,
+        ApresentacaoDoObjetoPublico apresentacao,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(bucketOrigem);
+        ArgumentException.ThrowIfNullOrWhiteSpace(chaveOrigem);
+        ArgumentException.ThrowIfNullOrWhiteSpace(bucketDestino);
+        ArgumentException.ThrowIfNullOrWhiteSpace(chaveDestino);
+        ArgumentNullException.ThrowIfNull(apresentacao);
+
+        // Consulta seguida de gravação, sem condição atômica: duas cópias concorrentes da mesma
+        // chave podem ambas não encontrar o objeto e gravar. A corrida é inofensiva porque a chave
+        // é derivada do conteúdo e da procedência — as duas gravariam os mesmos bytes com os mesmos
+        // cabeçalhos. Bucket de destino ausente também chega aqui como "não existe", e a cópia
+        // abaixo falha por ele, sem criá-lo.
+        if (await ObterMetadadosAsync(bucketDestino, chaveDestino, cancellationToken).ConfigureAwait(false) is not null)
+        {
+            return false;
+        }
+
+        // Substituição, e não cópia, dos metadados: o objeto de origem foi gravado sem cabeçalho de
+        // apresentação, e herdá-lo entregaria o arquivo com a chave como nome e sem política de cache.
+        Dictionary<string, string> cabecalhos = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["x-amz-copy-source"] = AssinaturaS3V4.CaminhoDoObjeto(bucketOrigem, chaveOrigem),
+            ["x-amz-metadata-directive"] = "REPLACE",
+            ["content-type"] = apresentacao.ContentType,
+            ["cache-control"] = CacheControlDoObjetoImutavel,
+            ["content-disposition"] = ContentDispositionDeAnexo(apresentacao.NomeDeApresentacao),
+        };
+
+        foreach ((string nome, string valor) in apresentacao.Procedencia)
+        {
+            cabecalhos[PrefixoDeMetadado + nome] = valor;
+        }
+
+        await CopiarNoServidorAsync(bucketDestino, chaveDestino, cabecalhos, cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    /// <summary>
+    /// A cópia no servidor (<c>CopyObject</c> do S3) por requisição assinada aqui, e não pela
+    /// biblioteca do MinIO: ela recusa enviar <c>Content-Disposition</c> — só monta, de cabeçalho de
+    /// conteúdo, o tipo, o tamanho e o MD5 —, e sem ele o cidadão baixaria um arquivo cujo nome é o
+    /// hash. Os bytes continuam sem passar pela aplicação.
+    /// </summary>
+    private async Task CopiarNoServidorAsync(
+        string bucket,
+        string chave,
+        IReadOnlyDictionary<string, string> cabecalhos,
+        CancellationToken cancellationToken)
+    {
+        StorageOptions opcoes = _opcoes.Value;
+        Uri endereco = new($"{(opcoes.UseSSL ? "https" : "http")}://{opcoes.Endpoint}{AssinaturaS3V4.CaminhoDoObjeto(bucket, chave)}");
+        (string authorization, string amzDate) = AssinaturaS3V4.Assinar(
+            HttpMethod.Put, endereco, cabecalhos, opcoes, _relogio.GetUtcNow());
+
+        using HttpRequestMessage requisicao = new(HttpMethod.Put, endereco) { Content = new ByteArrayContent([]) };
+        requisicao.Headers.TryAddWithoutValidation("Authorization", authorization);
+        requisicao.Headers.TryAddWithoutValidation("x-amz-date", amzDate);
+        requisicao.Headers.TryAddWithoutValidation("x-amz-content-sha256", AssinaturaS3V4.HashDoCorpoVazio);
+        foreach ((string nome, string valor) in cabecalhos)
+        {
+            // Sem validação nos dois lados: o valor segue byte a byte como foi assinado.
+            if (!requisicao.Headers.TryAddWithoutValidation(nome, valor))
+            {
+                requisicao.Content.Headers.TryAddWithoutValidation(nome, valor);
+            }
+        }
+
+        using HttpClient httpClient = _httpClientFactory.CreateClient(nameof(MinioStorageService));
+        using HttpResponseMessage resposta = await httpClient.SendAsync(requisicao, cancellationToken).ConfigureAwait(false);
+        string corpo = await resposta.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+        // O S3 pode responder 200 e trazer o erro no corpo quando a cópia falha depois de começar.
+        if (!resposta.IsSuccessStatusCode || corpo.Contains("<Error>", StringComparison.Ordinal))
+        {
+            throw new HttpRequestException(
+                $"A cópia para {bucket}/{chave} foi recusada pelo armazenamento ({(int)resposta.StatusCode}): {corpo}",
+                inner: null,
+                resposta.StatusCode);
+        }
+    }
+
+    /// <summary>
+    /// <c>Content-Disposition</c> de anexo com o nome em duas formas (RFC 6266): <c>filename*</c> em
+    /// UTF-8 codificado (RFC 5987), que todo navegador atual lê, e <c>filename</c> em ASCII para o
+    /// cliente que só conhece a forma antiga — com os acentos retirados e o que não couber em ASCII
+    /// imprimível trocado por sublinhado.
+    /// </summary>
+    private static string ContentDispositionDeAnexo(string nome)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+
+        string composto = nome.Normalize(NormalizationForm.FormC);
+        string semAcento = string.Concat(composto
+            .Normalize(NormalizationForm.FormD)
+            .Where(static c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+            .Select(static c => c is >= ' ' and <= '~' and not '"' and not '\\' ? c : '_'));
+
+        return $"attachment; filename=\"{semAcento}\"; filename*=UTF-8''{Uri.EscapeDataString(composto)}";
     }
 
     private async Task GarantirBucketExisteAsync(string bucket, CancellationToken cancellationToken)

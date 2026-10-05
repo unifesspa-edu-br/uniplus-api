@@ -27,6 +27,14 @@
 
   <ItemGroup>
     <!--
+      A política de leitura anônima do acervo público, a mesma que o docker-compose aplica: o
+      MinioContainerFixture a aplica com o mesmo comando, e os testes leem o acervo como o cidadão.
+    -->
+    <None Include="..\..\docker\minio\acervo-publico.policy.json" Link="Hosting\acervo-publico.policy.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
       TestAuthHandler reutiliza AuthenticationProblemDetailsWriter do código produtivo
       para emitir o mesmo body problem+json (RFC 9457) em 401/403 dentro do test host.
     -->

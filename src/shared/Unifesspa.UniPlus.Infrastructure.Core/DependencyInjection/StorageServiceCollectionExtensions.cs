@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -115,6 +116,10 @@ public static class StorageServiceCollectionExtensions
         // para o GET com Range via URL pre-assinada (a API de alto nível do SDK
         // MinIO não suporta range parcial). AddHttpClient() é idempotente.
         services.AddHttpClient();
+
+        // A assinatura da cópia para o acervo público carimba o instante da requisição. TryAdd:
+        // quem já registrou um relógio continua com o seu.
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IStorageService, MinioStorageService>();
 
         return services;
