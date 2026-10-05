@@ -22,6 +22,9 @@ public sealed class MinioContainerFixture : IAsyncLifetime
     public const string SecretKey = "minioadmin";
     public const string CollectionName = "Minio";
 
+    /// <summary>O bucket do acervo público, com o nome que a política versionada nomeia.</summary>
+    public const string BucketDoAcervoPublico = "uniplus-acervo-publico";
+
     private const ushort ApiPort = 9000;
     private const ushort ConsolePort = 9001;
 
@@ -51,7 +54,40 @@ public sealed class MinioContainerFixture : IAsyncLifetime
     public string Endpoint =>
         $"{_container.Hostname}:{_container.GetMappedPublicPort(ApiPort)}";
 
+    /// <summary>
+    /// Endereço do acervo público pela porta de dados do container, para os testes lerem o objeto
+    /// como o cidadão o lê — anonimamente. Fora daqui o acervo é servido pela borda (ADR-0132).
+    /// </summary>
+    public string EnderecoDoAcervoPublico => $"http://{Endpoint}/{BucketDoAcervoPublico}";
+
     public Task InitializeAsync() => _container.StartAsync();
+
+    /// <summary>
+    /// Cria o bucket do acervo público e aplica a política de leitura anônima versionada em
+    /// <c>docker/minio/acervo-publico.policy.json</c>, pelos mesmos comandos do docker-compose — a
+    /// aplicação nunca cria esse bucket. Idempotente.
+    /// </summary>
+    public async Task ProvisionarAcervoPublicoAsync()
+    {
+        const string CaminhoNoContainer = "/tmp/acervo-publico.policy.json";
+        byte[] politica = await File.ReadAllBytesAsync(
+            Path.Join(AppContext.BaseDirectory, "Hosting", "acervo-publico.policy.json")).ConfigureAwait(false);
+        await _container.CopyAsync(politica, CaminhoNoContainer).ConfigureAwait(false);
+
+        await ExecutarMcAsync("alias", "set", "local", $"http://localhost:{ApiPort}", AccessKey, SecretKey).ConfigureAwait(false);
+        await ExecutarMcAsync("mb", "--ignore-existing", $"local/{BucketDoAcervoPublico}").ConfigureAwait(false);
+        await ExecutarMcAsync("anonymous", "set-json", CaminhoNoContainer, $"local/{BucketDoAcervoPublico}").ConfigureAwait(false);
+    }
+
+    private async Task ExecutarMcAsync(params string[] argumentos)
+    {
+        ExecResult resultado = await _container.ExecAsync(["mc", .. argumentos]).ConfigureAwait(false);
+        if (resultado.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"mc {string.Join(' ', argumentos.Take(2))} falhou ({resultado.ExitCode}): {resultado.Stderr}");
+        }
+    }
 
     public async Task DisposeAsync() =>
         await _container.DisposeAsync().ConfigureAwait(false);

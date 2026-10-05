@@ -38,7 +38,48 @@ public interface IStorageService
     /// que fazer com isso (ex.: tratar como excedido).
     /// </summary>
     Task<Stream> DownloadLimitadoAsync(string bucket, string nomeArquivo, long limiteBytes, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Copia, dentro do armazenamento, o objeto de origem para o destino como objeto <b>imutável de
+    /// leitura pública</b>: grava nele o tipo do conteúdo, a política de cache perpétuo, o nome com
+    /// que o arquivo se apresenta a quem o baixa e os metadados de procedência. Os bytes não passam
+    /// pela aplicação.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Nunca sobrescreve.</b> Destino existente é o resultado de uma cópia anterior — o endereço
+    /// é derivado do conteúdo e da procedência —, e nada é gravado: devolve <see langword="false"/>.
+    /// </para>
+    /// <para>
+    /// <b>Não cria o bucket de destino.</b> O bucket público nasce com a política de leitura anônima
+    /// que a infraestrutura aplica; criado aqui, nasceria privado e os endereços divulgados
+    /// responderiam 403 sem que nada acusasse. Bucket ausente é exceção.
+    /// </para>
+    /// </remarks>
+    /// <returns><see langword="true"/> quando copiou; <see langword="false"/> quando o destino já existia.</returns>
+    Task<bool> CopiarComoObjetoPublicoAsync(
+        string bucketOrigem,
+        string chaveOrigem,
+        string bucketDestino,
+        string chaveDestino,
+        ApresentacaoDoObjetoPublico apresentacao,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>Metadados de um objeto armazenado, obtidos via stat/HEAD sem baixar o conteúdo.</summary>
 public sealed record ObjetoMetadados(long TamanhoBytes, string ContentType);
+
+/// <summary>
+/// O que o objeto público precisa dizer a quem o baixa, gravado nele porque nenhuma aplicação está
+/// no caminho da leitura.
+/// </summary>
+/// <param name="ContentType">Tipo do conteúdo.</param>
+/// <param name="NomeDeApresentacao">Nome legível com que o arquivo é salvo; sem ele, o nome seria a chave.</param>
+/// <param name="Procedencia">
+/// Metadados de procedência, por nome sem prefixo (ex.: <c>sha256</c>). Valores em ASCII: são
+/// identificadores, nunca dado pessoal.
+/// </param>
+public sealed record ApresentacaoDoObjetoPublico(
+    string ContentType,
+    string NomeDeApresentacao,
+    IReadOnlyDictionary<string, string> Procedencia);
