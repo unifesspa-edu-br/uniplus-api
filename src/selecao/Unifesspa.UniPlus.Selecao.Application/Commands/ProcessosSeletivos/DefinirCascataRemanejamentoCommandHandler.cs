@@ -115,7 +115,7 @@ public static class DefinirCascataRemanejamentoCommandHandler
             // A checagem de coerência ENTRE itens (ordem duplicada/não contígua, destino
             // repetido) pressupõe destinos já válidos e não roda aqui — mas fallback e limites
             // de contagem não dependem disso, e não podem desaparecer do lote só porque outro
-            // item também falhou (achado de revisão).
+            // item também falhou.
             List<FieldError> checagensIndependentes = ConfiguracaoCascataRemanejamento.ValidarFallbackELimitesIndependentesDeItens(
                 command.FallbackCodigo, command.Destinos.Count, command.Destinos.Select(d => d?.ModalidadeOrigemCodigo));
             return Result<MutacaoAceita>.ValidationFailure([.. checagensIndependentes, .. itemErros]);
@@ -206,10 +206,10 @@ public static class DefinirCascataRemanejamentoCommandHandler
                 StringComparer.Ordinal);
 
         // Conjunto de origens já conferidas — não uma contagem. Um esquema_args corrompido
-        // que repita uma origem não pode "cobrir" outra origem por coincidência de contagem
-        // (achado de revisão): a origem repetida é rejeitada explicitamente por Add devolver
-        // false na segunda ocorrência, e a checagem final compara o CONJUNTO de origens
-        // conferidas contra o conjunto exigido pela cascata, não o tamanho de cada um.
+        // que repita uma origem não pode "cobrir" outra origem por coincidência de contagem.
+        // A origem repetida é rejeitada explicitamente por Add devolver false na segunda
+        // ocorrência, e a checagem final compara o CONJUNTO de origens conferidas contra o
+        // conjunto exigido pela cascata, não o tamanho de cada um.
         HashSet<string> origensConferidas = new(StringComparer.Ordinal);
         foreach (JsonElement itemOrigem in ordensElemento.EnumerateArray())
         {
