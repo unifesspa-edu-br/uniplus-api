@@ -29,6 +29,18 @@ env:
 cors:
   allowedOrigins: []
 
+# Acervo publico (ADR-0132): bucket dedicado ao documento de ato publicado, de
+# leitura anonima de objeto, e o endereco pelo qual a borda o serve. O link de
+# download divulgado no contrato publico e enderecoBase + chave do objeto.
+# Fora de Development, AddUniPlusAcervoPublico().ValidateOnStart() rejeita
+# enderecoBase vazio ou sem https — sem ele o pod crashloopa no startup.
+# enderecoBase e o nome da borda, nunca a porta de dados do MinIO. A aplicacao
+# nao cria o bucket nem aplica politica: ambos sao provisionados pela infra.
+# Viram as env vars AcervoPublico__Bucket e AcervoPublico__EnderecoBase.
+acervoPublico:
+  bucket: uniplus-acervo-publico
+  enderecoBase: ""
+
 # Redes de onde o proxy que termina o TLS alcanca a aplicacao, em notacao CIDR.
 # Fora de Development, AddReverseProxyConfiguration().ValidateOnStart() rejeita
 # lista vazia — sem ao menos uma entrada o pod crashloopa no startup.
