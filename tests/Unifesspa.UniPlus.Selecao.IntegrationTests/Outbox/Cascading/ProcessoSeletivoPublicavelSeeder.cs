@@ -33,16 +33,18 @@ internal static class ProcessoSeletivoPublicavelSeeder
     /// Se a fase única também abre o pedido de isenção, dividindo a fase entre a inscrição e a isenção.
     /// </param>
     /// <param name="complementar">Configuração a mais do cenário, aplicada antes de gravar.</param>
+    /// <param name="tipo">O tipo do processo; sem ele, SiSU.</param>
     public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearAsync(
         SelecaoDbContext db,
         string nome,
         bool coletaSolicitacaoIsencao = false,
-        Action<ProcessoSeletivo>? complementar = null)
+        Action<ProcessoSeletivo>? complementar = null,
+        TipoProcessoSnapshot? tipo = null)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, tipo ?? TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         Result etapasResult = processo.DefinirEtapas([
             EtapaProcesso.Criar(

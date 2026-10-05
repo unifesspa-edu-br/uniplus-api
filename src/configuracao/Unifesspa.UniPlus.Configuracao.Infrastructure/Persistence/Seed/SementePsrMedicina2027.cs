@@ -2,11 +2,16 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A configuração do Processo Seletivo Regular Unificado de Medicina 2027 que existe ao subir o
@@ -31,6 +36,9 @@ public static class SementePsrMedicina2027
 {
     /// <summary>O tipo de processo do edital de Medicina.</summary>
     public const string TipoProcessoCodigo = "PSR";
+
+    /// <summary>O identificador fixo do tipo de processo semeado.</summary>
+    public static Guid TipoProcessoId => Id(TabelaTipoProcesso, 1);
 
     private const string PontoInscricao = "INSCRICAO";
     private const string PontoHabilitacao = "HABILITACAO";
@@ -59,6 +67,16 @@ public static class SementePsrMedicina2027
     private const int TabelaVersaoDoTermo = 3;
     private const int TabelaFato = 4;
     private const int TabelaValor = 5;
+    private const int TabelaModelo = 6;
+
+    /// <summary>Os tipos de endereço em que o formulário pede o nome da comunidade.</summary>
+    private static readonly string[] LocalidadesComComunidade = ["ALDEIA", "COMUNIDADE", "QUILOMBO"];
+
+    /// <summary>O modelo do formulário de inscrição de Medicina.</summary>
+    public const string ModeloDeInscricao = "PSR_MEDICINA_2027_INSCRICAO";
+
+    /// <summary>O modelo do formulário de habilitação de Medicina.</summary>
+    public const string ModeloDeHabilitacao = "PSR_MEDICINA_2027_HABILITACAO";
 
     /// <summary>Um termo da inscrição: o código pelo qual o modelo o cita, o nome, o texto e a base legal.</summary>
     public sealed record TermoDaSemente(int N, string Codigo, string Nome, string Texto, string BaseLegal)
@@ -206,6 +224,178 @@ public static class SementePsrMedicina2027
         return comandos;
     }
 
+    /// <summary>
+    /// Os comandos que gravam os dois modelos, ativos. O conteúdo é construído pelos records do
+    /// domínio e conferido por <see cref="ModeloFormulario.Criar"/> — estrutura, blocos por finalidade
+    /// e grafo das regras —, e serializado pelo mesmo conversor que a aplicação usa para ler.
+    /// </summary>
+    /// <remarks>
+    /// O modelo de inscrição é gravado sem a seção dos dados básicos: a API a repõe ao editar o modelo
+    /// e ao aplicá-lo ao processo. Por isso as regras do modelo não citam os dados básicos.
+    /// </remarks>
+    public static IReadOnlyList<string> ComandosDosModelos() =>
+    [
+        ComandoDoModelo(1, ModeloDeInscricao, "Inscrição — Medicina 2027",
+            "Formulário de inscrição do Processo Seletivo Regular Unificado de Medicina 2027.",
+            FinalidadeFormulario.Inscricao, ConteudoDaInscricao()),
+        ComandoDoModelo(2, ModeloDeHabilitacao, "Habilitação — Medicina 2027",
+            "Formulário de habilitação dos convocados no Processo Seletivo Regular Unificado de Medicina 2027.",
+            FinalidadeFormulario.Habilitacao, ConteudoDaHabilitacao()),
+    ];
+
+    /// <summary>Os comandos que apagam os modelos semeados, para o <c>Down</c> da migration.</summary>
+    public static IReadOnlyList<string> ComandosDeRemocaoDosModelos() =>
+    [
+        $"DELETE FROM configuracao.modelos_formulario WHERE id::text LIKE '5e3d{TabelaModelo:D4}-%';",
+    ];
+
+    private static ConteudoDoModelo ConteudoDaInscricao()
+    {
+        const string endereco = "ENDERECO";
+        const string escolaridade = "ESCOLARIDADE";
+        const string cotas = "RESERVA_DE_VAGAS";
+        const string bonus = "BONUS_REGIONAL";
+
+        return new(
+            "Inscrição no Processo Seletivo Regular Unificado de Medicina 2027",
+            [
+                Secao(endereco, 1, "Endereço", "Informações sobre o local de residência."),
+                Secao(escolaridade, 2, "Ensino médio", "Como você concluiu o ensino médio."),
+                Secao(cotas, 3, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
+                Secao(bonus, 4, "Bônus regional", "Pedido do bônus regional previsto no edital."),
+                Bloco("MODALIDADES", 5, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
+                Bloco("DOCUMENTOS", 6, BlocoSistema.ComprovacaoDocumental, "Documentos"),
+                Bloco("REVISAO", 7, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
+            ],
+            [
+                Campo("TIPO_ENDERECO", 101, endereco, "Tipo de endereço", TipoRenderizacao.SelecaoUnica,
+                    "Indique se o endereço de residência fica em zona urbana, zona rural, aldeia, comunidade tradicional, quilombo, vila ou outro tipo de localidade."),
+                Campo("NOME_COMUNIDADE", 102, endereco, "Nome da aldeia, comunidade ou quilombo", TipoRenderizacao.Texto,
+                    "Informe o nome da aldeia, da comunidade tradicional ou do quilombo em que você reside.",
+                    exibicao: Se("TIPO_ENDERECO", Operador.Em, LocalidadesComComunidade), formato: "LIVRE"),
+                Campo("FORMA_CONCLUSAO_EM", 103, escolaridade, "Forma de conclusão do ensino médio", TipoRenderizacao.SelecaoUnica,
+                    "Escolha como você concluiu o ensino médio: curso regular, Educação de Jovens e Adultos (EJA), ENCCEJA, exame de proficiência ou ENEM."),
+                Campo("PCD", 104, cotas, "Pessoa com deficiência", TipoRenderizacao.Booleano,
+                    "Responda sim se você é pessoa com deficiência. A condição é comprovada por laudo, conforme o edital."),
+                Campo("TIPO_DEFICIENCIA", 105, cotas, "Tipo de deficiência", TipoRenderizacao.SelecaoUnica,
+                    "Indique o tipo de deficiência, entre os que o processo seletivo considera.",
+                    exibicao: Se("PCD", Operador.Igual, true)),
+                Campo("CONCORRER_PCD", 106, cotas, "Deseja concorrer às vagas para pessoas com deficiência", TipoRenderizacao.Booleano,
+                    "Responda sim para concorrer às vagas reservadas a pessoas com deficiência.",
+                    exibicao: Se("PCD", Operador.Igual, true)),
+                Campo("EGRESSO_ESCOLA_PUBLICA", 107, cotas, "Cursou todo o ensino médio em escola pública", TipoRenderizacao.Booleano,
+                    "Responda sim se você cursou integralmente o ensino médio em escola pública."),
+                Campo("CONCORRER_EP", 108, cotas, "Deseja concorrer às vagas para egressos de escola pública", TipoRenderizacao.Booleano,
+                    "Responda sim para concorrer às vagas reservadas a quem cursou o ensino médio em escola pública.",
+                    exibicao: Se("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, true)),
+                Campo("CONCORRER_PPI", 109, cotas, "Deseja concorrer às vagas para pretos, pardos e indígenas", TipoRenderizacao.Booleano,
+                    "Para quem se autodeclara preto, pardo ou indígena. Responda sim para concorrer às vagas reservadas a esse grupo."),
+                Campo("QUILOMBOLA", 110, cotas, "Quilombola", TipoRenderizacao.Booleano,
+                    "Responda sim se você se autodeclara quilombola."),
+                Campo("CONCORRER_Q", 111, cotas, "Deseja concorrer às vagas para quilombolas", TipoRenderizacao.Booleano,
+                    "Responda sim para concorrer às vagas reservadas a quilombolas.",
+                    exibicao: Se("QUILOMBOLA", Operador.Igual, true)),
+                Campo("BAIXA_RENDA", 112, cotas, "Renda familiar bruta mensal por pessoa de até um salário mínimo", TipoRenderizacao.Booleano,
+                    "Responda sim se a renda familiar bruta mensal por pessoa é igual ou inferior a um salário mínimo. A renda é comprovada na habilitação."),
+                Campo("CONCORRER_RENDA", 113, cotas, "Deseja concorrer às vagas com critério de renda", TipoRenderizacao.Booleano,
+                    "Responda sim para concorrer às vagas reservadas por critério de renda.",
+                    exibicao: Se("BAIXA_RENDA", Operador.Igual, true)),
+                Campo("CONDICAO_ATENDIMENTO", 114, cotas, "Atendimento especializado", TipoRenderizacao.SelecaoMultipla,
+                    "Se precisar de atendimento especializado para realizar as etapas do processo, escolha os recursos necessários. Deixe em branco se não precisar.",
+                    obrigatoriedade: Obrigatoriedade.Nunca),
+                Campo("SOLICITA_BONUS_REGIONAL", 115, bonus, "Deseja solicitar o bônus regional", TipoRenderizacao.Booleano,
+                    "Responda sim para pedir o bônus regional previsto no edital."),
+                Campo("MUNICIPIO_EM_AREA_BONUS", 116, bonus, "Município da área do bônus regional", TipoRenderizacao.SelecaoUnica,
+                    "Escolha o município da área do bônus regional em que você reside, entre os que o edital lista.",
+                    exibicao: Se("SOLICITA_BONUS_REGIONAL", Operador.Igual, true)),
+            ],
+            [
+                Termo(Termos[0], 1),
+                Termo(Termos[1], 2),
+                Termo(Termos[2], 3, exibicao: Se("CONCORRER_RENDA", Operador.Igual, true)),
+            ],
+            [],
+            []);
+    }
+
+    private static ConteudoDoModelo ConteudoDaHabilitacao()
+    {
+        const string conclusao = "CONCLUSAO_ENSINO_MEDIO";
+        const string familia = "COMPOSICAO_FAMILIAR";
+
+        return new(
+            "Habilitação no Processo Seletivo Regular Unificado de Medicina 2027",
+            [
+                Secao(conclusao, 1, "Conclusão do ensino médio e vínculos", "Situação da conclusão do ensino médio e vínculos com outras instituições."),
+                Secao(familia, 2, "Composição familiar", "Destina-se a quem foi convocado em vaga com critério de renda: informe as pessoas que compõem o seu grupo familiar, incluindo você."),
+                Bloco("DOCUMENTOS", 3, BlocoSistema.ComprovacaoDocumental, "Documentos"),
+                Bloco("REVISAO", 4, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
+            ],
+            [
+                Campo("CERTIFICADO_EM_EMITIDO", 1, conclusao, "O certificado de conclusão do ensino médio já foi emitido", TipoRenderizacao.Booleano,
+                    "Responda não se a escola ainda não emitiu o certificado. Nesse caso, apresente a declaração de conclusão e o termo de responsabilidade.",
+                    exibicao: Se("FORMA_CONCLUSAO_EM", Operador.Igual, "REGULAR")),
+                Campo("HABILITACAO_POR_PROCURADOR", 2, conclusao, "A habilitação é feita por procurador", TipoRenderizacao.Booleano,
+                    "Responda sim se outra pessoa fará a habilitação em seu nome. O procurador apresenta a procuração e o próprio documento de identificação."),
+                Campo("VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", 3, conclusao, "Tem matrícula em outra instituição pública de ensino superior ou bolsa do ProUni", TipoRenderizacao.Booleano,
+                    "Responda sim se você tem matrícula ativa em outra instituição pública de ensino superior ou é bolsista do ProUni."),
+            ],
+            [],
+            ["FORMA_CONCLUSAO_EM"],
+            [
+                new GrupoDoModelo(
+                    familia, 4, familia, "Membros da composição familiar", Minimo: 1, Maximo: null, Exibicao: null,
+                    Obrigatoriedade.Sempre,
+                    [
+                        Campo(CandidatoComoMembro.FatoParentesco, 1, null, "Parentesco com você", TipoRenderizacao.SelecaoUnica,
+                            "Para quem foi convocado em vaga com critério de renda. Indique o parentesco deste membro com você; para você mesmo, escolha \"O próprio candidato\"."),
+                        Campo("CATEGORIA_RENDA", 2, null, "Categorias de renda", TipoRenderizacao.SelecaoMultipla,
+                            "Escolha todas as fontes de renda deste membro. Elas definem os documentos de renda a apresentar."),
+                        Campo("SOB_GUARDA", 3, null, "Menor sob guarda", TipoRenderizacao.Booleano,
+                            "Responda sim se este membro é menor de idade sob a sua guarda ou a de alguém do grupo familiar."),
+                    ],
+                    IncluiCandidato: true),
+            ]);
+    }
+
+    private static EtapaDoModelo Secao(string codigo, int ordem, string titulo, string descricao) =>
+        new(codigo, ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, titulo, descricao, null, null);
+
+    private static EtapaDoModelo Bloco(string codigo, int ordem, BlocoSistema bloco, string titulo) =>
+        new(codigo, ordem, TipoEtapaFormulario.Bloco, bloco, titulo, null, null, null);
+
+    private static ItemDoModelo Campo(
+        string fato, int ordem, string? etapa, string rotulo, TipoRenderizacao tipo, string ajuda,
+        PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null, string? formato = null) =>
+        new(fato, ordem, etapa, rotulo, tipo, formato, ajuda, obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, [], PedirConfirmacao: false);
+
+    private static TermoDoModelo Termo(TermoDaSemente termo, int ordem, PredicadoDnf? exibicao = null) =>
+        new(termo.Codigo, ordem, termo.TermoId, termo.VersaoId, exibicao, Obrigatoriedade.Sempre);
+
+    /// <summary>A condição única "fato operador valor", como predicado de uma cláusula só.</summary>
+    private static PredicadoDnf Se<T>(string fato, Operador operador, T valor)
+    {
+        CondicaoDnf condicao = Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)), $"condição sobre {fato}");
+        return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas([(1, condicao)]), $"predicado sobre {fato}");
+    }
+
+    private static string ComandoDoModelo(
+        int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
+    {
+        ModeloFormulario modelo = Exigir(
+            ModeloFormulario.Criar(codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo,
+                new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)),
+            $"modelo {codigo}");
+        Exigir(modelo.Ativar(), $"ativação do modelo {codigo}");
+
+        return Inserir("modelos_formulario", "id",
+            ("id", Uuid(Id(TabelaModelo, n))), ("codigo", Texto(modelo.Codigo)), ("nome", Texto(modelo.Nome)),
+            ("descricao", Texto(modelo.Descricao)), ("finalidade", Texto(EstruturaFormulario.ParaToken(modelo.Finalidade))),
+            ("tipo_processo_codigo", Texto(modelo.TipoProcessoCodigo)),
+            ("conteudo", $"{Texto(ConteudoDoModeloJson.Serializar(modelo.Conteudo))}::jsonb"),
+            ("ativo", Logico(modelo.Ativo)), ("created_at", Momento(Instante)));
+    }
+
     /// <summary>Os identificadores que a semente grava, para o <c>Down</c> da migration apagá-los.</summary>
     public static IReadOnlyList<string> ComandosDeRemocao() =>
     [
@@ -222,7 +412,7 @@ public static class SementePsrMedicina2027
         // O tipo de processo é reaproveitado pelo código quando o ambiente já o tem: os modelos o
         // citam pelo código, e nada depende do identificador dele.
         return Inserir("tipos_processo", "codigo",
-            ("id", Uuid(Id(TabelaTipoProcesso, 1))), ("codigo", Texto(tipo.Codigo)), ("nome", Texto(tipo.Nome)),
+            ("id", Uuid(TipoProcessoId)), ("codigo", Texto(tipo.Codigo)), ("nome", Texto(tipo.Nome)),
             ("descricao", Texto(tipo.Descricao)), ("ativo", Logico(tipo.Ativo)), ("created_at", Momento(Instante)));
     }
 
