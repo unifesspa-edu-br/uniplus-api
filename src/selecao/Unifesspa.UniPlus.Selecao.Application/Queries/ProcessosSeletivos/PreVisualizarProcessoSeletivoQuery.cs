@@ -64,26 +64,10 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         (Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias, List<FieldError> erros) = LerOcorrencias(simulacao.Grupos);
 
         IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
-        Dictionary<string, FatoCandidatoView> catalogo = fatosDoCatalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-
-        // A oferta de valores é a mesma que a publicação congelaria; o campo que o catálogo deixou
-        // de aceitar é recusado antes, como na publicação.
-        if (ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogo) is { IsFailure: true } naoColetavel)
+        Result<DefinicaoAvaliavel> montada = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, fatosDoCatalogo);
+        if (montada.IsFailure)
         {
-            return Result<PreVisualizacaoDoProcessoDto>.Failure(naoColetavel.Error!);
-        }
-
-        Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> oferta =
-            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo);
-        if (oferta.IsFailure)
-        {
-            return Result<PreVisualizacaoDoProcessoDto>.Failure(oferta.Error!);
-        }
-
-        Result<IReadOnlyList<RegrasDerivacaoFato>> derivacoes = Derivacoes(processo, catalogo);
-        if (derivacoes.IsFailure)
-        {
-            return Result<PreVisualizacaoDoProcessoDto>.Failure(derivacoes.Error!);
+            return Result<PreVisualizacaoDoProcessoDto>.Failure(montada.Error!);
         }
 
         if (erros.Count > 0)
@@ -91,14 +75,9 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
             return Result<PreVisualizacaoDoProcessoDto>.ValidationFailure(erros);
         }
 
-        Dictionary<string, IReadOnlySet<string>> ofertados = oferta.Value!
-            .Where(static v => v.Value is not null)
-            .ToDictionary(static v => v.Key, static v => (IReadOnlySet<string>)v.Value!.Select(static o => o.Codigo).ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal);
-
+        IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados = montada.Value!.Ofertas;
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
-            DefinicaoDoProcesso.Montar(
-                processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
-                derivacoes.Value!, Agregados(processo, fatosDoCatalogo, catalogo)),
+            montada.Value!.Definicao,
             new EntradaAvaliacaoFormulario(
                 RespostaDeCampo.DentroDaOferta(simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ofertados),
                 new HashSet<string>(
@@ -165,48 +144,6 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         }
 
         return (ocorrencias, erros);
-    }
-
-    /// <summary>
-    /// As derivações do processo, cada uma conferida contra o domínio em que contribui: o dinâmico
-    /// do processo, o do catálogo ou, quando o servidor não enumera a fonte, o das próprias regras.
-    /// </summary>
-    private static Result<IReadOnlyList<RegrasDerivacaoFato>> Derivacoes(
-        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
-    {
-        Dictionary<string, DominioDeValores> dominios = VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
-        List<RegrasDerivacaoFato> derivacoes = [];
-        foreach (ConfiguracaoDerivacaoFato configuracao in processo.RegrasDerivacao.OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
-        {
-            IReadOnlyCollection<string> dominio =
-                catalogo.TryGetValue(configuracao.CodigoFato, out FatoCandidatoView? fato) && VocabularioDeFatos.DominioDeContribuicao(fato, dominios) is { } doCatalogo
-                    ? doCatalogo
-                    : [.. configuracao.Regras.Select(static r => r.Contribui).OfType<string>().Distinct(StringComparer.Ordinal)];
-            Result<RegrasDerivacaoFato> regras = configuracao.ParaRegrasDerivacao(dominio);
-            if (regras.IsFailure)
-            {
-                return Result<IReadOnlyList<RegrasDerivacaoFato>>.Failure(regras.Error!);
-            }
-
-            derivacoes.Add(regras.Value!);
-        }
-
-        return Result<IReadOnlyList<RegrasDerivacaoFato>>.Success(derivacoes);
-    }
-
-    /// <summary>Os agregados do catálogo cujo fato de membro é campo de um grupo do processo.</summary>
-    private static List<DefinicaoAgregado> Agregados(
-        ProcessoSeletivo processo, IEnumerable<FatoCandidatoView> fatosDoCatalogo, Dictionary<string, FatoCandidatoView> catalogo)
-    {
-        Dictionary<string, string> grupoDoCampo = processo.GruposColetados
-            .SelectMany(static g => g.Subitens.Select(s => (Campo: s.FatoCodigo, Grupo: g.Codigo)))
-            .ToDictionary(static p => p.Campo, static p => p.Grupo, StringComparer.Ordinal);
-        return [.. VocabularioDeFatos.MembroPorAgregado(fatosDoCatalogo)
-            .Where(a => grupoDoCampo.ContainsKey(a.Value) && catalogo.ContainsKey(a.Value))
-            .OrderBy(static a => a.Key, StringComparer.Ordinal)
-            .Select(a => (Agregado: a.Key, Membro: a.Value, Operacao: AgregadoDeGrupo.OperacaoDoDominio(catalogo[a.Value].Dominio)))
-            .Where(static a => a.Operacao != OperacaoAgregado.Nenhuma)
-            .Select(a => new DefinicaoAgregado(a.Agregado, grupoDoCampo[a.Membro], a.Membro, a.Operacao))];
     }
 
     private static List<FormularioSimuladoDto> Formularios(ProcessoSeletivo processo, AvaliacaoFormulario avaliacao)
