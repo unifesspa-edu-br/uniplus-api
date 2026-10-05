@@ -167,8 +167,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0136](0136-catalogo-de-fatos-do-candidato-administravel.md) | O catálogo de fatos do candidato é administrável: o administrador cadastra fatos declarados e derivados por regra, e os fatos de sistema continuam protegidos — emendada pela ADR-0138: o agregado sobre grupo repetível é declarado pelo administrador | accepted | 2026-09-29 |
 | [0137](0137-formularios-por-finalidade-e-modelos-por-tipo-de-processo.md) | O processo tem um formulário por finalidade (inscrição, isenção, habilitação), com regras no item e modelos por tipo de processo aplicados por cópia — emenda as ADRs 0109 e 0110: codec único até a primeira publicação em produção; emendada em 2026-10-04: a exigência documental declara a finalidade do formulário | accepted | 2026-09-29 |
 | [0138](0138-grupo-repetivel-como-fonte-das-instancias-de-exigencia.md) | O grupo repetível do formulário é a fonte das instâncias da exigência repetida por entidade; fora do grupo, citam-se só os agregados — emenda a ADR-0136: o administrador declara o agregado com `AGREGACAO_GRUPO:` | accepted | 2026-09-29 |
+| [0139](0139-interpretador-de-regras-de-formulario-no-front.md) | O front interpreta as regras do formulário publicadas pela API, e a API valida tudo no envio: o contrato público declara os derivados e agregados que o formulário cita, um conversor de mão dupla garante a completude e um corpus de casos compartilhado mantém as duas implementações iguais | accepted | 2026-10-05 |
 
-> **Nota de numeração:** a sequência de `0001` a `0138` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0139+`.
+> **Nota de numeração:** a sequência de `0001` a `0139` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0140+`.
 
 ## Como adicionar um novo ADR
 
