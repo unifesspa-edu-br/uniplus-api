@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -10,13 +9,15 @@ using Abstractions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
+using Domain.Services;
 
 using DTOs;
+
+using Services;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Serializacao;
 
 /// <summary>
 /// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (RN08, UNI-REQ-0072): projeta os
@@ -111,9 +112,27 @@ public static class ObterFormularioRenderizavelQueryHandler
                 $"A configuração congelada do processo {query.ProcessoSeletivoId} não é um documento legível."));
         }
 
+        // As regras saem do grafo reidratado, pela mesma montagem da pré-visualização: o front
+        // interpreta exatamente o que a API confere (ADR-0139). A reidratação confere a forma de
+        // cada regra e a prova dos bytes, que a projeção da apresentação abaixo não refaz.
+        Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
+        if (reidratado.IsFailure)
+        {
+            return Result<FormularioRenderizavelDto>.Failure(reidratado.Error!);
+        }
+
+        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
+        if (avaliavel.IsFailure)
+        {
+            return Result<FormularioRenderizavelDto>.Failure(avaliavel.Error!);
+        }
+
+        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(
+            avaliavel.Value!.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(query.Finalidade, null), avaliavel.Value.Ofertas);
+
         // O ato da divulgação é o que publicou os modelos que este formulário oferece.
         DocumentosDoAtoNoAcervo acervo = new(versao.ProcessoSeletivoId, divulgado.AtoCriadorId, enderecoNoAcervo.De);
-        return Projetar(envelope, query.Finalidade, acervo) ?? NaoEncontrado(query.ProcessoSeletivoId);
+        return Projetar(envelope, query.Finalidade, acervo, recorte) ?? NaoEncontrado(query.ProcessoSeletivoId);
     }
 
     /// <summary>
@@ -149,7 +168,7 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// </summary>
     /// <remarks>Nulo quando a versão vigente não tem formulário da finalidade pedida.</remarks>
     private static Result<FormularioRenderizavelDto>? Projetar(
-        JsonObject envelope, FinalidadeFormulario finalidade, DocumentosDoAtoNoAcervo acervo)
+        JsonObject envelope, FinalidadeFormulario finalidade, DocumentosDoAtoNoAcervo acervo, RecorteDaFinalidade recorte)
     {
         string token = EstruturaFormulario.ParaToken(finalidade);
         if (!envelope.TryGetPropertyValue("formularios", out JsonNode? formulariosNode) || formulariosNode is not JsonArray formularios)
@@ -165,8 +184,8 @@ public static class ObterFormularioRenderizavelQueryHandler
         }
 
         if (!TentarStringOpcional(formulario, "titulo", out string? titulo)
-            || !TentarTermos(formulario, out List<TermoExigidoDto> termos)
-            || !TentarEtapas(formulario, out List<EtapaFormularioDto> etapas)
+            || !TentarTermos(formulario, finalidade, out List<TermoRenderizavelDto> termos)
+            || !TentarEtapas(formulario, finalidade, out List<SecaoRenderizavelDto> etapas)
             || !TentarComprovacaoDocumental(envelope, formulario, token, etapas, acervo, out List<ExigenciaDocumentalCertameDto>? comprovacao))
         {
             return VersaoSemApresentacao();
@@ -203,7 +222,8 @@ public static class ObterFormularioRenderizavelQueryHandler
             return VersaoSemApresentacao();
         }
 
-        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(token, titulo, etapas, termos, fatos, comprovacao, grupos));
+        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(
+            token, titulo, etapas, termos, fatos, comprovacao, grupos, recorte.Regras, recorte.Pressupostos));
     }
 
     /// <summary>Um fato coletado do envelope — item ou campo de grupo — na forma de renderização.</summary>
@@ -216,12 +236,8 @@ public static class ObterFormularioRenderizavelQueryHandler
             || !TentarInt(fato, "ordem", out int ordem)
             || !TentarString(fato, "rotulo", out string rotulo)
             || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
-            || !TentarObrigatoriedade(fato, out ObrigatoriedadeDto? obrigatoriedade)
             || !TentarStringOpcional(fato, "ajuda", out string? ajuda)
             || !TentarBool(fato, "pedirConfirmacao", out bool pedirConfirmacao)
-            || !TentarRestricoes(fato, out List<RestricaoValorDto>? restricoes)
-            || !TentarImpedimento(fato, out ImpedimentoDto? impedimento)
-            || !TentarPredicado(fato, "precondicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
             || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
             || !FormatoCoerente(tipoRenderizacao, formato))
         {
@@ -229,34 +245,7 @@ public static class ObterFormularioRenderizavelQueryHandler
         }
 
         dto = new FatoFormularioRenderizavelDto(
-            fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade!, precondicao, valoresSelecionaveis, etapaCodigo, formato,
-            ajuda, pedirConfirmacao, restricoes!, impedimento);
-        return true;
-    }
-
-    /// <summary>A resposta que impede a inscrição, congelada no item: nula quando o item não tem.</summary>
-    private static bool TentarImpedimento(JsonObject fato, out ImpedimentoDto? impedimento)
-    {
-        impedimento = null;
-        if (!fato.TryGetPropertyValue("impedimento", out JsonNode? node))
-        {
-            return false;
-        }
-
-        if (node is null)
-        {
-            return true;
-        }
-
-        if (node is not JsonObject bloco
-            || !TentarString(bloco, "mensagem", out string mensagem)
-            || !TentarPredicado(bloco, "quando", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? quando)
-            || quando is null)
-        {
-            return false;
-        }
-
-        impedimento = new ImpedimentoDto(quando, mensagem);
+            fatoCodigo, ordem, rotulo, tipoRenderizacao, valoresSelecionaveis, etapaCodigo, formato, ajuda, pedirConfirmacao);
         return true;
     }
 
@@ -292,8 +281,6 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarInt(grupo, "minimo", out int minimo)
                 || !grupo.ContainsKey("maximo") || !TentarIntOpcional(grupo, "maximo", out int? maximo)
                 || !TentarBool(grupo, "incluiCandidato", out bool incluiCandidato)
-                || !TentarPredicado(grupo, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao)
-                || !TentarObrigatoriedade(grupo, out ObrigatoriedadeDto? obrigatoriedade)
                 || !grupo.TryGetPropertyValue("subitens", out JsonNode? subitensNode) || subitensNode is not JsonArray subitens)
             {
                 return false;
@@ -319,7 +306,7 @@ public static class ObterFormularioRenderizavelQueryHandler
                 return false;
             }
 
-            lidos.Add(new GrupoFormularioRenderizavelDto(codigo, ordem, etapaCodigo, rotulo, minimo, maximo, incluiCandidato, exibicao, obrigatoriedade!, campos));
+            lidos.Add(new GrupoFormularioRenderizavelDto(codigo, ordem, etapaCodigo, rotulo, minimo, maximo, incluiCandidato, campos));
         }
 
         grupos = lidos;
@@ -379,8 +366,11 @@ public static class ObterFormularioRenderizavelQueryHandler
         return node is JsonValue jv && jv.TryGetValue(out valor);
     }
 
-    /// <summary>As etapas do formulário, na ordem congelada; forma inesperada é versão sem apresentação.</summary>
-    private static bool TentarEtapas(JsonObject formulario, out List<EtapaFormularioDto> etapas)
+    /// <summary>
+    /// As seções e os blocos do formulário, na ordem congelada, com o código com que a seção aparece
+    /// nas regras; forma inesperada é versão sem apresentação.
+    /// </summary>
+    private static bool TentarEtapas(JsonObject formulario, FinalidadeFormulario finalidade, out List<SecaoRenderizavelDto> etapas)
     {
         etapas = [];
         if (!formulario.TryGetPropertyValue("etapas", out JsonNode? node) || node is not JsonArray itens)
@@ -397,13 +387,13 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarStringOpcional(etapa, "bloco", out string? bloco)
                 || !TentarString(etapa, "titulo", out string titulo)
                 || !TentarStringOpcional(etapa, "descricao", out string? descricao)
-                || !TentarStringOpcional(etapa, "aviso", out string? aviso)
-                || !TentarPredicado(etapa, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao))
+                || !TentarStringOpcional(etapa, "aviso", out string? aviso))
             {
                 return false;
             }
 
-            etapas.Add(new EtapaFormularioDto(codigo, ordem, tipo, bloco, titulo, descricao, aviso, exibicao));
+            string? codigoNasRegras = tipo == EstruturaFormulario.TipoSecao ? DefinicaoDoProcesso.CodigoDaEtapa(finalidade, codigo) : null;
+            etapas.Add(new SecaoRenderizavelDto(codigo, codigoNasRegras, ordem, tipo, bloco, titulo, descricao, aviso));
         }
 
         return true;
@@ -413,7 +403,7 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// Os termos exigidos do formulário (UNI-REQ-0086), na ordem congelada; qualquer forma fora
     /// da esperada é versão sem apresentação.
     /// </summary>
-    private static bool TentarTermos(JsonObject formulario, out List<TermoExigidoDto> termos)
+    private static bool TentarTermos(JsonObject formulario, FinalidadeFormulario finalidade, out List<TermoRenderizavelDto> termos)
     {
         termos = [];
         if (!formulario.TryGetPropertyValue("termos", out JsonNode? node) || node is not JsonArray itens)
@@ -432,145 +422,15 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarString(termo, "texto", out string texto)
                 || !TentarString(termo, "baseLegal", out string baseLegal)
                 || !TentarString(termo, "formaAceite", out string formaAceite)
-                || !TentarString(termo, "hashVersao", out string hashVersao)
-                || !TentarPredicado(termo, "exibicao", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao)
-                || !TentarObrigatoriedade(termo, out ObrigatoriedadeDto? obrigatoriedade))
+                || !TentarString(termo, "hashVersao", out string hashVersao))
             {
                 return false;
             }
 
-            termos.Add(new TermoExigidoDto(
-                codigo, ordem, termoId, versaoId, nome, texto, baseLegal, formaAceite, hashVersao, exibicao, obrigatoriedade!));
+            termos.Add(new TermoRenderizavelDto(
+                codigo, DefinicaoDoProcesso.CodigoDoTermo(finalidade, codigo), ordem, termoId, versaoId, nome, texto, baseLegal, formaAceite, hashVersao));
         }
 
-        return true;
-    }
-
-    /// <summary>A obrigatoriedade congelada de um item ou de um termo: tipo e predicado.</summary>
-    private static bool TentarObrigatoriedade(JsonObject pai, out ObrigatoriedadeDto? obrigatoriedade)
-    {
-        obrigatoriedade = null;
-        if (!pai.TryGetPropertyValue("obrigatoriedade", out JsonNode? node)
-            || node is not JsonObject objeto
-            || !TentarString(objeto, "tipo", out string tipo)
-            || !TentarPredicado(objeto, "predicado", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? predicado))
-        {
-            return false;
-        }
-
-        obrigatoriedade = new ObrigatoriedadeDto(tipo, predicado);
-        return true;
-    }
-
-    /// <summary>As restrições de valor congeladas do item, cada uma com as chaves do seu tipo.</summary>
-    private static bool TentarRestricoes(JsonObject fato, out List<RestricaoValorDto>? restricoes)
-    {
-        restricoes = null;
-        if (!fato.TryGetPropertyValue("restricoes", out JsonNode? node) || node is not JsonArray array)
-        {
-            return false;
-        }
-
-        List<RestricaoValorDto> lidas = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject restricao
-                || !TentarString(restricao, "tipo", out string tipo)
-                || !TentarRestricao(restricao, tipo, out RestricaoValorDto? lida))
-            {
-                return false;
-            }
-
-            lidas.Add(lida!);
-        }
-
-        restricoes = lidas;
-        return true;
-    }
-
-    private static bool TentarRestricao(JsonObject restricao, string tipo, out RestricaoValorDto? lida)
-    {
-        lida = RestricaoValorJson.TipoDoToken(tipo) switch
-        {
-            TipoRestricaoValor.FaixaNumerica
-                when TentarDecimalOpcional(restricao, "minimo", out decimal? minimo) && TentarDecimalOpcional(restricao, "maximo", out decimal? maximo)
-                => new RestricaoValorDto(tipo, minimo, maximo, null, null),
-            TipoRestricaoValor.TamanhoTexto
-                when TentarIntOpcional(restricao, "minimo", out int? minimo) && TentarIntOpcional(restricao, "maximo", out int? maximo)
-                => new RestricaoValorDto(tipo, minimo, maximo, null, null),
-            TipoRestricaoValor.OpcoesPermitidas when TentarEntradas(restricao, out List<OpcoesCondicionadasDto>? entradas)
-                => new RestricaoValorDto(tipo, null, null, entradas, null),
-            TipoRestricaoValor.OpcoesDasRespostas or TipoRestricaoValor.MunicipiosDaUf when TentarTextos(restricao, "fatos", out List<string>? fatos)
-                => new RestricaoValorDto(tipo, null, null, null, fatos),
-            _ => null,
-        };
-        return lida is not null;
-    }
-
-    private static bool TentarEntradas(JsonObject restricao, out List<OpcoesCondicionadasDto>? entradas)
-    {
-        entradas = null;
-        if (!restricao.TryGetPropertyValue("entradas", out JsonNode? node) || node is not JsonArray array)
-        {
-            return false;
-        }
-
-        List<OpcoesCondicionadasDto> lidas = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject entrada
-                || !TentarPredicado(entrada, "quando", out List<IReadOnlyList<CondicaoPrecondicaoDto>>? quando)
-                || !TentarTextos(entrada, "valores", out List<string>? valores))
-            {
-                return false;
-            }
-
-            lidas.Add(new OpcoesCondicionadasDto(quando, valores!));
-        }
-
-        entradas = lidas;
-        return true;
-    }
-
-    private static bool TentarTextos(JsonObject objeto, string chave, out List<string>? textos)
-    {
-        textos = null;
-        if (!objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is not JsonArray array)
-        {
-            return false;
-        }
-
-        List<string> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonValue valor || !valor.TryGetValue(out string? texto))
-            {
-                return false;
-            }
-
-            lidos.Add(texto);
-        }
-
-        textos = lidos;
-        return true;
-    }
-
-    /// <summary>Chave ausente ou nula: sucesso, sem valor. Presente: o decimal canônico em texto.</summary>
-    private static bool TentarDecimalOpcional(JsonObject objeto, string chave, out decimal? valor)
-    {
-        valor = null;
-        if (!objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is null)
-        {
-            return true;
-        }
-
-        if (node is not JsonValue texto || !texto.TryGetValue(out string? bruto)
-            || !decimal.TryParse(bruto, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal lido))
-        {
-            return false;
-        }
-
-        valor = lido;
         return true;
     }
 
@@ -598,55 +458,6 @@ public static class ObterFormularioRenderizavelQueryHandler
     }
 
     /// <summary>
-    /// Chave ausente: sucesso, <see langword="null"/> (fato sem pré-condição). Chave presente com
-    /// <c>null</c> explícito: mesmo caso — o encoder nunca emite lista vazia. Chave presente com
-    /// outro tipo, ou uma cláusula/condição malformada por dentro: falha — nunca convertida
-    /// silenciosamente em "sem pré-condição", que mudaria a semântica do campo para incondicional.
-    /// </summary>
-    private static bool TentarPredicado(JsonObject objeto, string chave, out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
-    {
-        precondicao = null;
-        if (!objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is null)
-        {
-            return true;
-        }
-
-        if (node is not JsonArray clausulasNode)
-        {
-            return false;
-        }
-
-        List<IReadOnlyList<CondicaoPrecondicaoDto>> clausulas = [];
-        foreach (JsonNode? clausulaNode in clausulasNode)
-        {
-            if (clausulaNode is not JsonArray condicoesNode)
-            {
-                return false;
-            }
-
-            List<CondicaoPrecondicaoDto> condicoes = [];
-            foreach (JsonNode? condicaoNode in condicoesNode)
-            {
-                if (condicaoNode is not JsonObject condicao
-                    || !TentarString(condicao, "fato", out string fatoCitado)
-                    || !TentarString(condicao, "operador", out string operador)
-                    || !condicao.TryGetPropertyValue("valor", out JsonNode? valorNode)
-                    || valorNode is null)
-                {
-                    return false;
-                }
-
-                condicoes.Add(new CondicaoPrecondicaoDto(fatoCitado, operador, valorNode.Deserialize<JsonElement>()));
-            }
-
-            clausulas.Add(condicoes);
-        }
-
-        precondicao = clausulas;
-        return true;
-    }
-
-    /// <summary>
     /// As exigências do bloco de comprovação documental (UNI-REQ-0144): as da fase e da finalidade do
     /// formulário, na forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade e formatos. A condição
     /// de cada uma e a árvore de satisfação não atravessam este endereço anônimo
@@ -657,7 +468,7 @@ public static class ObterFormularioRenderizavelQueryHandler
         JsonObject envelope,
         JsonObject formulario,
         string finalidade,
-        List<EtapaFormularioDto> etapas,
+        List<SecaoRenderizavelDto> etapas,
         DocumentosDoAtoNoAcervo acervo,
         out List<ExigenciaDocumentalCertameDto>? comprovacao)
     {

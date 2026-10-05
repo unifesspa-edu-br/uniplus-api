@@ -7,11 +7,14 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -167,31 +170,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         Guid processoId = processo.Id;
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
-
-            // A divulgação é a publicidade: sem ela o formulário não é servido, porque a
-            // renderização resolve pela mesma linha que a página do certame serve. No caminho real
-            // ela nasce quando o ato normativo se confirma no registro central; aqui é semeada
-            // direto, porque o que este teste exercita é a projeção, não a materialização.
-            await new CertameDivulgadoRepository(writeContext).AdicionarAsync(
-                CertameDivulgado.Criar(
-                    processoId,
-                    publicar.Value!.NumeroVersao,
-                    publicar.Value!.AtoCriadorId,
-                    new string('a', 64),
-                    versaoProjecao: "1",
-                    new FacetasDoCertameDivulgado(
-                        processo.IdentificadorLegivel!.Value.Valor, processo.Nome, dados.Numero, ["AC"], dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim),
-                    """{"nome":"documento"}""",
-                    TimeProvider.System.GetUtcNow()),
-                CancellationToken.None);
-
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await PersistirDivulgadoAsync(processo, publicar.Value!, dados);
 
         // Duas leituras INDEPENDENTES — dois DbContext distintos, a mesma separação que existe
         // entre duas requisições HTTP de fato diferentes. Nenhum leitor de catálogo é injetado:
@@ -223,5 +202,114 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                 .Using<JsonElement>(c => c.Subject.GetRawText().Should().Be(c.Expectation.GetRawText())).WhenTypeIs<JsonElement>(),
             "duas leituras independentes da MESMA versão publicada — sem catálogo algum na assinatura do " +
             "handler — não têm de onde divergir: o formulário é função pura dos bytes persistidos");
+    }
+
+    [Fact(DisplayName = "As regras do formulário público são as da configuração publicada, recortadas para a finalidade, sem derivado que o formulário não cita")]
+    public async Task Handle_Regras_SaoAsDaConfiguracaoPublicadaRecortadas()
+    {
+        // O corpus rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
+        // que nenhuma regra da inscrição cita e dois agregados sobre a composição familiar, que o
+        // envelope congela e nenhuma regra do formulário cita.
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 9);
+        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo);
+        SnapshotCanonico congelado = Canonicalizer.Canonicalizar(entrada);
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            entrada.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+        await PersistirDivulgadoAsync(processo, publicar.Value!, entrada.Dados);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
+            new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Inscricao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
+            new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
+        lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
+
+        // A mesma montagem sobre a configuração viva, antes de passar pelo envelope: o que o front
+        // interpreta é o que a configuração declarou.
+        EnvelopeReidratado vivo = new(
+            new GrafoConfiguracao(
+                [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
+                [.. processo.CriteriosDesempate], processo.Classificacao!, [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
+                fatosColetados: [.. processo.FatosColetados], regrasDerivacao: [.. processo.RegrasDerivacao], formularios: [.. processo.Formularios],
+                termosExigidos: [.. processo.TermosExigidos], gruposColetados: [.. processo.GruposColetados]),
+            entrada.Dados, entrada.HashDocumento, entrada.FusoHorario, retificacao: null, conformidade: null,
+            valoresSelecionaveisCongelados: entrada.ValoresSelecionaveisCongelados, agregadosDosGrupos: entrada.AgregadosDosGrupos);
+        DefinicaoAvaliavel daConfiguracao = DefinicaoAvaliavelDoProcesso.DoCongelado(vivo).Value!;
+        RecorteDaFinalidade esperado = RecorteDaFinalidade.De(
+            daConfiguracao.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null), daConfiguracao.Ofertas);
+
+        // O envelope guarda as condições na ordem canônica: a equivalência é a da avaliação, em cada
+        // combinação das respostas que as regras da inscrição citam.
+        foreach ((string? corRaca, string? renda, bool rural) in
+            from cor in new[] { "PRETA", "BRANCA", null }
+            from faixa in new[] { "ATE_1_SM", "ACIMA_1_SM", null }
+            from trabalhaNoCampo in new[] { true, false }
+            select (cor, faixa, trabalhaNoCampo))
+        {
+            EntradaAvaliacaoFormulario entradaDaAvaliacao = Respostas(corRaca, renda, rural);
+            JsonSerializer.Serialize(lido.Value!.Regras.Avaliar(entradaDaAvaliacao).Value, JsonSerializerOptions.Web).Should().Be(
+                JsonSerializer.Serialize(esperado.Regras.Avaliar(entradaDaAvaliacao).Value, JsonSerializerOptions.Web),
+                $"o envelope preserva cada regra, a oferta e os agregados (cor {corRaca ?? "sem resposta"}, renda {renda ?? "sem resposta"}, campo {rural})");
+        }
+
+        lido.Value!.Pressupostos.Should().Equal(esperado.Pressupostos);
+        lido.Value.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");
+        lido.Value.Regras.Etapas.Should().Contain(e => e.Exibicao != null, "a seção de pertencimento só aparece para quem se declarou preto");
+        processo.RegrasDerivacao.Should().HaveCount(3);
+        lido.Value.Regras.Derivacoes.Should().BeEmpty("nenhuma regra da inscrição cita derivado, e o contrato não publica o que o formulário não usa");
+    }
+
+    private static EntradaAvaliacaoFormulario Respostas(string? corRaca, string? renda, bool trabalhaNoCampo)
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal);
+        if (corRaca is not null)
+        {
+            respostas["COR_RACA"] = JsonSerializer.SerializeToElement(corRaca);
+        }
+
+        if (renda is not null)
+        {
+            respostas["RENDA"] = JsonSerializer.SerializeToElement(renda);
+        }
+
+        return new EntradaAvaliacaoFormulario(
+            respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
+            {
+                ["COMPOSICAO_FAMILIAR"] =
+                [
+                    new("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                    {
+                        ["TRABALHADOR_RURAL"] = JsonSerializer.SerializeToElement(trabalhaNoCampo),
+                    }),
+                ],
+            });
+    }
+
+    /// <summary>
+    /// Grava o processo, a versão publicada e a divulgação. No caminho real a divulgação nasce quando
+    /// o ato normativo se confirma no registro central; aqui é semeada direto, porque o que se
+    /// exercita é a projeção.
+    /// </summary>
+    private async Task PersistirDivulgadoAsync(ProcessoSeletivo processo, VersaoConfiguracao versao, DadosEdital dados)
+    {
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+        await repository.AdicionarAsync(processo, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
+        await new CertameDivulgadoRepository(writeContext).AdicionarAsync(
+            CertameDivulgado.Criar(
+                processo.Id,
+                versao.NumeroVersao,
+                versao.AtoCriadorId,
+                new string('a', 64),
+                versaoProjecao: "1",
+                new FacetasDoCertameDivulgado(
+                    processo.IdentificadorLegivel!.Value.Valor, processo.Nome, dados.Numero, ["AC"], dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim),
+                """{"nome":"documento"}""",
+                TimeProvider.System.GetUtcNow()),
+            CancellationToken.None);
+        await writeContext.SaveChangesAsync(CancellationToken.None);
     }
 }

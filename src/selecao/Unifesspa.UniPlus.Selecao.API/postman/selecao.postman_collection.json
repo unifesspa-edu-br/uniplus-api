@@ -3543,6 +3543,59 @@
           ]
         },
         {
+          "name": "Formulário público de inscrição (v2: apresentação, regras e pressupostos)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.formulario.v2+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/formularios/INSCRICAO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "formularios",
+                "INSCRICAO"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Rota anônima. O certame só é servido depois que o ato normativo se confirma no registro central;",
+                  "// antes disso a resposta é 404, a mesma de um processo inexistente.",
+                  "pm.test('200 com regras e pressupostos, ou 404 enquanto o certame não é divulgado', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "  if (pm.response.code === 200) {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.finalidade).to.eql('INSCRICAO');",
+                  "    pm.expect(j.regras.etapas).to.be.an('array');",
+                  "    pm.expect(j.pressupostos).to.be.an('array');",
+                  "    j.fatosColetados.forEach(f => pm.expect(f).to.not.have.property('obrigatoriedade'));",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Obter Snapshot Vigente (2ª leitura — hash estável, RN08)",
           "request": {
             "method": "GET",

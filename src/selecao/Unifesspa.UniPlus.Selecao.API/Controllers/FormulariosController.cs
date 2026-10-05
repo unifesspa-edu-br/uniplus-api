@@ -48,8 +48,9 @@ public sealed class FormulariosController : ControllerBase
     }
 
     /// <summary>
-    /// Renderização pública do formulário de uma finalidade — título, etapas, termos e os fatos
-    /// coletados com sua apresentação, projetados da versão que o certame <b>divulgado</b> serve.
+    /// Renderização pública do formulário de uma finalidade — título, seções, termos e os fatos
+    /// coletados com sua apresentação, e as regras que o front interpreta (ADR-0139), projetados da
+    /// versão que o certame <b>divulgado</b> serve.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -66,7 +67,7 @@ public sealed class FormulariosController : ControllerBase
     /// </remarks>
     [HttpGet("processos-seletivos/{id:guid}/formularios/{finalidade}")]
     [AllowAnonymous]
-    [VendorMediaType(Resource = "formulario", Versions = [1])]
+    [VendorMediaType(Resource = "formulario", Versions = [2])]
     [ProducesResponseType(typeof(FormularioRenderizavelDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
