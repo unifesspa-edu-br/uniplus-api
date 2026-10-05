@@ -203,14 +203,16 @@ public sealed class ModeloDeDocumento : EntityBase
         _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo sem token."),
     };
 
-    private static string ExtensaoDe(FormatoDeModelo formato) => formato switch
+    /// <summary>A extensão do arquivo no formato, sem o ponto.</summary>
+    public static string ExtensaoDe(FormatoDeModelo formato) => formato switch
     {
         FormatoDeModelo.Docx => "docx",
         FormatoDeModelo.Odt => "odt",
         _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo sem extensão."),
     };
 
-    private static string ContentTypeDe(FormatoDeModelo formato) => formato switch
+    /// <summary>O content-type do arquivo no formato.</summary>
+    public static string ContentTypeDe(FormatoDeModelo formato) => formato switch
     {
         FormatoDeModelo.Docx => ContentTypeDocx,
         FormatoDeModelo.Odt => ContentTypeOdt,

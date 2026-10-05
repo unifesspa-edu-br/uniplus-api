@@ -23,8 +23,7 @@ public sealed class ArquivoArmazenadoStorageService : IArquivoArmazenadoStorage
         ArgumentNullException.ThrowIfNull(options);
 
         _storageService = storageService;
-        _bucket = options.Value.BucketName
-            ?? throw new InvalidOperationException("Storage:BucketName não configurado — obrigatório para o envio de arquivos do processo seletivo.");
+        _bucket = BucketDosArquivosEnviados.De(options.Value);
     }
 
     public Task<string> GerarUrlUploadAsync(string objectKey, string contentType, TimeSpan expiracao, CancellationToken cancellationToken = default) =>

@@ -5,6 +5,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Domain.Entities;
+using Domain.Enums;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -503,6 +505,60 @@ internal static class ProjecaoDoCertamePublicado
     private static bool TentarModelo(JsonObject exigencia, out ModeloDocumentalCertameDto? modelo)
     {
         modelo = null;
+        if (!TentarModeloCongelado(exigencia, out ModeloDaExigencia? congelado))
+        {
+            return false;
+        }
+
+        if (congelado is not null)
+        {
+            modelo = new ModeloDocumentalCertameDto(
+                congelado.NomeArquivo, ModeloDeDocumento.TokenDe(congelado.Formato), congelado.HashSha256);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Os modelos de documento que o edital congelou, um por modelo, na ordem das exigências — o
+    /// que a divulgação publica no acervo. Vazio quando nenhuma exigência oferece modelo.
+    /// </summary>
+    internal static bool TentarModelosCongelados(
+        JsonObject envelope,
+        [NotNullWhen(true)] out List<ModeloDaExigencia>? modelos)
+    {
+        modelos = null;
+        if (!TentarObjeto(envelope, BlocoPublico("documentosExigidos"), out JsonObject? bloco)
+            || !TentarArray(bloco, "exigencias", out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<ModeloDaExigencia> lidos = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject exigencia || !TentarModeloCongelado(exigencia, out ModeloDaExigencia? modelo))
+            {
+                return false;
+            }
+
+            if (modelo is not null && !lidos.Exists(m => m.ModeloId == modelo.ModeloId))
+            {
+                lidos.Add(modelo);
+            }
+        }
+
+        modelos = lidos;
+        return true;
+    }
+
+    /// <summary>
+    /// A cópia do modelo como o envelope a congelou, numa leitura só para o contrato público e para a
+    /// publicação no acervo. Formato fora do vocabulário recusa a leitura.
+    /// </summary>
+    private static bool TentarModeloCongelado(JsonObject exigencia, out ModeloDaExigencia? modelo)
+    {
+        modelo = null;
         if (!exigencia.TryGetPropertyValue("modelo", out JsonNode? node))
         {
             return false;
@@ -514,14 +570,21 @@ internal static class ProjecaoDoCertamePublicado
         }
 
         if (node is not JsonObject bloco
+            || !TentarIdentificador(bloco, "modeloId", out Guid modeloId)
             || !TentarTexto(bloco, "nomeArquivo", out string nomeArquivo)
-            || !TentarTexto(bloco, "formato", out string formato)
+            || !TentarTexto(bloco, "formato", out string token)
             || !TentarTexto(bloco, "hashSha256", out string hash))
         {
             return false;
         }
 
-        modelo = new ModeloDocumentalCertameDto(nomeArquivo, formato, hash);
+        FormatoDeModelo formato = ModeloDeDocumento.FormatoDoToken(token);
+        if (formato == FormatoDeModelo.Nenhum)
+        {
+            return false;
+        }
+
+        modelo = new ModeloDaExigencia(modeloId, nomeArquivo, formato, hash);
         return true;
     }
 
