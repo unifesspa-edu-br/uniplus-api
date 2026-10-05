@@ -58,6 +58,16 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     /// </summary>
     private static readonly Guid AtoDaDivulgacao = Guid.CreateVersion7();
 
+    /// <summary>O acervo público, com o endereço base da borda fixado para o teste.</summary>
+    private static readonly IEnderecoNoAcervoPublico Acervo = CriarAcervo();
+
+    private static IEnderecoNoAcervoPublico CriarAcervo()
+    {
+        IEnderecoNoAcervoPublico acervo = Substitute.For<IEnderecoNoAcervoPublico>();
+        acervo.De(Arg.Any<string>()).Returns(static chamada => new Uri($"https://acervo.teste/{chamada.Arg<string>()}"));
+        return acervo;
+    }
+
     private static Task<Result<FormularioRenderizavelDto>> HandleAsync(
         IProcessoSeletivoRepository repository,
         Guid processoId,
@@ -68,6 +78,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             repository,
             divulgadoRepository ?? RepositorioComDivulgacao(processoId),
             RegistroReconhecendoVersaoCorrente,
+            Acervo,
             CancellationToken.None);
 
     /// <summary>Repositório cuja linha de divulgação existe — o processo É público.</summary>
@@ -336,8 +347,17 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             [("Documento de identidade", "Geral"), ("Autodeclaração étnico-racial", "Condicional")],
             "só as exigências da fase da habilitação, na ordem congelada");
         habilitacao.Value.ComprovacaoDocumental!.Select(static e => e.Modelo).Should().BeEquivalentTo(
-            [null, new ModeloDocumentalCertameDto("Autodeclaração.odt", "ODT", new string('a', 64))],
-            "a exigência com modelo o traz, sem o id do cadastro; a sem modelo, nulo");
+            [
+                null,
+                new ModeloDocumentalCertameDto(
+                    "Autodeclaração.odt",
+                    "ODT",
+                    new string('a', 64),
+                    new Uri(
+                        $"https://acervo.teste/selecao/processos-seletivos/{processoId:D}/atos/{AtoDaDivulgacao:D}"
+                        + $"/modelos-de-documento/0199a000-0000-7000-8000-0000000000aa/{new string('a', 64)}.odt")),
+            ],
+            "a exigência com modelo o traz com o endereço no acervo do ato da divulgação, sem o id do cadastro como campo; a sem modelo, nulo");
         inscricao.Value!.ComprovacaoDocumental.Should().BeNull("o formulário de inscrição não tem o bloco");
 
         static string Exigencia(string nome, string aplicabilidade, string fase, string finalidade, string modelo = "null") => $$"""

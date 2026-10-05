@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
@@ -38,7 +39,7 @@ internal static class EsperaDeAtoRegistrado
     /// <param name="atoPredecessorId">Quando o ato esperado é uma retificação, o ato que ele emenda — só para diagnóstico.</param>
     /// <param name="orcamento">Tempo máximo de espera; <see cref="OrcamentoPadrao"/> (30s) quando omitido.</param>
     public static async Task<AtoNormativo> AguardarAsync(
-        CascadingApiFactory api,
+        MonolitoApiFactory api,
         Guid atoId,
         string checkpoint,
         Guid processoId,

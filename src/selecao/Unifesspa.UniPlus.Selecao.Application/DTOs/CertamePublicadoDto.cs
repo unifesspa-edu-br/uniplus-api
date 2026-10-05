@@ -121,11 +121,15 @@ public sealed record ExigenciaDocumentalCertameDto(
 
 /// <summary>
 /// O modelo editável que a exigência oferece ao candidato, como o edital o congelou: o nome do
-/// arquivo, o formato e o hash que atesta o conteúdo. O endereço de download vem do acervo público
-/// (ADR-0132), não daqui.
+/// arquivo, o formato, o hash que atesta o conteúdo e o endereço de onde baixá-lo.
 /// </summary>
 /// <param name="Formato"><c>DOCX</c> ou <c>ODT</c>.</param>
-public sealed record ModeloDocumentalCertameDto(string NomeArquivo, string Formato, string HashSha256);
+/// <param name="UrlDownload">
+/// Endereço do arquivo no acervo público (ADR-0132): permanente, de leitura anônima e nunca
+/// pré-assinado. É do ato que publicou o modelo, e continua servindo o mesmo arquivo depois de uma
+/// retificação.
+/// </param>
+public sealed record ModeloDocumentalCertameDto(string NomeArquivo, string Formato, string HashSha256, Uri UrlDownload);
 
 /// <summary>Uma condição de atendimento especializado ofertada no certame.</summary>
 public sealed record CondicaoAtendimentoCertameDto(string Codigo, string Nome);

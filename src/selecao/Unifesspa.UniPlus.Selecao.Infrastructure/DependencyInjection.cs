@@ -84,12 +84,14 @@ public static class SelecaoInfrastructureRegistration
         // cross-cutting compartilhado entre módulos, já ligado no host.
         services.AddScoped<IArquivoArmazenadoStorage, ArquivoArmazenadoStorageService>();
 
-        // Acervo público (ADR-0132): a escrita, pela materialização da divulgação. As opções vêm de
-        // AddUniPlusAcervoPublico, ligado no host junto do storage.
+        // Acervo público (ADR-0132): a escrita, pela materialização da divulgação, e o endereço que
+        // os contratos públicos divulgam. As opções vêm de AddUniPlusAcervoPublico, ligado no host
+        // junto do storage.
         services.AddScoped<IAcervoPublico>(sp => new AcervoPublicoService(
             () => sp.GetRequiredService<IStorageService>(),
             sp.GetRequiredService<IOptions<StorageOptions>>(),
             sp.GetRequiredService<IOptions<AcervoPublicoOptions>>()));
+        services.AddSingleton<IEnderecoNoAcervoPublico, EnderecoNoAcervoPublico>();
 
         return services;
     }
