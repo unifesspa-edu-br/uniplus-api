@@ -60,19 +60,19 @@ public static class FatoCandidatoSeed
     /// </summary>
     public const HipoteseLegalTratamento HipoteseLegal = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
 
-    private const string FinalidadeReservaDeVagas =
+    internal const string FinalidadeReservaDeVagas =
         "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.";
 
     private const string FinalidadeAtendimento =
         "Oferta de atendimento especializado ao candidato na realização das etapas do processo seletivo.";
 
-    private const string FinalidadeResidencia =
+    internal const string FinalidadeResidencia =
         "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.";
 
-    private const string FinalidadeComposicaoFamiliar =
+    internal const string FinalidadeComposicaoFamiliar =
         "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.";
 
-    private const string FinalidadeRequisitos =
+    internal const string FinalidadeRequisitos =
         "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.";
 
     private const string FinalidadeIdentificacao =

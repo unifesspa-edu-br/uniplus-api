@@ -75,7 +75,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         // Os quatro blocos do formulário de cotas. A elegibilidade de PPI é COR_RACA
         // (categórico); as demais são booleanas. O opt-in é sempre booleano.
@@ -107,7 +107,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         // Quatro fatos já existiam antes desta leva e são REUTILIZADOS, não recadastrados:
         // renomeá-los violaria a imutabilidade de código da ADR-0111.
@@ -162,7 +162,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(43);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
@@ -191,7 +191,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Sensivel)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
@@ -339,7 +339,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         string[] derivados = [.. fatos
             .Where(f => f.Origem == OrigemFato.Derivado)
@@ -358,7 +358,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         fatos.Where(static f => f.Codigo != "MODALIDADE_CONVOCACAO").Should().OnlyContain(static f => f.PontoResolucao == "INSCRICAO");
         fatos.Single(static f => f.Codigo == "MODALIDADE_CONVOCACAO").PontoResolucao.Should().Be("RESULTADO_FINAL");
@@ -369,7 +369,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         string[] multivalorados = [.. fatos
             .Where(f => f.Cardinalidade == CardinalidadeFato.Multivalorado)
@@ -386,7 +386,10 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking().ToListAsync();
+        // Só os valores dos fatos de sistema: o catálogo também tem fatos do administrador semeados.
+        List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking()
+            .Where(v => ctx.FatosCandidato.Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
+            .ToListAsync();
         valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(32);
 
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
@@ -456,7 +459,9 @@ public sealed class FatoCandidatoPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
         var reader = new FatoCandidatoReader(ctx);
 
-        IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
+        // Os fatos de sistema entre os listados: o catálogo também tem fatos do administrador semeados.
+        IReadOnlyList<FatoCandidatoView> views =
+            [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
         views.Should().HaveCount(43);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
@@ -604,7 +609,7 @@ public sealed class FatoCandidatoPersistenceTests
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         fatos.Should().HaveCount(esperado.Length);
 
