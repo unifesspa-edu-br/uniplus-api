@@ -15,3 +15,5 @@ data:
   {{- range $index, $network := .Values.reverseProxy.trustedNetworks }}
   ReverseProxy__TrustedNetworks__{{ $index }}: {{ $network | quote }}
   {{- end }}
+  AcervoPublico__Bucket: {{ .Values.acervoPublico.bucket | quote }}
+  AcervoPublico__EnderecoBase: {{ .Values.acervoPublico.enderecoBase | quote }}
