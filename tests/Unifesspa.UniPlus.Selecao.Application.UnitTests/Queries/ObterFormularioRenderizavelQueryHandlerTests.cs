@@ -11,8 +11,10 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura do <see cref="ObterFormularioRenderizavelQueryHandler"/> (Story #559/#1059): a
@@ -115,7 +117,26 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         registro.Capacidades.Returns(schemaVersionsReconhecidas
             .Select(static v => new CapacidadeCodec(v, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null))
             .ToList());
+        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(EnvelopeSemFormularios()));
         return registro;
+    }
+
+    /// <summary>
+    /// A reidratação de um processo sem formulários: as regras saem vazias, e os testes daqui olham
+    /// a apresentação. As regras que saem do grafo reidratado são provadas contra a codificação real
+    /// na suíte de integração.
+    /// </summary>
+    private static EnvelopeReidratado EnvelopeSemFormularios()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
+        return new EnvelopeReidratado(
+            new GrafoConfiguracao(
+                [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+                processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
+                [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null),
+            DadosEdital.Criar(
+                "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null);
     }
 
     [Fact(DisplayName = "Certame sem divulgação não serve formulário, e a recusa não diz por quê")]
@@ -440,8 +461,8 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
     }
 
-    [Fact(DisplayName = "Item com obrigatoriedade QUANDO é projetado com o predicado, a ajuda e o pedido de confirmação")]
-    public async Task Handle_ObrigatoriedadeQuando_ProjetaRegras()
+    [Fact(DisplayName = "Item é projetado com a ajuda e o pedido de confirmação")]
+    public async Task Handle_Item_ProjetaAjudaEConfirmacao()
     {
         const string envelope = """
             {
@@ -463,41 +484,11 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
 
         FatoFormularioRenderizavelDto fato = resultado.Value!.FatosColetados.Should().ContainSingle().Which;
-        fato.Obrigatoriedade.Tipo.Should().Be("QUANDO");
-        fato.Obrigatoriedade.Predicado.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("COR_RACA");
         fato.Ajuda.Should().Be("Renda por pessoa da família");
         fato.PedirConfirmacao.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Item com impedimento é projetado com a condição e a mensagem ao candidato")]
-    public async Task Handle_ItemComImpedimento_ProjetaOImpedimento()
-    {
-        const string envelope = """
-            {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ]}],
-              "gruposColetados": [], "fatosColetados": [
-                {"fatoCodigo": "VINCULO_PARFOR", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 1,
-                 "rotulo": "Vínculo com o PARFOR", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
-                 "ajuda": null, "pedirConfirmacao": false, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null,
-                 "impedimento": {"quando": [[{"fato": "VINCULO_PARFOR", "operador": "IGUAL", "valor": true}]],
-                   "mensagem": "Quem tem vínculo com o PARFOR não pode se inscrever neste processo."}}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
-
-        ImpedimentoDto impedimento = resultado.Value!.FatosColetados.Should().ContainSingle().Which.Impedimento!;
-        impedimento.Mensagem.Should().Be("Quem tem vínculo com o PARFOR não pode se inscrever neste processo.");
-        impedimento.Quando.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("VINCULO_PARFOR");
-    }
-
-    [Fact(DisplayName = "O grupo repetível da finalidade é projetado com as regras e os campos de cada ocorrência, sem máximo quando não o declara e com o candidato como membro")]
+    [Fact(DisplayName = "O grupo repetível da finalidade é projetado com os campos de cada ocorrência, sem máximo quando não o declara e com o candidato como membro")]
     public async Task Handle_GrupoRepetivel_ProjetaComOsCampos()
     {
         const string envelope = """
@@ -531,7 +522,6 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         grupo.Codigo.Should().Be("COMPOSICAO_FAMILIAR");
         grupo.Maximo.Should().BeNull();
         grupo.IncluiCandidato.Should().BeTrue();
-        grupo.Exibicao.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("COR_RACA");
         grupo.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MENOR_SOB_GUARDA");
     }
 
@@ -647,42 +637,6 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
     }
 
-    [Fact(DisplayName = "As restrições de valor congeladas são projetadas por tipo, com os limites e os grupos de opções")]
-    public async Task Handle_Restricoes_ProjetaPorTipo()
-    {
-        const string envelope = """
-            {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ]}],
-              "gruposColetados": [], "fatosColetados": [
-                {"fatoCodigo": "IDADE", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0,
-                 "rotulo": "Idade", "tipoRenderizacao": "NUMERO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
-                 "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "precondicao": null, "valoresSelecionaveis": null,
-                 "restricoes": [{"tipo": "FAIXA_NUMERICA", "minimo": "16.0000", "maximo": null}]},
-                {"fatoCodigo": "COR_RACA", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 1,
-                 "rotulo": "Cor ou raça", "tipoRenderizacao": "SELECAO_UNICA", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
-                 "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "precondicao": null,
-                 "valoresSelecionaveis": [{"valorCodigo": "PRETA", "descricao": null, "ordem": 0}],
-                 "restricoes": [{"tipo": "OPCOES_PERMITIDAS", "entradas": [
-                   {"quando": [[{"fato": "IDADE", "operador": "MAIOR_IGUAL", "valor": 18}]], "valores": ["PRETA"]}]}]}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        RestricaoValorDto faixa = resultado.Value!.FatosColetados[0].Restricoes.Should().ContainSingle().Which;
-        faixa.Should().BeEquivalentTo(new { Tipo = "FAIXA_NUMERICA", Minimo = 16m, Maximo = (decimal?)null });
-        OpcoesCondicionadasDto grupo = resultado.Value.FatosColetados[1].Restricoes.Should().ContainSingle().Which.Entradas.Should().ContainSingle().Which;
-        grupo.Valores.Should().Equal("PRETA");
-        grupo.Quando.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("IDADE");
-    }
-
     [Fact(DisplayName = "Campo de texto é projetado com o formato e sem valores selecionáveis")]
     public async Task Handle_CampoDeTexto_ProjetaFormato()
     {
@@ -776,15 +730,13 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Titulo.Should().Be("Formulário de Inscrição");
-        TermoExigidoDto termo = resultado.Value!.Termos.Should().ContainSingle().Which;
+        TermoRenderizavelDto termo = resultado.Value!.Termos.Should().ContainSingle().Which;
         termo.Texto.Should().Be("Declaro pertencer à comunidade.");
-        termo.Exibicao.Should().ContainSingle().Which.Should().ContainSingle().Which.Fato.Should().Be("COR_RACA");
-        termo.Obrigatoriedade.Should().Be(new ObrigatoriedadeDto("SEMPRE", null));
+        termo.CodigoNasRegras.Should().Be($"{FinalidadeFormulario.Inscricao}:{termo.Codigo}", "o termo é achado nas regras pelo código com a finalidade");
         FatoFormularioRenderizavelDto fato = resultado.Value!.FatosColetados.Should().ContainSingle().Which;
         fato.FatoCodigo.Should().Be("COR_RACA");
         fato.Rotulo.Should().Be("Cor ou raça");
         fato.TipoRenderizacao.Should().Be("SELECAO_UNICA");
-        fato.Obrigatoriedade.Tipo.Should().Be("SEMPRE");
         fato.ValoresSelecionaveis.Should().SatisfyRespectively(
             primeiro =>
             {
@@ -828,6 +780,31 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             $"'{VersaoCorrenteReconhecida}' — bytes coincidentemente válidos na forma atual não a devolvem " +
             "à lista de capacidades reconhecidas");
         resultado.Error!.Code.Should().Be("EnvelopeCodec.VersaoDesconhecida");
+    }
+
+    [Fact(DisplayName = "Versão cujos bytes não se provam não serve formulário: a recusa da reidratação aflora")]
+    public async Task Handle_ReidratacaoRecusada_AfloraARecusa()
+    {
+        const string envelope = """
+            {
+              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "etapas": [], "termos": []}],
+              "gruposColetados": [], "fatosColetados": []
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+        IRegistroCodecsEnvelope registro = CriarRegistroReconhecendo(VersaoCorrenteReconhecida);
+        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(
+            Result<EnvelopeReidratado>.Failure(new DomainError("EnvelopeCodec.HashDivergente", "Os bytes não batem com o hash.")));
+
+        Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
+            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao),
+            MockComVersaoVigente(processoId, envelope),
+            RepositorioComDivulgacao(processoId),
+            registro,
+            Acervo,
+            CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be("EnvelopeCodec.HashDivergente", "as regras saem da reidratação, e uma versão que não se prova não é servida");
     }
 
     /// <summary>

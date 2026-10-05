@@ -171,8 +171,14 @@ public sealed class FormulariosEndpointTests
         fato.GetProperty("fatoCodigo").GetString().Should().Be("COR_RACA");
         fato.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
         fato.GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
-        fato.GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
         fato.GetProperty("etapaCodigo").GetString().Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        fato.TryGetProperty("obrigatoriedade", out _).Should().BeFalse("as regras do campo estão só nas regras do formulário");
+        JsonElement regraDoCampo = root.GetProperty("regras").GetProperty("etapas").EnumerateArray()
+            .SelectMany(static e => e.GetProperty("itens").EnumerateArray())
+            .Single(static i => i.GetProperty("fatoCodigo").GetString() == "COR_RACA");
+        regraDoCampo.GetProperty("obrigatoriedade").GetString().Should().Be("SEMPRE");
+        regraDoCampo.GetProperty("oferta").GetArrayLength().Should().BePositive("a resposta fora da oferta congelada não vale");
+        root.GetProperty("pressupostos").GetArrayLength().Should().Be(0);
     }
 
     [Fact(DisplayName = "GET público exige revalidação, inclusive na recusa anterior à divulgação")]

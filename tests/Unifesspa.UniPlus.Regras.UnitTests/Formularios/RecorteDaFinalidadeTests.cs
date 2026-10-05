@@ -69,6 +69,32 @@ public sealed class RecorteDaFinalidadeTests
         recorte.Regras.Ofertas().Keys.Should().Equal("CERTIFICADO");
     }
 
+    [Fact(DisplayName = "O agregado sai quando a regra o cita e o grupo é da finalidade; o de grupo de outra finalidade é pressuposto")]
+    public void Recorte_AgregadoCitado_SaiComOGrupoDaFinalidade()
+    {
+        DefinicaoFormulario processo = new(
+            [
+                new DefinicaoEtapa("INSCRICAO:FAMILIA", null, [], [Grupo("FAMILIA_INSCRICAO", "TRABALHA_NO_CAMPO")]),
+                new DefinicaoEtapa("HABILITACAO:FAMILIA", null,
+                    [new DefinicaoItem("DECLARACAO_RURAL", Quando("PROPRIEDADE_NA_FAMILIA", true), Obrigatoriedade.Sempre, [])],
+                    [Grupo("PROPRIEDADES", "TEM_PROPRIEDADE", Quando("RURAL_NA_FAMILIA", true))]),
+            ],
+            [],
+            [],
+            [
+                new DefinicaoAgregado("RURAL_NA_FAMILIA", "FAMILIA_INSCRICAO", "TRABALHA_NO_CAMPO", OperacaoAgregado.Existe),
+                new DefinicaoAgregado("PROPRIEDADE_NA_FAMILIA", "PROPRIEDADES", "TEM_PROPRIEDADE", OperacaoAgregado.Existe),
+            ]);
+
+        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(processo, Habilitacao);
+
+        recorte.Regras.Agregados.Select(static a => a.Codigo).Should().Equal("PROPRIEDADE_NA_FAMILIA");
+        recorte.Pressupostos.Should().Equal(["RURAL_NA_FAMILIA"], "o grupo que o agregado agrega foi respondido na inscrição");
+    }
+
+    private static DefinicaoGrupo Grupo(string codigo, string subitem, PredicadoDnf? exibicao = null) =>
+        new(codigo, exibicao, Obrigatoriedade.Nunca, 0, null, [new DefinicaoItem(subitem, null, Obrigatoriedade.Sempre, [])]);
+
     /// <summary>
     /// A inscrição pergunta o tipo de escola; a habilitação pede o certificado de quem estudou em escola
     /// pública e a declaração de quem foi convocado em vaga de escola pública. A derivação que nenhum
