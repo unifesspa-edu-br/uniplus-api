@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// A fase em que um fato citado por gatilho de exigência fica conhecido no processo (UNI-REQ-0144,
 /// UNI-REQ-0077): a mais tardia entre a fase do catálogo e a do formulário que o produz, e a do
 /// derivado não antes das suas dependências, nem o agregado antes do grupo que tem o fato de membro;
-/// fato só da isenção fica na fase da isenção. O grupo que alimenta agregado citado é obrigatório
+/// fato só da isenção é citado só por documento do formulário de isenção. O grupo que alimenta agregado citado é obrigatório
 /// sempre, ele e o campo (UNI-REQ-0074).
 /// </summary>
 public sealed class FaseEfetivaDosFatosTests
@@ -85,14 +85,33 @@ public sealed class FaseEfetivaDosFatosTests
         return (processo, inscricao, isencao, habilitacao);
     }
 
+    /// <summary>Inscrição e isenção respondidas na mesma fase, cada uma com o fato que só ela coleta.</summary>
+    private static (ProcessoSeletivo Processo, FaseCronograma Compartilhada) ProcessoComInscricaoEIsencaoNaMesmaFase()
+    {
+        FaseCronograma compartilhada = Fase(1, "INSCRICAO", coletaInscricao: true, coletaIsencao: true);
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: compartilhada);
+        processo.DefinirCronogramaFases([compartilhada], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        foreach ((FinalidadeFormulario finalidade, string fato) in new[]
+        {
+            (FinalidadeFormulario.Inscricao, "TEM_RENDA"),
+            (FinalidadeFormulario.IsencaoTaxa, "BOLSISTA"),
+        })
+        {
+            processo.DefinirFormulario(finalidade, compartilhada.Id, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirFatosColetados(finalidade, [Item(fato)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }
+
+        return (processo, compartilhada);
+    }
+
     [Fact(DisplayName = "Fato coletado só na habilitação não é citado por exigência da inscrição, mesmo que o catálogo o dê na inscrição")]
     public void FatoDaHabilitacao_EmExigenciaDaInscricao_Recusa()
     {
         (ProcessoSeletivo processo, FaseCronograma inscricao, _, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho("COMPROVANTE_RENDA", inscricao.Id, TudoNaInscricao, SemAgregados)!.Code
+        processo.RecusaDeFaseDoGatilho("COMPROVANTE_RENDA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, SemAgregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
-        processo.RecusaDeFaseDoGatilho("COMPROVANTE_RENDA", habilitacao.Id, TudoNaInscricao, SemAgregados).Should().BeNull();
+        processo.RecusaDeFaseDoGatilho("COMPROVANTE_RENDA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados).Should().BeNull();
     }
 
     [Fact(DisplayName = "O derivado fica conhecido na fase da sua dependência mais tardia")]
@@ -101,7 +120,7 @@ public sealed class FaseEfetivaDosFatosTests
         (ProcessoSeletivo processo, FaseCronograma inscricao, _, _) = Processo();
         DefinirDerivado(processo, "RENDA_COMPROVADA", "COMPROVANTE_RENDA");
 
-        processo.RecusaDeFaseDoGatilho("RENDA_COMPROVADA", inscricao.Id, TudoNaInscricao, SemAgregados)!.Code
+        processo.RecusaDeFaseDoGatilho("RENDA_COMPROVADA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, SemAgregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
     }
 
@@ -112,9 +131,9 @@ public sealed class FaseEfetivaDosFatosTests
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("DATA_NASCIMENTO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         Dictionary<string, string> catalogo = new(TudoNaInscricao, StringComparer.Ordinal) { ["FAIXA_ETARIA"] = "INSCRICAO" };
 
-        processo.RecusaDeFaseDoGatilho("FAIXA_ETARIA", inscricao.Id, catalogo, SemAgregados)!.Code
+        processo.RecusaDeFaseDoGatilho("FAIXA_ETARIA", inscricao.Id, FinalidadeFormulario.Inscricao, catalogo, SemAgregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
-        processo.RecusaDeFaseDoGatilho("FAIXA_ETARIA", habilitacao.Id, catalogo, SemAgregados).Should().BeNull();
+        processo.RecusaDeFaseDoGatilho("FAIXA_ETARIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, catalogo, SemAgregados).Should().BeNull();
     }
 
     [Fact(DisplayName = "O agregado fica conhecido na fase do formulário do grupo que tem o fato de membro")]
@@ -122,18 +141,18 @@ public sealed class FaseEfetivaDosFatosTests
     {
         (ProcessoSeletivo processo, FaseCronograma inscricao, _, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho("RURAL_NA_FAMILIA", inscricao.Id, TudoNaInscricao, Agregados)!.Code
+        processo.RecusaDeFaseDoGatilho("RURAL_NA_FAMILIA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, Agregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
-        processo.RecusaDeFaseDoGatilho("RURAL_NA_FAMILIA", habilitacao.Id, TudoNaInscricao, Agregados).Should().BeNull();
+        processo.RecusaDeFaseDoGatilho("RURAL_NA_FAMILIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, Agregados).Should().BeNull();
     }
 
-    [Fact(DisplayName = "O agregado sobre grupo do formulário de isenção só é citado na fase da isenção")]
-    public void AgregadoDeGrupoDaIsencao_ForaDaFaseDaIsencao_Recusa()
+    [Fact(DisplayName = "O agregado sobre grupo do formulário de isenção só é citado por documento do formulário de isenção")]
+    public void AgregadoDeGrupoDaIsencao_EmOutraFinalidade_Recusa()
     {
         (ProcessoSeletivo processo, _, _, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho("BOLSISTA_NA_FAMILIA", habilitacao.Id, TudoNaInscricao, Agregados)!.Code
-            .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoForaDaFaseDeIsencao);
+        processo.RecusaDeFaseDoGatilho("BOLSISTA_NA_FAMILIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, Agregados)!.Code
+            .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
     }
 
     [Theory(DisplayName = "Agregado citado por regra viva exige o grupo e o campo de membro obrigatórios sempre")]
@@ -158,24 +177,57 @@ public sealed class FaseEfetivaDosFatosTests
         pendencia.Message.Should().Contain(recusado);
     }
 
-    [Fact(DisplayName = "Fato só da isenção é citado só na fase da isenção, nem mesmo na habilitação, que vem depois")]
-    public void FatoDaIsencao_SoNaFaseDaIsencao()
+    [Fact(DisplayName = "Fato só da isenção é citado só por documento do formulário de isenção, nem mesmo na habilitação, que vem depois")]
+    public void FatoDaIsencao_SoNoFormularioDeIsencao()
     {
         (ProcessoSeletivo processo, _, FaseCronograma isencao, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho("BOLSISTA", habilitacao.Id, TudoNaInscricao, SemAgregados)!.Code
-            .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoForaDaFaseDeIsencao);
-        processo.RecusaDeFaseDoGatilho("BOLSISTA", isencao.Id, TudoNaInscricao, SemAgregados).Should().BeNull();
+        processo.RecusaDeFaseDoGatilho("BOLSISTA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados)!.Code
+            .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
+        processo.RecusaDeFaseDoGatilho("BOLSISTA", isencao.Id, FinalidadeFormulario.IsencaoTaxa, TudoNaInscricao, SemAgregados).Should().BeNull();
     }
 
-    [Fact(DisplayName = "O derivado de fato da isenção também só é citado na fase da isenção")]
-    public void DerivadoDeFatoDaIsencao_ForaDaFaseDaIsencao_Recusa()
+    /// <summary>
+    /// Inscrição e isenção na mesma fase: a fase é a mesma, e só a finalidade da exigência separa o
+    /// documento da isenção, que cita o fato que só ela coleta, do documento da inscrição, que não cita.
+    /// </summary>
+    [Theory(DisplayName = "Na fase que divide inscrição e isenção, o fato só da isenção é citado pelo documento da isenção e recusado no da inscrição")]
+    [InlineData(FinalidadeFormulario.IsencaoTaxa, true)]
+    [InlineData(FinalidadeFormulario.Inscricao, false)]
+    public void FatoDaIsencao_NaFaseCompartilhada_SegueAFinalidade(FinalidadeFormulario finalidade, bool aceito)
+    {
+        (ProcessoSeletivo processo, FaseCronograma compartilhada) = ProcessoComInscricaoEIsencaoNaMesmaFase();
+
+        DomainError? recusa = processo.RecusaDeFaseDoGatilho("BOLSISTA", compartilhada.Id, finalidade, TudoNaInscricao, SemAgregados);
+
+        (recusa is null).Should().Be(aceito);
+        if (!aceito)
+        {
+            recusa!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
+        }
+    }
+
+    /// <summary>
+    /// A exigência sem formulário, na fase que divide inscrição e isenção, cita fato só da isenção: a
+    /// recusa que orienta é a da finalidade que falta, conferida na definição das exigências, e não a
+    /// do gatilho, que levaria a mexer na condição.
+    /// </summary>
+    [Fact(DisplayName = "Sem a finalidade que a fase pede, o gatilho não é recusado: a recusa é a da finalidade")]
+    public void FinalidadeAusente_NaoRecusaOGatilho()
+    {
+        (ProcessoSeletivo processo, FaseCronograma compartilhada) = ProcessoComInscricaoEIsencaoNaMesmaFase();
+
+        processo.RecusaDeFaseDoGatilho("BOLSISTA", compartilhada.Id, finalidadeDaExigencia: null, TudoNaInscricao, SemAgregados).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O derivado de fato da isenção também só é citado por documento do formulário de isenção")]
+    public void DerivadoDeFatoDaIsencao_EmOutraFinalidade_Recusa()
     {
         (ProcessoSeletivo processo, _, _, FaseCronograma habilitacao) = Processo();
         DefinirDerivado(processo, "ISENTO_POR_BOLSA", "BOLSISTA");
 
-        processo.RecusaDeFaseDoGatilho("ISENTO_POR_BOLSA", habilitacao.Id, TudoNaInscricao, SemAgregados)!.Code
-            .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoForaDaFaseDeIsencao);
+        processo.RecusaDeFaseDoGatilho("ISENTO_POR_BOLSA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados)!.Code
+            .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
     }
 
     [Fact(DisplayName = "Fato que o catálogo situa em fase fora do cronograma é recusado")]
@@ -184,7 +236,7 @@ public sealed class FaseEfetivaDosFatosTests
         (ProcessoSeletivo processo, _, _, FaseCronograma habilitacao) = Processo();
 
         processo.RecusaDeFaseDoGatilho(
-                "MODALIDADE_CONVOCACAO", habilitacao.Id, new Dictionary<string, string>(StringComparer.Ordinal) { ["MODALIDADE_CONVOCACAO"] = "RESULTADO_FINAL" }, SemAgregados)!
+                "MODALIDADE_CONVOCACAO", habilitacao.Id, FinalidadeFormulario.Habilitacao, new Dictionary<string, string>(StringComparer.Ordinal) { ["MODALIDADE_CONVOCACAO"] = "RESULTADO_FINAL" }, SemAgregados)!
             .Code.Should().Be(DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma);
     }
 }

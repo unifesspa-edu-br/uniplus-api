@@ -120,13 +120,13 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             .Error!.Code.Should().Be(FatoAusente);
     }
 
-    [Fact(DisplayName = "Exigência na fase da habilitação não cita fato que só a base da inscrição coleta; na fase da inscrição, cita")]
+    [Fact(DisplayName = "Exigência da habilitação não cita fato que só a base da inscrição coleta; a da inscrição, cita")]
     public void Exigencia_GatilhoEmFatoNaoGarantido_SoNaFaseDaPropriaFinalidade()
     {
         Cenario cenario = Publicado();
 
-        cenario.Processo.RecusaDeFaseDoGatilho(Novo, cenario.Habilitacao.Id, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
-        cenario.Processo.RecusaDeFaseDoGatilho(Novo, cenario.Inscricao.Id, SemCatalogo, SemCatalogo)
+        cenario.Processo.RecusaDeFaseDoGatilho(Novo, cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
+        cenario.Processo.RecusaDeFaseDoGatilho(Novo, cenario.Inscricao.Id, FinalidadeFormulario.Inscricao, SemCatalogo, SemCatalogo)
             .Should().BeNull("as exigências da inscrição seguem a versão do próprio formulário");
     }
 
@@ -140,12 +140,21 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)], Sessao).IsSuccess.Should().BeTrue();
 
-        processo.RecusaDeFaseDoGatilho("COMPROVANTE", cenario.Matricula.Id, SemCatalogo, SemCatalogo)
+        processo.RecusaDeFaseDoGatilho("COMPROVANTE", cenario.Matricula.Id, finalidadeDaExigencia: null, SemCatalogo, SemCatalogo)
             .Should().BeNull("ninguém preencheu a habilitação antes desta retificação");
     }
 
-    [Fact(DisplayName = "Com dois formulários na fase da exigência, nenhum é o próprio dela: o fato de cada um precisa estar em todas as versões")]
-    public void Exigencia_FaseComDoisFormularios_ExigeGarantiaDosDois()
+    /// <summary>
+    /// Com dois formulários na mesma fase, a exigência diz a que formulário pertence: o fato novo da
+    /// própria finalidade segue a versão do formulário dela, e só o da outra precisa estar em todas as
+    /// versões publicadas.
+    /// </summary>
+    [Theory(DisplayName = "Com dois formulários na fase da exigência, só o fato do outro formulário precisa estar em todas as versões")]
+    [InlineData(FinalidadeFormulario.Inscricao, Novo, true)]
+    [InlineData(FinalidadeFormulario.Inscricao, "LAUDO", false)]
+    [InlineData(FinalidadeFormulario.Habilitacao, "LAUDO", true)]
+    [InlineData(FinalidadeFormulario.Habilitacao, Novo, false)]
+    public void Exigencia_FaseComDoisFormularios_SegueAPropriaFinalidade(FinalidadeFormulario finalidade, string fato, bool aceito)
     {
         FaseCronograma unica = Fase(1, FormularioProcesso.CodigoFaseHabilitacao, coletaInscricao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: unica);
@@ -160,8 +169,13 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             .IsSuccess.Should().BeTrue();
         AbrirSessao(processo, [primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
 
-        processo.RecusaDeFaseDoGatilho(Novo, unica.Id, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
-        processo.RecusaDeFaseDoGatilho("LAUDO", unica.Id, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
+        DomainError? recusa = processo.RecusaDeFaseDoGatilho(fato, unica.Id, finalidade, SemCatalogo, SemCatalogo);
+
+        (recusa is null).Should().Be(aceito);
+        if (!aceito)
+        {
+            recusa!.Code.Should().Be(FatoAusente);
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -190,11 +204,11 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     {
         Cenario cenario = Publicado();
         cenario.Processo.DefinirRegrasDerivacao(Derivacoes(indireto: false, "TEM_RENDA"), Sessao).IsSuccess.Should().BeTrue();
-        cenario.Processo.RecusaDeFaseDoGatilho("RENDA_DECLARADA", cenario.Habilitacao.Id, SemCatalogo, SemCatalogo).Should().BeNull();
+        cenario.Processo.RecusaDeFaseDoGatilho("RENDA_DECLARADA", cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo).Should().BeNull();
 
         cenario.Processo.DefinirRegrasDerivacao(Derivacoes(indireto: false, Novo), Sessao).IsSuccess.Should().BeTrue();
 
-        cenario.Processo.RecusaDeFaseDoGatilho("RENDA_DECLARADA", cenario.Habilitacao.Id, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
+        cenario.Processo.RecusaDeFaseDoGatilho("RENDA_DECLARADA", cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
     }
 
     [Fact(DisplayName = "O derivado usado só pela inscrição passa a depender de fato novo da inscrição sem recusa no fechamento")]

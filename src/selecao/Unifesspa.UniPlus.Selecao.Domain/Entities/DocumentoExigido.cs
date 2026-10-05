@@ -508,7 +508,7 @@ public static class DocumentoExigidoErrorCodes
 {
     public const string FatoResolvidoEmFasePosterior = "DocumentoExigido.FatoResolvidoEmFasePosterior";
     public const string PontoResolucaoForaDoCronograma = "DocumentoExigido.PontoResolucaoForaDoCronograma";
-    public const string FatoDaIsencaoForaDaFaseDeIsencao = "DocumentoExigido.FatoDaIsencaoForaDaFaseDeIsencao";
+    public const string FatoDaIsencaoEmOutraFinalidade = "DocumentoExigido.FatoDaIsencaoEmOutraFinalidade";
     public const string FinalidadeObrigatoria = "DocumentoExigido.FinalidadeObrigatoria";
     public const string FaseIncoerenteComFinalidade = "DocumentoExigido.FaseIncoerenteComFinalidade";
 }

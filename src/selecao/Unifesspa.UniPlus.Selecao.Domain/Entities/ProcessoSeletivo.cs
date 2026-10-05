@@ -1986,17 +1986,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// tardia entre a fase do catálogo (<paramref name="pontoResolucaoPorFato"/>) e a fase do
     /// formulário que o produz; o derivado por regra, não antes das suas dependências; e o agregado
     /// sobre grupo repetível (<paramref name="membroPorAgregado"/>), não antes do fato de membro. Fato
-    /// produzido só pelo formulário de isenção só é citado na fase dele: a habilitação usa, de
-    /// outra finalidade, só fatos da inscrição.
+    /// produzido só pelo formulário de isenção só é citado por documento do formulário de isenção: a
+    /// habilitação usa, de outra finalidade, só fatos da inscrição. Inscrição e isenção podem dividir
+    /// a fase, e por isso a regra olha a finalidade da exigência, e não a fase.
     /// </summary>
     /// <remarks>
     /// Fato que o processo não coleta, não deriva e o catálogo não situa não é recusado aqui: a
     /// recusa por fato fora do processo é da conferência do universo. O derivado do sistema usa a
-    /// fase do catálogo e a das dependências declaradas pelo mecanismo dele.
+    /// fase do catálogo e a das dependências declaradas pelo mecanismo dele. A finalidade que falta
+    /// ou que a fase não responde também não é recusada aqui: a recusa que orienta é a da própria
+    /// finalidade, que a definição das exigências confere.
     /// </remarks>
     public DomainError? RecusaDeFaseDoGatilho(
         string fato,
         Guid exigidoNaFaseId,
+        FinalidadeFormulario? finalidadeDaExigencia,
         IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
         IReadOnlyDictionary<string, string> membroPorAgregado)
     {
@@ -2004,7 +2008,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
         ArgumentNullException.ThrowIfNull(membroPorAgregado);
 
-        if (_cronogramaFases.Find(f => f.Id == exigidoNaFaseId) is not { } faseDaExigencia)
+        if (_cronogramaFases.Find(f => f.Id == exigidoNaFaseId) is not { } faseDaExigencia
+            || Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(finalidadeDaExigencia, faseDaExigencia) is not null)
         {
             return null;
         }
@@ -2022,20 +2027,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"O fato '{fato}' só é conhecido na fase '{fase.Codigo}' (ordem {fase.Ordem}), posterior à fase em que o documento é exigido (ordem {faseDaExigencia.Ordem}).");
         }
 
-        if (FormularioDe(FinalidadeFormulario.IsencaoTaxa) is { } isencao
-            && isencao.FaseId != exigidoNaFaseId
+        if (finalidadeDaExigencia != FinalidadeFormulario.IsencaoTaxa
             && DependeDeFatoSoDaIsencao(fato, membroPorAgregado, []))
         {
             return new DomainError(
-                DocumentoExigidoErrorCodes.FatoDaIsencaoForaDaFaseDeIsencao,
-                $"O fato '{fato}' vem do formulário de isenção e só é citado por documento exigido na fase da isenção.");
+                DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade,
+                $"O fato '{fato}' vem do formulário de isenção e só é citado por documento exigido no formulário de isenção.");
         }
 
         // As exigências de uma finalidade seguem a versão do formulário dela; o fato de outra
         // finalidade tem de ter sido coletado em todas as versões publicadas (UNI-REQ-0144).
         return CitacaoNaoGarantida(
             [($"o gatilho de um documento exigido na fase '{faseDaExigencia.Codigo}'", fato)],
-            FinalidadePropriaDaFase(exigidoNaFaseId),
+            finalidadeDaExigencia,
             membroPorAgregado);
     }
 
@@ -2113,16 +2117,36 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// A repetição por entidade nomeia um grupo do processo (<see cref="Services.ValidadorRepeticaoPorGrupo"/>)
     /// conhecido até a fase da subárvore que repete: a fase do formulário do grupo, pela mesma regra
-    /// de fase dos gatilhos, inclusive a do grupo coletado só na isenção. A fase que o catálogo dá a
-    /// cada campo é conferida com os gatilhos, por quem lê o catálogo.
+    /// de fase e de formulário dos gatilhos, inclusive a do grupo coletado só na isenção. A fase que o
+    /// catálogo dá a cada campo é conferida com os gatilhos, por quem lê o catálogo.
     /// </summary>
-    private DomainError? RecusaDaRepeticaoPorGrupo(IReadOnlyCollection<NoExigencia> nos) =>
-        Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(nos, _gruposColetados)
-        ?? nos
-            .Where(static n => n.RepetePorEntidade is not null && n.FaseComum() is not null)
-            .SelectMany(n => _gruposColetados.Single(g => string.Equals(g.Codigo, n.RepetePorEntidade, StringComparison.Ordinal)).Subitens
-                .Select(campo => RecusaDeFaseDoGatilho(campo.FatoCodigo, n.FaseComum()!.Value, SemCatalogo, SemCatalogo)))
-            .FirstOrDefault(static r => r is not null);
+    private DomainError? RecusaDaRepeticaoPorGrupo(IReadOnlyCollection<NoExigencia> nos)
+    {
+        if (Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(nos, _gruposColetados) is { } semGrupo)
+        {
+            return semGrupo;
+        }
+
+        foreach (NoExigencia no in nos)
+        {
+            if (no.RepetePorEntidade is null
+                || no.FaseComum() is not { } fase
+                || !no.TentarFinalidadeComum(out FinalidadeFormulario? finalidade))
+            {
+                continue;
+            }
+
+            GrupoColetado grupo = _gruposColetados.Single(g => string.Equals(g.Codigo, no.RepetePorEntidade, StringComparison.Ordinal));
+            if (grupo.Subitens
+                    .Select(campo => RecusaDeFaseDoGatilho(campo.FatoCodigo, fase, finalidade, SemCatalogo, SemCatalogo))
+                    .FirstOrDefault(static r => r is not null) is { } recusa)
+            {
+                return recusa;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>A repetição por entidade de exigência viva que deixou de valer: o grupo saiu ou mudou de formulário.</summary>
     private DomainError? PendenciaDaRepeticaoPorGrupo() => RecusaDaRepeticaoPorGrupo(_nosExigencia);
@@ -2644,17 +2668,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private static IEnumerable<(string Citante, string Citado)> DoFormulario(
         FinalidadeFormulario finalidade, IEnumerable<(string Dono, string Citado)> citacoes) =>
         citacoes.Select(c => ($"{c.Dono} do formulário de {EstruturaFormulario.ParaToken(finalidade)}", c.Citado));
-
-    /// <summary>
-    /// A finalidade cujo formulário é respondido na fase, quando é um só. Com mais de um formulário na
-    /// mesma fase, nenhum é o próprio da exigência: atribuí-la a um deles dependeria da ordem da
-    /// coleção, e escolher o errado aceitaria fato que quem preencheu o outro numa versão anterior não
-    /// informou.
-    /// </summary>
-    private FinalidadeFormulario? FinalidadePropriaDaFase(Guid faseId) =>
-        _formularios.Where(f => f.FaseId == faseId).Select(static f => (FinalidadeFormulario?)f.Finalidade).ToList() is [var unica]
-            ? unica
-            : null;
 
     /// <summary>
     /// Sob retificação, a regra de formulário que usa, de outra finalidade, fato fora do que o

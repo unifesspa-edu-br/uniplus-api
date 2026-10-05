@@ -446,7 +446,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // (Story #986) — a recusa de mutação de processo publicado sem sessão é a geral
         // (ProcessoSeletivo.MutacaoPosPublicacaoBloqueada). Os códigos de FatoColetado usam
         // constantes e escapam do fitness test — registrados aqui à mão para não caírem em 500.
-        new("DocumentoExigido.FatoDaIsencaoForaDaFaseDeIsencao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_da_isencao_fora_da_fase_de_isencao", "Fato do formulário de isenção citado por documento de outra fase")),
+        new("DocumentoExigido.FatoDaIsencaoEmOutraFinalidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_da_isencao_em_outra_finalidade", "Fato do formulário de isenção citado por documento de outro formulário")),
         new("FatoColetado.ObrigatoriedadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.obrigatoriedade_invalida", "Obrigatoriedade do campo inválida")),
         new("FatoColetado.FatoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_duplicado", "O fato já é coletado por outro formulário do processo")),
         new("FatoColetado.PrecondicaoCitaFatoNaoColetado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_cita_fato_nao_coletado", "A regra de derivação cita um fato que este processo não coleta nem deriva")),
