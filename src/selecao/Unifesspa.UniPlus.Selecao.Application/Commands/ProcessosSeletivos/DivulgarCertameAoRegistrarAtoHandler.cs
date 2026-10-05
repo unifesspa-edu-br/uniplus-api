@@ -8,6 +8,8 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.Services;
+using Domain.ValueObjects;
 
 using DTOs;
 
@@ -33,6 +35,13 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// A recusa de mérito não chega aqui: ela é terminal e fica na fila morta. O efeito é exatamente o
 /// pretendido — a linha não avança, e o certame permanece no ar com o conteúdo da versão anterior.
 /// </para>
+/// <para>
+/// <b>É também o único caminho de escrita no acervo público (ADR-0132).</b> Os modelos de documento
+/// que o edital congelou são copiados para lá antes de a divulgação ser gravada, porque é aqui que o
+/// registro do ato está confirmado: nada fica público antes do ato, e o link só é divulgado depois de
+/// o arquivo estar no acervo. Falha na cópia lança, a divulgação não avança, e a reentrega repete —
+/// encontrando no acervo o que já tinha sido copiado.
+/// </para>
 /// </remarks>
 public static class DivulgarCertameAoRegistrarAtoHandler
 {
@@ -41,6 +50,8 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
+        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        IAcervoPublico acervoPublico,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -49,6 +60,8 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
+        ArgumentNullException.ThrowIfNull(acervoPublico);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -99,6 +112,11 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             throw new InvalidOperationException(
                 $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada: {projecao.Error!.Message}");
         }
+
+        // Antes de ler a linha de divulgação para mutação: a reentrega que a cópia falhada provoca
+        // começa sem nada rastreado, e a cópia já feita é encontrada no acervo e não se repete.
+        await PublicarModelosNoAcervoAsync(versao, envelope, modeloDeDocumentoRepository, acervoPublico, cancellationToken)
+            .ConfigureAwait(false);
 
         CertamePublicadoDto certame = projecao.Value!;
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
@@ -167,6 +185,62 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             }
 
             throw conflito;
+        }
+    }
+
+    /// <summary>
+    /// Copia para o acervo público cada modelo de documento que a versão congelou, na chave do ato
+    /// que a criou.
+    /// </summary>
+    /// <remarks>
+    /// O que se publica vem do envelope — nome, formato e hash são os do edital —, e do cadastro só se
+    /// lê onde está a cópia selada privada. Modelo sem cópia selada, ou com outro conteúdo, é dado
+    /// inconsistente: divulgar o link de um arquivo que não é o congelado seria pior que não divulgar.
+    /// </remarks>
+    private static async Task PublicarModelosNoAcervoAsync(
+        VersaoConfiguracao versao,
+        JsonObject envelope,
+        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        IAcervoPublico acervoPublico,
+        CancellationToken cancellationToken)
+    {
+        if (!ProjecaoDoCertamePublicado.TentarModelosCongelados(envelope, out List<ModeloDaExigencia>? modelos))
+        {
+            throw new InvalidOperationException(
+                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada nos modelos de documento.");
+        }
+
+        if (modelos.Count == 0)
+        {
+            return;
+        }
+
+        IReadOnlyList<ModeloDeDocumento> cadastrados = await modeloDeDocumentoRepository
+            .ListarDoProcessoAsync(versao.ProcessoSeletivoId, [.. modelos.Select(static m => m.ModeloId)], cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (ModeloDaExigencia modelo in modelos)
+        {
+            ModeloDeDocumento? cadastrado = cadastrados.FirstOrDefault(m => m.Id == modelo.ModeloId);
+            if (cadastrado?.ObjectKeyConfirmado is not { } chavePrivada
+                || !string.Equals(cadastrado.HashSha256, modelo.HashSha256, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"O modelo de documento {modelo.ModeloId}, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
+            }
+
+            await acervoPublico
+                .CopiarAsync(
+                    chavePrivada,
+                    ChaveNoAcervoPublico.DoModelo(versao.ProcessoSeletivoId, versao.AtoCriadorId, modelo),
+                    new DocumentoNoAcervo(
+                        ModeloDeDocumento.ContentTypeDe(modelo.Formato),
+                        modelo.NomeArquivo,
+                        versao.AtoCriadorId,
+                        versao.ProcessoSeletivoId,
+                        modelo.HashSha256),
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
     }
 

@@ -7,6 +7,7 @@ using Domain.Interfaces;
 using ExternalServices;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using Persistence;
 using Persistence.Interceptors;
@@ -14,6 +15,7 @@ using Persistence.Readers;
 using Persistence.Repositories;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
@@ -81,6 +83,13 @@ public static class SelecaoInfrastructureRegistration
         // AddUniPlusStorage). Não registra AddUniPlusStorage aqui: é
         // cross-cutting compartilhado entre módulos, já ligado no host.
         services.AddScoped<IArquivoArmazenadoStorage, ArquivoArmazenadoStorageService>();
+
+        // Acervo público (ADR-0132): a escrita, pela materialização da divulgação. As opções vêm de
+        // AddUniPlusAcervoPublico, ligado no host junto do storage.
+        services.AddScoped<IAcervoPublico>(sp => new AcervoPublicoService(
+            () => sp.GetRequiredService<IStorageService>(),
+            sp.GetRequiredService<IOptions<StorageOptions>>(),
+            sp.GetRequiredService<IOptions<AcervoPublicoOptions>>()));
 
         return services;
     }

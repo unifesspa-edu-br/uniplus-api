@@ -4,6 +4,7 @@ using JasperFx;
 using JasperFx.CodeGeneration;
 
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Wolverine.Configuration;
@@ -22,7 +23,7 @@ using Wolverine.Runtime.Handlers;
 /// consumo é assíncrono.
 /// </para>
 /// <para>
-/// As falhas prováveis desse consumo são todas transientes: indisponibilidade momentânea do banco,
+/// As falhas prováveis desse consumo são todas transientes: indisponibilidade do banco ou do acervo público,
 /// deadlock, conflito de gravação entre duas entregas do mesmo ato, e a janela de um deploy em que
 /// o pod que consome ainda não conhece a versão de schema que o pod que publicou congelou.
 /// Insistir resolve todas; desistir na primeira não resolve nenhuma. Mesma sequência de espera do
@@ -59,6 +60,13 @@ internal sealed class ReentregaDaDivulgacaoDoCertame : IHandlerPolicy
             //
             // Declarada ANTES da regra geral: a primeira política que casa é a que vale.
             chain.OnException<EnvelopeAindaNaoLegivelException>()
+                .ScheduleRetry(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15))
+                .Then.MoveToErrorQueue();
+
+            // A divulgação espera o modelo estar no acervo público, então a indisponibilidade do
+            // armazenamento — reinício, bucket público ainda não provisionado no deploy — esconderia
+            // o certame inteiro se fosse tratada como blip. Mesma escala do caso acima.
+            chain.OnException<AcervoPublicoIndisponivelException>()
                 .ScheduleRetry(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15))
                 .Then.MoveToErrorQueue();
 

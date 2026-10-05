@@ -86,6 +86,8 @@ builder.Services.AddCorsConfiguration(
     "X-Certames-Encerrados",
     "X-Certames-Revisao");
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
+// Acervo público (ADR-0132): só o host, que hospeda Seleção, publica documento de ato nele.
+builder.Services.AddUniPlusAcervoPublico(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
 
 // --- Módulos do monólito (self-describing; cada um traz seu OpenAPI doc, erros,

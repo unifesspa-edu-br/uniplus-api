@@ -50,6 +50,11 @@ public static class SelecaoCodegenRegistration
 
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ISelecaoUnitOfWork>();
 
+        // O acervo público é registrado por fábrica, que adia a resolução do storage para o uso:
+        // a divulgação de certame sem modelo não toca o armazenamento. A fábrica é opaca ao
+        // codegen, e service-locá-la é o opt-in sancionado (ADR-0098).
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IAcervoPublico>();
+
         // Readers de reference data cross-módulo (ADR-0056) consumidos pelo
         // handler de oferta de atendimento especializado (F0). A interface vive
         // em Configuracao.Contracts (contrato público), mas o concreto é
