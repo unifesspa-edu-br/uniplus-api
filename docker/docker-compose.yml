@@ -77,6 +77,29 @@ services:
       retries: 5
       start_period: 10s
 
+  # Cria o bucket do acervo público (ADR-0132) e aplica a política de leitura anônima só de
+  # objeto, sem listagem, de docker/minio/acervo-publico.policy.json. A aplicação nunca cria esse
+  # bucket. Só do ambiente local e dos testes: em homologação e produção o bucket e a política são
+  # da infraestrutura, com a leitura anônima restrita à borda. A imagem do servidor já traz o
+  # cliente mc — a imagem própria do mc deixou de ser servida publicamente.
+  minio-init:
+    image: ghcr.io/unifesspa-edu-br/minio:RELEASE.2025-09-07T16-13-09Z@sha256:52dfd5c0bbd38d3219f2058c7af216d9f9a27a994b7b5baad09bbd38866015ff
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./minio/acervo-publico.policy.json:/politicas/acervo-publico.policy.json:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
+        mc mb --ignore-existing local/uniplus-acervo-publico &&
+        mc anonymous set-json /politicas/acervo-publico.policy.json local/uniplus-acervo-publico
+
   openldap:
     # OpenLDAP local com dados sintéticos (4devs) para reproduzir o cenário
     # do LDAP institucional Unifesspa em ambiente de desenvolvimento.
