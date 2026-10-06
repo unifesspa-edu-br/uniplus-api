@@ -348,6 +348,23 @@ public sealed class ProcessoSeletivoPublicarTests
             condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: finalidade).Value!;
     }
 
+    [Fact(DisplayName = "No rascunho em montagem, a faixa etária citada sem referência declarada não tem data, sem recusar")]
+    public void DataReferenciaFatosEmMontagem_SemReferencia_NulaSemLancar()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        TimeZoneInfo fuso = TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId);
+
+        processo.DataReferenciaFatosEmMontagem(fuso).Should().BeNull("o rascunho ainda não declarou a referência, e a simulação não pode cair por isso");
+
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DataReferenciaFatosEmMontagem(fuso).Should().Be(new DateOnly(2026, 1, 31));
+    }
+
     [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase de outro processo é recusada")]
     public void DefinirReferenciaTemporalFatos_FaseDeOutroProcesso_Recusa()
     {

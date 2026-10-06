@@ -870,6 +870,99 @@
         }
       }
     },
+    "/api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}/renderizavel": {
+      "get": {
+        "tags": [
+          "Formularios"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "finalidade",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.formulario.v2\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormularioRenderizavelDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}": {
       "put": {
         "tags": [
@@ -9139,6 +9232,70 @@
           }
         }
       },
+      "CampoRenderizavel": {
+        "required": [
+          "fatoCodigo",
+          "ordem",
+          "rotulo",
+          "tipoRenderizacao",
+          "valoresSelecionaveis",
+          "etapaCodigo",
+          "formato",
+          "ajuda",
+          "pedirConfirmacao"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "tipoRenderizacao": {
+            "type": "string"
+          },
+          "valoresSelecionaveis": {
+            "minItems": 1,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ValorSelecionavel"
+            }
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "formato": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ajuda": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pedirConfirmacao": {
+            "type": "boolean"
+          }
+        }
+      },
       "CaraterEtapa": {
         "enum": [
           "nenhum",
@@ -12048,70 +12205,6 @@
           }
         }
       },
-      "FatoFormularioRenderizavelDto": {
-        "required": [
-          "fatoCodigo",
-          "ordem",
-          "rotulo",
-          "tipoRenderizacao",
-          "valoresSelecionaveis",
-          "etapaCodigo",
-          "formato",
-          "ajuda",
-          "pedirConfirmacao"
-        ],
-        "type": "object",
-        "properties": {
-          "fatoCodigo": {
-            "type": "string"
-          },
-          "ordem": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "rotulo": {
-            "type": "string"
-          },
-          "tipoRenderizacao": {
-            "type": "string"
-          },
-          "valoresSelecionaveis": {
-            "minItems": 1,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/ValorSelecionavelDto"
-            }
-          },
-          "etapaCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "formato": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "ajuda": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "pedirConfirmacao": {
-            "type": "boolean"
-          }
-        }
-      },
       "FecharRetificacaoRequest": {
         "required": [
           "numero",
@@ -12278,19 +12371,19 @@
       },
       "FormularioRenderizavelDto": {
         "required": [
-          "finalidade",
-          "titulo",
-          "etapas",
-          "termos",
-          "fatosColetados",
-          "comprovacaoDocumental",
-          "grupos",
-          "regras",
-          "pressupostos",
-          "dataReferenciaFatos"
+          "comprovacaoDocumental"
         ],
         "type": "object",
         "properties": {
+          "comprovacaoDocumental": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExigenciaDocumentalCertameDto"
+            }
+          },
           "finalidade": {
             "type": "string"
           },
@@ -12303,34 +12396,25 @@
           "etapas": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SecaoRenderizavelDto"
+              "$ref": "#/components/schemas/SecaoRenderizavel"
             }
           },
           "termos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TermoRenderizavelDto"
+              "$ref": "#/components/schemas/TermoRenderizavel"
             }
           },
           "fatosColetados": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FatoFormularioRenderizavelDto"
-            }
-          },
-          "comprovacaoDocumental": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/ExigenciaDocumentalCertameDto"
+              "$ref": "#/components/schemas/CampoRenderizavel"
             }
           },
           "grupos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/GrupoFormularioRenderizavelDto"
+              "$ref": "#/components/schemas/GrupoRenderizavel"
             }
           },
           "regras": {
@@ -12339,7 +12423,7 @@
           "pressupostos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PressupostoRenderizavelDto"
+              "$ref": "#/components/schemas/PressupostoRenderizavel"
             }
           },
           "dataReferenciaFatos": {
@@ -12589,67 +12673,6 @@
           }
         }
       },
-      "GrupoFormularioRenderizavelDto": {
-        "required": [
-          "codigo",
-          "ordem",
-          "etapaCodigo",
-          "rotulo",
-          "minimo",
-          "maximo",
-          "incluiCandidato",
-          "subitens"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "ordem": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "etapaCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "rotulo": {
-            "type": "string"
-          },
-          "minimo": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "maximo": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "incluiCandidato": {
-            "type": "boolean"
-          },
-          "subitens": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FatoFormularioRenderizavelDto"
-            }
-          }
-        }
-      },
       "GrupoPesoAreaEnemCongeladoDto": {
         "required": [
           "grupoAreaEnem",
@@ -12739,6 +12762,67 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ItemPortavel"
+            }
+          }
+        }
+      },
+      "GrupoRenderizavel": {
+        "required": [
+          "codigo",
+          "ordem",
+          "etapaCodigo",
+          "rotulo",
+          "minimo",
+          "maximo",
+          "incluiCandidato",
+          "subitens"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maximo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "incluiCandidato": {
+            "type": "boolean"
+          },
+          "subitens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoRenderizavel"
             }
           }
         }
@@ -14249,7 +14333,7 @@
           }
         }
       },
-      "PressupostoRenderizavelDto": {
+      "PressupostoRenderizavel": {
         "required": [
           "fatoCodigo",
           "rotulo",
@@ -14288,7 +14372,7 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/ValorSelecionavelDto"
+              "$ref": "#/components/schemas/ValorSelecionavel"
             }
           },
           "calculadoDe": {
@@ -15706,7 +15790,7 @@
           }
         }
       },
-      "SecaoRenderizavelDto": {
+      "SecaoRenderizavel": {
         "required": [
           "codigo",
           "codigoNasRegras",
@@ -16011,7 +16095,7 @@
           }
         }
       },
-      "TermoRenderizavelDto": {
+      "TermoRenderizavel": {
         "required": [
           "codigo",
           "codigoNasRegras",
@@ -16340,7 +16424,7 @@
           }
         }
       },
-      "ValorSelecionavelDto": {
+      "ValorSelecionavel": {
         "required": [
           "codigo",
           "descricao",

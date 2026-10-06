@@ -190,7 +190,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         FormularioRenderizavelDto primeira = await LerAsync();
         FormularioRenderizavelDto segunda = await LerAsync();
 
-        FatoFormularioRenderizavelDto corRaca = primeira.FatosColetados.Single(f => f.FatoCodigo == "COR_RACA");
+        CampoRenderizavel corRaca = primeira.FatosColetados.Single(f => f.FatoCodigo == "COR_RACA");
         corRaca.ValoresSelecionaveis.Should().NotBeNull();
         corRaca.ValoresSelecionaveis!.Select(v => v.Codigo).Should().Equal(
             ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_DECLARADO"],
@@ -305,11 +305,11 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
         lido.Value!.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");
-        PressupostoRenderizavelDto corRaca = lido.Value.Pressupostos[0];
+        PressupostoRenderizavel corRaca = lido.Value.Pressupostos[0];
         corRaca.Rotulo.Should().Be("Cor ou raça");
         corRaca.TipoRenderizacao.Should().Be("SELECAO_UNICA");
         corRaca.ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"], "a simulação pergunta o dado anterior com os valores congelados");
-        PressupostoRenderizavelDto faixaEtaria = lido.Value.Pressupostos[1];
+        PressupostoRenderizavel faixaEtaria = lido.Value.Pressupostos[1];
         faixaEtaria.Rotulo.Should().BeNull("o sistema calcula a faixa etária; nenhum formulário a pergunta");
         faixaEtaria.CalculadoDe.Should().Equal(["DATA_NASCIMENTO"]);
         lido.Value.DataReferenciaFatos.Should().Be(new DateOnly(2026, 1, 31), "a âncora da faixa etária é a congelada na publicação");

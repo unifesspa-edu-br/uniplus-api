@@ -3380,6 +3380,64 @@
           ]
         },
         {
+          "name": "Formulário renderizável do rascunho (v2, antes de publicar)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.formulario.v2+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{processo_id}}/formularios/INSCRICAO/renderizavel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "admin",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "formularios",
+                "INSCRICAO",
+                "renderizavel"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com a apresentação e as regras da configuração viva', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.finalidade).to.eql('INSCRICAO');",
+                  "  pm.expect(j.regras.etapas).to.be.an('array');",
+                  "  pm.expect(j.fatosColetados).to.be.an('array');",
+                  "  pm.expect(j.comprovacaoDocumental).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Publicar ProcessoSeletivo",
           "request": {
             "method": "POST",
