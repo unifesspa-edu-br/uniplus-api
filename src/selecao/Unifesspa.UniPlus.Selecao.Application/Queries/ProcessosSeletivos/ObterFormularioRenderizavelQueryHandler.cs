@@ -147,7 +147,7 @@ public static class ObterFormularioRenderizavelQueryHandler
             return VersaoSemApresentacao();
         }
 
-        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(formulario, comprovacao));
+        return Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(formulario, comprovacao));
     }
 
     /// <summary>
