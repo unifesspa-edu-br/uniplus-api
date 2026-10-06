@@ -1,0 +1,121 @@
+{
+  "descricao": "A resposta de cada ocorrência do grupo é avaliada, e o agregado sobre o grupo vale para as regras de fora dele: um membro trabalhador rural faz aparecer a declaração rural.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "DECLARACAO_RURAL",
+            "exibicao": [
+              [
+                {
+                  "fato": "RURAL_NA_FAMILIA",
+                  "operador": "IGUAL",
+                  "valor": true
+                }
+              ]
+            ],
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": [
+          {
+            "codigo": "FAMILIA",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "minimo": 1,
+            "maximo": null,
+            "incluiCandidato": false,
+            "subitens": [
+              {
+                "fatoCodigo": "TRABALHADOR_RURAL",
+                "exibicao": null,
+                "obrigatoriedade": "SEMPRE",
+                "predicadoObrigatoriedade": null,
+                "restricoes": [],
+                "impedimento": null,
+                "oferta": null,
+                "formato": null
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": [
+      {
+        "codigo": "RURAL_NA_FAMILIA",
+        "grupoCodigo": "FAMILIA",
+        "fatoDeMembro": "TRABALHADOR_RURAL",
+        "operacao": "EXISTE"
+      }
+    ]
+  },
+  "respostas": {},
+  "grupos": {
+    "FAMILIA": [
+      {
+        "id": "m1",
+        "respostas": {
+          "TRABALHADOR_RURAL": true
+        }
+      },
+      {
+        "id": "m2",
+        "respostas": {
+          "TRABALHADOR_RURAL": false
+        }
+      }
+    ]
+  },
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "esperado": {
+    "grupos": [
+      {
+        "codigo": "FAMILIA",
+        "estado": "RESOLVIDO",
+        "contagemValida": true,
+        "ocorrencias": [
+          {
+            "id": "m1",
+            "estado": "RESOLVIDO",
+            "campos": [
+              {
+                "fatoCodigo": "TRABALHADOR_RURAL",
+                "estado": "RESOLVIDO"
+              }
+            ]
+          },
+          {
+            "id": "m2",
+            "estado": "RESOLVIDO",
+            "campos": [
+              {
+                "fatoCodigo": "TRABALHADOR_RURAL",
+                "estado": "RESOLVIDO"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "campos": [
+      {
+        "fatoCodigo": "DECLARACAO_RURAL",
+        "visivel": "VERDADEIRO",
+        "obrigatorio": "VERDADEIRO"
+      }
+    ]
+  }
+}
