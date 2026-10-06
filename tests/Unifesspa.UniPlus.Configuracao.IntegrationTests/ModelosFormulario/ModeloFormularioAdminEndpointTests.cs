@@ -10,6 +10,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Contrato HTTP da manutenção dos modelos de formulário pelo papel <c>plataforma-admin</c>
@@ -227,6 +228,35 @@ public sealed class ModeloFormularioAdminEndpointTests
         grupo["subitens"]!.AsArray().Should().NotBeEmpty();
         formulario["regras"]!["etapas"]!.AsArray().SelectMany(static e => e!["grupos"]!.AsArray())
             .Select(static g => g!["codigo"]!.GetValue<string>()).Should().Contain("COMPOSICAO_FAMILIAR");
+    }
+
+    [Fact(DisplayName = "O renderizável do modelo de inscrição gravado sem o conjunto básico, como o semeado, traz os dados do candidato que o processo terá depois de aplicado")]
+    public async Task ObterRenderizavel_ModeloDeInscricaoSemOBasico_TrazOsDadosDoCandidato()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
+        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
+        Guid id = lista.RootElement.EnumerateArray()
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        JsonObject formulario = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
+        formulario["etapas"]!.AsArray().Select(static e => e!["codigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        formulario["fatosColetados"]!.AsArray().Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
+        JsonNode secaoNasRegras = formulario["regras"]!["etapas"]!.AsArray()
+            .Single(static e => e!["codigo"]!.GetValue<string>() == ConjuntoBasicoDaInscricao.CodigoDaSecao)!;
+        secaoNasRegras["itens"]!.AsArray().Select(static i => i!["fatoCodigo"]!.GetValue<string>())
+            .Should().Contain(ConjuntoBasicoDaInscricao.Fatos, "as regras vão com a apresentação");
+
+        HttpResponseMessage previa = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas = new Dictionary<string, object>() });
+
+        previa.StatusCode.Should().Be(HttpStatusCode.OK, await previa.Content.ReadAsStringAsync());
+        JsonObject preVisualizacao = JsonNode.Parse(await previa.Content.ReadAsStringAsync())!.AsObject();
+        preVisualizacao["secoes"]!.AsArray().Select(static e => e!["codigo"]!.GetValue<string>())
+            .Should().Contain(ConjuntoBasicoDaInscricao.CodigoDaSecao, "a pré-visualização avalia o mesmo conteúdo do renderizável");
+        preVisualizacao["itens"]!.AsArray().Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
     }
 
     [Theory(DisplayName = "A avaliação sem cadastro das regras do modelo dá o mesmo resultado da pré-visualização do modelo")]
