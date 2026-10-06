@@ -204,8 +204,8 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// O modelo como o avaliador de formulário o lê: cada etapa, na ordem, com os seus itens e grupos
-    /// repetíveis; os termos; as derivações por regra do catálogo, que a pré-visualização resolve com as
+    /// O modelo como o avaliador de formulário o lê: cada seção, na ordem, com os seus itens e grupos
+    /// repetíveis — os blocos que o sistema monta não têm regra, como na definição do processo —; os termos; as derivações por regra do catálogo, que a pré-visualização resolve com as
     /// respostas simuladas; e os agregados do catálogo sobre os grupos do modelo.
     /// </summary>
     public DefinicaoFormulario ParaAvaliacao(IReadOnlyList<RegrasDerivacaoFato> derivacoes, IReadOnlyList<DefinicaoAgregado> agregados)
@@ -215,7 +215,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         ILookup<string?, ItemDoModelo> itensPorEtapa = Conteudo.Itens.ToLookup(static i => i.EtapaCodigo, StringComparer.Ordinal);
         ILookup<string?, GrupoDoModelo> gruposPorEtapa = Conteudo.Grupos.ToLookup(static g => g.EtapaCodigo, StringComparer.Ordinal);
         return new DefinicaoFormulario(
-            [.. Conteudo.Etapas.OrderBy(static e => e.Ordem).Select(e => new DefinicaoEtapa(
+            [.. Conteudo.Etapas.Where(static e => e.Tipo == TipoEtapaFormulario.Secao).OrderBy(static e => e.Ordem).Select(e => new DefinicaoEtapa(
                 e.Codigo,
                 e.Exibicao,
                 [.. itensPorEtapa[e.Codigo].OrderBy(static i => i.Ordem).Select(Item)],

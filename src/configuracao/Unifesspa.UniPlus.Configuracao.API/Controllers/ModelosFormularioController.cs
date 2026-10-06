@@ -104,6 +104,26 @@ public sealed class ModelosFormularioController : ControllerBase
     }
 
     /// <summary>
+    /// Avalia as regras de um formulário renderizável contra respostas simuladas, sem cadastro nenhum:
+    /// é a conferência autoritativa da simulação de um arquivo importado, de um caso do corpus, de um
+    /// modelo ou de um processo. Não grava nada nem registra o conteúdo.
+    /// </summary>
+    [HttpPost("admin/avaliacoes-de-formulario")]
+    [VendorMediaType(Resource = "avaliacao-de-formulario", Versions = [1])]
+    [ProducesResponseType(typeof(AvaliacaoPortavel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AvaliarSemCadastro([FromBody] AvaliacaoSemCadastroInput simulacao, CancellationToken cancellationToken)
+    {
+        Result<AvaliacaoPortavel> resultado = await _queryBus
+            .Send(new AvaliarFormularioSemCadastroQuery(simulacao), cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Pré-visualiza o modelo com respostas simuladas: o que cada item, cada termo e cada grupo
     /// repetível faria diante delas, pelo mesmo avaliador da inscrição. Não grava nada.
     /// </summary>

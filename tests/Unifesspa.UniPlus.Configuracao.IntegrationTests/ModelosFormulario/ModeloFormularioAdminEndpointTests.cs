@@ -229,6 +229,67 @@ public sealed class ModeloFormularioAdminEndpointTests
             .Select(static g => g!["codigo"]!.GetValue<string>()).Should().Contain("COMPOSICAO_FAMILIAR");
     }
 
+    [Theory(DisplayName = "A avaliação sem cadastro das regras do modelo dá o mesmo resultado da pré-visualização do modelo")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AvaliarSemCadastro_MesmoResultadoDaPreVisualizacao(bool quilombola)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, ModeloComOpcoes(CodigoUnico()));
+        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
+        Dictionary<string, object> respostas = new() { ["QUILOMBOLA"] = quilombola };
+
+        HttpResponseMessage semCadastro = await EnviarAsync(
+            client, HttpMethod.Post, "/api/configuracao/admin/avaliacoes-de-formulario", new { regras = formulario["regras"], respostas });
+        HttpResponseMessage previa = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas });
+
+        semCadastro.StatusCode.Should().Be(HttpStatusCode.OK, await semCadastro.Content.ReadAsStringAsync());
+        semCadastro.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.avaliacao-de-formulario.v1+json");
+        JsonObject avaliacao = JsonNode.Parse(await semCadastro.Content.ReadAsStringAsync())!.AsObject();
+        JsonObject preVisualizacao = JsonNode.Parse(await previa.Content.ReadAsStringAsync())!.AsObject();
+        JsonArray itens = preVisualizacao["itens"]!.AsArray();
+        itens.Should().NotBeEmpty();
+        foreach (JsonNode? item in itens)
+        {
+            JsonNode campo = avaliacao["campos"]!.AsArray().Single(c => c!["fatoCodigo"]!.GetValue<string>() == item!["fatoCodigo"]!.GetValue<string>())!;
+            foreach (string chave in new[] { "visivel", "obrigatorio", "impedido", "restricoesVioladas", "opcoes" })
+            {
+                (campo[chave]?.ToJsonString()).Should().Be(item![chave]?.ToJsonString(), $"'{chave}' do campo {item["fatoCodigo"]} é o mesmo nos dois caminhos");
+            }
+        }
+
+        avaliacao["campos"]!.AsArray().Single(static c => c!["fatoCodigo"]!.GetValue<string>() == "TIPO_ENDERECO")!["opcoes"]!["codigos"]!.AsArray()
+            .Select(static c => c!.GetValue<string>()).Should().Equal(quilombola ? ["QUILOMBO", "URBANO"] : ["URBANO"], "as opções seguem a resposta anterior");
+
+        // No modelo, o código da etapa nas regras é o da seção: as duas listas se comparam direto.
+        Pares(avaliacao["etapas"]!, "codigo", "visivel").Should().Equal(Pares(preVisualizacao["secoes"]!, "codigo", "visivel"));
+
+        static List<string> Pares(JsonNode lista, string chave, string valor) =>
+            [.. lista.AsArray().Select(e => $"{e![chave]!.GetValue<string>()}={e[valor]!.GetValue<string>()}")];
+    }
+
+    [Fact(DisplayName = "A avaliação sem cadastro recusa regras que não formam formulário com a causa, e sem o papel é 403")]
+    public async Task AvaliarSemCadastro_RegrasMalformadas_Recusa()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object regras = new
+        {
+            etapas = new[] { new { codigo = "DADOS", exibicao = (object?)null, itens = Array.Empty<object>(), grupos = Array.Empty<object>() } },
+            termos = Array.Empty<object>(),
+            derivacoes = Array.Empty<object>(),
+            agregados = new[] { new { codigo = "ALGUEM", grupoCodigo = "FAMILIA", fatoDeMembro = "SEM_RENDA", operacao = "SOMA" } },
+        };
+
+        HttpResponseMessage recusa = await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/avaliacoes-de-formulario", new { regras });
+
+        recusa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await recusa.Content.ReadAsStringAsync()).Should().Contain("uniplus.formulario_portavel.operacao_de_agregado_invalida");
+        (await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/avaliacoes-de-formulario", new { regras }, papel: "candidato"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     [Fact(DisplayName = "Código já usado por outro modelo é recusado com conflito")]
     public async Task Criar_CodigoExistente_Retorna409()
     {
@@ -301,6 +362,52 @@ public sealed class ModeloFormularioAdminEndpointTests
                     obrigatoriedade = "SEMPRE",
                     precondicao = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
                     etapaCodigo = "DADOS",
+                },
+            },
+        },
+    };
+
+    /// <summary>
+    /// Um modelo de inscrição com um campo de escolha cujas opções seguem a resposta anterior: o tipo
+    /// de endereço admite quilombo só para quem se declarou quilombola.
+    /// </summary>
+    private static object ModeloComOpcoes(string codigo) => new
+    {
+        codigo,
+        nome = "Inscrição com opções",
+        finalidade = "INSCRICAO",
+        conteudo = new
+        {
+            titulo = "Inscrição",
+            etapas = new object[]
+            {
+                new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados", descricao = (string?)null, aviso = (string?)null },
+                new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão", descricao = (string?)null, aviso = (string?)null },
+            },
+            itens = new object[]
+            {
+                new { fatoCodigo = "QUILOMBOLA", ordem = 0, rotulo = "Quilombola", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE", precondicao = (object?)null, etapaCodigo = "DADOS" },
+                new
+                {
+                    fatoCodigo = "TIPO_ENDERECO",
+                    ordem = 1,
+                    rotulo = "Tipo de endereço",
+                    tipoRenderizacao = "SELECAO_UNICA",
+                    obrigatoriedade = "SEMPRE",
+                    precondicao = (object?)null,
+                    etapaCodigo = "DADOS",
+                    restricoes = new object[]
+                    {
+                        new
+                        {
+                            tipo = "OPCOES_PERMITIDAS",
+                            entradas = new object[]
+                            {
+                                new { quando = (object?)null, valores = new[] { "URBANO" } },
+                                new { quando = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } }, valores = new[] { "QUILOMBO" } },
+                            },
+                        },
+                    },
                 },
             },
         },

@@ -66,6 +66,17 @@ public sealed class FormularioPortavelTests
         },
     };
 
+    [Fact(DisplayName = "Elemento nulo dentro das regras é recusado com o caminho dele, sem estourar")]
+    public void ElementoNulo_RecusadoComOCaminho()
+    {
+        FormularioPortavel formulario = Formulario(Item("RENDA"), null!);
+
+        Result<DefinicaoFormulario> definicao = formulario.ParaDefinicao();
+
+        definicao.Error!.Code.Should().Be(FormularioPortavelErrorCodes.EstruturaInvalida);
+        definicao.Error.Message.Should().Contain("etapas[0].itens[1]");
+    }
+
     private static AvaliacaoFormulario Avaliar(FormularioPortavel formulario, IReadOnlyDictionary<string, JsonElement> respostas)
     {
         Result<AvaliacaoFormulario> avaliacao = formulario.Avaliar(new EntradaAvaliacaoFormulario(

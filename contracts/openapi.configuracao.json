@@ -6653,6 +6653,100 @@
         ]
       }
     },
+    "/api/configuracao/admin/avaliacoes-de-formulario": {
+      "post": {
+        "tags": [
+          "ModelosFormulario"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvaliacaoSemCadastroInput"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvaliacaoSemCadastroInput"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AvaliacaoSemCadastroInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.avaliacao-de-formulario.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvaliacaoPortavel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/configuracao/admin/modelos-formulario/{id}/pre-visualizacao": {
       "post": {
         "tags": [
@@ -13826,6 +13920,89 @@
           }
         }
       },
+      "AvaliacaoPortavel": {
+        "required": [
+          "etapas",
+          "campos",
+          "grupos",
+          "termos"
+        ],
+        "type": "object",
+        "properties": {
+          "etapas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaAvaliada"
+            }
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAvaliado"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoAvaliado"
+            }
+          },
+          "termos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermoAvaliado"
+            }
+          }
+        }
+      },
+      "AvaliacaoSemCadastroInput": {
+        "required": [
+          "regras",
+          "respostas",
+          "grupos",
+          "etapasConcluidas",
+          "pressupostos"
+        ],
+        "type": "object",
+        "properties": {
+          "regras": {
+            "$ref": "#/components/schemas/FormularioPortavel"
+          },
+          "respostas": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "grupos": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/OcorrenciaRecebida"
+              }
+            }
+          },
+          "etapasConcluidas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "pressupostos": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
       "BaseLegalBonusRegionalDto": {
         "required": [
           "id",
@@ -13962,6 +14139,55 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "CampoAvaliado": {
+        "required": [
+          "fatoCodigo",
+          "etapaCodigo",
+          "estado",
+          "visivel",
+          "obrigatorio",
+          "restricoesVioladas",
+          "impedido",
+          "opcoes"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "etapaCodigo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "visivel": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "string"
+          },
+          "restricoesVioladas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "impedido": {
+            "type": "string"
+          },
+          "opcoes": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OpcoesVigentes"
+              }
+            ]
           }
         }
       },
@@ -15902,6 +16128,21 @@
           }
         }
       },
+      "EtapaAvaliada": {
+        "required": [
+          "codigo",
+          "visivel"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "visivel": {
+            "type": "string"
+          }
+        }
+      },
       "EtapaFormularioInput": {
         "required": [
           "codigo",
@@ -16547,6 +16788,48 @@
           }
         }
       },
+      "GrupoAvaliado": {
+        "required": [
+          "codigo",
+          "etapaCodigo",
+          "visivel",
+          "obrigatorio",
+          "estado",
+          "contagemValida",
+          "ocorrenciaDoCandidatoValida",
+          "ocorrencias"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "etapaCodigo": {
+            "type": "string"
+          },
+          "visivel": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "contagemValida": {
+            "type": "boolean"
+          },
+          "ocorrenciaDoCandidatoValida": {
+            "type": "boolean"
+          },
+          "ocorrencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OcorrenciaAvaliada"
+            }
+          }
+        }
+      },
       "GrupoColetadoInput": {
         "required": [
           "codigo",
@@ -17173,6 +17456,28 @@
           }
         }
       },
+      "OcorrenciaAvaliada": {
+        "required": [
+          "id",
+          "estado",
+          "campos"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAvaliado"
+            }
+          }
+        }
+      },
       "OcorrenciaPreVisualizadaDto": {
         "required": [
           "id",
@@ -17349,6 +17654,26 @@
         "properties": {
           "codigos": {
             "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "definitivas": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OpcoesVigentes": {
+        "required": [
+          "definitivas"
+        ],
+        "type": "object",
+        "properties": {
+          "codigos": {
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "type": "string"
             }
@@ -17982,6 +18307,25 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "TermoAvaliado": {
+        "required": [
+          "codigo",
+          "visivel",
+          "obrigatorio"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "visivel": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "string"
           }
         }
       },

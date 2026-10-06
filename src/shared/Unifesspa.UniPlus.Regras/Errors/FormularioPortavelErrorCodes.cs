@@ -7,4 +7,5 @@ public static class FormularioPortavelErrorCodes
     public const string OperacaoDeAgregadoInvalida = "FormularioPortavel.OperacaoDeAgregadoInvalida";
     public const string DerivacaoInvalida = "FormularioPortavel.DerivacaoInvalida";
     public const string EstruturaInvalida = "FormularioPortavel.EstruturaInvalida";
+    public const string OcorrenciaInvalida = "FormularioPortavel.OcorrenciaInvalida";
 }

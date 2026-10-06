@@ -88,9 +88,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
             [.. avaliacao.Grupos.Select(g => new GrupoPreVisualizadoDto(
                 g.Codigo, g.EtapaCodigo, g.Visivel.ToCodigo(), g.Obrigatorio.ToCodigo(), g.ContagemValida, g.OcorrenciaDoCandidatoValida,
                 [.. g.Ocorrencias.Select(o => new OcorrenciaPreVisualizadaDto(o.Id, [.. o.Itens.Select(i => Item(i, itemPorFato))]))]))],
-            [.. avaliacao.Etapas
-                .Where(e => modelo.Conteudo.Etapas.Any(m => m.Codigo == e.Codigo && m.Tipo == TipoEtapaFormulario.Secao))
-                .Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.ToCodigo()))]));
+            [.. avaliacao.Etapas.Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.ToCodigo()))]));
     }
 
     private static ItemPreVisualizadoDto Item(AvaliacaoItem item, Dictionary<string, ItemDoModelo> itemPorFato) => new(
