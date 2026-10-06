@@ -170,7 +170,7 @@ public static class VocabularioDoCatalogo
                         .Where(static v => v.Ativo)
                         .OrderBy(static v => v.Ordem)
                         .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
-                        .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem))],
+                        .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))],
                     FonteValoresFato.GeoUf => [.. ReferenciaCidadeGeo.UnidadesFederativas.Select(static (uf, ordem) => new ValorSelecionavel(uf.Sigla, uf.Nome, ordem))],
                     _ => null,
                 }

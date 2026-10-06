@@ -48,7 +48,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         formulario.Regras.Etapas.Select(static e => e.Codigo).Should().Contain(formulario.Etapas[0].CodigoNasRegras);
     }
 
-    [Fact(DisplayName = "O campo de seleção traz os valores na ordem de apresentação; o de texto, o formato e nenhum valor")]
+    [Fact(DisplayName = "O campo de seleção traz os valores na ordem de apresentação, com a orientação congelada; o de texto, o formato e nenhum valor")]
     public void Projetar_Campos_TrazemValoresEFormato()
     {
         Configuracao configuracao = new(
@@ -62,7 +62,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         {
             Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
             {
-                ["COR_RACA"] = [new("PRETA", "Preta", 1), new("BRANCA", "Branca", 0), new("AMARELA", "Amarela", 1)],
+                ["COR_RACA"] = [new("PRETA", "Preta", 1, "Passa pela heteroidentificação."), new("BRANCA", "Branca", 0), new("AMARELA", "Amarela", 1)],
                 ["NOME_SOCIAL"] = null,
             },
         };
@@ -70,6 +70,8 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
         formulario.FatosColetados[0].ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal("BRANCA", "AMARELA", "PRETA");
+        formulario.FatosColetados[0].ValoresSelecionaveis!.Select(static v => v.Orientacao)
+            .Should().Equal(null, null, "Passa pela heteroidentificação.");
         formulario.FatosColetados[1].ValoresSelecionaveis.Should().BeNull();
         formulario.FatosColetados[1].Formato.Should().Be("NOME_PESSOA");
         formulario.Regras.Etapas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "COR_RACA").Oferta

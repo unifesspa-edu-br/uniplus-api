@@ -124,10 +124,10 @@ public sealed class FatoCandidatoTests
         fato.Sistema.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Acrescentar valor acumula as violações do código, da descrição e da ordem")]
+    [Fact(DisplayName = "Acrescentar valor acumula as violações do código, da descrição, da orientação e da ordem")]
     public void AdicionarValorDominio_AcumulaViolacoes() =>
-        Criar().Value!.AdicionarValorDominio(" ", null, -1, ativo: true)
-            .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["codigo", "descricao", "ordem"]);
+        Criar().Value!.AdicionarValorDominio(" ", null, -1, ativo: true, new string('x', FatoValorDominio.OrientacaoMaxLength + 1))
+            .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["codigo", "descricao", "orientacao", "ordem"]);
 
     [Fact(DisplayName = "Editar nome e descrição acumula as duas violações")]
     public void AlterarDescritivo_AcumulaViolacoes() =>

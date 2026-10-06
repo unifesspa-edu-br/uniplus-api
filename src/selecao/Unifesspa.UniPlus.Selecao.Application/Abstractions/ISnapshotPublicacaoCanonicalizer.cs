@@ -37,7 +37,11 @@ public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 /// vem do catálogo). <c>Ativo</c> continua fora daqui: o congelamento já filtra os valores
 /// ativos mais os desativados que o processo cita.
 /// </param>
-public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descricao, int Ordem);
+/// <param name="Orientacao">
+/// O que o candidato precisa saber sobre a opção, mostrado abaixo dela. Congela só nas opções do
+/// seletor do formulário; a evidência do gatilho não a usa.
+/// </param>
+public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descricao, int Ordem, string? Orientacao = null);
 
 /// <summary>
 /// Metadado de um fato do candidato (ADR-0111) congelado no envelope de publicação

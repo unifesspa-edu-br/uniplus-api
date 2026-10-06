@@ -17,6 +17,6 @@ public static class AdicionarValorDominioCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         return MutacaoDoFato.AplicarAsync(
-            command.FatoId, fato => fato.AdicionarValorDominio(command.Codigo, command.Descricao, command.Ordem, ativo: true), repository, unitOfWork, cancellationToken);
+            command.FatoId, fato => fato.AdicionarValorDominio(command.Codigo, command.Descricao, command.Ordem, ativo: true, command.Orientacao), repository, unitOfWork, cancellationToken);
     }
 }

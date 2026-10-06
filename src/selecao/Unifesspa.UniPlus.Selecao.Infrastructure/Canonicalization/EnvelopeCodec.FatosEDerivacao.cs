@@ -563,11 +563,12 @@ public sealed partial class EnvelopeCodec
         {
             string itemPath = $"{path}[{i}]";
             JsonObject valorItem = leitor.ItemObjeto(array, i, path);
-            leitor.ExigirChaves(valorItem, itemPath, "valorCodigo", "descricao", "ordem");
+            leitor.ExigirChaves(valorItem, itemPath, "valorCodigo", "descricao", "ordem", "orientacao");
 
             string valorCodigo = leitor.TextoNaoVazio(valorItem, "valorCodigo", itemPath);
             string? descricao = leitor.TextoOpcional(valorItem, "descricao", itemPath);
             int ordem = leitor.Inteiro(valorItem, "ordem", itemPath);
+            string? orientacao = leitor.TextoOpcional(valorItem, "orientacao", itemPath);
             if (leitor.Falhou)
             {
                 return null;
@@ -585,7 +586,7 @@ public sealed partial class EnvelopeCodec
                     ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}': o valor '{valorCodigo}' aparece mais de uma vez."));
             }
 
-            valores.Add(new ValorDominioDeclaradoCongelado(valorCodigo, descricao, ordem));
+            valores.Add(new ValorDominioDeclaradoCongelado(valorCodigo, descricao, ordem, orientacao));
         }
 
         // issue #1077: a bicondicional exige array, mas array VAZIO para um fato de seleção não

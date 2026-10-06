@@ -641,8 +641,11 @@ public sealed class RestauradorDeConfiguracaoTests
         dicionarioReidratado!["COR_RACA"].Should().NotBeNull("COR_RACA é estático, SELECAO_UNICA");
         dicionarioReidratado["COR_RACA"]!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"]);
         dicionarioReidratado["COR_RACA"]!.Select(static v => v.Descricao).Should().Equal([
-            "Autodeclaração de cor/raça branca.", "Autodeclaração de cor/raça preta.", "Autodeclaração de cor/raça parda.",
+            "Autodeclaração de cor/raça branca.", "Preta", "Autodeclaração de cor/raça parda.",
         ]);
+        dicionarioReidratado["COR_RACA"]!.Select(static v => v.Orientacao).Should().Equal([
+            null, "Quem concorre às vagas para pretos e pardos passa pela heteroidentificação.", null,
+        ], "a orientação congelada volta com o valor");
 
         dicionarioReidratado.Should().ContainKey("CONDICAO_ATENDIMENTO");
         dicionarioReidratado["CONDICAO_ATENDIMENTO"].Should().NotBeNull("CONDICAO_ATENDIMENTO é escopo-processo, SELECAO_MULTIPLA");

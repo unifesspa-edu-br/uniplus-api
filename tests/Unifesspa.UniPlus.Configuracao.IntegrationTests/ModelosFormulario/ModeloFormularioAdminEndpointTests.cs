@@ -245,6 +245,11 @@ public sealed class ModeloFormularioAdminEndpointTests
         JsonObject formulario = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
         formulario["etapas"]!.AsArray().Select(static e => e!["codigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.CodigoDaSecao);
         formulario["fatosColetados"]!.AsArray().Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
+        JsonNode preta = formulario["fatosColetados"]!.AsArray()
+            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["valoresSelecionaveis"]!.AsArray()
+            .Single(static v => v!["codigo"]!.GetValue<string>() == "PRETA")!;
+        preta["descricao"]!.GetValue<string>().Should().Be("Preta");
+        preta["orientacao"]!.GetValue<string>().Should().Contain("heteroidentificação", "a opção leva a orientação abaixo do nome curto");
         JsonNode secaoNasRegras = formulario["regras"]!["etapas"]!.AsArray()
             .Single(static e => e!["codigo"]!.GetValue<string>() == ConjuntoBasicoDaInscricao.CodigoDaSecao)!;
         secaoNasRegras["itens"]!.AsArray().Select(static i => i!["fatoCodigo"]!.GetValue<string>())

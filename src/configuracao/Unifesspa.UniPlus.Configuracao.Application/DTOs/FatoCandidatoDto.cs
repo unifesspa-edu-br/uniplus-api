@@ -29,7 +29,7 @@ public sealed record FatoCandidatoDto(
     IReadOnlyList<RegraPadraoDto> RegrasPadrao);
 
 /// <summary>Um valor de domínio de um fato de fonte global.</summary>
-public sealed record FatoValorDominioDto(string Codigo, string? Descricao, int Ordem, bool Ativo);
+public sealed record FatoValorDominioDto(string Codigo, string? Descricao, int Ordem, bool Ativo, string? Orientacao);
 
 /// <summary>
 /// Uma regra padrão do derivado: o que contribui (nulo no booleano) e o predicado, OU de cláusulas

@@ -42,6 +42,7 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(v => v.Codigo).HasMaxLength(FatoValorDominio.CodigoMaxLength).IsRequired();
         builder.Property(v => v.Descricao).HasMaxLength(FatoValorDominio.DescricaoMaxLength);
+        builder.Property(v => v.Orientacao).HasMaxLength(FatoValorDominio.OrientacaoMaxLength);
         builder.Property(v => v.Ordem).IsRequired();
         builder.Property(v => v.Ativo).IsRequired();
 
@@ -71,6 +72,7 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
             item.FatoCandidatoId,
             item.Codigo,
             item.Descricao,
+            item.Orientacao,
             item.Ordem,
             item.Ativo,
             CreatedAt = seedCriadoEm,

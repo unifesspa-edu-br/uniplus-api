@@ -28,6 +28,7 @@ public static class FatoValorDominioErrorCodes
     /// <summary>Descrição ausente quando o fato pai é <see cref="Enums.OrigemFato.Declarado"/>.</summary>
     public const string DescricaoObrigatoria = "FatoValorDominio.DescricaoObrigatoria";
     public const string DescricaoTamanho = "FatoValorDominio.DescricaoTamanho";
+    public const string OrientacaoTamanho = "FatoValorDominio.OrientacaoTamanho";
     public const string OrdemInvalida = "FatoValorDominio.OrdemInvalida";
     public const string NaoEncontrado = "FatoValorDominio.NaoEncontrado";
     public const string JaAtivo = "FatoValorDominio.JaAtivo";

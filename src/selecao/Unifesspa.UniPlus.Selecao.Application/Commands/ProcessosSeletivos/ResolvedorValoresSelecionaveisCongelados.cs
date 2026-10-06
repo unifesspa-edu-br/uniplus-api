@@ -198,7 +198,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             IReadOnlyList<ValorDominioDeclaradoCongelado> valores = [.. vigentes
                 .OrderBy(static v => v.Ordem)
                 .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
-                .Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))];
+                .Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))];
             return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(valores);
         }
 
