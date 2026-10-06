@@ -12371,7 +12371,16 @@
       },
       "FormularioRenderizavelDto": {
         "required": [
-          "comprovacaoDocumental"
+          "comprovacaoDocumental",
+          "finalidade",
+          "titulo",
+          "etapas",
+          "termos",
+          "fatosColetados",
+          "grupos",
+          "regras",
+          "pressupostos",
+          "dataReferenciaFatos"
         ],
         "type": "object",
         "properties": {
