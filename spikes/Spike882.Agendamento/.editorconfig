@@ -1,0 +1,5 @@
+# Spike descartável: isola das regras do repositório.
+root = true
+
+[*.cs]
+dotnet_analyzer_diagnostic.severity = none
