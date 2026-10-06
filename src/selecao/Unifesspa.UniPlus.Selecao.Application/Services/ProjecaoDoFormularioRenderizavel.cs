@@ -7,7 +7,6 @@ using Domain.Services;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
 /// O formulário renderizável de uma finalidade a partir da configuração do processo — a congelada na
@@ -39,11 +38,6 @@ public static class ProjecaoDoFormularioRenderizavel
         }
 
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = avaliavel.ValoresSelecionaveis;
-        Dictionary<string, IReadOnlyList<string>> calculadoDe = new(DerivadosDoSistema.Dependencias, StringComparer.Ordinal);
-        foreach (DefinicaoAgregado agregado in avaliavel.Definicao.Agregados)
-        {
-            calculadoDe[agregado.Codigo] = [agregado.FatoDeMembro];
-        }
 
         return FormularioRenderizavel.Montar(
             EstruturaFormulario.ParaToken(finalidade),
@@ -54,7 +48,7 @@ public static class ProjecaoDoFormularioRenderizavel
             [.. grupos.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem).Select(g => Grupo(g, valores))],
             RecorteDaFinalidade.De(avaliavel.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(finalidade, null), avaliavel.Ofertas),
             fatos.Where(f => f.Finalidade != finalidade).Select(f => Campo(f, valores)),
-            calculadoDe,
+            avaliavel.Definicao.Agregados,
             dataReferenciaFatos);
     }
 

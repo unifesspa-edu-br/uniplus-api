@@ -24,4 +24,7 @@ public static class ModeloFormularioErrorCodes
     public const string TermoVersaoNaoEncontrada = "ModeloFormulario.TermoVersaoNaoEncontrada";
     public const string ObrigatoriedadeInvalida = "ModeloFormulario.ObrigatoriedadeInvalida";
     public const string EntradaMalformada = "ModeloFormulario.EntradaMalformada";
+
+    /// <summary>Ocorrência de grupo simulada sem identidade própria no grupo.</summary>
+    public const string OcorrenciaSimuladaInvalida = "ModeloFormulario.OcorrenciaSimuladaInvalida";
 }

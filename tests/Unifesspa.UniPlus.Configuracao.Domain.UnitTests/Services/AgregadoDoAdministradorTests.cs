@@ -182,6 +182,24 @@ public sealed class AgregadoDoAdministradorTests
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(FatoCandidatoErrorCodes.RegraCitaValorDesativado);
     }
 
+    [Fact(DisplayName = "O modelo leva os agregados do catálogo cujo fato de membro é campo de um grupo dele, com a operação do domínio do membro")]
+    public void AgregadosDosGrupos_SoOsQueAgregamCampoDeGrupoDoModelo()
+    {
+        FatoCandidato membro = DeMembro("MENOR_SOB_GUARDA");
+        FatoCandidato foraDoModelo = DeMembro("TRABALHA_NO_CAMPO");
+        FatoCandidato agregado = Criar("EXISTE_MENOR_SOB_GUARDA", "MENOR_SOB_GUARDA", membro).Value!;
+        FatoCandidato outro = Criar("EXISTE_TRABALHADOR_RURAL", "TRABALHA_NO_CAMPO", foraDoModelo).Value!;
+        GrupoDoModelo familia = new(
+            "COMPOSICAO_FAMILIAR", 0, "DADOS", "Composição familiar", 0, null, null, Regras.Formularios.Obrigatoriedade.Nunca,
+            [new ItemDoModelo("MENOR_SOB_GUARDA", 0, null, "Menor sob guarda", TipoRenderizacao.Booleano, null, null,
+                Regras.Formularios.Obrigatoriedade.Sempre, null, [], false)]);
+
+        IReadOnlyList<Regras.Formularios.DefinicaoAgregado> agregados = VocabularioDoCatalogo.AgregadosDosGrupos([membro, foraDoModelo, agregado, outro], [familia]);
+
+        agregados.Should().ContainSingle().Which.Should().Be(new Regras.Formularios.DefinicaoAgregado(
+            "EXISTE_MENOR_SOB_GUARDA", "COMPOSICAO_FAMILIAR", "MENOR_SOB_GUARDA", Regras.Formularios.OperacaoAgregado.Existe));
+    }
+
     private static Result<FatoCandidato> Criar(string codigo, string fatoDeMembro, params FatoCandidato[] catalogo) =>
         FatoCandidato.CriarAgregadoDoAdministrador(
             codigo, codigo, null, fatoDeMembro, new CatalogoDeFatos(catalogo, []), "HABILITACAO",

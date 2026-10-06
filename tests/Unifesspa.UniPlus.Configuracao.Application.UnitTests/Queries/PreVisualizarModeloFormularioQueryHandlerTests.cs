@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -103,19 +104,66 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "Modelo inexistente não tem pré-visualização")]
     public async Task Handle_ModeloInexistente_DevolveNulo()
     {
-        PreVisualizacaoDoModeloDto? resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
+        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
             new PreVisualizarModeloFormularioQuery(Guid.NewGuid(), new(null, null, null)), _repository, _fatos, CancellationToken.None);
 
-        resultado.Should().BeNull();
+        resultado.Value.Should().BeNull();
     }
 
-    private Task<PreVisualizacaoDoModeloDto?> PreVisualizarAsync(
-        ModeloFormulario modelo, Dictionary<string, object>? respostas = null, Dictionary<string, object>? pressupostos = null)
+    [Fact(DisplayName = "A pré-visualização avalia o grupo repetível: a exibição de cada campo em cada ocorrência e a contagem")]
+    public async Task Handle_GrupoRepetivel_AvaliaCadaOcorrencia()
+    {
+        GrupoDoModelo familia = new(
+            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 2, null, Obrigatoriedade.Sempre,
+            [Subitem("TRABALHA_NO_CAMPO", 0), Subitem("DECLARACAO_RURAL", 1, exibicao: Quando("TRABALHA_NO_CAMPO", true))]);
+        ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [familia]);
+
+        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, grupos: new()
+        {
+            ["COMPOSICAO_FAMILIAR"] =
+            [
+                new OcorrenciaRecebida("m1", Json(new() { ["TRABALHA_NO_CAMPO"] = true })),
+                new OcorrenciaRecebida("m2", Json(new() { ["TRABALHA_NO_CAMPO"] = false })),
+            ],
+        }))!;
+
+        GrupoPreVisualizadoDto grupo = resultado.Grupos.Should().ContainSingle().Which;
+        grupo.ContagemValida.Should().BeTrue();
+        grupo.Ocorrencias.Select(static o => (o.Id, o.Itens.Single(static i => i.FatoCodigo == "DECLARACAO_RURAL").Visivel))
+            .Should().Equal(("m1", "VERDADEIRO"), ("m2", "FALSO"));
+    }
+
+    [Fact(DisplayName = "Ocorrência simulada sem identidade própria no grupo é recusada com o caminho dela")]
+    public async Task Handle_OcorrenciaSemIdentidade_Recusa()
+    {
+        GrupoDoModelo familia = new(
+            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 0, null, null, Obrigatoriedade.Nunca, [Subitem("TRABALHA_NO_CAMPO", 0)]);
+        ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [familia]);
+        _repository.ObterPorIdParaLeituraAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
+
+        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
+            new PreVisualizarModeloFormularioQuery(modelo.Id, new(null, null, null, new Dictionary<string, IReadOnlyList<OcorrenciaRecebida>?>
+            {
+                ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaRecebida("m1", null), new OcorrenciaRecebida("m1", null)],
+            })),
+            _repository, _fatos, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ModeloFormulario.OcorrenciaSimuladaInvalida");
+    }
+
+    private async Task<PreVisualizacaoDoModeloDto?> PreVisualizarAsync(
+        ModeloFormulario modelo,
+        Dictionary<string, object>? respostas = null,
+        Dictionary<string, object>? pressupostos = null,
+        Dictionary<string, IReadOnlyList<OcorrenciaRecebida>?>? grupos = null)
     {
         _repository.ObterPorIdParaLeituraAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
-        return PreVisualizarModeloFormularioQueryHandler.Handle(
-            new PreVisualizarModeloFormularioQuery(modelo.Id, new(Json(respostas), null, Json(pressupostos))),
+        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
+            new PreVisualizarModeloFormularioQuery(modelo.Id, new(Json(respostas), null, Json(pressupostos), grupos)),
             _repository, _fatos, CancellationToken.None);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        return resultado.Value;
     }
 
     private static Dictionary<string, JsonElement>? Json(Dictionary<string, object>? valores) =>
@@ -125,11 +173,12 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         IReadOnlyList<ItemDoModelo> itens,
         IReadOnlyList<TermoDoModelo>? termos = null,
         IReadOnlyList<string>? pressupostos = null,
-        Dictionary<string, IReadOnlyCollection<string>>? derivacoes = null)
+        Dictionary<string, IReadOnlyCollection<string>>? derivacoes = null,
+        IReadOnlyList<GrupoDoModelo>? grupos = null)
     {
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação", null, FinalidadeFormulario.Habilitacao, null,
-            new ConteudoDoModelo("Habilitação", [Dados, Revisao], itens, termos ?? [], pressupostos ?? [], []),
+            new ConteudoDoModelo("Habilitação", [Dados, Revisao], itens, termos ?? [], pressupostos ?? [], grupos ?? []),
             derivacoes ?? new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);
         return modelo.Value!;
@@ -137,6 +186,9 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
 
     private static ItemDoModelo Item(string fato, int ordem, TipoRenderizacao tipo = TipoRenderizacao.Booleano, PredicadoDnf? exibicao = null) =>
         new(fato, ordem, "DADOS", fato, tipo, null, null, Obrigatoriedade.Sempre, exibicao, [], false);
+
+    private static ItemDoModelo Subitem(string fato, int ordem, PredicadoDnf? exibicao = null) =>
+        new(fato, ordem, null, fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, exibicao, [], false);
 
     private static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
