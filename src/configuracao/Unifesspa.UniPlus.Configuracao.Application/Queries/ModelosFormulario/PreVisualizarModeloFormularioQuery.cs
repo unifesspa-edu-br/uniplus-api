@@ -64,14 +64,20 @@ public static class PreVisualizarModeloFormularioQueryHandler
             return Result<PreVisualizacaoDoModeloDto?>.ValidationFailure(erros);
         }
 
+        // A resposta fora das opções que o catálogo oferta não vale, como no renderizável que o front
+        // interpreta: os dois têm de dar o mesmo resultado para a mesma simulação.
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
+        Dictionary<string, IReadOnlySet<string>> ofertas = VocabularioDoCatalogo.Ofertas(VocabularioDoCatalogo.OpcoesDoModelo(fatos, modelo.Conteudo));
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
             modelo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, modelo.Conteudo.Grupos)),
             new EntradaAvaliacaoFormulario(
-                simulacao.Respostas ?? new Dictionary<string, JsonElement>(),
+                RespostaDeCampo.DentroDaOferta(simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ofertas),
                 new HashSet<string>(simulacao.EtapasConcluidas ?? [], StringComparer.Ordinal),
                 RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
-                ocorrencias));
+                ocorrencias.ToDictionary(
+                    static o => o.Key,
+                    o => (IReadOnlyList<OcorrenciaRespondida>)[.. o.Value.Select(r => r with { Respostas = RespostaDeCampo.DentroDaOferta(r.Respostas, ofertas) })],
+                    StringComparer.Ordinal)));
 
         Dictionary<string, ItemDoModelo> itemPorFato = modelo.Conteudo.Itens
             .Concat(modelo.Conteudo.Grupos.SelectMany(static g => g.Subitens))
