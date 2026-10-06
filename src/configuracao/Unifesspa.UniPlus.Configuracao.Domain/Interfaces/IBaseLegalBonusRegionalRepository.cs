@@ -9,6 +9,9 @@ public interface IBaseLegalBonusRegionalRepository
 
     Task<BaseLegalBonusRegional?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>As bases legais vivas com os municípios, para leitura, sem paginação: o cadastro é curto.</summary>
+    Task<IReadOnlyList<BaseLegalBonusRegional>> ListarVivasParaLeituraAsync(CancellationToken cancellationToken);
+
     Task<(IReadOnlyList<BaseLegalBonusRegional> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
