@@ -115,5 +115,5 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             : [.. valores
                 .OrderBy(v => v.Ordem)
                 .ThenBy(v => v.Codigo, StringComparer.Ordinal)
-                .Select(v => new FatoValorDominioViewItem(v.Codigo, v.Descricao, v.Ordem, v.Ativo))];
+                .Select(v => new FatoValorDominioViewItem(v.Codigo, v.Descricao, v.Ordem, v.Ativo, v.Orientacao))];
 }

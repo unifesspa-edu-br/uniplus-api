@@ -65,11 +65,13 @@ public sealed record FatoCandidatoView(
 /// round-trip cross-módulo.
 /// </summary>
 /// <param name="Codigo">Código do valor (ex.: "PRETA").</param>
-/// <param name="Descricao">Descrição que orienta a escolha do candidato — obrigatória quando o fato pai é DECLARADO.</param>
+/// <param name="Descricao">O nome da opção que o candidato escolhe — obrigatória quando o fato pai é DECLARADO.</param>
 /// <param name="Ordem">Ordem de exibição sugerida.</param>
 /// <param name="Ativo">Indica se o valor está ativo para novas seleções.</param>
+/// <param name="Orientacao">O que o candidato precisa saber sobre a opção, mostrado abaixo dela.</param>
 public sealed record FatoValorDominioViewItem(
     string Codigo,
     string? Descricao,
     int Ordem,
-    bool Ativo);
+    bool Ativo,
+    string? Orientacao = null);

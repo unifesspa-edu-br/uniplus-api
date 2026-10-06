@@ -94,7 +94,7 @@ public static class ProjecaoDoFormularioRenderizavel
         fato.TipoRenderizacao.ToCodigo(),
         valores.GetValueOrDefault(fato.FatoCodigo) is { } doCampo
             ? [.. doCampo.OrderBy(static v => v.Ordem).ThenBy(static v => v.Codigo, StringComparer.Ordinal)
-                .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem))]
+                .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))]
             : null,
         fato.EtapaCodigo,
         fato.Formato,

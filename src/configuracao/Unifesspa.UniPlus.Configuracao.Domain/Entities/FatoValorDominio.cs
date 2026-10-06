@@ -29,9 +29,18 @@ public sealed class FatoValorDominio : EntityBase
     /// <summary>Tamanho máximo da <see cref="Descricao"/> — mais curta que a do <c>FatoCandidato</c> pai (1000), por ser um rótulo de valor, não um parágrafo.</summary>
     public const int DescricaoMaxLength = 500;
 
+    /// <summary>Tamanho máximo da <see cref="Orientacao"/>: uma ou duas frases sob a opção.</summary>
+    public const int OrientacaoMaxLength = 500;
+
     public Guid FatoCandidatoId { get; private set; }
     public string Codigo { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
+
+    /// <summary>
+    /// O que o candidato precisa saber sobre esta opção, mostrado abaixo dela; a
+    /// <see cref="Descricao"/> é o nome curto da opção.
+    /// </summary>
+    public string? Orientacao { get; private set; }
     public int Ordem { get; private set; }
     public bool Ativo { get; private set; }
 
@@ -47,7 +56,7 @@ public sealed class FatoValorDominio : EntityBase
     /// <see cref="FatoCandidato.AdicionarValorDominio"/>.
     /// </summary>
     internal static FatoValorDominio Criar(
-        Guid fatoCandidatoId, string codigo, string? descricao, int ordem, bool ativo)
+        Guid fatoCandidatoId, string codigo, string? descricao, int ordem, bool ativo, string? orientacao = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         if (fatoCandidatoId == Guid.Empty)
@@ -60,6 +69,7 @@ public sealed class FatoValorDominio : EntityBase
             FatoCandidatoId = fatoCandidatoId,
             Codigo = codigo,
             Descricao = descricao,
+            Orientacao = orientacao,
             Ordem = ordem,
             Ativo = ativo,
         };

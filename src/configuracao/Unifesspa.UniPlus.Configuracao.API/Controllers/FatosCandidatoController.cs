@@ -262,7 +262,7 @@ public sealed class FatosCandidatoController : ControllerBase
     public Task<IActionResult> AdicionarValor(Guid id, [FromBody] ValorDominioInput request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return Enviar(new AdicionarValorDominioCommand(id, request.Codigo, request.Descricao, request.Ordem), cancellationToken);
+        return Enviar(new AdicionarValorDominioCommand(id, request.Codigo, request.Descricao, request.Ordem, request.Orientacao), cancellationToken);
     }
 
     /// <summary>Reativa um valor do fato do administrador.</summary>

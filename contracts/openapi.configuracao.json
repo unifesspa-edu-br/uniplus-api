@@ -16616,7 +16616,8 @@
           "codigo",
           "descricao",
           "ordem",
-          "ativo"
+          "ativo",
+          "orientacao"
         ],
         "type": "object",
         "properties": {
@@ -16639,6 +16640,12 @@
           },
           "ativo": {
             "type": "boolean"
+          },
+          "orientacao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -16670,6 +16677,12 @@
           },
           "ativo": {
             "type": "boolean"
+          },
+          "orientacao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -19055,6 +19068,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "orientacao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -19082,6 +19101,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "orientacao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       }

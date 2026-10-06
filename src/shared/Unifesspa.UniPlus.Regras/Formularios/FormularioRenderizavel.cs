@@ -2,8 +2,11 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using Unifesspa.UniPlus.Regras.Services;
 
-/// <summary>Um valor que o candidato pode escolher num campo de seleção: o código, a descrição que orienta a escolha e a ordem.</summary>
-public sealed record ValorSelecionavel(string Codigo, string? Descricao, int Ordem);
+/// <summary>
+/// Um valor que o candidato pode escolher num campo de seleção: o código, a descrição — o nome da
+/// opção —, a ordem e a orientação, o que o candidato precisa saber sobre a opção, mostrada abaixo dela.
+/// </summary>
+public sealed record ValorSelecionavel(string Codigo, string? Descricao, int Ordem, string? Orientacao = null);
 
 /// <summary>
 /// Um campo do formulário pronto para renderização (UNI-REQ-0144): a apresentação e, no campo de

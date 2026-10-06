@@ -895,6 +895,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_valor_dominio.descricao_tamanho",
                 "Tamanho da descrição do valor de domínio inválido")),
 
+        new(FatoValorDominioErrorCodes.OrientacaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.orientacao_tamanho",
+                "Tamanho da orientação do valor de domínio inválido")),
+
         new(FatoValorDominioErrorCodes.OrdemInvalida,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

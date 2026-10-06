@@ -1925,6 +1925,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                             ["valorCodigo"] = HashCanonicalComputer.NormalizeNfc(v.Codigo),
                             ["descricao"] = v.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
                             ["ordem"] = v.Ordem,
+                            ["orientacao"] = v.Orientacao is { } orientacao ? HashCanonicalComputer.NormalizeNfc(orientacao) : null,
                         })])
                     : null,
             });

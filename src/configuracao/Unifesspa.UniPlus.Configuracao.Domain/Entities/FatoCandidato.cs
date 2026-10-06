@@ -606,9 +606,10 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// <see cref="Dominio"/> é <see cref="DominioFato.Categorico"/>, que o
     /// <paramref name="codigo"/> (normalizado por trim, comparação ordinal) não
     /// colide com um irmão já adicionado, e que a <paramref name="descricao"/> é
-    /// obrigatória quando <see cref="Origem"/> é <see cref="OrigemFato.Declarado"/>.
+    /// obrigatória quando <see cref="Origem"/> é <see cref="OrigemFato.Declarado"/>. A
+    /// <paramref name="orientacao"/>, opcional, é o que o candidato vê abaixo da opção.
     /// </summary>
-    public Result AdicionarValorDominio(string codigo, string? descricao, int ordem, bool ativo)
+    public Result AdicionarValorDominio(string codigo, string? descricao, int ordem, bool ativo, string? orientacao = null)
     {
         if (RecusaSeSistema() is { } recusa)
         {
@@ -670,6 +671,13 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 "Descrição do valor de domínio é obrigatória quando a origem do fato é DECLARADO.");
         }
 
+        string? orientacaoNormalizada = string.IsNullOrWhiteSpace(orientacao) ? null : orientacao.Trim();
+        if (orientacaoNormalizada is { Length: > FatoValorDominio.OrientacaoMaxLength })
+        {
+            Recusar("orientacao", FatoValorDominioErrorCodes.OrientacaoTamanho,
+                $"Orientação do valor de domínio deve ter no máximo {FatoValorDominio.OrientacaoMaxLength} caracteres.");
+        }
+
         if (ordem < 0)
         {
             Recusar("ordem", FatoValorDominioErrorCodes.OrdemInvalida, "Ordem do valor de domínio não pode ser negativa.");
@@ -680,7 +688,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.ValidationFailure(erros);
         }
 
-        _valoresDominioDeclarados.Add(FatoValorDominio.Criar(Id, codigoNormalizado, descricaoNormalizada, ordem, ativo));
+        _valoresDominioDeclarados.Add(FatoValorDominio.Criar(Id, codigoNormalizado, descricaoNormalizada, ordem, ativo, orientacaoNormalizada));
         return Result.Success();
     }
 

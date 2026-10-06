@@ -823,7 +823,7 @@ internal static class CorpusEnvelope
         List<ValorDominioDeclaradoCongelado> corRaca =
         [
             new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
-            new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
+            new ValorDominioDeclaradoCongelado("PRETA", "Preta", 1, "Quem concorre às vagas para pretos e pardos passa pela heteroidentificação."),
             new ValorDominioDeclaradoCongelado("PARDA", "Autodeclaração de cor/raça parda.", 2),
         ];
         List<ValorDominioDeclaradoCongelado> renda =
