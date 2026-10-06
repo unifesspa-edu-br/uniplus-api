@@ -11,8 +11,9 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 
 /// <summary>
 /// O conjunto básico de dados do candidato que todo formulário de inscrição coleta, na seção
-/// reservada <see cref="CodigoDaSecao"/>, a primeira do formulário: a identificação, a filiação e os
-/// contatos, com a exibição e a obrigatoriedade de cada item.
+/// reservada <see cref="CodigoDaSecao"/>, a primeira do formulário: a identificação, a filiação, os
+/// contatos e a residência — o tipo de localidade antes do endereço —, com a exibição e a
+/// obrigatoriedade de cada item.
 /// </summary>
 /// <remarks>
 /// A seção e os itens estão na forma de entrada, para passarem pela mesma escrita dos demais itens
@@ -26,6 +27,10 @@ public static class ConjuntoBasicoDaInscricao
     private const string Nacionalidade = "NACIONALIDADE";
     private const string Estrangeiro = "ESTRANGEIRO";
     private const string DesejaNomeSocial = "DESEJA_NOME_SOCIAL";
+    private const string TipoDeLocalidade = "TIPO_ENDERECO";
+
+    /// <summary>Os tipos de localidade em que se pede o nome da aldeia, da comunidade ou do quilombo.</summary>
+    private static readonly string[] LocalidadesComComunidade = ["ALDEIA", "COMUNIDADE", "QUILOMBO"];
 
     /// <summary>A seção reservada, a primeira etapa do formulário de inscrição.</summary>
     public static EtapaFormularioInput Secao { get; } =
@@ -234,6 +239,9 @@ public static class ConjuntoBasicoDaInscricao
             new("COR_RACA", 0, "Cor ou raça", selecao, sempre, null),
             new("EMAIL", 0, "E-mail", texto, sempre, null),
             new("TELEFONE", 0, "Telefone", texto, sempre, null),
+            new(TipoDeLocalidade, 0, "Tipo de localidade", selecao, sempre, null),
+            new("NOME_COMUNIDADE", 0, "Nome da aldeia, comunidade ou quilombo", texto, sempre,
+                Quando(TipoDeLocalidade, OperadorCodigo.Em, LocalidadesComComunidade)),
             new("ENDERECO_RESIDENCIAL", 0, "Endereço residencial", TipoRenderizacaoCodigo.Endereco, sempre, null),
         ];
 

@@ -164,7 +164,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(43);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(45);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -390,7 +390,7 @@ public sealed class FatoCandidatoPersistenceTests
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking()
             .Where(v => ctx.FatosCandidato.Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
             .ToListAsync();
-        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(32);
+        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(39);
 
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
         string[] codigosCorRaca = [.. valores
@@ -463,7 +463,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(43);
+        views.Should().HaveCount(45);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -606,6 +606,8 @@ public sealed class FatoCandidatoPersistenceTests
             ("RG_UF", "041", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_UF", "INSCRICAO"),
             ("NATURALIDADE_UF", "042", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NATURALIDADE_UF", "INSCRICAO"),
             ("NATURALIDADE_MUNICIPIO", "043", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NATURALIDADE_MUNICIPIO", "INSCRICAO"),
+            ("TIPO_ENDERECO", "044", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:TIPO_ENDERECO", "INSCRICAO"),
+            ("NOME_COMUNIDADE", "045", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_COMUNIDADE", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

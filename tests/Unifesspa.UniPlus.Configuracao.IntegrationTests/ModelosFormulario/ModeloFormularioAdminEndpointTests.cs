@@ -92,7 +92,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         JsonObject lido = await ObterAsync(client, id);
         lido["conteudo"]!["etapas"]![0]!["codigo"]!.GetValue<string>().Should().Be("DADOS_BASICOS");
         JsonArray itens = lido["conteudo"]!["itens"]!.AsArray();
-        itens.Where(static i => i!["etapaCodigo"]!.GetValue<string>() == "DADOS_BASICOS").Should().HaveCount(22);
+        itens.Where(static i => i!["etapaCodigo"]!.GetValue<string>() == "DADOS_BASICOS").Should().HaveCount(ConjuntoBasicoDaInscricao.Itens.Count);
 
         // O conteúdo lido volta à escrita sem conversão; o dado básico alterado é recusado.
         (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Inscrição", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo = lido["conteudo"] }))
@@ -264,6 +264,33 @@ public sealed class ModeloFormularioAdminEndpointTests
         preVisualizacao["itens"]!.AsArray().Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
     }
 
+    [Theory(DisplayName = "No modelo de inscrição semeado, o tipo de localidade vem nos dados básicos antes do endereço, e o nome da comunidade só aparece para aldeia, comunidade ou quilombo")]
+    [InlineData("URBANO", "FALSO")]
+    [InlineData("ALDEIA", "VERDADEIRO")]
+    public async Task ModeloDeInscricao_TipoDeLocalidadeAntesDoEndereco(string localidade, string comunidadeVisivel)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
+        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
+        Guid id = lista.RootElement.EnumerateArray()
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+
+        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
+        List<string> basicos = [.. formulario["regras"]!["etapas"]!.AsArray()
+            .Single(static e => e!["codigo"]!.GetValue<string>() == ConjuntoBasicoDaInscricao.CodigoDaSecao)!["itens"]!.AsArray()
+            .Select(static i => i!["fatoCodigo"]!.GetValue<string>())];
+        basicos.IndexOf("TIPO_ENDERECO").Should().BeLessThan(basicos.IndexOf("NOME_COMUNIDADE"));
+        basicos.IndexOf("NOME_COMUNIDADE").Should().BeLessThan(basicos.IndexOf("ENDERECO_RESIDENCIAL"), "a localidade é perguntada antes do endereço");
+        formulario["etapas"]!.AsArray().Select(static e => e!["codigo"]!.GetValue<string>()).Should().NotContain("ENDERECO");
+
+        HttpResponseMessage previa = await EnviarAsync(
+            client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas = new Dictionary<string, object> { ["TIPO_ENDERECO"] = localidade } });
+        previa.StatusCode.Should().Be(HttpStatusCode.OK, await previa.Content.ReadAsStringAsync());
+        JsonObject preVisualizacao = JsonNode.Parse(await previa.Content.ReadAsStringAsync())!.AsObject();
+        preVisualizacao["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "NOME_COMUNIDADE")!["visivel"]!
+            .GetValue<string>().Should().Be(comunidadeVisivel);
+    }
+
     [Theory(DisplayName = "A avaliação sem cadastro das regras do modelo dá o mesmo resultado da pré-visualização do modelo")]
     [InlineData(false)]
     [InlineData(true)]
@@ -295,8 +322,8 @@ public sealed class ModeloFormularioAdminEndpointTests
             }
         }
 
-        avaliacao["campos"]!.AsArray().Single(static c => c!["fatoCodigo"]!.GetValue<string>() == "TIPO_ENDERECO")!["opcoes"]!["codigos"]!.AsArray()
-            .Select(static c => c!.GetValue<string>()).Should().Equal(quilombola ? ["QUILOMBO", "URBANO"] : ["URBANO"], "as opções seguem a resposta anterior");
+        avaliacao["campos"]!.AsArray().Single(static c => c!["fatoCodigo"]!.GetValue<string>() == "FORMA_CONCLUSAO_EM")!["opcoes"]!["codigos"]!.AsArray()
+            .Select(static c => c!.GetValue<string>()).Should().Equal(quilombola ? ["EJA", "REGULAR"] : ["REGULAR"], "as opções seguem a resposta anterior");
 
         // No modelo, o código da etapa nas regras é o da seção: as duas listas se comparam direto.
         Pares(avaliacao["etapas"]!, "codigo", "visivel").Should().Equal(Pares(preVisualizacao["secoes"]!, "codigo", "visivel"));
@@ -403,8 +430,8 @@ public sealed class ModeloFormularioAdminEndpointTests
     };
 
     /// <summary>
-    /// Um modelo de inscrição com um campo de escolha cujas opções seguem a resposta anterior: o tipo
-    /// de endereço admite quilombo só para quem se declarou quilombola.
+    /// Um modelo de inscrição com um campo de escolha cujas opções seguem a resposta anterior: a forma
+    /// de conclusão do ensino médio admite a EJA só para quem se declarou quilombola.
     /// </summary>
     private static object ModeloComOpcoes(string codigo) => new
     {
@@ -424,9 +451,9 @@ public sealed class ModeloFormularioAdminEndpointTests
                 new { fatoCodigo = "QUILOMBOLA", ordem = 0, rotulo = "Quilombola", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE", precondicao = (object?)null, etapaCodigo = "DADOS" },
                 new
                 {
-                    fatoCodigo = "TIPO_ENDERECO",
+                    fatoCodigo = "FORMA_CONCLUSAO_EM",
                     ordem = 1,
-                    rotulo = "Tipo de endereço",
+                    rotulo = "Forma de conclusão do ensino médio",
                     tipoRenderizacao = "SELECAO_UNICA",
                     obrigatoriedade = "SEMPRE",
                     precondicao = (object?)null,
@@ -438,8 +465,8 @@ public sealed class ModeloFormularioAdminEndpointTests
                             tipo = "OPCOES_PERMITIDAS",
                             entradas = new object[]
                             {
-                                new { quando = (object?)null, valores = new[] { "URBANO" } },
-                                new { quando = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } }, valores = new[] { "QUILOMBO" } },
+                                new { quando = (object?)null, valores = new[] { "REGULAR" } },
+                                new { quando = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } }, valores = new[] { "EJA" } },
                             },
                         },
                     },
