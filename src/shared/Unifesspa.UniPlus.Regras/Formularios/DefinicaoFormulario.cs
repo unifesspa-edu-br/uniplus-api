@@ -171,7 +171,8 @@ public sealed record DefinicaoGrupo
 
 /// <summary>
 /// Um item do formulário: o fato que ele produz e as regras do item — exibição, obrigatoriedade,
-/// restrições de valor e impedimento (UNI-REQ-0145).
+/// restrições de valor, impedimento (UNI-REQ-0145) e, no campo de texto, o formato do fato no
+/// catálogo.
 /// </summary>
 public sealed record DefinicaoItem
 {
@@ -180,7 +181,8 @@ public sealed record DefinicaoItem
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
         IReadOnlyList<RestricaoValor> restricoes,
-        Impedimento? impedimento = null)
+        Impedimento? impedimento = null,
+        string? formato = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
@@ -191,6 +193,8 @@ public sealed record DefinicaoItem
         Obrigatoriedade = obrigatoriedade;
         Restricoes = [.. restricoes];
         Impedimento = impedimento;
+        Formato = formato;
+        RestricoesDaResposta = formato is null ? Restricoes : [.. Restricoes, new FormatoDeTexto(formato)];
     }
 
     public string FatoCodigo { get; }
@@ -204,6 +208,12 @@ public sealed record DefinicaoItem
 
     /// <summary>A resposta que impede a inscrição — nulo quando nenhuma impede.</summary>
     public Impedimento? Impedimento { get; }
+
+    /// <summary>O formato do fato no catálogo, no campo de texto; nulo nos demais.</summary>
+    public string? Formato { get; }
+
+    /// <summary>O que a resposta tem de atender: as restrições declaradas e o formato do campo.</summary>
+    public IReadOnlyList<RestricaoValor> RestricoesDaResposta { get; }
 
     /// <summary>
     /// Os fatos citados pelas regras do próprio item, sem a exibição da etapa. O impedimento cita a

@@ -642,12 +642,6 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.classificacao_abaixo_do_minimo_do_dominio",
                 "Fato de texto, data ou endereço é classificado como pessoal ou sensível")),
 
-        new(FatoCandidatoErrorCodes.TextoLivreVazio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fato_candidato.texto_livre_vazio",
-                "O texto é obrigatório")),
-
         new(FatoCandidatoErrorCodes.EscopoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

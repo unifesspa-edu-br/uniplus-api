@@ -19,4 +19,7 @@ public enum TipoRestricaoValor
 
     /// <summary>A resposta é um município da UF respondida num item anterior.</summary>
     MunicipiosDaUf = 5,
+
+    /// <summary>A resposta de texto está no formato do fato no catálogo, como CPF ou e-mail.</summary>
+    FormatoTexto = 6,
 }

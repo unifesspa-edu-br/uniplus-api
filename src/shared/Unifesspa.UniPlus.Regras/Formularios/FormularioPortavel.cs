@@ -190,7 +190,8 @@ public sealed record FormularioPortavel(
             ParaFio(item.Obrigatoriedade.Predicado),
             [.. item.Restricoes.Select(EntradaDeRegras.ParaEntrada)],
             EntradaDeRegras.ParaEntrada(item.Impedimento),
-            ofertados.TryGetValue(item.FatoCodigo, out IReadOnlySet<string>? oferta) ? [.. oferta.Order(StringComparer.Ordinal)] : null);
+            ofertados.TryGetValue(item.FatoCodigo, out IReadOnlySet<string>? oferta) ? [.. oferta.Order(StringComparer.Ordinal)] : null,
+            item.Formato);
 
     private static Result<DefinicaoEtapa> Etapa(EtapaPortavel etapa)
     {
@@ -274,7 +275,7 @@ public sealed record FormularioPortavel(
             restricoes.Add(lida.Value!);
         }
 
-        return Construir(() => new DefinicaoItem(item.FatoCodigo, exibicao.Value, obrigatoriedade.Value!, restricoes, impedimento.Value));
+        return Construir(() => new DefinicaoItem(item.FatoCodigo, exibicao.Value, obrigatoriedade.Value!, restricoes, impedimento.Value, item.Formato));
     }
 
     private static Result<RegrasDerivacaoFato> Derivacao(DerivacaoPortavel derivacao)
@@ -376,8 +377,9 @@ public sealed record EtapaPortavel(
 
 /// <summary>
 /// Um campo: o fato que ele produz, a exibição, a obrigatoriedade — <c>SEMPRE</c>, <c>NUNCA</c> ou
-/// <c>QUANDO</c> com o predicado —, as restrições de valor, o impedimento e a oferta de valores, quando o
-/// campo tem uma: a resposta fora dela não vale.
+/// <c>QUANDO</c> com o predicado —, as restrições de valor, o impedimento, a oferta de valores, quando o
+/// campo tem uma — a resposta fora dela não vale —, e o formato do campo de texto, como <c>CPF</c> ou
+/// <c>EMAIL</c>, que a resposta tem de atender.
 /// </summary>
 public sealed record ItemPortavel(
     string FatoCodigo,
@@ -386,7 +388,8 @@ public sealed record ItemPortavel(
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade,
     IReadOnlyList<RestricaoValorInput> Restricoes,
     ImpedimentoInput? Impedimento,
-    IReadOnlyList<string>? Oferta);
+    IReadOnlyList<string>? Oferta,
+    string? Formato = null);
 
 /// <summary>Um grupo repetível: exibição, obrigatoriedade, mínimo e máximo de ocorrências, se o candidato é um dos membros e os subitens.</summary>
 public sealed record GrupoPortavel(

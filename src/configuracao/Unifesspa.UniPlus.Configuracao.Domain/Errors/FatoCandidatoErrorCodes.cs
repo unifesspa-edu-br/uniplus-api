@@ -28,9 +28,6 @@ public static class FatoCandidatoErrorCodes
     public const string FormatoObrigatorio = "FatoCandidato.FormatoObrigatorio";
     public const string FormatoForaDeTexto = "FatoCandidato.FormatoForaDeTexto";
 
-    /// <summary>Resposta vazia a um fato de texto livre.</summary>
-    public const string TextoLivreVazio = "FatoCandidato.TextoLivreVazio";
-
     /// <summary>Texto, data e endereço exigem classificação pessoal ou sensível.</summary>
     public const string ClassificacaoAbaixoDoMinimoDoDominio = "FatoCandidato.ClassificacaoAbaixoDoMinimoDoDominio";
     public const string ClassificacaoProtecaoObrigatoria = "FatoCandidato.ClassificacaoProtecaoObrigatoria";

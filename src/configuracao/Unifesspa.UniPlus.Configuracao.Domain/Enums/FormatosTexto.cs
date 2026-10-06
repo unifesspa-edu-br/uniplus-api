@@ -1,8 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
-using Unifesspa.UniPlus.Kernel.Results;
-
 /// <summary>
 /// Mapeamento entre <see cref="FormatoTexto"/> (PascalCase) e o token textual de contrato/banco
 /// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita (molde de
@@ -55,23 +52,6 @@ public static class FormatosTexto
             : throw new ArgumentOutOfRangeException(nameof(token), token, "Token de formato de texto fora do domínio fechado.");
 
     /// <summary>
-    /// Valida o texto no formato, delegando ao tipo de valor do Kernel; o texto livre só não pode
-    /// ser vazio.
-    /// </summary>
-    public static Result Validar(FormatoTexto formato, string? texto) => formato switch
-    {
-        FormatoTexto.Livre => string.IsNullOrWhiteSpace(texto)
-            ? Result.Failure(new DomainError(FatoCandidatoErrorCodes.TextoLivreVazio, "O texto é obrigatório."))
-            : Result.Success(),
-        FormatoTexto.Cpf => ComoResultado(Kernel.Domain.ValueObjects.Cpf.Criar(texto)),
-        FormatoTexto.Email => ComoResultado(Kernel.Domain.ValueObjects.Email.Criar(texto)),
-        FormatoTexto.Telefone => ComoResultado(Kernel.Domain.ValueObjects.Telefone.Criar(texto)),
-        FormatoTexto.Cep => ComoResultado(Kernel.Domain.ValueObjects.Cep.Criar(texto)),
-        FormatoTexto.NomePessoa => ComoResultado(Kernel.Domain.ValueObjects.NomePessoa.Criar(texto)),
-        _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de texto fora do domínio fechado."),
-    };
-
-    /// <summary>
     /// A exibição parcial do texto no formato, pela máscara do tipo de valor do Kernel. O texto
     /// livre, que pode conter qualquer coisa, e o texto que não valida são inteiramente ocultados.
     /// </summary>
@@ -87,7 +67,4 @@ public static class FormatosTexto
     };
 
     private const string Oculto = "***";
-
-    private static Result ComoResultado<T>(Result<T> resultado) =>
-        resultado.IsSuccess ? Result.Success() : Result.Failure(resultado.Error!);
 }
