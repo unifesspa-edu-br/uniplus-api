@@ -155,13 +155,13 @@ public static class VocabularioDoCatalogo
     /// só existem no processo (as que ele declara, as modalidades, os municípios do bônus) ou vêm do
     /// Geo pela UF, e nos campos que não são categóricos.
     /// </summary>
-    public static Dictionary<string, IReadOnlyList<ValorSelecionavel>?> OpcoesDoModelo(IEnumerable<FatoCandidato> fatos, IEnumerable<string> campos)
+    public static Dictionary<string, IReadOnlyList<ValorSelecionavel>?> OpcoesDoModelo(IEnumerable<FatoCandidato> fatos, ConteudoDoModelo conteudo)
     {
         ArgumentNullException.ThrowIfNull(fatos);
-        ArgumentNullException.ThrowIfNull(campos);
+        ArgumentNullException.ThrowIfNull(conteudo);
         Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = new(StringComparer.Ordinal);
-        foreach (string campo in campos)
+        foreach (string campo in conteudo.Itens.Concat(conteudo.Grupos.SelectMany(static g => g.Subitens)).Select(static i => i.FatoCodigo))
         {
             opcoes[campo] = porCodigo.TryGetValue(campo, out FatoCandidato? fato) && fato.Dominio == DominioFato.Categorico
                 ? fato.FonteValores switch
@@ -178,6 +178,18 @@ public static class VocabularioDoCatalogo
         }
 
         return opcoes;
+    }
+
+    /// <summary>
+    /// Os códigos que cada campo de seleção do modelo oferta, das opções do catálogo: a resposta fora
+    /// deles não vale, na pré-visualização e no renderizável.
+    /// </summary>
+    public static Dictionary<string, IReadOnlySet<string>> Ofertas(IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes)
+    {
+        ArgumentNullException.ThrowIfNull(opcoes);
+        return opcoes
+            .Where(static o => o.Value is not null)
+            .ToDictionary(static o => o.Key, static o => (IReadOnlySet<string>)o.Value!.Select(static v => v.Codigo).ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     private static Dictionary<string, FatoCandidato> PorCodigo(IEnumerable<FatoCandidato> fatos) =>

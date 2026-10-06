@@ -45,11 +45,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         ConteudoDoModelo conteudo = modelo.Conteudo;
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyList<DefinicaoAgregado> agregados = VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos);
-        IReadOnlyList<ItemDoModelo> campos = [.. conteudo.Itens, .. conteudo.Grupos.SelectMany(static g => g.Subitens)];
-        Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, campos.Select(static c => c.FatoCodigo));
-        Dictionary<string, IReadOnlySet<string>> ofertas = opcoes
-            .Where(static o => o.Value is not null)
-            .ToDictionary(static o => o.Key, static o => (IReadOnlySet<string>)o.Value!.Select(static v => v.Codigo).ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal);
+        Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo);
 
         List<TermoRenderizavel> termos = [];
         foreach (TermoDoModelo termo in conteudo.Termos.OrderBy(static t => t.Ordem))
@@ -85,7 +81,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => new GrupoRenderizavel(
                 g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo, g.Minimo, g.Maximo, g.IncluiCandidato,
                 [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(s, opcoes))]))],
-            RecorteDaFinalidade.DoFormulario(modelo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), agregados), ofertas),
+            RecorteDaFinalidade.DoFormulario(modelo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), agregados), VocabularioDoCatalogo.Ofertas(opcoes)),
             camposDosOutrosFormularios: [],
             agregados,
             dataReferenciaFatos: null);

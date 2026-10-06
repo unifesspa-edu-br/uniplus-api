@@ -133,6 +133,26 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             .Should().Equal(("m1", "VERDADEIRO"), ("m2", "FALSO"));
     }
 
+    [Fact(DisplayName = "A resposta fora das opções que o catálogo oferta não vale, como no renderizável que o front interpreta")]
+    public async Task Handle_RespostaForaDaOferta_NaoVale()
+    {
+        FatoCandidato cor = FatoCandidato.CriarDoAdministrador(
+            "COR_RACA", "Cor ou raça", null, DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
+            EscopoFato.Candidato, ClassificacaoProtecaoDado.Sensivel, Finalidade, Hipotese).Value!;
+        cor.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
+        cor.AdicionarValorDominio("AMARELA", "Amarela", 1, ativo: false).IsSuccess.Should().BeTrue();
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, cor]);
+        ModeloFormulario modelo = Modelo([
+            Item("COR_RACA", 0, TipoRenderizacao.SelecaoUnica),
+            Item("CERTIFICADO", 1, exibicao: Quando("COR_RACA", "AMARELA")),
+        ]);
+
+        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["COR_RACA"] = "AMARELA" }))!;
+
+        resultado.Itens.Single(static i => i.FatoCodigo == "CERTIFICADO").Visivel.Should().NotBe(
+            "VERDADEIRO", "o valor desativado no catálogo não é ofertado, e a resposta com ele é descartada");
+    }
+
     [Fact(DisplayName = "Ocorrência simulada sem identidade própria no grupo é recusada com o caminho dela")]
     public async Task Handle_OcorrenciaSemIdentidade_Recusa()
     {
