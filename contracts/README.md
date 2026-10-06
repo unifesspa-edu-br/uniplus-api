@@ -10,6 +10,7 @@ Specs OpenAPI 3.1 versionados como **fonte de verdade do contrato V1** da `unipl
 - `openapi.configuracao.json` — spec do módulo Configuração (Campus e Local de Oferta, sob o prefixo de módulo `/api/configuracao/*`, incluindo as variantes administrativas `/api/configuracao/admin/*`). A Cidade é referenciada por código IBGE + display cache (ADR-0090) — não há endpoint de cidade aqui.
 - `openapi.publicacoes.json` — spec do módulo Publicações (atos normativos e catálogo de tipos de ato, sob o prefixo `/api/publicacoes/*`, incluindo `/api/publicacoes/admin/*`).
 - `openapi.portal.json` — spec da Portal API, o *Backend for Frontend* público do portal do candidato ([ADR-0131](../docs/adrs/0131-portal-como-bff-publico-de-dominio.md)), sob o prefixo `/api/portal/*`, mais os endpoints compartilhados de sessão e perfil. Nasce só com o endpoint de teste; cada endpoint público novo regenera esta baseline.
+- `formularios/casos/` — corpus de casos da avaliação do formulário, rodado pela API e pelo interpretador do front (ADR-0139); o formato está no README da pasta.
 
 ## Como o spec é gerado
 

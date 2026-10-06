@@ -1,0 +1,67 @@
+{
+  "descricao": "Quem mora em área urbana não vê o campo do nome da aldeia, comunidade ou quilombo.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "TIPO_ENDERECO",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": [
+              "ALDEIA",
+              "URBANO"
+            ],
+            "formato": null
+          },
+          {
+            "fatoCodigo": "NOME_ALDEIA",
+            "exibicao": [
+              [
+                {
+                  "fato": "TIPO_ENDERECO",
+                  "operador": "IGUAL",
+                  "valor": "ALDEIA"
+                }
+              ]
+            ],
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "TIPO_ENDERECO": "URBANO"
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "TIPO_ENDERECO",
+        "estado": "RESOLVIDO"
+      },
+      {
+        "fatoCodigo": "NOME_ALDEIA",
+        "visivel": "FALSO",
+        "estado": "NAO_APLICAVEL"
+      }
+    ]
+  }
+}

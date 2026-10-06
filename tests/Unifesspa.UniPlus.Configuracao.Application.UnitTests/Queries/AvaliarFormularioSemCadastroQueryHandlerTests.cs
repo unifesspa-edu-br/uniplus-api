@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// A avaliação sem cadastro das regras de um formulário renderizável: o resultado na forma portátil, com
-/// o estado de cada fato, e a recusa da ocorrência sem identidade própria no grupo.
+/// A avaliação sem cadastro das regras de um formulário renderizável: a recusa da ocorrência sem
+/// identidade própria no grupo. O resultado da avaliação é conferido pelo corpus de casos.
 /// </summary>
 public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
 {
@@ -23,16 +23,6 @@ public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
         [],
         [],
         []);
-
-    [Fact(DisplayName = "O endereço urbano esconde a aldeia, e o resultado sai na forma portátil com o estado de cada fato")]
-    public void Handle_EnderecoUrbano_EscondeAAldeia()
-    {
-        Result<AvaliacaoPortavel> resultado = AvaliarFormularioSemCadastroQueryHandler.Handle(new AvaliarFormularioSemCadastroQuery(new(
-            Regras, new Dictionary<string, JsonElement> { ["TIPO_ENDERECO"] = JsonSerializer.SerializeToElement("URBANO") }, null, null, null)));
-
-        resultado.Value!.Campos.Select(static c => (c.FatoCodigo, c.Visivel, c.Estado)).Should().Equal(
-            ("TIPO_ENDERECO", "VERDADEIRO", "RESOLVIDO"), ("NOME_ALDEIA", "FALSO", "NAO_APLICAVEL"));
-    }
 
     [Fact(DisplayName = "Ocorrência sem identidade própria no grupo é recusada com o caminho dela")]
     public void Handle_OcorrenciaSemIdentidade_Recusa()

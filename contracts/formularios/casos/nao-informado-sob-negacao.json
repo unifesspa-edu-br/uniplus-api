@@ -1,0 +1,63 @@
+{
+  "descricao": "O opcional deixado em branco com a seção concluída é não informado, e a condição sobre ele é falsa mesmo negada: quem não respondeu não é 'diferente de SIM'.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "TEM_BOLSA",
+            "exibicao": null,
+            "obrigatoriedade": "NUNCA",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "JUSTIFICATIVA",
+            "exibicao": [
+              [
+                {
+                  "fato": "TEM_BOLSA",
+                  "operador": "DIFERENTE",
+                  "valor": "SIM"
+                }
+              ]
+            ],
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {},
+  "grupos": {},
+  "etapasConcluidas": [
+    "DADOS"
+  ],
+  "pressupostos": {},
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "TEM_BOLSA",
+        "estado": "NAO_INFORMADO"
+      },
+      {
+        "fatoCodigo": "JUSTIFICATIVA",
+        "visivel": "FALSO"
+      }
+    ]
+  }
+}
