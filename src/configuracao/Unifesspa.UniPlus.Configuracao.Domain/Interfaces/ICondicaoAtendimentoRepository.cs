@@ -16,6 +16,9 @@ public interface ICondicaoAtendimentoRepository
     /// <summary>Carrega a condição para leitura (<c>AsNoTracking</c>) — projeção em DTO.</summary>
     Task<CondicaoAtendimentoEspecializado?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Os itens vivos do cadastro, para leitura, sem paginação: o cadastro é curto.</summary>
+    Task<IReadOnlyList<CondicaoAtendimentoEspecializado>> ListarVivosParaLeituraAsync(CancellationToken cancellationToken);
+
     /// <summary>
     /// Lista condições vivas paginadas por cursor keyset bidirecional (ADR-0026 +
     /// ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve as âncoras de

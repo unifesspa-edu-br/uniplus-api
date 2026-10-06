@@ -29,6 +29,9 @@ public sealed class CondicaoAtendimentoRepository : ICondicaoAtendimentoReposito
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<CondicaoAtendimentoEspecializado>> ListarVivosParaLeituraAsync(CancellationToken cancellationToken) =>
+        await _dbContext.CondicoesAtendimento.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public Task<CondicaoAtendimentoEspecializado?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.CondicoesAtendimento
