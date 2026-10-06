@@ -289,6 +289,38 @@ public sealed class ModeloFormularioAdminEndpointTests
         Opcoes("TIPO_DEFICIENCIA").Should().Contain(deficiencia);
     }
 
+    [Fact(DisplayName = "Sem processo, o município da área do bônus oferece os municípios das bases legais cadastradas, sem repetir")]
+    public async Task ObterRenderizavel_MunicipioDoBonus_OfereceAsBasesLegais()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        foreach (object[] municipios in new[]
+        {
+            new object[] { new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" }, new { codigoIbge = "1500131", nome = "Abel Figueiredo", uf = "PA" } },
+            new object[] { new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" } },
+        })
+        {
+            HttpResponseMessage criada = await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/base-legal-bonus-regional", new
+            {
+                tipoInstrumento = "PORTARIA",
+                identificacao = $"Portaria {Guid.NewGuid().ToString("N")[..8]}",
+                descricao = "Área do bônus regional",
+                municipios,
+            });
+            criada.StatusCode.Should().Be(HttpStatusCode.Created, await criada.Content.ReadAsStringAsync());
+        }
+
+        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
+        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
+        Guid id = lista.RootElement.EnumerateArray()
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
+
+        List<string> codigos = [.. formulario["fatosColetados"]!.AsArray()
+            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "MUNICIPIO_EM_AREA_BONUS")!["valoresSelecionaveis"]!.AsArray()
+            .Select(static v => v!["codigo"]!.GetValue<string>())];
+        codigos.Should().Contain(["1500131", "1504208"]).And.OnlyHaveUniqueItems("o município de duas bases aparece uma vez");
+    }
+
     [Theory(DisplayName = "No modelo de inscrição semeado, o tipo de localidade vem nos dados básicos antes do endereço, e o nome da comunidade só aparece para aldeia, comunidade ou quilombo")]
     [InlineData("URBANO", "FALSO")]
     [InlineData("ALDEIA", "VERDADEIRO")]

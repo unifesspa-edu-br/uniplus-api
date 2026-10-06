@@ -24,6 +24,9 @@ public sealed class BaseLegalBonusRegionalRepository : IBaseLegalBonusRegionalRe
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<BaseLegalBonusRegional>> ListarVivasParaLeituraAsync(CancellationToken cancellationToken) =>
+        await _dbContext.BaseLegaisBonus.AsNoTracking().Include(x => x.Municipios).ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public Task<BaseLegalBonusRegional?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.BaseLegaisBonus
