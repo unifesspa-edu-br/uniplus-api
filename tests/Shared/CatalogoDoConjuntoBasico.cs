@@ -61,6 +61,8 @@ internal static class CatalogoDoConjuntoBasico
         Categorico("COR_RACA", "BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"),
         Texto("EMAIL", "EMAIL"),
         Texto("TELEFONE", "TELEFONE"),
+        Categorico("TIPO_ENDERECO", "URBANO", "RURAL", "ALDEIA", "COMUNIDADE", "QUILOMBO", "VILA", "OUTRO"),
+        Texto("NOME_COMUNIDADE", "LIVRE"),
         Declarado("ENDERECO_RESIDENCIAL", "ENDERECO"),
     ];
 

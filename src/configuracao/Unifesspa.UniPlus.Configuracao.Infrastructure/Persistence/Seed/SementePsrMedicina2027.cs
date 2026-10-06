@@ -69,9 +69,6 @@ public static class SementePsrMedicina2027
     private const int TabelaValor = 5;
     private const int TabelaModelo = 6;
 
-    /// <summary>Os tipos de endereço em que o formulário pede o nome da comunidade.</summary>
-    private static readonly string[] LocalidadesComComunidade = ["ALDEIA", "COMUNIDADE", "QUILOMBO"];
-
     /// <summary>O modelo do formulário de inscrição de Medicina.</summary>
     public const string ModeloDeInscricao = "PSR_MEDICINA_2027_INSCRICAO";
 
@@ -116,20 +113,6 @@ public static class SementePsrMedicina2027
     /// <summary>Os fatos que os formulários de Medicina coletam e que o catálogo de sistema não tem.</summary>
     private static IReadOnlyList<FatoDaSemente> Fatos { get; } =
     [
-        // Inscrição: o endereço do candidato fora da zona urbana e a comunidade, para quem mora em
-        // aldeia, comunidade tradicional ou quilombo.
-        new(1, _ => FatoCandidato.CriarDoAdministrador(
-                "TIPO_ENDERECO", "Tipo de endereço", "Onde fica o endereço de residência: zona urbana, zona rural, aldeia, comunidade tradicional, quilombo, vila ou outro.", DominioFato.Categorico, CardinalidadeFato.Escalar,
-                FonteValoresFato.Global, null, PontoInscricao, EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal,
-                FinalidadeDoEndereco, HipoteseLegal),
-            [("URBANO", "Urbano"), ("RURAL", "Rural"), ("ALDEIA", "Aldeia"), ("COMUNIDADE", "Comunidade tradicional"),
-             ("QUILOMBO", "Quilombo"), ("VILA", "Vila"), ("OUTRO", "Outro")]),
-        new(2, _ => FatoCandidato.CriarDoAdministrador(
-                "NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", "O nome da aldeia, da comunidade tradicional ou do quilombo em que o candidato reside.", DominioFato.Texto, CardinalidadeFato.Escalar,
-                null, FormatoTexto.Livre, PontoInscricao, EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal,
-                FinalidadeDoEndereco, HipoteseLegal),
-            Sem()),
-
         // Inscrição: o bônus regional, pedido pelo candidato e conferido pelo município da área do bônus.
         new(3, _ => FatoCandidato.CriarDoAdministrador(
                 "SOLICITA_BONUS_REGIONAL", "Solicita o bônus regional", "Se o candidato pede o bônus regional previsto no edital.", DominioFato.Booleano, CardinalidadeFato.Escalar,
@@ -251,7 +234,6 @@ public static class SementePsrMedicina2027
 
     private static ConteudoDoModelo ConteudoDaInscricao()
     {
-        const string endereco = "ENDERECO";
         const string escolaridade = "ESCOLARIDADE";
         const string cotas = "RESERVA_DE_VAGAS";
         const string bonus = "BONUS_REGIONAL";
@@ -259,20 +241,14 @@ public static class SementePsrMedicina2027
         return new(
             "Inscrição no Processo Seletivo Regular Unificado de Medicina 2027",
             [
-                Secao(endereco, 1, "Endereço", "Informações sobre o local de residência."),
-                Secao(escolaridade, 2, "Ensino médio", "Como você concluiu o ensino médio."),
-                Secao(cotas, 3, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
-                Secao(bonus, 4, "Bônus regional", "Pedido do bônus regional previsto no edital."),
-                Bloco("MODALIDADES", 5, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
-                Bloco("DOCUMENTOS", 6, BlocoSistema.ComprovacaoDocumental, "Documentos"),
-                Bloco("REVISAO", 7, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
+                Secao(escolaridade, 1, "Ensino médio", "Como você concluiu o ensino médio."),
+                Secao(cotas, 2, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
+                Secao(bonus, 3, "Bônus regional", "Pedido do bônus regional previsto no edital."),
+                Bloco("MODALIDADES", 4, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
+                Bloco("DOCUMENTOS", 5, BlocoSistema.ComprovacaoDocumental, "Documentos"),
+                Bloco("REVISAO", 6, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
             ],
             [
-                Campo("TIPO_ENDERECO", 101, endereco, "Tipo de endereço", TipoRenderizacao.SelecaoUnica,
-                    "Indique se o endereço de residência fica em zona urbana, zona rural, aldeia, comunidade tradicional, quilombo, vila ou outro tipo de localidade."),
-                Campo("NOME_COMUNIDADE", 102, endereco, "Nome da aldeia, comunidade ou quilombo", TipoRenderizacao.Texto,
-                    "Informe o nome da aldeia, da comunidade tradicional ou do quilombo em que você reside.",
-                    exibicao: Se("TIPO_ENDERECO", Operador.Em, LocalidadesComComunidade), formato: "LIVRE"),
                 Campo("FORMA_CONCLUSAO_EM", 103, escolaridade, "Forma de conclusão do ensino médio", TipoRenderizacao.SelecaoUnica,
                     "Escolha como você concluiu o ensino médio: curso regular, Educação de Jovens e Adultos (EJA), ENCCEJA, exame de proficiência ou ENEM."),
                 Campo("PCD", 104, cotas, "Pessoa com deficiência", TipoRenderizacao.Booleano,
@@ -395,6 +371,18 @@ public static class SementePsrMedicina2027
             ("conteudo", $"{Texto(ConteudoDoModeloJson.Serializar(modelo.Conteudo))}::jsonb"),
             ("ativo", Logico(modelo.Ativo)), ("created_at", Momento(Instante)));
     }
+
+    /// <summary>
+    /// Os comandos que tiram do banco o tipo de localidade e o nome da comunidade que a semente
+    /// gravava como fatos do administrador — eles passaram aos dados básicos, como fatos de sistema —
+    /// e o modelo de inscrição que os pedia, para ser gravado de novo sem eles.
+    /// </summary>
+    public static IReadOnlyList<string> ComandosQueRetiramALocalidadeDaSemente() =>
+    [
+        $"DELETE FROM configuracao.fato_valor_dominio WHERE fato_candidato_id IN ({Uuid(Id(TabelaFato, 1))}, {Uuid(Id(TabelaFato, 2))});",
+        $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id IN ({Uuid(Id(TabelaFato, 1))}, {Uuid(Id(TabelaFato, 2))});",
+        $"DELETE FROM configuracao.modelos_formulario WHERE id = {Uuid(Id(TabelaModelo, 1))};",
+    ];
 
     /// <summary>Os identificadores que a semente grava, para o <c>Down</c> da migration apagá-los.</summary>
     public static IReadOnlyList<string> ComandosDeRemocao() =>

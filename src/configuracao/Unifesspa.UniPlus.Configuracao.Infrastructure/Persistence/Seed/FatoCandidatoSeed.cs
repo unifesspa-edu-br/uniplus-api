@@ -263,6 +263,12 @@ public static class FatoCandidatoSeed
         DadoBasico(42, "NATURALIDADE_UF", "UF de nascimento", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
         DadoBasico(43, "NATURALIDADE_MUNICIPIO", "Município de nascimento", DominioFato.Categorico, FinalidadeIdentificacao,
             fonte: FonteValoresFato.GeoMunicipio),
+
+        // O tipo de localidade da residência, perguntado antes do endereço, e o nome da aldeia, da
+        // comunidade tradicional ou do quilombo de quem mora em um deles.
+        DadoBasico(44, "TIPO_ENDERECO", "Tipo de localidade", DominioFato.Categorico, FinalidadeResidencia, fonte: FonteValoresFato.Global),
+        DadoBasico(45, "NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", DominioFato.Texto, FinalidadeResidencia,
+            formato: FormatoTexto.Livre),
     ];
 
     /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>

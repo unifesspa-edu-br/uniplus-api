@@ -88,6 +88,17 @@ public static class FatoValorDominioSeed
         new(SeedId(30), FatoCandidatoId("ESTADO_CIVIL"), "SEPARADO", "Separado(a) judicialmente", 3, true),
         new(SeedId(31), FatoCandidatoId("ESTADO_CIVIL"), "DIVORCIADO", "Divorciado(a)", 4, true),
         new(SeedId(32), FatoCandidatoId("ESTADO_CIVIL"), "VIUVO", "Viúvo(a)", 5, true),
+
+        // ── TIPO_ENDERECO ────────────────────────────────────────────────
+        // O tipo de localidade da residência; aldeia, comunidade tradicional e quilombo pedem o nome.
+        new(SeedId(33), FatoCandidatoId("TIPO_ENDERECO"), "URBANO", "Zona urbana", 0, true),
+        new(SeedId(34), FatoCandidatoId("TIPO_ENDERECO"), "RURAL", "Zona rural", 1, true),
+        new(SeedId(35), FatoCandidatoId("TIPO_ENDERECO"), "ALDEIA", "Aldeia indígena", 2, true),
+        new(SeedId(36), FatoCandidatoId("TIPO_ENDERECO"), "COMUNIDADE", "Comunidade tradicional", 3, true,
+            "Comunidade ribeirinha, extrativista, de pescadores ou outra comunidade tradicional."),
+        new(SeedId(37), FatoCandidatoId("TIPO_ENDERECO"), "QUILOMBO", "Quilombo", 4, true),
+        new(SeedId(38), FatoCandidatoId("TIPO_ENDERECO"), "VILA", "Vila", 5, true),
+        new(SeedId(39), FatoCandidatoId("TIPO_ENDERECO"), "OUTRO", "Outro", 6, true),
     ];
 }
 

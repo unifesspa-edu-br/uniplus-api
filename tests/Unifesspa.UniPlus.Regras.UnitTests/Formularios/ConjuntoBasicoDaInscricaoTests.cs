@@ -20,8 +20,8 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     private static readonly int Teto = ConjuntoBasicoDaInscricao.Itens.Count;
 
     [Theory(DisplayName = "Os itens do cliente sobem acima da seção só quando colidem com ela, e os básicos omitidos entram")]
-    [InlineData(0, 22)]
-    [InlineData(22, 22)]
+    [InlineData(0, 24)]
+    [InlineData(24, 24)]
     [InlineData(40, 40)]
     public void MesclarItens_ItemDoCliente_SobeSoQuandoColide(int ordemEnviada, int ordemGravada)
     {

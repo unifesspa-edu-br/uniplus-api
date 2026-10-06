@@ -233,6 +233,7 @@ internal static class FormularioDeTeste
         ["RG_NUMERO"] = "LIVRE",
         ["RG_ORGAO_EMISSOR"] = "LIVRE",
         ["DOCUMENTO_ESTRANGEIRO_NUMERO"] = "LIVRE",
+        ["NOME_COMUNIDADE"] = "LIVRE",
     };
 
     /// <summary>O item básico na forma do domínio, a partir da entrada do conjunto básico.</summary>
