@@ -54,6 +54,22 @@ public sealed record GrupoFormularioRenderizavelDto(
     IReadOnlyList<FatoFormularioRenderizavelDto> Subitens);
 
 /// <summary>
+/// Um fato que as regras do formulário citam e ele não pergunta. Quando outro formulário do processo o
+/// pergunta, vem com a apresentação congelada dele — rótulo, tipo de renderização, formato e valores —,
+/// e a simulação o pergunta como dado anterior. Quando o sistema o calcula de atributos do
+/// candidato, como a faixa etária da data de nascimento, <see cref="CalculadoDe"/> diz de quais; o
+/// que a classificação produz, como o grupo de vagas em que o candidato foi convocado, vem só com o
+/// código.
+/// </summary>
+public sealed record PressupostoRenderizavelDto(
+    string FatoCodigo,
+    string? Rotulo,
+    string? TipoRenderizacao,
+    string? Formato,
+    IReadOnlyList<ValorSelecionavelDto>? ValoresSelecionaveis,
+    IReadOnlyList<string>? CalculadoDe);
+
+/// <summary>
 /// Uma seção ou um bloco do formulário pronto para renderização. <see cref="CodigoNasRegras"/> é o
 /// código com que a seção aparece nas regras — nulo no bloco, que não tem regra própria.
 /// </summary>
@@ -96,6 +112,10 @@ public sealed record TermoRenderizavelDto(
 /// cada seção, campo, grupo e termo, as restrições, os impedimentos e a oferta de valores, com as
 /// derivações e os agregados que o formulário cita. A API confere de novo tudo o que recebe.
 /// </param>
+/// <param name="DataReferenciaFatos">
+/// A data em que os fatos que dependem do tempo, como a faixa etária, são calculados: a âncora
+/// congelada na publicação. Nula quando o processo não declara referência temporal.
+/// </param>
 /// <param name="Pressupostos">
 /// Os fatos que as regras citam e o formulário não pergunta — respondidos em formulário anterior ou
 /// calculados pelo sistema —, que o interpretador recebe como já conhecidos.
@@ -113,4 +133,5 @@ public sealed record FormularioRenderizavelDto(
     IReadOnlyList<ExigenciaDocumentalCertameDto>? ComprovacaoDocumental,
     IReadOnlyList<GrupoFormularioRenderizavelDto> Grupos,
     FormularioPortavel Regras,
-    IReadOnlyList<string> Pressupostos);
+    IReadOnlyList<PressupostoRenderizavelDto> Pressupostos,
+    DateOnly? DataReferenciaFatos);

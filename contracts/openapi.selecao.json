@@ -12286,7 +12286,8 @@
           "comprovacaoDocumental",
           "grupos",
           "regras",
-          "pressupostos"
+          "pressupostos",
+          "dataReferenciaFatos"
         ],
         "type": "object",
         "properties": {
@@ -12338,8 +12339,15 @@
           "pressupostos": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/PressupostoRenderizavelDto"
             }
+          },
+          "dataReferenciaFatos": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         }
       },
@@ -14229,6 +14237,59 @@
           },
           "codigos": {
             "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PressupostoRenderizavelDto": {
+        "required": [
+          "fatoCodigo",
+          "rotulo",
+          "tipoRenderizacao",
+          "formato",
+          "valoresSelecionaveis",
+          "calculadoDe"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tipoRenderizacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "formato": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valoresSelecionaveis": {
+            "minItems": 1,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ValorSelecionavelDto"
+            }
+          },
+          "calculadoDe": {
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "type": "string"
             }

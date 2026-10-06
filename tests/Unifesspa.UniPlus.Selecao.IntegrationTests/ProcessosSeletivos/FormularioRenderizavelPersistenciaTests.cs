@@ -253,11 +253,66 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                 $"o envelope preserva cada regra, a oferta e os agregados (cor {corRaca ?? "sem resposta"}, renda {renda ?? "sem resposta"}, campo {rural})");
         }
 
-        lido.Value!.Pressupostos.Should().Equal(esperado.Pressupostos);
+        lido.Value!.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal(esperado.Pressupostos);
         lido.Value.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");
         lido.Value.Regras.Etapas.Should().Contain(e => e.Exibicao != null, "a seção de pertencimento só aparece para quem se declarou preto");
         processo.RegrasDerivacao.Should().HaveCount(3);
         lido.Value.Regras.Derivacoes.Should().BeEmpty("nenhuma regra da inscrição cita derivado, e o contrato não publica o que o formulário não usa");
+    }
+
+    [Fact(DisplayName = "O pressuposto respondido na inscrição vem com a apresentação congelada dela; o calculado pelo sistema, só com o código")]
+    public async Task Handle_Habilitacao_PressupostosComAApresentacaoDaInscricao()
+    {
+        // A habilitação pede o certificado de quem se declarou preto na inscrição e a declaração de
+        // quem é maior de idade, faixa que o sistema calcula da data de nascimento na data de
+        // referência dos fatos.
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 10);
+        FaseCronograma habilitacao = FaseCronograma.Criar(
+            processo.CronogramaFases.Max(static f => f.Ordem) + 1, Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, "CEPS",
+            OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
+            produtos: [ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        Result itens = processo.DefinirItens(
+        [
+            FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
+                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+            ]).Value!,
+            FatoColetado.Criar("DECLARACAO_MAIORIDADE", 1, "Declaração de maioridade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
+                CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!,
+            ]).Value!,
+        ], finalidade: FinalidadeFormulario.Habilitacao);
+        itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
+
+        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo);
+        SnapshotCanonico congelado = Canonicalizer.Canonicalizar(entrada);
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            entrada.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+        await PersistirDivulgadoAsync(processo, publicar.Value!, entrada.Dados);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
+            new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Habilitacao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
+            new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
+
+        lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
+        lido.Value!.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");
+        PressupostoRenderizavelDto corRaca = lido.Value.Pressupostos[0];
+        corRaca.Rotulo.Should().Be("Cor ou raça");
+        corRaca.TipoRenderizacao.Should().Be("SELECAO_UNICA");
+        corRaca.ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"], "a simulação pergunta o dado anterior com os valores congelados");
+        PressupostoRenderizavelDto faixaEtaria = lido.Value.Pressupostos[1];
+        faixaEtaria.Rotulo.Should().BeNull("o sistema calcula a faixa etária; nenhum formulário a pergunta");
+        faixaEtaria.CalculadoDe.Should().Equal(["DATA_NASCIMENTO"]);
+        lido.Value.DataReferenciaFatos.Should().Be(new DateOnly(2026, 1, 31), "a âncora da faixa etária é a congelada na publicação");
     }
 
     private static EntradaAvaliacaoFormulario Respostas(string? corRaca, string? renda, bool trabalhaNoCampo)

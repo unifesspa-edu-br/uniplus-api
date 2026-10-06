@@ -233,48 +233,48 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     [Theory(DisplayName = "Envelope com valor de tipo/nulidade incoerente (só alcançável por linha adulterada) recusa com o mesmo erro nomeado, nunca estoura")]
     [InlineData(
         // Item sem "finalidade": não pode aparecer no formulário de uma finalidade qualquer.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "pedirConfirmacao" como texto em vez de booleano.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":"true", "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":"true", "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "rotulo" presente mas null — chave existe, valor não é o esperado.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":null,"tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":null,"tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "precondicao" presente com tipo errado (objeto em vez de array) — não pode virar
         // silenciosamente "sem pré-condição", que mudaria a semântica do campo.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":{},"valoresSelecionaveis":[]}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":{},"valoresSelecionaveis":[]}]}""")]
     [InlineData(
         // "valoresSelecionaveis" null num fato de seleção — descumpre a bicondicional (issue
         // #1059): SELECAO_UNICA/SELECAO_MULTIPLA exige array, nunca null.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
     [InlineData(
         // "valoresSelecionaveis" ausente — envelope congelado antes de a chave existir.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null}]}""")]
     [InlineData(
         // "tipoRenderizacao" fora do vocabulário, com valoresSelecionaveis null — o
         // decoder converteria o token em TipoRenderizacao.Nenhuma e FatoColetado.Criar recusaria;
         // sem esta guarda aqui, o token desconhecido cairia no ramo "não é seleção" por omissão.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"DATA_HORA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"DATA_HORA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
     [InlineData(
         // "ordem" negativa dentro de um item de valoresSelecionaveis — o decoder recusa.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":-1}]}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":-1}]}]}""")]
     [InlineData(
         // "valorCodigo" repetido no array — o decoder recusa (o encoder nunca emite duas entradas
         // para o mesmo valor).
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0},{"valorCodigo":"BRANCA","descricao":null,"ordem":1}]}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0},{"valorCodigo":"BRANCA","descricao":null,"ordem":1}]}]}""")]
     [InlineData(
         // "formato" ausente — o encoder sempre o emite, nulo fora do campo de texto.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
     [InlineData(
         // Restrição de tipo desconhecido — não pode ser descartada em silêncio, que liberaria o valor.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[{"tipo":"REGEX"}],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[{"tipo":"REGEX"}],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
     [InlineData(
         // Campo de texto sem formato — o encoder sempre emite o formato do catálogo no campo de texto.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"NOME_SOCIAL","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Nome social","tipoRenderizacao":"TEXTO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"NOME_SOCIAL","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Nome social","tipoRenderizacao":"TEXTO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
     [InlineData(
         // Formato num campo que não é de texto.
-        """{"formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"BAIXA_RENDA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":"CPF","ordem":0,"rotulo":"Baixa renda","tipoRenderizacao":"BOOLEANO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
+        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"BAIXA_RENDA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":"CPF","ordem":0,"rotulo":"Baixa renda","tipoRenderizacao":"BOOLEANO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
     public async Task Handle_EnvelopeComValorIncoerente_RecusaSemEstourar(string envelopeJson)
     {
         Guid processoId = Guid.CreateVersion7();
@@ -295,7 +295,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             """;
         string envelope = $$"""
             {
-              "formularios": [
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [
                 {"finalidade": "INSCRICAO", "faseId": null, "titulo": "Inscrição", "modeloOrigem": null, "etapas": {{etapas}}, "termos": [{{Termo("CIENCIA_EDITAL")}}]},
                 {"finalidade": "HABILITACAO", "faseId": null, "titulo": "Habilitação", "modeloOrigem": null, "etapas": {{etapas}}, "termos": [{{Termo("VERACIDADE")}}]}
               ],
@@ -351,7 +351,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                  "etapas": [{"codigo": "REVISAO", "ordem": 0, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}
               ],
               "gruposColetados": [], "fatosColetados": [],
-              "documentosExigidos": {"exigencias": [
+              "documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
                 {{Exigencia("Documento de identidade", "Geral", faseHabilitacao, "HABILITACAO")}},
                 {{Exigencia("Comprovante de inscrição", "Geral", "0199a000-0000-7000-8000-0000000000f1", "INSCRICAO")}},
                 {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, "HABILITACAO", Modelo)}}
@@ -403,7 +403,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                 {{Formulario("ISENCAO_TAXA")}}
               ],
               "gruposColetados": [], "fatosColetados": [],
-              "documentosExigidos": {"exigencias": [
+              "documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
                 {{Exigencia("Documento de identidade", "\"INSCRICAO\"")}},
                 {{Exigencia("Comprovante de renda", "\"ISENCAO_TAXA\"")}},
                 {{Exigencia("Laudo da banca", "null")}}
@@ -447,7 +447,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
                   {"codigo": "DOCUMENTOS", "ordem": 0, "tipo": "BLOCO", "bloco": "COMPROVACAO_DOCUMENTAL", "titulo": "Documentos", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}],
               "gruposColetados": [], "fatosColetados": [],
-              "documentosExigidos": {"exigencias": [
+              "documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
                 {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
                  {{finalidadeDaExigencia}} "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null }
               ]}
@@ -466,7 +466,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelope = """
             {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
                 "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
@@ -493,7 +493,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelope = """
             {
-              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
                 "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
@@ -532,7 +532,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         string envelope = $$"""
             {
-              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
                 "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
                 ]}],
@@ -569,7 +569,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             """;
         string envelope = $$"""
             {
-              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
                 "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
                 ]}],
@@ -594,7 +594,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelope = """
             {
-              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
                 "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
                 ]}],
@@ -623,7 +623,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelope = """
             {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
                 "etapas": [
                   {"codigo": "REVISAO", "ordem": 0, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ]}],
@@ -642,7 +642,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelope = """
             {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
                 "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
@@ -670,7 +670,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         string envelope = $$"""
             {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
                 "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
@@ -696,7 +696,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelopeCorrente = """
             {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null,
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null,
                 "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
@@ -763,7 +763,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelopeFormaCorrente = """
             {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null, "etapas": [
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null, "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ], "termos": []}],
@@ -787,7 +787,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         const string envelope = """
             {
-              "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "etapas": [], "termos": []}],
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "etapas": [], "termos": []}],
               "gruposColetados": [], "fatosColetados": []
             }
             """;

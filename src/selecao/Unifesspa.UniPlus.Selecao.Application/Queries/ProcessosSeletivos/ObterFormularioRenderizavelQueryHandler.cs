@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -18,6 +19,7 @@ using Services;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
 /// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (RN08, UNI-REQ-0072): projeta os
@@ -196,25 +198,26 @@ public static class ObterFormularioRenderizavelQueryHandler
             return VersaoSemApresentacao();
         }
 
+        // Os campos dos outros formulários dão a apresentação dos pressupostos que eles respondem.
         List<FatoFormularioRenderizavelDto> fatos = [];
+        Dictionary<string, FatoFormularioRenderizavelDto> deOutrosFormularios = new(StringComparer.Ordinal);
         foreach (JsonNode? item in fatosColetados)
         {
-            if (item is not JsonObject doItem || !TentarString(doItem, "finalidade", out string finalidadeDoItem))
+            if (item is not JsonObject doItem
+                || !TentarString(doItem, "finalidade", out string finalidadeDoItem)
+                || !TentarFato(doItem, out FatoFormularioRenderizavelDto? fato))
             {
                 return VersaoSemApresentacao();
             }
 
-            if (finalidadeDoItem != token)
+            if (finalidadeDoItem == token)
             {
-                continue;
+                fatos.Add(fato);
             }
-
-            if (!TentarFato(doItem, out FatoFormularioRenderizavelDto? fato))
+            else
             {
-                return VersaoSemApresentacao();
+                deOutrosFormularios[fato.FatoCodigo] = fato;
             }
-
-            fatos.Add(fato);
         }
 
         if (!TentarGrupos(envelope, token, out List<GrupoFormularioRenderizavelDto>? grupos))
@@ -222,8 +225,48 @@ public static class ObterFormularioRenderizavelQueryHandler
             return VersaoSemApresentacao();
         }
 
+        if (!TentarDataReferenciaFatos(envelope, out DateOnly? dataReferenciaFatos))
+        {
+            return VersaoSemApresentacao();
+        }
+
+        IReadOnlyList<PressupostoRenderizavelDto> pressupostos = [.. recorte.Pressupostos.Select(codigo =>
+            deOutrosFormularios.TryGetValue(codigo, out FatoFormularioRenderizavelDto? respondido)
+                ? new PressupostoRenderizavelDto(
+                    codigo, respondido.Rotulo, respondido.TipoRenderizacao, respondido.Formato, respondido.ValoresSelecionaveis, null)
+                : new PressupostoRenderizavelDto(
+                    codigo, null, null, null, null, DerivadosDoSistema.Dependencias.GetValueOrDefault(codigo)))];
         return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(
-            token, titulo, etapas, termos, fatos, comprovacao, grupos, recorte.Regras, recorte.Pressupostos));
+            token, titulo, etapas, termos, fatos, comprovacao, grupos, recorte.Regras, pressupostos, dataReferenciaFatos));
+    }
+
+    /// <summary>
+    /// A data de referência dos fatos, já resolvida na publicação, do bloco de documentos exigidos.
+    /// Nula quando o processo não declara referência temporal; fora da forma de data, a versão não
+    /// tem apresentação.
+    /// </summary>
+    private static bool TentarDataReferenciaFatos(JsonObject envelope, out DateOnly? data)
+    {
+        data = null;
+        if (!envelope.TryGetPropertyValue("documentosExigidos", out JsonNode? node)
+            || node is not JsonObject documentos
+            || !TentarStringOpcional(documentos, "dataReferenciaFatos", out string? texto))
+        {
+            return false;
+        }
+
+        if (texto is null)
+        {
+            return true;
+        }
+
+        if (!DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly lida))
+        {
+            return false;
+        }
+
+        data = lida;
+        return true;
     }
 
     /// <summary>Um fato coletado do envelope — item ou campo de grupo — na forma de renderização.</summary>
