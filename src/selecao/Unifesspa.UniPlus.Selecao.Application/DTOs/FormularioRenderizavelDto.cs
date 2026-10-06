@@ -56,10 +56,10 @@ public sealed record GrupoFormularioRenderizavelDto(
 /// <summary>
 /// Um fato que as regras do formulário citam e ele não pergunta. Quando outro formulário do processo o
 /// pergunta, vem com a apresentação congelada dele — rótulo, tipo de renderização, formato e valores —,
-/// e a simulação o pergunta como dado anterior. Quando o sistema o calcula de atributos do
-/// candidato, como a faixa etária da data de nascimento, <see cref="CalculadoDe"/> diz de quais; o
-/// que a classificação produz, como o grupo de vagas em que o candidato foi convocado, vem só com o
-/// código.
+/// e a simulação o pergunta como dado anterior. Quando é calculado, <see cref="CalculadoDe"/> diz de
+/// quais fatos: o sistema calcula a faixa etária da data de nascimento, e o agregado sobre o grupo
+/// repetível de outro formulário, do fato de membro que ele agrega. O que a classificação produz,
+/// como o grupo de vagas em que o candidato foi convocado, vem só com o código.
 /// </summary>
 public sealed record PressupostoRenderizavelDto(
     string FatoCodigo,

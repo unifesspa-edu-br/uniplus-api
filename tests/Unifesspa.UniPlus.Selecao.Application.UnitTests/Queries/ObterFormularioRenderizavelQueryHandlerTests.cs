@@ -1,13 +1,16 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using System.Text;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
@@ -780,6 +783,57 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             $"'{VersaoCorrenteReconhecida}' — bytes coincidentemente válidos na forma atual não a devolvem " +
             "à lista de capacidades reconhecidas");
         resultado.Error!.Code.Should().Be("EnvelopeCodec.VersaoDesconhecida");
+    }
+
+    [Fact(DisplayName = "O agregado sobre grupo de outro formulário é pressuposto calculado do fato de membro, não da classificação")]
+    public async Task Handle_AgregadoDeOutroFormulario_PressupostoCalculadoDoMembro()
+    {
+        const string envelope = """
+            {
+              "documentosExigidos": {"dataReferenciaFatos": null},
+              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [], "etapas": []}],
+              "gruposColetados": [], "fatosColetados": [
+                {"fatoCodigo": "DECLARACAO_RURAL", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
+                 "rotulo": "Declaração de atividade rural", "tipoRenderizacao": "BOOLEANO", "ajuda": null, "pedirConfirmacao": false,
+                 "valoresSelecionaveis": null}
+              ]
+            }
+            """;
+        PredicadoDnf ruralNaFamilia = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("RURAL_NA_FAMILIA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
+        FatoColetado declaracao = FatoColetado.Criar(
+            "DECLARACAO_RURAL", 0, "Declaração de atividade rural", TipoRenderizacao.Booleano, Obrigatoriedade.Quando(ruralNaFamilia), null,
+            finalidade: FinalidadeFormulario.Habilitacao).Value!;
+        GrupoColetado familia = GrupoColetado.Criar(
+            "COMPOSICAO_FAMILIAR", 0, null, "Composição familiar", 0, null, null, Obrigatoriedade.Nunca,
+            [FatoColetado.Criar("TRABALHADOR_RURAL", 0, "Trabalha no campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+                finalidade: FinalidadeFormulario.Inscricao).Value!],
+            FinalidadeFormulario.Inscricao).Value!;
+        EnvelopeReidratado semFormularios = EnvelopeSemFormularios();
+        GrafoConfiguracao grafo = semFormularios.Grafo;
+        EnvelopeReidratado comAgregado = new(
+            new GrafoConfiguracao(
+                grafo.Etapas, grafo.OfertaAtendimento, grafo.DistribuicaoVagas, grafo.BonusRegional, grafo.CriteriosDesempate,
+                grafo.Classificacao, grafo.CronogramaFases, grafo.DocumentosExigidos, grafo.NosExigencia, grafo.ReferenciaTemporalFatos,
+                fatosColetados: [declaracao], gruposColetados: [familia]),
+            semFormularios.Dados, semFormularios.HashDocumento, semFormularios.FusoHorario, retificacao: null, conformidade: null,
+            agregadosDosGrupos: [new DefinicaoAgregado("RURAL_NA_FAMILIA", "COMPOSICAO_FAMILIAR", "TRABALHADOR_RURAL", OperacaoAgregado.Existe)]);
+        IRegistroCodecsEnvelope registro = CriarRegistroReconhecendo(VersaoCorrenteReconhecida);
+        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(comAgregado));
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
+            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Habilitacao),
+            MockComVersaoVigente(processoId, envelope),
+            RepositorioComDivulgacao(processoId),
+            registro,
+            Acervo,
+            CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        PressupostoRenderizavelDto agregado = resultado.Value!.Pressupostos.Should().ContainSingle().Which;
+        agregado.FatoCodigo.Should().Be("RURAL_NA_FAMILIA");
+        agregado.CalculadoDe.Should().Equal(["TRABALHADOR_RURAL"], "o agregado é calculado das respostas ao grupo da inscrição");
     }
 
     [Fact(DisplayName = "Versão cujos bytes não se provam não serve formulário: a recusa da reidratação aflora")]
