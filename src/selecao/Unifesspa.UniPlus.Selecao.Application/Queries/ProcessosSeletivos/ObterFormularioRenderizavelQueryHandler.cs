@@ -134,7 +134,13 @@ public static class ObterFormularioRenderizavelQueryHandler
 
         // O ato da divulgação é o que publicou os modelos que este formulário oferece.
         DocumentosDoAtoNoAcervo acervo = new(versao.ProcessoSeletivoId, divulgado.AtoCriadorId, enderecoNoAcervo.De);
-        return Projetar(envelope, query.Finalidade, acervo, recorte) ?? NaoEncontrado(query.ProcessoSeletivoId);
+        Dictionary<string, IReadOnlyList<string>> calculadoDe = new(DerivadosDoSistema.Dependencias, StringComparer.Ordinal);
+        foreach (DefinicaoAgregado agregado in reidratado.Value!.AgregadosDosGrupos)
+        {
+            calculadoDe[agregado.Codigo] = [agregado.FatoDeMembro];
+        }
+
+        return Projetar(envelope, query.Finalidade, acervo, recorte, calculadoDe) ?? NaoEncontrado(query.ProcessoSeletivoId);
     }
 
     /// <summary>
@@ -170,7 +176,11 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// </summary>
     /// <remarks>Nulo quando a versão vigente não tem formulário da finalidade pedida.</remarks>
     private static Result<FormularioRenderizavelDto>? Projetar(
-        JsonObject envelope, FinalidadeFormulario finalidade, DocumentosDoAtoNoAcervo acervo, RecorteDaFinalidade recorte)
+        JsonObject envelope,
+        FinalidadeFormulario finalidade,
+        DocumentosDoAtoNoAcervo acervo,
+        RecorteDaFinalidade recorte,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> calculadoDe)
     {
         string token = EstruturaFormulario.ParaToken(finalidade);
         if (!envelope.TryGetPropertyValue("formularios", out JsonNode? formulariosNode) || formulariosNode is not JsonArray formularios)
@@ -234,8 +244,7 @@ public static class ObterFormularioRenderizavelQueryHandler
             deOutrosFormularios.TryGetValue(codigo, out FatoFormularioRenderizavelDto? respondido)
                 ? new PressupostoRenderizavelDto(
                     codigo, respondido.Rotulo, respondido.TipoRenderizacao, respondido.Formato, respondido.ValoresSelecionaveis, null)
-                : new PressupostoRenderizavelDto(
-                    codigo, null, null, null, null, DerivadosDoSistema.Dependencias.GetValueOrDefault(codigo)))];
+                : new PressupostoRenderizavelDto(codigo, null, null, null, null, calculadoDe.GetValueOrDefault(codigo)))];
         return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(
             token, titulo, etapas, termos, fatos, comprovacao, grupos, recorte.Regras, pressupostos, dataReferenciaFatos));
     }
