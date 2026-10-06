@@ -190,6 +190,45 @@ public sealed class ModeloFormularioAdminEndpointTests
         (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", simulacao, papel: "candidato")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    [Fact(DisplayName = "O renderizável do modelo traz a apresentação e as regras no formato do formulário; modelo inexistente é 404, e sem o papel, 403")]
+    public async Task ObterRenderizavel_DevolveOFormulario()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico()));
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.formulario.v2+json");
+        JsonObject formulario = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
+        formulario["fatosColetados"]!.AsArray().Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Should().Contain("BAIXA_RENDA");
+        formulario["regras"]!["etapas"]!.AsArray().SelectMany(static e => e!["itens"]!.AsArray())
+            .Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().Contain("BAIXA_RENDA", "as regras vão com a apresentação");
+        (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{Guid.NewGuid()}/renderizavel", null)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null, papel: "candidato")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "O renderizável do modelo de habilitação semeado traz o grupo repetível com os campos de cada ocorrência")]
+    public async Task ObterRenderizavel_ModeloComGrupo_TrazOGrupo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=HABILITACAO", null);
+        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
+        Guid id = lista.RootElement.EnumerateArray()
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_HABILITACAO").GetProperty("id").GetGuid();
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        JsonObject formulario = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
+        JsonNode grupo = formulario["grupos"]!.AsArray().Single(static g => g!["codigo"]!.GetValue<string>() == "COMPOSICAO_FAMILIAR")!;
+        grupo["incluiCandidato"]!.GetValue<bool>().Should().BeTrue();
+        grupo["subitens"]!.AsArray().Should().NotBeEmpty();
+        formulario["regras"]!["etapas"]!.AsArray().SelectMany(static e => e!["grupos"]!.AsArray())
+            .Select(static g => g!["codigo"]!.GetValue<string>()).Should().Contain("COMPOSICAO_FAMILIAR");
+    }
+
     [Fact(DisplayName = "Código já usado por outro modelo é recusado com conflito")]
     public async Task Criar_CodigoExistente_Retorna409()
     {

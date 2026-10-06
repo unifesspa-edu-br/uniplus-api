@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Manutenção dos modelos de formulário pelo papel <c>plataforma-admin</c> (UNI-REQ-0144,
@@ -85,8 +86,26 @@ public sealed class ModelosFormularioController : ControllerBase
     }
 
     /// <summary>
-    /// Pré-visualiza o modelo com respostas simuladas: o que cada item e cada termo faria diante delas,
-    /// pelo mesmo avaliador da inscrição. Não grava nada.
+    /// O modelo no formato do formulário renderizável — o mesmo do certame divulgado e do rascunho do
+    /// processo —, para a simulação interpretar o modelo antes de aplicá-lo. Não grava nada.
+    /// </summary>
+    [HttpGet("admin/modelos-formulario/{id:guid}/renderizavel")]
+    [VendorMediaType(Resource = "formulario", Versions = [2])]
+    [ProducesResponseType(typeof(FormularioRenderizavel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterRenderizavel(Guid id, CancellationToken cancellationToken)
+    {
+        FormularioRenderizavel? formulario = await _queryBus
+            .Send(new ObterFormularioRenderizavelDoModeloQuery(id), cancellationToken).ConfigureAwait(false);
+        return formulario is null ? NotFound() : Ok(formulario);
+    }
+
+    /// <summary>
+    /// Pré-visualiza o modelo com respostas simuladas: o que cada item, cada termo e cada grupo
+    /// repetível faria diante delas, pelo mesmo avaliador da inscrição. Não grava nada.
     /// </summary>
     [HttpPost("admin/modelos-formulario/{id:guid}/pre-visualizacao")]
     [VendorMediaType(Resource = "pre-visualizacao-modelo-formulario", Versions = [1])]
@@ -96,11 +115,17 @@ public sealed class ModelosFormularioController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> PreVisualizar(Guid id, [FromBody] PreVisualizacaoDoModeloInput simulacao, CancellationToken cancellationToken)
     {
-        PreVisualizacaoDoModeloDto? resultado = await _queryBus
+        Result<PreVisualizacaoDoModeloDto?> resultado = await _queryBus
             .Send(new PreVisualizarModeloFormularioQuery(id, simulacao), cancellationToken).ConfigureAwait(false);
-        return resultado is null ? NotFound() : Ok(resultado);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        return resultado.Value is { } preVisualizacao ? Ok(preVisualizacao) : NotFound();
     }
 
     /// <summary>

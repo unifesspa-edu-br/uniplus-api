@@ -20,6 +20,7 @@ using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -63,7 +64,10 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         }
 
         PreVisualizacaoDoProcessoInput simulacao = query.Simulacao ?? new(null, null, null, null);
-        (Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias, List<FieldError> erros) = LerOcorrencias(simulacao.Grupos);
+        (Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias, List<FieldError> erros) = OcorrenciasRecebidas.Ler(
+            simulacao.Grupos?.Select(static g => KeyValuePair.Create(
+                g.Key, (IReadOnlyList<OcorrenciaRecebida>?)g.Value?.Select(static o => new OcorrenciaRecebida(o?.Id, o?.Respostas)).ToList())),
+            OcorrenciaInvalida);
 
         IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         Result<DefinicaoAvaliavel> montada = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, fatosDoCatalogo);
@@ -114,38 +118,6 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         return Result<PreVisualizacaoDoProcessoDto>.Success(new PreVisualizacaoDoProcessoDto(
             Formularios(processo, avaliacao),
             Documentos(processo, arvore.Value!, avaliacao.Grupos.ToDictionary(static g => g.Codigo, StringComparer.Ordinal))));
-    }
-
-    /// <summary>
-    /// As ocorrências simuladas de cada grupo; a identidade em branco ou repetida é recusada, porque
-    /// é ela que correlaciona os documentos exigidos por membro (UNI-REQ-0069).
-    /// </summary>
-    private static (Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> Ocorrencias, List<FieldError> Erros) LerOcorrencias(
-        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaSimuladaInput>>? grupos)
-    {
-        Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias = new(StringComparer.Ordinal);
-        List<FieldError> erros = [];
-        foreach ((string grupo, IReadOnlyList<OcorrenciaSimuladaInput>? simuladas) in grupos ?? new Dictionary<string, IReadOnlyList<OcorrenciaSimuladaInput>>())
-        {
-            HashSet<string> vistas = new(StringComparer.Ordinal);
-            List<OcorrenciaRespondida> respondidas = [];
-            IReadOnlyList<OcorrenciaSimuladaInput> lista = simuladas ?? [];
-            for (int i = 0; i < lista.Count; i++)
-            {
-                if (lista[i]?.Id is not { } id || string.IsNullOrWhiteSpace(id) || !vistas.Add(id))
-                {
-                    erros.Add(new($"grupos.{grupo}[{i}].id", new DomainError(
-                        OcorrenciaInvalida, "Cada ocorrência do grupo precisa de uma identidade própria, que não se repita no grupo.")));
-                    continue;
-                }
-
-                respondidas.Add(new OcorrenciaRespondida(id, lista[i].Respostas ?? new Dictionary<string, JsonElement>()));
-            }
-
-            ocorrencias[grupo] = respondidas;
-        }
-
-        return (ocorrencias, erros);
     }
 
     private static List<FormularioSimuladoDto> Formularios(ProcessoSeletivo processo, AvaliacaoFormulario avaliacao)

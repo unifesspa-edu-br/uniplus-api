@@ -1303,6 +1303,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.tipo_processo.conflito_de_concorrencia",
                 "Tipo de processo seletivo alterado concorrentemente", RetryableConflict: true)),
         // ── Modelo de formulário (UNI-REQ-0144, ADR-0137) ──────────────────
+        new(ModeloFormularioErrorCodes.OcorrenciaSimuladaInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.ocorrencia_simulada_invalida",
+                "Ocorrência simulada sem identidade própria no grupo")),
+
         new(ModeloFormularioErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modelo_formulario.codigo_obrigatorio", "Código do modelo de formulário é obrigatório")),

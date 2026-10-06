@@ -5,8 +5,11 @@ using System.Text.Json;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -14,16 +17,21 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// As respostas simuladas da pré-visualização: as do formulário, por fato; as etapas dadas como
-/// concluídas; e os pressupostos, os fatos da inscrição que o modelo cita.
+/// concluídas; os pressupostos, os fatos da inscrição que o modelo cita; e as ocorrências de cada grupo
+/// repetível, pela identidade de cada uma.
 /// </summary>
 public sealed record PreVisualizacaoDoModeloInput(
     IReadOnlyDictionary<string, JsonElement>? Respostas,
     IReadOnlyList<string>? EtapasConcluidas,
-    IReadOnlyDictionary<string, JsonElement>? Pressupostos);
+    IReadOnlyDictionary<string, JsonElement>? Pressupostos,
+    IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRecebida>?>? Grupos = null);
 
-/// <summary>Avalia o modelo contra as respostas simuladas (UNI-REQ-0145); nulo quando o modelo não existe.</summary>
+/// <summary>
+/// Avalia o modelo contra as respostas simuladas (UNI-REQ-0145, UNI-REQ-0146); sucesso nulo quando o
+/// modelo não existe, e recusa quando uma ocorrência não tem identidade própria no grupo.
+/// </summary>
 public sealed record PreVisualizarModeloFormularioQuery(Guid Id, PreVisualizacaoDoModeloInput Simulacao)
-    : IQuery<PreVisualizacaoDoModeloDto?>;
+    : IQuery<Result<PreVisualizacaoDoModeloDto?>>;
 
 /// <summary>
 /// A pré-visualização usa o mesmo avaliador da execução da inscrição (<see cref="AvaliadorFormulario"/>):
@@ -32,7 +40,7 @@ public sealed record PreVisualizarModeloFormularioQuery(Guid Id, PreVisualizacao
 /// </summary>
 public static class PreVisualizarModeloFormularioQueryHandler
 {
-    public static async Task<PreVisualizacaoDoModeloDto?> Handle(
+    public static async Task<Result<PreVisualizacaoDoModeloDto?>> Handle(
         PreVisualizarModeloFormularioQuery query,
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
@@ -45,27 +53,43 @@ public static class PreVisualizarModeloFormularioQueryHandler
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
         if (modelo is null)
         {
-            return null;
+            return Result<PreVisualizacaoDoModeloDto?>.Success(null);
+        }
+
+        PreVisualizacaoDoModeloInput simulacao = query.Simulacao ?? new(null, null, null);
+        (Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias, List<FieldError> erros) =
+            OcorrenciasRecebidas.Ler(simulacao.Grupos, ModeloFormularioErrorCodes.OcorrenciaSimuladaInvalida);
+        if (erros.Count > 0)
+        {
+            return Result<PreVisualizacaoDoModeloDto?>.ValidationFailure(erros);
         }
 
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
-        PreVisualizacaoDoModeloInput simulacao = query.Simulacao ?? new(null, null, null);
-
-        Dictionary<string, FatoResolvido> conhecidos = RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos);
-
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
-            modelo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos)),
+            modelo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, modelo.Conteudo.Grupos)),
             new EntradaAvaliacaoFormulario(
                 simulacao.Respostas ?? new Dictionary<string, JsonElement>(),
                 new HashSet<string>(simulacao.EtapasConcluidas ?? [], StringComparer.Ordinal),
-                conhecidos));
+                RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
+                ocorrencias));
 
-        return new PreVisualizacaoDoModeloDto(
-            [.. avaliacao.Itens.Select(i => new ItemPreVisualizadoDto(
-                i.FatoCodigo, i.EtapaCodigo, i.Visivel.ToCodigo(), i.Obrigatorio.ToCodigo(),
-                [.. i.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
-                i.Impedido.ToCodigo(),
-                modelo.Conteudo.Itens.First(item => item.FatoCodigo == i.FatoCodigo).Impedimento?.Mensagem))],
-            [.. avaliacao.Termos.Select(static t => new TermoPreVisualizadoDto(t.Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))]);
+        Dictionary<string, ItemDoModelo> itemPorFato = modelo.Conteudo.Itens
+            .Concat(modelo.Conteudo.Grupos.SelectMany(static g => g.Subitens))
+            .ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
+        return Result<PreVisualizacaoDoModeloDto?>.Success(new PreVisualizacaoDoModeloDto(
+            [.. avaliacao.Itens.Select(i => Item(i, itemPorFato))],
+            [.. avaliacao.Termos.Select(static t => new TermoPreVisualizadoDto(t.Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))],
+            [.. avaliacao.Grupos.Select(g => new GrupoPreVisualizadoDto(
+                g.Codigo, g.EtapaCodigo, g.Visivel.ToCodigo(), g.Obrigatorio.ToCodigo(), g.ContagemValida, g.OcorrenciaDoCandidatoValida,
+                [.. g.Ocorrencias.Select(o => new OcorrenciaPreVisualizadaDto(o.Id, [.. o.Itens.Select(i => Item(i, itemPorFato))]))]))]));
     }
+
+    private static ItemPreVisualizadoDto Item(AvaliacaoItem item, Dictionary<string, ItemDoModelo> itemPorFato) => new(
+        item.FatoCodigo,
+        item.EtapaCodigo,
+        item.Visivel.ToCodigo(),
+        item.Obrigatorio.ToCodigo(),
+        [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
+        item.Impedido.ToCodigo(),
+        itemPorFato[item.FatoCodigo].Impedimento?.Mensagem);
 }

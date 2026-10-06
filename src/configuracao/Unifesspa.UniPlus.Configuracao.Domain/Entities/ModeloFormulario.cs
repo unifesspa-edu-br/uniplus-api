@@ -204,20 +204,30 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// O modelo como o avaliador de formulário o lê: cada etapa, na ordem, com os seus itens; os
-    /// termos; e as derivações por regra do catálogo, que a pré-visualização resolve com as respostas
-    /// simuladas.
+    /// O modelo como o avaliador de formulário o lê: cada etapa, na ordem, com os seus itens e grupos
+    /// repetíveis; os termos; as derivações por regra do catálogo, que a pré-visualização resolve com as
+    /// respostas simuladas; e os agregados do catálogo sobre os grupos do modelo.
     /// </summary>
-    public DefinicaoFormulario ParaAvaliacao(IReadOnlyList<RegrasDerivacaoFato> derivacoes)
+    public DefinicaoFormulario ParaAvaliacao(IReadOnlyList<RegrasDerivacaoFato> derivacoes, IReadOnlyList<DefinicaoAgregado> agregados)
     {
         ArgumentNullException.ThrowIfNull(derivacoes);
+        ArgumentNullException.ThrowIfNull(agregados);
         ILookup<string?, ItemDoModelo> itensPorEtapa = Conteudo.Itens.ToLookup(static i => i.EtapaCodigo, StringComparer.Ordinal);
+        ILookup<string?, GrupoDoModelo> gruposPorEtapa = Conteudo.Grupos.ToLookup(static g => g.EtapaCodigo, StringComparer.Ordinal);
         return new DefinicaoFormulario(
-            [.. Conteudo.Etapas.Select(e => new DefinicaoEtapa(
-                e.Codigo, e.Exibicao, [.. itensPorEtapa[e.Codigo].Select(static i => new DefinicaoItem(i.FatoCodigo, i.Exibicao, i.Obrigatoriedade, i.Restricoes, i.Impedimento, i.Formato))]))],
-            [.. Conteudo.Termos.Select(static t => new DefinicaoTermo(t.Codigo, t.Exibicao, t.Obrigatoriedade))],
-            derivacoes);
+            [.. Conteudo.Etapas.OrderBy(static e => e.Ordem).Select(e => new DefinicaoEtapa(
+                e.Codigo,
+                e.Exibicao,
+                [.. itensPorEtapa[e.Codigo].OrderBy(static i => i.Ordem).Select(Item)],
+                [.. gruposPorEtapa[e.Codigo].OrderBy(static g => g.Ordem).Select(static g => new DefinicaoGrupo(
+                    g.Codigo, g.Exibicao, g.Obrigatoriedade, g.Minimo, g.Maximo, [.. g.Subitens.OrderBy(static s => s.Ordem).Select(Item)], g.IncluiCandidato))]))],
+            [.. Conteudo.Termos.OrderBy(static t => t.Ordem).Select(static t => new DefinicaoTermo(t.Codigo, t.Exibicao, t.Obrigatoriedade))],
+            derivacoes,
+            agregados);
     }
+
+    private static DefinicaoItem Item(ItemDoModelo item) =>
+        new(item.FatoCodigo, item.Exibicao, item.Obrigatoriedade, item.Restricoes, item.Impedimento, item.Formato);
 
     /// <summary>
     /// O que o cadastro confere fora do conteúdo — código, descritivo, tipo de processo e finalidade

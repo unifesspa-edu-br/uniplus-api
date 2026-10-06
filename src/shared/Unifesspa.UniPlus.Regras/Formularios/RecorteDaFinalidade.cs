@@ -27,9 +27,26 @@ public sealed record RecorteDaFinalidade(FormularioPortavel Regras, IReadOnlyLis
         ArgumentException.ThrowIfNullOrWhiteSpace(finalidade);
 
         string prefixo = finalidade + ":";
-        DefinicaoEtapa[] etapas = [.. definicao.Etapas.Where(e => e.Codigo == finalidade || e.Codigo.StartsWith(prefixo, StringComparison.Ordinal))];
-        DefinicaoTermo[] termos = [.. definicao.Termos.Where(t => t.Codigo.StartsWith(prefixo, StringComparison.Ordinal))];
+        return Recortar(
+            definicao,
+            [.. definicao.Etapas.Where(e => e.Codigo == finalidade || e.Codigo.StartsWith(prefixo, StringComparison.Ordinal))],
+            [.. definicao.Termos.Where(t => t.Codigo.StartsWith(prefixo, StringComparison.Ordinal))],
+            ofertas);
+    }
 
+    /// <summary>
+    /// O recorte de uma definição que é um formulário só, como a do modelo: todas as etapas e todos os
+    /// termos, com o fechamento das derivações e dos agregados que eles citam e os pressupostos.
+    /// </summary>
+    public static RecorteDaFinalidade DoFormulario(DefinicaoFormulario definicao, IReadOnlyDictionary<string, IReadOnlySet<string>>? ofertas = null)
+    {
+        ArgumentNullException.ThrowIfNull(definicao);
+        return Recortar(definicao, [.. definicao.Etapas], [.. definicao.Termos], ofertas);
+    }
+
+    private static RecorteDaFinalidade Recortar(
+        DefinicaoFormulario definicao, DefinicaoEtapa[] etapas, DefinicaoTermo[] termos, IReadOnlyDictionary<string, IReadOnlySet<string>>? ofertas)
+    {
         HashSet<string> grupos = new(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
         HashSet<string> produzidos = new(
             etapas.SelectMany(static e => e.Itens.Select(static i => i.FatoCodigo)

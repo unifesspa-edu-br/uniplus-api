@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Regras.Services;
+
 /// <summary>Um valor que o candidato pode escolher num campo de seleção: o código, a descrição que orienta a escolha e a ordem.</summary>
 public sealed record ValorSelecionavel(string Codigo, string? Descricao, int Ordem);
 
@@ -116,7 +118,8 @@ public record FormularioRenderizavel(
     /// <summary>
     /// Monta o formulário a partir da apresentação, do recorte das regras da finalidade e do que
     /// descreve os pressupostos: os campos dos outros formulários, que dão a apresentação do que eles
-    /// perguntam, e os fatos de que cada fato calculado é calculado.
+    /// perguntam, e os agregados sobre os grupos, que com os derivados do sistema dizem de que fatos
+    /// cada fato calculado é calculado.
     /// </summary>
     public static FormularioRenderizavel Montar(
         string finalidade,
@@ -127,12 +130,18 @@ public record FormularioRenderizavel(
         IReadOnlyList<GrupoRenderizavel> grupos,
         RecorteDaFinalidade recorte,
         IEnumerable<CampoRenderizavel> camposDosOutrosFormularios,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> calculadoDe,
+        IEnumerable<DefinicaoAgregado> agregados,
         DateOnly? dataReferenciaFatos)
     {
         ArgumentNullException.ThrowIfNull(recorte);
         ArgumentNullException.ThrowIfNull(camposDosOutrosFormularios);
-        ArgumentNullException.ThrowIfNull(calculadoDe);
+        ArgumentNullException.ThrowIfNull(agregados);
+
+        Dictionary<string, IReadOnlyList<string>> calculadoDe = new(DerivadosDoSistema.Dependencias, StringComparer.Ordinal);
+        foreach (DefinicaoAgregado agregado in agregados)
+        {
+            calculadoDe[agregado.Codigo] = [agregado.FatoDeMembro];
+        }
 
         Dictionary<string, CampoRenderizavel> perguntados = new(StringComparer.Ordinal);
         foreach (CampoRenderizavel campo in camposDosOutrosFormularios)

@@ -92,6 +92,22 @@ public sealed class RecorteDaFinalidadeTests
         recorte.Pressupostos.Should().Equal(["RURAL_NA_FAMILIA"], "o grupo que o agregado agrega foi respondido na inscrição");
     }
 
+    [Fact(DisplayName = "O recorte de um formulário só leva todas as seções e termos, e ainda poda a derivação que ninguém cita")]
+    public void DoFormulario_LevaTudoEPodaODerivadoNaoCitado()
+    {
+        DefinicaoFormulario modelo = new(
+            [new DefinicaoEtapa("DOCUMENTOS", null, [new DefinicaoItem("CERTIFICADO", Quando("ESCOLA_PUBLICA", true), Obrigatoriedade.Sempre, [])])],
+            [new DefinicaoTermo("VERACIDADE", null, Obrigatoriedade.Sempre)],
+            [Booleana("ESCOLA_PUBLICA", Quando("TIPO_ESCOLA", "PUBLICA")), Booleana("NAO_CITADO", Quando("TIPO_ESCOLA", "PRIVADA"))]);
+
+        RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(modelo);
+
+        recorte.Regras.Etapas.Select(static e => e.Codigo).Should().Equal("DOCUMENTOS");
+        recorte.Regras.Termos.Select(static t => t.Codigo).Should().Equal("VERACIDADE");
+        recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo).Should().Equal("ESCOLA_PUBLICA");
+        recorte.Pressupostos.Should().Equal("TIPO_ESCOLA");
+    }
+
     private static DefinicaoGrupo Grupo(string codigo, string subitem, PredicadoDnf? exibicao = null) =>
         new(codigo, exibicao, Obrigatoriedade.Nunca, 0, null, [new DefinicaoItem(subitem, null, Obrigatoriedade.Sempre, [])]);
 

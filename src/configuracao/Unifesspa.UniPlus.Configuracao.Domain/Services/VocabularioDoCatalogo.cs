@@ -128,6 +128,58 @@ public static class VocabularioDoCatalogo
             : fato.ValoresDominioDeclarados;
     }
 
+    /// <summary>
+    /// Os agregados do catálogo sobre os grupos do modelo: os que agregam um campo de algum grupo, com
+    /// a operação que o domínio do fato de membro dá (ADR-0138), em ordem de código.
+    /// </summary>
+    public static IReadOnlyList<DefinicaoAgregado> AgregadosDosGrupos(IEnumerable<FatoCandidato> fatos, IEnumerable<GrupoDoModelo> grupos)
+    {
+        ArgumentNullException.ThrowIfNull(fatos);
+        ArgumentNullException.ThrowIfNull(grupos);
+        Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
+        Dictionary<string, string> grupoDoCampo = grupos
+            .SelectMany(static g => g.Subitens.Select(s => (Campo: s.FatoCodigo, Grupo: g.Codigo)))
+            .ToDictionary(static p => p.Campo, static p => p.Grupo, StringComparer.Ordinal);
+        return [.. porCodigo.Values
+            .Where(f => f.FatoDeMembroAgregado is { } membro && grupoDoCampo.ContainsKey(membro) && porCodigo.ContainsKey(membro))
+            .OrderBy(static f => f.Codigo, StringComparer.Ordinal)
+            .Select(f => (Agregado: f.Codigo, Membro: f.FatoDeMembroAgregado!,
+                Operacao: AgregadoDeGrupo.OperacaoDoDominio(DominiosFato.ParaTokenCanonico(porCodigo[f.FatoDeMembroAgregado!].Dominio))))
+            .Where(static a => a.Operacao != OperacaoAgregado.Nenhuma)
+            .Select(a => new DefinicaoAgregado(a.Agregado, grupoDoCampo[a.Membro], a.Membro, a.Operacao))];
+    }
+
+    /// <summary>
+    /// As opções que o catálogo oferece a cada campo de seleção do modelo, na ordem de apresentação: os
+    /// valores ativos do fato — os do fato de membro, no agregado — ou as UFs. Nulas quando as opções
+    /// só existem no processo (as que ele declara, as modalidades, os municípios do bônus) ou vêm do
+    /// Geo pela UF, e nos campos que não são categóricos.
+    /// </summary>
+    public static Dictionary<string, IReadOnlyList<ValorSelecionavel>?> OpcoesDoModelo(IEnumerable<FatoCandidato> fatos, IEnumerable<string> campos)
+    {
+        ArgumentNullException.ThrowIfNull(fatos);
+        ArgumentNullException.ThrowIfNull(campos);
+        Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
+        Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = new(StringComparer.Ordinal);
+        foreach (string campo in campos)
+        {
+            opcoes[campo] = porCodigo.TryGetValue(campo, out FatoCandidato? fato) && fato.Dominio == DominioFato.Categorico
+                ? fato.FonteValores switch
+                {
+                    FonteValoresFato.Global => [.. ValoresDe(fato, porCodigo)
+                        .Where(static v => v.Ativo)
+                        .OrderBy(static v => v.Ordem)
+                        .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
+                        .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem))],
+                    FonteValoresFato.GeoUf => [.. ReferenciaCidadeGeo.UnidadesFederativas.Select(static (uf, ordem) => new ValorSelecionavel(uf.Sigla, uf.Nome, ordem))],
+                    _ => null,
+                }
+                : null;
+        }
+
+        return opcoes;
+    }
+
     private static Dictionary<string, FatoCandidato> PorCodigo(IEnumerable<FatoCandidato> fatos) =>
         fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
 
