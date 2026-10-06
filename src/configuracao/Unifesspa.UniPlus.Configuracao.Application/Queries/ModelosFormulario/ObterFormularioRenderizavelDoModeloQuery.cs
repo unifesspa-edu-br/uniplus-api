@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -16,8 +17,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed record ObterFormularioRenderizavelDoModeloQuery(Guid Id) : IQuery<FormularioRenderizavel?>;
 
 /// <summary>
-/// Projeta o conteúdo vigente do modelo com o catálogo vivo: as regras pela mesma definição da
-/// pré-visualização do modelo, recortadas como um formulário só; as opções que o catálogo oferece a
+/// Projeta o conteúdo do modelo como aplicado — o de inscrição, com o conjunto básico — com o catálogo
+/// vivo: as regras pela mesma definição da pré-visualização do modelo, recortadas como um formulário só; as opções que o catálogo oferece a
 /// cada campo; e o conteúdo da versão escolhida de cada termo. As opções que só existem no processo
 /// — as que ele declara, as modalidades, os municípios do bônus — saem nulas: no modelo, ainda não há
 /// processo que as oferte.
@@ -42,8 +43,9 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             return null;
         }
 
-        ConteudoDoModelo conteudo = modelo.Conteudo;
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
+        // O formulário que o candidato verá é o do modelo aplicado: o de inscrição, com o conjunto básico.
+        ConteudoDoModelo conteudo = EscritaDoModelo.ComoAplicado(modelo, fatos);
         IReadOnlyList<DefinicaoAgregado> agregados = VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos);
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo);
 
@@ -81,7 +83,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => new GrupoRenderizavel(
                 g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo, g.Minimo, g.Maximo, g.IncluiCandidato,
                 [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(s, opcoes))]))],
-            RecorteDaFinalidade.DoFormulario(modelo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), agregados), VocabularioDoCatalogo.Ofertas(opcoes)),
+            RecorteDaFinalidade.DoFormulario(conteudo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), agregados), VocabularioDoCatalogo.Ofertas(opcoes)),
             camposDosOutrosFormularios: [],
             agregados,
             dataReferenciaFatos: null);

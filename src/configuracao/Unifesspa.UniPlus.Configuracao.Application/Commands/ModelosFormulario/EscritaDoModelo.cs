@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
+using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -65,6 +66,27 @@ internal static class EscritaDoModelo
         }
 
         return (conteudo, catalogo, erros);
+    }
+
+    /// <summary>
+    /// O conteúdo do modelo como o formulário do processo o terá depois de aplicado: no de inscrição, com o
+    /// conjunto básico na seção reservada, mesclado como a gravação e a aplicação o mesclam. O modelo
+    /// gravado sem o básico — o da semente, montado direto pelo domínio — o ganha ao ser aplicado, e a
+    /// simulação do modelo tem de mostrar o que o candidato verá.
+    /// </summary>
+    public static ConteudoDoModelo ComoAplicado(ModeloFormulario modelo, IReadOnlyList<FatoCandidato> fatos)
+    {
+        ArgumentNullException.ThrowIfNull(modelo);
+        if (modelo.Finalidade != FinalidadeFormulario.Inscricao)
+        {
+            return modelo.Conteudo;
+        }
+
+        // O gravado é a própria referência do básico: o item básico que ele já traz fica como está, e a
+        // mescla não tem com o que divergir.
+        ConteudoDoModeloInput gravado = modelo.ToView().Conteudo;
+        (ConteudoDoModeloInput? mesclado, _) = ComASecaoDosDadosBasicos(gravado, modelo.Finalidade, gravado);
+        return ConteudoLido.Ler(mesclado, CatalogoDoModelo.De(fatos).Formatos).ParaConteudo();
     }
 
     private static (ConteudoDoModeloInput? Entrada, List<FieldError> Erros) ComASecaoDosDadosBasicos(

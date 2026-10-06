@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -67,9 +68,11 @@ public static class PreVisualizarModeloFormularioQueryHandler
         // A resposta fora das opções que o catálogo oferta não vale, como no renderizável que o front
         // interpreta: os dois têm de dar o mesmo resultado para a mesma simulação.
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
-        Dictionary<string, IReadOnlySet<string>> ofertas = VocabularioDoCatalogo.Ofertas(VocabularioDoCatalogo.OpcoesDoModelo(fatos, modelo.Conteudo));
+        // O mesmo conteúdo do renderizável: o do modelo aplicado, o de inscrição com o conjunto básico.
+        ConteudoDoModelo conteudo = EscritaDoModelo.ComoAplicado(modelo, fatos);
+        Dictionary<string, IReadOnlySet<string>> ofertas = VocabularioDoCatalogo.Ofertas(VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo));
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
-            modelo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, modelo.Conteudo.Grupos)),
+            conteudo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos)),
             new EntradaAvaliacaoFormulario(
                 RespostaDeCampo.DentroDaOferta(simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ofertas),
                 new HashSet<string>(simulacao.EtapasConcluidas ?? [], StringComparer.Ordinal),
@@ -79,8 +82,8 @@ public static class PreVisualizarModeloFormularioQueryHandler
                     o => (IReadOnlyList<OcorrenciaRespondida>)[.. o.Value.Select(r => r with { Respostas = RespostaDeCampo.DentroDaOferta(r.Respostas, ofertas) })],
                     StringComparer.Ordinal)));
 
-        Dictionary<string, ItemDoModelo> itemPorFato = modelo.Conteudo.Itens
-            .Concat(modelo.Conteudo.Grupos.SelectMany(static g => g.Subitens))
+        Dictionary<string, ItemDoModelo> itemPorFato = conteudo.Itens
+            .Concat(conteudo.Grupos.SelectMany(static g => g.Subitens))
             .ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
         return Result<PreVisualizacaoDoModeloDto?>.Success(new PreVisualizacaoDoModeloDto(
             [.. avaliacao.Itens.Select(i => Item(i, itemPorFato))],
