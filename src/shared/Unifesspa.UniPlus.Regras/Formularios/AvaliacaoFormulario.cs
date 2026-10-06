@@ -31,12 +31,43 @@ public sealed record OcorrenciaRespondida(string Id, IReadOnlyDictionary<string,
     public string Id { get; } = !string.IsNullOrWhiteSpace(Id) ? Id : throw new ArgumentException("A ocorrência precisa de identidade.", nameof(Id));
 }
 
-/// <summary>O resultado da avaliação: o estado final de cada fato, de cada item e de cada termo.</summary>
+/// <summary>O resultado da avaliação: o estado final de cada fato, de cada seção, de cada item, de cada termo e de cada grupo.</summary>
 public sealed record AvaliacaoFormulario(
     IReadOnlyDictionary<string, FatoResolvido> Fatos,
     IReadOnlyList<AvaliacaoItem> Itens,
     IReadOnlyList<AvaliacaoTermo> Termos,
-    IReadOnlyList<AvaliacaoGrupo> Grupos);
+    IReadOnlyList<AvaliacaoGrupo> Grupos,
+    IReadOnlyList<AvaliacaoEtapa> Etapas);
+
+/// <summary>A avaliação de uma seção: se ela aparece. A seção oculta leva todos os campos dela a não aplicáveis.</summary>
+public sealed record AvaliacaoEtapa(string Codigo, Ternario Visivel);
+
+/// <summary>
+/// As opções que um campo de escolha deixa escolher diante das respostas anteriores: as que valem em
+/// definitivo, em ordem ordinal, e se elas já são todas — falso enquanto uma resposta de que as opções
+/// dependem ainda não se sabe e pode acrescentar opção. São as das restrições do campo; a oferta de
+/// valores do campo vale à parte.
+/// </summary>
+public sealed record OpcoesVigentes
+{
+    public OpcoesVigentes(IEnumerable<string> codigos, bool definitivas)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+        Codigos = [.. codigos.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        Definitivas = definitivas;
+    }
+
+    public IReadOnlyList<string> Codigos { get; }
+
+    public bool Definitivas { get; }
+
+    /// <summary>As opções que as duas restrições deixam escolher juntas.</summary>
+    public OpcoesVigentes E(OpcoesVigentes outras)
+    {
+        ArgumentNullException.ThrowIfNull(outras);
+        return new(Codigos.Intersect(outras.Codigos, StringComparer.Ordinal), Definitivas && outras.Definitivas);
+    }
+}
 
 /// <summary>
 /// A avaliação de um grupo repetível: se aparece, se é obrigatório, se a contagem de ocorrências cabe
@@ -81,7 +112,8 @@ public sealed record AvaliacaoItem(
     Ternario Visivel,
     Ternario Obrigatorio,
     IReadOnlyList<RestricaoValor> RestricoesVioladas,
-    Ternario Impedido = Ternario.Falso);
+    Ternario Impedido = Ternario.Falso,
+    OpcoesVigentes? Opcoes = null);
 
 /// <summary>A avaliação de um termo: se aparece e se é obrigatório.</summary>
 public sealed record AvaliacaoTermo(string Codigo, Ternario Visivel, Ternario Obrigatorio);

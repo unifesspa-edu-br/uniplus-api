@@ -153,6 +153,22 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             "VERDADEIRO", "o valor desativado no catálogo não é ofertado, e a resposta com ele é descartada");
     }
 
+    [Fact(DisplayName = "A pré-visualização diz de cada seção se ela aparece e as opções vigentes do campo de escolha")]
+    public async Task Handle_SecoesEOpcoes()
+    {
+        OpcoesPermitidas filtro = new([new OpcoesCondicionadas(Quando("CERTIFICADO", true), ["COM_CERTIFICADO"])]);
+        ModeloFormulario modelo = Modelo([
+            Item("CERTIFICADO", 0),
+            new ItemDoModelo("SITUACAO", 1, "DADOS", "Situação", TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Nunca, null, [filtro], false),
+        ]);
+
+        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = true }))!;
+
+        resultado.Secoes.Should().ContainSingle().Which.Should().Be(new SecaoPreVisualizadaDto("DADOS", "VERDADEIRO"));
+        resultado.Itens.Single(static i => i.FatoCodigo == "SITUACAO").Opcoes.Should().BeEquivalentTo(
+            new OpcoesPreVisualizadasDto(["COM_CERTIFICADO"], true));
+    }
+
     [Fact(DisplayName = "Ocorrência simulada sem identidade própria no grupo é recusada com o caminho dela")]
     public async Task Handle_OcorrenciaSemIdentidade_Recusa()
     {

@@ -205,6 +205,58 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
         avaliacao.Fatos["MUNICIPIO"].Estado.Should().Be(EstadoFato.Indeterminado, "o campo é obrigatório e a resposta não vale");
     }
 
+    [Theory(DisplayName = "As opções vigentes do campo são as do filtro da resposta anterior; sem ela, ainda não são todas")]
+    [InlineData("PA", new[] { "BELEM", "MARABA" }, true)]
+    [InlineData(null, new string[0], false)]
+    public void OpcoesVigentes_SeguemARespostaAnterior(string? uf, string[] esperadas, bool definitivas)
+    {
+        OpcoesPermitidas municipios = new(
+        [
+            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "PA")), ["MARABA", "BELEM"]),
+            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "AM")), ["MANAUS"]),
+        ]);
+        DefinicaoFormulario formulario = Formulario(Item("UF"), Item("MUNICIPIO", restricoes: [municipios]));
+        (string, object)[] respostas = uf is null ? [] : [("UF", uf)];
+
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, respostas));
+
+        avaliacao.Itens[1].Opcoes!.Codigos.Should().Equal(esperadas);
+        avaliacao.Itens[1].Opcoes!.Definitivas.Should().Be(definitivas);
+        avaliacao.Itens[0].Opcoes.Should().BeNull("o campo sem restrição de opções não limita a escolha");
+    }
+
+    [Fact(DisplayName = "A entrada que ainda depende de resposta mas não traz opção nova não deixa as opções provisórias")]
+    public void OpcoesVigentes_EntradaPendenteSemOpcaoNova_Definitivas()
+    {
+        OpcoesPermitidas opcoes = new(
+        [
+            new OpcoesCondicionadas(null, ["A", "B"]),
+            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "PA")), ["A"]),
+        ]);
+        DefinicaoFormulario formulario = Formulario(Item("UF"), Item("ESCOLHA", restricoes: [opcoes]));
+
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false));
+
+        avaliacao.Itens[1].Opcoes!.Codigos.Should().Equal("A", "B");
+        avaliacao.Itens[1].Opcoes!.Definitivas.Should().BeTrue("a resposta pendente só poderia acrescentar A, que já vale");
+    }
+
+    [Fact(DisplayName = "A avaliação diz de cada seção se ela aparece")]
+    public void Etapas_DizemSeAparecem()
+    {
+        DefinicaoFormulario formulario = new(
+            [
+                new DefinicaoEtapa("DADOS", exibicao: null, [Item("TIPO_ENDERECO")]),
+                new DefinicaoEtapa("ALDEIA", Predicado(Condicao("TIPO_ENDERECO", Operador.Igual, "ALDEIA")), [Item("NOME_ALDEIA")]),
+            ],
+            termos: [],
+            derivacoes: []);
+
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, ("TIPO_ENDERECO", "URBANO")));
+
+        avaliacao.Etapas.Select(static e => (e.Codigo, e.Visivel)).Should().Equal(("DADOS", Ternario.Verdadeiro), ("ALDEIA", Ternario.Falso));
+    }
+
     [Theory]
     [InlineData("\"BRASIL\"", EstadoFato.Resolvido)]
     [InlineData("\"MARABA\"", EstadoFato.Indeterminado)]

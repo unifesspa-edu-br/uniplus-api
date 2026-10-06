@@ -141,14 +141,21 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
                         i, grupoPorCodigo[g.Codigo].Subitens.Single(s => s.FatoCodigo == i.FatoCodigo), grupoPorCodigo[g.Codigo].EtapaCodigo))]))]))],
             [.. avaliacao.Termos
                 .Where(t => termoPorCodigo[t.Codigo].Finalidade == formulario.Finalidade)
-                .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))]))];
+                .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))],
+            [.. formulario.Etapas
+                .Where(static e => e.Tipo == TipoEtapaFormulario.Secao)
+                .OrderBy(static e => e.Ordem)
+                .Select(e => new SecaoSimuladaDto(
+                    e.Codigo,
+                    avaliacao.Etapas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(formulario.Finalidade, e.Codigo)).Visivel.ToCodigo()))]))];
     }
 
     /// <summary>O item avaliado; o campo de grupo segue a seção do grupo.</summary>
     private static ItemSimuladoDto Item(AvaliacaoItem item, FatoColetado campo, string? etapaDoGrupo = null) => new(
         item.FatoCodigo, etapaDoGrupo ?? campo.EtapaCodigo, item.Visivel.ToCodigo(), item.Obrigatorio.ToCodigo(),
         [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
-        item.Impedido.ToCodigo(), campo.Impedimento?.Mensagem);
+        item.Impedido.ToCodigo(), campo.Impedimento?.Mensagem,
+        item.Opcoes is { } opcoes ? new OpcoesSimuladasDto(opcoes.Codigos, opcoes.Definitivas) : null);
 
     /// <summary>
     /// Cada folha da árvore com a situação dela diante do perfil: a de fora de repetição pelo status

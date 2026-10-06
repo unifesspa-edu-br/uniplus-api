@@ -30,12 +30,22 @@ public sealed record PreVisualizacaoDoProcessoDto(
     IReadOnlyList<FormularioSimuladoDto> Formularios,
     IReadOnlyList<DocumentoSimuladoDto> Documentos);
 
-/// <summary>Um formulário avaliado: os itens, os grupos e os termos dele.</summary>
+/// <summary>Um formulário avaliado: as seções, os itens, os grupos e os termos dele.</summary>
 public sealed record FormularioSimuladoDto(
     string Finalidade,
     IReadOnlyList<ItemSimuladoDto> Itens,
     IReadOnlyList<GrupoSimuladoDto> Grupos,
-    IReadOnlyList<TermoSimuladoDto> Termos);
+    IReadOnlyList<TermoSimuladoDto> Termos,
+    IReadOnlyList<SecaoSimuladaDto> Secoes);
+
+/// <summary>Uma seção do formulário avaliada: se ela aparece.</summary>
+public sealed record SecaoSimuladaDto(string Codigo, string Visivel);
+
+/// <summary>
+/// As opções que um campo de escolha deixa escolher diante das respostas: as que valem em definitivo e
+/// se já são todas — falso enquanto uma resposta de que elas dependem ainda não foi dada.
+/// </summary>
+public sealed record OpcoesSimuladasDto(IReadOnlyList<string> Codigos, bool Definitivas);
 
 /// <summary>
 /// Um item avaliado: se aparece, se é obrigatório, os tipos das restrições que a resposta viola e se
@@ -48,7 +58,8 @@ public sealed record ItemSimuladoDto(
     string Obrigatorio,
     IReadOnlyList<string> RestricoesVioladas,
     string Impedido,
-    string? MensagemDoImpedimento);
+    string? MensagemDoImpedimento,
+    OpcoesSimuladasDto? Opcoes);
 
 /// <summary>
 /// Um grupo repetível avaliado: se aparece e é obrigatório, se a contagem de ocorrências e a

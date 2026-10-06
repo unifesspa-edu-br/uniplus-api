@@ -148,7 +148,8 @@ public static class AvaliadorFormulario
             fatos,
             [.. itens.Select(par => avaliacaoPorFato[par.Item.FatoCodigo])],
             termos,
-            [.. grupos.Select(par => avaliacaoPorGrupo[par.Grupo.Codigo])]);
+            [.. grupos.Select(par => avaliacaoPorGrupo[par.Grupo.Codigo])],
+            [.. definicao.Etapas.Select(etapa => new AvaliacaoEtapa(etapa.Codigo, etapa.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro))]);
     }
 
     private static FatoResolvido Derivar(RegrasDerivacaoFato derivacao, IReadOnlyDictionary<string, FatoResolvido> fatos)
@@ -269,12 +270,18 @@ public static class AvaliadorFormulario
         Ternario visivel = E(visivelDoContentor, item.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
         Ternario obrigatorio = ObrigatorioSeVisivel(visivel, item.Obrigatoriedade, fatos);
 
+        // As opções do campo que aparece ou pode aparecer: a interseção das restrições que limitam a escolha.
+        OpcoesVigentes? opcoes = visivel == Ternario.Falso
+            ? null
+            : item.RestricoesDaResposta.Select(r => r.Opcoes(fatos)).OfType<OpcoesVigentes>().Aggregate((OpcoesVigentes?)null, static (juntas, uma) => juntas?.E(uma) ?? uma);
+
         // O impedimento se avalia com a resposta do próprio campo já resolvida: o campo oculto ou sem
         // resposta não impede, porque nenhuma condição se cumpre sobre ele (UNI-REQ-0074).
         (FatoResolvido Fato, AvaliacaoItem Avaliacao) Resultado(FatoResolvido fato, IReadOnlyList<RestricaoValor> violadas) =>
             (fato, new(item.FatoCodigo, etapaCodigo, visivel, obrigatorio, violadas,
                 item.Impedimento?.Avaliar(new Dictionary<string, FatoResolvido>(fatos, StringComparer.Ordinal) { [item.FatoCodigo] = fato })
-                    ?? Ternario.Falso));
+                    ?? Ternario.Falso,
+                opcoes));
 
         switch (visivel)
         {

@@ -32,6 +32,12 @@ public abstract record RestricaoValor
     /// <summary>Avalia a resposta, já sabida não vazia, contra a restrição.</summary>
     public abstract Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos);
 
+    /// <summary>
+    /// As opções que a restrição deixa escolher diante das respostas anteriores; nula quando ela não
+    /// limita a escolha a um conjunto que o servidor enumera.
+    /// </summary>
+    public virtual OpcoesVigentes? Opcoes(IReadOnlyDictionary<string, FatoResolvido> fatos) => null;
+
     private protected static Ternario ComoTernario(bool atende) => atende ? Ternario.Verdadeiro : Ternario.Falso;
 }
 
@@ -142,6 +148,23 @@ public sealed record OpcoesPermitidas : RestricaoValor
 
     public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
+        (HashSet<string> vigentes, HashSet<string> talvezVigentes) = Vigentes(fatos);
+        return EscolheSoEntre(resposta, vigentes, talvezVigentes);
+    }
+
+    public override OpcoesVigentes? Opcoes(IReadOnlyDictionary<string, FatoResolvido> fatos)
+    {
+        (HashSet<string> vigentes, HashSet<string> talvezVigentes) = Vigentes(fatos);
+        // As opções são uma união: a entrada que talvez valha só muda o conjunto se trouxer opção nova.
+        return new OpcoesVigentes(vigentes, definitivas: talvezVigentes.All(vigentes.Contains));
+    }
+
+    /// <summary>
+    /// As opções das entradas cuja condição é verdadeira, e as das que ainda dependem de resposta
+    /// desconhecida e talvez valham.
+    /// </summary>
+    private (HashSet<string> Vigentes, HashSet<string> TalvezVigentes) Vigentes(IReadOnlyDictionary<string, FatoResolvido> fatos)
+    {
         HashSet<string> vigentes = new(StringComparer.Ordinal);
         HashSet<string> talvezVigentes = new(StringComparer.Ordinal);
         foreach (OpcoesCondicionadas entrada in Entradas)
@@ -160,7 +183,7 @@ public sealed record OpcoesPermitidas : RestricaoValor
             }
         }
 
-        return EscolheSoEntre(resposta, vigentes, talvezVigentes);
+        return (vigentes, talvezVigentes);
     }
 
     /// <summary>
@@ -243,13 +266,30 @@ public sealed record OpcoesDasRespostas : RestricaoValor
 
     public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
+        OpcoesVigentes opcoes = Opcoes(fatos)!;
+        Ternario resultado = OpcoesPermitidas.EscolheSoEntre(
+            resposta, opcoes.Codigos.ToHashSet(StringComparer.Ordinal), talvezVigentes: new HashSet<string>(StringComparer.Ordinal));
+
+        // Uma resposta ainda desconhecida pode trazer qualquer opção: o que não está entre as
+        // conhecidas fica indeterminado, não violado — salvo a resposta de forma inválida.
+        return resultado == Ternario.Falso && !opcoes.Definitivas && RespostaDeCampo.Codigos(resposta) is not null
+            ? Ternario.Indeterminado
+            : resultado;
+    }
+
+    /// <summary>
+    /// As respostas resolvidas dos fatos citados; o fato não aplicável ou não informado não contribui,
+    /// e o ainda indeterminado deixa as opções em aberto.
+    /// </summary>
+    public override OpcoesVigentes? Opcoes(IReadOnlyDictionary<string, FatoResolvido> fatos)
+    {
         HashSet<string> vigentes = new(StringComparer.Ordinal);
-        bool algumDesconhecido = false;
+        bool definitivas = true;
         foreach (string codigo in Fatos)
         {
             if (!fatos.TryGetValue(codigo, out FatoResolvido? fato) || fato is null || fato.Estado == EstadoFato.Indeterminado)
             {
-                algumDesconhecido = true;
+                definitivas = false;
             }
             else if (fato.Estado == EstadoFato.Resolvido && RespostaDeCampo.Codigos(fato.Valor!.Value) is { } codigos)
             {
@@ -257,13 +297,7 @@ public sealed record OpcoesDasRespostas : RestricaoValor
             }
         }
 
-        Ternario resultado = OpcoesPermitidas.EscolheSoEntre(resposta, vigentes, talvezVigentes: new HashSet<string>(StringComparer.Ordinal));
-
-        // Uma resposta ainda desconhecida pode trazer qualquer opção: o que não está entre as
-        // conhecidas fica indeterminado, não violado — salvo a resposta de forma inválida.
-        return resultado == Ternario.Falso && algumDesconhecido && RespostaDeCampo.Codigos(resposta) is not null
-            ? Ternario.Indeterminado
-            : resultado;
+        return new OpcoesVigentes(vigentes, definitivas);
     }
 
     internal static string? Violacao(IReadOnlyCollection<string> fatos) =>
