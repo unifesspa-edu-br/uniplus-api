@@ -1,0 +1,40 @@
+{
+  "descricao": "O predicado sem cláusula é falso, e não 'sem condição': o campo exibido por ele não aparece.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "DETALHE",
+            "exibicao": [],
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {},
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "DETALHE",
+        "visivel": "FALSO",
+        "estado": "NAO_APLICAVEL"
+      }
+    ]
+  }
+}

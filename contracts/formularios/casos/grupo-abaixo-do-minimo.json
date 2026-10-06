@@ -1,0 +1,60 @@
+{
+  "descricao": "O grupo com menos ocorrências que o mínimo não vale a contagem.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [],
+        "grupos": [
+          {
+            "codigo": "FAMILIA",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "minimo": 2,
+            "maximo": null,
+            "incluiCandidato": false,
+            "subitens": [
+              {
+                "fatoCodigo": "PARENTESCO",
+                "exibicao": null,
+                "obrigatoriedade": "SEMPRE",
+                "predicadoObrigatoriedade": null,
+                "restricoes": [],
+                "impedimento": null,
+                "oferta": null,
+                "formato": null
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {},
+  "grupos": {
+    "FAMILIA": [
+      {
+        "id": "m1",
+        "respostas": {
+          "PARENTESCO": "MAE"
+        }
+      }
+    ]
+  },
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "esperado": {
+    "grupos": [
+      {
+        "codigo": "FAMILIA",
+        "visivel": "VERDADEIRO",
+        "contagemValida": false
+      }
+    ]
+  }
+}

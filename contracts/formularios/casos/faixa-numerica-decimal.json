@@ -1,0 +1,75 @@
+{
+  "descricao": "A faixa numérica compara decimais: 0,49 fica fora do mínimo 0,5, e 0,5 atende.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "NOTA_A",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_NUMERICA",
+                "minimo": 0.5,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "NOTA_B",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_NUMERICA",
+                "minimo": 0.5,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "NOTA_A": 0.49,
+    "NOTA_B": 0.5
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "NOTA_A",
+        "restricoesVioladas": [
+          "FAIXA_NUMERICA"
+        ]
+      },
+      {
+        "fatoCodigo": "NOTA_B",
+        "estado": "RESOLVIDO",
+        "restricoesVioladas": []
+      }
+    ]
+  }
+}

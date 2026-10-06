@@ -1,0 +1,50 @@
+{
+  "descricao": "O tamanho do texto é contado sem os espaços das pontas.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "SIGLA",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "TAMANHO_TEXTO",
+                "minimo": null,
+                "maximo": 3,
+                "entradas": null,
+                "fatos": null
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "SIGLA": "  abc  "
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "SIGLA",
+        "estado": "RESOLVIDO",
+        "restricoesVioladas": []
+      }
+    ]
+  }
+}

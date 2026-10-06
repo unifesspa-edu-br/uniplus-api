@@ -1,0 +1,59 @@
+{
+  "descricao": "A condição que compara número com a resposta em texto não decide: fica indeterminada, nunca falsa em silêncio.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "IDADE",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "DECLARACAO",
+            "exibicao": [
+              [
+                {
+                  "fato": "IDADE",
+                  "operador": "IGUAL",
+                  "valor": 18
+                }
+              ]
+            ],
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "IDADE": "18"
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "DECLARACAO",
+        "visivel": "INDETERMINADO"
+      }
+    ]
+  }
+}
