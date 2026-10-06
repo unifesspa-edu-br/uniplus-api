@@ -264,6 +264,31 @@ public sealed class ModeloFormularioAdminEndpointTests
         preVisualizacao["itens"]!.AsArray().Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
     }
 
+    [Fact(DisplayName = "Sem processo, a condição de atendimento e o tipo de deficiência oferecem o cadastro institucional vivo")]
+    public async Task ObterRenderizavel_AtendimentoEDeficiencia_OferecemOCadastro()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string condicao = $"COND_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
+        string deficiencia = $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+        (await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/condicoes-atendimento", new { codigo = condicao, nome = "Ledor" }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        (await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/tipos-deficiencia",
+            new { codigo = deficiencia, nome = $"Deficiência {deficiencia}", descricao = "Deficiência relacionada à visão" }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
+        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
+        Guid id = lista.RootElement.EnumerateArray()
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+
+        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
+
+        List<string> Opcoes(string fato) => [.. formulario["fatosColetados"]!.AsArray()
+            .Single(f => f!["fatoCodigo"]!.GetValue<string>() == fato)!["valoresSelecionaveis"]!.AsArray()
+            .Select(static v => v!["codigo"]!.GetValue<string>())];
+        Opcoes("CONDICAO_ATENDIMENTO").Should().Contain(condicao);
+        Opcoes("TIPO_DEFICIENCIA").Should().Contain(deficiencia);
+    }
+
     [Theory(DisplayName = "No modelo de inscrição semeado, o tipo de localidade vem nos dados básicos antes do endereço, e o nome da comunidade só aparece para aldeia, comunidade ou quilombo")]
     [InlineData("URBANO", "FALSO")]
     [InlineData("ALDEIA", "VERDADEIRO")]

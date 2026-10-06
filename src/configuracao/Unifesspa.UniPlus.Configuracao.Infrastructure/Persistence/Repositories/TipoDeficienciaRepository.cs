@@ -29,6 +29,9 @@ public sealed class TipoDeficienciaRepository : ITipoDeficienciaRepository
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<TipoDeficiencia>> ListarVivosParaLeituraAsync(CancellationToken cancellationToken) =>
+        await _dbContext.TiposDeficiencia.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public Task<TipoDeficiencia?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.TiposDeficiencia

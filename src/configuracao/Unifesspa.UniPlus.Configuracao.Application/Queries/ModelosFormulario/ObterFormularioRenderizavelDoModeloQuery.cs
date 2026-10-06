@@ -21,7 +21,8 @@ public sealed record ObterFormularioRenderizavelDoModeloQuery(Guid Id) : IQuery<
 /// vivo: as regras pela mesma definição da pré-visualização do modelo, recortadas como um formulário só; as opções que o catálogo oferece a
 /// cada campo; e o conteúdo da versão escolhida de cada termo. As opções que só existem no processo
 /// — as que ele declara, as modalidades, os municípios do bônus — saem nulas: no modelo, ainda não há
-/// processo que as oferte.
+/// processo que as oferte. A condição de atendimento e o tipo de deficiência são a exceção: oferecem o
+/// cadastro institucional, que a oferta do processo recorta.
 /// </summary>
 public static class ObterFormularioRenderizavelDoModeloQueryHandler
 {
@@ -29,12 +30,16 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         ObterFormularioRenderizavelDoModeloQuery query,
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
+        ICondicaoAtendimentoRepository condicaoRepository,
+        ITipoDeficienciaRepository tipoDeficienciaRepository,
         ITermoConsentimentoRepository termoRepository,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(fatoRepository);
+        ArgumentNullException.ThrowIfNull(condicaoRepository);
+        ArgumentNullException.ThrowIfNull(tipoDeficienciaRepository);
         ArgumentNullException.ThrowIfNull(termoRepository);
 
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
@@ -48,6 +53,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         ConteudoDoModelo conteudo = EscritaDoModelo.ComoAplicado(modelo, fatos);
         IReadOnlyList<DefinicaoAgregado> agregados = VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos);
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo);
+        await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, condicaoRepository, tipoDeficienciaRepository, cancellationToken).ConfigureAwait(false);
 
         List<TermoRenderizavel> termos = [];
         foreach (TermoDoModelo termo in conteudo.Termos.OrderBy(static t => t.Ordem))

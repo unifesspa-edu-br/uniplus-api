@@ -16,6 +16,9 @@ public interface ITipoDeficienciaRepository
     /// <summary>Carrega o tipo de deficiência para leitura (<c>AsNoTracking</c>) — projeção em DTO.</summary>
     Task<TipoDeficiencia?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Os itens vivos do cadastro, para leitura, sem paginação: o cadastro é curto.</summary>
+    Task<IReadOnlyList<TipoDeficiencia>> ListarVivosParaLeituraAsync(CancellationToken cancellationToken);
+
     /// <summary>
     /// Lista tipos de deficiência vivos paginados por cursor keyset bidirecional
     /// (ADR-0026 + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve

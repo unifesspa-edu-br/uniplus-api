@@ -32,6 +32,8 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
 
     private readonly IModeloFormularioRepository _repository = Substitute.For<IModeloFormularioRepository>();
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
+    private readonly ICondicaoAtendimentoRepository _condicoes = Substitute.For<ICondicaoAtendimentoRepository>();
+    private readonly ITipoDeficienciaRepository _tiposDeficiencia = Substitute.For<ITipoDeficienciaRepository>();
     private readonly FatoCandidato _certificado = Declarado("CERTIFICADO");
 
     public PreVisualizarModeloFormularioQueryHandlerTests()
@@ -105,7 +107,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     public async Task Handle_ModeloInexistente_DevolveNulo()
     {
         Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
-            new PreVisualizarModeloFormularioQuery(Guid.NewGuid(), new(null, null, null)), _repository, _fatos, CancellationToken.None);
+            new PreVisualizarModeloFormularioQuery(Guid.NewGuid(), new(null, null, null)), _repository, _fatos, _condicoes, _tiposDeficiencia, CancellationToken.None);
 
         resultado.Value.Should().BeNull();
     }
@@ -182,7 +184,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             {
                 ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaRecebida("m1", null), new OcorrenciaRecebida("m1", null)],
             })),
-            _repository, _fatos, CancellationToken.None);
+            _repository, _fatos, _condicoes, _tiposDeficiencia, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModeloFormulario.OcorrenciaSimuladaInvalida");
@@ -197,7 +199,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         _repository.ObterPorIdParaLeituraAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
         Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
             new PreVisualizarModeloFormularioQuery(modelo.Id, new(Json(respostas), null, Json(pressupostos), grupos)),
-            _repository, _fatos, CancellationToken.None);
+            _repository, _fatos, _condicoes, _tiposDeficiencia, CancellationToken.None);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         return resultado.Value;
     }

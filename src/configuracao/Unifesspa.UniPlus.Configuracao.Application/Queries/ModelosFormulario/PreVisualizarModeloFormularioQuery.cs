@@ -45,11 +45,15 @@ public static class PreVisualizarModeloFormularioQueryHandler
         PreVisualizarModeloFormularioQuery query,
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
+        ICondicaoAtendimentoRepository condicaoRepository,
+        ITipoDeficienciaRepository tipoDeficienciaRepository,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(fatoRepository);
+        ArgumentNullException.ThrowIfNull(condicaoRepository);
+        ArgumentNullException.ThrowIfNull(tipoDeficienciaRepository);
 
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
         if (modelo is null)
@@ -70,7 +74,9 @@ public static class PreVisualizarModeloFormularioQueryHandler
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         // O mesmo conteúdo do renderizável: o do modelo aplicado, o de inscrição com o conjunto básico.
         ConteudoDoModelo conteudo = EscritaDoModelo.ComoAplicado(modelo, fatos);
-        Dictionary<string, IReadOnlySet<string>> ofertas = VocabularioDoCatalogo.Ofertas(VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo));
+        Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo);
+        await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, condicaoRepository, tipoDeficienciaRepository, cancellationToken).ConfigureAwait(false);
+        Dictionary<string, IReadOnlySet<string>> ofertas = VocabularioDoCatalogo.Ofertas(opcoes);
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
             conteudo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos)),
             new EntradaAvaliacaoFormulario(
