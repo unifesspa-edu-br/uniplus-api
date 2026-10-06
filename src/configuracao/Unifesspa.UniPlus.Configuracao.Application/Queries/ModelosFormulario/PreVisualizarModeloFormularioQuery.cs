@@ -87,7 +87,10 @@ public static class PreVisualizarModeloFormularioQueryHandler
             [.. avaliacao.Termos.Select(static t => new TermoPreVisualizadoDto(t.Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))],
             [.. avaliacao.Grupos.Select(g => new GrupoPreVisualizadoDto(
                 g.Codigo, g.EtapaCodigo, g.Visivel.ToCodigo(), g.Obrigatorio.ToCodigo(), g.ContagemValida, g.OcorrenciaDoCandidatoValida,
-                [.. g.Ocorrencias.Select(o => new OcorrenciaPreVisualizadaDto(o.Id, [.. o.Itens.Select(i => Item(i, itemPorFato))]))]))]));
+                [.. g.Ocorrencias.Select(o => new OcorrenciaPreVisualizadaDto(o.Id, [.. o.Itens.Select(i => Item(i, itemPorFato))]))]))],
+            [.. avaliacao.Etapas
+                .Where(e => modelo.Conteudo.Etapas.Any(m => m.Codigo == e.Codigo && m.Tipo == TipoEtapaFormulario.Secao))
+                .Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.ToCodigo()))]));
     }
 
     private static ItemPreVisualizadoDto Item(AvaliacaoItem item, Dictionary<string, ItemDoModelo> itemPorFato) => new(
@@ -97,5 +100,6 @@ public static class PreVisualizarModeloFormularioQueryHandler
         item.Obrigatorio.ToCodigo(),
         [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
         item.Impedido.ToCodigo(),
-        itemPorFato[item.FatoCodigo].Impedimento?.Mensagem);
+        itemPorFato[item.FatoCodigo].Impedimento?.Mensagem,
+        item.Opcoes is { } opcoes ? new OpcoesPreVisualizadasDto(opcoes.Codigos, opcoes.Definitivas) : null);
 }

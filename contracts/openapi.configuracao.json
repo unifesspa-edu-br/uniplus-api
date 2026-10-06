@@ -16921,7 +16921,8 @@
           "obrigatorio",
           "restricoesVioladas",
           "impedido",
-          "mensagemDoImpedimento"
+          "mensagemDoImpedimento",
+          "opcoes"
         ],
         "type": "object",
         "properties": {
@@ -16950,6 +16951,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "opcoes": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OpcoesPreVisualizadasDto"
+              }
             ]
           }
         }
@@ -17329,6 +17340,24 @@
           }
         }
       },
+      "OpcoesPreVisualizadasDto": {
+        "required": [
+          "codigos",
+          "definitivas"
+        ],
+        "type": "object",
+        "properties": {
+          "codigos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "definitivas": {
+            "type": "boolean"
+          }
+        }
+      },
       "PesoAreaEnemAreaCommand": {
         "required": [
           "codigo",
@@ -17535,7 +17564,8 @@
         "required": [
           "itens",
           "termos",
-          "grupos"
+          "grupos",
+          "secoes"
         ],
         "type": "object",
         "properties": {
@@ -17555,6 +17585,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/GrupoPreVisualizadoDto"
+            }
+          },
+          "secoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecaoPreVisualizadaDto"
             }
           }
         }
@@ -17875,6 +17911,21 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "SecaoPreVisualizadaDto": {
+        "required": [
+          "codigo",
+          "visivel"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "visivel": {
+            "type": "string"
           }
         }
       },

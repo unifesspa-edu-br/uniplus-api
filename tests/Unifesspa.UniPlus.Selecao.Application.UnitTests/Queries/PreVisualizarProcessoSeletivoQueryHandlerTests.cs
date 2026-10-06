@@ -166,6 +166,17 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             .Should().BeEquivalentTo(new { Impedido = impedido, MensagemDoImpedimento = Mensagem });
     }
 
+    [Fact(DisplayName = "Cada formulário avaliado diz de cada seção se ela aparece")]
+    public async Task Handle_Secoes_DizemSeAparecem()
+    {
+        PreVisualizacaoDoProcessoDto previa = await PreVisualizarAsync(Perfil(
+            nacionalidade: "NATO", corRaca: "INDIGENA", convocacao: "AC", membros: [Membro("CANDIDATO", "URBANO", menorSobGuarda: false)]));
+
+        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade == "INSCRICAO");
+        inscricao.Secoes.Should().NotBeEmpty();
+        inscricao.Secoes.Should().OnlyContain(static s => s.Visivel == "VERDADEIRO", "nenhuma seção do formulário de teste tem exibição condicional");
+    }
+
     [Fact(DisplayName = "Processo inexistente é recusado como não encontrado")]
     public async Task Handle_ProcessoInexistente_NaoEncontrado()
     {
