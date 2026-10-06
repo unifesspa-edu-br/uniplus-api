@@ -214,7 +214,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         ILookup<string?, ItemDoModelo> itensPorEtapa = Conteudo.Itens.ToLookup(static i => i.EtapaCodigo, StringComparer.Ordinal);
         return new DefinicaoFormulario(
             [.. Conteudo.Etapas.Select(e => new DefinicaoEtapa(
-                e.Codigo, e.Exibicao, [.. itensPorEtapa[e.Codigo].Select(static i => new DefinicaoItem(i.FatoCodigo, i.Exibicao, i.Obrigatoriedade, i.Restricoes, i.Impedimento))]))],
+                e.Codigo, e.Exibicao, [.. itensPorEtapa[e.Codigo].Select(static i => new DefinicaoItem(i.FatoCodigo, i.Exibicao, i.Obrigatoriedade, i.Restricoes, i.Impedimento, i.Formato))]))],
             [.. Conteudo.Termos.Select(static t => new DefinicaoTermo(t.Codigo, t.Exibicao, t.Obrigatoriedade))],
             derivacoes);
     }

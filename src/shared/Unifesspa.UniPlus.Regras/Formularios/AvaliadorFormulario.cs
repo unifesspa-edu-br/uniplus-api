@@ -291,7 +291,7 @@ public static class AvaliadorFormulario
         if (resposta is { } respondida && !RespostaDeCampo.EstaVazia(respondida))
         {
             bool algumaIndeterminada = false;
-            foreach (RestricaoValor restricao in item.Restricoes)
+            foreach (RestricaoValor restricao in item.RestricoesDaResposta)
             {
                 switch (restricao.Avaliar(respondida, fatos))
                 {

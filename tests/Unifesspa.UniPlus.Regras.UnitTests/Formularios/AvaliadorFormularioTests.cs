@@ -157,6 +157,24 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
         avaliacao.Itens[1].RestricoesVioladas.Should().HaveCount(violacoes);
     }
 
+    [Theory(DisplayName = "A resposta fora do formato do campo de texto viola a restrição de formato; a válida passa")]
+    [InlineData("CPF", "111.111.111-11", false)]
+    [InlineData("CPF", "529.982.247-25", true)]
+    [InlineData("EMAIL", "sem-arroba", false)]
+    [InlineData("EMAIL", "candidato@unifesspa.edu.br", true)]
+    [InlineData("LIVRE", "qualquer texto", true)]
+    public void CampoDeTexto_RespostaForaDoFormato_ViolaORestricaoDeFormato(string formato, string resposta, bool atende)
+    {
+        DefinicaoFormulario formulario = Formulario(
+            new DefinicaoItem("CONTATO", null, Obrigatoriedade.Sempre, [], formato: formato));
+
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, ("CONTATO", resposta)));
+
+        avaliacao.Fatos["CONTATO"].Estado.Should().Be(atende ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
+        avaliacao.Itens[0].RestricoesVioladas.Select(static r => r.Tipo).Should().Equal(
+            atende ? [] : [TipoRestricaoValor.FormatoTexto]);
+    }
+
     [Fact]
     public void MunicipioDaUf_ComUfIndeterminada_FicaIndeterminado()
     {

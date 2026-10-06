@@ -46,6 +46,21 @@ public sealed class DefinicaoDoProcessoTests
             .Grupos.Should().ContainSingle().Which.Codigo.Should().Be("COMPOSICAO_FAMILIAR");
     }
 
+    [Fact(DisplayName = "O campo de texto entra na definição com o formato do fato, que a avaliação confere")]
+    public void Montar_CampoDeTexto_LevaOFormato()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+        processo.DefinirItens(
+            [FatoColetado.Criar(
+                "CPF_RESPONSAVEL", 0, "CPF do responsável", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
+                etapaCodigo: "DADOS", finalidade: FinalidadeFormulario.Habilitacao, formato: "CPF").Value!],
+            finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+
+        DefinicaoItem item = Montar(processo).Etapas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "CPF_RESPONSAVEL");
+
+        item.RestricoesDaResposta.OfType<FormatoDeTexto>().Should().ContainSingle().Which.Formato.Should().Be("CPF");
+    }
+
     private static DefinicaoFormulario Montar(ProcessoSeletivo processo) => DefinicaoDoProcesso.Montar(
         processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos, derivacoes: [], agregados: []);
 

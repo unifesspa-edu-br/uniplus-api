@@ -23,6 +23,7 @@ public static class RestricaoValorJson
     public const string OpcoesPermitidas = "OPCOES_PERMITIDAS";
     public const string OpcoesDasRespostas = "OPCOES_DAS_RESPOSTAS";
     public const string MunicipiosDaUf = "MUNICIPIOS_DA_UF";
+    public const string FormatoTexto = "FORMATO_TEXTO";
 
     public static string ParaToken(TipoRestricaoValor tipo) => tipo switch
     {
@@ -31,6 +32,7 @@ public static class RestricaoValorJson
         TipoRestricaoValor.OpcoesPermitidas => OpcoesPermitidas,
         TipoRestricaoValor.OpcoesDasRespostas => OpcoesDasRespostas,
         TipoRestricaoValor.MunicipiosDaUf => MunicipiosDaUf,
+        TipoRestricaoValor.FormatoTexto => FormatoTexto,
         TipoRestricaoValor.Nenhuma => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "O sentinela não tem token."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de restrição sem token."),
     };

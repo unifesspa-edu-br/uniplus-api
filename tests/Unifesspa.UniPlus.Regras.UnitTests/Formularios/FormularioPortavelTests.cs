@@ -55,6 +55,7 @@ public sealed class FormularioPortavelTests
     {
         { Formulario(Item("RENDA", obrigatoriedade: "QUANDO")), FormularioPortavelErrorCodes.ObrigatoriedadeInvalida },
         { Formulario(Item("RENDA"), Item("RENDA")), FormularioPortavelErrorCodes.EstruturaInvalida },
+        { Formulario(Item("CONTATO") with { Formato = "TELEGRAMA" }), FormularioPortavelErrorCodes.EstruturaInvalida },
         {
             Formulario(Item("ELEGIVEL")) with { Derivacoes = [new DerivacaoPortavel("COTISTA", true, [new RegraDerivacaoPortavel(null!, null)])] },
             FormularioPortavelErrorCodes.DerivacaoInvalida
