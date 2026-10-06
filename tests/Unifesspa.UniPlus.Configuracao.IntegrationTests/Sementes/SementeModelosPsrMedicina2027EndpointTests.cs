@@ -32,7 +32,7 @@ public sealed class SementeModelosPsrMedicina2027EndpointTests
         _fixture = fixture;
     }
 
-    [Theory(DisplayName = "O modelo semeado está ativo, tem ajuda em todo campo, e o conteúdo dele volta à escrita aceito pela conferência do catálogo")]
+    [Theory(DisplayName = "O modelo semeado está ativo, tem campos, e o conteúdo dele volta à escrita aceito pela conferência do catálogo")]
     [InlineData(SementePsrMedicina2027.ModeloDeInscricao)]
     [InlineData(SementePsrMedicina2027.ModeloDeHabilitacao)]
     public async Task ModeloSemeado_EhAceitoPelaEscrita(string codigo)
@@ -45,7 +45,7 @@ public sealed class SementeModelosPsrMedicina2027EndpointTests
         JsonNode conteudo = modelo["conteudo"]!;
         IEnumerable<JsonNode> campos = conteudo["itens"]!.AsArray()
             .Concat(conteudo["grupos"]!.AsArray().SelectMany(static g => g!["subitens"]!.AsArray()))!;
-        campos.Should().NotBeEmpty().And.OnlyContain(static c => !string.IsNullOrWhiteSpace(c["ajuda"]!.GetValue<string>()));
+        campos.Should().NotBeEmpty();
 
         // A escrita confere o conteúdo contra o catálogo de fatos, os termos e o tipo de processo,
         // o que a migration não alcança: aceito aqui, o modelo é o que a tela teria gravado.

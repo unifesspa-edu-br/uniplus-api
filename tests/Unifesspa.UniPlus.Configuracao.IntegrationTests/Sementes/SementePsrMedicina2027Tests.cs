@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// A configuração do edital de Medicina 2027 existe ao subir o sistema, gravada pela migration
@@ -61,6 +63,25 @@ public sealed class SementePsrMedicina2027Tests
         fatos.Should().OnlyContain(static f => !f.Sistema && f.Ativo && !string.IsNullOrWhiteSpace(f.Descricao));
         fatos.Single(static f => f.Codigo == "CATEGORIA_RENDA").ValoresDominioDeclarados.Should().HaveCount(7);
         fatos.Single(static f => f.Codigo == "CATEGORIAS_RENDA_FAMILIA").Binding.Should().Be("AGREGACAO_GRUPO:CATEGORIA_RENDA");
+    }
+
+    [Fact(DisplayName = "Nos modelos semeados, a pergunta de sim ou não termina em interrogação, e a ajuda não manda responder nem repete o rótulo")]
+    public async Task Modelos_RotulosEAjudasSemRepeticao()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        List<ModeloFormulario> modelos = await ctx.ModelosFormulario
+            .Where(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao || m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao)
+            .ToListAsync();
+        List<ItemDoModelo> itens = [.. modelos.SelectMany(static m => m.Conteudo.Itens.Concat(m.Conteudo.Grupos.SelectMany(static g => g.Subitens)))];
+
+        modelos.Should().HaveCount(2);
+        itens.Where(static i => i.TipoRenderizacao == TipoRenderizacao.Booleano)
+            .Should().OnlyContain(static i => i.Rotulo.EndsWith('?'), "o sim ou não responde a uma pergunta");
+        itens.Where(static i => i.Ajuda != null).Should().OnlyContain(
+            static i => !i.Ajuda!.StartsWith("Responda", StringComparison.Ordinal)
+                && !i.Ajuda.Contains(i.Rotulo.TrimEnd('?'), StringComparison.OrdinalIgnoreCase),
+            "a ajuda diz o que o rótulo não diz");
     }
 
     [Fact(DisplayName = "Reaplicar a semente não duplica nem altera o que já existe")]
