@@ -8,23 +8,21 @@ using System.Text.Json.Nodes;
 using Abstractions;
 
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Interfaces;
-using Domain.Services;
+using Domain.ValueObjects;
 
 using DTOs;
 
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
-/// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (RN08, UNI-REQ-0072): projeta os
-/// blocos <c>formulario</c>/<c>fatosColetados</c> (incluindo <c>valoresSelecionaveis</c>) da versão
-/// que o certame <b>divulgado</b> serve.
+/// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (RN08, UNI-REQ-0072): projeta o
+/// formulário renderizável da finalidade a partir da versão que o certame <b>divulgado</b> serve —
+/// a apresentação e as regras saem do grafo reidratado, pela mesma projeção do rascunho
+/// (<see cref="ProjecaoDoFormularioRenderizavel"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -114,9 +112,8 @@ public static class ObterFormularioRenderizavelQueryHandler
                 $"A configuração congelada do processo {query.ProcessoSeletivoId} não é um documento legível."));
         }
 
-        // As regras saem do grafo reidratado, pela mesma montagem da pré-visualização: o front
-        // interpreta exatamente o que a API confere (ADR-0139). A reidratação confere a forma de
-        // cada regra e a prova dos bytes, que a projeção da apresentação abaixo não refaz.
+        // A reidratação confere a forma de cada entidade e a prova dos bytes; a apresentação e as
+        // regras saem do grafo reidratado, pela mesma projeção do rascunho (ADR-0139).
         Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
         if (reidratado.IsFailure)
         {
@@ -129,18 +126,28 @@ public static class ObterFormularioRenderizavelQueryHandler
             return Result<FormularioRenderizavelDto>.Failure(avaliavel.Error!);
         }
 
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(
-            avaliavel.Value!.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(query.Finalidade, null), avaliavel.Value.Ofertas);
+        if (!TentarDataReferenciaFatos(envelope, out DateOnly? dataReferenciaFatos))
+        {
+            return VersaoSemApresentacao();
+        }
+
+        GrafoConfiguracao grafo = reidratado.Value!.Grafo;
+        if (ProjecaoDoFormularioRenderizavel.Projetar(
+                query.Finalidade, avaliavel.Value!, grafo.Formularios, grafo.FatosColetados, grafo.GruposColetados, grafo.TermosExigidos,
+                dataReferenciaFatos) is not { } formulario)
+        {
+            return NaoEncontrado(query.ProcessoSeletivoId);
+        }
 
         // O ato da divulgação é o que publicou os modelos que este formulário oferece.
         DocumentosDoAtoNoAcervo acervo = new(versao.ProcessoSeletivoId, divulgado.AtoCriadorId, enderecoNoAcervo.De);
-        Dictionary<string, IReadOnlyList<string>> calculadoDe = new(DerivadosDoSistema.Dependencias, StringComparer.Ordinal);
-        foreach (DefinicaoAgregado agregado in reidratado.Value!.AgregadosDosGrupos)
+        FormularioProcesso doFormulario = grafo.Formularios.First(f => f.Finalidade == query.Finalidade);
+        if (!TentarComprovacaoDocumental(envelope, doFormulario, formulario.Finalidade, acervo, out List<ExigenciaDocumentalCertameDto>? comprovacao))
         {
-            calculadoDe[agregado.Codigo] = [agregado.FatoDeMembro];
+            return VersaoSemApresentacao();
         }
 
-        return Projetar(envelope, query.Finalidade, acervo, recorte, calculadoDe) ?? NaoEncontrado(query.ProcessoSeletivoId);
+        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(formulario, comprovacao));
     }
 
     /// <summary>
@@ -158,95 +165,6 @@ public static class ObterFormularioRenderizavelQueryHandler
         }
 
         return envelope is not null;
-    }
-
-    /// <summary>
-    /// Projeta os blocos <c>formulario</c>/<c>fatosColetados</c> (incluindo
-    /// <c>valoresSelecionaveis</c>, issue #1059) do envelope congelado, já com a
-    /// <c>SchemaVersion</c> confirmada como reconhecida por <see cref="IRegistroCodecsEnvelope"/>
-    /// (ver <see cref="Handle"/>). Guardado contra QUALQUER forma que não seja exatamente a
-    /// esperada — versão vigente congelada ANTES de a apresentação existir no envelope (sem as
-    /// chaves novas), ou um valor de tipo/nulidade incoerente (só alcançável por uma linha
-    /// adulterada diretamente no banco, nunca pelo caminho normal de escrita, que sempre passa
-    /// pelo encoder). O registro de codecs confirma a versão, mas decodifica para o grafo de
-    /// entidades das seis dimensões (<see cref="EnvelopeReidratado"/>), não para este DTO de
-    /// renderização — por isso a leitura abaixo permanece local, mesma disciplina: toda extração
-    /// checa presença, tipo e nulidade antes de usar o valor, nunca um cast bruto sobre entrada
-    /// que não passou pelo encoder confiável.
-    /// </summary>
-    /// <remarks>Nulo quando a versão vigente não tem formulário da finalidade pedida.</remarks>
-    private static Result<FormularioRenderizavelDto>? Projetar(
-        JsonObject envelope,
-        FinalidadeFormulario finalidade,
-        DocumentosDoAtoNoAcervo acervo,
-        RecorteDaFinalidade recorte,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> calculadoDe)
-    {
-        string token = EstruturaFormulario.ParaToken(finalidade);
-        if (!envelope.TryGetPropertyValue("formularios", out JsonNode? formulariosNode) || formulariosNode is not JsonArray formularios)
-        {
-            return VersaoSemApresentacao();
-        }
-
-        JsonObject? formulario = formularios.OfType<JsonObject>()
-            .FirstOrDefault(f => TentarString(f, "finalidade", out string finalidadeDoBloco) && finalidadeDoBloco == token);
-        if (formulario is null)
-        {
-            return null;
-        }
-
-        if (!TentarStringOpcional(formulario, "titulo", out string? titulo)
-            || !TentarTermos(formulario, finalidade, out List<TermoRenderizavelDto> termos)
-            || !TentarEtapas(formulario, finalidade, out List<SecaoRenderizavelDto> etapas)
-            || !TentarComprovacaoDocumental(envelope, formulario, token, etapas, acervo, out List<ExigenciaDocumentalCertameDto>? comprovacao))
-        {
-            return VersaoSemApresentacao();
-        }
-
-        if (!envelope.TryGetPropertyValue("fatosColetados", out JsonNode? fatosNode) || fatosNode is not JsonArray fatosColetados)
-        {
-            return VersaoSemApresentacao();
-        }
-
-        // Os campos dos outros formulários dão a apresentação dos pressupostos que eles respondem.
-        List<FatoFormularioRenderizavelDto> fatos = [];
-        Dictionary<string, FatoFormularioRenderizavelDto> deOutrosFormularios = new(StringComparer.Ordinal);
-        foreach (JsonNode? item in fatosColetados)
-        {
-            if (item is not JsonObject doItem
-                || !TentarString(doItem, "finalidade", out string finalidadeDoItem)
-                || !TentarFato(doItem, out FatoFormularioRenderizavelDto? fato))
-            {
-                return VersaoSemApresentacao();
-            }
-
-            if (finalidadeDoItem == token)
-            {
-                fatos.Add(fato);
-            }
-            else
-            {
-                deOutrosFormularios[fato.FatoCodigo] = fato;
-            }
-        }
-
-        if (!TentarGrupos(envelope, token, out List<GrupoFormularioRenderizavelDto>? grupos))
-        {
-            return VersaoSemApresentacao();
-        }
-
-        if (!TentarDataReferenciaFatos(envelope, out DateOnly? dataReferenciaFatos))
-        {
-            return VersaoSemApresentacao();
-        }
-
-        IReadOnlyList<PressupostoRenderizavelDto> pressupostos = [.. recorte.Pressupostos.Select(codigo =>
-            deOutrosFormularios.TryGetValue(codigo, out FatoFormularioRenderizavelDto? respondido)
-                ? new PressupostoRenderizavelDto(
-                    codigo, respondido.Rotulo, respondido.TipoRenderizacao, respondido.Formato, respondido.ValoresSelecionaveis, null)
-                : new PressupostoRenderizavelDto(codigo, null, null, null, null, calculadoDe.GetValueOrDefault(codigo)))];
-        return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(
-            token, titulo, etapas, termos, fatos, comprovacao, grupos, recorte.Regras, pressupostos, dataReferenciaFatos));
     }
 
     /// <summary>
@@ -278,93 +196,6 @@ public static class ObterFormularioRenderizavelQueryHandler
         return true;
     }
 
-    /// <summary>Um fato coletado do envelope — item ou campo de grupo — na forma de renderização.</summary>
-    private static bool TentarFato(JsonObject fato, [NotNullWhen(true)] out FatoFormularioRenderizavelDto? dto)
-    {
-        dto = null;
-        if (!TentarString(fato, "fatoCodigo", out string fatoCodigo)
-            || !TentarStringOpcional(fato, "etapaCodigo", out string? etapaCodigo)
-            || !TentarStringOpcional(fato, "formato", out string? formato)
-            || !TentarInt(fato, "ordem", out int ordem)
-            || !TentarString(fato, "rotulo", out string rotulo)
-            || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
-            || !TentarStringOpcional(fato, "ajuda", out string? ajuda)
-            || !TentarBool(fato, "pedirConfirmacao", out bool pedirConfirmacao)
-            || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
-            || !FormatoCoerente(tipoRenderizacao, formato))
-        {
-            return false;
-        }
-
-        dto = new FatoFormularioRenderizavelDto(
-            fatoCodigo, ordem, rotulo, tipoRenderizacao, valoresSelecionaveis, etapaCodigo, formato, ajuda, pedirConfirmacao);
-        return true;
-    }
-
-    /// <summary>
-    /// Os grupos repetíveis da finalidade (UNI-REQ-0146), com os campos de cada ocorrência na forma
-    /// dos itens. O bloco é obrigatório no envelope; ausente, a versão não tem apresentação.
-    /// </summary>
-    private static bool TentarGrupos(JsonObject envelope, string token, [NotNullWhen(true)] out List<GrupoFormularioRenderizavelDto>? grupos)
-    {
-        grupos = null;
-        if (!envelope.TryGetPropertyValue("gruposColetados", out JsonNode? gruposNode) || gruposNode is not JsonArray array)
-        {
-            return false;
-        }
-
-        List<GrupoFormularioRenderizavelDto> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject grupo || !TentarString(grupo, "finalidade", out string finalidade))
-            {
-                return false;
-            }
-
-            if (finalidade != token)
-            {
-                continue;
-            }
-
-            if (!TentarString(grupo, "codigo", out string codigo)
-                || !TentarInt(grupo, "ordem", out int ordem)
-                || !TentarStringOpcional(grupo, "etapaCodigo", out string? etapaCodigo)
-                || !TentarString(grupo, "rotulo", out string rotulo)
-                || !TentarInt(grupo, "minimo", out int minimo)
-                || !grupo.ContainsKey("maximo") || !TentarIntOpcional(grupo, "maximo", out int? maximo)
-                || !TentarBool(grupo, "incluiCandidato", out bool incluiCandidato)
-                || !grupo.TryGetPropertyValue("subitens", out JsonNode? subitensNode) || subitensNode is not JsonArray subitens)
-            {
-                return false;
-            }
-
-            List<FatoFormularioRenderizavelDto> campos = [];
-            foreach (JsonNode? campo in subitens)
-            {
-                // O campo segue o grupo: a mesma finalidade e nenhuma seção própria.
-                if (campo is not JsonObject doCampo
-                    || !TentarString(doCampo, "finalidade", out string finalidadeDoCampo) || finalidadeDoCampo != token
-                    || !TentarFato(doCampo, out FatoFormularioRenderizavelDto? dto) || dto.EtapaCodigo is not null)
-                {
-                    return false;
-                }
-
-                campos.Add(dto);
-            }
-
-            // A contagem e a quantidade de campos são as da forma do grupo: fora delas o grupo não se responde.
-            if (!FormaDoGrupo.ContagemValida(minimo, maximo) || !FormaDoGrupo.QuantidadeDeCamposValida(campos.Count))
-            {
-                return false;
-            }
-
-            lidos.Add(new GrupoFormularioRenderizavelDto(codigo, ordem, etapaCodigo, rotulo, minimo, maximo, incluiCandidato, campos));
-        }
-
-        grupos = lidos;
-        return true;
-    }
-
     /// <summary>
     /// A recusa única da leitura pública: inexistente, rascunho, sem versão vigente e sem
     /// divulgação recebem a mesma resposta, porque nenhum deles tem linha.
@@ -386,21 +217,9 @@ public static class ObterFormularioRenderizavelQueryHandler
         return objeto.TryGetPropertyValue(chave, out JsonNode? node) && node is JsonValue jv && jv.TryGetValue(out valor!);
     }
 
-    private static bool TentarInt(JsonObject objeto, string chave, out int valor)
-    {
-        valor = 0;
-        return objeto.TryGetPropertyValue(chave, out JsonNode? node) && node is JsonValue jv && jv.TryGetValue(out valor);
-    }
-
-    private static bool TentarBool(JsonObject objeto, string chave, out bool valor)
-    {
-        valor = false;
-        return objeto.TryGetPropertyValue(chave, out JsonNode? node) && node is JsonValue jv && jv.TryGetValue(out valor);
-    }
-
     /// <summary>
-    /// Chave presente com <c>null</c> explícito OU valor de texto: sucesso (campo nulável — a
-    /// ausência de título/termo é estado válido). Chave ausente ou de outro tipo: falha.
+    /// Chave presente com <c>null</c> explícito OU valor de texto: sucesso. Chave ausente ou de outro
+    /// tipo: falha.
     /// </summary>
     private static bool TentarStringOpcional(JsonObject objeto, string chave, out string? valor)
     {
@@ -418,91 +237,6 @@ public static class ObterFormularioRenderizavelQueryHandler
         return node is JsonValue jv && jv.TryGetValue(out valor);
     }
 
-    /// <summary>
-    /// As seções e os blocos do formulário, na ordem congelada, com o código com que a seção aparece
-    /// nas regras; forma inesperada é versão sem apresentação.
-    /// </summary>
-    private static bool TentarEtapas(JsonObject formulario, FinalidadeFormulario finalidade, out List<SecaoRenderizavelDto> etapas)
-    {
-        etapas = [];
-        if (!formulario.TryGetPropertyValue("etapas", out JsonNode? node) || node is not JsonArray itens)
-        {
-            return false;
-        }
-
-        foreach (JsonNode? item in itens)
-        {
-            if (item is not JsonObject etapa
-                || !TentarString(etapa, "codigo", out string codigo)
-                || !TentarInt(etapa, "ordem", out int ordem)
-                || !TentarString(etapa, "tipo", out string tipo)
-                || !TentarStringOpcional(etapa, "bloco", out string? bloco)
-                || !TentarString(etapa, "titulo", out string titulo)
-                || !TentarStringOpcional(etapa, "descricao", out string? descricao)
-                || !TentarStringOpcional(etapa, "aviso", out string? aviso))
-            {
-                return false;
-            }
-
-            string? codigoNasRegras = tipo == EstruturaFormulario.TipoSecao ? DefinicaoDoProcesso.CodigoDaEtapa(finalidade, codigo) : null;
-            etapas.Add(new SecaoRenderizavelDto(codigo, codigoNasRegras, ordem, tipo, bloco, titulo, descricao, aviso));
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Os termos exigidos do formulário (UNI-REQ-0086), na ordem congelada; qualquer forma fora
-    /// da esperada é versão sem apresentação.
-    /// </summary>
-    private static bool TentarTermos(JsonObject formulario, FinalidadeFormulario finalidade, out List<TermoRenderizavelDto> termos)
-    {
-        termos = [];
-        if (!formulario.TryGetPropertyValue("termos", out JsonNode? node) || node is not JsonArray itens)
-        {
-            return false;
-        }
-
-        foreach (JsonNode? item in itens)
-        {
-            if (item is not JsonObject termo
-                || !TentarString(termo, "codigo", out string codigo)
-                || !TentarInt(termo, "ordem", out int ordem)
-                || !TentarGuid(termo, "termoId", out Guid termoId)
-                || !TentarGuid(termo, "versaoId", out Guid versaoId)
-                || !TentarString(termo, "nome", out string nome)
-                || !TentarString(termo, "texto", out string texto)
-                || !TentarString(termo, "baseLegal", out string baseLegal)
-                || !TentarString(termo, "formaAceite", out string formaAceite)
-                || !TentarString(termo, "hashVersao", out string hashVersao))
-            {
-                return false;
-            }
-
-            termos.Add(new TermoRenderizavelDto(
-                codigo, DefinicaoDoProcesso.CodigoDoTermo(finalidade, codigo), ordem, termoId, versaoId, nome, texto, baseLegal, formaAceite, hashVersao));
-        }
-
-        return true;
-    }
-
-    private static bool TentarIntOpcional(JsonObject objeto, string chave, out int? valor)
-    {
-        valor = null;
-        if (!objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is null)
-        {
-            return true;
-        }
-
-        if (node is not JsonValue numero || !numero.TryGetValue(out int lido))
-        {
-            return false;
-        }
-
-        valor = lido;
-        return true;
-    }
-
     private static bool TentarGuid(JsonObject objeto, string chave, out Guid valor)
     {
         valor = Guid.Empty;
@@ -518,21 +252,20 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// </summary>
     private static bool TentarComprovacaoDocumental(
         JsonObject envelope,
-        JsonObject formulario,
+        FormularioProcesso formulario,
         string finalidade,
-        List<SecaoRenderizavelDto> etapas,
         DocumentosDoAtoNoAcervo acervo,
         out List<ExigenciaDocumentalCertameDto>? comprovacao)
     {
         comprovacao = null;
-        if (!etapas.Exists(static e => e.Bloco == EstruturaFormulario.BlocoComprovacaoDocumental))
+        if (!formulario.Etapas.Any(static e => e.Bloco == BlocoSistema.ComprovacaoDocumental))
         {
             return true;
         }
 
         // O formulário publicado tem fase, e toda exigência é de uma fase: a falta de qualquer das
         // duas é forma inesperada, e omitir o documento em silêncio esconderia exigência do candidato.
-        return TentarGuid(formulario, "faseId", out Guid faseDoFormulario)
+        return formulario.FaseId is { } faseDoFormulario
             && ProjecaoDoCertamePublicado.TentarExigencias(
                 envelope,
                 exigencia => DoFormulario(exigencia, faseDoFormulario, finalidade),
@@ -556,74 +289,5 @@ public static class ObterFormularioRenderizavelQueryHandler
         }
 
         return fase == faseDoFormulario && string.Equals(finalidade, finalidadeDoFormulario, StringComparison.Ordinal);
-    }
-
-    /// <summary>O formato existe se, e só se, o campo é de texto.</summary>
-    private static bool FormatoCoerente(string tipoRenderizacao, string? formato) =>
-        (TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacao) == TipoRenderizacao.Texto) == !string.IsNullOrWhiteSpace(formato);
-
-    /// <summary>
-    /// Chave presente e coerente com a bicondicional (issue #1059, UNI-REQ-0072):
-    /// <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> exige um array com cardinalidade mínima 1 (issue #1077);
-    /// os demais tipos exigem <c>null</c> explícito. <paramref name="tipoRenderizacao"/>
-    /// fora do vocabulário fechado falha aqui — sem isso, um token desconhecido cairia no
-    /// ramo "não é seleção" por omissão e aceitaria <c>valoresSelecionaveis: null</c> em silêncio,
-    /// a mesma forma que <c>EnvelopeCodec.LerFatosColetados</c> recusa (o decoder converte um
-    /// token não reconhecido em <c>TipoRenderizacao.Nenhuma</c>, que <c>FatoColetado.Criar</c>
-    /// rejeita). Cada item do array exige <c>ordem</c> não negativa e <c>valorCodigo</c> sem
-    /// repetição — mesmas recusas do decoder. Chave ausente, forma incoerente com a bicondicional,
-    /// ou item malformado dentro do array: falha — nunca convertida silenciosamente em "sem
-    /// valores selecionáveis".
-    /// </summary>
-    private static bool TentarValoresSelecionaveis(
-        JsonObject fato, string tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
-    {
-        valoresSelecionaveis = null;
-        if (!fato.TryGetPropertyValue("valoresSelecionaveis", out JsonNode? node))
-        {
-            return false;
-        }
-
-        return (TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacao), node) switch
-        {
-            (TipoRenderizacao.Nenhuma, _) => false,
-            (TipoRenderizacao tipo, null) => !tipo.EhSelecao(),
-            (TipoRenderizacao tipo, JsonArray array) when tipo.EhSelecao() => TentarValores(array, out valoresSelecionaveis),
-            _ => false,
-        };
-    }
-
-    /// <summary>Os valores de um fato de seleção: ao menos um, cada código uma vez, ordem não negativa.</summary>
-    private static bool TentarValores(JsonArray array, out List<ValorSelecionavelDto>? valoresSelecionaveis)
-    {
-        valoresSelecionaveis = null;
-        List<ValorSelecionavelDto> valores = [];
-        HashSet<string> codigos = new(StringComparer.Ordinal);
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject valorItem
-                || !TentarString(valorItem, "valorCodigo", out string valorCodigo)
-                || !TentarStringOpcional(valorItem, "descricao", out string? descricao)
-                || !TentarInt(valorItem, "ordem", out int ordem)
-                || ordem < 0
-                || !codigos.Add(valorCodigo))
-            {
-                return false;
-            }
-
-            valores.Add(new ValorSelecionavelDto(valorCodigo, descricao, ordem));
-        }
-
-        // issue #1077: defesa em profundidade — o decoder já recusa um envelope persistido com
-        // array vazio para fato de seleção (EnvelopeMalformado), então este ramo é inalcançável
-        // em uso normal. Mantido para nunca projetar um seletor sem opção nenhuma caso um
-        // chamador futuro monte o JsonObject por outro caminho que não o decoder.
-        if (valores.Count == 0)
-        {
-            return false;
-        }
-
-        valoresSelecionaveis = valores;
-        return true;
     }
 }

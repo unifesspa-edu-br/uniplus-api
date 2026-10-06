@@ -21,14 +21,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura do <see cref="ObterFormularioRenderizavelQueryHandler"/> (Story #559/#1059): a
-/// distinção 404/422/200, a guarda contra versão vigente congelada ANTES de a apresentação do
-/// formulário — ou os valores selecionáveis (UNI-REQ-0072) — existirem no envelope, e a recusa de
-/// uma <c>SchemaVersion</c> aposentada (issue #1089) mesmo quando os bytes coincidem com a forma
-/// atual. Sem <see cref="Unifesspa.UniPlus.Selecao.Infrastructure"/> disponível aqui (Application
-/// não a alcança), a projeção lê o JSON cru e tem de recusar com um erro nomeado, nunca estourar,
-/// quando as chaves novas (rotulo/tipoRenderizacao/obrigatorio/formulario/valoresSelecionaveis)
-/// não existem, ou quando <c>valoresSelecionaveis</c> descumpre a bicondicional com
-/// <c>tipoRenderizacao</c>.
+/// resolução pela divulgação, a recusa de uma <c>SchemaVersion</c> aposentada (issue #1089) e da
+/// versão que não se prova, e o que ainda sai do JSON congelado — a comprovação documental e a data
+/// de referência dos fatos. A apresentação e as regras saem do grafo reidratado pela projeção
+/// única, coberta em <see cref="Services.ProjecaoDoFormularioRenderizavelTests"/>; aqui o registro
+/// de codecs é um substituto, e a reidratação real é provada na suíte de integração.
 /// </summary>
 public sealed class ObterFormularioRenderizavelQueryHandlerTests
 {
@@ -120,27 +117,54 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         registro.Capacidades.Returns(schemaVersionsReconhecidas
             .Select(static v => new CapacidadeCodec(v, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null))
             .ToList());
-        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(EnvelopeSemFormularios()));
+        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(EnvelopeCom()));
+        return registro;
+    }
+
+    private static IRegistroCodecsEnvelope RegistroReidratando(EnvelopeReidratado envelope)
+    {
+        IRegistroCodecsEnvelope registro = CriarRegistroReconhecendo(VersaoCorrenteReconhecida);
+        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(envelope));
         return registro;
     }
 
     /// <summary>
-    /// A reidratação de um processo sem formulários: as regras saem vazias, e os testes daqui olham
-    /// a apresentação. As regras que saem do grafo reidratado são provadas contra a codificação real
-    /// na suíte de integração.
+    /// A reidratação de um processo com os formulários dados, sobre a estrutura de um processo
+    /// conforme. Sem formulários, nenhuma finalidade tem o que servir.
     /// </summary>
-    private static EnvelopeReidratado EnvelopeSemFormularios()
+    private static EnvelopeReidratado EnvelopeCom(params FormularioProcesso[] formularios)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
         return new EnvelopeReidratado(
             new GrafoConfiguracao(
                 [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
                 processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
-                [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null),
+                [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null, formularios: formularios),
             DadosEdital.Criar(
                 "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null);
     }
+
+    /// <summary>Um formulário só com blocos: o de comprovação documental, quando pedido, e o de revisão e aceite.</summary>
+    private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, Guid? faseId, bool comComprovacao) =>
+        FormularioProcesso.Criar(
+            finalidade, faseId, null,
+            [
+                .. comComprovacao
+                    ? [EtapaFormulario.Criar("DOCUMENTOS", 0, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null).Value!]
+                    : Array.Empty<EtapaFormulario>(),
+                EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+            ]).Value!;
+
+    private static Task<Result<FormularioRenderizavelDto>> HandleAsync(
+        Guid processoId, string envelopeJson, EnvelopeReidratado reidratado, FinalidadeFormulario finalidade) =>
+        ObterFormularioRenderizavelQueryHandler.Handle(
+            new ObterFormularioRenderizavelQuery(processoId, finalidade),
+            MockComVersaoVigente(processoId, envelopeJson),
+            RepositorioComDivulgacao(processoId),
+            RegistroReidratando(reidratado),
+            Acervo,
+            CancellationToken.None);
 
     [Fact(DisplayName = "Certame sem divulgação não serve formulário, e a recusa não diz por quê")]
     public async Task Handle_SemDivulgacao_RetornaNaoEncontrado()
@@ -209,163 +233,59 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Versão vigente congelada ANTES desta Story (sem formulario/campos novos) recusa com FormularioInscricao.VersaoSemApresentacao, nunca estoura")]
-    public async Task Handle_EnvelopeAntigoSemApresentacao_RetornaErroNomeado()
-    {
-        // Forma real de uma VersaoConfiguracao congelada sob schema_version anterior a esta
-        // Story: "formulario" é stub (nao_construido) e os itens de "fatosColetados" não têm
-        // rotulo/tipoRenderizacao/obrigatorio — exatamente o que já existe hoje no banco
-        // compartilhado de desenvolvimento (versões em 0.0.2/1.2/1.3/1.4).
-        const string envelopeAntigo = """
-            {
-              "formulario": {"status": "nao_construido"},
-              "gruposColetados": [], "fatosColetados": [
-                {"fatoCodigo": "COR_RACA", "ordem": 0, "precondicao": null}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelopeAntigo);
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
-
-        resultado.IsFailure.Should().BeTrue("um envelope sem as chaves novas não pode ser interpretado como formulário vazio nem estourar — é um estado nomeado");
-        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
-    }
-
-    [Theory(DisplayName = "Envelope com valor de tipo/nulidade incoerente (só alcançável por linha adulterada) recusa com o mesmo erro nomeado, nunca estoura")]
-    [InlineData(
-        // Item sem "finalidade": não pode aparecer no formulário de uma finalidade qualquer.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
-    [InlineData(
-        // "pedirConfirmacao" como texto em vez de booleano.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"ajuda":null,"pedirConfirmacao":"true", "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
-    [InlineData(
-        // "rotulo" presente mas null — chave existe, valor não é o esperado.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":null,"tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[]}]}""")]
-    [InlineData(
-        // "precondicao" presente com tipo errado (objeto em vez de array) — não pode virar
-        // silenciosamente "sem pré-condição", que mudaria a semântica do campo.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":{},"valoresSelecionaveis":[]}]}""")]
-    [InlineData(
-        // "valoresSelecionaveis" null num fato de seleção — descumpre a bicondicional (issue
-        // #1059): SELECAO_UNICA/SELECAO_MULTIPLA exige array, nunca null.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
-    [InlineData(
-        // "valoresSelecionaveis" ausente — envelope congelado antes de a chave existir.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null}]}""")]
-    [InlineData(
-        // "tipoRenderizacao" fora do vocabulário, com valoresSelecionaveis null — o
-        // decoder converteria o token em TipoRenderizacao.Nenhuma e FatoColetado.Criar recusaria;
-        // sem esta guarda aqui, o token desconhecido cairia no ramo "não é seleção" por omissão.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"DATA_HORA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
-    [InlineData(
-        // "ordem" negativa dentro de um item de valoresSelecionaveis — o decoder recusa.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":-1}]}]}""")]
-    [InlineData(
-        // "valorCodigo" repetido no array — o decoder recusa (o encoder nunca emite duas entradas
-        // para o mesmo valor).
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0},{"valorCodigo":"BRANCA","descricao":null,"ordem":1}]}]}""")]
-    [InlineData(
-        // "formato" ausente — o encoder sempre o emite, nulo fora do campo de texto.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
-    [InlineData(
-        // Restrição de tipo desconhecido — não pode ser descartada em silêncio, que liberaria o valor.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"COR_RACA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Cor ou raça","tipoRenderizacao":"SELECAO_UNICA","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[{"tipo":"REGEX"}],"precondicao":null,"valoresSelecionaveis":[{"valorCodigo":"BRANCA","descricao":null,"ordem":0}]}]}""")]
-    [InlineData(
-        // Campo de texto sem formato — o encoder sempre emite o formato do catálogo no campo de texto.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"NOME_SOCIAL","finalidade":"INSCRICAO","etapaCodigo":null,"formato":null,"ordem":0,"rotulo":"Nome social","tipoRenderizacao":"TEXTO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
-    [InlineData(
-        // Formato num campo que não é de texto.
-        """{"documentosExigidos": {"dataReferenciaFatos": null}, "formularios":[{"finalidade":"INSCRICAO","faseId":null,"titulo":null,"modeloOrigem":null,"etapas":[],"termos":[]}],"fatosColetados":[{"fatoCodigo":"BAIXA_RENDA","finalidade":"INSCRICAO","etapaCodigo":null,"formato":"CPF","ordem":0,"rotulo":"Baixa renda","tipoRenderizacao":"BOOLEANO","obrigatoriedade":{"tipo":"NUNCA","predicado":null},"ajuda":null,"pedirConfirmacao":false, "impedimento": null,"restricoes":[],"precondicao":null,"valoresSelecionaveis":null}]}""")]
-    public async Task Handle_EnvelopeComValorIncoerente_RecusaSemEstourar(string envelopeJson)
+    [Fact(DisplayName = "Processo sem formulário da finalidade não serve formulário")]
+    public async Task Handle_SemFormularioDaFinalidade_NaoEncontrado()
     {
         Guid processoId = Guid.CreateVersion7();
-        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelopeJson);
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            processoId, """{"documentosExigidos": {"dataReferenciaFatos": null}}""",
+            EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Habilitacao);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Com dois formulários, cada finalidade serve só os seus itens e termos, e a finalidade sem formulário é 404")]
-    public async Task Handle_DoisFormularios_CadaFinalidadeServeOsSeus()
+    [Theory(DisplayName = "A data de referência dos fatos sai do envelope congelado; fora da forma de data, a versão não tem apresentação")]
+    [InlineData("\"2026-01-31\"", true)]
+    [InlineData("null", true)]
+    [InlineData("\"31/01/2026\"", false)]
+    public async Task Handle_DataReferenciaFatos_SaiDoEnvelope(string data, bool valida)
     {
-        const string etapas = """
-            [{"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-             {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]
-            """;
-        string envelope = $$"""
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [
-                {"finalidade": "INSCRICAO", "faseId": null, "titulo": "Inscrição", "modeloOrigem": null, "etapas": {{etapas}}, "termos": [{{Termo("CIENCIA_EDITAL")}}]},
-                {"finalidade": "HABILITACAO", "faseId": null, "titulo": "Habilitação", "modeloOrigem": null, "etapas": {{etapas}}, "termos": [{{Termo("VERACIDADE")}}]}
-              ],
-              "gruposColetados": [], "fatosColetados": [
-                {{Item("COR_RACA", "INSCRICAO")}},
-                {{Item("CERTIFICADO_EMITIDO", "HABILITACAO")}}
-              ]
-            }
-            """;
         Guid processoId = Guid.CreateVersion7();
-        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelope);
 
-        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(repository, processoId);
-        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(repository, processoId, finalidade: FinalidadeFormulario.Habilitacao);
-        Result<FormularioRenderizavelDto> isencao = await HandleAsync(repository, processoId, finalidade: FinalidadeFormulario.IsencaoTaxa);
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            processoId, $$"""{"documentosExigidos": {"dataReferenciaFatos": {{data}} } }""",
+            EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Inscricao);
 
-        inscricao.IsSuccess.Should().BeTrue(inscricao.Error?.Message);
-        habilitacao.IsSuccess.Should().BeTrue(habilitacao.Error?.Message);
-        inscricao.Value!.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("COR_RACA");
-        inscricao.Value!.Termos.Select(static t => t.Codigo).Should().Equal("CIENCIA_EDITAL");
-        habilitacao.Value!.FatosColetados.Select(static f => f.FatoCodigo).Should().Equal("CERTIFICADO_EMITIDO");
-        habilitacao.Value!.Termos.Select(static t => t.Codigo).Should().Equal("VERACIDADE");
-        isencao.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado", "a versão vigente não tem formulário de isenção");
-
-        static string Termo(string codigo) => $$"""
-            {"codigo": "{{codigo}}", "ordem": 0, "termoId": "0199a000-0000-7000-8000-00000000a001", "versaoId": "0199a000-0000-7000-8000-00000000b001",
-             "nome": "Termo", "texto": "Texto", "baseLegal": "Base legal", "formaAceite": "REGISTRO_DIGITAL_SEM_LOG_IP", "hashVersao": "aaaa",
-             "exibicao": null, "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null} }
-            """;
-
-        static string Item(string fato, string finalidade) => $$"""
-            {"fatoCodigo": "{{fato}}", "finalidade": "{{finalidade}}", "etapaCodigo": "DADOS", "formato": null, "ordem": 0, "rotulo": "{{fato}}",
-             "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
-            """;
+        if (valida)
+        {
+            resultado.Value!.DataReferenciaFatos.Should().Be(data == "null" ? null : new DateOnly(2026, 1, 31));
+        }
+        else
+        {
+            resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+        }
     }
-
-    private const string Modelo = """
-        {"modeloId": "0199a000-0000-7000-8000-0000000000aa", "nomeArquivo": "Autodeclaração.odt", "formato": "ODT", "hashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
-        """;
 
     [Fact(DisplayName = "O bloco de comprovação documental lista as exigências da fase do formulário, na forma pública e com o modelo editável; sem o bloco, nada")]
     public async Task Handle_BlocoDeComprovacao_ListaAsExigenciasDaFaseDoFormulario()
     {
-        const string faseHabilitacao = "0199a000-0000-7000-8000-0000000000f2";
+        Guid faseHabilitacao = Guid.Parse("0199a000-0000-7000-8000-0000000000f2");
+        Guid faseInscricao = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
         string envelope = $$"""
-            {
-              "formularios": [
-                {"finalidade": "HABILITACAO", "faseId": "{{faseHabilitacao}}", "titulo": null, "modeloOrigem": null, "termos": [],
-                 "etapas": [
-                   {"codigo": "DOCUMENTOS", "ordem": 0, "tipo": "BLOCO", "bloco": "COMPROVACAO_DOCUMENTAL", "titulo": "Documentos", "descricao": null, "aviso": null},
-                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]},
-                {"finalidade": "INSCRICAO", "faseId": "0199a000-0000-7000-8000-0000000000f1", "titulo": null, "modeloOrigem": null, "termos": [],
-                 "etapas": [{"codigo": "REVISAO", "ordem": 0, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}
-              ],
-              "gruposColetados": [], "fatosColetados": [],
-              "documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
-                {{Exigencia("Documento de identidade", "Geral", faseHabilitacao, "HABILITACAO")}},
-                {{Exigencia("Comprovante de inscrição", "Geral", "0199a000-0000-7000-8000-0000000000f1", "INSCRICAO")}},
-                {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, "HABILITACAO", Modelo)}}
-              ]}
-            }
+            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+              {{Exigencia("Documento de identidade", "Geral", faseHabilitacao, "HABILITACAO")}},
+              {{Exigencia("Comprovante de inscrição", "Geral", faseInscricao, "INSCRICAO")}},
+              {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, "HABILITACAO", Modelo)}}
+            ] } }
             """;
+        EnvelopeReidratado reidratado = EnvelopeCom(
+            Formulario(FinalidadeFormulario.Habilitacao, faseHabilitacao, comComprovacao: true),
+            Formulario(FinalidadeFormulario.Inscricao, faseInscricao, comComprovacao: false));
         Guid processoId = Guid.CreateVersion7();
-        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelope);
 
-        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(repository, processoId, finalidade: FinalidadeFormulario.Habilitacao);
-        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(repository, processoId);
+        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Habilitacao);
+        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Inscricao);
 
         habilitacao.Value!.ComprovacaoDocumental!.Select(static e => (e.Rotulo, e.Aplicabilidade)).Should().Equal(
             [("Documento de identidade", "Geral"), ("Autodeclaração étnico-racial", "Condicional")],
@@ -383,11 +303,6 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             ],
             "a exigência com modelo o traz com o endereço no acervo do ato da divulgação, sem o id do cadastro como campo; a sem modelo, nulo");
         inscricao.Value!.ComprovacaoDocumental.Should().BeNull("o formulário de inscrição não tem o bloco");
-
-        static string Exigencia(string nome, string aplicabilidade, string fase, string finalidade, string modelo = "null") => $$"""
-            {"tipoDocumentoNome": "{{nome}}", "aplicabilidade": "{{aplicabilidade}}", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
-             "finalidade": "{{finalidade}}", "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": {{modelo}} }
-            """;
     }
 
     /// <summary>
@@ -398,360 +313,57 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     [Fact(DisplayName = "Na fase que divide inscrição e isenção, o bloco de comprovação de cada formulário lista só as exigências da sua finalidade")]
     public async Task Handle_BlocoDeComprovacaoNaFaseCompartilhada_ListaSoAsExigenciasDaFinalidade()
     {
-        const string fase = "0199a000-0000-7000-8000-0000000000f1";
+        Guid fase = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
         string envelope = $$"""
-            {
-              "formularios": [
-                {{Formulario("INSCRICAO")}},
-                {{Formulario("ISENCAO_TAXA")}}
-              ],
-              "gruposColetados": [], "fatosColetados": [],
-              "documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
-                {{Exigencia("Documento de identidade", "\"INSCRICAO\"")}},
-                {{Exigencia("Comprovante de renda", "\"ISENCAO_TAXA\"")}},
-                {{Exigencia("Laudo da banca", "null")}}
-              ]}
-            }
+            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+              {{Exigencia("Documento de identidade", "Geral", fase, "INSCRICAO")}},
+              {{Exigencia("Comprovante de renda", "Geral", fase, "ISENCAO_TAXA")}},
+              {{Exigencia("Laudo da banca", "Geral", fase, null)}}
+            ] } }
             """;
+        EnvelopeReidratado reidratado = EnvelopeCom(
+            Formulario(FinalidadeFormulario.Inscricao, fase, comComprovacao: true),
+            Formulario(FinalidadeFormulario.IsencaoTaxa, fase, comComprovacao: true));
         Guid processoId = Guid.CreateVersion7();
-        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelope);
 
-        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(repository, processoId);
-        Result<FormularioRenderizavelDto> isencao = await HandleAsync(repository, processoId, finalidade: FinalidadeFormulario.IsencaoTaxa);
+        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Inscricao);
+        Result<FormularioRenderizavelDto> isencao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.IsencaoTaxa);
 
         inscricao.Value!.ComprovacaoDocumental!.Select(static e => e.Rotulo).Should().Equal("Documento de identidade");
         isencao.Value!.ComprovacaoDocumental!.Select(static e => e.Rotulo).Should().Equal("Comprovante de renda");
-
-        static string Formulario(string finalidade) => $$"""
-            {"finalidade": "{{finalidade}}", "faseId": "{{fase}}", "titulo": null, "modeloOrigem": null, "termos": [],
-             "etapas": [
-               {"codigo": "DOCUMENTOS", "ordem": 0, "tipo": "BLOCO", "bloco": "COMPROVACAO_DOCUMENTAL", "titulo": "Documentos", "descricao": null, "aviso": null},
-               {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}
-            """;
-
-        static string Exigencia(string nome, string finalidade) => $$"""
-            {"tipoDocumentoNome": "{{nome}}", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
-             "finalidade": {{finalidade}}, "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null }
-            """;
     }
 
     [Theory(DisplayName = "Com o bloco de comprovação, fase ou finalidade ausente ou malformada recusa a versão em vez de omitir documento")]
-    [InlineData("null", "\"0199a000-0000-7000-8000-0000000000f2\"", "\"finalidade\": \"HABILITACAO\",")]
-    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "null", "\"finalidade\": \"HABILITACAO\",")]
-    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "\"nao-e-guid\"", "\"finalidade\": \"HABILITACAO\",")]
-    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "\"0199a000-0000-7000-8000-0000000000f2\"", "")]
-    [InlineData("\"0199a000-0000-7000-8000-0000000000f2\"", "\"0199a000-0000-7000-8000-0000000000f2\"", "\"finalidade\": \"MATRICULA\",")]
-    public async Task Handle_BlocoDeComprovacaoComFaseOuFinalidadeAusente_Recusa(string faseDoFormulario, string faseDaExigencia, string finalidadeDaExigencia)
+    [InlineData(false, "\"0199a000-0000-7000-8000-0000000000f2\"", "\"finalidade\": \"HABILITACAO\",")]
+    [InlineData(true, "null", "\"finalidade\": \"HABILITACAO\",")]
+    [InlineData(true, "\"nao-e-guid\"", "\"finalidade\": \"HABILITACAO\",")]
+    [InlineData(true, "\"0199a000-0000-7000-8000-0000000000f2\"", "")]
+    [InlineData(true, "\"0199a000-0000-7000-8000-0000000000f2\"", "\"finalidade\": \"MATRICULA\",")]
+    public async Task Handle_BlocoDeComprovacaoComFaseOuFinalidadeAusente_Recusa(bool formularioComFase, string faseDaExigencia, string finalidadeDaExigencia)
     {
         string envelope = $$"""
-            {
-              "formularios": [{"finalidade": "HABILITACAO", "faseId": {{faseDoFormulario}}, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DOCUMENTOS", "ordem": 0, "tipo": "BLOCO", "bloco": "COMPROVACAO_DOCUMENTAL", "titulo": "Documentos", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}]}],
-              "gruposColetados": [], "fatosColetados": [],
-              "documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
-                {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
-                 {{finalidadeDaExigencia}} "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null }
-              ]}
-            }
+            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+              {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
+               {{finalidadeDaExigencia}} "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null }
+            ] } }
             """;
-        Guid processoId = Guid.CreateVersion7();
+        Guid? faseDoFormulario = formularioComFase ? Guid.Parse("0199a000-0000-7000-8000-0000000000f2") : null;
 
         Result<FormularioRenderizavelDto> resultado = await HandleAsync(
-            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
+            Guid.CreateVersion7(), envelope,
+            EnvelopeCom(Formulario(FinalidadeFormulario.Habilitacao, faseDoFormulario, comComprovacao: true)), FinalidadeFormulario.Habilitacao);
 
         resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
     }
 
-    [Fact(DisplayName = "Item é projetado com a ajuda e o pedido de confirmação")]
-    public async Task Handle_Item_ProjetaAjudaEConfirmacao()
-    {
-        const string envelope = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ]}],
-              "gruposColetados": [], "fatosColetados": [
-                {"fatoCodigo": "BAIXA_RENDA", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 1,
-                 "rotulo": "Baixa renda", "tipoRenderizacao": "BOOLEANO",
-                 "obrigatoriedade": {"tipo": "QUANDO", "predicado": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]]},
-                 "ajuda": "Renda por pessoa da família", "pedirConfirmacao": true, "impedimento": null, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
+    private const string Modelo = """
+        {"modeloId": "0199a000-0000-7000-8000-0000000000aa", "nomeArquivo": "Autodeclaração.odt", "formato": "ODT", "hashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+        """;
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
-
-        FatoFormularioRenderizavelDto fato = resultado.Value!.FatosColetados.Should().ContainSingle().Which;
-        fato.Ajuda.Should().Be("Renda por pessoa da família");
-        fato.PedirConfirmacao.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "O grupo repetível da finalidade é projetado com os campos de cada ocorrência, sem máximo quando não o declara e com o candidato como membro")]
-    public async Task Handle_GrupoRepetivel_ProjetaComOsCampos()
-    {
-        const string envelope = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ]}],
-              "fatosColetados": [],
-              "gruposColetados": [
-                {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": 0, "maximo": null, "incluiCandidato": true, "exibicao": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]],
-                 "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
-                 "subitens": [
-                   {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
-                    "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
-                    "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
-                 ]},
-                {"codigo": "OUTRO", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Outro",
-                 "minimo": 0, "maximo": 1, "incluiCandidato": false, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null}, "subitens": []}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
-            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
-
-        GrupoFormularioRenderizavelDto grupo = resultado.Value!.Grupos.Should().ContainSingle("só o grupo da finalidade pedida").Which;
-        grupo.Codigo.Should().Be("COMPOSICAO_FAMILIAR");
-        grupo.Maximo.Should().BeNull();
-        grupo.IncluiCandidato.Should().BeTrue();
-        grupo.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MENOR_SOB_GUARDA");
-    }
-
-    [Theory(DisplayName = "Campo de grupo com outra finalidade ou com seção própria não tem apresentação — o campo segue o grupo")]
-    [InlineData("\"finalidade\": \"INSCRICAO\", \"etapaCodigo\": null")]
-    [InlineData("\"finalidade\": \"HABILITACAO\", \"etapaCodigo\": \"DADOS\"")]
-    public async Task Handle_CampoDeGrupoForaDoGrupo_VersaoSemApresentacao(string donoDoCampo)
-    {
-        string envelope = $$"""
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
-                ]}],
-              "fatosColetados": [],
-              "gruposColetados": [
-                {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": 0, "maximo": 10, "incluiCandidato": false, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
-                 "subitens": [
-                   {"fatoCodigo": "MENOR_SOB_GUARDA", {{donoDoCampo}}, "formato": null, "ordem": 0,
-                    "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
-                    "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
-                 ]}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
-            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
-
-        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
-    }
-
-    [Theory(DisplayName = "Grupo com contagem impossível ou sem campos não tem apresentação")]
-    [InlineData(5, 2, true)]
-    [InlineData(0, 0, true)]
-    [InlineData(0, 3, false)]
-    public async Task Handle_GrupoImpossivel_VersaoSemApresentacao(int minimo, int maximo, bool comCampo)
-    {
-        string campo = """
-            {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
-             "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
-             "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
-            """;
-        string envelope = $$"""
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
-                ]}],
-              "fatosColetados": [],
-              "gruposColetados": [
-                {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": {{minimo}}, "maximo": {{maximo}}, "incluiCandidato": false, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
-                 "subitens": [{{(comCampo ? campo : string.Empty)}}]}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
-            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
-
-        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
-    }
-
-    [Fact(DisplayName = "Grupo sem a chave do máximo não tem apresentação — só o máximo nulo explícito é grupo sem limite")]
-    public async Task Handle_GrupoSemChaveDoMaximo_VersaoSemApresentacao()
-    {
-        const string envelope = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null}
-                ]}],
-              "fatosColetados": [],
-              "gruposColetados": [
-                {"codigo": "COMPOSICAO_FAMILIAR", "finalidade": "HABILITACAO", "etapaCodigo": "DADOS", "ordem": 0, "rotulo": "Composição familiar",
-                 "minimo": 0, "incluiCandidato": false, "exibicao": null, "obrigatoriedade": {"tipo": "NUNCA", "predicado": null},
-                 "subitens": [
-                   {"fatoCodigo": "MENOR_SOB_GUARDA", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
-                    "rotulo": "Menor sob guarda", "tipoRenderizacao": "BOOLEANO", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null},
-                    "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
-                 ]}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
-            MockComVersaoVigente(processoId, envelope), processoId, finalidade: FinalidadeFormulario.Habilitacao);
-
-        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
-    }
-
-    [Fact(DisplayName = "Envelope sem o bloco de grupos não tem apresentação")]
-    public async Task Handle_SemBlocoDeGrupos_VersaoSemApresentacao()
-    {
-        const string envelope = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "REVISAO", "ordem": 0, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ]}],
-              "fatosColetados": []
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
-
-        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
-    }
-
-    [Fact(DisplayName = "Campo de texto é projetado com o formato e sem valores selecionáveis")]
-    public async Task Handle_CampoDeTexto_ProjetaFormato()
-    {
-        const string envelope = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ]}],
-              "gruposColetados": [], "fatosColetados": [
-                {"fatoCodigo": "NOME_SOCIAL", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": "NOME_PESSOA", "ordem": 0,
-                 "rotulo": "Nome social", "tipoRenderizacao": "TEXTO", "obrigatoriedade": {"tipo": "NUNCA", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
-
-        FatoFormularioRenderizavelDto fato = resultado.Value!.FatosColetados.Should().ContainSingle().Which;
-        fato.TipoRenderizacao.Should().Be("TEXTO");
-        fato.Formato.Should().Be("NOME_PESSOA");
-        fato.ValoresSelecionaveis.Should().BeNull();
-    }
-
-    [Theory(DisplayName = "Campo de data e campo de endereço são projetados com o tipo, sem formato nem valores selecionáveis")]
-    [InlineData("DATA_NASCIMENTO", "DATA")]
-    [InlineData("ENDERECO_RESIDENCIAL", "ENDERECO")]
-    public async Task Handle_CampoDeDataOuEndereco_ProjetaOTipo(string fatoCodigo, string tipoRenderizacao)
-    {
-        string envelope = $$"""
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [],
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ]}],
-              "gruposColetados": [], "fatosColetados": [
-                {"fatoCodigo": "{{fatoCodigo}}", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0,
-                 "rotulo": "Campo", "tipoRenderizacao": "{{tipoRenderizacao}}", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "restricoes": [], "precondicao": null, "valoresSelecionaveis": null}
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(MockComVersaoVigente(processoId, envelope), processoId);
-
-        FatoFormularioRenderizavelDto fato = resultado.Value!.FatosColetados.Should().ContainSingle().Which;
-        fato.TipoRenderizacao.Should().Be(tipoRenderizacao);
-        fato.Formato.Should().BeNull();
-        fato.ValoresSelecionaveis.Should().BeNull();
-    }
-
-    [Fact(DisplayName = "Versão vigente congelada com a forma corrente projeta título, termos e fatos com apresentação e valores selecionáveis")]
-    public async Task Handle_EnvelopeCorrente_ProjetaApresentacao()
-    {
-        const string envelopeCorrente = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null,
-                "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ],
-                "termos": [
-                {
-                  "codigo": "DECLARACAO_PERTENCIMENTO", "ordem": 0,
-                  "termoId": "0199a000-0000-7000-8000-00000000a001", "versaoId": "0199a000-0000-7000-8000-00000000b001",
-                  "nome": "Declaração de pertencimento", "texto": "Declaro pertencer à comunidade.", "baseLegal": "Lei 12.711/2012",
-                  "formaAceite": "REGISTRO_DIGITAL_SEM_LOG_IP", "hashVersao": "aaaa",
-                  "exibicao": [[{"fato": "COR_RACA", "operador": "IGUAL", "valor": "PRETA"}]],
-                  "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}
-                }
-              ]}],
-              "gruposColetados": [], "fatosColetados": [
-                {
-                  "fatoCodigo": "COR_RACA", "finalidade": "INSCRICAO", "etapaCodigo": "DADOS", "formato": null, "ordem": 0, "rotulo": "Cor ou raça",
-                  "tipoRenderizacao": "SELECAO_UNICA", "obrigatoriedade": {"tipo": "SEMPRE", "predicado": null}, "ajuda": null, "pedirConfirmacao": false, "impedimento": null, "restricoes": [], "precondicao": null,
-                  "valoresSelecionaveis": [
-                    {"valorCodigo": "BRANCA", "descricao": "Autodeclaração de cor/raça branca.", "ordem": 0},
-                    {"valorCodigo": "PRETA", "descricao": "Autodeclaração de cor/raça preta.", "ordem": 1}
-                  ]
-                }
-              ]
-            }
-            """;
-        Guid processoId = Guid.CreateVersion7();
-        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelopeCorrente);
-
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Titulo.Should().Be("Formulário de Inscrição");
-        TermoRenderizavelDto termo = resultado.Value!.Termos.Should().ContainSingle().Which;
-        termo.Texto.Should().Be("Declaro pertencer à comunidade.");
-        termo.CodigoNasRegras.Should().Be($"{FinalidadeFormulario.Inscricao}:{termo.Codigo}", "o termo é achado nas regras pelo código com a finalidade");
-        FatoFormularioRenderizavelDto fato = resultado.Value!.FatosColetados.Should().ContainSingle().Which;
-        fato.FatoCodigo.Should().Be("COR_RACA");
-        fato.Rotulo.Should().Be("Cor ou raça");
-        fato.TipoRenderizacao.Should().Be("SELECAO_UNICA");
-        fato.ValoresSelecionaveis.Should().SatisfyRespectively(
-            primeiro =>
-            {
-                primeiro.Codigo.Should().Be("BRANCA");
-                primeiro.Ordem.Should().Be(0);
-            },
-            segundo =>
-            {
-                segundo.Codigo.Should().Be("PRETA");
-                segundo.Ordem.Should().Be(1);
-            });
-    }
+    private static string Exigencia(string nome, string aplicabilidade, Guid fase, string? finalidade, string modelo = "null") => $$"""
+        {"tipoDocumentoNome": "{{nome}}", "aplicabilidade": "{{aplicabilidade}}", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
+         "finalidade": {{(finalidade is null ? "null" : $"\"{finalidade}\"")}}, "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": {{modelo}} }
+        """;
 
     /// <summary>
     /// O teste central da issue #1089: a versão é aposentada, mas o JSON congelado tem a forma
@@ -783,57 +395,6 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             $"'{VersaoCorrenteReconhecida}' — bytes coincidentemente válidos na forma atual não a devolvem " +
             "à lista de capacidades reconhecidas");
         resultado.Error!.Code.Should().Be("EnvelopeCodec.VersaoDesconhecida");
-    }
-
-    [Fact(DisplayName = "O agregado sobre grupo de outro formulário é pressuposto calculado do fato de membro, não da classificação")]
-    public async Task Handle_AgregadoDeOutroFormulario_PressupostoCalculadoDoMembro()
-    {
-        const string envelope = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null},
-              "formularios": [{"finalidade": "HABILITACAO", "faseId": null, "titulo": null, "modeloOrigem": null, "termos": [], "etapas": []}],
-              "gruposColetados": [], "fatosColetados": [
-                {"fatoCodigo": "DECLARACAO_RURAL", "finalidade": "HABILITACAO", "etapaCodigo": null, "formato": null, "ordem": 0,
-                 "rotulo": "Declaração de atividade rural", "tipoRenderizacao": "BOOLEANO", "ajuda": null, "pedirConfirmacao": false,
-                 "valoresSelecionaveis": null}
-              ]
-            }
-            """;
-        PredicadoDnf ruralNaFamilia = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("RURAL_NA_FAMILIA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
-        FatoColetado declaracao = FatoColetado.Criar(
-            "DECLARACAO_RURAL", 0, "Declaração de atividade rural", TipoRenderizacao.Booleano, Obrigatoriedade.Quando(ruralNaFamilia), null,
-            finalidade: FinalidadeFormulario.Habilitacao).Value!;
-        GrupoColetado familia = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 0, null, "Composição familiar", 0, null, null, Obrigatoriedade.Nunca,
-            [FatoColetado.Criar("TRABALHADOR_RURAL", 0, "Trabalha no campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-                finalidade: FinalidadeFormulario.Inscricao).Value!],
-            FinalidadeFormulario.Inscricao).Value!;
-        EnvelopeReidratado semFormularios = EnvelopeSemFormularios();
-        GrafoConfiguracao grafo = semFormularios.Grafo;
-        EnvelopeReidratado comAgregado = new(
-            new GrafoConfiguracao(
-                grafo.Etapas, grafo.OfertaAtendimento, grafo.DistribuicaoVagas, grafo.BonusRegional, grafo.CriteriosDesempate,
-                grafo.Classificacao, grafo.CronogramaFases, grafo.DocumentosExigidos, grafo.NosExigencia, grafo.ReferenciaTemporalFatos,
-                fatosColetados: [declaracao], gruposColetados: [familia]),
-            semFormularios.Dados, semFormularios.HashDocumento, semFormularios.FusoHorario, retificacao: null, conformidade: null,
-            agregadosDosGrupos: [new DefinicaoAgregado("RURAL_NA_FAMILIA", "COMPOSICAO_FAMILIAR", "TRABALHADOR_RURAL", OperacaoAgregado.Existe)]);
-        IRegistroCodecsEnvelope registro = CriarRegistroReconhecendo(VersaoCorrenteReconhecida);
-        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(comAgregado));
-        Guid processoId = Guid.CreateVersion7();
-
-        Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Habilitacao),
-            MockComVersaoVigente(processoId, envelope),
-            RepositorioComDivulgacao(processoId),
-            registro,
-            Acervo,
-            CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        PressupostoRenderizavelDto agregado = resultado.Value!.Pressupostos.Should().ContainSingle().Which;
-        agregado.FatoCodigo.Should().Be("RURAL_NA_FAMILIA");
-        agregado.CalculadoDe.Should().Equal(["TRABALHADOR_RURAL"], "o agregado é calculado das respostas ao grupo da inscrição");
     }
 
     [Fact(DisplayName = "Versão cujos bytes não se provam não serve formulário: a recusa da reidratação aflora")]

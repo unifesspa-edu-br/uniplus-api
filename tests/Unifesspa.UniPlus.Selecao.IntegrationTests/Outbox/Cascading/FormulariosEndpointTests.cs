@@ -129,6 +129,37 @@ public sealed class FormulariosEndpointTests
             inexistente.StatusCode, "a resposta não pode separar o que ainda não é público do que não existe");
     }
 
+    [Fact(DisplayName = "GET admin do rascunho exige autenticação e o papel plataforma-admin")]
+    public async Task ObterRascunho_SemPapel_Recusa()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(ObterRascunho_SemPapel_Recusa));
+
+        (await ctx.GetRascunhoAsync(Autenticacao.Nenhuma)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await ctx.GetRascunhoAsync(Autenticacao.PapelErrado)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "GET admin do rascunho serve o formulário da configuração viva, que o público ainda não serve")]
+    public async Task ObterRascunho_EmRascunho_200ComApresentacaoERegras()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(ObterRascunho_EmRascunho_200ComApresentacaoERegras));
+        (await ctx.PutFormularioAsync("Formulário de Inscrição")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ctx.PutFatosAsync([])).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage publico = await ctx.GetFormularioAsync();
+        HttpResponseMessage rascunho = await ctx.GetRascunhoAsync(Autenticacao.PlataformaAdmin);
+
+        publico.StatusCode.Should().Be(HttpStatusCode.NotFound, "o certame ainda não foi divulgado");
+        rascunho.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await rascunho.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
+        root.GetProperty("fatosColetados").GetArrayLength().Should().Be(ConjuntoBasicoDaInscricao.Itens.Count);
+        root.GetProperty("regras").GetProperty("etapas").EnumerateArray().SelectMany(static e => e.GetProperty("itens").EnumerateArray())
+            .Select(static i => i.GetProperty("fatoCodigo").GetString())
+            .Should().Contain("COR_RACA", "as regras da configuração viva vão com a apresentação");
+        root.GetProperty("comprovacaoDocumental").ValueKind.Should().Be(JsonValueKind.Null, "a lista de documentos sai da publicação");
+    }
+
     [Fact(DisplayName = "GET público, sem autenticação, retorna 404 para processo inexistente")]
     public async Task Obter_ProcessoInexistente_404()
     {
@@ -275,6 +306,15 @@ public sealed class FormulariosEndpointTests
             };
             Autenticar(request, autenticar);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+            return await Client.SendAsync(request).ConfigureAwait(false);
+        }
+
+        public async Task<HttpResponseMessage> GetRascunhoAsync(Autenticacao autenticar, string finalidade = "INSCRICAO")
+        {
+            using HttpRequestMessage request = new(
+                HttpMethod.Get,
+                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{finalidade}/renderizavel", UriKind.Relative));
+            Autenticar(request, autenticar);
             return await Client.SendAsync(request).ConfigureAwait(false);
         }
 

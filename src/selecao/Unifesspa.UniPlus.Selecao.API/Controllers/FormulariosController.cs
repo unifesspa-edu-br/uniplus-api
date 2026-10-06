@@ -91,6 +91,33 @@ public sealed class FormulariosController : ControllerBase
     }
 
     /// <summary>
+    /// O formulário da finalidade como a configuração viva o define agora — o rascunho, ou a sessão de
+    /// retificação aberta —, no mesmo formato que o certame divulgado serve. É o que a simulação do
+    /// administrador interpreta antes de publicar; nada é gravado.
+    /// </summary>
+    [HttpGet("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/renderizavel")]
+    [Authorize(Roles = "plataforma-admin")]
+    [VendorMediaType(Resource = "formulario", Versions = [2])]
+    [ProducesResponseType(typeof(FormularioRenderizavelDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ObterFormularioRenderizavelDoRascunho(Guid id, string finalidade, CancellationToken cancellationToken)
+    {
+        if (EstruturaFormulario.FinalidadeDoToken(finalidade) is not (not FinalidadeFormulario.Nenhuma and var alvo))
+        {
+            return NotFound();
+        }
+
+        Result<FormularioRenderizavelDto> resultado = await _queryBus
+            .Send(new ObterFormularioRenderizavelDoRascunhoQuery(id, alvo), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Define ou substitui o formulário da finalidade: a fase do cronograma, o título e as etapas.
     /// Editável em rascunho e sob sessão de retificação, que pode acrescentar formulário.
     /// </summary>

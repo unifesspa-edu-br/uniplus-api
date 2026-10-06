@@ -5041,6 +5041,25 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Resolução de dataReferenciaFatos sem ReferenciaTemporalFatos configurada — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
         }
 
+        return DataDaReferencia(referencia, fusoHorario)
+            ?? throw new InvalidOperationException(
+                "dataReferenciaFatos não resolvível a partir do cronograma — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
+    }
+
+    /// <summary>
+    /// A data de referência que a configuração viva já resolve, para o rascunho em montagem: nula
+    /// quando nenhuma regra cita <c>FAIXA_ETARIA</c>, quando a referência ainda não foi declarada ou
+    /// quando a fase que a ancora ainda não tem a data. A publicação usa
+    /// <see cref="ResolverDataReferenciaFatos"/>, que recusa o que não resolve.
+    /// </summary>
+    public DateOnly? DataReferenciaFatosEmMontagem(TimeZoneInfo fusoHorario)
+    {
+        ArgumentNullException.ThrowIfNull(fusoHorario);
+        return CitaFaixaEtaria() && ReferenciaTemporalFatos is { } referencia ? DataDaReferencia(referencia, fusoHorario) : null;
+    }
+
+    private DateOnly? DataDaReferencia(ReferenciaTemporalFatos referencia, TimeZoneInfo fusoHorario)
+    {
         if (referencia.Tipo == ReferenciaTipo.DataEspecifica)
         {
             return referencia.Data!.Value;
@@ -5064,13 +5083,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _ => throw new InvalidOperationException($"Tipo de ReferenciaTemporalFatos não reconhecido: {referencia.Tipo}."),
         };
 
-        if (extremo is not { } instante)
-        {
-            throw new InvalidOperationException(
-                "dataReferenciaFatos não resolvível a partir do cronograma — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
-        }
-
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instante, fusoHorario).DateTime);
+        return extremo is { } instante ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instante, fusoHorario).DateTime) : null;
     }
 
     /// <summary>
