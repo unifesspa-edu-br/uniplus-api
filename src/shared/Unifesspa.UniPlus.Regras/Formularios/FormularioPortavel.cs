@@ -76,6 +76,26 @@ public sealed record FormularioPortavel(
     /// </summary>
     public Result<DefinicaoFormulario> ParaDefinicao()
     {
+        if (CaminhoDoPrimeiroNulo() is { } nulo)
+        {
+            return Result<DefinicaoFormulario>.Failure(new DomainError(
+                FormularioPortavelErrorCodes.EstruturaInvalida, $"O elemento '{nulo}' das regras é nulo."));
+        }
+
+        // As invariantes da definição são protegidas por exceção, porque a definição montada pelo
+        // módulo nunca as viola; o portável vem de fora e é recusado com a causa.
+        try
+        {
+            return Converter();
+        }
+        catch (ArgumentException excecao)
+        {
+            return Result<DefinicaoFormulario>.Failure(new DomainError(FormularioPortavelErrorCodes.EstruturaInvalida, excecao.Message));
+        }
+    }
+
+    private Result<DefinicaoFormulario> Converter()
+    {
         List<DefinicaoEtapa> etapas = [];
         foreach (EtapaPortavel etapa in Etapas ?? [])
         {
@@ -127,16 +147,59 @@ public sealed record FormularioPortavel(
             agregados.Add(new DefinicaoAgregado(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, operacao));
         }
 
-        // As invariantes de unicidade da definição são protegidas por exceção, porque a definição
-        // montada pelo módulo nunca as viola; o portável vem de fora e é recusado com a causa.
-        try
+        return Result<DefinicaoFormulario>.Success(new DefinicaoFormulario(etapas, termos, derivacoes, agregados));
+    }
+
+    /// <summary>
+    /// O caminho do primeiro elemento nulo dentro das regras, como <c>etapas[0].itens[2]</c>; nulo
+    /// quando não há. O arquivo importado chega pelo fio, e a lista com elemento nulo não forma
+    /// definição.
+    /// </summary>
+    private string? CaminhoDoPrimeiroNulo() =>
+        Lista(Etapas, "etapas", static (etapa, caminho) =>
+            Predicado(etapa.Exibicao, $"{caminho}.exibicao")
+            ?? Lista(etapa.Itens, $"{caminho}.itens", NuloNoItem)
+            ?? Lista(etapa.Grupos, $"{caminho}.grupos", static (grupo, doGrupo) =>
+                Predicado(grupo.Exibicao, $"{doGrupo}.exibicao")
+                ?? Predicado(grupo.PredicadoObrigatoriedade, $"{doGrupo}.predicadoObrigatoriedade")
+                ?? Lista(grupo.Subitens, $"{doGrupo}.subitens", NuloNoItem)))
+        ?? Lista(Termos, "termos", static (termo, caminho) =>
+            Predicado(termo.Exibicao, $"{caminho}.exibicao") ?? Predicado(termo.PredicadoObrigatoriedade, $"{caminho}.predicadoObrigatoriedade"))
+        ?? Lista(Derivacoes, "derivacoes", static (derivacao, caminho) =>
+            Lista(derivacao.Regras, $"{caminho}.regras", static (regra, daRegra) => Predicado(regra.Quando, $"{daRegra}.quando")))
+        ?? Lista(Agregados, "agregados", static (_, _) => null);
+
+    private static string? NuloNoItem(ItemPortavel item, string caminho) =>
+        Predicado(item.Exibicao, $"{caminho}.exibicao")
+        ?? Predicado(item.PredicadoObrigatoriedade, $"{caminho}.predicadoObrigatoriedade")
+        ?? Lista(item.Restricoes, $"{caminho}.restricoes", static (restricao, daRestricao) =>
+            Lista(restricao.Entradas, $"{daRestricao}.entradas", static (entrada, daEntrada) =>
+                Predicado(entrada.Quando, $"{daEntrada}.quando") ?? Lista(entrada.Valores, $"{daEntrada}.valores", static (_, _) => null))
+            ?? Lista(restricao.Fatos, $"{daRestricao}.fatos", static (_, _) => null))
+        ?? (item.Impedimento is { } impedimento ? Predicado(impedimento.Quando, $"{caminho}.impedimento.quando") : null)
+        ?? Lista(item.Oferta, $"{caminho}.oferta", static (_, _) => null);
+
+    private static string? Predicado(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicado, string caminho) =>
+        Lista(predicado, caminho, static (clausula, daClausula) => Lista(clausula, daClausula, static (_, _) => null));
+
+    private static string? Lista<T>(IReadOnlyList<T>? lista, string caminho, Func<T, string, string?> dentro)
+        where T : class
+    {
+        for (int i = 0; i < (lista?.Count ?? 0); i++)
         {
-            return Result<DefinicaoFormulario>.Success(new DefinicaoFormulario(etapas, termos, derivacoes, agregados));
+            string doElemento = $"{caminho}[{i}]";
+            if (lista![i] is not { } elemento)
+            {
+                return doElemento;
+            }
+
+            if (dentro(elemento, doElemento) is { } nulo)
+            {
+                return nulo;
+            }
         }
-        catch (ArgumentException excecao)
-        {
-            return Result<DefinicaoFormulario>.Failure(new DomainError(FormularioPortavelErrorCodes.EstruturaInvalida, excecao.Message));
-        }
+
+        return null;
     }
 
     /// <summary>
