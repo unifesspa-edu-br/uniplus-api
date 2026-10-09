@@ -316,9 +316,9 @@ reset_test_user_passwords() {
 
 readonly PERSONAS_FILE="$SCRIPT_DIR/../docker/keycloak/personas.json"
 
-# A persona "privilegiada" recebe os mesmos realm roles do usuário `admin` do
-# `realm-export.json` — o papel de acesso exato de HML não está disponível
-# localmente.
+# A persona "privilegiada" recebe os mesmos realm roles e os mesmos client
+# roles (client `uniplus-api`) do usuário `admin` do `realm-export.json` — o
+# papel de acesso exato de HML não está disponível localmente.
 readonly PERSONA_PRIVILEGIADA_ROLES=("admin" "plataforma-admin")
 
 # Só os roles que este script usa para persona (candidato ou privilegiada) —
@@ -346,10 +346,36 @@ assign_realm_roles() {
     auth_json -X POST "$API/users/$user_id/role-mappings/realm" -d "$roles_json" >/dev/null
 }
 
+# Mesma troca (substitui, não só acrescenta), mas para os roles do client
+# `uniplus-api` — a persona "privilegiada" só equivale ao `admin` com os
+# realm roles E os client roles dele (ex.: catálogos restritos por client
+# role, como motivos de decisão recursal).
+assign_client_roles() {
+    local user_id="$1" client_uuid="$2" roles_json="$3"
+    local atuais a_remover
+
+    atuais=$(auth "$API/users/$user_id/role-mappings/clients/$client_uuid")
+    a_remover=$(jq -nc --argjson atuais "$atuais" --argjson alvo "$roles_json" \
+        '$atuais | map(select(.name as $n | ($alvo | map(.name) | index($n)) | not))')
+
+    if [ "$(jq 'length' <<< "$a_remover")" -gt 0 ]; then
+        auth_json -X DELETE "$API/users/$user_id/role-mappings/clients/$client_uuid" -d "$a_remover" >/dev/null
+    fi
+    if [ "$(jq 'length' <<< "$roles_json")" -gt 0 ]; then
+        auth_json -X POST "$API/users/$user_id/role-mappings/clients/$client_uuid" -d "$roles_json" >/dev/null
+    fi
+    # `roles_json` vazio é o caso comum (persona "candidato") — sem isto, o
+    # `[ ] &&` acima, como ÚLTIMO comando da função, devolveria 1 (falso) e,
+    # sendo o último elo de `[ -n "$client_uuid" ] && assign_client_roles ...`
+    # em upsert_persona, `set -e` encerraria o script inteiro em silêncio.
+    return 0
+}
+
 # Separa "Nome Completo" em firstName (1ª palavra) / lastName (resto) — convenção
 # suficiente para dado de teste; quem identifica a persona é o username.
 upsert_persona() {
     local username="$1" nome="$2" nome_social="$3" cpf="$4" email="$5" roles_json="$6"
+    local client_roles_json="${7:-[]}" client_uuid="${8:-}"
     local first_name last_name cpf_digits existing_id body
 
     # `set -e` encerra o script em qualquer `curl -f` que falhe aqui dentro —
@@ -394,6 +420,7 @@ upsert_persona() {
         -d "$(jq -nc --arg p "$TEST_PASSWORD" '{type:"password", value:$p, temporary:false}')" >/dev/null
     auth_json -X PUT "$API/users/$existing_id" -d '{"requiredActions":[]}' >/dev/null
     assign_realm_roles "$existing_id" "$roles_json"
+    [ -n "$client_uuid" ] && assign_client_roles "$existing_id" "$client_uuid" "$client_roles_json"
 
     ok "persona '$username' configurada"
 }
@@ -411,20 +438,38 @@ ensure_personas() {
         --argjson b "$(auth "$API/roles/${PERSONA_PRIVILEGIADA_ROLES[1]}")" \
         '[$a, $b]')
 
-    local total i row perfil roles_json
+    # A persona "privilegiada" só equivale ao `admin` com os client roles dele
+    # também (ex.: catálogos restritos por client role), não só os realm
+    # roles — lidos do próprio `admin` em vez de hardcoded, para acompanhar o
+    # `realm-export.json` se o conjunto dele mudar.
+    local admin_id client_uuid privilegiada_client_roles_json=""
+    admin_id=$(auth "$API/users?username=admin&exact=true" | jq -r '.[0].id // empty')
+    client_uuid=$(auth "$API/clients?clientId=uniplus-api" | jq -r '.[0].id // empty')
+    if [ -n "$admin_id" ] && [ -n "$client_uuid" ]; then
+        privilegiada_client_roles_json=$(auth "$API/users/$admin_id/role-mappings/clients/$client_uuid")
+    else
+        warn "não achei o usuário 'admin' ou o client 'uniplus-api' — personas privilegiadas ficam sem client roles"
+        privilegiada_client_roles_json="[]"
+    fi
+
+    local total i row perfil roles_json client_roles_json
     total=$(jq 'length' "$PERSONAS_FILE")
     for ((i = 0; i < total; i++)); do
         row=$(jq -c ".[$i]" "$PERSONAS_FILE")
         perfil=$(jq -r '.perfil' <<< "$row")
         roles_json="$candidato_roles_json"
-        [ "$perfil" = "privilegiado" ] && roles_json="$privilegiada_roles_json"
+        client_roles_json="[]"
+        if [ "$perfil" = "privilegiado" ]; then
+            roles_json="$privilegiada_roles_json"
+            client_roles_json="$privilegiada_client_roles_json"
+        fi
         upsert_persona \
             "$(jq -r '.username' <<< "$row")" \
             "$(jq -r '.nome' <<< "$row")" \
             "$(jq -r '.nome_social // ""' <<< "$row")" \
             "$(jq -r '.cpf' <<< "$row")" \
             "$(jq -r '.email' <<< "$row")" \
-            "$roles_json"
+            "$roles_json" "$client_roles_json" "$client_uuid"
     done
     ok "$total personas provisionadas (senha=$TEST_PASSWORD, não-temporária)"
 }
