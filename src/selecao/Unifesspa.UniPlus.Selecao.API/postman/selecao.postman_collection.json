@@ -1897,7 +1897,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCodigo\": \"BONUS-MULTIPLICATIVO\",\n  \"regraVersao\": \"v1\",\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegalBonusRegionalId\": \"{{base_legal_bonus_regional_id}}\"\n}",
+              "raw": "{\n  \"aplica\": true,\n  \"regraCodigo\": \"BONUS-MULTIPLICATIVO\",\n  \"regraVersao\": \"v1\",\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegalBonusRegionalId\": \"{{base_legal_bonus_regional_id}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

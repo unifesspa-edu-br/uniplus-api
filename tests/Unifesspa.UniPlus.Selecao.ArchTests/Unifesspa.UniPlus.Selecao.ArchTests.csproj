@@ -35,6 +35,7 @@
          dele passaria em todos os arquivos-alvo, porque todos usam datas de 2026. -->
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/IdentificadoresDeTeste.cs" Link="IdentificadoresDeTeste.cs" />
+    <Compile Include="../Shared/DeclaracoesObrigatoriasDeTeste.cs" Link="DeclaracoesObrigatoriasDeTeste.cs" />
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
   </ItemGroup>
 

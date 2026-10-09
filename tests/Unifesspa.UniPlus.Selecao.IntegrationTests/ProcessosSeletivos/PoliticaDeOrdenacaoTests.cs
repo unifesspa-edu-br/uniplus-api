@@ -869,7 +869,7 @@ public sealed class PoliticaDeOrdenacaoTests
             [("1504208", "Zebu", "PA"), ("1504208", "Abaco", "PA")]).Value!;
 
         ProcessoSeletivo processo = Montar();
-        processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         JsonArray municipiosJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
             ["bonusRegional"]!["municipios"]!.AsArray();

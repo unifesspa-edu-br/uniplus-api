@@ -96,6 +96,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
@@ -239,7 +240,7 @@ public sealed class ProcessoSeletivoPublicarTests
             "etapas" => processo.DefinirEtapas([EtapaProcesso.Criar("Nova Etapa", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente),
             "ofertaAtendimento" => processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente),
             "distribuicaoVagas" => processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente),
-            "bonusRegional" => processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente),
+            "bonusRegional" => processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente),
             "criteriosDesempate" => processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.Ausente),
             "classificacao" => processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
                 ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
@@ -767,6 +768,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
@@ -904,8 +906,8 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        // Nenhum ConfiguracaoBonusRegional definido — RN05, toggle por presença: a
-        // ausência da entidade já significa "sem vantagem viva" para remover.
+        // O processo declara que não aplica o bônus regional (RN05): sem configuração do bônus
+        // não há "vantagem viva" para a consequência REMOVE_VANTAGEM remover.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
@@ -919,7 +921,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         processo.DefinirBonusRegional(
-            ConfiguracaoBonusRegional.Criar(
+            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
                 ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", HashFixo).Value!,
                 fator: 1.2m, teto: null, baseLegalBonusRegionalId: Guid.CreateVersion7(),
                 tipoInstrumento: "PORTARIA", identificacao: "Portaria Unifesspa nº 2514/2023",

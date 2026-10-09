@@ -64,10 +64,13 @@ public sealed class ConformidadeCronogramaTests
     /// todo teste deste arquivo para que a pendência de CRONOGRAMA isolada por cada um seja a
     /// única a aflorar, não mascarada pela pendência estrutural genérica.
     /// </summary>
-    private static void DeclararNaoCobra(ProcessoSeletivo processo) =>
+    private static void DeclararNaoCobra(ProcessoSeletivo processo)
+    {
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+    }
 
     // ── CA-11 — piso mínimo de InscricaoPropria ──
 

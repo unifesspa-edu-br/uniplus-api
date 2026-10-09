@@ -244,7 +244,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             .IsSuccess.Should().BeTrue();
         rascunho.Revisao.Should().Be(2);
 
-        processo.DefinirBonusRegional(null, PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.DeTags([rascunho.ETag]))
             .IsSuccess.Should().BeTrue();
         rascunho.Revisao.Should().Be(3);
     }
@@ -663,6 +663,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;

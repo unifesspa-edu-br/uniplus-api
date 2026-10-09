@@ -106,7 +106,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     public void Resolver_FatoDosMunicipiosDoBonus_CongelaOsMunicipiosDaArea()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirBonusRegional(ConfiguracaoBonusRegional.Criar(
+        processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
             1.20m, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

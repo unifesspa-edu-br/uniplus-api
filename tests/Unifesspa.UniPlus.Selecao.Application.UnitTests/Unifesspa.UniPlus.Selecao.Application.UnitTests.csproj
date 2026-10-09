@@ -30,6 +30,7 @@
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/IdentificadoresDeTeste.cs" Link="IdentificadoresDeTeste.cs" />
+    <Compile Include="../Shared/DeclaracoesObrigatoriasDeTeste.cs" Link="DeclaracoesObrigatoriasDeTeste.cs" />
     <Compile Include="../Shared/QuadroPesoAreaEnemDeTeste.cs" Link="QuadroPesoAreaEnemDeTeste.cs" />
     <Compile Include="../Shared/FormularioDeTeste.cs" Link="FormularioDeTeste.cs" />
     <Compile Include="../Shared/VersoesPublicadasDeTeste.cs" Link="VersoesPublicadasDeTeste.cs" />

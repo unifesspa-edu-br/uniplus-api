@@ -13,5 +13,7 @@ public static class ProcessoSeletivoErrorCodes
     public const string IdentificadorLegivelComFormatoDeGuid = "ProcessoSeletivo.IdentificadorLegivelComFormatoDeGuid";
     public const string IdentificadorLegivelAusente = "ProcessoSeletivo.IdentificadorLegivelAusente";
     public const string IdentificadorLegivelImutavel = "ProcessoSeletivo.IdentificadorLegivelImutavel";
+    public const string BonusRegionalAplicaSemConfiguracao = "ProcessoSeletivo.BonusRegionalAplicaSemConfiguracao";
+    public const string BonusRegionalNaoAplicaComConfiguracao = "ProcessoSeletivo.BonusRegionalNaoAplicaComConfiguracao";
     public const string IdentificadorLegivelEmUso = "ProcessoSeletivo.IdentificadorLegivelEmUso";
 }

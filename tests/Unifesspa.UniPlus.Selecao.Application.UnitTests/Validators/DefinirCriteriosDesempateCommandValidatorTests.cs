@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirCriteriosDesempateCommandValidatorTests
 {
-    [Fact(DisplayName = "Validator passa com lista de critérios vazia (dimensão opcional)")]
+    [Fact(DisplayName = "Validator passa com lista de critérios vazia (a exigência é da publicação)")]
     public void Aceita_ListaVazia()
     {
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator()

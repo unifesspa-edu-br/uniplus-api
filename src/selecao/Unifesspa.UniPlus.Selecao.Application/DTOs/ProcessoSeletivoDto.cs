@@ -30,6 +30,7 @@ public sealed record ProcessoSeletivoDto(
     OfertaAtendimentoEspecializadoDto? OfertaAtendimento,
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
     ConfiguracaoBonusRegionalDto? BonusRegional,
+    bool? AplicaBonusRegional,
     ConfiguracaoCascataRemanejamentoDto? Cascata,
     IReadOnlyList<CriterioDesempateDto> CriteriosDesempate,
     ConfiguracaoClassificacaoDto? Classificacao,

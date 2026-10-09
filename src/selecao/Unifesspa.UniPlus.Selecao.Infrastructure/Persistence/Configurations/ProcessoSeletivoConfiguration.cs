@@ -54,6 +54,10 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasConversion(IdentificadorLegivelConverter)
             .HasMaxLength(FormatoKebab.ComprimentoMaximo)
             .HasComment("Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado.");
+        // Declaração de que o processo aplica ou não o bônus regional: nula = ainda não declarado,
+        // o que bloqueia a publicação.
+        builder.Property(p => p.AplicaBonusRegional)
+            .HasComment("Declaração de que o processo aplica (true) ou não aplica (false) o bônus regional. Nulo = ainda não declarado.");
         builder.HasIndex(p => p.IdentificadorLegivel)
             .IsUnique()
             .HasFilter("identificador_legivel IS NOT NULL")
@@ -186,8 +190,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .OnDelete(DeleteBehavior.Cascade);
 
         // Taxa de inscrição e isenção (issue #1112) — 1:1, mesmo padrão de BonusRegional/
-        // Divulgacao acima. Diferente dos dois, ausência aqui NÃO é estado publicável (CA-01) —
-        // é dimensão do agregado do mesmo jeito, só o significado semântico da ausência muda.
+        // Divulgacao acima. Diferente da divulgação, ausência aqui NÃO é estado publicável
+        // (CA-01), como a ausência da declaração do bônus — é dimensão do agregado do mesmo jeito,
+        // só o significado semântico da ausência muda.
         builder.HasOne(p => p.ConfiguracaoTaxaInscricao)
             .WithOne()
             .HasForeignKey<ConfiguracaoTaxaInscricao>(t => t.ProcessoSeletivoId)

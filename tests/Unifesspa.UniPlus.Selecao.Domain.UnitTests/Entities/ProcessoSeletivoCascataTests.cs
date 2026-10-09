@@ -337,6 +337,7 @@ public sealed class ProcessoSeletivoCascataTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         processo.PendenciaDeConformidade().Should().BeNull("os itens estruturais estão todos completos — a cascata não é um deles");
         processo.PendenciaDaCascata().Should().NotBeNull("a oferta federal tem SegueCascata sem cascata configurada");

@@ -138,6 +138,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelComFormatoDeGuid, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.identificador_legivel_com_formato_de_guid", "O identificador legível não pode ter a forma de um identificador técnico")),
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.identificador_legivel_ausente", "O identificador legível é obrigatório")),
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.identificador_legivel_imutavel", "O identificador legível já consta em versão publicada e não pode ser alterado")),
+        new(ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao", "O processo que aplica o bônus regional precisa da configuração do bônus")),
+        new(ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.bonus_regional_nao_aplica_com_configuracao", "O processo que não aplica o bônus regional não pode ter a configuração do bônus")),
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.processo_seletivo.identificador_legivel_em_uso", "O identificador legível já é usado por outro processo seletivo")),
         new("FormularioProcesso.FaseForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.fase_fora_do_cronograma", "A fase do formulário não está no cronograma do processo")),
         new("FormularioProcesso.FaseIncoerenteComFinalidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.fase_incoerente_com_finalidade", "A fase do formulário não é a que a finalidade pede")),
@@ -244,7 +246,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ReferenciaReservaDemograficaSnapshot.PercentualInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.percentual_invalido", "Os percentuais demográficos devem estar entre 0 e 100")),
         new("ReferenciaReservaDemograficaSnapshot.BaseLegalObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.base_legal_obrigatoria", "Base legal é obrigatória")),
         // Desempate + Bônus (Story #774) — RN05
-        // (bônus toggle por presença) e INV-B6 (etapa_ref executável).
+        // (bônus: declaração de aplicar ou não) e INV-B6 (etapa_ref executável).
         new("ProcessoSeletivo.OrdemDesempateDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_desempate_duplicada", "Cada critério de desempate deve ter uma ordem única dentro do processo")),
         new("ProcessoSeletivo.EtapaRefDesempateInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_ref_desempate_inexistente", "O critério de desempate referencia uma etapa que não existe neste processo")),
         new("ProcessoSeletivo.EtapaReferenciadaPorDesempate", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_referenciada_por_desempate", "A etapa é referenciada por um critério de desempate e não pode ser removida sem antes reconfigurar o desempate")),
@@ -853,8 +855,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // do mesmo CidadeReferenciaErrorCodes sobrescreveria silenciosamente o mapeamento de
         // Configuração/Organização Institucional (ou vice-versa, a depender da ordem de DI).
         // Divulgação pública do Processo Seletivo (UNI-REQ-0050, issue #563) — ausência já é o
-        // default minimizado (só o número de inscrição), toggle por presença mesmo padrão de
-        // ConfiguracaoBonusRegional acima.
+        // default minimizado (só o número de inscrição), toggle por presença.
         new("ConfiguracaoDivulgacao.CamposPublicosVazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.campos_publicos_vazio", "A lista de campos públicos não pode ser vazia")),
         new("ConfiguracaoDivulgacao.CampoNaoPermitido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.campo_nao_permitido", "Campo fora do vocabulário de divulgação pública")),
         new("ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.numero_inscricao_obrigatorio", "O número de inscrição é o piso da divulgação pública e não pode ser removido")),
@@ -865,8 +866,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RegrasDeNomeAbreviado.IdentificadorDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_de_nome_abreviado.identificador_desconhecido", "O identificador de regra de abreviação não é conhecido")),
         new("RegrasDeNomeAbreviado.NomeEmBranco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_de_nome_abreviado.nome_em_branco", "O nome a abreviar não pode ser vazio ou só espaços")),
         // Taxa de inscrição e isenção do Processo Seletivo (issue #1112). Diferente de
-        // ConfiguracaoBonusRegional/ConfiguracaoDivulgacao, ausência aqui NÃO é estado
-        // publicável — ver ProcessoSeletivo.ItensEstruturaisDeConformidade (CA-01).
+        // ConfiguracaoDivulgacao, ausência aqui NÃO é estado publicável — ver ProcessoSeletivo.ItensEstruturaisDeConformidade (CA-01).
         new("ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.valor_obrigatorio_quando_cobra", "Processo que cobra taxa exige valor positivo")),
         new("ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.valor_nao_permitido_quando_nao_cobra", "Processo que declara não cobrar taxa não pode informar valor")),
         new("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_exige_cobranca", "Processo que declara não cobrar taxa não pode configurar fundamento de isenção")),
