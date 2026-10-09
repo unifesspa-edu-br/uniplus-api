@@ -142,6 +142,7 @@ Além dos 4 usuários de teste, `scripts/setup-keycloak-dev.sh` importa no realm
 
 - **27** com perfil `candidato` (role realm `candidato`).
 - **3** com perfil `privilegiado` (`diogo.souza`, `betina.neves`, `isabella.figueiredo`), com os mesmos realm roles do usuário `admin` (`admin`, `plataforma-admin`) — o papel de acesso exato que elas têm no Keycloak de HML não está disponível localmente.
+- O e-mail de cada persona troca o domínio do catálogo (que mistura domínios reais) por `uniplus-test.local`, preservando o local-part — o mesmo domínio reservado (RFC 2606) que `scripts/generate-ldif.py` usa para os usuários sintéticos do LDAP, para que nenhuma mensagem real de SMTP (se algum dia configurado no realm local) chegue a uma caixa de terceiro.
 - `cpf` e `nomeSocial` vêm do catálogo; o atributo `cpf` só é editável por administrador (regra do User Profile do realm, igual à dos 4 usuários de teste).
 
 **Senha de todos os usuários do realm `unifesspa`: `Uni+Teste26`**, não temporária — os 4 de teste, as 30 personas e também os usuários sintéticos federados do `openldap` (`docker/ldap/bootstrap/01-users.ldif`, gerado por `scripts/generate-ldif.py`). A senha de HML é outra.
