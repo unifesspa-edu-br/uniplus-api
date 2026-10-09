@@ -164,7 +164,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(47);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(48);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -355,15 +355,16 @@ public sealed class FatoCandidatoPersistenceTests
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
 
-    [Fact(DisplayName = "PontoResolucao: os fatos de sistema resolvem na inscrição, exceto a modalidade da convocação, no resultado final")]
+    [Fact(DisplayName = "PontoResolucao: os fatos de sistema resolvem na inscrição, exceto a modalidade da convocação, no resultado final, e a renda do pedido de isenção, na solicitação de isenção")]
     public async Task Seed_PontoResolucaoInscricaoParaTodos()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Where(static f => f.Codigo != "MODALIDADE_CONVOCACAO").Should().OnlyContain(static f => f.PontoResolucao == "INSCRICAO");
+        fatos.Where(static f => f.Codigo is not "MODALIDADE_CONVOCACAO" and not "RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO").Should().OnlyContain(static f => f.PontoResolucao == "INSCRICAO");
         fatos.Single(static f => f.Codigo == "MODALIDADE_CONVOCACAO").PontoResolucao.Should().Be("RESULTADO_FINAL");
+        fatos.Single(static f => f.Codigo == "RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO").PontoResolucao.Should().Be("SOLICITACAO_ISENCAO");
     }
 
     [Fact(DisplayName = "Cardinalidade: só MODALIDADE e CONDICAO_ATENDIMENTO são multivalorados; os demais escalares")]
@@ -478,7 +479,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(47);
+        views.Should().HaveCount(48);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -625,6 +626,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("NOME_COMUNIDADE", "045", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_COMUNIDADE", "INSCRICAO"),
             ("FORMA_CONCLUSAO_EM", "046", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:FORMA_CONCLUSAO_EM", "INSCRICAO"),
             ("ONDE_CURSOU_EM", "047", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ONDE_CURSOU_EM", "INSCRICAO"),
+            ("RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "048", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "SOLICITACAO_ISENCAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

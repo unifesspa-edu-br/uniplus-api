@@ -1,18 +1,18 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+
+using static Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed.SqlDaSemente;
 
 /// <summary>
 /// A configuração do Processo Seletivo Regular Unificado de Medicina 2027 que existe ao subir o
@@ -46,6 +46,9 @@ public static class SementePsrMedicina2027
 
     /// <summary>Quem consta como autor da promoção dos termos semeados, que não passaram por pessoa.</summary>
     private const string AutorDaSemente = "semente-psr-medicina-2027";
+
+    /// <summary>Como as recusas do domínio nomeiam esta semente.</summary>
+    private const string NomeDaSemente = "do PSR Medicina 2027";
 
     private const HipoteseLegalTratamento HipoteseLegal = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
 
@@ -371,20 +374,9 @@ public static class SementePsrMedicina2027
 
     private static string ComandoDoModelo(
         int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
-    {
-        ModeloFormulario modelo = Exigir(
-            ModeloFormulario.Criar(codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo, derivacoes),
-            $"modelo {codigo}");
-        Exigir(modelo.Ativar(), $"ativação do modelo {codigo}");
-
-        return Inserir("modelos_formulario", "id",
-            ("id", Uuid(Id(TabelaModelo, n))), ("codigo", Texto(modelo.Codigo)), ("nome", Texto(modelo.Nome)),
-            ("descricao", Texto(modelo.Descricao)), ("finalidade", Texto(EstruturaFormulario.ParaToken(modelo.Finalidade))),
-            ("tipo_processo_codigo", Texto(modelo.TipoProcessoCodigo)),
-            ("conteudo", $"{Texto(ConteudoDoModeloJson.Serializar(modelo.Conteudo))}::jsonb"),
-            ("ativo", Logico(modelo.Ativo)), ("created_at", Momento(Instante)));
-    }
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
+        SqlDaSemente.ComandoDoModelo(
+            Id(TabelaModelo, n), codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo, derivacoes, Instante, NomeDaSemente);
 
     /// <summary>
     /// Os comandos que tiram do banco o tipo de localidade e o nome da comunidade que a semente
@@ -418,26 +410,9 @@ public static class SementePsrMedicina2027
             ("descricao", Texto(tipo.Descricao)), ("ativo", Logico(tipo.Ativo)), ("created_at", Momento(Instante)));
     }
 
-    private static IEnumerable<string> ComandosDoTermo(TermoDaSemente semente)
-    {
-        TermoConsentimento termo = Exigir(
-            TermoConsentimento.Criar(semente.Nome, semente.Texto, semente.BaseLegal,
-                FormasAceite.ParaTokenCanonico(FormaAceite.RegistroDigitalComLogIp)),
-            $"termo {semente.Codigo}");
-        Exigir(termo.MarcarRevisado(AutorDaSemente, Instante), $"revisão do termo {semente.Codigo}");
-        TermoConsentimentoVersao versao = Exigir(termo.Promover(AutorDaSemente, Instante), $"promoção do termo {semente.Codigo}");
-
-        yield return Inserir("termo_consentimento", "id",
-            ("id", Uuid(semente.TermoId)), ("nome", Texto(termo.Nome)), ("texto_rascunho", Texto(termo.TextoRascunho)),
-            ("base_legal_rascunho", Texto(termo.BaseLegalRascunho)),
-            ("forma_aceite_rascunho", Texto(FormasAceite.ParaTokenCanonico(termo.FormaAceiteRascunho))),
-            ("revisado", Logico(termo.Revisado)), ("is_deleted", Logico(false)), ("created_at", Momento(Instante)));
-        yield return Inserir("termo_consentimento_versao", "id",
-            ("id", Uuid(semente.VersaoId)), ("termo_consentimento_id", Uuid(semente.TermoId)),
-            ("texto", Texto(versao.Texto)), ("base_legal", Texto(versao.BaseLegal)),
-            ("forma_aceite", Texto(FormasAceite.ParaTokenCanonico(versao.FormaAceite))), ("hash", Texto(versao.Hash)),
-            ("promovida_em", Momento(versao.PromovidaEm)), ("promovida_por", Texto(versao.PromovidaPor)));
-    }
+    private static IEnumerable<string> ComandosDoTermo(TermoDaSemente semente) =>
+        SqlDaSemente.ComandosDoTermo(
+            semente.TermoId, semente.VersaoId, semente.Nome, semente.Texto, semente.BaseLegal, AutorDaSemente, Instante, NomeDaSemente);
 
     private static string ComandoDoFato(Guid id, FatoCandidato fato) =>
         Inserir("rol_de_fatos_candidato", "id",
@@ -461,45 +436,7 @@ public static class SementePsrMedicina2027
             ("descricao", Texto(valor.Descricao)), ("ordem", valor.Ordem.ToString(CultureInfo.InvariantCulture)),
             ("ativo", Logico(valor.Ativo)), ("created_at", Momento(Instante)));
 
-    private static T Exigir<T>(Result<T> resultado, string oQue) =>
-        resultado.IsSuccess ? resultado.Value! : throw Recusa(resultado.Errors, oQue);
+    private static T Exigir<T>(Result<T> resultado, string oQue) => SqlDaSemente.Exigir(resultado, NomeDaSemente, oQue);
 
-    private static void Exigir(Result resultado, string oQue)
-    {
-        if (resultado.IsFailure)
-        {
-            throw Recusa(resultado.Errors, oQue);
-        }
-    }
-
-    private static InvalidOperationException Recusa(IEnumerable<FieldError> erros, string oQue) =>
-        new($"A semente do PSR Medicina 2027 tem {oQue} que o domínio recusa: "
-            + string.Join("; ", erros.Select(static e => $"{e.Field}: {e.Error.Message}")));
-
-    /// <summary>
-    /// A inserção que ignora a linha já gravada com a mesma chave <paramref name="chave"/>. Para os
-    /// fatos, os valores e os termos a chave é o identificador fixo: um código já ocupado por outro
-    /// cadastro do ambiente falha pelo índice único, com o nome do código, em vez de ser ignorado e
-    /// deixar os filhos apontando para o fato que não entrou.
-    /// </summary>
-    private static string Inserir(string tabela, string chave, params (string Coluna, string Valor)[] colunas) =>
-        $"INSERT INTO configuracao.{tabela} ({string.Join(", ", colunas.Select(static c => c.Coluna))}) "
-        + $"VALUES ({string.Join(", ", colunas.Select(static c => c.Valor))}) ON CONFLICT ({chave}) DO NOTHING;";
-
-    private static string Uuid(Guid id) => $"'{id}'::uuid";
-
-    private static string Texto(string? texto) => texto is null ? "NULL" : $"'{texto.Replace("'", "''", StringComparison.Ordinal)}'";
-
-    private static string Logico(bool valor) => valor ? "TRUE" : "FALSE";
-
-    private static string Momento(DateTimeOffset instante) =>
-        $"'{instante.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}+00'::timestamptz";
-
-    private static string ListaDeTexto(IReadOnlyList<string> itens)
-    {
-        StringBuilder sql = new("ARRAY[");
-        sql.Append(string.Join(", ", itens.Select(Texto)));
-        sql.Append("]::text[]");
-        return sql.ToString();
-    }
+    private static void Exigir(Result resultado, string oQue) => SqlDaSemente.Exigir(resultado, NomeDaSemente, oQue);
 }

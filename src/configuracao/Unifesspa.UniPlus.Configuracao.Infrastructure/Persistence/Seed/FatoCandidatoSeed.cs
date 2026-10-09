@@ -48,7 +48,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <para>
 /// Os fatos semeados resolvem em <c>PontoResolucao = "INSCRICAO"</c> — são
 /// respondidos/derivados no cadastro de inscrição do candidato —, exceto
-/// <c>MODALIDADE_CONVOCACAO</c>, que só existe depois do resultado final.
+/// <c>MODALIDADE_CONVOCACAO</c>, que só existe depois do resultado final, e a renda declarada no
+/// pedido de isenção da taxa, que resolve na solicitação de isenção.
 /// </para>
 /// </remarks>
 public static class FatoCandidatoSeed
@@ -76,6 +77,9 @@ public static class FatoCandidatoSeed
 
     internal const string FinalidadeRequisitos =
         "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.";
+
+    internal const string FinalidadeIsencaoDaTaxa =
+        "Análise do pedido de isenção da taxa de inscrição do processo seletivo.";
 
     private const string FinalidadeIdentificacao =
         "Identificação do candidato no processo seletivo.";
@@ -282,6 +286,14 @@ public static class FatoCandidatoSeed
         DadoBasico(47, OrigemEscolar.FatoOndeCursou, "Onde cursou o ensino médio", DominioFato.Categorico,
             FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global,
             descricao: "Em que rede de ensino o candidato cursou o ensino médio, ou se o concluiu por certificação sem frequentá-lo."),
+
+        // A renda declarada no pedido de isenção da taxa, conhecida na fase dele, que a condição da Lei nº 12.799/2013 cita
+        // ao lado da origem escolar (UNI-REQ-0149).
+        new(SeedId(48), IsencaoPorCarenciaSocioeconomica.FatoRenda, "Renda familiar per capita de até um salário mínimo e meio",
+            "Se a renda familiar per capita do candidato é igual ou inferior a um salário mínimo e meio, como ele declara no pedido de isenção da taxa.",
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
+            FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, $"CAMPO_FORMULARIO:{IsencaoPorCarenciaSocioeconomica.FatoRenda}",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeIsencaoDaTaxa),
     ];
 
     /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>
