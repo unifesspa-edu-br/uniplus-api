@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -125,16 +126,6 @@ public static class SementePsrMedicina2027
                 ClassificacaoProtecaoDado.Pessoal, FinalidadeDoEndereco, HipoteseLegal),
             Sem()),
 
-        // Inscrição: como o candidato concluiu o ensino médio (UNI-REQ-0148). Fica como fato do
-        // administrador até a origem escolar ser decidida (uniplus-api#1298).
-        new(5, _ => FatoCandidato.CriarDoAdministrador(
-                "FORMA_CONCLUSAO_EM", "Forma de conclusão do ensino médio", "Como o candidato concluiu o ensino médio: curso regular, Educação de Jovens e Adultos, ENCCEJA, exame de proficiência ou ENEM.", DominioFato.Categorico,
-                CardinalidadeFato.Escalar, FonteValoresFato.Global, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaEscolaridade, HipoteseLegal),
-            [("REGULAR", "Ensino médio regular"), ("EJA", "Educação de Jovens e Adultos (EJA)"),
-             ("ENCCEJA", "Certificação pelo ENCCEJA"), ("PROFICIENCIA", "Exame de proficiência"),
-             ("ENEM", "Certificação pelo ENEM")]),
-
         // Habilitação: o que o edital pede de quem é convocado (itens 9.16, 9.21 e 9.24).
         new(6, _ => FatoCandidato.CriarDoAdministrador(
                 "CERTIFICADO_EM_EMITIDO", "Certificado de conclusão do ensino médio já emitido", "Se o certificado de conclusão do ensino médio já foi emitido. Sem ele, a habilitação pede a declaração de conclusão e o termo de responsabilidade.", DominioFato.Booleano,
@@ -220,10 +211,22 @@ public static class SementePsrMedicina2027
     [
         ComandoDoModelo(1, ModeloDeInscricao, "Inscrição — Medicina 2027",
             "Formulário de inscrição do Processo Seletivo Regular Unificado de Medicina 2027.",
-            FinalidadeFormulario.Inscricao, ConteudoDaInscricao()),
+            FinalidadeFormulario.Inscricao, ConteudoDaInscricao(), DerivacoesDaInscricao),
         ComandoDoModelo(2, ModeloDeHabilitacao, "Habilitação — Medicina 2027",
             "Formulário de habilitação dos convocados no Processo Seletivo Regular Unificado de Medicina 2027.",
-            FinalidadeFormulario.Habilitacao, ConteudoDaHabilitacao()),
+            FinalidadeFormulario.Habilitacao, ConteudoDaHabilitacao(),
+            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)),
+    ];
+
+    /// <summary>
+    /// Os comandos que tiram do banco a forma de conclusão do ensino médio que a semente gravava como
+    /// fato do administrador: ela passou a fato de sistema, com o mesmo código, ao lado de onde o
+    /// candidato cursou o ensino médio.
+    /// </summary>
+    public static IReadOnlyList<string> ComandosQueRetiramAFormaDeConclusaoDaSemente() =>
+    [
+        $"DELETE FROM configuracao.fato_valor_dominio WHERE fato_candidato_id = {Uuid(Id(TabelaFato, 5))};",
+        $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id = {Uuid(Id(TabelaFato, 5))};",
     ];
 
     /// <summary>Os comandos que apagam os modelos semeados, para o <c>Down</c> da migration.</summary>
@@ -231,6 +234,13 @@ public static class SementePsrMedicina2027
     [
         $"DELETE FROM configuracao.modelos_formulario WHERE id::text LIKE '5e3d{TabelaModelo:D4}-%';",
     ];
+
+    /// <summary>A inscrição cita o egresso de escola pública, que deriva da origem escolar.</summary>
+    private static IReadOnlyDictionary<string, IReadOnlyCollection<string>> DerivacoesDaInscricao { get; } =
+        new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)
+        {
+            [OrigemEscolar.FatoEgresso] = [.. OrigemEscolar.DependenciasDoEgresso],
+        };
 
     private static ConteudoDoModelo ConteudoDaInscricao()
     {
@@ -241,7 +251,7 @@ public static class SementePsrMedicina2027
         return new(
             "Inscrição no Processo Seletivo Regular Unificado de Medicina 2027",
             [
-                Secao(escolaridade, 1, "Ensino médio", "Como você concluiu o ensino médio."),
+                Secao(escolaridade, 1, "Ensino médio", "Como você concluiu o ensino médio e onde o cursou."),
                 Secao(cotas, 2, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
                 Secao(bonus, 3, "Bônus regional", "Pedido do bônus regional previsto no edital."),
                 Bloco("MODALIDADES", 4, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
@@ -249,16 +259,18 @@ public static class SementePsrMedicina2027
                 Bloco("REVISAO", 6, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
             ],
             [
-                Campo("FORMA_CONCLUSAO_EM", 103, escolaridade, "Forma de conclusão do ensino médio", TipoRenderizacao.SelecaoUnica, null),
-                Campo("PCD", 104, cotas, "Você é pessoa com deficiência?", TipoRenderizacao.Booleano,
+                Campo(OrigemEscolar.FatoFormaDeConclusao, 103, escolaridade, "Como você concluiu o ensino médio?", TipoRenderizacao.SelecaoUnica, null),
+                Campo(OrigemEscolar.FatoOndeCursou, 104, escolaridade, "Onde você cursou o ensino médio?", TipoRenderizacao.SelecaoUnica,
+                    "A resposta define se você pode concorrer às vagas para quem cursou o ensino médio em escola pública.",
+                    restricoes: [OpcoesDeOndeCursou()]),
+                Campo("PCD", 105, cotas, "Você é pessoa com deficiência?", TipoRenderizacao.Booleano,
                     "A deficiência é comprovada por laudo, conforme o edital."),
-                Campo("TIPO_DEFICIENCIA", 105, cotas, "Tipo de deficiência", TipoRenderizacao.SelecaoUnica, null,
+                Campo("TIPO_DEFICIENCIA", 106, cotas, "Tipo de deficiência", TipoRenderizacao.SelecaoUnica, null,
                     exibicao: Se("PCD", Operador.Igual, true)),
-                Campo("CONCORRER_PCD", 106, cotas, "Deseja concorrer às vagas para pessoas com deficiência?", TipoRenderizacao.Booleano, null,
+                Campo("CONCORRER_PCD", 107, cotas, "Deseja concorrer às vagas para pessoas com deficiência?", TipoRenderizacao.Booleano, null,
                     exibicao: Se("PCD", Operador.Igual, true)),
-                Campo("EGRESSO_ESCOLA_PUBLICA", 107, cotas, "Você cursou todo o ensino médio em escola pública?", TipoRenderizacao.Booleano, null),
                 Campo("CONCORRER_EP", 108, cotas, "Deseja concorrer às vagas para quem cursou o ensino médio em escola pública?", TipoRenderizacao.Booleano, null,
-                    exibicao: Se("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, true)),
+                    exibicao: Se(OrigemEscolar.FatoEgresso, Operador.Igual, true)),
                 Campo("CONCORRER_PPI", 109, cotas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoRenderizacao.Booleano,
                     "Para quem se autodeclara preto, pardo ou indígena."),
                 Campo("QUILOMBOLA", 110, cotas, "Você se autodeclara quilombola?", TipoRenderizacao.Booleano, null),
@@ -301,13 +313,13 @@ public static class SementePsrMedicina2027
             [
                 Campo("CERTIFICADO_EM_EMITIDO", 1, conclusao, "Seu certificado de conclusão do ensino médio já foi emitido?", TipoRenderizacao.Booleano,
                     "Se ainda não, apresente a declaração de conclusão e o termo de responsabilidade.",
-                    exibicao: Se("FORMA_CONCLUSAO_EM", Operador.Igual, "REGULAR")),
+                    exibicao: Se(OrigemEscolar.FatoFormaDeConclusao, Operador.Igual, OrigemEscolar.Regular)),
                 Campo("HABILITACAO_POR_PROCURADOR", 2, conclusao, "Outra pessoa fará a habilitação em seu nome, por procuração?", TipoRenderizacao.Booleano,
                     "O procurador apresenta a procuração e o próprio documento de identificação."),
                 Campo("VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", 3, conclusao, "Você tem matrícula ativa em outra instituição pública de ensino superior ou bolsa do ProUni?", TipoRenderizacao.Booleano, null),
             ],
             [],
-            ["FORMA_CONCLUSAO_EM"],
+            [OrigemEscolar.FatoFormaDeConclusao],
             [
                 new GrupoDoModelo(
                     familia, 4, familia, "Membros da composição familiar", Minimo: 1, Maximo: null, Exibicao: null,
@@ -331,8 +343,21 @@ public static class SementePsrMedicina2027
 
     private static ItemDoModelo Campo(
         string fato, int ordem, string? etapa, string rotulo, TipoRenderizacao tipo, string? ajuda,
-        PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null, string? formato = null) =>
-        new(fato, ordem, etapa, rotulo, tipo, formato, ajuda, obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, [], PedirConfirmacao: false);
+        PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null, string? formato = null,
+        IReadOnlyList<RestricaoValor>? restricoes = null) =>
+        new(fato, ordem, etapa, rotulo, tipo, formato, ajuda, obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, restricoes ?? [], PedirConfirmacao: false);
+
+    /// <summary>
+    /// Onde cursou oferece "Concluí por certificação" só a quem respondeu que concluiu por
+    /// certificação; as demais opções, a todos.
+    /// </summary>
+    private static OpcoesPermitidas OpcoesDeOndeCursou() =>
+        new([
+            new OpcoesCondicionadas(null, OrigemEscolar.OndeCursouSemCertificacao),
+            new OpcoesCondicionadas(
+                Se(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, OrigemEscolar.Certificacoes),
+                [OrigemEscolar.ConcluiuPorCertificacao]),
+        ]);
 
     private static TermoDoModelo Termo(TermoDaSemente termo, int ordem, PredicadoDnf? exibicao = null) =>
         new(termo.Codigo, ordem, termo.TermoId, termo.VersaoId, exibicao, Obrigatoriedade.Sempre);
@@ -345,11 +370,11 @@ public static class SementePsrMedicina2027
     }
 
     private static string ComandoDoModelo(
-        int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
+        int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         ModeloFormulario modelo = Exigir(
-            ModeloFormulario.Criar(codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo,
-                new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)),
+            ModeloFormulario.Criar(codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo, derivacoes),
             $"modelo {codigo}");
         Exigir(modelo.Ativar(), $"ativação do modelo {codigo}");
 

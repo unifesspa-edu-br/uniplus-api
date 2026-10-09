@@ -164,7 +164,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(45);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(47);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -348,7 +348,9 @@ public sealed class FatoCandidatoPersistenceTests
 
         // MODALIDADE passou a Derivado: não é resposta do candidato, e sim resultado da avaliação
         // dos fatos declarados contra as regras congeladas do processo (ADR-0116, emenda 2026-07-22).
-        derivados.Should().Equal("FAIXA_ETARIA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "MUNICIPIO_RESIDENCIA", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
+        // O egresso de escola pública deriva das duas perguntas da origem escolar (UNI-REQ-0148).
+        derivados.Should().Equal(
+            "EGRESSO_ESCOLA_PUBLICA", "FAIXA_ETARIA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "MUNICIPIO_RESIDENCIA", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
         fatos.Where(f => f.Origem != OrigemFato.Derivado)
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
@@ -390,7 +392,7 @@ public sealed class FatoCandidatoPersistenceTests
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking()
             .Where(v => ctx.FatosCandidato.Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
             .ToListAsync();
-        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(39);
+        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(56);
 
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
         string[] codigosCorRaca = [.. valores
@@ -431,6 +433,19 @@ public sealed class FatoCandidatoPersistenceTests
         valores.Where(v => v.FatoCandidatoId == estadoCivil.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
             .Should().Equal("SOLTEIRO", "CASADO", "UNIAO_ESTAVEL", "SEPARADO", "DIVORCIADO", "VIUVO");
 
+        FatoCandidato formaDeConclusao = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "FORMA_CONCLUSAO_EM");
+        valores.Where(v => v.FatoCandidatoId == formaDeConclusao.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
+            .Should().Equal("REGULAR", "EJA", "ENCCEJA", "PROFICIENCIA", "ENEM");
+
+        // A parte em escola privada com bolsa integral fica separada da parte fora da rede pública sem
+        // ela, e "Concluí por certificação" é o último valor.
+        FatoCandidato ondeCursou = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "ONDE_CURSOU_EM");
+        valores.Where(v => v.FatoCandidatoId == ondeCursou.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
+            .Should().Equal(
+                "SOMENTE_PUBLICA", "COMUNITARIA_CAMPO", "PRIVADA_BOLSA_INTEGRAL", "PRIVADA_BOLSA_PARCIAL", "PRIVADA",
+                "PUBLICA_E_PRIVADA_BOLSA_INTEGRAL", "PUBLICA_E_FORA_DA_REDE", "PUBLICA_E_COMUNITARIA", "SISTEMA_S", "EXTERIOR",
+                "MAIS_DE_UM_FORA_DA_REDE", "CERTIFICACAO");
+
         FatoCandidato modalidade = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "MODALIDADE");
         valores.Should().NotContain(v => v.FatoCandidatoId == modalidade.Id,
             "MODALIDADE é escopo-processo — não tem FatoValorDominio filhos");
@@ -463,7 +478,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(45);
+        views.Should().HaveCount(47);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -566,7 +581,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("COR_RACA", "001", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:COR_RACA", "INSCRICAO"),
             ("QUILOMBOLA", "002", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:QUILOMBOLA", "INSCRICAO"),
             ("PCD", "003", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PCD", "INSCRICAO"),
-            ("EGRESSO_ESCOLA_PUBLICA", "004", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:EGRESSO_ESCOLA_PUBLICA", "INSCRICAO"),
+            ("EGRESSO_ESCOLA_PUBLICA", "004", DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, "REGRA_DERIVACAO:EGRESSO_ESCOLA_PUBLICA", "INSCRICAO"),
             ("RENDA_PER_CAPITA", "005", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", "INSCRICAO"),
             ("FAIXA_ETARIA", "006", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", "INSCRICAO"),
             ("SEXO", "007", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SEXO", "INSCRICAO"),
@@ -608,6 +623,8 @@ public sealed class FatoCandidatoPersistenceTests
             ("NATURALIDADE_MUNICIPIO", "043", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NATURALIDADE_MUNICIPIO", "INSCRICAO"),
             ("TIPO_ENDERECO", "044", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:TIPO_ENDERECO", "INSCRICAO"),
             ("NOME_COMUNIDADE", "045", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_COMUNIDADE", "INSCRICAO"),
+            ("FORMA_CONCLUSAO_EM", "046", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:FORMA_CONCLUSAO_EM", "INSCRICAO"),
+            ("ONDE_CURSOU_EM", "047", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ONDE_CURSOU_EM", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -638,6 +655,10 @@ public sealed class FatoCandidatoPersistenceTests
             fato.Escopo.Should().Be(deMembroDeGrupo.Contains(codigo) ? EscopoFato.MembroGrupo : EscopoFato.Candidato);
             fato.Dependencias.Should().Equal(dependencias.GetValueOrDefault(codigo) ?? []);
         }
+
+        // O egresso de escola pública chega ao banco com a regra padrão que deriva das duas perguntas.
+        fatos.Single(static f => f.Codigo == "EGRESSO_ESCOLA_PUBLICA").RegrasPadrao.SelectMany(static r => r.FatosCitados).Distinct()
+            .Should().BeEquivalentTo(["FORMA_CONCLUSAO_EM", "ONDE_CURSOU_EM"]);
     }
 
     private static string CodigoUnico() => $"FATO_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";

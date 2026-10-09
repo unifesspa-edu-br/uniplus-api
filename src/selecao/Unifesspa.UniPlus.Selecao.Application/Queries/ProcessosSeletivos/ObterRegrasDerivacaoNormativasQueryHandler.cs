@@ -8,6 +8,7 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -28,16 +29,23 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// modalidade de outro ramo — a resposta é uma lista vazia, e não uma configuração sem regra: o
 /// agregado recusa configuração vazia, e propô-la seria propor o que não se pode gravar.
 /// </para>
+/// <para>
+/// A matriz cita derivados por regra, como o egresso de escola pública, que se deriva da origem
+/// escolar. O que o processo ainda não deriva vem junto, com as regras padrão do catálogo, para a
+/// proposta ser gravável tal como chega.
+/// </para>
 /// </remarks>
 public static class ObterRegrasDerivacaoNormativasQueryHandler
 {
     public static async Task<IReadOnlyList<ConfiguracaoDerivacaoDto>?> Handle(
         ObterRegrasDerivacaoNormativasQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IFatoCandidatoReader fatoCandidatoReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken)
@@ -74,9 +82,23 @@ public static class ObterRegrasDerivacaoNormativasQueryHandler
                 regra.EhAncora ? null : [.. regra.Quando.Clausulas.Select(ComoClausula)]));
         }
 
-        return regras.Count == 0
-            ? []
-            : [new ConfiguracaoDerivacaoDto(RegrasDerivacaoModalidadeLei12711.CodigoFato, regras)];
+        if (regras.Count == 0)
+        {
+            return [];
+        }
+
+        IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao =
+            await fatoCandidatoReader.ListarRegrasPadraoAsync(cancellationToken).ConfigureAwait(false);
+        HashSet<string> jaDerivados = [.. processo.RegrasDerivacao.Select(static r => r.CodigoFato)];
+        List<ConfiguracaoDerivacaoDto> derivados = [.. regras
+            .SelectMany(static r => r.Quando ?? []).SelectMany(static c => c).Select(static c => c.Fato)
+            .Distinct(StringComparer.Ordinal)
+            .Where(fato => !jaDerivados.Contains(fato) && regrasPadrao.ContainsKey(fato))
+            .Order(StringComparer.Ordinal)
+            .Select(fato => new ConfiguracaoDerivacaoDto(fato, [.. regrasPadrao[fato].Select(static (regra, i) =>
+                new RegraDerivacaoDto(i, regra.Contribui, regra.EhAncora ? null : [.. regra.Quando.Clausulas.Select(ComoClausula)]))]))];
+
+        return [.. derivados, new ConfiguracaoDerivacaoDto(RegrasDerivacaoModalidadeLei12711.CodigoFato, regras)];
     }
 
     private static IReadOnlyList<CondicaoDerivacaoDto> ComoClausula(ClausulaDnf clausula) =>

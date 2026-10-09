@@ -86,9 +86,10 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
     /**
      * O caso que o endpoint existe para servir, e que o round-trip de ampla concorrência não
      * alcança: ofertando cota, a matriz traz regras COM condição, e essas condições citam o que
-     * o candidato responde na inscrição — se quer concorrer a cada cota, e se veio de escola
-     * pública. Quem gravar a matriz antes de coletar esses campos é recusado, e é por isso que
-     * o cliente pergunta pela matriz ANTES de gravar os campos do formulário.
+     * o candidato responde na inscrição — se quer concorrer a cada cota — e o egresso de escola
+     * pública, que não é perguntado: deriva de como e onde o candidato cursou o ensino médio. A
+     * proposta traz a derivação do egresso com as regras padrão do catálogo, e quem a gravar antes
+     * de coletar as duas perguntas da origem escolar e as opções de concorrência é recusado.
      */
     [Fact(DisplayName = "A matriz com cota traz as condições, e só é gravável depois de o processo coletar os fatos que ela cita")]
     public async Task Get_ComCota_ExigeOsFatosQueAsRegrasCitam()
@@ -97,7 +98,8 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
         await ctx.OfertarCotaAsync();
 
         using JsonDocument doc = await ctx.ObterNormativasAsync();
-        JsonElement regras = doc.RootElement[0].GetProperty("regras");
+        JsonElement regras = Configuracao(doc, "MODALIDADE").GetProperty("regras");
+        Configuracao(doc, "EGRESSO_ESCOLA_PUBLICA").GetProperty("regras").GetArrayLength().Should().Be(1);
 
         string[] contribuidos = [.. regras.EnumerateArray().Select(r => r.GetProperty("contribui").GetString()!)];
         contribuidos.Should().BeEquivalentTo(["AC", "LB_PPI"]);
@@ -119,7 +121,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
         HttpResponseMessage semColeta = await ctx.PutRegrasAsync(doc.RootElement);
         semColeta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
 
-        await ctx.ColetarAsync(citados);
+        await ctx.ColetarAsync([.. citados.Where(static c => c != "EGRESSO_ESCOLA_PUBLICA"), .. OrigemEscolarColetada]);
 
         HttpResponseMessage comColeta = await ctx.PutRegrasAsync(doc.RootElement);
         comColeta.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -132,7 +134,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
         await ctx.OfertarAsync(AmplaConcorrencia(28), Cota(), AcaoAfirmativaPcd());
 
         using JsonDocument doc = await ctx.ObterNormativasAsync();
-        JsonElement acPcd = doc.RootElement[0].GetProperty("regras").EnumerateArray()
+        JsonElement acPcd = Configuracao(doc, "MODALIDADE").GetProperty("regras").EnumerateArray()
             .Single(r => r.GetProperty("contribui").GetString() == "AC_PCD");
 
         string[] clausulas =
@@ -146,7 +148,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
             "CONCORRER_PCD=true E EGRESSO_ESCOLA_PUBLICA=false",
             "CONCORRER_EP=false E CONCORRER_PCD=true");
 
-        await ctx.ColetarAsync(["CONCORRER_PCD", "EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP", "CONCORRER_PPI", "CONCORRER_RENDA"]);
+        await ctx.ColetarAsync(["CONCORRER_PCD", .. OrigemEscolarColetada, "CONCORRER_EP", "CONCORRER_PPI", "CONCORRER_RENDA"]);
         HttpResponseMessage gravacao = await ctx.PutRegrasAsync(doc.RootElement);
         gravacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -177,6 +179,13 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    /** As duas perguntas da origem escolar, de que o egresso de escola pública deriva. */
+    private static readonly string[] OrigemEscolarColetada = ["FORMA_CONCLUSAO_EM", "ONDE_CURSOU_EM"];
+
+    /** A configuração do fato derivado na proposta normativa. */
+    private static JsonElement Configuracao(JsonDocument proposta, string codigoFato) =>
+        proposta.RootElement.EnumerateArray().Single(c => c.GetProperty("codigoFato").GetString() == codigoFato);
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId)
     {
@@ -239,7 +248,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
                     fatoCodigo = codigo,
                     ordem,
                     rotulo = codigo,
-                    tipoRenderizacao = "BOOLEANO",
+                    tipoRenderizacao = OrigemEscolarColetada.Contains(codigo) ? "SELECAO_UNICA" : "BOOLEANO",
                     obrigatoriedade = "SEMPRE",
                     precondicao = (object?)null,
                 }),

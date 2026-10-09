@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Fonte única do seed do catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0077,
@@ -29,8 +31,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </para>
 /// <para>
 /// <see cref="OrigemFato"/> (ADR-0116): <c>FAIXA_ETARIA</c> e <c>RENDA_PER_CAPITA</c>
-/// (computados de atributo do candidato), <c>MODALIDADE</c> (derivada das regras
-/// congeladas do processo) e <c>MODALIDADE_CONVOCACAO</c> (resultado da classificação) são
+/// (computados de atributo do candidato), <c>MODALIDADE</c> e <c>EGRESSO_ESCOLA_PUBLICA</c>
+/// (derivados das regras congeladas do processo) e <c>MODALIDADE_CONVOCACAO</c> (resultado da classificação) são
 /// <see cref="OrigemFato.Derivado"/>; todos os demais são
 /// <see cref="OrigemFato.Declarado"/> (resposta/seleção direta do candidato), inclusive
 /// os cinco opt-ins <c>CONCORRER_*</c> — que são seleção direta, ainda que expressem
@@ -104,10 +106,12 @@ public static class FatoCandidatoSeed
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:PCD",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
-        new(SeedId(4), "EGRESSO_ESCOLA_PUBLICA", "Egresso de escola pública", null,
-            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
-            PontoResolucaoInscricao, "CAMPO_FORMULARIO:EGRESSO_ESCOLA_PUBLICA",
-            ClassificacaoProtecaoDado.Pessoal, FinalidadeReservaDeVagas),
+        // O egresso de escola pública é derivado das duas perguntas da origem escolar, com a regra das
+        // cotas da Lei nº 12.711/2012 (UNI-REQ-0148) como regra padrão, que o processo copia.
+        new(SeedId(4), OrigemEscolar.FatoEgresso, "Egresso de escola pública", null,
+            DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeReservaDeVagas, RegrasPadrao: OrigemEscolar.RegrasDoEgresso),
 
         new(SeedId(5), "RENDA_PER_CAPITA", "Renda familiar per capita", null,
             DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null,
@@ -269,6 +273,15 @@ public static class FatoCandidatoSeed
         DadoBasico(44, "TIPO_ENDERECO", "Tipo de localidade", DominioFato.Categorico, FinalidadeResidencia, fonte: FonteValoresFato.Global),
         DadoBasico(45, "NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", DominioFato.Texto, FinalidadeResidencia,
             formato: FormatoTexto.Livre),
+
+        // A origem escolar em duas perguntas (UNI-REQ-0148): vocabulários normativos, de que o egresso
+        // de escola pública deriva.
+        DadoBasico(46, OrigemEscolar.FatoFormaDeConclusao, "Forma de conclusão do ensino médio", DominioFato.Categorico,
+            FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global,
+            descricao: "Como o candidato concluiu o ensino médio: curso regular, Educação de Jovens e Adultos, ENCCEJA, exame de proficiência ou ENEM."),
+        DadoBasico(47, OrigemEscolar.FatoOndeCursou, "Onde cursou o ensino médio", DominioFato.Categorico,
+            FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global,
+            descricao: "Em que rede de ensino o candidato cursou o ensino médio, ou se o concluiu por certificação sem frequentá-lo."),
     ];
 
     /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>
@@ -280,8 +293,9 @@ public static class FatoCandidatoSeed
         string finalidade,
         FonteValoresFato? fonte = null,
         FormatoTexto? formato = null,
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal) =>
-        new(SeedId(n), codigo, nome, null, dominio, OrigemFato.Declarado, CardinalidadeFato.Escalar, fonte,
+        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal,
+        string? descricao = null) =>
+        new(SeedId(n), codigo, nome, descricao, dominio, OrigemFato.Declarado, CardinalidadeFato.Escalar, fonte,
             PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{codigo}", classificacao, finalidade, Formato: formato);
 }
 
@@ -305,4 +319,5 @@ public sealed record FatoCandidatoSeedItem(
     ClassificacaoProtecaoDado ClassificacaoProtecao,
     string FinalidadeTratamento,
     EscopoFato Escopo = EscopoFato.Candidato,
-    FormatoTexto? Formato = null);
+    FormatoTexto? Formato = null,
+    IReadOnlyList<RegraDerivacao>? RegrasPadrao = null);
