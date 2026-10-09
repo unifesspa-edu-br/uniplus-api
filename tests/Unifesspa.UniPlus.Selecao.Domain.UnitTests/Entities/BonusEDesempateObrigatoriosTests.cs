@@ -1,7 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
+using System.Text;
+using System.Text.Json.Nodes;
+
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -64,6 +68,42 @@ public sealed class BonusEDesempateObrigatoriosTests
 
         processo.BonusRegional.Should().BeNull();
         processo.AplicaBonusRegional.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Processo publicado antes da exigência declara o bônus dentro da sessão de retificação, e só então fecha")]
+    public void PublicadoSemDeclaracao_DeclaraNaSessaoEFecha()
+    {
+        string hash = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
+        byte[] bytes = Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
+        DateTimeOffset agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        VersaoConfiguracao versao = processo.Publicar(
+            ProcessoConformeFactory.Dados(), bytes, "1.1", "canonical-json/sha256@v1", hash, "user-sub-1",
+            new RelogioFixo(agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Value!;
+        // O estado de quem foi publicado antes de a declaração existir: a coluna volta nula.
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.AplicaBonusRegional))!.SetValue(processo, null);
+        processo.AbrirRetificacao(
+            "Declara o bônus", versao, processo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo),
+            "user-sub-1", agora).IsSuccess.Should().BeTrue("abrir a sessão não exige a declaração");
+
+        Result<VersaoConfiguracao> semDeclarar = FecharSessao(processo, versao, bytes, hash, agora);
+        semDeclarar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
+
+        processo.DefinirBonusRegional(
+            aplica: false, bonus: null, PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!])).IsSuccess.Should().BeTrue();
+        FecharSessao(processo, versao, bytes, hash, agora).IsSuccess.Should().BeTrue();
+    }
+
+    private static Result<VersaoConfiguracao> FecharSessao(
+        ProcessoSeletivo processo, VersaoConfiguracao versao, byte[] bytes, string hash, DateTimeOffset agora) =>
+        processo.FecharRetificacao(
+            ProcessoConformeFactory.Dados(), versao, bytes, "1.1", "canonical-json/sha256@v1", hash, "user-sub-1",
+            PrecondicaoIfMatch.Curinga, new RelogioFixo(agora.AddMinutes(1)),
+            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+
+    private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => instante;
     }
 
     [Fact(DisplayName = "Bônus gravado antes da declaração (configuração sem declaração) volta como por declarar")]
