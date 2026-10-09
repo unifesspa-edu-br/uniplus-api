@@ -123,6 +123,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
@@ -201,6 +202,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("cronograma_inscricao_propria_sem_fase_de_coleta");
@@ -228,6 +230,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("cronograma_fase_que_coleta_inscricao_sem_janela");
@@ -1324,6 +1327,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirTaxaInscricao(null!, PrecondicaoIfMatch.Curinga);
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         string[] vermelhos = [.. processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
@@ -1794,12 +1798,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void FatoDosMunicipiosDoBonusSemBonus_RecusaAteHaverBonus()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
 
-        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();
     }
@@ -1808,7 +1812,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void DefinirBonusRegional_MunicipioCitadoPorExigencia_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
@@ -1821,9 +1825,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
-        processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
     }
 
@@ -1831,7 +1835,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void MunicipioCitadoForaDaArea_ContornandoPelaColeta_PendenciaDePublicacao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
@@ -1845,7 +1849,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
-        processo.DefinirBonusRegional(Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");

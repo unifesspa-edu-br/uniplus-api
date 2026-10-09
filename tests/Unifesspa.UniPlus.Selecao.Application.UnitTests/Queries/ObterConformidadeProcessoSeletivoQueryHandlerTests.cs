@@ -95,6 +95,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -168,6 +169,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente);
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();

@@ -27,8 +27,11 @@ internal static class ProcessoConformeFactory
     /// <param name="declararTaxa">
     /// Falso deixa a taxa por declarar, único jeito de exercitar a recusa correspondente.
     /// </param>
+    /// <param name="declararBonus">Falso deixa o bônus regional por declarar.</param>
+    /// <param name="comDesempate">Falso deixa a inscrição própria sem critério de desempate.</param>
     /// <param name="fase">Fase do cronograma; a omissão usa a mínima e conforme, sem recurso.</param>
-    internal static ProcessoSeletivo Criar(bool declararTaxa = true, FaseCronograma? fase = null)
+    internal static ProcessoSeletivo Criar(
+        bool declararTaxa = true, FaseCronograma? fase = null, bool declararBonus = true, bool comDesempate = true)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Gate", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -85,6 +88,8 @@ internal static class ProcessoConformeFactory
                 ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
                 PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
+
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo, bonus: declararBonus, desempate: comDesempate);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;

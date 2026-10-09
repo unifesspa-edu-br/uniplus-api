@@ -365,8 +365,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente os critérios de desempate do processo (Story
-    /// #774). Dimensão opcional (0..*) — lista vazia
-    /// remove todos os critérios.
+    /// #774). Lista vazia remove todos os critérios: o rascunho aceita, mas a publicação de
+    /// processo com inscrição própria exige ao menos um (resultado importado dispensa).
     /// </summary>
     [HttpPut("{id:guid}/criterios-desempate")]
     [RequiresIdempotencyKey]
@@ -392,9 +392,9 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Define (ou remove) o bônus regional do processo (RN05, Story #774).
-    /// <c>RegraCodigo</c> nulo remove o bônus — a ausência já é o toggle "sem
-    /// bônus" (INV-B5).
+    /// Declara se o processo aplica o bônus regional (RN05, Story #774). <c>Aplica</c> falso
+    /// dispensa a configuração; verdadeiro exige <c>RegraCodigo</c> e os demais campos do bônus.
+    /// A declaração é obrigatória para publicar.
     /// </summary>
     [HttpPut("{id:guid}/bonus-regional")]
     [RequiresIdempotencyKey]
@@ -417,7 +417,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirBonusRegionalCommand(id, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.BaseLegalBonusRegionalId, precondicao),
+            new DefinirBonusRegionalCommand(id, request.Aplica, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.BaseLegalBonusRegionalId, precondicao),
             cancellationToken);
         return ResponderMutacao(resultado);
     }

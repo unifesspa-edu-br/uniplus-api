@@ -279,6 +279,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
     }

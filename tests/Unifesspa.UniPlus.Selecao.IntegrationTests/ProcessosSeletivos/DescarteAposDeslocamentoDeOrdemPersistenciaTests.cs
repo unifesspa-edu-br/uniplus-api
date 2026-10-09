@@ -381,6 +381,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
     }
@@ -483,6 +484,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.ConfiguracaoTaxaInscricao)
+            .Include(p => p.CriteriosDesempate)
             .Include(p => p.Rascunho)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == processoId);

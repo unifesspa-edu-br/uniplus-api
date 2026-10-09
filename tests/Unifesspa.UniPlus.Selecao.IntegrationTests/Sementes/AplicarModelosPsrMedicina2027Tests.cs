@@ -78,7 +78,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)).Value!, 1.20m, null,
             Guid.CreateVersion7(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]).Value!;
-        Result definido = processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente);
+        Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
 

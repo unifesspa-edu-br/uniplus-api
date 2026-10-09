@@ -30,9 +30,10 @@ public sealed record ItemConformidadeDto(string Codigo, string Dimensao, string 
 /// (<c>GET /conformidade-legal</c>), documento confirmado, tipo de ato e outras leituras
 /// request-specific que só o comando de publicação avalia.
 /// <para>
-/// Bônus regional (0..1) e critérios de desempate (0..*) são deliberadamente opcionais na
-/// modelagem da classificação e NÃO entram neste checklist — a ausência de bônus/desempate é um estado
-/// válido (RN05: ausência de bônus = sem bônus), não uma pendência. Etapa também deixou de ser
+/// O bônus regional e os critérios de desempate entram neste checklist: o processo declara se
+/// aplica o bônus (a ausência da declaração é pendência; a da configuração só significa "sem
+/// bônus" quando a declaração é falsa), e o desempate é obrigatório quando a inscrição é feita no
+/// sistema (com resultado importado a lista já vem classificada). Etapa também deixou de ser
 /// item incondicional (Story #851 §3.5): um processo sem prova (SiSU, <c>CLASSIFICACAO-IMPORTADA</c>)
 /// publica sem etapa quando o cronograma é coerente.
 /// </para>

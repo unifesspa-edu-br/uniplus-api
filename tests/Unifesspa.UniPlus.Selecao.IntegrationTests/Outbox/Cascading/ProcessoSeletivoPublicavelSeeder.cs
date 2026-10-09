@@ -129,6 +129,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         Result taxaDefinirResult = processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente);
         taxaDefinirResult.IsSuccess.Should().BeTrue(taxaDefinirResult.Error?.Message);
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         complementar?.Invoke(processo);
 

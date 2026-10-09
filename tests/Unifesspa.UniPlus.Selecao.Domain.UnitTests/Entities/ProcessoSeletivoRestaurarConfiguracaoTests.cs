@@ -123,6 +123,22 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
     }
 
+    [Fact(DisplayName = "Restaurar deriva a declaração do bônus da versão publicada: com bônus, aplica; sem, não aplica")]
+    public void Restaurar_DerivaADeclaracaoDoBonus()
+    {
+        ProcessoSeletivo semBonus = ProcessoPublicado(TipoProcesso.PSIQ);
+        semBonus.RestaurarConfiguracaoCongelada(VersaoDo(semBonus), Grafo()).IsSuccess.Should().BeTrue();
+        semBonus.AplicaBonusRegional.Should().BeFalse();
+
+        ProcessoSeletivo comBonus = ProcessoPublicado(TipoProcesso.PSIQ);
+        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
+            Regra(RegraBonusCodigo.Multiplicativo, 'a'), 1.20m, null, Guid.NewGuid(), "PORTARIA",
+            "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
+        comBonus.RestaurarConfiguracaoCongelada(VersaoDo(comBonus), GrafoComBonus(bonus)).IsSuccess.Should().BeTrue();
+        comBonus.AplicaBonusRegional.Should().BeTrue();
+        comBonus.BonusRegional.Should().NotBeNull();
+    }
+
     [Fact(DisplayName = "Restaurar etapa de nota do ENEM com parecer e recurso por ciência é aceito, como na gravação")]
     public void Restaurar_EtapaNotaEnemComParecerERecursoPorCiencia_Aceita()
     {
@@ -1231,6 +1247,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente);
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
     }
@@ -1266,6 +1283,18 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         atoCriadorHash: new string('a', 64),
         atorUsuarioSub: "testes",
         instante: DateTimeOffset.UnixEpoch);
+
+    private static GrafoConfiguracao GrafoComBonus(ConfiguracaoBonusRegional bonus) => new(
+        etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1)],
+        ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+        distribuicaoVagas: [Distribuicao()],
+        bonusRegional: bonus,
+        criteriosDesempate: [],
+        classificacao: Classificacao([]),
+        cronogramaFases: [FaseConforme()],
+        documentosExigidos: [],
+        nosExigencia: [],
+        referenciaTemporalFatos: null);
 
     private static GrafoConfiguracao Grafo(
         IReadOnlyList<EtapaProcesso>? etapas = null,

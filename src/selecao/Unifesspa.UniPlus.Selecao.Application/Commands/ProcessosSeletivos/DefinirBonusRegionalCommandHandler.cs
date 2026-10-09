@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Errors;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
@@ -13,8 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirBonusRegionalCommand"/> (RN05, Story #774):
-/// <c>RegraCodigo</c> nulo remove o bônus (toggle por ausência, INV-B5); caso
-/// contrário resolve a regra <c>BONUS-MULTIPLICATIVO</c> no
+/// <c>Aplica</c> falso declara que o processo não aplica o bônus; verdadeiro resolve a regra <c>BONUS-MULTIPLICATIVO</c> no
 /// <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772) e a Base Legal
 /// referenciada (<see cref="IBaseLegalBonusRegionalReader"/>, Configuração, Story #1465),
 /// cujo snapshot é congelado em <see cref="ConfiguracaoBonusRegional"/> (Story #1466).
@@ -77,16 +77,30 @@ public static class DefinirBonusRegionalCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
-        if (command.RegraCodigo is null)
+        if (!command.Aplica)
         {
-            Result removerResult = processo.DefinirBonusRegional(null, command.Precondicao);
-            if (removerResult.IsFailure)
+            if (command.RegraCodigo is not null)
             {
-                return Result<MutacaoAceita>.Failure(removerResult.Error!);
+                return Result<MutacaoAceita>.Failure(new DomainError(
+                    ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
+                    "O processo que não aplica o bônus regional não pode ter a configuração do bônus."));
+            }
+
+            Result naoAplicaResult = processo.DefinirBonusRegional(aplica: false, bonus: null, command.Precondicao);
+            if (naoAplicaResult.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(naoAplicaResult.Error!);
             }
 
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
             return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        }
+
+        if (command.RegraCodigo is null)
+        {
+            return Result<MutacaoAceita>.Failure(new DomainError(
+                ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
+                "O processo que aplica o bônus regional precisa da configuração do bônus."));
         }
 
         if (command.RegraVersao is null || command.Fator is null || command.BaseLegalBonusRegionalId is null)
@@ -146,7 +160,7 @@ public static class DefinirBonusRegionalCommandHandler
             return Result<MutacaoAceita>.ValidationFailure(bonusResult.Errors);
         }
 
-        Result definirResult = processo.DefinirBonusRegional(bonusResult.Value!, command.Precondicao);
+        Result definirResult = processo.DefinirBonusRegional(aplica: true, bonusResult.Value!, command.Precondicao);
         if (definirResult.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(definirResult.Error!);

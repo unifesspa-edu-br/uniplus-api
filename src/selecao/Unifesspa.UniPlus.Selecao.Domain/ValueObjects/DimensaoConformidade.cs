@@ -28,6 +28,8 @@ public static class DimensaoConformidade
     public const string ExigenciasDocumentais = "exigencias_documentais";
     public const string CascataRemanejamento = "cascata_remanejamento";
     public const string ColetaDeFatos = "coleta_de_fatos";
+    public const string BonusRegional = "bonus_regional";
+    public const string Desempate = "desempate";
 
     /// <summary>
     /// Os dados do processo que regem a contagem dos prazos de recurso — a localidade cujo

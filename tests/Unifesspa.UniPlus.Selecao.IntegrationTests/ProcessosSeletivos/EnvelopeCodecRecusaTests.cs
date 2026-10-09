@@ -1003,6 +1003,7 @@ public sealed class EnvelopeCodecRecusaTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
         DocumentoExigido rg = DocumentoExigido.Criar(

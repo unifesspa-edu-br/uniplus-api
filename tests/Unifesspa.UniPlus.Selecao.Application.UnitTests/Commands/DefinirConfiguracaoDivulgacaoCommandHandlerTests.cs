@@ -190,6 +190,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         DadosEdital dados = DadosEdital.Criar(
             numero: "001/2026",

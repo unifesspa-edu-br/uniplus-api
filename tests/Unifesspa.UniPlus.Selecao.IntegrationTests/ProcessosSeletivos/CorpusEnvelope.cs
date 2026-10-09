@@ -310,7 +310,7 @@ internal static class CorpusEnvelope
 
         processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional(("HUMANISTICA_I", "Humanística I"))], permutar), FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirBonusRegional(ConfiguracaoBonusRegional.Criar(
+        processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
             fator: 1.2000m,
             teto: 95.5000m,
@@ -452,6 +452,7 @@ internal static class CorpusEnvelope
                 valor: 150.00m,
                 fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar)).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
     }

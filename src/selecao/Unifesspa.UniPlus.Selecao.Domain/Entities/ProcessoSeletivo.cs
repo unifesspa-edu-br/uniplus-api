@@ -306,13 +306,23 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<ConfiguracaoDistribuicaoVagas> _distribuicaoVagas = [];
     public IReadOnlyCollection<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas => _distribuicaoVagas.AsReadOnly();
 
-    /// <summary>Bônus regional (RN05) — ausência = sem bônus (toggle por presença, INV-B5).</summary>
+    /// <summary>
+    /// Configuração do bônus regional (RN05); só existe quando o processo declara que o aplica
+    /// (<see cref="AplicaBonusRegional"/>).
+    /// </summary>
     public ConfiguracaoBonusRegional? BonusRegional { get; private set; }
 
     /// <summary>
+    /// Declaração explícita de que o processo aplica ou não o bônus regional, como
+    /// <see cref="ConfiguracaoTaxaInscricao"/> faz com a cobrança. <see langword="null"/> é "ainda
+    /// não declarado" e BLOQUEIA a publicação: a ausência da configuração deixou de significar "sem
+    /// bônus". Verdadeiro exige <see cref="BonusRegional"/>; falso a dispensa.
+    /// </summary>
+    public bool? AplicaBonusRegional { get; private set; }
+
+    /// <summary>
     /// A cascata de remanejamento das cotas reservadas (Story #575, RN-CASCATA-1..5) —
-    /// ausência = nenhuma cascata configurada (toggle por presença, mesmo padrão de
-    /// <see cref="BonusRegional"/>). Uma só por processo, nunca por oferta de curso
+    /// ausência = nenhuma cascata configurada (toggle por presença). Uma só por processo, nunca por oferta de curso
     /// (§2.2 da story) — a cobertura por oferta é validada em <see cref="PendenciaDaCascata"/>.
     /// </summary>
     public ConfiguracaoCascataRemanejamento? Cascata { get; private set; }
@@ -326,16 +336,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Divulgação pública do certame (UNI-REQ-0050, issue #563) — ausência já é o default
     /// minimizado (só o número de inscrição), não uma escolha administrativa pendente
-    /// (mesmo padrão de toggle por presença de <see cref="BonusRegional"/>).
+    /// (toggle por presença).
     /// </summary>
     public ConfiguracaoDivulgacao? ConfiguracaoDivulgacao { get; private set; }
 
     /// <summary>
     /// Taxa de inscrição e isenção (issue #1112) — <see langword="null"/> significa "ainda não
     /// declarado" e BLOQUEIA a publicação (CA-01, ver <see cref="ItensEstruturaisDeConformidade"/>).
-    /// Diferente de <see cref="BonusRegional"/>/<see cref="ConfiguracaoDivulgacao"/>, ausência
-    /// aqui não é um estado válido de publicação — é uma dimensão obrigatória ainda não
-    /// preenchida.
+    /// Como a declaração do bônus (<see cref="AplicaBonusRegional"/>), e diferente de
+    /// <see cref="ConfiguracaoDivulgacao"/>, ausência aqui não é um estado válido de publicação —
+    /// é uma dimensão obrigatória ainda não preenchida.
     /// </summary>
     public ConfiguracaoTaxaInscricao? ConfiguracaoTaxaInscricao { get; private set; }
 
@@ -670,15 +680,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Define (ou remove) o bônus regional do processo (RN05). Passar
-    /// <see langword="null"/> remove o bônus — a ausência da entidade já é o
-    /// toggle "sem bônus" (INV-B5); não existe um "BONUS-NENHUM".
+    /// Declara se o processo aplica o bônus regional (RN05). Aplicar exige a configuração, e não
+    /// aplicar a recusa: a declaração e a configuração não podem divergir.
     /// </summary>
-    public Result DefinirBonusRegional(ConfiguracaoBonusRegional? bonus, PrecondicaoIfMatch precondicao)
+    public Result DefinirBonusRegional(bool aplica, ConfiguracaoBonusRegional? bonus, PrecondicaoIfMatch precondicao)
     {
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
+        }
+
+        if (aplica && bonus is null)
+        {
+            return Result.Failure(new DomainError(
+                ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
+                "O processo que aplica o bônus regional precisa da configuração do bônus."));
+        }
+
+        if (!aplica && bonus is not null)
+        {
+            return Result.Failure(new DomainError(
+                ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
+                "O processo que não aplica o bônus regional não pode ter a configuração do bônus."));
         }
 
         // Os campos com os municípios do bônus como opções referenciam o município pelo código
@@ -694,15 +717,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Existe condição citando um município que deixaria a área do bônus regional — ajuste ou remova a condição antes de redefinir o bônus."));
         }
 
-        if (bonus is null)
-        {
-            BonusRegional = null;
-            Rascunho?.IncrementarRevisao();
-            return Result.Success();
-        }
-
-        bonus.VincularProcesso(Id);
+        bonus?.VincularProcesso(Id);
         BonusRegional = bonus;
+        AplicaBonusRegional = aplica;
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
@@ -735,8 +752,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo (issue
     /// #1112). Passar <see langword="null"/> remove a declaração — o processo volta a "ainda
-    /// não declarado" (CA-01), que BLOQUEIA a publicação, diferente do toggle de
-    /// <see cref="DefinirBonusRegional"/> (onde ausência é estado publicável).
+    /// não declarado" (CA-01), que BLOQUEIA a publicação, como a declaração do bônus em
+    /// <see cref="DefinirBonusRegional"/> e diferente da divulgação (onde ausência é estado
+    /// publicável).
     /// </summary>
     public Result DefinirTaxaInscricao(ConfiguracaoTaxaInscricao? configuracao, PrecondicaoIfMatch precondicao)
     {
@@ -761,7 +779,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Define (ou remove) a cascata de remanejamento do processo (Story #575).
     /// Passar <see langword="null"/> remove a cascata — a ausência da entidade já
-    /// é o toggle "sem cascata configurada", mesmo padrão de <see cref="DefinirBonusRegional"/>.
+    /// é o toggle "sem cascata configurada".
     /// A forma (RN-CASCATA-4) e o vínculo com a regra versionada (RN-CASCATA-5) já
     /// foram validados antes de chegar aqui — pela factory de <see cref="ConfiguracaoCascataRemanejamento"/>
     /// e pelo handler da Application, respectivamente; este método só aplica a mutação
@@ -819,8 +837,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Substitui integralmente os critérios de desempate do processo (Story
-    /// #774). Dimensão opcional (0..*): lista vazia
-    /// remove todos os critérios. INV-B6: todo <c>etapa_ref</c> referenciado
+    /// #774). Lista vazia remove todos os critérios: o rascunho aceita, mas a publicação de
+    /// processo com inscrição própria exige ao menos um (resultado importado dispensa). INV-B6: todo <c>etapa_ref</c> referenciado
     /// por um critério <c>DESEMPATE-MAIOR-NOTA-ETAPA</c> precisa existir entre
     /// as etapas deste processo — senão a config congelaria um desempate
     /// inexecutável.
@@ -3037,6 +3055,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return Result.Success();
     }
 
+    /// <summary>A declaração do bônus existe e concorda com a configuração.</summary>
+    private bool BonusRegionalDeclarado() => AplicaBonusRegional switch
+    {
+        true => BonusRegional is not null,
+        false => BonusRegional is null,
+        null => false,
+    };
+
     /// <summary>
     /// Recusa gerar versão sem identificador legível: o certame publicado ficaria sem endereço
     /// legível e sem chave no acervo público.
@@ -3174,9 +3200,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Os itens do PRIMEIRO gate estrutural — <see cref="PendenciaDeConformidade"/> (Story #758
     /// CA-07) — as dimensões estruturalmente OBRIGATÓRIAS do agregado: Oferta de atendimento
     /// especializado (1), Distribuição de vagas (1..*), Classificação (1) e Cronograma de fases
-    /// (1..*, Story #851). Bônus regional (0..1) e critérios de desempate (0..*) são
-    /// deliberadamente opcionais e NÃO entram — a ausência é um estado válido (RN05: ausência de
-    /// bônus = sem bônus), não uma pendência.
+    /// (1..*, Story #851), mais duas declarações obrigatórias: o bônus regional, que o processo
+    /// declara aplicar ou não (a ausência da declaração é pendência, e a ausência da configuração só
+    /// significa "sem bônus" quando a declaração é falsa), e os critérios de desempate, obrigatórios
+    /// quando a inscrição é feita no sistema (com resultado importado a lista já vem classificada).
     /// </summary>
     /// <remarks>
     /// <b>"Etapas" deixou de ser item incondicional (Story #851 §3.5).</b> Um processo
@@ -3210,8 +3237,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             new ItemConformidade("classificacao_ausente", DimensaoConformidade.Classificacao, "Classificação", Classificacao is not null),
             new ItemConformidade("cronograma_fases_ausente", DimensaoConformidade.Cronograma, "Cronograma de fases", _cronogramaFases.Count > 0),
             // Issue #1112: publicar sem declarar cobrança de taxa é recusado — a ausência nunca
-            // é interpretada como "não cobra" (CA-01). Diferente de BonusRegional/Divulgacao,
-            // aqui ausência não é estado publicável.
+            // é interpretada como "não cobra" (CA-01). Diferente de ConfiguracaoDivulgacao, aqui
+            // ausência não é estado publicável.
             new ItemConformidade("taxa_inscricao_nao_declarada", DimensaoConformidade.TaxaInscricao, "Taxa de inscrição e isenção", ConfiguracaoTaxaInscricao is not null),
             // Issue #1310: processo que cobra reconhece ao menos um fundamento de isenção — a
             // possibilidade de pedir isenção se materializa nos fundamentos declarados. A fábrica
@@ -3232,6 +3259,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Base legal das exigências documentais",
                 Services.ValidadorBaseLegalExigencias.TodasResolvidas(_documentosExigidos)
                     && GruposComConsequenciaTemBaseLegalResolvida()),
+            // O processo declara se aplica o bônus regional; a ausência da configuração não
+            // significa mais "sem bônus". Declaração e configuração também precisam concordar:
+            // o EF hidrata a linha sem passar por DefinirBonusRegional.
+            new ItemConformidade("bonus_regional_nao_declarado", DimensaoConformidade.BonusRegional, "Bônus regional: aplica ou não aplica", BonusRegionalDeclarado()),
+            // Com inscrição própria o desempate é obrigatório; com resultado importado a lista
+            // já vem classificada e o desempate não se aplica.
+            new ItemConformidade("criterios_desempate_ausentes", DimensaoConformidade.Desempate, "Critérios de desempate (inscrição própria)", OrigemCandidatos != OrigemCandidatos.InscricaoPropria || _criteriosDesempate.Count > 0),
         ];
 
         if (Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada })
@@ -4787,8 +4821,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Duas checagens:
     /// <list type="bullet">
     /// <item><c>REMOVE_VANTAGEM</c> exige vantagem viva no processo — hoje a única
-    /// vantagem modelada é <see cref="BonusRegional"/> (RN05, toggle por presença:
-    /// ausência da entidade já significa sem bônus).</item>
+    /// vantagem modelada é <see cref="BonusRegional"/> (RN05; só existe quando
+    /// <see cref="AplicaBonusRegional"/> é verdadeiro).</item>
     /// <item>Para cada modalidade que a exigência alcança pelas condições sobre os fatos cujos
     /// valores são modalidades (os mesmos do gate real, <see cref="Services.AvaliadorConformidadeLegal"/>),
     /// quando essa modalidade declara <c>AcaoQuandoIndeferido</c>, a consequência precisa
@@ -6650,6 +6684,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         grafo.BonusRegional?.VincularProcesso(Id);
         BonusRegional = grafo.BonusRegional;
+        // Versão publicada só existe se passou pelo gate: ter ou não o bônus era uma declaração.
+        AplicaBonusRegional = grafo.BonusRegional is not null;
 
         grafo.CascataRemanejamento?.VincularProcesso(Id);
         Cascata = grafo.CascataRemanejamento;

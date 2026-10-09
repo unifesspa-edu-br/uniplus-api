@@ -65,7 +65,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.20m, null, baseLegalId,
             "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]).Value!;
-        processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -119,7 +119,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirBonusRegional(
-            ConfiguracaoBonusRegional.Criar(
+            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
                 Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, Guid.CreateVersion7(),
                 "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
                 [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
@@ -144,7 +144,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             desempateResult.IsSuccess.Should().BeTrue();
 
             Result bonusResult = carregado.DefinirBonusRegional(
-                ConfiguracaoBonusRegional.Criar(
+                aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
                     Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, Guid.CreateVersion7(),
                     "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
                     [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);

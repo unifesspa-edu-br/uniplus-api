@@ -115,6 +115,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;

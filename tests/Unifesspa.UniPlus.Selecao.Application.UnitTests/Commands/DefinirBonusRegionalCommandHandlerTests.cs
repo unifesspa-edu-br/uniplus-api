@@ -61,7 +61,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirBonusRegionalCommand command = new(Guid.CreateVersion7(), null, null, null, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(Guid.CreateVersion7(), false, null, null, null, null, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
@@ -69,23 +69,52 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Handle com RegraCodigo nulo remove o bônus e persiste (toggle por ausência, RN05)")]
-    public async Task Handle_RegraCodigoNulo_RemoveBonus()
+    [Fact(DisplayName = "Handle declarando que não aplica o bônus remove a configuração, declara e persiste (RN05)")]
+    public async Task Handle_NaoAplica_RemoveBonusEDeclara()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirBonusRegional(ConfiguracaoBonusRegional.Criar(
+        processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
             Domain.ValueObjects.ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
             1.20m, null, BaseLegalId, "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirBonusRegionalCommand command = new(processo.Id, null, null, null, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, false, null, null, null, null, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
         result.IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().BeNull();
+        processo.AplicaBonusRegional.Should().BeFalse();
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle aplicando o bônus sem informar a configuração recusa com erro nomeado, e não persiste")]
+    public async Task Handle_AplicaSemConfiguracao_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result<MutacaoAceita> result = await Handle(
+            new DefinirBonusRegionalCommand(processo.Id, true, null, null, null, null, null, PrecondicaoIfMatch.Ausente), mocks);
+
+        result.Error!.Code.Should().Be(Domain.Errors.ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao);
+        processo.AplicaBonusRegional.Should().BeNull();
+        await mocks.UnitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
+    [Fact(DisplayName = "Handle declarando que não aplica, mas enviando a configuração, recusa com erro nomeado")]
+    public async Task Handle_NaoAplicaComConfiguracao_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result<MutacaoAceita> result = await Handle(
+            new DefinirBonusRegionalCommand(processo.Id, false, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente), mocks);
+
+        result.Error!.Code.Should().Be(Domain.Errors.ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao);
+        processo.AplicaBonusRegional.Should().BeNull();
+        await mocks.UnitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 
     [Fact(DisplayName = "Handle com regra e base legal válidas define o bônus, congela o snapshot e persiste")]
@@ -96,7 +125,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         mocks.RegraCatalogoReader.ObterAsync(RegraBonusCodigo.Multiplicativo, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(RegraBonusCodigo.Multiplicativo, TipoRegra.RegraBonus));
 
-        DefinirBonusRegionalCommand command = new(processo.Id, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, true, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
@@ -115,7 +144,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        DefinirBonusRegionalCommand command = new(processo.Id, RegraBonusCodigo.Multiplicativo, "v1", null, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, true, RegraBonusCodigo.Multiplicativo, "v1", null, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
@@ -129,7 +158,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        DefinirBonusRegionalCommand command = new(processo.Id, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, true, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
@@ -146,7 +175,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((RegraCatalogo?)null);
 
-        DefinirBonusRegionalCommand command = new(processo.Id, "INEXISTENTE", "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, true, "INEXISTENTE", "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
@@ -162,7 +191,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         mocks.RegraCatalogoReader.ObterAsync(RegraBonusCodigo.Multiplicativo, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(RegraBonusCodigo.Multiplicativo, TipoRegra.RegraCalculo));
 
-        DefinirBonusRegionalCommand command = new(processo.Id, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, true, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
@@ -181,7 +210,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         mocks.BaseLegalBonusRegionalReader.ObterPorIdAsync(idInexistente, Arg.Any<CancellationToken>())
             .Returns((BaseLegalBonusRegionalView?)null);
 
-        DefinirBonusRegionalCommand command = new(processo.Id, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, idInexistente, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, true, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, idInexistente, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
@@ -271,6 +300,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         Domain.ValueObjects.DadosEdital dados = Domain.ValueObjects.DadosEdital.Criar(
             numero: "001/2026",
@@ -295,7 +325,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         mocks.RegraCatalogoReader.ObterAsync(RegraBonusCodigo.Multiplicativo, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(RegraBonusCodigo.Multiplicativo, TipoRegra.RegraBonus));
 
-        DefinirBonusRegionalCommand command = new(processo.Id, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, true, RegraBonusCodigo.Multiplicativo, "v1", 1.20m, null, BaseLegalId, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 
@@ -311,7 +341,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcessoPublicado();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirBonusRegionalCommand command = new(processo.Id, null, null, null, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirBonusRegionalCommand command = new(processo.Id, false, null, null, null, null, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await Handle(command, mocks);
 

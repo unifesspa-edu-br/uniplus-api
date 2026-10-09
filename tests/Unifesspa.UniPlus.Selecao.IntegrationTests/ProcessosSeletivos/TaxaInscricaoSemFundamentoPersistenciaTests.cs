@@ -165,6 +165,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
             fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]);
         taxa.IsSuccess.Should().BeTrue(taxa.Error?.Message);
         processo.DefinirTaxaInscricao(taxa.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
@@ -202,6 +203,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
             .Include(p => p.OfertaAtendimento)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.ConfiguracaoTaxaInscricao)
+            .Include(p => p.CriteriosDesempate)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == processoId);
 

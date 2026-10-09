@@ -21,8 +21,8 @@ public sealed class DefinirBonusRegionalCommandValidator : AbstractValidator<Def
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
 
-        // RegraCodigo nulo = remover o bônus (toggle por ausência, INV-B5) —
-        // as demais regras só se aplicam quando um bônus está sendo definido.
+        // As demais regras só se aplicam quando a configuração do bônus é informada; a
+        // coerência entre Aplica e a configuração é do handler e do agregado.
         RuleFor(x => x.RegraVersao)
             .NotEmpty()
             .When(x => x.RegraCodigo is not null)

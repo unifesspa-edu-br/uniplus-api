@@ -276,6 +276,8 @@ public sealed class EnvelopeFechadoE2ETests
                 "taxa_inscricao_nao_declarada",
                 "taxa_inscricao_sem_fundamento_de_isencao",
                 "exigencias_base_legal_nao_resolvida",
+                "bonus_regional_nao_declarado",
+                "criterios_desempate_ausentes",
                 "classificacao_divisor_media_invalido",
                 "classificacao_resolucao_peso_area_enem_ausente",
                 "distribuicao_vagas_oferta_sem_grupo_area_enem",
@@ -590,6 +592,7 @@ public sealed class EnvelopeFechadoE2ETests
             HttpMethod.Put, $"{Rota}/{ProcessoId}/bonus-regional",
             new
             {
+                aplica = true,
                 regraCodigo = RegraBonusCodigo.Multiplicativo,
                 regraVersao = "v1",
                 fator = 1.2000m,

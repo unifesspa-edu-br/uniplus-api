@@ -963,6 +963,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         // obrigatorio: false — DocumentoExigido.DeterminaResultado() (obrigatória OU
         // consequência declarada) fica falso nas duas folhas, então a checagem de base
@@ -1154,6 +1155,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormatosPermitidos formatosPermitidos = FormatosPermitidos.Criar(
             qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!;
@@ -1622,6 +1624,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
     }

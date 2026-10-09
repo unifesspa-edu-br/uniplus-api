@@ -7,13 +7,13 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
-/// Define (ou remove) o bônus regional do processo (RN05, Story #774).
-/// Passar <see langword="null"/> em
-/// <see cref="RegraCodigo"/> remove o bônus — a ausência já é o toggle "sem
-/// bônus" (INV-B5); não existe um "BONUS-NENHUM".
+/// Declara se o processo aplica o bônus regional (RN05, Story #774) e, quando aplica, a
+/// configuração do bônus. <see cref="Aplica"/> falso dispensa a configuração; verdadeiro a exige.
 /// </summary>
+/// <param name="Aplica">Declaração obrigatória: o processo aplica ou não o bônus regional.</param>
 public sealed record DefinirBonusRegionalCommand(
     Guid ProcessoSeletivoId,
+    bool Aplica,
     string? RegraCodigo,
     string? RegraVersao,
     decimal? Fator,

@@ -332,7 +332,7 @@ public sealed class ProcessoSeletivoTests
     private static ReferenciaRegra RegraDesempate(string codigo) =>
         ReferenciaRegra.Criar(codigo, "v1", new string('a', 64)).Value!;
 
-    [Fact(DisplayName = "DefinirBonusRegional define e depois remove (toggle por presença, RN05)")]
+    [Fact(DisplayName = "DefinirBonusRegional declara que aplica e depois que não aplica, removendo a configuração (RN05)")]
     public void DefinirBonusRegional_DefineERemove()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -341,11 +341,11 @@ public sealed class ProcessoSeletivoTests
             1.20m, null, Guid.CreateVersion7(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]).Value!;
 
-        processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().NotBeNull();
         processo.BonusRegional!.ProcessoSeletivoId.Should().Be(processo.Id);
 
-        processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().BeNull();
     }
 
@@ -363,7 +363,7 @@ public sealed class ProcessoSeletivoTests
         processo.CriteriosDesempate.Should().OnlyContain(c => c.ProcessoSeletivoId == processo.Id);
     }
 
-    [Fact(DisplayName = "DefinirCriteriosDesempate vazia remove todos os critérios (dimensão opcional)")]
+    [Fact(DisplayName = "DefinirCriteriosDesempate vazia remove todos os critérios (o rascunho aceita)")]
     public void DefinirCriteriosDesempate_Vazia_RemoveTodos()
     {
         ProcessoSeletivo processo = NovoProcesso();

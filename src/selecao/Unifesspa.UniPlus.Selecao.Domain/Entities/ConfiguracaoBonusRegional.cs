@@ -12,11 +12,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// do <c>rol_de_regras</c> e seus args (<see cref="Fator"/>, <see cref="Teto"/>).
 /// </summary>
 /// <remarks>
-/// <strong>Toggle por presença (RN05, INV-B5):</strong> não existe
-/// "BONUS-NENHUM" — a ausência desta entidade no processo já significa sem
-/// bônus. A presença, com sua regra tipada, é o que habilita o bônus. O
-/// bônus se aplica sobre a nota final, após os pesos (decisão do P.O.:
-/// multiplicativo, ex. ×1,20, sem teto).
+/// <strong>Declaração e configuração (RN05):</strong> não existe "BONUS-NENHUM". O processo
+/// declara se aplica o bônus (<see cref="ProcessoSeletivo.AplicaBonusRegional"/>): esta entidade
+/// só existe quando a declaração é verdadeira, e é a sua presença, com a regra tipada, que
+/// habilita o bônus. A ausência da entidade só significa "sem bônus" quando a declaração é falsa;
+/// com a declaração nula, significa "por declarar" e bloqueia a publicação. O bônus se aplica
+/// sobre a nota final, após os pesos (decisão do P.O.: multiplicativo, ex. ×1,20, sem teto).
 /// </remarks>
 public sealed class ConfiguracaoBonusRegional : EntityBase
 {

@@ -249,8 +249,11 @@ public sealed class DesempatePorAreaEnemEndpointTests
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
             SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            // Estes testes partem de um desempate ainda por definir: o seeder declara um critério
+            // para o processo ser publicável, e aqui ele sai.
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+                .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", complementar: semear =>
+                    semear.DefinirCriteriosDesempate([], Domain.ValueObjects.PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue());
             processoId = processo.Id;
         }
 

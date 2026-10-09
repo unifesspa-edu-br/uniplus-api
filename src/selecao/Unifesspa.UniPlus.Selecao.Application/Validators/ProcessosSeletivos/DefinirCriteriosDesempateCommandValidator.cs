@@ -23,8 +23,9 @@ public sealed class DefinirCriteriosDesempateCommandValidator : AbstractValidato
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
 
-        // Critérios de desempate são opcionais (0..*) — lista vazia é válida
-        // (remove todos os critérios), diferente de DefinirEtapas/DefinirDistribuicaoVagas.
+        // Lista vazia é válida na gravação (remove todos os critérios), diferente de
+        // DefinirEtapas/DefinirDistribuicaoVagas: a exigência de ao menos um critério com
+        // inscrição própria é da publicação, não do rascunho.
         // RuleForEach por si só não falha sobre uma coleção NULA (apenas não
         // itera) — sem a regra a seguir, um payload malformado chegaria ao
         // handler como null e estouraria no foreach em vez de devolver 400.

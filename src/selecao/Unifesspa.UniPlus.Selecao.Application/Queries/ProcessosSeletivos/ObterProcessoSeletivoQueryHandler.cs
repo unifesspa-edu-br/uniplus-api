@@ -88,6 +88,7 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectOfertaAtendimento(processo.OfertaAtendimento),
         [.. processo.DistribuicaoVagas.Select(ProjectDistribuicaoVagas)],
         ProjectBonusRegional(processo.BonusRegional),
+        processo.AplicaBonusRegional,
         ProjectCascata(processo.Cascata),
         [.. processo.CriteriosDesempate.OrderBy(c => c.Ordem).Select(ProjectCriterioDesempate)],
         ProjectClassificacao(processo),

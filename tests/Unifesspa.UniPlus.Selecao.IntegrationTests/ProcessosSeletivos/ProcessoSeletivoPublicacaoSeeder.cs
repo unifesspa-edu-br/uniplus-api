@@ -124,6 +124,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             cobra: false, valor: null, fundamentosCodigos: null);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 
     /// <summary>
