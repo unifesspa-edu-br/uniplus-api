@@ -103,6 +103,25 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         await mocks.UnitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 
+    [Theory(DisplayName = "Handle declarando que não aplica, mas enviando qualquer campo do bônus, recusa com erro nomeado")]
+    [InlineData(null, "v1", null, null, false)]
+    [InlineData(null, null, 1.20, null, false)]
+    [InlineData(null, null, null, 0.5, false)]
+    [InlineData(null, null, null, null, true)]
+    public async Task Handle_NaoAplicaComCampoSolto_Recusa(string? regraCodigo, string? regraVersao, double? fator, double? teto, bool comBaseLegal)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirBonusRegionalCommand command = new(
+            processo.Id, false, regraCodigo, regraVersao, (decimal?)fator, (decimal?)teto, comBaseLegal ? BaseLegalId : null, PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Handle(command, mocks);
+
+        result.Error!.Code.Should().Be(Domain.Errors.ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao);
+        processo.AplicaBonusRegional.Should().BeNull();
+        await mocks.UnitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
     [Fact(DisplayName = "Handle declarando que não aplica, mas enviando a configuração, recusa com erro nomeado")]
     public async Task Handle_NaoAplicaComConfiguracao_Recusa()
     {
