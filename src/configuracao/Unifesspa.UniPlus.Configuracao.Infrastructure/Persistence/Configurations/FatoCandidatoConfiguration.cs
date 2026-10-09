@@ -233,7 +233,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             FatoCandidatoSeed.HipoteseLegal,
             Sistema = true,
             Ativo = true,
-            RegrasPadrao = (IReadOnlyList<RegraDerivacao>)[],
+            RegrasPadrao = item.RegrasPadrao ?? (IReadOnlyList<RegraDerivacao>)[],
             Dependencias = DerivadosDoSistema.Dependencias.GetValueOrDefault(item.Codigo) ?? [],
             CreatedAt = seedCriadoEm,
         });

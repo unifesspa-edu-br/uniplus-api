@@ -348,6 +348,31 @@ public sealed class ModeloFormularioAdminEndpointTests
             .GetValue<string>().Should().Be(comunidadeVisivel);
     }
 
+    [Theory(DisplayName = "No modelo de inscrição semeado, \"Concluí por certificação\" só é oferecido a quem concluiu por certificação, e a opção pelas vagas de escola pública segue o egresso derivado")]
+    [InlineData("REGULAR", "PRIVADA_BOLSA_INTEGRAL", false, "FALSO")]
+    [InlineData("ENCCEJA", "CERTIFICACAO", true, "VERDADEIRO")]
+    public async Task ModeloDeInscricao_OrigemEscolarEmDuasPerguntas(
+        string formaDeConclusao, string ondeCursou, bool ofereceCertificacao, string opcaoPelaEscolaPublicaVisivel)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
+        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
+        Guid id = lista.RootElement.EnumerateArray()
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+
+        HttpResponseMessage previa = await EnviarAsync(
+            client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao",
+            new { respostas = new Dictionary<string, object> { ["FORMA_CONCLUSAO_EM"] = formaDeConclusao, ["ONDE_CURSOU_EM"] = ondeCursou } });
+        previa.StatusCode.Should().Be(HttpStatusCode.OK, await previa.Content.ReadAsStringAsync());
+        JsonArray itens = JsonNode.Parse(await previa.Content.ReadAsStringAsync())!["itens"]!.AsArray();
+
+        itens.Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().NotContain("EGRESSO_ESCOLA_PUBLICA", "o egresso é derivado, não perguntado");
+        itens.Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "ONDE_CURSOU_EM")!["opcoes"]!["codigos"]!.AsArray()
+            .Select(static c => c!.GetValue<string>()).Contains("CERTIFICACAO").Should().Be(ofereceCertificacao);
+        itens.Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "CONCORRER_EP")!["visivel"]!
+            .GetValue<string>().Should().Be(opcaoPelaEscolaPublicaVisivel);
+    }
+
     [Theory(DisplayName = "A avaliação sem cadastro das regras do modelo dá o mesmo resultado da pré-visualização do modelo")]
     [InlineData(false)]
     [InlineData(true)]

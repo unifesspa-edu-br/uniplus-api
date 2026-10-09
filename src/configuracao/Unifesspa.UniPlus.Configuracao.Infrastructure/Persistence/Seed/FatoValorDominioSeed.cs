@@ -1,12 +1,14 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
 /// Fonte única do seed de <c>fato_valor_dominio</c> (ADR-0116): a descrição por
 /// valor dos fatos categóricos <b>estáticos</b> desta colheita —
 /// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>NACIONALIDADE</c> (3), <c>PARENTESCO</c> (12),
-/// <c>DOCUMENTO_ESTRANGEIRO_TIPO</c> (2) e <c>ESTADO_CIVIL</c> (6). Consumida pela
+/// <c>DOCUMENTO_ESTRANGEIRO_TIPO</c> (2), <c>ESTADO_CIVIL</c> (6), <c>TIPO_ENDERECO</c> (7) e a origem
+/// escolar, <c>FORMA_CONCLUSAO_EM</c> (5) e <c>ONDE_CURSOU_EM</c> (12). Consumida pela
 /// configuração EF Core (<c>HasData</c> na migration) e pelos testes de
 /// integração, mesmo papel de <see cref="FatoCandidatoSeed"/> para o pai.
 /// </summary>
@@ -26,9 +28,13 @@ public static class FatoValorDominioSeed
     private static Guid FatoCandidatoId(string codigo) =>
         FatoCandidatoSeed.Itens.Single(item => item.Codigo == codigo).Id;
 
+    private static readonly Guid FormaDeConclusao = FatoCandidatoId(OrigemEscolar.FatoFormaDeConclusao);
+
+    private static readonly Guid OndeCursou = FatoCandidatoId(OrigemEscolar.FatoOndeCursou);
+
     /// <summary>
     /// As linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE + 12 PARENTESCO + 2
-    /// DOCUMENTO_ESTRANGEIRO_TIPO + 6 ESTADO_CIVIL).
+    /// DOCUMENTO_ESTRANGEIRO_TIPO + 6 ESTADO_CIVIL + 7 TIPO_ENDERECO + 5 FORMA_CONCLUSAO_EM + 12 ONDE_CURSOU_EM).
     /// </summary>
     public static IReadOnlyList<FatoValorDominioSeedItem> Itens { get; } =
     [
@@ -99,6 +105,39 @@ public static class FatoValorDominioSeed
         new(SeedId(37), FatoCandidatoId("TIPO_ENDERECO"), "QUILOMBO", "Quilombo", 4, true),
         new(SeedId(38), FatoCandidatoId("TIPO_ENDERECO"), "VILA", "Vila", 5, true),
         new(SeedId(39), FatoCandidatoId("TIPO_ENDERECO"), "OUTRO", "Outro", 6, true),
+
+        // ── FORMA_CONCLUSAO_EM ───────────────────────────────────────────
+        // Como o candidato concluiu o ensino médio (UNI-REQ-0148).
+        new(SeedId(40), FormaDeConclusao, OrigemEscolar.Regular, "Ensino médio regular", 0, true),
+        new(SeedId(41), FormaDeConclusao, OrigemEscolar.Eja, "Educação de Jovens e Adultos (EJA)", 1, true),
+        new(SeedId(42), FormaDeConclusao, OrigemEscolar.Encceja, "Certificação pelo ENCCEJA", 2, true),
+        new(SeedId(43), FormaDeConclusao, OrigemEscolar.Proficiencia, "Exame de proficiência dos sistemas estaduais de ensino", 3, true),
+        new(SeedId(44), FormaDeConclusao, OrigemEscolar.Enem, "Certificação pelo ENEM", 4, true),
+
+        // ── ONDE_CURSOU_EM ───────────────────────────────────────────────
+        // Onde o candidato cursou o ensino médio (UNI-REQ-0148). A parte em escola privada com bolsa
+        // integral é separada das demais partes fora da rede pública, porque a isenção da taxa a
+        // equipara à escola pública e as cotas não.
+        new(SeedId(45), OndeCursou, OrigemEscolar.SomentePublica, "Somente em escola pública", 0, true,
+            "Todos os anos que você cursou, mesmo que tenha concluído por certificação sem cursar todos."),
+        new(SeedId(46), OndeCursou, OrigemEscolar.ComunitariaDoCampo, "Escola comunitária do campo conveniada com o poder público", 1, true),
+        new(SeedId(47), OndeCursou, OrigemEscolar.PrivadaComBolsaIntegral, "Escola privada com bolsa integral", 2, true),
+        new(SeedId(48), OndeCursou, OrigemEscolar.PrivadaComBolsaParcial, "Escola privada com bolsa parcial", 3, true),
+        new(SeedId(49), OndeCursou, OrigemEscolar.Privada, "Escola privada", 4, true),
+        new(SeedId(50), OndeCursou, OrigemEscolar.PublicaEPrivadaComBolsaIntegral,
+            "Parte em escola pública e parte em escola privada com bolsa integral", 5, true),
+        new(SeedId(51), OndeCursou, OrigemEscolar.PublicaEForaDaRede,
+            "Parte na rede pública (escola pública ou comunitária do campo conveniada) e parte fora dela, nos demais casos", 6, true,
+            "A parte fora da rede pública em escola privada sem bolsa integral, no Sistema S ou no exterior."),
+        new(SeedId(52), OndeCursou, OrigemEscolar.PublicaEComunitaria,
+            "Parte em escola pública e parte em escola comunitária do campo conveniada", 7, true),
+        new(SeedId(53), OndeCursou, OrigemEscolar.SistemaS, "Sistema S", 8, true,
+            "Escolas do SESI, SENAI, SESC, SENAC e demais serviços sociais autônomos."),
+        new(SeedId(54), OndeCursou, OrigemEscolar.Exterior, "Exterior", 9, true),
+        new(SeedId(55), OndeCursou, OrigemEscolar.MaisDeUmForaDaRede, "Mais de um tipo de escola fora da rede pública", 10, true,
+            "Escola privada, Sistema S ou exterior, sem passar pela rede pública."),
+        new(SeedId(56), OndeCursou, OrigemEscolar.ConcluiuPorCertificacao, "Concluí por certificação", 11, true,
+            "Para quem concluiu pelo ENCCEJA, por exame de proficiência ou pelo ENEM sem frequentar o ensino médio."),
     ];
 }
 

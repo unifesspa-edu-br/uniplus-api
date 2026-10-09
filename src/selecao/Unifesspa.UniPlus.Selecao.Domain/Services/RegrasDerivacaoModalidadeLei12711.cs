@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -35,7 +36,7 @@ public static class RegrasDerivacaoModalidadeLei12711
     private const string ConcorrerPpi = "CONCORRER_PPI";
     private const string ConcorrerQ = "CONCORRER_Q";
     private const string ConcorrerRenda = "CONCORRER_RENDA";
-    private const string EgressoEscolaPublica = "EGRESSO_ESCOLA_PUBLICA";
+    private const string EgressoEscolaPublica = OrigemEscolar.FatoEgresso;
 
     /// <summary>O domínio canônico de MODALIDADE no ramo Lei 12.711.</summary>
     public static IReadOnlyCollection<string> DominioCanonico { get; } =
