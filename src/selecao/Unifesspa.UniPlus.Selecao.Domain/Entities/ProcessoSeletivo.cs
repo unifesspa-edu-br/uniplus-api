@@ -50,7 +50,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Identificador legível escolhido no cadastro, de onde derivam o endereço da página pública
-    /// do certame e a chave do documento no acervo. Ausência = ainda não declarado, o que só
+    /// do certame e a chave do documento no acervo. É exigido na criação
+    /// (<see cref="Criar"/>); a ausência só aparece em processo gravado antes dessa exigência, e
     /// impede gerar versão publicada (<see cref="PendenciaDoIdentificadorLegivel"/>).
     /// </summary>
     /// <remarks>
@@ -367,7 +368,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Guid unidadeAdministradoraOrigemId,
         UnidadeAdministradoraSnapshot unidadeAdministradora,
         LocalidadeRegente localidade,
-        IdentificadorLegivel? identificadorLegivel = null)
+        IdentificadorLegivel identificadorLegivel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         if (tipoProcesso is null)
@@ -387,6 +388,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         ArgumentNullException.ThrowIfNull(unidadeAdministradora);
         ArgumentNullException.ThrowIfNull(localidade);
+        ArgumentException.ThrowIfNullOrWhiteSpace(identificadorLegivel.Valor, nameof(identificadorLegivel));
 
         return new ProcessoSeletivo
         {
@@ -2925,8 +2927,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Declara, troca ou remove o identificador legível enquanto ele não consta em versão
-    /// publicada.
+    /// Declara ou troca o identificador legível enquanto ele não consta em versão publicada.
+    /// Não há remoção: o certame sempre tem um identificador.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -2946,8 +2948,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// handler. O índice único do banco é a última defesa.
     /// </para>
     /// </remarks>
-    public Result DefinirIdentificadorLegivel(IdentificadorLegivel? identificador, PrecondicaoIfMatch precondicao)
+    public Result DefinirIdentificadorLegivel(IdentificadorLegivel identificador, PrecondicaoIfMatch precondicao)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(identificador.Valor, nameof(identificador));
+
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);

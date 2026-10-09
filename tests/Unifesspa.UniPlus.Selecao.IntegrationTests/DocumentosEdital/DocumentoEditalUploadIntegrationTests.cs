@@ -29,6 +29,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Integração real (Testcontainers Postgres + MinIO) do fluxo completo do
@@ -79,7 +80,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS 2026 — SiSU (teste #784)", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria,
             Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot
-                .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+                .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         context.ProcessosSeletivos.Add(processo);
         await context.SaveChangesAsync();
         return (context, processo);

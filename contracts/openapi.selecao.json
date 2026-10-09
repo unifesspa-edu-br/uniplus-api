@@ -10309,7 +10309,8 @@
           "unidadeAdministradoraOrigemId",
           "localidadeCodigoIbge",
           "localidadeNome",
-          "localidadeUf"
+          "localidadeUf",
+          "identificadorLegivel"
         ],
         "type": "object",
         "properties": {

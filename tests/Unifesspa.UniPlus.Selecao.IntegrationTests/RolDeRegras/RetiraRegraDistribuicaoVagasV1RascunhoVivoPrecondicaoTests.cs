@@ -120,7 +120,7 @@ public sealed class RetiraRegraDistribuicaoVagasV1RascunhoVivoPrecondicaoTests :
             OrigemCandidatos.InscricaoPropria,
             Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(codigo, versao, HashFixo).Value!;
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(

@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Identificador legível contra o Postgres real (issue #1479): o índice único é a última defesa
@@ -34,15 +35,6 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
         ProcessoSeletivo recarregado = await ctx.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == processo.Id);
 
         recarregado.IdentificadorLegivel.Should().Be(identificador);
-    }
-
-    [Fact(DisplayName = "Dois processos sem identificador convivem: o índice único ignora os ausentes")]
-    public async Task SemIdentificador_Convivem()
-    {
-        await PersistirAsync(NovoProcesso(null));
-        Func<Task> segundo = () => PersistirAsync(NovoProcesso(null));
-
-        await segundo.Should().NotThrowAsync();
     }
 
     [Fact(DisplayName = "O banco recusa o mesmo identificador em dois processos")]
@@ -76,7 +68,7 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
             .Should().BeFalse("o próprio processo não conflita consigo mesmo");
     }
 
-    private static ProcessoSeletivo NovoProcesso(IdentificadorLegivel? identificador) => ProcessoSeletivo.Criar(
+    private static ProcessoSeletivo NovoProcesso(IdentificadorLegivel identificador) => ProcessoSeletivo.Criar(
         "PS Identificador", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,

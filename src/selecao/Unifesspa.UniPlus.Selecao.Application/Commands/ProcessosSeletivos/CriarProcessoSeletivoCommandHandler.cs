@@ -53,19 +53,15 @@ public static class CriarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // O formato do identificador legível é conferido antes de qualquer consulta: validação
-        // de campo vence I/O, e quem erra o formato não precisa esperar pelas leituras abaixo.
-        IdentificadorLegivel? identificadorLegivel = null;
-        if (!string.IsNullOrWhiteSpace(command.IdentificadorLegivel))
+        // Presença e formato do identificador legível são conferidos antes de qualquer consulta:
+        // validação de campo vence I/O, e quem erra não precisa esperar pelas leituras abaixo.
+        Result<IdentificadorLegivel> identificadorResult = IdentificadorLegivelDeclarado(command.IdentificadorLegivel);
+        if (identificadorResult.IsFailure)
         {
-            Result<IdentificadorLegivel> identificadorResult = IdentificadorLegivel.Criar(command.IdentificadorLegivel);
-            if (identificadorResult.IsFailure)
-            {
-                return Result<Guid>.Failure(identificadorResult.Error!);
-            }
-
-            identificadorLegivel = identificadorResult.Value;
+            return Result<Guid>.Failure(identificadorResult.Error!);
         }
+
+        IdentificadorLegivel identificadorLegivel = identificadorResult.Value!;
 
         UnidadeView? unidade = await unidadeReader
             .ObterPorIdAsync(command.UnidadeAdministradoraOrigemId, cancellationToken)
@@ -132,12 +128,11 @@ public static class CriarProcessoSeletivoCommandHandler
             return Result<Guid>.Failure(snapshotResult.Error!);
         }
 
-        if (identificadorLegivel is { } identificador
-            && await processoSeletivoRepository
-                .IdentificadorLegivelEmUsoAsync(identificador, excluirId: null, cancellationToken)
+        if (await processoSeletivoRepository
+                .IdentificadorLegivelEmUsoAsync(identificadorLegivel, excluirId: null, cancellationToken)
                 .ConfigureAwait(false))
         {
-            return Result<Guid>.Failure(IdentificadorLegivelEmUso(identificador));
+            return Result<Guid>.Failure(IdentificadorLegivelEmUso(identificadorLegivel));
         }
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
@@ -149,13 +144,13 @@ public static class CriarProcessoSeletivoCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (identificadorLegivel is { } emDisputa && EhConflitoDeIdentificadorLegivel(ex))
+        catch (Exception ex) when (EhConflitoDeIdentificadorLegivel(ex))
         {
             // Outro processo gravou o mesmo identificador entre a consulta acima e esta gravação. O
             // processo recusado sai do contexto: sem isso ele continuaria Added no escopo, e uma
             // gravação posterior no mesmo contexto tentaria inseri-lo de novo.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(IdentificadorLegivelEmUso(emDisputa));
+            return Result<Guid>.Failure(IdentificadorLegivelEmUso(identificadorLegivel));
         }
 
         return Result<Guid>.Success(processo.Id);
@@ -165,6 +160,18 @@ public static class CriarProcessoSeletivoCommandHandler
 
     internal static bool EhConflitoDeIdentificadorLegivel(Exception ex) => string.Equals(
         UniqueConstraintViolation.GetViolatedConstraint(ex), IndiceDoIdentificadorLegivel, StringComparison.Ordinal);
+
+    /// <summary>
+    /// O identificador declarado pelo cliente, já no formato do domínio. A ausência é erro
+    /// nomeado, e não regra do validator, pelo mesmo motivo da localidade: o consumidor precisa
+    /// da página que explica a causa.
+    /// </summary>
+    internal static Result<IdentificadorLegivel> IdentificadorLegivelDeclarado(string? valor) =>
+        string.IsNullOrWhiteSpace(valor)
+            ? Result<IdentificadorLegivel>.Failure(new DomainError(
+                ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente,
+                "O identificador legível é obrigatório."))
+            : IdentificadorLegivel.Criar(valor);
 
     internal static DomainError IdentificadorLegivelEmUso(IdentificadorLegivel identificador) => new(
         ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso,

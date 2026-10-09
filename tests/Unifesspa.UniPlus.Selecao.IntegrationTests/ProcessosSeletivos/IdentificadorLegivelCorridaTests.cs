@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A corrida que a consulta de unicidade não alcança: outro processo grava o mesmo identificador
@@ -49,10 +50,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>())
             .Returns(new TipoProcessoView(TipoProcesso.SiSU.OrigemId, "SiSU", "SiSU", null));
         CriarProcessoSeletivoCommand command = new(
-            "PS Corrida", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA")
-        {
-            IdentificadorLegivel = disputado.Valor,
-        };
+            "PS Corrida", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", disputado.Valor);
 
         Result<Guid> resultado = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, unidadeReader, tipoProcessoReader, ctx, CancellationToken.None);
@@ -67,7 +65,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
     public async Task Definir_CorridaNoIndice_ConflitoNomeadoEDescarta()
     {
         IdentificadorLegivel disputado = IdentificadoresDeTeste.Novo();
-        ProcessoSeletivo alvo = NovoProcesso(null);
+        ProcessoSeletivo alvo = NovoProcesso(IdentificadoresDeTeste.Novo());
         await PersistirAsync(alvo);
         await PersistirConcorrenteAsync(disputado);
 
@@ -100,7 +98,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         return repository;
     }
 
-    private static ProcessoSeletivo NovoProcesso(IdentificadorLegivel? identificador) => ProcessoSeletivo.Criar(
+    private static ProcessoSeletivo NovoProcesso(IdentificadorLegivel identificador) => ProcessoSeletivo.Criar(
         "PS Corrida", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,

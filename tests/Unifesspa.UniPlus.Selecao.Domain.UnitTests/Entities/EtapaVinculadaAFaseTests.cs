@@ -23,7 +23,7 @@ public sealed class EtapaVinculadaAFaseTests
     private static ProcessoSeletivo Processo() => ProcessoSeletivo.Criar(
         "PS", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     /// <summary>
     /// Fase do cronograma, com ou sem janela. A origem da data acompanha o que foi declarado

@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O token que a leitura devolve é o mesmo que a escrita aceita (issue #1294): grava,
@@ -90,7 +91,8 @@ public sealed class VocabularioIdaEVoltaEndpointTests
               "unidadeAdministradoraOrigemId": "{{unidadeId}}",
               "localidadeCodigoIbge": "1504208",
               "localidadeNome": "Marabá",
-              "localidadeUf": "PA"
+              "localidadeUf": "PA",
+              "identificadorLegivel": "{{IdentificadoresDeTeste.NovoValor()}}"
             }
             """;
 

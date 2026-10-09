@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O lote de recusas do cronograma chegando ao cliente, pelo HTTP: duas fases mal
@@ -277,7 +278,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
             OrigemCandidatos.ImportacaoExterna,
             Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         await db.ProcessosSeletivos.AddAsync(processo).ConfigureAwait(false);
         await db.SaveChangesAsync().ConfigureAwait(false);

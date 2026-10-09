@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A janela do cronograma de fases informada com offset diferente de UTC (issue #1124),
@@ -196,7 +197,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
                 OrigemCandidatos.InscricaoPropria,
                 Guid.CreateVersion7(),
                 UnidadeAdministradoraSnapshot.Criar(
-                    "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+                    "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
             await db.ProcessosSeletivos.AddAsync(processo).ConfigureAwait(false);
             await db.SaveChangesAsync().ConfigureAwait(false);
             processoId = processo.Id;

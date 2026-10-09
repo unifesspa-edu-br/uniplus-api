@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Integração real (Testcontainers Postgres) do rascunho da publicação: o que o operador
@@ -201,7 +202,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
             OrigemCandidatos.InscricaoPropria,
             Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         contexto.ProcessosSeletivos.Add(processo);
         await contexto.SaveChangesAsync();
         return processo.Id;

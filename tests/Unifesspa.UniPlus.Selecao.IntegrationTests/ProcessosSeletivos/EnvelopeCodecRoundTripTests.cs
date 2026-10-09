@@ -217,9 +217,9 @@ public sealed class EnvelopeCodecRoundTripTests
         // é montada sobre eles.
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         IdentificadorLegivel? declarado = processo.IdentificadorLegivel;
-        processo.DefinirIdentificadorLegivel(null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IdentificadoresDeTeste.Retirar(processo);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        processo.DefinirIdentificadorLegivel(declarado, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirIdentificadorLegivel(declarado!.Value, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         CorpusEnvelope.Publicar(processo);
 
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);

@@ -27,8 +27,8 @@ public readonly record struct IdentificadorLegivel
     private IdentificadorLegivel(string valor) => Valor = valor;
 
     /// <summary>
-    /// Valida o valor informado. O chamador decide o que significa a ausência — no cadastro ela
-    /// é permitida, na publicação não —, por isso nulo ou vazio não é tratado aqui.
+    /// Valida o valor informado. Quem chama decide como tratar a ausência (o cadastro a recusa
+    /// com erro nomeado), por isso nulo ou vazio não é tratado aqui.
     /// </summary>
     public static Result<IdentificadorLegivel> Criar(string valor)
     {

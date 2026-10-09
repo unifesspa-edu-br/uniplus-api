@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -41,7 +42,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
                 OrigemCandidatos.InscricaoPropria,
                 Guid.CreateVersion7(),
                 UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-                LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+                LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
             EtapaProcesso etapa = EtapaProcesso.Criar(
                 "Prova de títulos",
@@ -107,7 +108,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
                 OrigemCandidatos.InscricaoPropria,
                 Guid.CreateVersion7(),
                 UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-                LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+                LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
             EtapaProcesso etapa = EtapaProcesso.Criar(
                 "Prova de títulos",
