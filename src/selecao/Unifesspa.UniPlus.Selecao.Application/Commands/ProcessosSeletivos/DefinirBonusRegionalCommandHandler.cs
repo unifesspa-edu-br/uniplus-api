@@ -79,7 +79,10 @@ public static class DefinirBonusRegionalCommandHandler
 
         if (!command.Aplica)
         {
-            if (command.RegraCodigo is not null)
+            // Qualquer campo do bônus enviado contradiz a declaração: descartá-lo em silêncio
+            // esconderia um payload mal formado.
+            if (command.RegraCodigo is not null || command.RegraVersao is not null || command.Fator is not null
+                || command.Teto is not null || command.BaseLegalBonusRegionalId is not null)
             {
                 return Result<MutacaoAceita>.Failure(new DomainError(
                     ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
