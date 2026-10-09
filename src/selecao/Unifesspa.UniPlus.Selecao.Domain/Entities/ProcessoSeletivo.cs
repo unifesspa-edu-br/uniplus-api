@@ -3056,12 +3056,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>A declaração do bônus existe e concorda com a configuração.</summary>
-    private bool BonusRegionalDeclarado() => AplicaBonusRegional switch
-    {
-        true => BonusRegional is not null,
-        false => BonusRegional is null,
-        null => false,
-    };
+    private bool BonusRegionalDeclarado() =>
+        AplicaBonusRegional is { } aplica && aplica == (BonusRegional is not null);
 
     /// <summary>
     /// Recusa gerar versão sem identificador legível: o certame publicado ficaria sem endereço
